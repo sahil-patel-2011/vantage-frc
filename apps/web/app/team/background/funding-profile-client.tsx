@@ -8,6 +8,7 @@ import {
   type FundingAffiliation,
   type FundingProfileView,
 } from "../../../lib/funding-profile";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Draft = {
   teamAffiliation: FundingAffiliation;
@@ -30,9 +31,13 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
+    setLoadFailed(false);
     const response = await fetch(
       `/api/organizations/funding-profile?orgId=${encodeURIComponent(orgId)}`,
     );
@@ -40,9 +45,12 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     if (!response.ok || !("orgId" in data)) {
       setMessage("error" in data && data.error ? data.error : "Could not load funding profile");
       setMessageTone("error");
+      setErrorStatus(response.status);
+      setLoadFailed(true);
       setLoading(false);
       return;
     }
+    setErrorStatus(null);
     setCanEdit(data.canEdit);
     setDraft({
       teamAffiliation: data.teamAffiliation,
@@ -84,6 +92,23 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     setSaving(false);
   }
 
+  const failure = loadFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message,
+        },
+      )
+    : null;
+
   return (
     <Panel className="team-funding-profile-panel">
       <div className="team-funding-profile-header">
@@ -96,13 +121,26 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
         Same fields as onboarding. When Sponsors allowed is off, Business tabs and drawer links for sponsor tools stay
         hidden — grants and Media remain available.
       </p>
-      {message ? (
+      {message && !failure ? (
         <p className={messageTone === "error" ? "status-bad" : "status-good"} role="status">
           {message}
         </p>
       ) : null}
       {loading ? (
         <EmptyState soft title="Loading funding profile…" description="Pulling affiliation and funding paths." />
+      ) : failure ? (
+        <EmptyState soft title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       ) : (
         <form className="auth-policy-form" onSubmit={(event) => void save(event)}>
           <fieldset className="onboarding-affiliation">

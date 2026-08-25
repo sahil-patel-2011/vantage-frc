@@ -30,8 +30,10 @@
 
 .svp-list-item {
   display: grid;
+  align-content: center;
   gap: 4px;
   width: 100%;
+  min-height: 44px;
   padding: 12px 14px;
   text-align: left;
   border: 1px solid var(--soft-line, #d5dde8);
@@ -78,9 +80,9 @@
 }
 
 .svp-badge.ready {
-  color: #166534;
-  background: #e8f8ee;
-  border-color: #b7e4c7;
+  color: var(--app-positive);
+  background: color-mix(in srgb, var(--app-positive) 14%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-positive) 38%, var(--soft-line));
 }
 
 .svp-composer {
@@ -110,7 +112,7 @@
 .svp-form input,
 .svp-form textarea {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 12px;
   border: 1px solid var(--soft-line, #d5dde8);
   border-radius: 12px;
@@ -129,7 +131,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   color: var(--soft-ink, #0f172a);
   font-weight: 600;
 }
@@ -157,9 +159,14 @@
   padding: 18px 20px;
   border-radius: var(--soft-radius, 14px);
   border: 1px solid var(--soft-line, #d5dde8);
+  /* Tinted head fading into the card colour — token-only so dark mode stays dark. */
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--soft-accent-soft, #e8eefc) 40%, #fff), #fff 42%),
-    var(--soft-card, #fff);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--soft-accent-soft, var(--app-accent)) 40%, var(--soft-card)),
+      var(--soft-card) 42%
+    ),
+    var(--soft-card);
   box-shadow: var(--soft-shadow, 0 4px 14px rgba(28, 36, 48, 0.06));
   min-height: 420px;
 }
@@ -233,15 +240,9 @@
 }
 
 .svp-meter i.ok {
-  color: #166534;
-  background: #e8f8ee;
-  border-color: #b7e4c7;
-}
-
-.svp-empty {
-  padding: 28px 18px;
-  text-align: center;
-  color: var(--soft-muted, #6b7280);
+  color: var(--app-positive);
+  background: color-mix(in srgb, var(--app-positive) 14%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-positive) 38%, var(--soft-line));
 }
 
 .svp-note {

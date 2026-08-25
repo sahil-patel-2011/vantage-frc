@@ -6,6 +6,7 @@ import {
   resolveOrgChatAdapter,
   runAutonomousAgent,
 } from "@vantage/agent";
+import { createBridgeTransport } from "../../../../lib/ai-bridge/transport";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -18,6 +19,19 @@ async function current() {
 }
 
 const fail = (error: unknown) => failMeteredAi(error, "Autonomous agent request failed");
+
+/**
+ * Autonomous steps call a real upstream model. A bridged turn (a paired device with
+ * coverage 'everything') holds the request open for the bridge poll budget
+ * (BRIDGE_HEAVY_POLL_TOTAL_BUDGET_MS, 240s), so this function declares 300s to keep
+ * headroom above it; the adapter's own timeout still fires first and returns a
+ * classified error instead of the platform killing the function mid-request.
+ *
+ * 300s is only honored where the hosting plan's Node function cap reaches it. Below
+ * that cap set VANTAGE_BRIDGE_MAX_WAIT_MS so the turn falls through to the team's own
+ * keys instead of 504-ing — see docs/AI_BRIDGE.md "Function duration".
+ */
+export const maxDuration = 300;
 
 export async function GET(request: Request) {
   try {
@@ -74,6 +88,7 @@ export async function POST(request: Request) {
         orgId,
         promptCachingEnabled,
         feature: "agent",
+        bridgeTransport: createBridgeTransport(),
       });
 
       const result = await runAutonomousAgent({

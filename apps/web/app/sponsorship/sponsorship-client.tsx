@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   buildOnePagerLines,
   defaultTitle,
@@ -89,6 +90,8 @@ async function downloadBlob(response: Response, fallbackName: string) {
 export default function SponsorshipClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<SponsorshipView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -97,6 +100,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
 
   const load = useCallback((seasonOverride?: number, preferId?: string | null) => {
     setError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -108,6 +112,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         const data = (await response.json()) as SponsorshipView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setError("error" in data && data.error ? data.error : "Could not load sponsorship one-pagers.");
+          setErrorStatus(response.status);
           return;
         }
         setView(data);
@@ -227,15 +232,42 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
   }
 
   if (!view) {
+    const copy = error
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
     return (
       <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
-          <PageHeader navPath="/sponsorship" title="Sponsorship one-pagers" description="Loading…" />
+          <PageHeader
+            navPath="/sponsorship"
+            title="Sponsorship one-pagers"
+            description={copy ? copy.title : "Loading…"}
+          />
         ) : null}
-        {error ? (
-          <p className="telemetry-status" role="alert">
-            {error}
-          </p>
+        {copy ? (
+          <>
+            <p className="telemetry-status" role="alert">
+              <strong>{copy.title}</strong> — {copy.description}
+            </p>
+            {copy.primary ? (
+              <a className="app-button" href={copy.primary.href}>
+                {copy.primary.label}
+              </a>
+            ) : null}
+          </>
         ) : null}
       </main>
     );
@@ -384,7 +416,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           <span className="eyebrow">Library</span>
           <div className="svp-list">
             {onePagers.length === 0 ? (
-              <p className="svp-empty">No one-pagers yet for {season ?? seasonYear}. Create one to start composing.</p>
+              <p className="empty-hint">No one-pagers yet for {season ?? seasonYear}. Create one to start composing.</p>
             ) : (
               onePagers.map((page) => (
                 <button

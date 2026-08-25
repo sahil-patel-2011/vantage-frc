@@ -12,6 +12,7 @@ import {
   type ItemPatch,
   type LocationPatch,
 } from "../../../lib/inventory";
+import { adjustStock as adjustUnifiedStock } from "../../../lib/parts/store";
 
 class HttpError extends Error {
   constructor(
@@ -75,7 +76,7 @@ export async function GET(request: Request) {
 
       const [items, locations, transactions, bom] = await Promise.all([
         client.query<InventoryItem>(
-          `SELECT i.id, i.name, i.category, i.part_number AS "partNumber", i.vendor, i.unit,
+          `SELECT i.id, i.name, i.kind, i.category, i.part_number AS "partNumber", i.vendor, i.unit,
                   i.quantity::float8 AS quantity, i.min_quantity::float8 AS "minQuantity",
                   i.unit_cost::float8 AS "unitCost", i.location_id AS "locationId", l.name AS "locationName",
                   i.subsystem, i.notes, i.archived, i.updated_at::text AS "updatedAt"
@@ -191,27 +192,22 @@ export async function POST(request: Request) {
         }
 
         case "adjust_stock": {
-          // Atomic within the RLS transaction; the guard blocks stock going negative.
-          const updated = await client.query<{ quantity: string }>(
-            `UPDATE inventory_items SET quantity = quantity + $1, updated_at = now()
-             WHERE id = $2 AND org_id = $3 AND quantity + $1 >= 0
-             RETURNING quantity::float8 AS quantity`,
-            [action.delta, action.itemId, action.orgId],
-          );
-          if (!updated.rowCount) {
-            const exists = await client.query(`SELECT 1 FROM inventory_items WHERE id = $1 AND org_id = $2`, [
-              action.itemId,
-              action.orgId,
-            ]);
-            if (!exists.rowCount) throw new HttpError(404, "Item not found");
-            throw new HttpError(400, "Adjustment would drop stock below zero");
+          // One parts ledger (0462): the unified store appends the ledger row and moves the
+          // running total atomically; the guard blocks stock going negative.
+          try {
+            const quantity = await adjustUnifiedStock(client, {
+              orgId: action.orgId,
+              userId,
+              itemId: action.itemId,
+              delta: action.delta,
+              reason: action.reason,
+              note: action.note,
+            });
+            return { quantity };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Adjustment failed";
+            throw new HttpError(message === "Item not found" ? 404 : 400, message);
           }
-          await client.query(
-            `INSERT INTO inventory_transactions (org_id, item_id, delta, reason, note, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [action.orgId, action.itemId, action.delta, action.reason, action.note, userId],
-          );
-          return { quantity: Number(updated.rows[0]!.quantity) };
         }
 
         case "create_location": {

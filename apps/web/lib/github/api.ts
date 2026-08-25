@@ -1,8 +1,20 @@
-import { formatBugbotScanBundle, pickBugbotScanEntries } from "@vantage/agent/bugbot";
+import {
+  BUGBOT_SCAN_CHUNK_FILES,
+  formatBugbotScanBundle,
+  isBugbotScanPath,
+  planBugbotScan,
+  type BugbotScanPlan,
+  type BugbotSkipReason,
+} from "@vantage/agent/bugbot";
+import { asCommitSha } from "../bugbot/grounding";
 import { GITHUB_API_BASE } from "./oauth";
 
 export const GITHUB_MAX_FILE_CHARS = 48_000;
 export const GITHUB_MAX_TREE_ENTRIES = 200;
+/** Scan planning classifies the WHOLE tree so the skip report is honest. */
+export const GITHUB_MAX_SCAN_TREE_ENTRIES = 5_000;
+/** Per-file chars pulled into one scan chunk. */
+export const GITHUB_SCAN_FILE_CHARS = 12_000;
 export const GITHUB_MAX_CONTEXT_CHARS = 48_000;
 
 export type GitHubRepoSummary = {
@@ -151,11 +163,34 @@ export async function fetchGitHubRepoMeta(http: GitHubHttp, fullName: string) {
   };
 }
 
+/**
+ * Resolve a branch/tag/sha ref to the exact commit sha it points at right now.
+ * Null when unresolvable (missing ref, revoked token, network) — callers fall
+ * back to the symbolic ref rather than failing the whole request.
+ */
+export async function resolveGitHubCommitSha(
+  http: GitHubHttp,
+  fullName: string,
+  ref: string,
+): Promise<string | null> {
+  const { owner, repo } = parseOwnerRepo(fullName);
+  try {
+    const response = await http(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits/${encodeURIComponent(ref)}`,
+    );
+    if (!response.ok) return null;
+    const data = (await response.json()) as { sha?: unknown };
+    return asCommitSha(typeof data.sha === "string" ? data.sha : null);
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchGitHubTree(
   http: GitHubHttp,
   fullName: string,
   ref: string,
-  options?: { recursive?: boolean; maxEntries?: number },
+  options?: { recursive?: boolean; maxEntries?: number; keep?: (entry: GitHubTreeEntry) => boolean },
 ): Promise<{ truncated: boolean; entries: GitHubTreeEntry[]; ref: string }> {
   const { owner, repo } = parseOwnerRepo(fullName);
   const maxEntries = options?.maxEntries ?? GITHUB_MAX_TREE_ENTRIES;
@@ -169,17 +204,19 @@ export async function fetchGitHubTree(
     tree?: Array<{ path?: string; type?: string; size?: number }>;
   };
   if (!response.ok) throw new Error(String(data.message ?? "Failed to load repository tree"));
-  const entries = (data.tree ?? [])
+  // Filter BEFORE the cap: on a real WPILib repo the first 200 entries are gradle
+  // and vendordeps, so capping first would hide src/main/java entirely.
+  const all = (data.tree ?? [])
     .filter((item) => item.path && item.type)
-    .slice(0, maxEntries)
     .map((item) => ({
       path: String(item.path),
       type: String(item.type),
       size: typeof item.size === "number" ? item.size : undefined,
     }));
+  const kept = options?.keep ? all.filter(options.keep) : all;
   return {
-    truncated: Boolean(data.truncated) || (data.tree?.length ?? 0) > maxEntries,
-    entries,
+    truncated: Boolean(data.truncated) || kept.length > maxEntries,
+    entries: kept.slice(0, maxEntries),
     ref,
   };
 }
@@ -252,6 +289,8 @@ export type GitHubScanBundle = {
   filesScanned: number;
   truncated: boolean;
   files: string[];
+  /** Files the plan chose that could not be read (binary / encoding / gone). */
+  unreadable: Array<{ path: string; reason: BugbotSkipReason }>;
   fullName: string;
   ref: string;
   treeTruncated: boolean;
@@ -259,32 +298,65 @@ export type GitHubScanBundle = {
 };
 
 /**
+ * Plan a repo scan without spending a metered call: what will be reviewed, what is
+ * skipped and why, how many chunks it takes, and therefore what it costs.
+ */
+export async function planGitHubBugbotScan(
+  http: GitHubHttp,
+  fullName: string,
+  ref: string,
+  options?: { chunkFiles?: number; maxChunks?: number },
+): Promise<BugbotScanPlan> {
+  const tree = await fetchGitHubTree(http, fullName, ref, { maxEntries: GITHUB_MAX_SCAN_TREE_ENTRIES });
+  return planBugbotScan(tree.entries, {
+    chunkFiles: options?.chunkFiles,
+    maxChunks: options?.maxChunks,
+    treeTruncated: tree.truncated,
+  });
+}
+
+/**
  * Load a size-capped robot-code bundle for Bugbot. Skips unreadable blobs.
  * Never invents DEMO source when the tree is empty or disconnected.
+ *
+ * `files` scans exactly that list (one chunk of a planned scan); every path is
+ * re-checked against the scan classifier so a caller cannot smuggle in a lockfile.
  */
 export async function fetchGitHubScanBundle(
   http: GitHubHttp,
   fullName: string,
   ref: string,
+  options?: { files?: string[] },
 ): Promise<GitHubScanBundle> {
-  const tree = await fetchGitHubTree(http, fullName, ref, { maxEntries: 400 });
-  const paths = pickBugbotScanEntries(tree.entries);
+  let paths: string[];
+  let treeTruncated = false;
+  if (options?.files?.length) {
+    paths = options.files.filter((path) => isBugbotScanPath(path)).slice(0, BUGBOT_SCAN_CHUNK_FILES);
+  } else {
+    const plan = await planGitHubBugbotScan(http, fullName, ref, { maxChunks: 1 });
+    paths = plan.chunks[0] ?? [];
+    treeTruncated = plan.treeTruncated;
+  }
   const files: Array<{ path: string; content: string }> = [];
+  const unreadable: Array<{ path: string; reason: BugbotSkipReason }> = [];
   for (const path of paths) {
     try {
-      const snippet = await fetchGitHubFileSnippet(http, fullName, path, ref, 12_000);
+      const snippet = await fetchGitHubFileSnippet(http, fullName, path, ref, GITHUB_SCAN_FILE_CHARS);
       if (snippet.content.trim()) files.push({ path: snippet.path, content: snippet.content });
+      else unreadable.push({ path, reason: "not_robot_code" });
     } catch {
-      // Binary / missing / encoding skip — never fabricate the file.
+      // Binary / missing / encoding skip — never fabricate the file, always report it.
+      unreadable.push({ path, reason: "not_robot_code" });
     }
   }
   const bundle = formatBugbotScanBundle(files);
   return {
     ...bundle,
     files: files.map((file) => file.path),
+    unreadable,
     fullName,
     ref,
-    treeTruncated: tree.truncated,
+    treeTruncated,
     emptyReason: bundle.filesScanned
       ? null
       : paths.length

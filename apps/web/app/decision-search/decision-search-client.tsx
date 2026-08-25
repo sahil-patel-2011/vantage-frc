@@ -18,7 +18,7 @@ import {
   type DecisionSearchShellKind,
 } from "../../lib/decision-search/decision-search-related";
 import type { DecisionSearchSourceKind } from "../../lib/decision-search/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./decision-search.css";
 
@@ -94,7 +94,7 @@ function DecisionSearchShell({
     queryCount,
   });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const aiHref = hubHref("/ai", "decision-search", orgId);
+  const aiHref = hubWorkbenchHref("ai", "decision-search", orgId);
 
   return (
     <main className="module-page decision-search-page soft-gate">
@@ -243,7 +243,7 @@ export default function DecisionSearchClient() {
     documentCount,
     queryCount,
   });
-  const aiHref = hubHref("/ai", "decision-search", orgId);
+  const aiHref = hubWorkbenchHref("ai", "decision-search", orgId);
   const relatedLinks = decisionSearchRelatedLinks(orgId, {
     include: [...DECISION_SEARCH_RELATED_INCLUDE],
   });

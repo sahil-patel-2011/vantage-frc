@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Form = { id: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null; notes: string };
 type ConsentRecord = { id: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; byName: string | null };
@@ -15,13 +16,23 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a bare error line.
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [formForm, setFormForm] = useState({ name: "", formType: "medical_release", required: true, documentUrl: "" });
   const [recordForm, setRecordForm] = useState({ formId: "", personName: "", guardianName: "", status: "submitted", signedOn: "" });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/consent?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
+    setLoadError("");
+    setErrorStatus(null);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load forms"); return; }
+    if (!response.ok) {
+      setMessage(data.error ?? "Failed to load forms");
+      setLoadError(data.error ?? "Failed to load forms");
+      setErrorStatus(response.status);
+      return;
+    }
     setView(data);
     if (data.status === "ready" && !recordForm.formId && data.forms[0]) {
       setRecordForm((prev) => ({ ...prev, formId: data.forms[0]!.id }));
@@ -52,7 +63,52 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
     if (view?.status === "ready") setRecordForm((prev) => ({ ...prev, personName: "", guardianName: "", signedOn: "" }));
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading forms…"}</p></main>;
+  if (!view) {
+    // Retry cannot fix an expired session, so the failure decides its own action.
+    const failure = loadError
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError,
+          },
+        )
+      : null;
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status">
+          {failure ? (
+            <>
+              <strong>{failure.title}</strong> — {failure.description}
+            </>
+          ) : (
+            message || "Loading forms…"
+          )}
+        </p>
+        {failure?.primary ? (
+          <p>
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          </p>
+        ) : null}
+        {failure?.showRetry ? (
+          <p>
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          </p>
+        ) : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / FORMS</span><h1>Forms &amp; consent</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

@@ -9,20 +9,16 @@ import {
 } from "../src";
 
 describe("plan → strategy engine selection", () => {
-  it("maps Free/BYOK and Access to baseline weighted-current-v1", () => {
-    expect(selectStrategyEngine("free").engineId).toBe("weighted-current-v1");
-    expect(selectStrategyEngine("access").engineId).toBe("weighted-current-v1");
-    expect(selectStrategyEngine(null).engineId).toBe("weighted-current-v1");
-    expect(selectStrategyEngine(undefined).engineId).toBe("weighted-current-v1");
-    expect(selectStrategyEngine("FREE").tier).toBe("baseline");
+  it("gives every plan — Free included — the max-depth engine (0481 ladder)", () => {
+    for (const code of ["free", "pro", "pro_plus", "max", "team_trial", "access"]) {
+      expect(selectStrategyEngine(code).engineId).toBe("strategy-engine-max-v1");
+    }
   });
 
-  it("maps Individual Pro / Team Pro (and trial) to strategy-engine-v2", () => {
-    expect(selectStrategyEngine("individual_pro").engineId).toBe("strategy-engine-v2");
-    expect(selectStrategyEngine("team_pro").engineId).toBe("strategy-engine-v2");
-    expect(selectStrategyEngine("team_trial").engineId).toBe("strategy-engine-v2");
-    expect(selectStrategyEngine("team_pro").depth).toBe(2);
-    expect(selectStrategyEngine("individual_pro").thisSeasonOnly).toBe(true);
+  it("keeps legacy plan codes on the max engine via the alias ladder", () => {
+    for (const code of ["individual_pro", "team_pro", "individual_max", "team_max"]) {
+      expect(selectStrategyEngine(code).engineId).toBe("strategy-engine-max-v1");
+    }
   });
 
   it("maps Individual Max / Team Max to strategy-engine-max-v1", () => {
@@ -43,8 +39,9 @@ describe("plan → strategy engine selection", () => {
     expect(PLAN_TO_ENGINE_ID.team_max).toBe("strategy-engine-max-v1");
   });
 
-  it("falls back to baseline for unknown plan codes", () => {
-    expect(selectStrategyEngine("not_a_real_plan").engineId).toBe("weighted-current-v1");
+  it("falls back to the max engine for unknown plan codes — a typo never degrades a team", () => {
+    expect(selectStrategyEngine("mystery_plan").engineId).toBe("strategy-engine-max-v1");
+    expect(selectStrategyEngine(null).engineId).toBe("strategy-engine-max-v1");
   });
 });
 

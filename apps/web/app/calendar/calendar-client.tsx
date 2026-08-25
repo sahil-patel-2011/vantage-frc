@@ -1,12 +1,13 @@
 "use client";
 
-import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
+import { useOnline } from "../../lib/offline";
 
 import { OfflineBanner } from "../../components/offline-banner";
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   daysUntil,
   groupByMonth,
@@ -261,11 +262,13 @@ function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId
 
 export default function CalendarClient() {
   const online = useOnline();
-  const [fromCache, setFromCache] = useState(false);
-  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [fromCache] = useState(false);
+  const [cachedAt] = useState<string | null>(null);
   const [view, setView] = useState<CalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [kickoff, setKickoff] = useState("");
@@ -286,12 +289,15 @@ export default function CalendarClient() {
       const data = (await response.json()) as CalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the season calendar.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
     } catch {
+      setErrorStatus(null);
       setFetchFailed(true);
     }
   }, []);
@@ -335,15 +341,32 @@ export default function CalendarClient() {
         <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         {fetchFailed ? (
-          <EmptyState
-            soft
-            title="Could not load the season calendar"
-            description={error || "Check your connection and try again."}
-          >
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
-              Retry
-            </button>
-          </EmptyState>
+          (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({ status: errorStatus, message: error, online }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error || "Check your connection and try again.",
+              },
+            );
+            return (
+              <EmptyState soft title={copy.title} description={copy.description}>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </EmptyState>
+            );
+          })()
         ) : (
           <Panel className="cal-empty">
             <p className="app-muted">Loading season calendar…</p>

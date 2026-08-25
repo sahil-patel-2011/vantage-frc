@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, rankMentorCandidates } from ".";
+import { roleTier } from "../learning/learning-mode";
+import { buildCalibrationSignals, type CalibrationRow, type CalibrationSignal } from "./calibration";
 import type {
   MentorRequest,
   MentorRequestStatus,
@@ -34,6 +36,14 @@ export type SkillsGraphView =
       members: Array<{ userId: string; userName: string }>;
       entries: SkillEntry[];
       requests: MentorRequest[];
+      /**
+       * "Call Your Shot" prediction-calibration evidence (learning_predictions,
+       * fetched under RLS so students only ever see their own). Signals may
+       * PROPOSE a skills entry; a human accepts or ignores — never automatic.
+       */
+      calibration: CalibrationSignal[];
+      /** True when the viewer is owner/admin — the tier that countersigns proposals. */
+      viewerCanCountersign: boolean;
       summary: SkillsGraphSummary;
       computedAt: string;
     };
@@ -54,9 +64,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -117,7 +127,7 @@ export async function computeSkillsGraphView(
     };
   }
 
-  const [memberResult, entryResult, evidenceResult, requestResult] = await Promise.all([
+  const [memberResult, entryResult, evidenceResult, requestResult, calibrationResult] = await Promise.all([
     client.query<MemberRow>(
       `SELECT u.id AS "userId", u.name AS "userName"
        FROM memberships m
@@ -155,6 +165,34 @@ export async function computeSkillsGraphView(
        LEFT JOIN users mu ON mu.id = r.matched_user_id
        WHERE r.org_id = $1
        ORDER BY r.created_at DESC`,
+      [org.orgId],
+    ),
+    // "Call Your Shot" calibration (0452_learning_predictions.sql). RLS already
+    // limits this to the viewer's own rows unless they are owner/admin, so a
+    // student's signals are visible to that student and to mentors — never to
+    // another student.
+    client.query<{
+      userId: string;
+      userName: string | null;
+      surface: string;
+      scored: string;
+      spotOn: string;
+      close: string;
+      off: string;
+      skipped: string;
+      lastCallAt: string | null;
+    }>(
+      `SELECT p.user_id AS "userId", u.name AS "userName", p.surface,
+              count(*) FILTER (WHERE NOT p.skipped AND p.closeness IS NOT NULL)::text AS "scored",
+              count(*) FILTER (WHERE p.closeness = 'spot-on')::text AS "spotOn",
+              count(*) FILTER (WHERE p.closeness = 'close')::text AS "close",
+              count(*) FILTER (WHERE p.closeness = 'off')::text AS "off",
+              count(*) FILTER (WHERE p.skipped)::text AS "skipped",
+              max(p.created_at)::text AS "lastCallAt"
+       FROM learning_predictions p
+       JOIN users u ON u.id = p.user_id
+       WHERE p.org_id = $1::uuid
+       GROUP BY p.user_id, u.name, p.surface`,
       [org.orgId],
     ),
   ]);
@@ -206,6 +244,20 @@ export async function computeSkillsGraphView(
   const categories = new Set(entries.map((e) => e.skillCategory));
   const members = memberResult.rows.map((r) => ({ userId: r.userId, userName: r.userName }));
 
+  const calibration = buildCalibrationSignals(
+    calibrationResult.rows.map<CalibrationRow>((r) => ({
+      userId: r.userId,
+      userName: r.userName,
+      surface: r.surface,
+      scored: Number(r.scored) || 0,
+      spotOn: Number(r.spotOn) || 0,
+      close: Number(r.close) || 0,
+      off: Number(r.off) || 0,
+      skipped: Number(r.skipped) || 0,
+      lastCallAt: r.lastCallAt,
+    })),
+  );
+
   const summary: SkillsGraphSummary = {
     totalEntries: entries.length,
     totalMembers: new Set(entries.map((e) => e.userId)).size,
@@ -221,6 +273,8 @@ export async function computeSkillsGraphView(
     members,
     entries,
     requests,
+    calibration,
+    viewerCanCountersign: roleTier(org.role) === "mentor",
     summary,
     computedAt: new Date().toISOString(),
   };

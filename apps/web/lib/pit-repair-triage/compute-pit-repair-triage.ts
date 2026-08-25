@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { TRIAGE_DECISIONS, TRIAGE_STATUSES, triageRepair } from ".";
+import { consumeForSource } from "../parts/store";
 import type { FmeaHistoryEntry, SpareCandidate, TriageDecision, TriageReport, TriageStatus } from "./types";
+
+/** A part consumed by a repair, chosen from the unified stock at resolve time. */
+export type UsedPart = { itemId: string; quantity: number };
 
 export { TRIAGE_DECISIONS, TRIAGE_STATUSES };
 
@@ -324,12 +328,35 @@ export async function logFailure(
 
 export async function updateReportStatus(
   client: PoolClient,
-  input: { orgId: string; reportId: string; status: TriageStatus },
+  input: {
+    orgId: string;
+    userId: string;
+    reportId: string;
+    status: TriageStatus;
+    /** Parts consumed by this repair; decremented through the ONE parts ledger on resolve. */
+    usedParts?: UsedPart[];
+  },
 ): Promise<void> {
-  await client.query(
-    `UPDATE pit_repair_triage_reports SET status = $1, updated_at = now() WHERE id = $2 AND org_id = $3`,
+  const updated = await client.query<{ title: string }>(
+    `UPDATE pit_repair_triage_reports SET status = $1, updated_at = now()
+     WHERE id = $2 AND org_id = $3
+     RETURNING title`,
     [input.status, input.reportId, input.orgId],
   );
+  if (!updated.rowCount) throw new Error("Report not found");
+
+  // Close the loop: a resolved repair that consumed parts decrements the unified stock through
+  // the append-only ledger, keyed to this repair (idempotent — a replay cannot double-decrement).
+  if (input.status === "resolved" && input.usedParts?.length) {
+    await consumeForSource(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      sourceKind: "pit_repair_triage",
+      sourceId: input.reportId,
+      note: `Used by pit repair: ${updated.rows[0]!.title}`,
+      items: input.usedParts.map((part) => ({ itemId: part.itemId, quantity: part.quantity })),
+    });
+  }
 }
 
 export async function deleteReport(

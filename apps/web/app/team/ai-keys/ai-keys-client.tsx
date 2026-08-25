@@ -18,7 +18,27 @@ import {
   type ByokKeyStatus,
   type ByokProvider,
 } from "../../../lib/ai-keys/byok-providers";
+import {
+  describeModelPolicy,
+  MODEL_POLICY_MODE_META,
+} from "../../../lib/ai-keys/model-policy-related";
+import { ModelSelector } from "../../../components/model-selector";
+import { FREE_KEY_CAVEAT, FREE_KEY_PROVIDERS } from "../../../lib/ai-keys/free-key-providers";
+import {
+  ANY_ENDPOINT_BODY,
+  ANY_ENDPOINT_HEADLINE,
+  ANY_ENDPOINT_POINTS,
+  describeMemberKey,
+  ENDPOINT_EXAMPLES,
+  MEMBER_KEY_BASE_URL_HINT,
+  MEMBER_KEY_BODY,
+  MEMBER_KEY_HEADLINE,
+  MEMBER_KEY_MODEL_HINT,
+  memberKeyFields,
+  PAGE_DESCRIPTION,
+} from "./ai-keys-copy";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./ai-keys.css";
 
 type ProviderMeta = {
@@ -52,10 +72,28 @@ type RoutingPrefs = {
   enabledModelIds: string[];
 };
 
+type ModelPolicyMode = "allow_all" | "allowlist" | "force_auto";
+
+type ModelPolicyPayload = {
+  mode: ModelPolicyMode;
+  allowedModelIds: string[];
+  canManage: boolean;
+  catalog: ModelOption[];
+};
+
+type MemberKeyRow = {
+  provider: string;
+  baseUrl: string | null;
+  model: string | null;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+};
+
 type Payload = {
   tier: string;
   canManage: boolean;
   keys: ByokKeyStatus[];
+  memberKeys?: MemberKeyRow[];
   providers: ProviderMeta[];
   localConnector?: LocalConnector;
   routing?: RoutingPrefs;
@@ -111,6 +149,57 @@ function ShellPanel({
         <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
           Team admin
         </a>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * The load failed — say why, and offer the one action that fixes it. Retry can
+ * never revive an expired session, so an auth failure offers sign-in instead.
+ */
+function LoadFailurePanel({
+  status,
+  message,
+  onRetry,
+}: {
+  status: number | null;
+  message: string;
+  onRetry: () => void;
+}) {
+  const kind = classifyLoadFailure({
+    status,
+    message,
+    online: typeof navigator === "undefined" ? true : navigator.onLine,
+  });
+  const copy = loadFailureCopy(kind, {
+    nextPath:
+      typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+    message,
+  });
+  const badge =
+    kind === "auth"
+      ? "Signed out"
+      : kind === "forbidden"
+        ? "No access"
+        : kind === "offline"
+          ? "Offline"
+          : "Error";
+  return (
+    <section className="app-card soft-panel ai-keys-shell" role="status">
+      <span className="app-badge setup">{badge}</span>
+      <span className="eyebrow">{badge.toUpperCase()}</span>
+      <h2>{copy.title}</h2>
+      <p className="app-muted">{copy.description}</p>
+      {copy.primary ? (
+        <a className="app-button primary" href={copy.primary.href}>
+          {copy.primary.label}
+        </a>
+      ) : null}
+      {copy.showRetry ? (
+        <button type="button" className="app-button secondary" onClick={onRetry}>
+          Retry
+        </button>
       ) : null}
     </section>
   );
@@ -205,6 +294,8 @@ function ProviderCard({
 export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
   const [busyProvider, setBusyProvider] = useState<ByokProvider | null>(null);
   const [busyLocal, setBusyLocal] = useState(false);
@@ -221,6 +312,36 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     fixedModelId: null,
     enabledModelIds: [],
   });
+  const [modelPolicy, setModelPolicy] = useState<ModelPolicyPayload | null>(null);
+  const [policyDraft, setPolicyDraft] = useState<{ mode: ModelPolicyMode; allowedModelIds: string[] }>({
+    mode: "allow_all",
+    allowedModelIds: [],
+  });
+  const [busyPolicy, setBusyPolicy] = useState(false);
+  // Member preview of the shared selector — controlled locally; each product
+  // surface persists its own choice, this shows the policy's effect live.
+  const [myModelChoice, setMyModelChoice] = useState<string | null>(null);
+
+  async function loadModelPolicy() {
+    if (!orgId) {
+      setModelPolicy(null);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `/api/organizations/model-policy?orgId=${encodeURIComponent(orgId)}`,
+      );
+      if (!response.ok) {
+        setModelPolicy(null);
+        return;
+      }
+      const data = (await response.json()) as ModelPolicyPayload;
+      setModelPolicy(data);
+      setPolicyDraft({ mode: data.mode, allowedModelIds: data.allowedModelIds });
+    } catch {
+      setModelPolicy(null);
+    }
+  }
 
   async function load() {
     if (!orgId) {
@@ -234,9 +355,11 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as Payload & { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not load AI keys");
+        setErrorStatus(response.status);
         setPayload(null);
       } else {
         setMessage("");
+        setErrorStatus(null);
         setPayload(data);
         if (data.localConnector?.baseUrl) {
           setLocalDraft((prev) => ({
@@ -258,6 +381,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       }
     } catch {
       setMessage("Could not load AI keys");
+      setErrorStatus(null);
       setPayload(null);
     } finally {
       setLoading(false);
@@ -266,8 +390,93 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   useEffect(() => {
     void load();
+    void loadModelPolicy();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when org changes
   }, [orgId]);
+
+  async function saveModelPolicy() {
+    if (!orgId) return;
+    setBusyPolicy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/model-policy", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          mode: policyDraft.mode,
+          allowedModelIds: policyDraft.mode === "allowlist" ? policyDraft.allowedModelIds : undefined,
+        }),
+      });
+      const data = (await response.json()) as ModelPolicyPayload & { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not save the model policy");
+        return;
+      }
+      setModelPolicy(data);
+      setPolicyDraft({ mode: data.mode, allowedModelIds: data.allowedModelIds });
+      setMessage(
+        `Model policy saved — ${describeModelPolicy(data.mode, data.allowedModelIds.length)}`,
+      );
+    } finally {
+      setBusyPolicy(false);
+    }
+  }
+
+  const [mineDraft, setMineDraft] = useState({ provider: "openai", apiKey: "", baseUrl: "", model: "" });
+  const [mineBusy, setMineBusy] = useState(false);
+
+  async function saveMemberKey() {
+    if (!orgId || !mineDraft.apiKey.trim()) return;
+    setMineBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "save_member_key",
+          provider: mineDraft.provider,
+          apiKey: mineDraft.apiKey,
+          baseUrl: mineDraft.baseUrl || undefined,
+          model: mineDraft.model || undefined,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not save your personal key");
+        return;
+      }
+      setMineDraft((d) => ({ ...d, apiKey: "" }));
+      setMessage("Personal key saved - your AI calls now use it instead of the team key.");
+      void load();
+    } finally {
+      setMineBusy(false);
+    }
+  }
+
+  async function removeMemberKey(provider: string) {
+    if (!orgId) return;
+    setMineBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "remove_member_key", provider }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not remove your personal key");
+        return;
+      }
+      setMessage("Personal key removed - back to the team key.");
+      void load();
+    } finally {
+      setMineBusy(false);
+    }
+  }
 
   async function save(provider: ByokProvider) {
     if (!orgId) return;
@@ -472,7 +681,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         }
         navPath="/team/ai-keys"
         title="AI API keys"
-        description="Bring your own OpenAI, Anthropic, Google, OpenRouter, or local OpenAI-compatible server. Fixed model or Automode by task toughness. Never DEMO usage totals."
+        description={PAGE_DESCRIPTION}
       >
       </PageHeader>
 
@@ -485,8 +694,12 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         </div>
       ) : null}
 
-      {shell === "empty" || shell === "auth_required" || (shell === "error" && !payload) ? (
+      {shell === "empty" || shell === "auth_required" ? (
         <ShellPanel shell={shell} detail={message} orgId={orgId} />
+      ) : null}
+
+      {shell === "error" && !payload ? (
+        <LoadFailurePanel status={errorStatus} message={message} onRetry={() => void load()} />
       ) : null}
 
       {payload?.setupRequired ? (
@@ -503,6 +716,137 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
               <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>BYOK usage</a>
               . Hosted 0.75× metering still applies when no BYOK path is configured.
             </p>
+          </section>
+
+          {/* The promise this page exists to make, stated before any of the
+              provider-specific machinery below it: the endpoint is the team's
+              choice, and the choice does not gate features. Copy lives in
+              ./ai-keys-copy.ts so the promises stay pinned by tests. */}
+          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
+            <span className="eyebrow">BRING ANY ENDPOINT</span>
+            <h2>{ANY_ENDPOINT_HEADLINE}</h2>
+            <p className="app-muted">{ANY_ENDPOINT_BODY}</p>
+            <ul className="ai-keys-any-points">
+              {ANY_ENDPOINT_POINTS.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+            <details className="ai-keys-any-examples">
+              <summary>Where does each one go?</summary>
+              <ul>
+                {ENDPOINT_EXAMPLES.map((example) => (
+                  <li key={example.id}>
+                    <strong>{example.name}</strong>
+                    <span className="app-muted"> — {example.howToUse}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
+
+          <section className="app-card soft-panel ai-keys-mine" aria-label="My personal AI keys">
+            <span className="eyebrow">MINE</span>
+            <h2>{MEMBER_KEY_HEADLINE}</h2>
+            <p className="app-muted">{MEMBER_KEY_BODY}</p>
+            {(payload.memberKeys ?? []).length ? (
+              <ul className="ai-keys-mine-list">
+                {(payload.memberKeys ?? []).map((row) => (
+                  <li key={row.provider}>
+                    <div>
+                      <strong>{BYOK_PROVIDER_META[row.provider as ByokProvider]?.label ?? row.provider}</strong>
+                      {/* describeMemberKey never guesses: an unset base URL or
+                          model is named as the inherited default, not invented. */}
+                      <small className="app-muted">
+                        {` ${describeMemberKey(row)}`}
+                        {row.lastUsedAt
+                          ? ` · last used ${new Date(row.lastUsedAt).toLocaleDateString()}`
+                          : " · not used yet"}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      className="app-button secondary"
+                      disabled={mineBusy}
+                      onClick={() => void removeMemberKey(row.provider)}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="app-muted">No personal keys yet. The team key (if any) answers for you.</p>
+            )}
+            <form
+              className="ai-keys-mine-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveMemberKey();
+              }}
+            >
+              <label>
+                Provider
+                <select
+                  value={mineDraft.provider}
+                  onChange={(event) => {
+                    const provider = event.target.value;
+                    // Drop a base URL the new provider cannot use, so nothing is
+                    // submitted that the route would silently discard.
+                    setMineDraft((d) => ({
+                      ...d,
+                      provider,
+                      baseUrl: memberKeyFields(provider).baseUrl ? d.baseUrl : "",
+                    }));
+                  }}
+                >
+                  <option value="openai">OpenAI / any compatible endpoint</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="google">Google AI Studio</option>
+                  <option value="openrouter">OpenRouter</option>
+                </select>
+              </label>
+              <label>
+                API key
+                <input
+                  type="password"
+                  value={mineDraft.apiKey}
+                  autoComplete="off"
+                  onChange={(event) => setMineDraft((d) => ({ ...d, apiKey: event.target.value }))}
+                  placeholder="Paste your key"
+                />
+              </label>
+              {/* Field parity with the team form, driven by what the route
+                  actually stores: a base URL on the OpenAI-compatible slot, a
+                  model id on every provider (0442's columns). Offering a field
+                  the route drops would be a promise we do not keep. */}
+              {memberKeyFields(mineDraft.provider).baseUrl ? (
+                <label>
+                  Base URL
+                  <input
+                    type="url"
+                    value={mineDraft.baseUrl}
+                    onChange={(event) => setMineDraft((d) => ({ ...d, baseUrl: event.target.value }))}
+                    placeholder="https://api.groq.com/openai/v1"
+                  />
+                  <small className="app-muted">{MEMBER_KEY_BASE_URL_HINT}</small>
+                </label>
+              ) : null}
+              {memberKeyFields(mineDraft.provider).model ? (
+                <label>
+                  Model
+                  <input
+                    type="text"
+                    value={mineDraft.model}
+                    onChange={(event) => setMineDraft((d) => ({ ...d, model: event.target.value }))}
+                    placeholder="llama-3.3-70b-versatile"
+                  />
+                  <small className="app-muted">{MEMBER_KEY_MODEL_HINT}</small>
+                </label>
+              ) : null}
+              <button className="app-button" type="submit" disabled={mineBusy || !mineDraft.apiKey.trim()}>
+                {mineBusy ? "Saving…" : "Save my key"}
+              </button>
+            </form>
           </section>
 
           {!payload.canManage ? (
@@ -628,6 +972,37 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
             ) : null}
           </section>
 
+          <section className="app-card soft-panel ai-keys-free" aria-label="Free API key providers">
+            <span className="eyebrow">FREE API KEYS</span>
+            <h2>No budget? Start with a free key</h2>
+            <p className="app-muted">
+              These providers currently offer free API tiers that work as Team or personal keys.
+              {" "}{FREE_KEY_CAVEAT}
+            </p>
+            <ul className="ai-keys-free-list">
+              {FREE_KEY_PROVIDERS.map((provider) => (
+                <li key={provider.id}>
+                  <div>
+                    <strong>
+                      <a href={provider.signupUrl} target="_blank" rel="noreferrer noopener">
+                        {provider.name}
+                      </a>
+                    </strong>
+                    <span className="app-muted"> — {provider.note}</span>
+                  </div>
+                  <small className="app-muted">
+                    Use as: {provider.byokProvider}
+                    {provider.baseUrl ? (
+                      <>
+                        {" "}· base URL <code>{provider.baseUrl}</code>
+                      </>
+                    ) : null}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
             <span className="eyebrow">MODEL ROUTING</span>
             <h2>Fixed model or Automode</h2>
@@ -725,6 +1100,92 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
                 </div>
               </form>
             ) : null}
+          </section>
+
+          {modelPolicy?.canManage ? (
+            <section className="app-card soft-panel ai-keys-model-policy" aria-label="Model policy">
+              <span className="eyebrow">MODEL POLICY</span>
+              <h2>Which models members may pick</h2>
+              <p className="app-muted">
+                Selection policy for the whole team, app-wide. Separate from API spend limits —
+                this only controls what shows up in model pickers. A pick that a new policy no
+                longer allows quietly falls back to the best allowed model; nothing errors mid-chat.
+              </p>
+              <form
+                className="ai-keys-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveModelPolicy();
+                }}
+              >
+                <fieldset className="ai-keys-mode">
+                  <legend>Policy</legend>
+                  {(Object.keys(MODEL_POLICY_MODE_META) as ModelPolicyMode[]).map((mode) => (
+                    <label key={mode} className="check-field">
+                      <input
+                        type="radio"
+                        name="model-policy-mode"
+                        checked={policyDraft.mode === mode}
+                        onChange={() => setPolicyDraft((prev) => ({ ...prev, mode }))}
+                      />{" "}
+                      <strong>{MODEL_POLICY_MODE_META[mode].label}</strong>
+                      <span className="app-muted"> · {MODEL_POLICY_MODE_META[mode].description}</span>
+                    </label>
+                  ))}
+                </fieldset>
+
+                {policyDraft.mode === "allowlist" ? (
+                  <fieldset className="ai-keys-pool">
+                    <legend>Allowed models</legend>
+                    {modelPolicy.catalog.map((opt) => {
+                      const checked = policyDraft.allowedModelIds.includes(opt.id);
+                      return (
+                        <label key={opt.id} className="check-field">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setPolicyDraft((prev) => ({
+                                ...prev,
+                                allowedModelIds: checked
+                                  ? prev.allowedModelIds.filter((id) => id !== opt.id)
+                                  : [...prev.allowedModelIds, opt.id],
+                              }))
+                            }
+                          />{" "}
+                          <strong>{opt.label}</strong>
+                          <span className="app-muted">
+                            {" "}
+                            · {opt.tierLabel} · <code>{opt.modelId}</code>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                ) : null}
+
+                <div className="ai-keys-actions">
+                  <button className="primary-action" type="submit" disabled={busyPolicy}>
+                    Save policy
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : null}
+
+          <section className="app-card soft-panel ai-keys-my-model" aria-label="My model">
+            <span className="eyebrow">MINE</span>
+            <h2>My model</h2>
+            <p className="app-muted">
+              What you may pick under the current team policy. The same selector (and policy)
+              applies in every product surface where you choose a model.
+            </p>
+            <ModelSelector
+              orgId={orgId}
+              value={myModelChoice}
+              onChange={setMyModelChoice}
+              label="My model"
+            />
           </section>
         </>
       ) : null}

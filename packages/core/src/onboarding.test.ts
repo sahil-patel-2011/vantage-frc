@@ -16,6 +16,7 @@ describe("onboarding validation", () => {
     teamRole: "student" as const,
     primaryFocus: "build" as const,
     termsAccepted: true,
+    privacyAccepted: true,
   };
 
   it("accepts a complete youth-safe payload", () => {
@@ -25,7 +26,13 @@ describe("onboarding validation", () => {
     expect(result.primaryFocus).toBe("build");
   });
 
-  it("requires explicit terms acceptance", () => { expect(() => validateOnboardingPayload({ ...base, termsAccepted: false })).toThrow(/Terms of Service/i); });
+  it("requires explicit acceptance of BOTH documents", () => {
+    expect(() => validateOnboardingPayload({ ...base, termsAccepted: false })).toThrow(/Terms of Service/i);
+    expect(() => validateOnboardingPayload({ ...base, privacyAccepted: false })).toThrow(/Privacy Policy/i);
+    expect(() => validateOnboardingPayload({ ...base, termsAccepted: false, privacyAccepted: false })).toThrow(
+      /Terms of Service and to the Privacy Policy/i,
+    );
+  });
 
   it("rejects future birthdays and invalid team numbers", () => {
     expect(() => validateOnboardingPayload({ ...base, dateOfBirth: "2999-01-01" })).toThrow(/future/i);

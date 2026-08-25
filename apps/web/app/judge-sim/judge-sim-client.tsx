@@ -17,7 +17,7 @@ import {
   type JudgeSimShellKind,
 } from "../../lib/judge-sim/judge-sim-related";
 import type { JudgeSimCategory, JudgeSimVerdict } from "../../lib/judge-sim/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./judge-sim.css";
 
@@ -90,7 +90,7 @@ function JudgeSimShell({
 }) {
   const actions = judgeSimNextActions({ orgId, shell });
   const copy = judgeSimShellCopy(shell);
-  const businessHref = hubHref("/business", "judge-sim", orgId);
+  const businessHref = hubWorkbenchHref("business", "judge-sim", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
   const essayHref = hubHref("/business", "impact-essay", orgId);
   const awardsHref = hubHref("/business", "evidence", orgId);
@@ -212,7 +212,7 @@ export default function JudgeSimClient() {
   const relatedLinks = judgeSimRelatedLinks(orgId, {
     include: [...JUDGE_SIM_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "judge-sim", orgId);
+  const businessHref = hubWorkbenchHref("business", "judge-sim", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
   const essayHref = hubHref("/business", "impact-essay", orgId);
   const awardsHref = hubHref("/business", "evidence", orgId);

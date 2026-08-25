@@ -128,7 +128,6 @@ export async function GET(request: Request) {
         linkedDeadlines = await loadLinkedDeadlines(client, row.orgId);
       } catch {
         // Business tables may be absent in partial local setups — calendar still works.
-        linkedDeadlines = [];
       }
 
       return {

@@ -18,7 +18,7 @@ import {
   type OnboardingBuddyShellKind,
 } from "../../lib/onboarding-buddy/onboarding-buddy-related";
 import type { OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./onboarding-buddy.css";
 
@@ -85,7 +85,7 @@ function BuddyShell({
 }) {
   const actions = onboardingBuddyNextActions({ orgId, shell });
   const copy = onboardingBuddyShellCopy(shell);
-  const teamHref = hubHref("/team", "onboarding-buddy", orgId);
+  const teamHref = hubWorkbenchHref("team", "onboarding-buddy", orgId);
   const steps = shell === "setup" ? onboardingBuddySetupSteps(orgId) : [];
 
   return (
@@ -221,7 +221,7 @@ export default function OnboardingBuddyClient() {
   const relatedLinks = onboardingBuddyRelatedLinks(orgId, {
     include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "onboarding-buddy", orgId);
+  const teamHref = hubWorkbenchHref("team", "onboarding-buddy", orgId);
   const showTiles = shouldShowOnboardingBuddySummaryTiles({
     memberCount,
     pairingCount,

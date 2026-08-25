@@ -130,7 +130,7 @@ export async function POST(request: Request) {
           announce: true,
         });
       } catch {
-        matchNotify = null;
+        // Stays null — the SQL fingerprint path below still runs.
       }
       // Prefer SQL fingerprint alerts when migration 0155 is applied; fall back is matchNotify above.
       try {

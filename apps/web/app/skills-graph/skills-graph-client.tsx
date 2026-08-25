@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, skillCategoryLabel, proficiencyLabel } from "../../lib/skills-graph";
 import type { SkillsGraphView } from "../../lib/skills-graph/compute-skills-graph";
 import type { ProficiencyLevel, SkillCategory } from "../../lib/skills-graph/types";
@@ -16,12 +17,17 @@ export default function SkillsGraphClient() {
   const [view, setView] = useState<SkillsGraphView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setErrorMessage(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -31,6 +37,8 @@ export default function SkillsGraphClient() {
       .then(async (response) => {
         const data = (await response.json()) as SkillsGraphView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setErrorMessage("error" in data && data.error ? data.error : null);
           setFetchFailed(true);
           return;
         }
@@ -89,14 +97,36 @@ export default function SkillsGraphClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the skills graph"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: errorMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: errorMessage,
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
@@ -116,6 +146,7 @@ export default function SkillsGraphClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
+          <CalibrationEvidence view={view} busy={busy} mutate={mutate} />
           <AddSkillForm view={view} busy={busy} mutate={mutate} />
           <RequestMentorForm busy={busy} mutate={mutate} />
           <MentorRequests view={view} busy={busy} mutate={mutate} />
@@ -145,6 +176,72 @@ function SummaryTiles({ view }: { view: LiveView }) {
           </div>
         ))}
       </div>
+    </Panel>
+  );
+}
+
+/**
+ * "Call Your Shot" calibration signals surfaced as EVIDENCE. A strong signal
+ * may propose a skill entry; only a mentor's explicit click (the countersign)
+ * writes one — the signal itself never changes anyone's proficiency. Thin
+ * samples say "not enough graded calls yet" instead of scoring anybody.
+ * RLS already scoped the rows: students see only their own signals here.
+ */
+function CalibrationEvidence({
+  view,
+  busy,
+  mutate,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  if (view.calibration.length === 0) return null;
+  return (
+    <Panel style={{ display: "grid", gap: 10 }}>
+      <h2 style={{ margin: 0 }}>Prediction calibration (Call Your Shot)</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Evidence from calls made on the engineering calculators. A signal can propose a skill entry, but
+        nothing lands in the graph until a mentor countersigns it.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+        {view.calibration.map((signal) => (
+          <li
+            key={`${signal.userId}:${signal.surface}`}
+            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}
+          >
+            <div style={{ display: "grid", gap: 2 }}>
+              <strong>
+                {signal.userName} · {signal.surfaceLabel}
+                {signal.proposal ? (
+                  <span className="app-badge good" style={{ marginLeft: 8 }}>
+                    Proposal
+                  </span>
+                ) : null}
+              </strong>
+              <small className="app-muted">{signal.note}</small>
+            </div>
+            {signal.proposal && view.viewerCanCountersign ? (
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy}
+                onClick={() =>
+                  mutate({
+                    action: "add-skill",
+                    targetUserId: signal.userId,
+                    skillCategory: signal.proposal!.skillCategory,
+                    proficiency: signal.proposal!.proficiency,
+                    evidenceNote: signal.proposal!.evidenceNote,
+                  })
+                }
+              >
+                Countersign as {proficiencyLabel(signal.proposal.proficiency)}
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }

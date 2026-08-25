@@ -8,15 +8,16 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
-  color: var(--soft-muted, #6b7280);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-muted);
   font-size: 13px;
 }
 
 .awards-status.ok {
-  border-color: color-mix(in srgb, var(--biz-mint, #2f8f6b) 35%, var(--soft-line, #d5dde8));
-  color: var(--biz-mint, #2f8f6b);
+  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-positive) 10%, var(--soft-card));
+  color: var(--app-positive);
 }
 
 .awards-stats {
@@ -41,7 +42,7 @@
 .awards-form p,
 .awards-items p {
   margin: 0;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -66,14 +67,14 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
   cursor: pointer;
 }
 
 .awards-submission-list li[data-selected="true"] {
-  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 40%, var(--soft-line, #d5dde8));
-  background: color-mix(in srgb, var(--soft-accent-soft, #eff6ff) 70%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent-soft) 70%, var(--soft-card));
 }
 
 .awards-submission-list li > div:first-child {
@@ -87,14 +88,14 @@
 }
 
 .awards-submission-list span {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.35;
 }
 
 .awards-submission-list select {
   flex: none;
-  min-height: 36px;
+  min-height: 44px;
   max-width: 160px;
 }
 
@@ -111,18 +112,18 @@
   gap: 8px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
 }
 
 .awards-item-list textarea {
   min-height: 120px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line, #e5e7eb);
+  border: 1px solid var(--soft-line);
   border-radius: 12px;
   font: 500 14px var(--font-source-sans), ui-sans-serif;
-  background: #fff;
+  background: var(--soft-card);
   color: inherit;
   resize: vertical;
 }
@@ -140,7 +141,7 @@
   gap: 10px;
   margin-top: 4px;
   padding-top: 12px;
-  border-top: 1px solid var(--soft-line, #d5dde8);
+  border-top: 1px solid var(--soft-line);
 }
 
 .awards-add-item-row {

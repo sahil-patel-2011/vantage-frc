@@ -29,7 +29,7 @@ import {
   type RobotWeighInNextAction,
   type RobotWeighInShellKind,
 } from "../../lib/robot-weigh-in/robot-weigh-in-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./robot-weigh-in.css";
 
@@ -104,7 +104,7 @@ function WeighShell({
 }) {
   const actions = robotWeighInNextActions({ orgId, shell });
   const copy = robotWeighInShellCopy(shell);
-  const buildHref = hubHref("/build", "robot-weigh-in", orgId);
+  const buildHref = hubWorkbenchHref("build", "robot-weigh-in", orgId);
   const steps = shell === "setup" ? robotWeighInSetupSteps(orgId) : [];
 
   return (
@@ -116,7 +116,7 @@ function WeighShell({
             {" / Robot Weigh-In"}
           </>
         }
-        title="Robot Weigh-In Log"
+        title="Robot weigh-in log"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -230,7 +230,7 @@ export default function RobotWeighInClient() {
     overLimitCount,
     playoffReweighCue: view?.status === "live" ? view.playoffReweighCue : null,
   });
-  const buildHref = hubHref("/build", "robot-weigh-in", orgId);
+  const buildHref = hubWorkbenchHref("build", "robot-weigh-in", orgId);
   const showTiles = shouldShowRobotWeighInSummaryTiles(entryCount);
   const loaded = view?.status === "live";
 
@@ -294,7 +294,7 @@ export default function RobotWeighInClient() {
             {" / Robot Weigh-In"}
           </>
         }
-        title="Robot Weigh-In Log"
+        title="Robot weigh-in log"
         description="Log robot weigh-ins and track the trend against the competition weight limit — never DEMO scale readings."
       >
         <div className="rwi-header-actions">

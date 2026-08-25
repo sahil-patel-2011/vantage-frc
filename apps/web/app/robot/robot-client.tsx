@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { EmptyState } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   cadProvider,
   robotRollup,
@@ -215,12 +217,15 @@ export default function RobotClient() {
   const [view, setView] = useState<BlueprintView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [robotLabel, setRobotLabel] = useState("competition");
   const [newName, setNewName] = useState("");
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setFailureStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -228,6 +233,7 @@ export default function RobotClient() {
       const data = (await response.json()) as BlueprintView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the robot blueprint.");
+        setFailureStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -290,13 +296,38 @@ export default function RobotClient() {
         </header>
         <div className="app-card robot-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load the robot blueprint</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: failureStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading robot blueprint…</p>
           )}
@@ -315,13 +346,11 @@ export default function RobotClient() {
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
         </header>
-        <div className="app-card robot-empty">
-          <strong>Select a team workspace</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState className="robot-empty" title="Select a team workspace" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </div>
+        </EmptyState>
       </main>
     );
   }
@@ -378,9 +407,11 @@ export default function RobotClient() {
       </section>
 
       {robotSubsystems.length === 0 ? (
-        <div className="app-card robot-empty">
-          <strong>No subsystems yet for “{robotLabel}”</strong>
-          <p className="app-muted">Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy.</p>
+        <EmptyState
+          className="robot-empty"
+          title={`No subsystems yet for “${robotLabel}”`}
+          description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
+        >
           <button
             type="button"
             className="app-button"
@@ -389,7 +420,7 @@ export default function RobotClient() {
           >
             Seed standard subsystems
           </button>
-        </div>
+        </EmptyState>
       ) : (
         <div className="robot-grid">
           {robotSubsystems.map((subsystem) => (

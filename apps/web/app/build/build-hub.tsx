@@ -14,9 +14,12 @@ const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/protot
 });
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 
+/** Tab ids rendered inline below. Anything else opens its own route directly. */
+const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;
+
 export default function BuildHub() {
   return (
-    <ProductHubShell hubId="build">
+    <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
         if (tab === "kickoff") return <KickoffClient embedded />;
         if (tab === "fmea") return <FmeaClient embedded />;

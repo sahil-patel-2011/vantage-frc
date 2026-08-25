@@ -19,6 +19,7 @@ function item(overrides: Partial<InventoryItem>): InventoryItem {
   return {
     id: ITEM,
     name: "NEO",
+    kind: "part",
     category: "motor",
     partNumber: null,
     vendor: null,

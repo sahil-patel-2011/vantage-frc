@@ -29,7 +29,7 @@ import {
   type MatchVideoIndexNextAction,
   type MatchVideoIndexShellKind,
 } from "../../lib/match-video-index/match-video-index-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./match-video-index.css";
 
@@ -93,7 +93,7 @@ function IndexShell({
 }) {
   const actions = matchVideoIndexNextActions({ orgId, shell });
   const copy = matchVideoIndexShellCopy(shell);
-  const competitionHref = hubHref("/competition", "match-video-index", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-video-index", orgId);
   const steps = shell === "setup" ? matchVideoIndexSetupSteps(orgId) : [];
 
   return (
@@ -209,7 +209,7 @@ export default function MatchVideoIndexClient() {
     shell: shell === "empty" ? "ready" : shell,
     videoCount,
   });
-  const competitionHref = hubHref("/competition", "match-video-index", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-video-index", orgId);
   const showTiles = shouldShowMatchVideoIndexSummaryTiles(videoCount, matchCount);
   const loaded = view?.status === "live";
 

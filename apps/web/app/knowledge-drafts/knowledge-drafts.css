@@ -1,0 +1,179 @@
+/* Capture-from-work review queue. Tokens only — no literal colors, so light and dark
+   both come from the app palette. Every control clears the 44px touch target. */
+
+.kd-note {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--app-line);
+  border-left: 3px solid var(--app-accent);
+  border-radius: var(--app-radius);
+  background: var(--app-soft);
+  color: var(--app-ink);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.kd-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.kd-count strong {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--app-ink);
+}
+
+.kd-list {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kd-card {
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.kd-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.kd-card-head h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--app-ink);
+}
+
+.kd-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  background: var(--app-soft);
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* Source evidence sits BESIDE the proposal so a reviewer can check every line
+   against what was actually recorded. It stacks on narrow screens. */
+.kd-split {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .kd-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.kd-pane {
+  min-width: 0;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  background: var(--app-soft);
+  padding: 12px;
+}
+
+.kd-pane > h4 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.kd-evidence {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.kd-evidence dt {
+  font-size: 0.78rem;
+  color: var(--app-muted);
+}
+
+.kd-evidence dd {
+  margin: 2px 0 0;
+  color: var(--app-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.kd-body {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--app-ink);
+}
+
+.kd-field {
+  display: grid;
+  gap: 6px;
+}
+
+.kd-field > span {
+  font-size: 0.8rem;
+  color: var(--app-muted);
+}
+
+.kd-field input,
+.kd-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+}
+
+.kd-field textarea {
+  min-height: 240px;
+  resize: vertical;
+}
+
+.kd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.kd-actions .app-button,
+.kd-actions button {
+  min-height: 44px;
+}
+
+.kd-slug {
+  color: var(--app-muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}

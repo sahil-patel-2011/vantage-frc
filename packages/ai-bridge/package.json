@@ -1,0 +1,9 @@
+{
+  "name": "@vantage/ai-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Vantage AI subscription bridge: runs the team's interactive AI chat jobs through a member's own Claude Code (Claude Pro/Max) or Codex CLI (ChatGPT) subscription on their machine. Stdlib-only, single file: node bridge.mjs",
+  "type": "module",
+  "main": "bridge.mjs",
+  "bin": { "vantage-ai-bridge": "bridge.mjs" }
+}

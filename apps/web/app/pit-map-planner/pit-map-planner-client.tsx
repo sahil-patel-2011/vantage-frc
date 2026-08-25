@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { venueShapeLabel, type NexusVenueMapView } from "../../lib/display";
 import { pitMapCategoryLabel, PIT_MAP_CATEGORIES } from "../../lib/pit-map-planner";
 import type { PitMapPlannerView } from "../../lib/pit-map-planner/compute-pit-map-planner";
 import type { PitMapItemCategory } from "../../lib/pit-map-planner/types";
@@ -16,6 +18,9 @@ export default function PitMapPlannerClient() {
   const [view, setView] = useState<PitMapPlannerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -23,6 +28,8 @@ export default function PitMapPlannerClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -34,6 +41,8 @@ export default function PitMapPlannerClient() {
       .then(async (response) => {
         const data = (await response.json()) as PitMapPlannerView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -114,14 +123,36 @@ export default function PitMapPlannerClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Pit Map Planner"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
@@ -140,6 +171,7 @@ export default function PitMapPlannerClient() {
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }} className="print-pit-map">
+          <VenueMapPanel orgId={view.orgId} />
           <LayoutPanel view={view} busy={busy} mutate={mutate} />
           <PitMapCanvas view={view} />
           <AddItemForm busy={busy} mutate={mutate} />
@@ -147,6 +179,110 @@ export default function PitMapPlannerClient() {
         </div>
       )}
     </main>
+  );
+}
+
+/**
+ * The REAL venue, when Nexus published one.
+ *
+ * This is the pit hall — where our pit sits and which neighbours have an open
+ * parts request — and it is entirely separate from the footprint planner below,
+ * which is our own 10x10 box. When Nexus has no geometry for the active event
+ * this panel says exactly why and the planner underneath is unaffected: we do
+ * not draw a stand-in venue.
+ */
+function VenueMapPanel({ orgId }: { orgId: string }) {
+  const [venue, setVenue] = useState<NexusVenueMapView | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/nexus/venue-map?orgId=${encodeURIComponent(orgId)}`)
+      .then((response) => response.json() as Promise<NexusVenueMapView | { error?: string }>)
+      .then((data) => {
+        if (cancelled) return;
+        setVenue("status" in data ? data : null);
+      })
+      .catch(() => {
+        // A failed venue lookup must never block the planner itself.
+        if (!cancelled) setVenue(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
+  if (!venue) return null;
+
+  if (venue.status === "setup_required") {
+    return (
+      <Panel>
+        <h2 style={{ marginTop: 0 }}>Venue pit map</h2>
+        <p className="app-muted">From frc.nexus — shown only when Nexus publishes it.</p>
+        <p className="app-muted">{venue.message}</p>
+      </Panel>
+    );
+  }
+
+  const map = venue.map;
+  return (
+    <Panel>
+      <h2 style={{ marginTop: 0 }}>Venue pit map</h2>
+      <p className="app-muted">{`${venue.eventName ?? venue.eventKey} · frc.nexus`}</p>
+      <svg
+        viewBox={map.viewBox}
+        role="img"
+        aria-label="Venue pit map from Nexus"
+        style={{ width: "100%", height: "auto", maxHeight: "60vh" }}
+      >
+        {map.shapes.map((shape, index) => (
+          <g
+            key={shape.id ?? `${shape.kind}-${index}`}
+            transform={
+              shape.rotation
+                ? `rotate(${shape.rotation} ${shape.x + shape.width / 2} ${shape.y + shape.height / 2})`
+                : undefined
+            }
+          >
+            <rect
+              x={shape.x}
+              y={shape.y}
+              width={shape.width}
+              height={shape.height}
+              className={`venue-shape kind-${shape.kind}${shape.ours ? " is-ours" : ""}${
+                shape.requester ? " is-requester" : ""
+              }`}
+            />
+            {venueShapeLabel(shape) ? (
+              <text
+                x={shape.x + shape.width / 2}
+                y={shape.y + shape.height / 2}
+                dominantBaseline="middle"
+                textAnchor="middle"
+                className="venue-shape-label"
+              >
+                {venueShapeLabel(shape)}
+              </text>
+            ) : null}
+          </g>
+        ))}
+      </svg>
+      <p className="app-muted">
+        {map.ourShape
+          ? `Your pit is highlighted${venue.ourPitAddress ? ` (${venue.ourPitAddress})` : ""}.`
+          : "Nexus did not place your team on this map."}
+        {venue.syncedAt ? ` Synced ${new Date(venue.syncedAt).toLocaleString()}.` : ""}
+      </p>
+      {venue.requests.length ? (
+        <ul className="venue-requests">
+          {venue.requests.map((entry, index) => (
+            <li key={`${entry.team ?? "team"}-${index}`}>
+              {entry.team ? `Team ${entry.team}` : "A team"} needs {entry.parts}
+              {entry.pitAddress ? ` · Pit ${entry.pitAddress}` : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Panel>
   );
 }
 

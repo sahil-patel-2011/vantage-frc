@@ -12,7 +12,20 @@ import {
   parseObjectLinkInput,
   type MessageObjectLink,
 } from "../../../lib/messages/object-links";
+import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/history";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
+import {
+  attachSupervisor,
+  dmPartyIds,
+  guardDmPair,
+  isOrgChatAdmin,
+  listSupervisors,
+  memberChatClass,
+  readDmMode,
+  supportsYouthProtection,
+  type SupervisorRef,
+} from "../../../lib/messages/supervision";
+import { supervisionBadge, type DmMode } from "../../../lib/messages/youth-protection";
 import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 
 export const maxDuration = 10;
@@ -447,6 +460,33 @@ async function ensureTeamChannel(client: PoolClient, orgId: string, userId: stri
 async function listInbox(client: PoolClient, orgId: string, userId: string): Promise<ConversationRow[]> {
   await ensureTeamChannel(client, orgId, userId);
 
+  // A supervised DM has three participants, so the peer label has to aggregate rather than join
+  // row-per-participant (that would duplicate the conversation in the inbox). Supervisors are
+  // excluded from the label: the thread is still "you and Sam", with a supervision banner inside.
+  const supervisionSupported = await supportsYouthProtection(client);
+  const peersCte = supervisionSupported
+    ? `peers AS (
+       SELECT p.conversation_id,
+              MIN(u.id::text)::uuid AS peer_user_id,
+              string_agg(u.name, ', ' ORDER BY lower(u.name)) AS peer_name
+       FROM org_conversation_participants p
+       INNER JOIN users u ON u.id = p.user_id
+       INNER JOIN visible v ON v.id = p.conversation_id AND v.kind = 'dm'
+       WHERE p.user_id <> $2
+         AND NOT EXISTS (
+           SELECT 1 FROM org_conversation_supervisors s
+           WHERE s.conversation_id = p.conversation_id AND s.supervisor_user_id = p.user_id
+         )
+       GROUP BY p.conversation_id
+     )`
+    : `peers AS (
+       SELECT p.conversation_id, u.id AS peer_user_id, u.name AS peer_name
+       FROM org_conversation_participants p
+       INNER JOIN users u ON u.id = p.user_id
+       INNER JOIN visible v ON v.id = p.conversation_id AND v.kind = 'dm'
+       WHERE p.user_id <> $2
+     )`;
+
   const rows = await client.query<ConversationRow>(
     `WITH visible AS (
        SELECT c.id, c.kind, c.title, c.updated_at
@@ -471,13 +511,7 @@ async function listInbox(client: PoolClient, orgId: string, userId: string): Pro
        WHERE m.deleted_at IS NULL
        ORDER BY m.conversation_id, m.created_at DESC
      ),
-     peers AS (
-       SELECT p.conversation_id, u.id AS peer_user_id, u.name AS peer_name
-       FROM org_conversation_participants p
-       INNER JOIN users u ON u.id = p.user_id
-       INNER JOIN visible v ON v.id = p.conversation_id AND v.kind = 'dm'
-       WHERE p.user_id <> $2
-     ),
+     ${peersCte},
      reads AS (
        SELECT conversation_id, last_read_at
        FROM org_conversation_participants
@@ -565,13 +599,16 @@ async function listMessages(
   userId: string,
   conversationId: string,
   since?: string | null,
-  options?: { markRead?: boolean },
+  options?: { markRead?: boolean; before?: { createdAt: string; id: string | null } | null },
 ): Promise<{
   conversation: ConversationRow | null;
   messages: MessageRow[];
   pinned: MessageRow[];
+  hasEarlier: boolean;
   pinsSupported: boolean;
   mentionsSupported: boolean;
+  supervisors: SupervisorRef[];
+  supervisionNotice: string;
 }> {
   const access = await client.query<{ kind: "team" | "dm"; title: string | null }>(
     `SELECT kind, title FROM org_conversations WHERE id = $1 AND org_id = $2`,
@@ -581,57 +618,120 @@ async function listMessages(
 
   const pinsSupported = await supportsMessagePins(client);
   const mentionsSupported = await supportsMessageMentions(client);
+  const before = since ? null : (options?.before ?? null);
 
-  const messages = pinsSupported
-    ? await client.query<MessageRow>(
-        `SELECT
-           m.id,
-           CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-           m.created_at::text AS "createdAt",
-           COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
-           m.author_user_id AS "authorUserId",
-           COALESCE(u.name, 'Member') AS "authorName",
-           m.deleted_at::text AS "deletedAt",
-           m.pinned_at::text AS "pinnedAt",
-           m.pinned_by AS "pinnedBy",
-           (m.author_user_id = $3) AS mine
-         FROM org_messages m
-         LEFT JOIN users u ON u.id = m.author_user_id
-         WHERE m.conversation_id = $1
-           AND m.org_id = $2
-           AND ($4::timestamptz IS NULL OR COALESCE(m.updated_at, m.created_at) > $4::timestamptz)
-         ORDER BY m.created_at ASC
-         LIMIT ${POLL_LIMIT}`,
-        [conversationId, orgId, userId, since || null],
-      )
-    : await client.query<MessageRow>(
-        `SELECT
-           m.id,
-           CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-           m.created_at::text AS "createdAt",
-           COALESCE(m.deleted_at, m.created_at)::text AS "updatedAt",
-           m.author_user_id AS "authorUserId",
-           COALESCE(u.name, 'Member') AS "authorName",
-           m.deleted_at::text AS "deletedAt",
-           NULL::text AS "pinnedAt",
-           NULL::uuid AS "pinnedBy",
-           (m.author_user_id = $3) AS mine
-         FROM org_messages m
-         LEFT JOIN users u ON u.id = m.author_user_id
-         WHERE m.conversation_id = $1
-           AND m.org_id = $2
-           AND (
-             $4::timestamptz IS NULL
-             OR m.created_at > $4::timestamptz
-             OR (m.deleted_at IS NOT NULL AND m.deleted_at > $4::timestamptz)
-           )
-         ORDER BY m.created_at ASC
-         LIMIT ${POLL_LIMIT}`,
-        [conversationId, orgId, userId, since || null],
-      );
+  let messageList: MessageRow[];
+  let hasEarlier = false;
+
+  if (since) {
+    // Incremental poll: everything changed after the client's watermark.
+    const messages = pinsSupported
+      ? await client.query<MessageRow>(
+          `SELECT
+             m.id,
+             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
+             m.created_at::text AS "createdAt",
+             COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
+             m.author_user_id AS "authorUserId",
+             COALESCE(u.name, 'Member') AS "authorName",
+             m.deleted_at::text AS "deletedAt",
+             m.pinned_at::text AS "pinnedAt",
+             m.pinned_by AS "pinnedBy",
+             (m.author_user_id = $3) AS mine
+           FROM org_messages m
+           LEFT JOIN users u ON u.id = m.author_user_id
+           WHERE m.conversation_id = $1
+             AND m.org_id = $2
+             AND COALESCE(m.updated_at, m.created_at) > $4::timestamptz
+           ORDER BY m.created_at ASC
+           LIMIT ${POLL_LIMIT}`,
+          [conversationId, orgId, userId, since],
+        )
+      : await client.query<MessageRow>(
+          `SELECT
+             m.id,
+             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
+             m.created_at::text AS "createdAt",
+             COALESCE(m.deleted_at, m.created_at)::text AS "updatedAt",
+             m.author_user_id AS "authorUserId",
+             COALESCE(u.name, 'Member') AS "authorName",
+             m.deleted_at::text AS "deletedAt",
+             NULL::text AS "pinnedAt",
+             NULL::uuid AS "pinnedBy",
+             (m.author_user_id = $3) AS mine
+           FROM org_messages m
+           LEFT JOIN users u ON u.id = m.author_user_id
+           WHERE m.conversation_id = $1
+             AND m.org_id = $2
+             AND (
+               m.created_at > $4::timestamptz
+               OR (m.deleted_at IS NOT NULL AND m.deleted_at > $4::timestamptz)
+             )
+           ORDER BY m.created_at ASC
+           LIMIT ${POLL_LIMIT}`,
+          [conversationId, orgId, userId, since],
+        );
+    messageList = messages.rows;
+  } else {
+    // Initial load or a "Show earlier messages" page: fetch the NEWEST rows
+    // before the cursor (page size + 1 sentinel), then reverse for display.
+    // Without this an active conversation opened at its oldest 100 messages.
+    const rows = pinsSupported
+      ? await client.query<MessageRow>(
+          `SELECT
+             m.id,
+             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
+             m.created_at::text AS "createdAt",
+             COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
+             m.author_user_id AS "authorUserId",
+             COALESCE(u.name, 'Member') AS "authorName",
+             m.deleted_at::text AS "deletedAt",
+             m.pinned_at::text AS "pinnedAt",
+             m.pinned_by AS "pinnedBy",
+             (m.author_user_id = $3) AS mine
+           FROM org_messages m
+           LEFT JOIN users u ON u.id = m.author_user_id
+           WHERE m.conversation_id = $1
+             AND m.org_id = $2
+             AND (
+               $4::timestamptz IS NULL
+               OR (m.created_at, m.id) < ($4::timestamptz, COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
+             )
+           ORDER BY m.created_at DESC, m.id DESC
+           LIMIT ${HISTORY_PAGE_SIZE + 1}`,
+          [conversationId, orgId, userId, before?.createdAt ?? null, before?.id ?? null],
+        )
+      : await client.query<MessageRow>(
+          `SELECT
+             m.id,
+             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
+             m.created_at::text AS "createdAt",
+             COALESCE(m.deleted_at, m.created_at)::text AS "updatedAt",
+             m.author_user_id AS "authorUserId",
+             COALESCE(u.name, 'Member') AS "authorName",
+             m.deleted_at::text AS "deletedAt",
+             NULL::text AS "pinnedAt",
+             NULL::uuid AS "pinnedBy",
+             (m.author_user_id = $3) AS mine
+           FROM org_messages m
+           LEFT JOIN users u ON u.id = m.author_user_id
+           WHERE m.conversation_id = $1
+             AND m.org_id = $2
+             AND (
+               $4::timestamptz IS NULL
+               OR (m.created_at, m.id) < ($4::timestamptz, COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
+             )
+           ORDER BY m.created_at DESC, m.id DESC
+           LIMIT ${HISTORY_PAGE_SIZE + 1}`,
+          [conversationId, orgId, userId, before?.createdAt ?? null, before?.id ?? null],
+        );
+    const page = trimHistoryPage(rows.rows, HISTORY_PAGE_SIZE);
+    messageList = page.messages;
+    hasEarlier = page.hasEarlier;
+  }
 
   const pinned =
-    !since && pinsSupported
+    !since && !before && pinsSupported
       ? (
           await client.query<MessageRow>(
             `SELECT
@@ -658,7 +758,6 @@ async function listMessages(
         ).rows
       : [];
 
-  const messageList = messages.rows;
   if (mentionsSupported) {
     await attachMentions(client, orgId, [...messageList, ...pinned]);
   } else {
@@ -712,7 +811,20 @@ async function listMessages(
   const inbox = await listInbox(client, orgId, userId);
   const conversation = inbox.find((item) => item.id === conversationId) ?? null;
 
-  return { conversation, messages: messageList, pinned, pinsSupported, mentionsSupported };
+  // Both parties always see who else is in the room and why. This is not dismissible in the UI.
+  const supervisors =
+    access.rows[0]!.kind === "dm" ? await listSupervisors(client, conversationId) : [];
+
+  return {
+    conversation,
+    messages: messageList,
+    pinned,
+    hasEarlier,
+    pinsSupported,
+    mentionsSupported,
+    supervisors,
+    supervisionNotice: supervisionBadge(supervisors.map((item) => item.name)),
+  };
 }
 
 async function openDm(client: PoolClient, orgId: string, userId: string, peerUserId: string) {
@@ -729,7 +841,29 @@ async function openDm(client: PoolClient, orgId: string, userId: string, peerUse
     `SELECT id FROM org_conversations WHERE org_id = $1 AND kind = 'dm' AND dm_key = $2 LIMIT 1`,
     [orgId, key],
   );
-  if (existing.rowCount) return existing.rows[0]!.id;
+
+  // Youth-protection gate. Runs BEFORE the conversation exists (and again on re-open, so a policy
+  // tightened after the fact is applied to threads created under the old one) and throws a message
+  // that names the org policy, which the caller surfaces verbatim.
+  const guard = await guardDmPair(client, {
+    orgId,
+    actorUserId: userId,
+    peerUserId,
+    conversationId: existing.rows[0]?.id ?? null,
+  });
+
+  if (existing.rowCount) {
+    const existingId = existing.rows[0]!.id;
+    if (guard.supervisor) {
+      await attachSupervisor(client, {
+        orgId,
+        conversationId: existingId,
+        supervisorUserId: guard.supervisor.userId,
+        reason: "ypp_two_adult_rule_backfill",
+      });
+    }
+    return existingId;
+  }
 
   let conversationId: string | undefined;
   await client.query("SAVEPOINT open_dm");
@@ -759,7 +893,45 @@ async function openDm(client: PoolClient, orgId: string, userId: string, peerUse
     [conversationId, userId, peerUserId],
   );
 
+  if (guard.supervisor) {
+    await attachSupervisor(client, {
+      orgId,
+      conversationId,
+      supervisorUserId: guard.supervisor.userId,
+    });
+  }
+
   return conversationId;
+}
+
+/**
+ * Re-check the youth-protection rule on the send path. Holding a conversationId from before a
+ * policy change must not be a way around it, so the rule is enforced where messages are written,
+ * not only where conversations are created.
+ */
+async function guardDmSend(client: PoolClient, orgId: string, userId: string, conversationId: string) {
+  if (!(await supportsYouthProtection(client))) return;
+  const parties = await dmPartyIds(client, conversationId);
+  if (parties.length < 2) return;
+  // The rule is about the PAIR, not the sender: a supervisor writing into the room is still
+  // evaluated against the two people whose conversation it is.
+  const actorIsParty = parties.includes(userId);
+  const actorSide = actorIsParty ? userId : parties[0]!;
+  const peerUserId = actorIsParty ? parties.find((id) => id !== userId)! : parties[1]!;
+  const guard = await guardDmPair(client, {
+    orgId,
+    actorUserId: actorSide,
+    peerUserId,
+    conversationId,
+  });
+  if (guard.supervisor) {
+    await attachSupervisor(client, {
+      orgId,
+      conversationId,
+      supervisorUserId: guard.supervisor.userId,
+      reason: "ypp_two_adult_rule_backfill",
+    });
+  }
 }
 
 async function sendMessage(
@@ -782,6 +954,7 @@ async function sendMessage(
   if (!conversation.rowCount) throw new Error("Conversation not found");
 
   const kind = conversation.rows[0]!.kind;
+  if (kind === "dm") await guardDmSend(client, orgId, userId, conversationId);
   const mentionsSupported = await supportsMessageMentions(client);
 
   if (objectLink && kind !== "team") {
@@ -975,6 +1148,30 @@ async function setPinned(
   return { ok: true, pinned };
 }
 
+type YouthProtectionState = {
+  supported: boolean;
+  dmMode: DmMode;
+  viewerClass: "adult" | "youth";
+  canManage: boolean;
+};
+
+async function youthProtectionState(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+): Promise<YouthProtectionState> {
+  const supported = await supportsYouthProtection(client);
+  if (!supported) {
+    return { supported: false, dmMode: "open", viewerClass: "youth", canManage: false };
+  }
+  const [dmMode, viewerClass, canManage] = await Promise.all([
+    readDmMode(client, orgId),
+    memberChatClass(client, orgId, userId),
+    isOrgChatAdmin(client, orgId, userId),
+  ]);
+  return { supported, dmMode, viewerClass, canManage };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
@@ -983,6 +1180,15 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "inbox";
     const conversationId = url.searchParams.get("conversationId");
     const since = url.searchParams.get("since");
+    const beforeRaw = url.searchParams.get("before");
+    const beforeIdRaw = url.searchParams.get("beforeId");
+    const before =
+      !since && beforeRaw
+        ? {
+            createdAt: beforeRaw,
+            id: beforeIdRaw && UUID_RE.test(beforeIdRaw) ? beforeIdRaw : null,
+          }
+        : null;
     const waitMs = clampWaitMs(url.searchParams.get("wait"));
     if (!orgId) throw new Error("orgId is required");
 
@@ -991,6 +1197,15 @@ export async function GET(request: Request) {
 
       if (mode === "members") {
         return { members: await listMembers(client, orgId, session.user.id) };
+      }
+
+      if (mode === "link_targets") {
+        const objectType = normalizeObjectType(url.searchParams.get("linkType"));
+        if (!objectType || !COMPOSER_OBJECT_TYPES.includes(objectType)) {
+          throw new Error("Unsupported link type");
+        }
+        const q = url.searchParams.get("q") ?? "";
+        return { targets: await listLinkTargets(client, orgId, objectType, q) };
       }
 
       if (mode === "unread") {
@@ -1009,12 +1224,18 @@ export async function GET(request: Request) {
           }
         }
 
-        const thread = await listMessages(client, orgId, session.user.id, conversationId, since);
+        const thread = await listMessages(client, orgId, session.user.id, conversationId, since, {
+          before,
+          // Paging back through history should not rewrite read state; the
+          // initial load and incremental polls still mark the thread read.
+          markRead: !before,
+        });
         const conversations = await listInbox(client, orgId, session.user.id);
         return {
           currentUserId: session.user.id,
           conversations,
           unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+          youthProtection: await youthProtectionState(client, orgId, session.user.id),
           ...thread,
         };
       }
@@ -1028,7 +1249,10 @@ export async function GET(request: Request) {
         pinned: [] as MessageRow[],
         pinsSupported: await supportsMessagePins(client),
         mentionsSupported: await supportsMessageMentions(client),
+        youthProtection: await youthProtectionState(client, orgId, session.user.id),
         conversation: null,
+        supervisors: [] as SupervisorRef[],
+        supervisionNotice: "",
       };
     });
 

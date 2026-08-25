@@ -9,6 +9,7 @@ import {
   type IncidentsView,
 } from "../../lib/incidents/compute-incidents";
 import type { IncidentCategory, IncidentEvaluation, IncidentSeverity, IncidentStatus } from "../../lib/incidents/types";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<IncidentsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -24,6 +25,8 @@ export default function IncidentsClient() {
   const [view, setView] = useState<IncidentsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -31,6 +34,7 @@ export default function IncidentsClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -42,6 +46,7 @@ export default function IncidentsClient() {
       .then(async (response) => {
         const data = (await response.json()) as IncidentsView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -119,13 +124,36 @@ export default function IncidentsClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load the incident log</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </section>
+        (() => {
+          const kind = classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          });
+          return (
+            <section className="app-card soft-panel">
+              <h2>{copy.title}</h2>
+              <p className="app-muted">{copy.description}</p>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </section>
+          );
+        })()
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>

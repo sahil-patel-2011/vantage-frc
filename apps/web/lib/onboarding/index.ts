@@ -9,7 +9,7 @@ export {
   onboardingProgressLabel,
   onboardingStepIndex,
   onboardingStepPhase,
-  onboardingTermsRequired,
+  onboardingLegalRequired,
   type OnboardingFlowStep,
   type OnboardingLoadCopy,
   type OnboardingLoadKind,
@@ -18,3 +18,48 @@ export {
   type OnboardingStepPhase,
   type TeamAffiliationOption,
 } from "./onboarding-flow";
+
+export {
+  TEAM_NUMBER_MAX,
+  TEAM_NUMBER_MIN,
+  isAdultRole,
+  lookupTeamNumber,
+  parseTeamNumber,
+  sanitizeTeamNumberInput,
+  type TeamLookupAccessStatus,
+  type TeamLookupInput,
+  type TeamLookupKind,
+  type TeamLookupResult,
+  type TeamLookupTone,
+} from "./team-lookup";
+
+export {
+  buildOnboardingPendingPlan,
+  defaultFocusForRole,
+  emptyOnboardingDraft,
+  nextOnboardingStep,
+  onboardingAdvance,
+  onboardingGoBack,
+  previousOnboardingStep,
+  submittedTeamNumber,
+  validateOnboardingStep,
+  type OnboardingCrew,
+  type OnboardingDraft,
+  type OnboardingFocus,
+  type OnboardingGender,
+  type OnboardingPendingPlan,
+  type OnboardingRole,
+  type OnboardingStepContext,
+  type OnboardingStepState,
+  type PendingMeanwhileLink,
+  type PendingStage,
+  type StepValidation,
+} from "./step-model";
+
+export {
+  FIRST_FIVE_LIMIT,
+  buildOnboardingLanding,
+  landingTrackRank,
+  type LandingLink,
+  type OnboardingLanding,
+} from "./landing";

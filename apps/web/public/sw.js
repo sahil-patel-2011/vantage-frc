@@ -1,4 +1,4 @@
-/* global self, caches, fetch, URL, Response */
+/* global self, caches, clients */
 /**
  * Vantage offline app shell (CD #10).
  *
@@ -11,8 +11,11 @@
  *
  * Route allowlist mirror: apps/web/lib/offline/shell-routes.ts
  */
-const ASSET_CACHE = "vantage-assets-v4";
-const SHELL_CACHE = "vantage-shell-v4";
+// Bump both on any release that changes the shell or its assets: `activate` deletes
+// every cache whose key is not one of these two, so a version bump is what forces a
+// returning installed client off the previous release's cached UI.
+const ASSET_CACHE = "vantage-assets-v5";
+const SHELL_CACHE = "vantage-shell-v5";
 const SHELL_URL = "/offline";
 
 const PRECACHE = ["/manifest.webmanifest", "/icon.svg", SHELL_URL];
@@ -121,6 +124,127 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "WARM_SHELL") {
     event.waitUntil(precacheShell());
   }
+});
+
+/* ---------------------------------------------------------------------------
+ * Web Push (the "your match is up in 7 minutes" ping).
+ *
+ * Payload contract — server side is apps/web/lib/push/payload.ts:
+ *   { title, body?, url?, tag?, type?, urgent? }
+ * `url` is always a same-origin path (the server strips anything else).
+ * A push MUST show a notification: browsers revoke the subscription from origins
+ * that receive a push and stay silent, so the catch path still shows something.
+ * ------------------------------------------------------------------------- */
+
+const PUSH_FALLBACK_TITLE = "Vantage";
+
+function readPushPayload(event) {
+  if (!event.data) return { title: PUSH_FALLBACK_TITLE };
+  try {
+    const parsed = event.data.json();
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {
+    const text = event.data.text();
+    if (text) return { title: PUSH_FALLBACK_TITLE, body: text };
+  }
+  return { title: PUSH_FALLBACK_TITLE };
+}
+
+function pushNotificationOptions(payload) {
+  const urgent = payload.urgent === true;
+  const options = {
+    body: typeof payload.body === "string" ? payload.body : "",
+    icon: "/icon.svg",
+    badge: "/icon.svg",
+    data: {
+      url: typeof payload.url === "string" && payload.url.startsWith("/") ? payload.url : "/",
+      type: typeof payload.type === "string" ? payload.type : "",
+    },
+    // Competition-day pings stay on screen until someone acts on them.
+    requireInteraction: urgent,
+  };
+  if (typeof payload.tag === "string" && payload.tag) {
+    options.tag = payload.tag;
+    // Same tag = a newer version of the same thing; buzz again rather than replace silently.
+    options.renotify = true;
+  }
+  if (urgent) options.vibrate = [180, 80, 180];
+  return options;
+}
+
+self.addEventListener("push", (event) => {
+  const payload = readPushPayload(event);
+  const title =
+    typeof payload.title === "string" && payload.title.trim()
+      ? payload.title.trim()
+      : PUSH_FALLBACK_TITLE;
+  event.waitUntil(self.registration.showNotification(title, pushNotificationOptions(payload)));
+});
+
+/**
+ * Browsers rotate a subscription on their own schedule. Re-register with the same
+ * application server key and tell the server, otherwise the device goes quiet with
+ * nothing in the UI to explain why. Best-effort: failures leave the old row to be
+ * pruned by the next 404/410 from the push service.
+ */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const oldSubscription = event.oldSubscription;
+  const applicationServerKey =
+    (event.newSubscription && event.newSubscription.options.applicationServerKey) ||
+    (oldSubscription && oldSubscription.options.applicationServerKey);
+  event.waitUntil(
+    (async () => {
+      try {
+        const subscription =
+          event.newSubscription ||
+          (await self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey,
+          }));
+        const toBase64Url = (buffer) => {
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          for (const byte of bytes) binary += String.fromCharCode(byte);
+          return self.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        };
+        await fetch("/api/push", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: subscription.endpoint,
+            p256dh: toBase64Url(subscription.getKey("p256dh")),
+            auth: toBase64Url(subscription.getKey("auth")),
+            previousEndpoint: oldSubscription ? oldSubscription.endpoint : null,
+          }),
+        });
+      } catch {
+        // Nothing useful to do inside a service worker; the next visit re-subscribes.
+      }
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    (event.notification.data && event.notification.data.url) || "/",
+    self.location.origin,
+  );
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
+      for (const client of windowClients) {
+        if (new URL(client.url).origin !== self.location.origin) continue;
+        // Reuse the open app window: navigate it, then bring it forward.
+        if ("navigate" in client) {
+          const navigated = await client.navigate(target.href).catch(() => client);
+          return (navigated || client).focus();
+        }
+        return client.focus();
+      }
+      return clients.openWindow(target.href);
+    }),
+  );
 });
 
 self.addEventListener("fetch", (event) => {

@@ -35,7 +35,7 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string
 const EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
     title: "No upcoming match",
-    body: "Set a workspace and active event.",
+    body: "Shows the next scheduled match after TBA sync.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
   },
@@ -130,9 +130,7 @@ function emptyHintFor(type: string): EmptyHint {
 
 function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }) {
   if (status === "live") return <span className="app-badge good">Live</span>;
-  if (status === "empty") return <span className="app-badge">Empty</span>;
-  if (status === "waiting") return null;
-  return <span className="app-badge setup">Setup</span>;
+  return null;
 }
 
 function EmptyState({
@@ -187,7 +185,7 @@ function Shell({
   const iconMeta = WIDGET_ICON[type];
   // Colored circle icons only when the widget has real live data — never decorate empty/waiting shells.
   const showIcon = showLive && Boolean(iconMeta);
-  const isHero = type === "next_match" && showLive;
+  const isHero = type === "next_match";
 
   return (
     <article
@@ -208,14 +206,14 @@ function Shell({
             ) : null}
           </div>
         </div>
-        <StatusBadge status={payload ? (preferChildren && status !== "live" ? "waiting" : payload.status) : "waiting"} />
+        {showLive ? <StatusBadge status={payload?.status ?? "live"} /> : null}
       </header>
       {useChildren ? (
         children
       ) : (
         <EmptyState hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
       )}
-      {href ? (
+      {href && showLive ? (
         <a className="dash-widget-link" href={href}>
           Open →
         </a>
@@ -297,7 +295,7 @@ export function DashboardWidgetView({
       return (
         <Shell
           type={type}
-          title="Next match / bumper"
+          title="Next match"
           payload={payload}
           href={myDayHref}
           emptyHint={hint}

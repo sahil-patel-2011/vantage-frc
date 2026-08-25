@@ -34,7 +34,7 @@ import {
   type DefensePlannerShellKind,
 } from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./defense-planner.css";
 
@@ -111,7 +111,7 @@ function DefenseShell({
 }) {
   const actions = defensePlannerNextActions({ orgId, shell });
   const copy = defensePlannerShellCopy(shell);
-  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "defense-planner", orgId);
   const steps = shell === "setup" ? defensePlannerSetupSteps(orgId) : [];
 
   return (
@@ -120,10 +120,10 @@ function DefenseShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Defense Planner"}
+            {" / Defense planner"}
           </>
         }
-        title="Defense Planner"
+        title="Defense planner"
         description={description}
       >
         <DefenseRelatedStrip orgId={orgId} />
@@ -245,7 +245,7 @@ export default function DefensePlannerClient() {
   const relatedLinks = defensePlannerRelatedLinks(orgId, {
     include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "defense-planner", orgId);
   const showTiles = shouldShowDefensePlannerSummaryTiles({ matchupCount, hasProfile });
 
   const mutate = useCallback(
@@ -318,10 +318,10 @@ export default function DefensePlannerClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Defense Planner"}
+            {" / Defense planner"}
           </>
         }
-        title="Defense Planner"
+        title="Defense planner"
         description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book — never DEMO defense metrics."
       >
         <div className="defense-planner-header-actions">

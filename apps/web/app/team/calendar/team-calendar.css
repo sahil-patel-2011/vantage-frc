@@ -133,7 +133,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
+  min-height: 44px;
+  padding: 7px 14px;
   border: 1px solid var(--app-line);
   border-radius: 999px;
   background: var(--app-surface);
@@ -492,6 +493,7 @@
   min-height: 36px;
   width: auto;
 }
+.tc-mode {
   display: inline-flex;
   padding: 3px;
   border-radius: 999px;
@@ -555,8 +557,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
   background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
@@ -574,7 +576,8 @@
 .tc-rsvp-btn.active {
   background: var(--app-accent);
   border-color: transparent;
-  color: #fff;
+  /* --app-accent-ink, not #fff: the dark-theme accent is a light blue. */
+  color: var(--app-accent-ink);
 }
 .tc-rsvp-btn.soft.active {
   background: color-mix(in srgb, var(--app-ink) 12%, var(--app-surface));
@@ -858,7 +861,7 @@
 .tc-sync-note {
   padding: 12px 14px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--soft-accent-soft, #e4ecfc) 70%, transparent);
+  background: color-mix(in srgb, var(--soft-accent-soft) 70%, transparent);
   border: 1px solid color-mix(in srgb, var(--app-accent) 18%, var(--app-line));
 }
 .tc-sync-note strong {
@@ -872,7 +875,7 @@
   line-height: 1.45;
 }
 .tc-text-btn.danger {
-  color: #b91c1c;
+  color: var(--app-critical);
 }
 
 @media (max-width: 900px) {
@@ -910,7 +913,7 @@
   }
 }
 
-.tc-travel{border-left:3px solid #1f4fd6;padding-left:10px}
+.tc-travel{border-left:3px solid var(--app-accent);padding-left:10px}
 
 .tc-page > .team-hq-strip {
   margin-bottom: 12px;
@@ -1078,5 +1081,169 @@
 @media (max-width: 720px) {
   .tc-timed.is-day {
     min-width: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Recurring events (migration 0456)
+ * Repeat picker, plain-English rule read-back, and the
+ * this / this and following / all events chooser.
+ * ------------------------------------------------------------------ */
+
+.tc-event-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.tc-event-tools .tc-text-btn:first-child {
+  color: var(--app-accent);
+}
+
+.tc-repeat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--app-accent);
+  overflow-wrap: anywhere;
+}
+
+.tc-repeat {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+}
+.tc-repeat-days {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.tc-repeat-days legend {
+  padding: 0 0 6px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.tc-repeat-day-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tc-repeat-day {
+  min-width: 46px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc-repeat-day.active {
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  color: var(--app-accent);
+}
+.tc-repeat-day:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.tc-repeat-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+}
+.tc-repeat-end {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.tc-repeat-summary {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--app-accent);
+  overflow-wrap: anywhere;
+}
+.tc-repeat-summary.invalid {
+  color: var(--app-critical);
+}
+
+.tc-scope {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+}
+.tc-scope-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+.tc-scope-options {
+  display: grid;
+  gap: 6px;
+}
+.tc-scope-btn {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tc-scope-btn strong {
+  font-size: 13px;
+}
+.tc-scope-btn span {
+  font-size: 11px;
+  color: var(--app-muted);
+}
+.tc-scope-btn:hover:not(:disabled) {
+  border-color: var(--app-accent);
+}
+.tc-scope-btn.danger:hover:not(:disabled) {
+  border-color: var(--app-critical);
+}
+.tc-scope-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tc-occurrence-edit {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+}
+.tc-occurrence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 420px) {
+  .tc-repeat-day {
+    min-width: 40px;
+    flex: 1 1 40px;
   }
 }

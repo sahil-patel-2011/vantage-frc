@@ -16,7 +16,7 @@ import {
   type TuningAutopilotShellKind,
 } from "../../lib/tuning-autopilot/tuning-autopilot-related";
 import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./tuning-autopilot.css";
 
@@ -89,7 +89,7 @@ function TuningShell({
 }) {
   const actions = tuningAutopilotNextActions({ orgId, shell });
   const copy = tuningAutopilotShellCopy(shell);
-  const buildHref = hubHref("/build", "tuning-autopilot", orgId);
+  const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const practiceHref = hubHref("/team", "practice", orgId);
@@ -224,7 +224,7 @@ export default function TuningAutopilotClient() {
   const relatedLinks = tuningAutopilotRelatedLinks(orgId, {
     include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "tuning-autopilot", orgId);
+  const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const practiceHref = hubHref("/team", "practice", orgId);

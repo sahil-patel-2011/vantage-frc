@@ -5,9 +5,10 @@ import {
   formatInviteTeamIdentity,
   inviteCanAccept,
   inviteEmptyCopy,
+  inviteJoiningHeadline,
   inviteNextActions,
   inviteSignInHref,
-  inviteTermsRequired,
+  inviteLegalRequired,
   normalizeInviteStatus,
 } from "./invite-flow";
 
@@ -21,22 +22,40 @@ describe("invite Soft-UI flow helpers", () => {
     ).toBe("Team 254 · Vantage Robotics · Scout");
   });
 
-  it("requires terms only when not previously accepted", () => {
-    expect(inviteTermsRequired(null)).toBe(true);
-    expect(inviteTermsRequired("")).toBe(true);
-    expect(inviteTermsRequired("2026-07-01T00:00:00.000Z")).toBe(false);
-    expect(inviteCanAccept({ termsAccepted: false, termsRequired: true, status: "pending" })).toBe(
-      false,
-    );
-    expect(inviteCanAccept({ termsAccepted: true, termsRequired: true, status: "pending" })).toBe(
-      true,
-    );
-    expect(inviteCanAccept({ termsAccepted: false, termsRequired: false, status: "pending" })).toBe(
-      true,
-    );
-    expect(inviteCanAccept({ termsAccepted: true, termsRequired: false, status: "expired" })).toBe(
-      false,
-    );
+  it("asks for consent unless BOTH documents were already accepted", () => {
+    expect(inviteLegalRequired({ termsAcceptedAt: null, privacyAcceptedAt: null })).toBe(true);
+    expect(inviteLegalRequired({ termsAcceptedAt: "", privacyAcceptedAt: "" })).toBe(true);
+    // Legacy 0163 combined checkbox is not evidence of a separate privacy consent.
+    expect(
+      inviteLegalRequired({ termsAcceptedAt: "2026-07-01T00:00:00.000Z", privacyAcceptedAt: null }),
+    ).toBe(true);
+    expect(
+      inviteLegalRequired({
+        termsAcceptedAt: "2026-07-01T00:00:00.000Z",
+        privacyAcceptedAt: "2026-07-01T00:00:00.000Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("cannot accept until both boxes are ticked", () => {
+    expect(
+      inviteCanAccept({ termsAccepted: false, privacyAccepted: false, legalRequired: true, status: "pending" }),
+    ).toBe(false);
+    expect(
+      inviteCanAccept({ termsAccepted: true, privacyAccepted: false, legalRequired: true, status: "pending" }),
+    ).toBe(false);
+    expect(
+      inviteCanAccept({ termsAccepted: false, privacyAccepted: true, legalRequired: true, status: "pending" }),
+    ).toBe(false);
+    expect(
+      inviteCanAccept({ termsAccepted: true, privacyAccepted: true, legalRequired: true, status: "pending" }),
+    ).toBe(true);
+    expect(
+      inviteCanAccept({ termsAccepted: false, privacyAccepted: false, legalRequired: false, status: "pending" }),
+    ).toBe(true);
+    expect(
+      inviteCanAccept({ termsAccepted: true, privacyAccepted: true, legalRequired: false, status: "expired" }),
+    ).toBe(false);
   });
 
   it("classifies expired / mismatch / ready shells without inventing access", () => {
@@ -93,6 +112,19 @@ describe("invite Soft-UI flow helpers", () => {
       }),
     ).toBe("auth_required");
     expect(classifyInviteFlow({ token: "", loading: false, preview: null })).toBe("missing_token");
+    // A bare `/invite` (proxy.ts drops the query on its bounce) may still be
+    // recovering the stashed token — flashing "link incomplete" there is a lie.
+    expect(classifyInviteFlow({ token: "", loading: true, preview: undefined })).toBe("loading");
+  });
+
+  it("names the team being joined without inventing one", () => {
+    expect(inviteJoiningHeadline({ orgName: "Vantage Robotics", teamNumber: 254 })).toBe(
+      "You’re joining Team 254",
+    );
+    expect(inviteJoiningHeadline({ orgName: "Vantage Robotics", teamNumber: Number.NaN })).toBe(
+      "You’re joining Vantage Robotics",
+    );
+    expect(inviteJoiningHeadline(null)).toBe("You’re joining a team");
   });
 
   it("keeps empty copy and next steps honest for exact-email security", () => {

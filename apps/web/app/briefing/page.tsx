@@ -4,7 +4,7 @@ import "./briefing.css";
 export const metadata = {
   title: "Pre-Match Briefing · Vantage",
   description:
-    "One pre-match card for the drive coach — prediction, game plan, whiteboard play, practice readiness, and opponent film.",
+    "The one pre-match briefing — prediction, game plan, match card, scouted tendencies, opponent notes, defense plan, robot health, practice readiness, and film for one match.",
 };
 
 export default function BriefingPage() {

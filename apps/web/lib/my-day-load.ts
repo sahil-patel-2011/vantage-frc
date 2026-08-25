@@ -3,7 +3,6 @@ import {
   buildMyDayMatches,
   freshnessLabel,
   type MyDayContext,
-  type MyDayMatch,
   type MyDayView,
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";

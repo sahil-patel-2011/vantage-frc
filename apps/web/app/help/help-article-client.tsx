@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeader } from "../../components/ui";
-import { type HelpArticle, helpArticleHref } from "../../lib/help";
+import { helpArticleHref, helpCategoryLabel, type HelpArticle } from "../../lib/help";
 import "./help.css";
 
 export default function HelpArticleClient({ article }: { article: HelpArticle }) {
@@ -10,7 +10,7 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
       <PageHeader
         breadcrumbs={
           <>
-            <a href="/docs">App manual</a>
+            <a href="/help">Help centre</a>
             {" / "}
             {article.title}
           </>
@@ -22,13 +22,13 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
           <a className="app-button" href={article.relatedHref}>
             Open in app
           </a>
-          <a className="app-button secondary" href="/docs">
+          <a className="app-button secondary" href="/help">
             All topics
           </a>
         </div>
       </PageHeader>
 
-      <span className="eyebrow help-article-cat">{article.category}</span>
+      <span className="eyebrow help-article-cat">{helpCategoryLabel(article.category)}</span>
 
       <div className="help-article-body">
         {article.sections.map((section) => (
@@ -43,8 +43,9 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
         ))}
       </div>
 
-      <nav className="help-article-footer" aria-label="App manual navigation">
-        <a href="/docs">← App manual</a>
+      <nav className="help-article-footer" aria-label="Help navigation">
+        <a href="/help">← Help centre</a>
+        <a href="/docs?view=sections">Section-by-section guide</a>
         <a href={helpArticleHref(article.slug)}>Permalink</a>
         <a href="/support">Support tickets</a>
       </nav>

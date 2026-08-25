@@ -19,6 +19,24 @@ import { runLocalCadUpdate } from "./update";
 import { doctorExitCode, formatDoctorReport, runDoctor } from "./doctor";
 import { runClaudeCadCli } from "./claude";
 import { runCadMcpStdio } from "@vantage/cad";
+// Imported by path rather than through the package barrel: these modules are owned by
+// the browser-session workstream and the barrel is edited concurrently by others.
+import {
+  formatClaudeCadSession,
+  loadClaudeCadSession,
+  noteSessionCalls,
+  saveClaudeCadSession,
+  type ClaudeCadSession,
+} from "../../cad/src/claude-session";
+import { describeCallTally, formatCallBudget } from "../../cad/src/call-budget";
+import {
+  clearOnshapeBrowserSession,
+  loadOnshapeBrowserSession,
+  onshapeSessionStatus,
+} from "../../cad/src/onshape-session-store";
+import { probeOnshapeIdentity, resolveOnshapeAuth } from "../../cad/src/onshape-session";
+import { createChromiumLoginLauncher, formatLoginResult, runOnshapeBrowserLogin } from "./login";
+import { createCadSyncReporter, formatCadStatusLines, readCadSyncStatus } from "./sync";
 
 const VERSION = "0.1.1";
 const command = process.argv[2] ?? "help";
@@ -157,23 +175,131 @@ async function setup() {
   console.log(`\nSetup complete. Device token stored in ${storage}.`);
 }
 
+function flagValue(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+
+/** Onshape auth + call-ledger lines shared by `status` and `login --status`. */
+async function onshapeAuthLines(): Promise<string[]> {
+  const saved = await loadOnshapeBrowserSession();
+  const sessionState = onshapeSessionStatus(saved);
+  const lines = [
+    `${sessionState.connected ? "[PASS]" : "[WARN]"} Onshape session: ${sessionState.message}`,
+  ];
+  if (sessionState.accountLabel) lines.push(`       account ${sessionState.accountLabel}`);
+  const cad: ClaudeCadSession = await loadClaudeCadSession().catch(() => ({}));
+  lines.push(`       ${describeCallTally(cad.calls)}`);
+  return lines;
+}
+
+async function login() {
+  if (process.argv.includes("--clear")) {
+    const removed = await clearOnshapeBrowserSession();
+    console.log(
+      removed
+        ? "Saved Onshape browser session removed. Run `vantage-cad login` to sign in again."
+        : "No saved Onshape browser session to remove.",
+    );
+    return;
+  }
+  if (process.argv.includes("--status")) {
+    for (const line of await onshapeAuthLines()) console.log(line);
+    return;
+  }
+
+  const timeoutSeconds = Number(flagValue("--timeout") ?? "300");
+  const result = await runOnshapeBrowserLogin({
+    launch: createChromiumLoginLauncher(),
+    ...(process.env.ONSHAPE_BASE_URL ? { baseUrl: process.env.ONSHAPE_BASE_URL } : {}),
+    ...(Number.isFinite(timeoutSeconds) ? { timeoutMs: Math.max(30, timeoutSeconds) * 1_000 } : {}),
+  });
+  for (const line of formatLoginResult(result)) console.log(line);
+  if (result.status !== "signed-in") {
+    process.exitCode = 1;
+    return;
+  }
+
+  // Onshape does not document session-cookie replay by a third-party process, so the
+  // premise is measured here rather than assumed: one call on the saved cookies,
+  // outside the browser, against the documented /users/current endpoint.
+  try {
+    const auth = await resolveOnshapeAuth({ prefer: "session" });
+    const identity = await probeOnshapeIdentity(auth.http);
+    if (identity) {
+      console.log(`Verified: the saved session authenticates outside the browser as ${identity.name ?? identity.id}.`);
+    } else {
+      process.exitCode = 1;
+      console.log(
+        "Warning: Onshape accepted the sign-in but the saved cookies did not authenticate when replayed from this process. Use OAuth or API keys for now (API-key calls are deducted from your annual allowance).",
+      );
+    }
+    const summary = auth.budget.summary();
+    for (const line of formatCallBudget(summary)) console.log(line);
+    const cad: ClaudeCadSession = await loadClaudeCadSession().catch(() => ({}));
+    await saveClaudeCadSession(noteSessionCalls(cad, summary));
+  } catch (error) {
+    process.exitCode = 1;
+    console.log(`Warning: could not verify the saved session — ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+}
+
 async function status() {
+  const asJson = process.argv.includes("--json");
   const credential = await loadDeviceCredential();
-  if (!credential) throw new Error("Not paired. Run `vantage-cad setup`.");
-  const result = await heartbeat(credential);
-  console.log(
-    JSON.stringify(
-      {
-        connected: true,
-        device: result.device,
-        serverTime: result.serverTime,
-        credentialStorage: credentialStorageStatus(),
-        cliVersion: VERSION,
-      },
-      null,
-      2,
-    ),
-  );
+  const bound: ClaudeCadSession = await loadClaudeCadSession().catch(() => ({}));
+  const sync = await readCadSyncStatus();
+  const onshapeSession = onshapeSessionStatus(await loadOnshapeBrowserSession());
+
+  let device: Record<string, unknown> | null = null;
+  let serverReachable = false;
+  let serverDetail = "";
+  if (credential) {
+    try {
+      const result = await heartbeat(credential);
+      device = result.device as Record<string, unknown>;
+      serverReachable = true;
+    } catch (error) {
+      serverDetail = error instanceof Error ? error.message : "connection failed";
+    }
+  }
+
+  if (asJson) {
+    console.log(
+      JSON.stringify(
+        {
+          connected: serverReachable,
+          paired: Boolean(credential),
+          device,
+          platform: device?.platform ?? credential?.platform ?? null,
+          bound: bound && (bound as { documentId?: string }).documentId ? bound : null,
+          onshapeSession,
+          onshapeCalls: bound.calls ?? null,
+          sync,
+          credentialStorage: credentialStorageStatus(),
+          cliVersion: VERSION,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const lines = formatCadStatusLines({
+    cliVersion: VERSION,
+    paired: Boolean(credential),
+    platform: String(device?.platform ?? credential?.platform ?? "") || undefined,
+    machineName: String(device?.machineName ?? "") || undefined,
+    orgId: String(device?.orgId ?? credential?.orgId ?? "") || undefined,
+    baseUrl: credential?.baseUrl ?? base,
+    serverReachable,
+    serverDetail,
+    storage: credentialStorageStatus(),
+    bound,
+    sync,
+  });
+  console.log([...lines, ...(await onshapeAuthLines()), ...formatClaudeCadSession(bound)].join("\n"));
 }
 
 async function diagnose() {
@@ -194,8 +320,12 @@ async function diagnose() {
       windowsInstallHint();
     }
     console.log(
-      "Consumer ChatGPT/Claude subscriptions are not tested as API credentials. Vantage never scrapes browser sessions or cookies.",
+      "Consumer ChatGPT/Claude subscriptions are not tested as API credentials.",
     );
+    console.log(
+      "`vantage-cad login` stores YOUR Onshape browser session, captured in a window you sign into yourself, in a 0600 file under your home directory. No other site's cookies are read; `vantage-cad login --clear` deletes it.",
+    );
+    for (const line of await onshapeAuthLines()) console.log(line);
   }
   if (!report.ok) process.exitCode = doctorExitCode(report);
 }
@@ -296,16 +426,45 @@ async function update() {
 
 async function main() {
   if (command === "setup") await setup();
+  else if (command === "login") await login();
   else if (command === "status") await status();
   else if (command === "diagnose" || command === "doctor") await diagnose();
   else if (command === "start") await start();
   else if (command === "logout") await logout();
   else if (command === "update") await update();
-  else if (command === "mcp") await runCadMcpStdio();
-  else if (command === "claude" || command === "onshape" || command === "fusion") {
-    await runClaudeCadCli(command, process.argv[3] ?? "");
+  else if (command === "mcp") {
+    // Sync is a bonus, never a blocker: the reporter says once (on stderr — stdout
+    // is MCP protocol) if it cannot reach the app and keeps working locally.
+    const reporter = createCadSyncReporter();
+    void reporter.sessionStart();
+    let ended = false;
+    const end = () => {
+      if (ended) return;
+      ended = true;
+      void reporter.sessionEnd("completed").finally(() => process.exit(process.exitCode ?? 0));
+    };
+    process.stdin.on("end", end);
+    process.on("SIGINT", end);
+    process.on("SIGTERM", end);
+    await runCadMcpStdio({
+      onToolCall: (name, args, ok, error) => reporter.toolCall(name, args, ok, error),
+    });
+  } else if (command === "agent") {
+    const { runAgentSync } = await import("./agent-sync");
+    await runAgentSync(process.argv.slice(3));
+  } else if (command === "claude" || command === "onshape" || command === "fusion") {
+    const reporter = createCadSyncReporter();
+    await runClaudeCadCli(command, process.argv[3] ?? "", (tool, args, ok, error) =>
+      reporter.oneShotToolCall(tool, args, ok, error),
+    );
   } else {
-    console.log("vantage-cad <setup|start|status|diagnose|doctor|update|logout|claude|mcp|onshape|fusion>");
+    console.log("vantage-cad <login|setup|start|status|diagnose|doctor|update|logout|claude|mcp|agent|onshape|fusion>");
+    console.log("  login [--timeout <s>] [--status] [--clear]");
+    console.log("                         sign into Onshape in a browser window and save the session.");
+    console.log("                         Session calls are not deducted from your Onshape annual API allowance;");
+    console.log("                         API keys are. This is the `cadcursor login` step.");
+    console.log("  agent sync [--dir <repo>] [--dry-run]  pull team agent config (rules, subagents, MCP, skills)");
+    console.log("  status [--json]        platform, binding, Onshape auth path, call ledger, and web sync state");
     console.log("  claude                 print Claude Code CAD setup + status");
     console.log("  mcp                    stdio MCP server for Claude Code");
     console.log("  onshape docs|bind|sketch|extrude");

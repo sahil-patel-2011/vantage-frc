@@ -1,4 +1,11 @@
+// Alliance Selection Desk — the draft board. It keeps its own session / slot / evidence rows
+// (evidence FKs to a slot), but the answer to "which team is in this slot" now comes from the ONE
+// pick list: pick_list_entries.drafted_alliance_seed / drafted_pick_slot (migration 0454). Placing
+// a team here therefore moves the collaborative list and takes the team out of Pick Clock, and the
+// justifier's rationale rides along on the same row.
+
 import type { PoolClient } from "@neondatabase/serverless";
+import { boardState, ensurePickList, setBoardSlot, type BoardSlot } from "../picklist";
 import { hubHref } from "../nav/hubs";
 import {
   detectDeskConflicts,
@@ -67,6 +74,7 @@ type SessionRow = {
   notes: string;
   eventKey: string;
   updatedAt: string;
+  linkedPickListId: string | null;
 };
 
 type SlotRow = {
@@ -182,7 +190,8 @@ async function loadSessions(
   eventKey: string,
 ): Promise<DeskSessionSummary[]> {
   const result = await client.query<SessionRow>(
-    `SELECT id, name, status, notes, event_key AS "eventKey", updated_at::text AS "updatedAt"
+    `SELECT id, name, status, notes, event_key AS "eventKey", updated_at::text AS "updatedAt",
+            linked_pick_list_id AS "linkedPickListId"
      FROM alliance_selection_desk_sessions
      WHERE org_id = $1 AND event_key = $2
      ORDER BY updated_at DESC`,
@@ -265,7 +274,8 @@ export async function computeAllianceSelectionDeskView(
     : sessions[0]!.id;
 
   const sessionResult = await client.query<SessionRow>(
-    `SELECT id, name, status, notes, event_key AS "eventKey", updated_at::text AS "updatedAt"
+    `SELECT id, name, status, notes, event_key AS "eventKey", updated_at::text AS "updatedAt",
+            linked_pick_list_id AS "linkedPickListId"
      FROM alliance_selection_desk_sessions
      WHERE org_id = $1 AND id = $2::uuid`,
     [org.orgId, activeId],
@@ -360,18 +370,35 @@ export async function computeAllianceSelectionDeskView(
     evidenceBySlot.set(row.slotId, list);
   }
 
+  // THE overlay: the spine (pick_list_entries.drafted_*) decides who is in each slot. The desk's
+  // own slot rows are kept in sync as a mirror for one release, but they no longer win.
+  const spineBoard = await boardState(client, {
+    orgId: org.orgId,
+    pickListId: session.linkedPickListId,
+    eventKey: session.linkedPickListId ? null : org.eventKey,
+  });
+  const spineBySlot = new Map<string, BoardSlot>();
+  for (const slot of spineBoard?.slots ?? []) {
+    spineBySlot.set(`${slot.allianceSeed}:${slot.pickSlot}`, slot);
+  }
+
   const slots: DeskSlot[] = slotResult.rows.map((row) => {
-    const metrics = row.teamKey ? metricsByTeam.get(row.teamKey) : undefined;
-    const scout = row.teamKey ? scoutByTeam.get(row.teamKey) : undefined;
+    const spine = spineBySlot.get(`${row.allianceSeed}:${row.pickSlot}`) ?? null;
+    const teamKey = spineBoard ? spine?.teamKey ?? null : row.teamKey;
+    const metrics = teamKey ? metricsByTeam.get(teamKey) : undefined;
+    const scout = teamKey ? scoutByTeam.get(teamKey) : undefined;
     return {
       id: row.id,
       allianceSeed: row.allianceSeed,
       pickSlot: row.pickSlot,
-      teamKey: row.teamKey,
-      teamNumber: teamNumberFromKey(row.teamKey),
-      nickname: null,
-      rationale: row.rationale,
+      teamKey,
+      teamNumber: teamNumberFromKey(teamKey),
+      nickname: spine?.nickname ?? null,
+      rationale: (spine?.rationale ?? "").trim() || row.rationale,
       sortOrder: row.sortOrder,
+      pickListRank: spine?.rank ?? null,
+      pickListBucket: spine?.bucket ?? null,
+      justification: spine?.justification ?? null,
       evidence: evidenceBySlot.get(row.id) ?? [],
       matchScoutCount: scout?.match ?? 0,
       pitScoutCount: scout?.pit ?? 0,
@@ -440,11 +467,22 @@ export async function createDeskSession(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; notes?: string | null },
 ): Promise<string> {
+  // A new session drafts from the ONE pick list for this event — find-or-create it now so the
+  // board and the collaborative list are the same object from the first pick.
+  const pickListId = await ensurePickList(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    eventKey: input.eventKey,
+    name: input.name,
+    source: "alliance_desk",
+  });
+
   const inserted = await client.query<{ id: string }>(
-    `INSERT INTO alliance_selection_desk_sessions (org_id, event_key, name, notes, created_by)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO alliance_selection_desk_sessions
+       (org_id, event_key, name, notes, created_by, linked_pick_list_id)
+     VALUES ($1, $2, $3, $4, $5, $6::uuid)
      RETURNING id`,
-    [input.orgId, input.eventKey, input.name, input.notes ?? "", input.userId],
+    [input.orgId, input.eventKey, input.name, input.notes ?? "", input.userId, pickListId],
   );
   const id = inserted.rows[0]!.id;
   await seedDefaultSlots(client, input.orgId, id);
@@ -483,13 +521,56 @@ export async function setDeskSlotTeam(
     rationale?: string | null;
   },
 ): Promise<void> {
-  const locked = await client.query<{ status: DeskSessionStatus }>(
-    `SELECT status FROM alliance_selection_desk_sessions WHERE org_id = $1 AND id = $2::uuid`,
+  const sessionRow = await client.query<{
+    status: DeskSessionStatus;
+    eventKey: string;
+    name: string;
+    linkedPickListId: string | null;
+  }>(
+    `SELECT status, event_key AS "eventKey", name, linked_pick_list_id AS "linkedPickListId"
+     FROM alliance_selection_desk_sessions WHERE org_id = $1 AND id = $2::uuid`,
     [input.orgId, input.sessionId],
   );
-  if (locked.rows[0]?.status === "locked") throw new Error("Session is locked");
+  const session = sessionRow.rows[0];
+  if (!session) throw new Error("Session not found");
+  if (session.status === "locked") throw new Error("Session is locked");
 
   const teamKey = normalizeTeamKey(input.teamKey);
+
+  // Which slot is being set — the desk addresses slots by row id, the spine by (seed, slot).
+  const slotRow = await client.query<{ allianceSeed: number; pickSlot: DeskPickSlot }>(
+    `SELECT alliance_seed AS "allianceSeed", pick_slot AS "pickSlot"
+     FROM alliance_selection_desk_slots
+     WHERE org_id = $1 AND session_id = $2::uuid AND id = $3::uuid`,
+    [input.orgId, input.sessionId, input.slotId],
+  );
+  const slot = slotRow.rows[0];
+  if (!slot) throw new Error("Slot not found");
+
+  // Source of truth: the ONE pick list. This is what makes the draft board, the collaborative
+  // list and Pick Clock agree — the drafted team leaves Pick Clock's available pool immediately.
+  const pickListId =
+    session.linkedPickListId ??
+    (await ensurePickList(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      eventKey: session.eventKey,
+      name: session.name,
+      source: "alliance_desk",
+    }));
+
+  await setBoardSlot(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    pickListId,
+    allianceSeed: slot.allianceSeed,
+    pickSlot: slot.pickSlot,
+    teamKey,
+    rationale: input.rationale ?? null,
+  });
+
+  // Mirror onto the desk's own slot row. Kept for one release so evidence attachments and an
+  // in-flight rollback keep working; the read path already prefers the spine.
   await client.query(
     `UPDATE alliance_selection_desk_slots
      SET team_key = $4, rationale = COALESCE($5, rationale), updated_by = $6, updated_at = now()
@@ -497,8 +578,10 @@ export async function setDeskSlotTeam(
     [input.orgId, input.sessionId, input.slotId, teamKey, input.rationale ?? null, input.userId],
   );
   await client.query(
-    `UPDATE alliance_selection_desk_sessions SET updated_at = now() WHERE org_id = $1 AND id = $2::uuid`,
-    [input.orgId, input.sessionId],
+    `UPDATE alliance_selection_desk_sessions
+     SET updated_at = now(), linked_pick_list_id = $3::uuid
+     WHERE org_id = $1 AND id = $2::uuid`,
+    [input.orgId, input.sessionId, pickListId],
   );
 }
 

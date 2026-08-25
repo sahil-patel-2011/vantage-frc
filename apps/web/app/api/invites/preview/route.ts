@@ -1,7 +1,7 @@
 import { auth, isInviteTokenShape, peekOrganizationInvite } from "@vantage/core";
 import { requestPool, withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { inviteTermsRequired } from "../../../../lib/invite";
+import { inviteLegalRequired } from "../../../../lib/invite";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 
 const limiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "invite-preview" });
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       const preview = await peekInvite(token);
       if (!preview) {
         return privateJson(
-          { preview: null, signedIn: false, emailMismatch: false, termsRequired: true },
+          { preview: null, signedIn: false, emailMismatch: false, legalRequired: true },
           { status: 404 },
         );
       }
@@ -48,21 +48,28 @@ export async function GET(request: Request) {
         preview,
         signedIn: false,
         emailMismatch: false,
-        termsRequired: true,
+        legalRequired: true,
         sessionEmail: null,
       });
     }
 
     const result = await withRls({ userId: session.user.id }, async (client) => {
       const preview = await peekOrganizationInvite(client, token);
-      const terms = await client.query<{ termsAcceptedAt: string | null }>(
-        `SELECT terms_accepted_at::text AS "termsAcceptedAt"
+      const consent = await client.query<{
+        termsAcceptedAt: string | null;
+        privacyAcceptedAt: string | null;
+      }>(
+        `SELECT terms_accepted_at::text AS "termsAcceptedAt",
+                privacy_accepted_at::text AS "privacyAcceptedAt"
          FROM profiles WHERE user_id = $1::uuid`,
         [session.user.id],
       );
       return {
         preview,
-        termsRequired: inviteTermsRequired(terms.rows[0]?.termsAcceptedAt ?? null),
+        legalRequired: inviteLegalRequired({
+          termsAcceptedAt: consent.rows[0]?.termsAcceptedAt ?? null,
+          privacyAcceptedAt: consent.rows[0]?.privacyAcceptedAt ?? null,
+        }),
       };
     });
     if (!result.preview) {
@@ -71,7 +78,7 @@ export async function GET(request: Request) {
           preview: null,
           signedIn: true,
           emailMismatch: false,
-          termsRequired: result.termsRequired,
+          legalRequired: result.legalRequired,
           sessionEmail: session.user.email ?? null,
         },
         { status: 404 },
@@ -84,7 +91,7 @@ export async function GET(request: Request) {
       preview: result.preview,
       signedIn: true,
       emailMismatch,
-      termsRequired: result.termsRequired,
+      legalRequired: result.legalRequired,
       sessionEmail: session.user.email ?? null,
     });
   } catch (error) {

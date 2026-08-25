@@ -1,6 +1,6 @@
 import {
   acceptOrganizationInvite,
-  assertTermsAccepted,
+  assertLegalAccepted,
   auth,
   isInviteTokenShape,
   peekOrganizationInvite,
@@ -9,7 +9,7 @@ import {
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { inviteTermsRequired } from "../../../../lib/invite";
+import { inviteLegalRequired } from "../../../../lib/invite";
 import {
   anonymizeIp,
   clientIp,
@@ -22,8 +22,9 @@ const limiter = createRateLimiter({ limit: 20, windowMs: 10 * 60_000, namespace:
 const acceptSchema = z
   .object({
     token: z.string().trim().refine(isInviteTokenShape, "Invite token is invalid"),
-    /** Required when the account has not yet accepted Terms/Privacy. */
+    /** Two separate consents. Both required when this account has not accepted both documents. */
     termsAccepted: z.boolean().optional(),
+    privacyAccepted: z.boolean().optional(),
   })
   .strict();
 
@@ -62,16 +63,29 @@ export async function POST(request: Request) {
         );
       }
 
-      const terms = await client.query<{ termsAcceptedAt: string | null }>(
-        `SELECT terms_accepted_at::text AS "termsAcceptedAt"
+      const consent = await client.query<{
+        termsAcceptedAt: string | null;
+        privacyAcceptedAt: string | null;
+      }>(
+        `SELECT terms_accepted_at::text AS "termsAcceptedAt",
+                privacy_accepted_at::text AS "privacyAcceptedAt"
          FROM profiles WHERE user_id = $1::uuid`,
         [session.user.id],
       );
-      const required = inviteTermsRequired(terms.rows[0]?.termsAcceptedAt ?? null);
-      if (required) {
-        assertTermsAccepted(body.termsAccepted === true);
+      const legalRequired = inviteLegalRequired({
+        termsAcceptedAt: consent.rows[0]?.termsAcceptedAt ?? null,
+        privacyAcceptedAt: consent.rows[0]?.privacyAcceptedAt ?? null,
+      });
+      const bothSent = body.termsAccepted === true && body.privacyAccepted === true;
+      if (legalRequired) {
+        // Server re-validates: a client checkbox is not consent.
+        assertLegalAccepted({
+          termsAccepted: body.termsAccepted,
+          privacyAccepted: body.privacyAccepted,
+        });
         await recordLegalAcceptance(client, session.user.id);
-      } else if (body.termsAccepted === true) {
+      } else if (bothSent) {
+        // Re-affirming both is fine; a partial re-send is never recorded.
         await recordLegalAcceptance(client, session.user.id);
       }
 

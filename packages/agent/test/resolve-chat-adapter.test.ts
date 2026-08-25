@@ -404,4 +404,55 @@ describe("resolveOrgChatAdapter", () => {
       }),
     ).rejects.toBeInstanceOf(ChatProviderResolutionError);
   });
+
+  it("personal OpenAI base URL overlays the team key when userId is set", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "m1",
+            provider: "openai",
+            baseUrl: "http://127.0.0.1:11434/v1",
+            model: "llama3.2",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k1",
+            provider: "openai",
+            baseUrl: null,
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      userId: "user-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "local",
+    });
+
+    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter.provider).toBe("openai-compatible");
+    expect(adapter.model).toBe("llama3.2");
+    expect((adapter as HttpChatAdapter).baseUrl).toBe("http://127.0.0.1:11434/v1");
+  });
 });

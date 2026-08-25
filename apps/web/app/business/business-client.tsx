@@ -5,15 +5,16 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import SustainabilityPanel from "./sustainability-panel";
 import {
   GRANT_STATUSES,
-  SPONSOR_STATUSES,
   sponsorHealth,
   type BusinessPortalView,
   type BusinessView,
   type GrantApplication,
   type PurchaseRequest,
-  type Sponsor,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
@@ -108,9 +109,6 @@ function dollars(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function percent(value: number, total: number): number {
   if (total <= 0) return 0;
@@ -141,6 +139,8 @@ export default function BusinessClient() {
   const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
+  const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
 
   const selectTab = useCallback((next: Tab) => {
@@ -150,6 +150,7 @@ export default function BusinessClient() {
 
   const load = useCallback(async (seasonOverride?: number) => {
     setError("");
+    setLoadFailure(null);
     const params = new URLSearchParams(window.location.search);
     const query = new URLSearchParams();
     if (params.get("orgId")) query.set("orgId", params.get("orgId")!);
@@ -157,10 +158,20 @@ export default function BusinessClient() {
     try {
       const response = await fetch(`/api/business?${query.toString()}`);
       const data = (await response.json()) as BusinessPortalView | { error?: string };
-      if (!response.ok || !("status" in data)) throw new Error("error" in data ? data.error : "Could not load portal");
+      if (!response.ok || !("status" in data)) {
+        setLoadFailure({
+          status: response.status,
+          message: ("error" in data && data.error) || "Could not load portal",
+        });
+        return;
+      }
+      setLoadFailure(null);
       setView(data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load the business portal");
+      setLoadFailure({
+        status: null,
+        message: cause instanceof Error ? cause.message : "Could not load the business portal",
+      });
     }
   }, []);
 
@@ -328,8 +339,41 @@ export default function BusinessClient() {
         </div>
       ) : null}
 
-      {!view && !error ? (
-        <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+      {!view ? (
+        loadFailure ? (
+          (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: loadFailure.status,
+                message: loadFailure.message,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: loadFailure.message,
+              },
+            );
+            return (
+              <EmptyState soft title={copy.title} description={copy.description}>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </EmptyState>
+            );
+          })()
+        ) : (
+          <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+        )
       ) : null}
 
       <TabBar
@@ -431,6 +475,9 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
   const costsHref = `/costs?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`;
   return (
     <div className="biz-stack">
+      {/* Early warning sits above the KPIs: a team on the death track should read that
+          before it reads how much of this season's budget is committed. */}
+      <SustainabilityPanel orgId={view.orgId} seasonYear={view.seasonYear} />
       <section className="biz-kpis" aria-label="Season funding summary">
         <Kpi label="Working funds" value={money(available)} detail={`${money(view.budget.totalBudgetCents)} base budget`} tone="blue" />
         <Kpi label="Committed" value={money(view.budget.committedCents)} detail={`${utilization}% of working funds`} tone={utilization > 90 ? "danger" : "neutral"} />
@@ -484,9 +531,16 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             <div><span>Actually ordered</span><strong>{money(view.budget.spentCents)}</strong></div>
             <div><span>Fundraising actual</span><strong>{money(progress.actualCents)}</strong></div>
           </div>
-          <button className="app-button" type="button" onClick={() => setTab("finance")}>Open season finance</button>
-          <button className="app-button secondary" type="button" onClick={() => setTab("budget")}>Open budget</button>
-          <a className="app-button secondary" href={businessOrdersHref} style={{ marginLeft: 8 }}>Purchase orders</a>
+          {/* Three same-weight buttons became one primary + one secondary + overflow. */}
+          <ActionMenu
+            label="Financial pulse"
+            maxSecondary={1}
+            actions={[
+              { id: "finance", label: "Open season finance", intent: "primary", onClick: () => setTab("finance") },
+              { id: "budget", label: "Open budget", onClick: () => setTab("budget") },
+              { id: "orders", label: "Purchase orders", hint: "Approve, order, receive", href: businessOrdersHref },
+            ]}
+          />
         </article>
         <article className="app-card">
           <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
@@ -610,7 +664,32 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
 function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: PurchaseRequest; canManage: boolean; busy: boolean; mutate: Mutate }) {
   const next: Partial<Record<PurchaseRequest["status"], PurchaseRequest["status"]>> = { submitted: "approved", approved: "ordered", ordered: "received" };
   const nextStatus = next[purchase.status];
-  return <tr><td><strong>{purchase.itemName}</strong><small>{purchase.quantity} × {money(purchase.unitPriceCents)} · {purchase.vendor} · {purchase.requestedByName}</small>{purchase.itemUrl ? <a href={purchase.itemUrl} target="_blank" rel="noreferrer">Product link ↗</a> : null}<p>{purchase.purpose}</p></td><td>{purchase.categoryName ?? "Uncategorized"}</td><td><strong>{money(purchase.totalCents)}</strong></td><td>{purchase.neededBy ?? "—"}</td><td><ToneBadge tone={purchase.status === "rejected" ? "danger" : purchase.status === "received" ? "good" : purchase.status === "submitted" ? "warn" : "blue"}>{statusLabel(purchase.status)}</ToneBadge></td><td>{canManage && nextStatus ? <div className="biz-row-actions"><button disabled={busy} onClick={() => void mutate({ action: "set-purchase-status", purchaseId: purchase.id, status: nextStatus })}>{nextStatus === "approved" ? "Approve" : nextStatus === "ordered" ? "Mark ordered" : "Received"}</button>{purchase.status === "submitted" ? <button className="danger" disabled={busy} onClick={() => void mutate({ action: "set-purchase-status", purchaseId: purchase.id, status: "rejected" })}>Reject</button> : null}</div> : <span className="app-muted">{purchase.orderedOn ?? "—"}</span>}</td></tr>;
+  // One move forward is the loud control; rejecting a student's request is a deliberate,
+  // confirmed choice behind the overflow — never a button sitting next to "Approve".
+  const rowActions: ActionSpec[] = nextStatus
+    ? [
+        {
+          id: "advance",
+          label: nextStatus === "approved" ? "Approve" : nextStatus === "ordered" ? "Mark ordered" : "Received",
+          intent: "primary",
+          disabled: busy,
+          onClick: () => void mutate({ action: "set-purchase-status", purchaseId: purchase.id, status: nextStatus }),
+        },
+        ...(purchase.status === "submitted"
+          ? [
+              {
+                id: "reject",
+                label: "Reject request",
+                intent: "destructive",
+                disabled: busy,
+                hint: `Tells ${purchase.requestedByName} this purchase is not happening`,
+                onClick: () => void mutate({ action: "set-purchase-status", purchaseId: purchase.id, status: "rejected" }),
+              } satisfies ActionSpec,
+            ]
+          : []),
+      ]
+    : [];
+  return <tr><td><strong>{purchase.itemName}</strong><small>{purchase.quantity} × {money(purchase.unitPriceCents)} · {purchase.vendor} · {purchase.requestedByName}</small>{purchase.itemUrl ? <a href={purchase.itemUrl} target="_blank" rel="noreferrer">Product link ↗</a> : null}<p>{purchase.purpose}</p></td><td>{purchase.categoryName ?? "Uncategorized"}</td><td><strong>{money(purchase.totalCents)}</strong></td><td>{purchase.neededBy ?? "—"}</td><td><ToneBadge tone={purchase.status === "rejected" ? "danger" : purchase.status === "received" ? "good" : purchase.status === "submitted" ? "warn" : "blue"}>{statusLabel(purchase.status)}</ToneBadge></td><td>{canManage && nextStatus ? <div className="biz-row-actions"><ActionMenu tone="row" maxSecondary={0} label={`${purchase.itemName} request`} triggerTestId={`purchase-more:${purchase.id}`} actions={rowActions} /></div> : <span className="app-muted">{purchase.orderedOn ?? "—"}</span>}</td></tr>;
 }
 
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {

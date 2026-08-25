@@ -41,7 +41,7 @@ import type {
   ReadinessTier,
   WiringStatus,
 } from "../../lib/readiness-score/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./readiness-score.css";
 
@@ -134,7 +134,7 @@ function ReadinessShell({
 }) {
   const actions = readinessScoreNextActions({ orgId, shell });
   const copy = readinessScoreShellCopy(shell);
-  const buildHref = hubHref("/build", "readiness-score", orgId);
+  const buildHref = hubWorkbenchHref("build", "readiness-score", orgId);
   const steps = shell === "setup" ? readinessScoreSetupSteps(orgId) : [];
 
   return (
@@ -146,7 +146,7 @@ function ReadinessShell({
             {" / Readiness Score"}
           </>
         }
-        title="Robot Readiness Score"
+        title="Robot readiness score"
         description={description}
       >
         <ReadinessRelatedStrip orgId={orgId} />
@@ -267,7 +267,7 @@ export default function ReadinessScoreClient() {
   const relatedLinks = readinessScoreRelatedLinks(orgId, {
     include: [...READINESS_SCORE_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "readiness-score", orgId);
+  const buildHref = hubWorkbenchHref("build", "readiness-score", orgId);
   const showTiles = shouldShowReadinessScoreSummaryTiles(subsystemCount);
 
   const mutate = useCallback(
@@ -343,7 +343,7 @@ export default function ReadinessScoreClient() {
             {" / Readiness Score"}
           </>
         }
-        title="Robot Readiness Score"
+        title="Robot readiness score"
         description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code — never DEMO readiness metrics."
       >
         <div className="readiness-score-header-actions">

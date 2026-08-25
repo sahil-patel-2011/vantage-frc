@@ -191,7 +191,7 @@ describe("scout-accuracy pure helpers", () => {
         allianceColor: "red",
         scoutValue: 55,
         officialValue: 56,
-        absErrorPct: 56 === 0 ? 0 : Math.abs(55 - 56) / 56,
+        absErrorPct: Math.abs(55 - 56) / 56,
         accurate: true,
         verifiable: true,
       },

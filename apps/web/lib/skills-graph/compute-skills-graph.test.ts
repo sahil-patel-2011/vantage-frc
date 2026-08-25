@@ -93,6 +93,57 @@ describe("computeSkillsGraphView", () => {
     expect(view.requests).toHaveLength(1);
     expect(view.requests[0]!.candidates[0]!.userId).toBe(MENTOR);
     expect(view.requests[0]!.candidates[0]!.taskEvidenceCount).toBe(6);
+    // No learning_predictions rows -> honest empty calibration, never a zeroed table.
+    expect(view.calibration).toEqual([]);
+  });
+
+  it("surfaces Call Your Shot calibration as evidence with proposals only above threshold", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships m") && sql.includes("JOIN organizations")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254, role: "owner" }] };
+      }
+      if (sql.includes("FROM learning_predictions")) {
+        return {
+          rows: [
+            {
+              userId: USER,
+              userName: "Nova Novice",
+              surface: "gearbox",
+              scored: "7",
+              spotOn: "6",
+              close: "1",
+              off: "0",
+              skipped: "1",
+              lastCallAt: "2026-03-01T00:00:00.000Z",
+            },
+            {
+              userId: MENTOR,
+              userName: "Mira Mentor",
+              surface: "power_budget",
+              scored: "2",
+              spotOn: "2",
+              close: "0",
+              off: "0",
+              skipped: "0",
+              lastCallAt: "2026-03-02T00:00:00.000Z",
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    });
+
+    const view = await computeSkillsGraphView(client, { userId: USER, requestedOrg: ORG });
+
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.viewerCanCountersign).toBe(true);
+    expect(view.calibration).toHaveLength(2);
+    const strong = view.calibration.find((s) => s.userId === USER)!;
+    expect(strong.proposal?.skillCategory).toBe("mechanical_design");
+    const thin = view.calibration.find((s) => s.userId === MENTOR)!;
+    expect(thin.proposal).toBeNull();
+    expect(thin.note).toContain("Not enough graded calls yet");
   });
 });
 

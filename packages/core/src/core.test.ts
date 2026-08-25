@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   createInviteToken,
-  deterministicLocalOtp,
   hashInviteToken,
   inviteAcceptUrl,
   isInviteTokenShape,
-  LocalMailboxProvider,
-  localMailbox,
-  OTP_POLICY,
   requireOrg,
   evaluateOrgAuthAccess,
   validateOrgAuthPolicy,
@@ -176,6 +172,8 @@ describe("waitlist-only auth access policy", () => {
     const { isDatabaseConfigured } = await import("./access-policy");
     expect(isDatabaseConfigured()).toBe(true);
     delete process.env.POSTGRES_URL;
+    expect(isDatabaseConfigured()).toBe(false);
+    process.env.DATABASE_AUTH_URL = "[SENSITIVE]";
     expect(isDatabaseConfigured()).toBe(false);
     process.env.DATABASE_AUTH_URL = previous.auth;
     process.env.DATABASE_URL = previous.db;

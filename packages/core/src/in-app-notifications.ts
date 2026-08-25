@@ -17,6 +17,7 @@ export type InAppNotificationPrefs = {
   calendarEvents: boolean;
   sponsorReminders: boolean;
   teamChat: boolean;
+  performanceDigest: boolean;
 };
 
 export const DEFAULT_IN_APP_NOTIFICATION_PREFS: InAppNotificationPrefs = {
@@ -30,6 +31,7 @@ export const DEFAULT_IN_APP_NOTIFICATION_PREFS: InAppNotificationPrefs = {
   calendarEvents: true,
   sponsorReminders: true,
   teamChat: true,
+  performanceDigest: true,
 };
 
 /** Preference key that gates a notification `type` (null = always allow). */
@@ -51,6 +53,11 @@ const TYPE_PREF: Record<string, InAppPrefKey | null> = {
   sponsor_followup_overdue: "sponsorReminders",
   team_chat: "teamChat",
   message_mention: "teamChat",
+  performance_digest: "performanceDigest",
+  // Membership-critical access-request lifecycle: never gated by prefs.
+  team_access_request: null,
+  team_access_approved: null,
+  team_access_declined: null,
 };
 
 export function prefKeyForNotificationType(type: string): InAppPrefKey | null {

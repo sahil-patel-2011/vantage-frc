@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { vendorCategoryLabel } from "../../lib/vendors";
 import { VENDOR_CATEGORIES, type VendorsView } from "../../lib/vendors/compute-vendors";
 import {
@@ -22,6 +23,29 @@ import "./vendors.css";
 
 type LiveView = Extract<VendorsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+/**
+ * CSV shape of the vendor directory — the sheet a purchasing lead works from.
+ * `accountNumber` is deliberately left out: it is an account credential, and an export
+ * that lands in a shared Drive should not carry it.
+ */
+const VENDOR_CSV_COLUMNS: CsvColumn<Vendor>[] = [
+  { key: "name", header: "Vendor" },
+  { key: "category", header: "Category", value: (vendor) => vendorCategoryLabel(vendor.category) },
+  { key: "preferred", header: "Preferred", hint: "true / false", value: (vendor) => vendor.preferred },
+  { key: "rating", header: "Rating", hint: "1–5, blank when unrated", value: (vendor) => vendor.rating },
+  {
+    key: "leadTimeDays",
+    header: "Lead time days",
+    hint: "Typical order-to-delivery, blank when unknown",
+    value: (vendor) => vendor.leadTimeDays,
+  },
+  { key: "website", header: "Website", value: (vendor) => vendor.website },
+  { key: "contactName", header: "Contact", value: (vendor) => vendor.contactName },
+  { key: "contactEmail", header: "Email", value: (vendor) => vendor.contactEmail },
+  { key: "contactPhone", header: "Phone", value: (vendor) => vendor.contactPhone },
+  { key: "notes", header: "Notes", value: (vendor) => vendor.notes },
+];
 
 function VendorsRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = vendorsRelatedLinks(orgId, {
@@ -450,6 +474,17 @@ function VendorList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
   }
   return (
     <section id="vendors-directory" style={{ display: "grid", gap: 12 }} aria-label="Vendor directory">
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <ExportButton
+          rows={view.vendors}
+          columns={VENDOR_CSV_COLUMNS}
+          feature="Vendors"
+          orgLabel={view.teamNumber != null ? `team-${view.teamNumber}` : null}
+          orgId={view.orgId}
+          size="sm"
+          provenance="Your team's vendor directory. Account numbers are intentionally left out of the file."
+        />
+      </div>
       {view.vendors.map((vendor) => (
         <VendorCard key={vendor.id} vendor={vendor} busy={busy} mutate={mutate} />
       ))}

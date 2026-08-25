@@ -15,7 +15,7 @@ import {
   type OpponentWatchlistShellKind,
 } from "../../lib/opponent-watchlist/opponent-watchlist-related";
 import type { WatchlistAlertType } from "../../lib/opponent-watchlist/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./opponent-watchlist.css";
 
@@ -96,7 +96,7 @@ function WatchlistShell({
 }) {
   const actions = opponentWatchlistNextActions({ orgId, shell });
   const copy = opponentWatchlistShellCopy(shell);
-  const competitionHref = hubHref("/competition", "opponent-watchlist", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "opponent-watchlist", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -215,7 +215,7 @@ export default function OpponentWatchlistClient() {
   const relatedLinks = opponentWatchlistRelatedLinks(orgId, {
     include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "opponent-watchlist", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "opponent-watchlist", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);

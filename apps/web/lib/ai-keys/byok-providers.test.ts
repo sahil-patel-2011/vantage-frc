@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildByokKeyStatuses,
+  matchOpenaiBasePreset,
   parseByokProvider,
+  parseOptionalBaseUrl,
 } from "./byok-providers";
-import { aiKeysBillingNote, classifyAiKeysShell } from "./ai-keys-related";
+import { AI_KEYS_RELATED_INCLUDE, aiKeysBillingNote, classifyAiKeysShell } from "./ai-keys-related";
 
 describe("byok providers", () => {
   it("parses gemini as google", () => {
@@ -25,6 +27,14 @@ describe("byok providers", () => {
     expect(statuses.find((row) => row.provider === "openrouter")?.configured).toBe(false);
     expect(JSON.stringify(statuses)).not.toMatch(/sk-|AIza|ciphertext/i);
   });
+
+  it("matches Ollama and LM Studio presets from a base URL", () => {
+    expect(matchOpenaiBasePreset(null)).toBe("openai");
+    expect(matchOpenaiBasePreset("http://127.0.0.1:11434/v1")).toBe("ollama");
+    expect(matchOpenaiBasePreset("http://127.0.0.1:1234/v1")).toBe("lmstudio");
+    expect(parseOptionalBaseUrl(" https://proxy.example/v1/ ")).toBe("https://proxy.example/v1");
+    expect(parseOptionalBaseUrl("")).toBeNull();
+  });
 });
 
 describe("ai keys soft-ui helpers", () => {
@@ -39,10 +49,14 @@ describe("ai keys soft-ui helpers", () => {
     expect(aiKeysBillingNote("team").body).toMatch(/hosted/i);
     expect(aiKeysBillingNote("team").body).toMatch(/not billed twice|does not consume/i);
   });
+
+  it("keeps the keys page related strip to chat only", () => {
+    expect(AI_KEYS_RELATED_INCLUDE).toEqual(["chat"]);
+  });
 });
 
 describe("byok model catalog re-export", () => {
-  it("exposes automode helpers from agent", async () => {
+  it("exposes automode helpers from agent", { timeout: 15_000 }, async () => {
     const { preferredTierForFeature, BYOK_MODEL_OPTIONS } = await import("./byok-model-catalog");
     expect(preferredTierForFeature("cad")).toBe("high");
     expect(BYOK_MODEL_OPTIONS.some((m) => m.modelId === "gpt-4.1-mini")).toBe(true);

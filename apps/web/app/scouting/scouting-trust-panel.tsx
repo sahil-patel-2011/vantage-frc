@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Panel } from "../../components/ui";
+import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 
 type InfluenceRow = {
   entryId: string;
@@ -338,6 +339,8 @@ export default function ScoutingTrustPanel({
           </Panel>
         </aside>
       </section>
+
+      <ScoutingReconciliationPanel orgId={orgId} eventKey={view.eventKey} />
 
       <section className="scout-trust-grid lower">
         <Panel>

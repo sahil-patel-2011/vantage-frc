@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       scope?: "personal" | "org";
       layout?: unknown;
       activate?: boolean;
-      action?: "reset" | "save" | "activate" | "rename" | "create";
+      action?: "reset" | "save" | "activate" | "rename" | "create" | "duplicate";
     };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
@@ -248,6 +248,70 @@ export async function POST(request: Request) {
         );
         if (!updated.rowCount) throw new Error("Board not found or not editable");
         return { id: updated.rows[0]!.id, name: updated.rows[0]!.name, scope: updated.rows[0]!.scope, renamed: true };
+      }
+
+      if (action === "duplicate") {
+        // Copy a board the caller can already see into a new *personal* board.
+        // Duplicating a team board into a personal one is the common ask ("start
+        // from the team layout, then make it mine") and needs no admin rights.
+        const id = String(body.id ?? "");
+        if (!id) throw new Error("id is required");
+        const source = await client.query<BoardRow>(
+          `SELECT id, name, scope, is_active AS "isActive", layout, updated_at::text AS "updatedAt",
+                  owner_user_id AS "ownerUserId"
+           FROM dashboards
+           WHERE id = $1 AND org_id = $2
+             AND (
+               (scope = 'personal' AND owner_user_id = $3)
+               OR scope = 'org'
+             )
+           LIMIT 1`,
+          [id, orgId, session.user.id],
+        );
+        const board = source.rows[0];
+        if (!board) throw new Error("Board not found");
+
+        const targetScope = scope === "org" && canWriteOrgDashboard(role) ? "org" : "personal";
+        const existingCount = await countBoards(client, orgId, session.user.id, targetScope);
+        if (existingCount >= MAX_BOARDS_PER_SCOPE) {
+          throw new Error(
+            `At most ${MAX_BOARDS_PER_SCOPE} ${targetScope === "org" ? "team" : "personal"} boards`,
+          );
+        }
+
+        const validated = validateDashboardLayout(
+          board.layout?.length ? board.layout : DEFAULT_DASHBOARD_LAYOUT,
+          role,
+        );
+        if (!validated.ok) throw new Error(validated.error);
+        const name =
+          String(body.name ?? `${board.name} copy`).trim().slice(0, 80) || `${board.name} copy`;
+        const activate = body.activate !== false;
+        if (activate) await deactivateForSwitch(client, orgId, session.user.id, targetScope);
+
+        const row = await client.query<{ id: string }>(
+          `INSERT INTO dashboards(id, org_id, owner_user_id, name, scope, is_active, layout, created_by)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::jsonb, $7)
+           RETURNING id`,
+          [
+            orgId,
+            targetScope === "personal" ? session.user.id : null,
+            name,
+            targetScope,
+            activate,
+            JSON.stringify(validated.layout),
+            session.user.id,
+          ],
+        );
+
+        return {
+          id: row.rows[0]!.id,
+          layout: filterLayoutForRole(validated.layout, role),
+          scope: targetScope,
+          name,
+          isActive: activate,
+          duplicated: true,
+        };
       }
 
       if (action === "activate") {
@@ -398,7 +462,9 @@ export async function POST(request: Request) {
       };
     });
 
-    return Response.json(result, { status: action === "rename" || action === "activate" ? 200 : 201 });
+    return Response.json(result, {
+      status: action === "rename" || action === "activate" ? 200 : 201,
+    });
   } catch (error) {
     return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
   }

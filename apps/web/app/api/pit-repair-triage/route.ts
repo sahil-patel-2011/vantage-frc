@@ -34,6 +34,25 @@ function nonNegativeInt(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Parts a resolved repair consumed: [{ itemId, quantity }]. Invalid rows are rejected, not guessed. */
+function parseUsedParts(value: unknown): Array<{ itemId: string; quantity: number }> | undefined {
+  if (value == null) return undefined;
+  if (!Array.isArray(value)) throw new Error("usedParts must be an array");
+  if (value.length > 20) throw new Error("usedParts is limited to 20 items");
+  return value.map((entry) => {
+    const row = (entry ?? {}) as Record<string, unknown>;
+    const itemId = typeof row.itemId === "string" ? row.itemId.trim() : "";
+    const quantity = Number(row.quantity);
+    if (!UUID_RE.test(itemId)) throw new Error("usedParts itemId is invalid");
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10_000) {
+      throw new Error("usedParts quantity must be between 0 and 10000");
+    }
+    return { itemId, quantity: Math.round(quantity * 100) / 100 };
+  });
+}
+
 function seasonFrom(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 2000 && n < 3000 ? Math.round(n) : currentSeasonYear();
@@ -120,7 +139,13 @@ export async function POST(request: Request) {
           if (!reportId) throw new Error("reportId is required");
           const status = oneOf<TriageStatus>(TRIAGE_STATUSES, body.status);
           if (!status) throw new Error("status must be one of open, staged, resolved");
-          await updateReportStatus(client, { orgId, reportId, status });
+          await updateReportStatus(client, {
+            orgId,
+            userId,
+            reportId,
+            status,
+            usedParts: parseUsedParts(body.usedParts),
+          });
           break;
         }
         case "delete-report": {

@@ -61,7 +61,17 @@ describe("computeSponsorWallView", () => {
         };
       }
       if (sql.includes("FROM sponsor_wall_settings")) {
-        return { rows: [{ headline: "Our 2026 Sponsors", subtitle: "Thank you!", theme: "team", published: true }] };
+        return {
+          rows: [
+            {
+              headline: "Our 2026 Sponsors",
+              subtitle: "Thank you!",
+              theme: "team",
+              published: true,
+              publicId: "33333333-3333-4333-8333-333333333333",
+            },
+          ],
+        };
       }
       return { rows: [] };
     });
@@ -74,6 +84,8 @@ describe("computeSponsorWallView", () => {
     expect(view.teamNumber).toBe(254);
     expect(view.settings.headline).toBe("Our 2026 Sponsors");
     expect(view.settings.theme).toBe("team");
+    // The saved wall exposes its public share token for /sponsor-wall/{publicId}.
+    expect(view.publicId).toBe("33333333-3333-4333-8333-333333333333");
     // Title tier should be sorted ahead of silver regardless of insertion order.
     expect(view.entries[0]?.sponsorName).toBe("Acme Robotics");
     expect(view.entries[1]?.sponsorName).toBe("Bolt Supply");
@@ -98,6 +110,8 @@ describe("computeSponsorWallView", () => {
     if (view.status !== "live") throw new Error("expected live view");
     expect(view.settings.published).toBe(false);
     expect(view.settings.headline).toBe("Thank You to Our Sponsors");
+    // No settings row yet means no public share token — never a fabricated link.
+    expect(view.publicId).toBeNull();
     expect(view.summary.totalEntries).toBe(0);
   });
 });

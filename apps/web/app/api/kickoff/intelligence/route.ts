@@ -284,6 +284,13 @@ async function createCadBriefFor(
   return { cadJobId: created.jobId, aiRunId: created.aiRunId, request: seed.request };
 }
 
+/**
+ * Kickoff intelligence runs the metered orchestrator against a real upstream
+ * model: give the function a 60s budget so the adapter's own 50s timeout fires
+ * first and returns a classified error instead of the platform killing it.
+ */
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();

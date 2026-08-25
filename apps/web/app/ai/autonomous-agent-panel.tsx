@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
+import { WhyPanel } from "../../components/why-panel";
+import { narrateAgentRun, narrationCoverage } from "../../lib/agent-narration/narration";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
-import { AIAttribution } from "../../components/ui";
+import { AIAttribution, ModelProvenance } from "../../components/ui";
 import { resolveCutoffErrorCode, UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import "./autonomous-agent.css";
@@ -191,6 +193,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
 
   const shell = classifyShell({ loading, status: httpStatus, error, code: errorCode });
   const empty = !loading && runs.length === 0 && !selectedRun;
+  /** Show-your-work narration derived from the persisted steps — never from invented reasoning. */
+  const narrations = useMemo(() => narrateAgentRun(steps), [steps]);
+  const coverage = useMemo(() => narrationCoverage(narrations), [narrations]);
 
   return (
     <div className="aa-page">
@@ -240,8 +245,8 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             {error ??
               "Add a BYOK / managed / sponsored AI key under AI API keys, or configure BRAVE_SEARCH_API_KEY for web search."}
           </p>
-          <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
-            Open AI API keys
+            <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
+            Open AI keys
           </a>
         </section>
       ) : null}
@@ -315,13 +320,13 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             <>
               <div className="aa-status-row">
                 <span className={`aa-status aa-status--${selectedRun.status}`}>{selectedRun.status}</span>
-                {selectedRun.provider ? (
-                  <span className="aa-muted">
-                    {selectedRun.provider}
-                    {selectedRun.model ? ` / ${selectedRun.model}` : ""}
-                  </span>
-                ) : null}
               </div>
+              {/* Which endpoint actually ran this goal. Sits above the step log so a
+                  small-model notice is visible even when the run errored before an
+                  answer. The run row is persisted, so this is never a guess. */}
+              <ModelProvenance
+                meta={{ provider: selectedRun.provider, modelId: selectedRun.model }}
+              />
               {selectedRun.errorMessage ? (
                 <p className="aa-error" role="status">
                   {selectedRun.errorClass ? `${selectedRun.errorClass}: ` : ""}
@@ -354,6 +359,14 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   </li>
                 ))}
               </ol>
+              {narrations.length ? (
+                <WhyPanel
+                  narrations={narrations}
+                  orgId={orgId}
+                  title="Why the agent did this"
+                  subtitle={`${coverage.total} step${coverage.total === 1 ? "" : "s"} · ${coverage.explained} with a reason the run actually recorded`}
+                />
+              ) : null}
               {selectedRun.finalAnswer ? (
                 <article className="aa-answer">
                   <h3>Final answer</h3>

@@ -1,10 +1,10 @@
 /* Kickoff & Game Analysis — Soft-UI Build hub. .kick-* prefixed, theme-aware. */
 .kick-page{max-width:1100px;margin:0 auto}
-.kick-page input,.kick-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit}
+.kick-page input,.kick-page select{min-height:44px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit}
 .kick-page textarea{min-height:52px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit;resize:vertical}
 .kick-year{display:flex;align-items:center;gap:8px;color:var(--app-muted);font-size:12px;font-weight:700}
 .kick-empty{display:grid;gap:12px;justify-items:start;padding:26px}
-.kick-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.kick-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .kick-link.danger{color:var(--app-critical)}
 
 .kick-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
@@ -17,7 +17,7 @@
 .kick-next-actions li div{display:grid;gap:2px;min-width:0}
 .kick-next-actions li strong{font-size:14px}
 .kick-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.kick-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.kick-next-actions li .app-button{flex:none;min-height:44px;padding:0 12px;font-size:12px}
 
 .kick-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .kick-tile{display:grid;gap:4px;align-content:start;padding:16px}
@@ -28,7 +28,7 @@
 .kick-section h2{margin:0;font-size:17px}
 .kick-section>p{margin:-6px 0 0;font-size:12px}
 .kick-table{display:grid;gap:6px}
-.kick-row{display:grid;grid-template-columns:minmax(0,1fr) 92px 84px 84px 64px 28px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
+.kick-row{display:grid;grid-template-columns:minmax(0,1fr) 92px 84px 84px 64px 44px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
 .kick-row-head{padding:0 10px;background:none;border:0;color:var(--app-muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
 .kick-label{display:grid;min-width:0;font-size:13px;font-weight:600}
 .kick-label small{font-weight:400;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -36,15 +36,15 @@
 .kick-phase-auto{color:var(--app-accent)}
 .kick-phase-endgame{color:var(--app-warning)}
 .kick-rate{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
-.kick-num{width:100%;min-height:34px;padding:6px 8px;font-variant-numeric:tabular-nums}
+.kick-num{width:100%;min-height:44px;padding:6px 8px;font-variant-numeric:tabular-nums}
 .kick-num-add{width:96px}
 .kick-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.kick-priority{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(120px,auto) minmax(150px,auto) 28px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
+.kick-priority{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(120px,auto) minmax(150px,auto) 44px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
 .kick-priority-text{display:grid;min-width:0;font-size:13px}
 .kick-priority-text small{font-size:11px}
-.kick-priority select{min-height:34px;padding:6px 8px;font-size:12px}
+.kick-priority select{min-height:44px;padding:6px 8px;font-size:12px}
 .kick-weight{display:flex;gap:4px}
-.kick-weight-btn{width:26px;height:26px;padding:0;color:var(--app-muted);background:var(--app-soft);border:1px solid var(--app-line);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
+.kick-weight-btn{min-width:44px;min-height:44px;padding:0;color:var(--app-muted);background:var(--app-soft);border:1px solid var(--app-line);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
 .kick-weight-btn.active{color:var(--app-accent-ink);background:var(--app-accent);border-color:var(--app-accent)}
 .kick-rule{display:grid;gap:8px;padding:10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
 .kick-rule-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
@@ -59,7 +59,7 @@
 .kick-intel-head h2{margin:0 0 6px}
 .kick-intel-head p{margin:0}
 .kick-pipeline-links{display:flex;gap:8px;flex-wrap:wrap}
-.kick-pipeline-links .app-button{min-height:36px;padding:0 12px;font-size:12px}
+.kick-pipeline-links .app-button{min-height:44px;padding:0 12px;font-size:12px}
 .kick-intel-empty{display:grid;gap:6px;padding:14px;background:var(--app-bg);border:1px dashed var(--app-line);border-radius:10px}
 .kick-intel-form{display:grid;gap:12px}
 .kick-intel-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--app-muted)}
@@ -84,17 +84,17 @@
 .kick-setup-steps li div{display:grid;gap:2px;min-width:0}
 .kick-setup-steps strong{font-size:13px}
 .kick-setup-steps span{color:var(--app-muted);font-size:12px}
-.kick-setup-steps a{flex:none;font-size:12px;font-weight:700;color:var(--app-accent)}
+.kick-setup-steps a{display:inline-flex;align-items:center;flex:none;min-height:44px;font-size:12px;font-weight:700;color:var(--app-accent)}
 
 @media(max-width:900px){
 .kick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kick-intel-grid,.kick-intel-entry{grid-template-columns:1fr}
 }
 @media(max-width:760px){
-.kick-row{grid-template-columns:repeat(3,minmax(0,1fr)) 28px}
+.kick-row{grid-template-columns:repeat(3,minmax(0,1fr)) 44px}
 .kick-row .kick-label{grid-column:1/-1}
 .kick-row-head{display:none}
-.kick-priority{grid-template-columns:minmax(0,1fr) 28px}
+.kick-priority{grid-template-columns:minmax(0,1fr) 44px}
 .kick-priority .kick-priority-text{grid-column:1}
 .kick-priority .kick-weight{grid-column:1/-1}
 .kick-priority select{grid-column:1/-1}

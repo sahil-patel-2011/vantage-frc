@@ -1,6 +1,6 @@
-/* Match Schedule Board — co-located styles. All selectors are .sched- prefixed
-   and theme-aware. Alliance red #d43a3a / blue #2f6fdd appear ONLY as small
-   chips and markers; all general text stays on theme variables. */
+/* Match schedule board — co-located styles. All selectors are .sched- prefixed
+   and theme-aware. Alliance red/blue ride the shared --app-critical / --app-accent
+   tokens so chips and markers keep their contrast in dark mode. */
 .sched-page{display:grid;gap:16px}
 .sched-header-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px}
 .sched-related{display:flex;flex-wrap:wrap;gap:8px}
@@ -15,7 +15,7 @@
 .sched-next-actions li div{display:grid;gap:2px;min-width:0}
 .sched-next-actions li strong{font-size:14px}
 .sched-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.sched-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px}
+.sched-next-actions li .app-button{flex:none;min-height:44px;padding:0 14px}
 .sched-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .sched-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;background:var(--app-surface);border:1px solid var(--app-accent);border-radius:var(--app-radius);box-shadow:0 0 0 1px var(--app-accent)}
 .sched-hero-main{display:grid;gap:2px}
@@ -26,8 +26,8 @@
 .sched-hero-teams{color:var(--app-ink);font-size:13px;font-weight:600}
 .sched-hero-teams em{color:var(--app-muted);font-style:normal;font-weight:500}
 .sched-alliance-chip{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:transparent}
-.sched-alliance-chip.red{color:#d43a3a;border:1px solid #d43a3a}
-.sched-alliance-chip.blue{color:#2f6fdd;border:1px solid #2f6fdd}
+.sched-alliance-chip.red{color:var(--app-critical);border:1px solid var(--app-critical)}
+.sched-alliance-chip.blue{color:var(--app-accent);border:1px solid var(--app-accent)}
 .sched-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .sched-toggle{display:inline-flex;padding:3px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px}
 .sched-toggle button{padding:6px 14px;color:var(--app-muted);background:transparent;border:0;border-radius:999px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
@@ -48,13 +48,13 @@
 .sched-alliances{display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap;min-width:0}
 .sched-alliance{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
 .sched-dot{flex:none;width:8px;height:8px;border-radius:50%}
-.sched-dot.red{background:#d43a3a}
-.sched-dot.blue{background:#2f6fdd}
+.sched-dot.red{background:var(--app-critical)}
+.sched-dot.blue{background:var(--app-accent)}
 .sched-team{color:var(--app-ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .sched-team.us{color:var(--app-accent);text-decoration:underline;text-underline-offset:3px}
 .sched-us{padding:1px 6px;border-radius:999px;font-size:9px;font-weight:800;font-style:normal;letter-spacing:.06em}
-.sched-us.red{color:#d43a3a;border:1px solid #d43a3a}
-.sched-us.blue{color:#2f6fdd;border:1px solid #2f6fdd}
+.sched-us.red{color:var(--app-critical);border:1px solid var(--app-critical)}
+.sched-us.blue{color:var(--app-accent);border:1px solid var(--app-accent)}
 .sched-vs{color:var(--app-muted);font-size:11px;text-transform:uppercase}
 .sched-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .sched-score{display:inline-flex;align-items:baseline;gap:4px;color:var(--app-ink);font-size:14px;font-variant-numeric:tabular-nums}

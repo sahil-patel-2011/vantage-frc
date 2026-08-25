@@ -56,7 +56,13 @@ describe("postgres host detection", () => {
       expect(() => assertSafePostgresUrl("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toThrow(
         UnsafePostgresUrlError,
       );
+      expect(() => assertSafePostgresUrl("sb_secret_0123456789abcdef0123456789abcdef")).toThrow(
+        UnsafePostgresUrlError,
+      );
+      expect(() => assertSafePostgresUrl("sb_publishable_0123456789abcdef")).toThrow(UnsafePostgresUrlError);
       expect(() => assertSafePostgresUrl("https://abcdefghijkl.supabase.co/rest/v1")).toThrow(UnsafePostgresUrlError);
+      process.env.DATABASE_URL = "[SENSITIVE]";
+      expect(firstConfiguredEnv("DATABASE_URL", "POSTGRES_URL")).toContain("pooler.supabase.com");
     } finally {
       if (previous.database == null) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previous.database;

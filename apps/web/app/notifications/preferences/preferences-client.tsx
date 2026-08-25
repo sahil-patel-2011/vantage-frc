@@ -27,6 +27,7 @@ type EmailPrefs = {
   coachTodos: boolean;
   coachPracticeReminders: boolean;
   sponsorReminders: boolean;
+  performanceDigest: boolean;
 };
 
 type Delivery = { status: "available" | "setup_required"; detail: string };
@@ -105,6 +106,12 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
     title: "Sponsor reminders",
     detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
   },
+  {
+    key: "performanceDigest",
+    title: "Daily performance digest",
+    detail:
+      "One email on days your team has real data — match results, tomorrow's schedule, and grounded pointers. On by default; sends nothing on quiet days.",
+  },
 ];
 
 const DEFAULT_IN_APP: InAppPrefs = {
@@ -125,6 +132,7 @@ const DEFAULT_EMAIL: EmailPrefs = {
   coachTodos: false,
   coachPracticeReminders: false,
   sponsorReminders: false,
+  performanceDigest: true,
 };
 
 function PrefsRelated() {
@@ -183,14 +191,16 @@ export default function NotificationPreferencesClient() {
     setMessage("");
     setMessageOk(false);
     try {
-      const response = await fetch("/api/notifications/preferences", {
+      // `/api/account` is the single writer for notification_prefs — this page only reads
+      // from `/api/notifications/preferences`. It returns no delivery status, so the badge
+      // stays as loaded (it reflects deployment email config, not the saved prefs).
+      const response = await fetch("/api/account", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ notificationPrefs: inAppPrefs, emailPrefs }),
       });
       const data = (await response.json()) as {
         error?: string;
-        delivery?: Delivery;
         notificationPrefs?: InAppPrefs;
         emailPrefs?: EmailPrefs;
       };
@@ -200,7 +210,6 @@ export default function NotificationPreferencesClient() {
       }
       if (data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
       if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
-      if (data.delivery) setDelivery(data.delivery);
       setMessage("Preferences saved. Opted-out categories stay out of your inbox and email.");
       setMessageOk(true);
     } finally {
@@ -284,7 +293,8 @@ export default function NotificationPreferencesClient() {
           <Panel className="account-panel">
             <h2>Email opt-ins</h2>
             <p className="app-muted">
-              Every email category starts off. Unsubscribe links are included in every opt-in message.
+              Most email categories start off; product updates and the daily performance digest start on.
+              Unsubscribe links are included in every message.
             </p>
             <ul className="account-prefs">
               {EMAIL_PREF_LABELS.map((item) => (

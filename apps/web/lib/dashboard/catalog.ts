@@ -74,10 +74,10 @@ export type DashboardGrid = {
 
 /** Phone 4-col, tablet 8-col, laptop 12-col, pit TV larger tiles. */
 export function dashboardGridForWidth(width: number): DashboardGrid {
-  if (width < 640) return { cols: 4, rowHeight: 78, margin: [10, 10], label: "phone" };
-  if (width < 1024) return { cols: 8, rowHeight: 64, margin: [12, 12], label: "tablet" };
-  if (width >= 1600) return { cols: 12, rowHeight: 84, margin: [16, 16], label: "tv" };
-  return { cols: 12, rowHeight: 56, margin: [12, 12], label: "laptop" };
+  if (width < 640) return { cols: 4, rowHeight: 86, margin: [10, 10], label: "phone" };
+  if (width < 1024) return { cols: 8, rowHeight: 72, margin: [12, 12], label: "tablet" };
+  if (width >= 1600) return { cols: 12, rowHeight: 92, margin: [16, 16], label: "tv" };
+  return { cols: 12, rowHeight: 72, margin: [12, 12], label: "laptop" };
 }
 
 export function scaleLayoutToCols(
@@ -161,6 +161,35 @@ export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardW
   return placed;
 }
 
+const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
+
+/**
+ * View-mode Home: live widgets plus next-match. Empty/setup cards stay off the
+ * board until Edit Home — never a wall of DEMO-looking placeholders.
+ */
+export function homeViewLayout(
+  layout: DashboardWidgetLayout[],
+  input: {
+    editing: boolean;
+    shell: "loading" | "no_org" | "setup" | "tba" | "ready";
+    widgets?: Record<string, { status?: string } | undefined>;
+  },
+): DashboardWidgetLayout[] {
+  if (input.editing) return layout.map((item) => ({ ...item }));
+  const ready = input.shell === "ready";
+  const widgets = input.widgets ?? {};
+  const visible = layout.filter((item) => {
+    if (SETUP_ONLY_WIDGETS.has(item.type)) return !ready;
+    if (item.type === "next_match") return true;
+    return widgets[item.type]?.status === "live";
+  });
+  return packDashboardLayout(
+    visible.map((item) =>
+      item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,
+    ),
+  );
+}
+
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "onboarding_checklist",
@@ -173,9 +202,9 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "next_match",
-    label: "Next match / bumper",
+    label: "Next match",
     description: "Countdown, bumper color, and alliances for your next match",
-    defaultW: 6,
+    defaultW: 12,
     defaultH: 4,
     minW: 3,
     minH: 3,
@@ -301,12 +330,12 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
 ];
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
-  { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
-  { i: "w-next_match", type: "next_match", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-competition_snapshot", type: "competition_snapshot", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
-  { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-quick_actions", type: "quick_actions", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 4, minW: 3, minH: 3 },
+  { i: "w-competition_snapshot", type: "competition_snapshot", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-robot_readiness", type: "robot_readiness", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-alerts", type: "alerts", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-recent_result", type: "recent_result", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-scouting_coverage", type: "scouting_coverage", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
 export type DashboardPrimaryFocus = "competition" | "build" | "business" | "leadership";
@@ -314,27 +343,24 @@ export type DashboardPrimaryFocus = "competition" | "build" | "business" | "lead
 const FOCUS_DASHBOARD_LAYOUTS: Record<DashboardPrimaryFocus, DashboardWidgetLayout[]> = {
   competition: DEFAULT_DASHBOARD_LAYOUT,
   build: [
-    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
-    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-    { i: "w-subteam_upcoming", type: "subteam_upcoming", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
-    { i: "w-quick_actions", type: "quick_actions", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-    { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-    { i: "w-sync_status", type: "sync_status", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 3 },
+    { i: "w-subteam_upcoming", type: "subteam_upcoming", x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: "w-alerts", type: "alerts", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-sync_status", type: "sync_status", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-quick_actions", type: "quick_actions", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
   ],
   business: [
-    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
-    { i: "w-quick_actions", type: "quick_actions", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-    { i: "w-notifications", type: "notifications", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
-    { i: "w-competition_snapshot", type: "competition_snapshot", x: 0, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
-    { i: "w-alerts", type: "alerts", x: 6, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-notifications", type: "notifications", x: 0, y: 0, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-alerts", type: "alerts", x: 6, y: 0, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-competition_snapshot", type: "competition_snapshot", x: 0, y: 3, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-quick_actions", type: "quick_actions", x: 6, y: 3, w: 6, h: 3, minW: 3, minH: 2 },
   ],
   leadership: [
-    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
-    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-    { i: "w-alerts", type: "alerts", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
-    { i: "w-notifications", type: "notifications", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-    { i: "w-quick_actions", type: "quick_actions", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
-    { i: "w-ai_usage", type: "ai_usage", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 3 },
+    { i: "w-alerts", type: "alerts", x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: "w-notifications", type: "notifications", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-quick_actions", type: "quick_actions", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-ai_usage", type: "ai_usage", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
   ],
 };
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Signals = {
   members: number;
@@ -121,6 +122,8 @@ function classifyShell(input: { loading: boolean; error: string; hasData: boolea
 export default function AiHubClient({ orgId }: { orgId: string }) {
   const [data, setData] = useState<Data | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -130,9 +133,12 @@ export default function AiHubClient({ orgId }: { orgId: string }) {
       const response = await fetch(`/api/team/getting-started?orgId=${encodeURIComponent(orgId)}`);
       const body = await response.json();
       if (!active) return;
-      if (!response.ok) setMessage(body.error ?? "Unable to load AI hub");
-      else {
+      if (!response.ok) {
+        setErrorStatus(response.status);
+        setMessage(body.error ?? "Unable to load AI hub");
+      } else {
         setMessage("");
+        setErrorStatus(null);
         setData(body);
       }
       setLoading(false);
@@ -177,16 +183,40 @@ export default function AiHubClient({ orgId }: { orgId: string }) {
         </section>
       ) : null}
 
-      {shell === "error" ? (
-        <section className="app-card soft-panel product-hub-setup" role="status">
-          <span className="app-badge setup">Unavailable</span>
-          <h2>Could not load the AI launcher</h2>
-          <p className="app-muted">{message}</p>
-          <a className="app-button secondary" href={aiHubHref}>
-            Open AI hub
-          </a>
-        </section>
-      ) : null}
+      {shell === "error"
+        ? (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message,
+              },
+            );
+            return (
+              <section className="app-card soft-panel product-hub-setup" role="status">
+                <span className="app-badge setup">Unavailable</span>
+                <h2>{copy.title}</h2>
+                <p className="app-muted">{copy.description}</p>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : (
+                  <a className="app-button secondary" href={aiHubHref}>
+                    Open AI hub
+                  </a>
+                )}
+              </section>
+            );
+          })()
+        : null}
 
       {shell === "ready" && data ? (
         <section className="ai-hub-launcher-grid" aria-label="AI tools">

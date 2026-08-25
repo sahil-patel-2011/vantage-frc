@@ -51,11 +51,18 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/team/ai-policy", destination: "/ai?tab=governance" },
   { source: "/writer", destination: "/ai?tab=writer" },
   { source: "/team/ai-memory", destination: "/ai?tab=memory" },
+  // The AI hub launcher predates the /ai hub and is now a second door to the
+  // same place, with no menu entry of its own.
+  { source: "/team/ai-hub", destination: "/ai?tab=chat" },
   { source: "/travel", destination: "/logistics" },
   { source: "/travel/:path*", destination: "/logistics" },
   { source: "/help", destination: "/docs" },
   { source: "/help/:slug", destination: "/docs/:slug" },
   { source: "/pit-tv", destination: "/display/pit" },
+  // Match Copilot's pre-match half was consolidated into the one Pre-Match
+  // Briefing; inbound query (?orgId, ?matchKey/?match) is preserved by Next.
+  { source: "/match-copilot", destination: "/briefing" },
+  { source: "/match-copilot/:path*", destination: "/briefing" },
 ];
 
 /** Next.js overwrites the request query when the destination already has one. */

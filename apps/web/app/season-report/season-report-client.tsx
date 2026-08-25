@@ -3,8 +3,15 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { hubHref } from "../../lib/nav/hubs";
+import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  AI_EXPAND_IDLE,
+  expandedDisplay,
+  expandFailureState,
+  expandSuccessState,
+  type AiExpandState,
+} from "../../lib/ai-expand";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   SEASON_REPORT_CATEGORIES,
@@ -105,7 +112,7 @@ function SeasonReportShell({
     snapshotCount,
   });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const aiHref = hubHref("/ai", "season-report", orgId);
+  const aiHref = hubWorkbenchHref("ai", "season-report", orgId);
 
   return (
     <main className="module-page season-report-page soft-gate">
@@ -254,7 +261,7 @@ export default function SeasonReportClient() {
     entryCount,
     snapshotCount,
   });
-  const aiHref = hubHref("/ai", "season-report", orgId);
+  const aiHref = hubWorkbenchHref("ai", "season-report", orgId);
   const relatedLinks = seasonReportRelatedLinks(orgId, {
     include: [...SEASON_REPORT_RELATED_INCLUDE],
   });
@@ -487,6 +494,37 @@ function SnapshotsPanel({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
+  // Optional metered AI expansion of the computed retrospective. The computed
+  // snapshot always renders; a missing model degrades to it with a setup note.
+  const [expand, setExpand] = useState<AiExpandState>(AI_EXPAND_IDLE);
+
+  const expandWithAi = async () => {
+    setExpand({ status: "loading" });
+    try {
+      const response = await fetch("/api/season-report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: view.orgId, seasonYear: view.seasonYear, action: "expand-narrative" }),
+      });
+      const data = (await response.json()) as Record<string, unknown>;
+      if (!response.ok) {
+        setExpand(
+          expandFailureState({
+            httpStatus: response.status,
+            code: typeof data.code === "string" ? data.code : null,
+            error: typeof data.error === "string" ? data.error : null,
+          }),
+        );
+        return;
+      }
+      setExpand(expandSuccessState(data));
+    } catch {
+      setExpand(expandFailureState({ httpStatus: 0, error: "network error" }));
+    }
+  };
+
+  const aiDisplay = expandedDisplay("", expand);
+
   return (
     <Panel id="season-report-snapshots">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -501,8 +539,8 @@ function SnapshotsPanel({
         </button>
       </header>
       <p className="app-muted">
-        Snapshot generation is metered through your plan allowance. Narratives use only logged entries —
-        never DEMO season stats.
+        Snapshots are computed deterministically from your logged entries — never DEMO season stats.
+        &ldquo;Expand with AI&rdquo; is the optional metered model pass on top.
       </p>
       {view.summary.totalEntries === 0 ? (
         <p className="app-muted">Log at least one entry to generate a retrospective snapshot.</p>
@@ -552,8 +590,33 @@ function SnapshotsPanel({
                   </ul>
                 </div>
               ) : null}
+              <AIAttribution kind="computed" feature="season_report" generatedAt={snapshot.createdAt} />
             </article>
           ))}
+          {expand.status === "ready" && aiDisplay.aiText ? (
+            <article className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
+              <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{aiDisplay.aiText}</p>
+              <AIAttribution
+                kind="ai"
+                feature="season_report"
+                generatedAt={expand.expansion.generatedAt}
+                onRegenerate={() => void expandWithAi()}
+              />
+            </article>
+          ) : (
+            <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
+              <button
+                type="button"
+                className="app-button secondary"
+                style={{ minHeight: 44 }}
+                disabled={busy || expand.status === "loading"}
+                onClick={() => void expandWithAi()}
+              >
+                {expand.status === "loading" ? "Expanding…" : "Expand with AI"}
+              </button>
+              {aiDisplay.note ? <p className="app-muted" style={{ margin: 0 }}>{aiDisplay.note}</p> : null}
+            </div>
+          )}
         </div>
       )}
     </Panel>

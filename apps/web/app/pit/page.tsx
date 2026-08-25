@@ -33,10 +33,10 @@ export default async function PitCommandPage({
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Pit Command"}
+              {" / Pit command"}
             </>
           }
-          title="Pit Command"
+          title="Pit command"
           description={copy.description}
         >
           {related.length ? (

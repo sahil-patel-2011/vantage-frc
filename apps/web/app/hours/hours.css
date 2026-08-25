@@ -1,9 +1,9 @@
 /* Build Hours — co-located so styling survives independently of the shared global
    stylesheet. All selectors are .hours-* prefixed (plus reuse of app design-system
    classes) and use theme-aware CSS variables. */
-.hours-page input,.hours-page select,.hours-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.hours-page input,.hours-page select,.hours-page textarea{min-height:44px;padding:10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
 .hours-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.app-button.sm{min-height:32px;padding:5px 10px;font-size:11px}
+.app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
 .hours-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .hours-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .hours-link.danger{color:var(--app-critical)}
@@ -15,7 +15,7 @@
 .hours-clock-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hours-clock-actions select{min-width:130px}
 .hours-big-btn{min-height:52px;padding:12px 26px;font-size:15px;font-weight:800;border-radius:12px;border:0;cursor:pointer;color:var(--app-accent-ink);background:var(--app-accent)}
-.hours-big-btn.out{background:var(--app-critical);color:#fff}
+.hours-big-btn.out{background:var(--app-critical-fill);color:#fff}
 .hours-big-btn:disabled{opacity:.6;cursor:default}
 .hours-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .hours-summary-tile{display:grid;gap:3px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}

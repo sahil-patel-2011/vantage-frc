@@ -10,14 +10,14 @@ import {
 } from "./drive-team-signals-related";
 
 describe("driveTeamSignalsRelatedLinks", () => {
-  it("builds Checklist / Strategy Cards / Copilot cross-links", () => {
+  it("builds Checklist / Strategy Cards / Briefing cross-links", () => {
     const links = driveTeamSignalsRelatedLinks("org-1", {
       include: [...DRIVE_TEAM_SIGNALS_RELATED_INCLUDE],
     });
     expect(links.map((l) => l.id)).toEqual([
       "match-checklist",
       "match-strategy-cards",
-      "match-copilot",
+      "briefing",
     ]);
     expect(links.find((l) => l.id === "match-checklist")?.href).toBe(
       "/competition?tab=match-checklist&orgId=org-1",

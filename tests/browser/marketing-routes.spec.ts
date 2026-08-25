@@ -19,12 +19,11 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await expect(page.getByText("DEMO DATA")).toHaveCount(0);
 });
 
-test("mobile menu exposes every marketing route", async ({ page }) => {
+test("marketing header has no hamburger; routes stay in the footer", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.locator("summary[aria-label='Open navigation']").click();
-  const mobile = page.getByRole("navigation", { name: "Mobile navigation" });
-  await expect(mobile.getByRole("link", { name: "Product" })).toBeVisible();
-  await mobile.getByRole("link", { name: "How it works" }).click();
+  await expect(page.locator("summary[aria-label='Open navigation']")).toHaveCount(0);
+  await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
+  await page.getByRole("contentinfo").getByRole("link", { name: "How it works" }).click();
   await expect(page).toHaveURL(/\/workflow$/);
 });

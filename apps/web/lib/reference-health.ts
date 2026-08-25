@@ -207,7 +207,7 @@ export async function loadDataSourceHealth(
     );
     cacheHasRows = Boolean(cache.rows[0]?.ok);
   } catch {
-    cacheHasRows = false;
+    // stays false
   }
 
   let healthRows: HealthRow[] = [];
@@ -238,7 +238,7 @@ export async function loadDataSourceHealth(
       lastError: row.details && typeof row.details.error === "string" ? row.details.error : null,
     }));
   } catch {
-    healthRows = [];
+    // stays []
   }
 
   let cursorRows: CursorRow[] = [];
@@ -269,7 +269,7 @@ export async function loadDataSourceHealth(
       lastStatus: row.lastStatus == null ? null : Number(row.lastStatus),
     }));
   } catch {
-    cursorRows = [];
+    // stays []
   }
 
   let freshness: FreshnessRow | null = null;

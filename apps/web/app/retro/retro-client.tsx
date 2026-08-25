@@ -17,7 +17,7 @@ import {
   type RetroShellKind,
 } from "../../lib/retro/retro-related";
 import type { RetroActionStatus, RetroItemKind } from "../../lib/retro/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./retro.css";
 
@@ -95,7 +95,7 @@ function RetroShell({
 }) {
   const actions = retroNextActions({ orgId, shell });
   const copy = retroShellCopy(shell);
-  const teamHref = hubHref("/team", "retro", orgId);
+  const teamHref = hubWorkbenchHref("team", "retro", orgId);
   const steps = shell === "setup" ? retroSetupSteps(orgId) : [];
 
   return (
@@ -242,7 +242,7 @@ export default function RetroClient() {
   const relatedLinks = retroRelatedLinks(orgId, {
     include: [...RETRO_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "retro", orgId);
+  const teamHref = hubWorkbenchHref("team", "retro", orgId);
   const showTiles = shouldShowRetroSummaryTiles({
     sessionCount,
     itemCount,

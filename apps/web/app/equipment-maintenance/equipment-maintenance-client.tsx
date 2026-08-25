@@ -33,7 +33,7 @@ import {
   type EquipmentMaintenanceNextAction,
   type EquipmentMaintenanceShellKind,
 } from "../../lib/equipment-maintenance/equipment-maintenance-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./equipment-maintenance.css";
 
@@ -109,7 +109,7 @@ function MaintenanceShell({
 }) {
   const actions = equipmentMaintenanceNextActions({ orgId, shell });
   const copy = equipmentMaintenanceShellCopy(shell);
-  const teamHref = hubHref("/team", "equipment-maintenance", orgId);
+  const teamHref = hubWorkbenchHref("team", "equipment-maintenance", orgId);
   const steps = shell === "setup" ? equipmentMaintenanceSetupSteps(orgId) : [];
 
   return (
@@ -231,7 +231,7 @@ export default function EquipmentMaintenanceClient() {
     assetCount,
     overdueCount,
   });
-  const teamHref = hubHref("/team", "equipment-maintenance", orgId);
+  const teamHref = hubWorkbenchHref("team", "equipment-maintenance", orgId);
   const showTiles = shouldShowEquipmentMaintenanceSummaryTiles(assetCount, logCount);
   const loaded = view?.status === "live";
 

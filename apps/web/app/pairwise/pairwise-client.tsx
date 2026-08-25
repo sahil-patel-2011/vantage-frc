@@ -5,6 +5,7 @@ import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./pairwise.css";
 
 type LiveView = Extract<PairwiseView, { status: "live" }>;
@@ -12,6 +13,8 @@ type LiveView = Extract<PairwiseView, { status: "live" }>;
 export default function PairwiseClient() {
   const [view, setView] = useState<PairwiseView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [left, setLeft] = useState("");
   const [right, setRight] = useState("");
@@ -27,7 +30,10 @@ export default function PairwiseClient() {
       const response = await fetch(`/api/pairwise?${query.toString()}`);
       const data = (await response.json()) as PairwiseView | { error?: string };
       if (!response.ok || !("status" in data)) {
-        setError("Could not load pairwise ranking.");
+        setError(
+          "error" in data && data.error ? data.error : "Could not load pairwise ranking.",
+        );
+        setErrorStatus(response.status);
         return;
       }
       setView(data);
@@ -117,7 +123,39 @@ export default function PairwiseClient() {
         ))}
       </nav>
 
-      {error ? <p className="app-muted" role="alert">{error}</p> : null}
+      {error && view ? <p className="app-muted" role="alert">{error}</p> : null}
+      {!view && error
+        ? (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error,
+              },
+            );
+            return (
+              <EmptyState title={copy.title} description={copy.description}>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </EmptyState>
+            );
+          })()
+        : null}
       {!view && !error ? <p className="app-muted">Loading qualitative ranks…</p> : null}
 
       {view?.status === "setup_required" ? (

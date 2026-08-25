@@ -44,9 +44,12 @@ function MessagesTab({ orgId }: { orgId: string }) {
   );
 }
 
+/** Tab ids rendered inline below. Anything else opens its own route directly. */
+const EMBEDDED_TABS = ["calendar", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
+
 export default function TeamHub() {
   return (
-    <ProductHubShell hubId="team">
+    <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
         if (tab === "calendar") return <TeamCalendarClient embedded />;
         if (tab === "todos") return <TodosClient embedded />;

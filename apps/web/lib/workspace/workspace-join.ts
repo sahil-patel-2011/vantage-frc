@@ -169,7 +169,7 @@ export function workspaceJoinCopy(kind: Exclude<WorkspaceJoinKind, "loading" | "
  * Single short path for empty join — no Onboarding Buddy until membership exists.
  * Prefer this over duplicated Setup + Next steps lists.
  */
-export function workspaceSetupSteps(orgId?: string | null): WorkspaceSetupStep[] {
+export function workspaceSetupSteps(_orgId?: string | null): WorkspaceSetupStep[] {
   return [
     {
       id: "invite",
@@ -189,7 +189,7 @@ export function workspaceSetupSteps(orgId?: string | null): WorkspaceSetupStep[]
 /** Deduped next actions — one primary CTA; support only as secondary quiet link. */
 export function workspaceJoinNextActions(
   kind: Exclude<WorkspaceJoinKind, "loading" | "ready"> | WorkspaceShellKind,
-  orgId?: string | null,
+  _orgId?: string | null,
 ): WorkspaceJoinNextAction[] {
   const shell: WorkspaceShellKind =
     kind === "none" ? "empty" : kind === "select" ? "select" : (kind as WorkspaceShellKind);

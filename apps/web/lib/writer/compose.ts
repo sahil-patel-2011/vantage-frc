@@ -158,7 +158,7 @@ export function composeSponsorEmail(
   return { subject, body: paras.join("\n\n") };
 }
 
-function focusSentence(focus: GrantFocus, profile: WriterProfile): string {
+function focusSentence(focus: GrantFocus, _profile: WriterProfile): string {
   switch (focus) {
     case "impact":
       return "Beyond the robot, our focus is community impact: we run STEM outreach and mentor younger students so the benefit of this program reaches far past our own roster.";

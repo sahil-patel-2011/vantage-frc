@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
 import {
   bomCoverage,
   categoryLabel,
@@ -30,6 +31,7 @@ import {
 } from "../../lib/inventory/inventory-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import InventoryLabelTools from "./inventory-label-tools";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -98,12 +100,49 @@ function ItemRow({
           </button>
         </div>
         <div className="inventory-item-actions">
-          <button type="button" className="inventory-link" disabled={busy} onClick={() => setMode(mode === "adjust" ? "none" : "adjust")}>
-            Adjust
-          </button>
-          <button type="button" className="inventory-link" disabled={busy} onClick={() => setMode(mode === "edit" ? "none" : "edit")}>
-            Edit
-          </button>
+          {/* One row of controls per item: Adjust + Edit stay one tap; archive/delete live
+              behind the single overflow menu with a required confirm step. */}
+          <ActionMenu
+            tone="row"
+            label={`${item.name} actions`}
+            maxSecondary={1}
+            triggerTestId={`inventory-item-more:${item.id}`}
+            actions={[
+              {
+                id: "adjust",
+                label: "Adjust",
+                intent: "primary",
+                disabled: busy,
+                hint: "Log a stock change with a reason",
+                onClick: () => setMode(mode === "adjust" ? "none" : "adjust"),
+              },
+              {
+                id: "edit",
+                label: "Edit",
+                disabled: busy,
+                hint: "Reorder point, unit cost, location, subsystem",
+                onClick: () => setMode(mode === "edit" ? "none" : "edit"),
+              },
+              {
+                id: "archive",
+                label: item.archived ? "Unarchive item" : "Archive item",
+                disabled: busy,
+                hint: item.archived ? "Show it in the active stock list again" : "Hide it without losing stock history",
+                onClick: () => {
+                  void run({ action: "update_item", orgId, id: item.id, archived: !item.archived }, `item:${item.id}`);
+                  setMode("none");
+                },
+              },
+              {
+                id: "delete",
+                label: "Delete item",
+                intent: "destructive",
+                disabled: busy,
+                hint: "Removes the item and its stock history",
+                onClick: () => void run({ action: "delete_item", orgId, id: item.id }, `item:${item.id}`),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -215,29 +254,14 @@ function ItemEditForm({
         <span>Subsystem</span>
         <input value={subsystem} disabled={busy} placeholder="e.g. Drivetrain" onChange={(e) => setSubsystem(e.target.value)} />
       </label>
+      {/* Archive + Delete moved into this item's overflow menu (see ItemRow) so the edit
+          form has exactly one action: save what you just typed. */}
       <div className="inventory-edit-actions">
         <button type="submit" className="app-button secondary sm" disabled={busy}>
           Save
         </button>
-        <button
-          type="button"
-          className="inventory-link"
-          disabled={busy}
-          onClick={() => void run({ action: "update_item", orgId, id: item.id, archived: !item.archived }, `item:${item.id}`).then(onDone)}
-        >
-          {item.archived ? "Unarchive" : "Archive"}
-        </button>
-        <button
-          type="button"
-          className="inventory-link danger"
-          disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete "${item.name}" and its stock history?`)) {
-              void run({ action: "delete_item", orgId, id: item.id }, `item:${item.id}`);
-            }
-          }}
-        >
-          Delete
+        <button type="button" className="inventory-link" disabled={busy} onClick={onDone}>
+          Cancel
         </button>
       </div>
     </form>
@@ -533,6 +557,7 @@ function InventoryShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -540,11 +565,30 @@ function InventoryShell({
   orgId?: string | null;
   shell: InventoryShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = inventoryNextActions({ orgId, shell });
   const copy = inventoryShellCopy(shell);
+  // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
   const buildHref = withOrgHref("/build", orgId);
   const vendorsHref = withOrgHref("/vendors", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
@@ -577,11 +621,16 @@ function InventoryShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -645,6 +694,8 @@ export default function InventoryClient() {
   const [view, setView] = useState<InventoryView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [tab, setTab] = useState<InventoryTab>("stock");
   const [search, setSearch] = useState("");
@@ -656,6 +707,7 @@ export default function InventoryClient() {
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
@@ -664,6 +716,7 @@ export default function InventoryClient() {
       const data = (await response.json()) as InventoryView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load inventory.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -748,6 +801,7 @@ export default function InventoryClient() {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => void load()}
       />
     );
@@ -813,17 +867,33 @@ export default function InventoryClient() {
           {summary && summary.lowStock > 0 ? (
             <span className="app-badge setup">{formatInventoryMetric(summary.lowStock, true)} low</span>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <button type="button" className="app-button" onClick={() => setShowAdd((value) => !value)}>
-            {showAdd ? "Close" : "Add item"}
-          </button>
-          <button type="button" className="app-button secondary" onClick={() => setShowLabels((value) => !value)}>
-            Scan / labels
-          </button>
+          {/* Header was: N related links + Add item + Scan/labels, all shouting equally.
+              Now one primary, one secondary, and every related tool one keystroke away. */}
+          <ActionMenu
+            label="Inventory"
+            overflowLabel="Related tools"
+            maxSecondary={1}
+            actions={[
+              {
+                id: "add-item",
+                label: showAdd ? "Close add item" : "Add item",
+                intent: "primary",
+                onClick: () => setShowAdd((value) => !value),
+              },
+              {
+                id: "labels",
+                label: "Scan / labels",
+                hint: "Print or scan location + item labels",
+                onClick: () => setShowLabels((value) => !value),
+              },
+              ...relatedLinks.map<ActionSpec>((link) => ({
+                id: `related:${link.id}`,
+                label: link.label,
+                href: link.href,
+                group: "related",
+              })),
+            ]}
+          />
         </div>
       </PageHeader>
 
@@ -852,18 +922,24 @@ export default function InventoryClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <button type="button" className="app-button" onClick={() => setShowAdd(true)}>
-            Add your first item
-          </button>
-          <a className="app-button secondary" href={vendorsHref}>
-            Open Vendors
-          </a>
-          <a className="app-button secondary" href={ordersHref}>
-            Open Orders
-          </a>
-          <a className="app-button secondary" href={spareForecastHref}>
-            Open Spare Forecast
-          </a>
+          {/* One obvious first move; the three "go look somewhere else" links stop
+              competing with it. */}
+          <ActionMenu
+            label="Get started with inventory"
+            overflowLabel="Related tools"
+            maxSecondary={0}
+            actions={[
+              {
+                id: "add-first",
+                label: "Add your first item",
+                intent: "primary",
+                onClick: () => setShowAdd(true),
+              },
+              { id: "vendors", label: "Open Vendors", href: vendorsHref },
+              { id: "orders", label: "Open Orders", href: ordersHref },
+              { id: "spare-forecast", label: "Open Spare Forecast", href: spareForecastHref },
+            ]}
+          />
         </EmptyState>
       ) : null}
 

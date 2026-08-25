@@ -6,7 +6,7 @@
   "description": {
     "": "Vantage CAD local relay — loopback HTTP bridge for signed Fusion jobs. Never accepts non-loopback clients."
   },
-  "version": "0.1.1",
+  "version": "0.2.0",
   "runOnStartup": false,
   "supportedOS": "windows|mac",
   "editEnabled": true

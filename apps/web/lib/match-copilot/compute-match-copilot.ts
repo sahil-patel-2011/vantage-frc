@@ -141,7 +141,8 @@ type MetricRow = {
   rank: number | null;
 };
 
-async function loadTeams(
+/** Exported for the consolidated Pre-Match Briefing (lib/briefing). */
+export async function loadTeams(
   client: PoolClient,
   eventKey: string,
   teamKeys: string[],
@@ -222,7 +223,8 @@ async function loadStrategyPlan(
   return { hasPlan: true, summary: summarizePlan(row.plan) };
 }
 
-async function loadOpenRisks(client: PoolClient, orgId: string, seasonYear: number): Promise<MatchCopilotRisk[]> {
+/** Exported for the consolidated Pre-Match Briefing (lib/briefing). */
+export async function loadOpenRisks(client: PoolClient, orgId: string, seasonYear: number): Promise<MatchCopilotRisk[]> {
   const result = await client.query<{
     id: string;
     subsystemName: string;
@@ -251,7 +253,8 @@ async function loadOpenRisks(client: PoolClient, orgId: string, seasonYear: numb
   }));
 }
 
-async function loadBatteryFleet(client: PoolClient, orgId: string): Promise<MatchCopilotBattery[]> {
+/** Exported for the consolidated Pre-Match Briefing (lib/briefing). */
+export async function loadBatteryFleet(client: PoolClient, orgId: string): Promise<MatchCopilotBattery[]> {
   const result = await client.query<{
     id: string;
     label: string;
@@ -292,7 +295,8 @@ async function loadBatteryFleet(client: PoolClient, orgId: string): Promise<Matc
   });
 }
 
-async function loadLatestBrief(
+/** Exported for the consolidated Pre-Match Briefing (lib/briefing). */
+export async function loadLatestBrief(
   client: PoolClient,
   orgId: string,
   matchKey: string,

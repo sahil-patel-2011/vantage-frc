@@ -1,0 +1,236 @@
+/* Presence — RSVP, roll call, and hours reconciled on one screen.
+   Design tokens only; light and dark both come from the shared app theme
+   variables, so nothing here hard-codes a color. Touch targets >= 44px and the
+   whole page reflows to a single column at 360px. */
+
+.prs-page {
+  display: grid;
+  gap: 16px;
+}
+
+.prs-picker {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.prs-field {
+  display: grid;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.prs-field input,
+.prs-field select {
+  min-height: 44px;
+}
+
+.prs-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.prs-panel-title {
+  margin: 0;
+}
+
+.prs-tip {
+  margin: 0;
+}
+
+.prs-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.prs-steps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.prs-steps .app-button,
+.prs-empty-action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* --- the selected meeting + the one primary action ----------------------- */
+
+.prs-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.prs-hero-main {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+
+.prs-hero-action {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  max-width: 30ch;
+}
+
+.prs-hero-action button {
+  min-height: 44px;
+}
+
+/* --- figures ------------------------------------------------------------- */
+
+.prs-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.prs-figures {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.prs-figure {
+  display: grid;
+  gap: 4px;
+}
+
+.prs-figure strong {
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+/* A missing figure must read as missing, never as a zero. */
+.prs-figure.unavailable strong {
+  font-size: 1rem;
+  opacity: 0.75;
+}
+
+/* --- the two answers ----------------------------------------------------- */
+
+.prs-two-up {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.prs-two-up .app-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+}
+
+.prs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.prs-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.prs-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.prs-sub {
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
+.prs-marks {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.prs-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.prs-chips li {
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+/* --- discrepancies and the unmatched backlog ----------------------------- */
+
+.prs-flagged,
+.prs-unmatched {
+  align-items: flex-start;
+}
+
+.prs-flag-main {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.prs-flag-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.prs-flag-actions button {
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .prs-hero,
+  .prs-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .prs-hero-action {
+    max-width: none;
+  }
+
+  .prs-marks,
+  .prs-flag-actions {
+    justify-content: flex-start;
+  }
+
+  .prs-steps li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

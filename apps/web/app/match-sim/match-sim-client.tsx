@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import type { AllianceColor, MatchSimRun, MatchSimSetupStep } from "../../lib/match-sim/types";
@@ -20,12 +21,15 @@ export default function MatchSimClient() {
   const [view, setView] = useState<MatchSimView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((runId?: string) => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -36,6 +40,7 @@ export default function MatchSimClient() {
       .then(async (response) => {
         const data = (await response.json()) as MatchSimView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -94,11 +99,34 @@ export default function MatchSimClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState title="Could not load Match Simulator" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const kind = classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          });
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

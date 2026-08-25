@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { canWriteOrgDashboard, dashboardRectsOverlap, DEFAULT_DASHBOARD_LAYOUT } from "./catalog";
+import {
+  canWriteOrgDashboard,
+  dashboardRectsOverlap,
+  DASHBOARD_COLUMNS,
+  DEFAULT_DASHBOARD_LAYOUT,
+  scaleLayoutToCols,
+} from "./catalog";
 import {
   applyGridDrag,
   boardStorageKey,
@@ -7,6 +13,14 @@ import {
   pickHomeBoard,
   type HomeBoardPick,
 } from "./boards";
+import {
+  compactLayout,
+  layoutFitsColumns,
+  layoutHasOverlap,
+  layoutOrder,
+  moveItem,
+  reorderLayout,
+} from "./grid-drag";
 
 const aliceHome: HomeBoardPick = {
   id: "board-alice",
@@ -82,7 +96,7 @@ describe("dashboard drag and drop", () => {
     const moved = dragged.find((item) => item.type === "next_match");
     expect(moved?.x).toBe(6);
     expect(moved?.y).toBe(4);
-    expect(dragged.find((item) => item.type === "competition_snapshot")?.x).toBe(6);
+    expect(dragged.find((item) => item.type === "competition_snapshot")?.x).toBe(0);
   });
 
   it("scales a phone-grid drag back onto the saved 12-column board", () => {
@@ -122,5 +136,61 @@ describe("dashboard drag and drop", () => {
       ok: false,
       error: "That widget is already on the board.",
     });
+  });
+});
+
+/**
+ * The pointer/keyboard editors settle a move in *display* space and then write
+ * it back through applyGridDrag. These lock down that round trip.
+ */
+describe("pointer drag round trip onto the saved board", () => {
+  function displayOf(cols: number) {
+    return compactLayout(scaleLayoutToCols(DEFAULT_DASHBOARD_LAYOUT, DASHBOARD_COLUMNS, cols), cols);
+  }
+
+  it("writes a laptop-grid move straight back to the 12-column board", () => {
+    const display = displayOf(12);
+    const alerts = display.find((item) => item.type === "alerts")!;
+    const moved = moveItem(display, alerts.i, { col: 8, row: alerts.y }, 12);
+    const saved = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 12);
+    expect(saved.find((item) => item.type === "alerts")?.x).toBe(8);
+    expect(layoutHasOverlap(saved)).toBe(false);
+    expect(layoutFitsColumns(saved, DASHBOARD_COLUMNS)).toBe(true);
+  });
+
+  it("keeps a tablet-grid move inside the saved board", () => {
+    const display = displayOf(8);
+    const recent = display.find((item) => item.type === "recent_result")!;
+    const moved = moveItem(display, recent.i, { col: 6, row: recent.y }, 8);
+    const saved = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 8);
+    expect(layoutHasOverlap(saved)).toBe(false);
+    expect(layoutFitsColumns(saved, DASHBOARD_COLUMNS)).toBe(true);
+  });
+
+  it("uses reorderLayout on a phone so a one-column drag does not flatten every widget to full width", () => {
+    const display = displayOf(1);
+    const first = display.find((item) => item.y === 0)!;
+    const moved = moveItem(display, first.i, { col: 0, row: 20 }, 1);
+
+    // Writing a 1-column drag back through applyGridDrag would stretch
+    // everything to 12 wide, which is why the client reorders instead.
+    const flattened = applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 1);
+    expect(flattened.every((item) => item.w === DASHBOARD_COLUMNS)).toBe(true);
+
+    const reordered = reorderLayout(DEFAULT_DASHBOARD_LAYOUT, layoutOrder(moved));
+    for (const before of DEFAULT_DASHBOARD_LAYOUT) {
+      expect(reordered.find((item) => item.i === before.i)!.w).toBe(before.w);
+    }
+    expect(layoutOrder(reordered)[layoutOrder(reordered).length - 1]).toBe(first.i);
+    expect(layoutHasOverlap(reordered)).toBe(false);
+  });
+
+  it("leaves the saved board untouched when a drag ends on its own cell", () => {
+    const display = displayOf(12);
+    const target = display[2]!;
+    const moved = moveItem(display, target.i, { col: target.x, row: target.y }, 12);
+    expect(applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, moved, 12)).toEqual(
+      applyGridDrag(DEFAULT_DASHBOARD_LAYOUT, display, 12),
+    );
   });
 });

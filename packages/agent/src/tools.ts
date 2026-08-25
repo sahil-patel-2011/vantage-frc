@@ -110,7 +110,7 @@ export function summarizeOpenPurchaseRequests(
       openTotalUsd: 0,
     };
   }
-  let headline = `${open.length} open request${open.length === 1 ? "" : "s"} totaling ${usdLabel(openTotalUsd)}.`;
+  let headline: string;
   if (pending.length && approved.length) {
     headline = `${pending.length} awaiting approval and ${approved.length} ready to buy (${usdLabel(openTotalUsd)} open).`;
   } else if (pending.length) {

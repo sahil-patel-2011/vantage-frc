@@ -191,7 +191,7 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
       message: input.message,
       contextChars: input.context.reduce((n, item) => n + item.content.length, 0),
       completionChars: text.length,
-      enabled: Boolean(input.promptCachingEnabled),
+      enabled: input.promptCachingEnabled ?? true,
     });
     return {
       text,
@@ -215,8 +215,11 @@ export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
 export * from "./resolve-chat-adapter";
+export * from "./resolve-stt-endpoint";
+export * from "./model-tier";
 export * from "./sponsored-provider-pool";
 export * from "./byok-model-routing";
+export * from "./model-policy";
 export * from "./coding-assistant";
 export * from "./bugbot";
 export * from "./brief-from-tools";
@@ -231,3 +234,5 @@ export * from "./safe-web-fetch";
 export * from "./web-tools";
 export * from "./autonomous-agent-store";
 export * from "./autonomous-loop";
+export * from "./org-agent-rules";
+export * from "./subscription-bridge-adapter";

@@ -181,8 +181,10 @@ export async function computeGrantReportView(
 /**
  * Generate a deterministic post-grant impact report grounded only in the grant's recorded award
  * amount, outreach_messages linked to it, and finance_transactions expenses recorded for the
- * grant's season. Wrapped in meteredAI so the run is billed and audited through the standard
- * usage-ledger path, matching every other metered feature.
+ * grant's season. Finance rows carry no per-grant linkage, so season expenses are reported
+ * strictly as org-wide context with an explicit "spend linkage is not configured" disclosure —
+ * never presented as spend attributable to this grant. Wrapped in meteredAI so the run is billed
+ * and audited through the standard usage-ledger path, matching every other metered feature.
  */
 export async function generateGrantReport(
   client: PoolClient,

@@ -1,7 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
 import {
+  FUSION_RELAY_IMPLEMENTED_OPERATIONS,
   FUSION_RELAY_PROTOCOL_VERSION,
+  fusionRelayImplements,
   signFusionRelayJob,
   verifyFusionRelayJob,
   type FusionRelayEnvelope,
@@ -35,6 +37,9 @@ export function createMockFusionPluginHandler(secret = process.env.FUSION_RELAY_
         protocol: FUSION_RELAY_PROTOCOL_VERSION,
         documentName: "Vantage Mock Document",
         active: true,
+        // Same list the real add-in publishes, so a CI run against the mock
+        // exercises the same parity contract a Fusion machine does.
+        operations: [...FUSION_RELAY_IMPLEMENTED_OPERATIONS],
       });
     }
     if (req.method === "POST" && url.pathname === "/execute") {
@@ -49,6 +54,13 @@ export function createMockFusionPluginHandler(secret = process.env.FUSION_RELAY_
         return json(res, 401, { error: "Invalid or expired signed job" });
       }
       const operation = envelope.operation as CadAction;
+      // The mock must refuse exactly what the real add-in refuses, or CI would
+      // green-light an operation that fails on a real Fusion machine.
+      if (!fusionRelayImplements(operation.operation)) {
+        return json(res, 400, {
+          error: `'${operation.operation}' is not implemented by the Vantage Fusion add-in. Implemented: ${FUSION_RELAY_IMPLEMENTED_OPERATIONS.join(", ")}.`,
+        });
+      }
       const fingerprint = createHash("sha256")
         .update(`${envelope.jobId}:${envelope.stepId}:${operation.operation}`)
         .digest("hex");

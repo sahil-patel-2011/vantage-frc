@@ -807,8 +807,39 @@ export const orgLlmKeys = pgTable(
       .references(() => users.id),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,
+    baseUrl: text("base_url"),
+    model: text("model"),
   },
   (table) => [index("org_llm_keys_org_idx").on(table.orgId)],
+);
+
+export const memberLlmKeys = pgTable(
+  "member_llm_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    label: text("label").notNull(),
+    keyCiphertext: text("key_ciphertext").notNull(),
+    keyNonce: text("key_nonce").notNull(),
+    keyAuthTag: text("key_auth_tag").notNull(),
+    encryptedDek: text("encrypted_dek").notNull(),
+    kmsKeyId: text("kms_key_id").notNull(),
+    baseUrl: text("base_url"),
+    model: text("model"),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [
+    uniqueIndex("member_llm_keys_org_user_provider_idx").on(table.orgId, table.userId, table.provider),
+    index("member_llm_keys_user_idx").on(table.orgId, table.userId),
+  ],
 );
 
 export const orgByokRoutingPrefs = pgTable("org_byok_routing_prefs", {
@@ -1375,13 +1406,17 @@ export const teamMemories = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
-    sourceThreadId: uuid("source_thread_id").notNull().references(() => agentThreads.id, {
+    // Nullable since 0446: a worker-authored "dream" memory has no source chat
+    // thread and no promoting member.
+    sourceThreadId: uuid("source_thread_id").references(() => agentThreads.id, {
       onDelete: "cascade",
     }),
     sourceMessageId: uuid("source_message_id").references(() => agentMessages.id, {
       onDelete: "set null",
     }),
-    promotedBy: uuid("promoted_by").notNull().references(() => users.id),
+    promotedBy: uuid("promoted_by").references(() => users.id),
+    /** 'promoted' = a member promoted a chat message; 'dream' = nightly consolidation. */
+    source: text("source").$type<"promoted" | "dream">().notNull().default("promoted"),
     importance: doublePrecision("importance").notNull().default(0.5),
     disabledAt: timestamp("disabled_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
@@ -1521,6 +1556,12 @@ export const cadJobs = pgTable("cad_jobs", {
   leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
   lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  // Multi-mode agent (0444): active mode, pending mode proposal, plan and task state.
+  mode: text("mode").$type<"simple"|"plan"|"multitask">().notNull().default("simple"),
+  proposedMode: text("proposed_mode").$type<"simple"|"plan"|"multitask">(),
+  proposedAt: timestamp("proposed_at", { withTimezone: true }),
+  plan: jsonb("plan").$type<Record<string, unknown>>(),
+  tasks: jsonb("tasks").$type<Array<Record<string, unknown>>>(),
   ...timestamps,
 }, (table) => [index("cad_jobs_org_updated_idx").on(table.orgId, table.updatedAt)]);
 
@@ -1895,7 +1936,7 @@ export const orgApiBudgetPolicies = pgTable("org_api_budget_policies", {
   modelAllowlistEnabled: boolean("model_allowlist_enabled").notNull().default(false),
   providerAllowlistEnabled: boolean("provider_allowlist_enabled").notNull().default(false),
   killSwitch: boolean("kill_switch").notNull().default(false),
-  promptCachingEnabled: boolean("prompt_caching_enabled").notNull().default(false),
+  promptCachingEnabled: boolean("prompt_caching_enabled").notNull().default(true),
   updatedBy: uuid("updated_by").notNull().references(() => users.id),
   ...timestamps,
 });

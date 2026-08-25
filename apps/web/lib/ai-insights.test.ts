@@ -405,10 +405,18 @@ describe("parseInsightRequest + capability map", () => {
       orgId: ORG,
       kind: "practice_coach",
       robotLabel: "competition",
+      mode: "computed",
     });
     expect(parseInsightRequest({ orgId: ORG, kind: "inspection_advisor", robotLabel: "practice" }).robotLabel).toBe("practice");
     expect(() => parseInsightRequest({ orgId: ORG, kind: "fortune_teller" })).toThrow(/Unknown insight kind/);
     expect(() => parseInsightRequest({ orgId: "nope", kind: "practice_coach" })).toThrow(/invalid/i);
+  });
+  it("defaults to the computed (deterministic) mode and only accepts the two honest modes", () => {
+    expect(parseInsightRequest({ orgId: ORG, kind: "schedule_risk" }).mode).toBe("computed");
+    expect(parseInsightRequest({ orgId: ORG, kind: "schedule_risk", mode: "ai" }).mode).toBe("ai");
+    expect(() => parseInsightRequest({ orgId: ORG, kind: "schedule_risk", mode: "magic" })).toThrow(
+      /Unknown insight mode/,
+    );
   });
   it("maps every kind to an orchestrator capability", () => {
     expect(INSIGHT_CAPABILITY.practice_coach).toBe("strategy");

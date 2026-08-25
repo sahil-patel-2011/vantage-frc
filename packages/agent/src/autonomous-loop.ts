@@ -281,7 +281,7 @@ export async function runAutonomousAgent(
           autonomous: true,
           stepIndex,
           usageTag: "agent.autonomous",
-          promptCachingEnabled: input.promptCachingEnabled ?? false,
+          promptCachingEnabled: input.promptCachingEnabled ?? true,
         },
         invoke: async () => {
           const result = await adapter.complete({

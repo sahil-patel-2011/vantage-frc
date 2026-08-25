@@ -15,7 +15,7 @@ import {
   type MatchCopilotShellKind,
 } from "../../lib/match-copilot/match-copilot-related";
 import type { MatchCopilotCalloutCategory } from "../../lib/match-copilot/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./match-copilot.css";
 
@@ -99,7 +99,7 @@ function CopilotShell({
 }) {
   const actions = matchCopilotNextActions({ orgId, shell });
   const copy = matchCopilotShellCopy(shell);
-  const competitionHref = hubHref("/competition", "match-copilot", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-copilot", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const fmeaHref = hubHref("/team", "fmea", orgId);
@@ -217,7 +217,7 @@ export default function MatchCopilotClient() {
   const relatedLinks = matchCopilotRelatedLinks(orgId, {
     include: [...MATCH_COPILOT_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "match-copilot", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-copilot", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const fmeaHref = hubHref("/team", "fmea", orgId);

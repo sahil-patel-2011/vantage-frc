@@ -35,7 +35,7 @@ import {
   type SeasonPlanningShellKind,
 } from "../../lib/season-planning-workspace/season-planning-workspace-related";
 import type { GoalCategory, SeasonGoal, WorkItemStatus } from "../../lib/season-planning-workspace/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./season-planning-workspace.css";
 
@@ -110,7 +110,7 @@ function PlanShell({
 }) {
   const actions = seasonPlanningNextActions({ orgId, shell });
   const copy = seasonPlanningShellCopy(shell);
-  const teamHref = hubHref("/team", "season-planning-workspace", orgId);
+  const teamHref = hubWorkbenchHref("team", "season-planning-workspace", orgId);
   const steps = shell === "setup" ? seasonPlanningSetupSteps(orgId) : [];
 
   return (
@@ -374,7 +374,7 @@ export default function SeasonPlanningWorkspaceClient() {
   const relatedLinks = seasonPlanningRelatedLinks(orgId, {
     include: [...SEASON_PLANNING_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "season-planning-workspace", orgId);
+  const teamHref = hubWorkbenchHref("team", "season-planning-workspace", orgId);
   const showTiles = shouldShowSeasonPlanningSummaryTiles({ goalsTotal, milestonesTotal });
 
   const mutate = useCallback(
