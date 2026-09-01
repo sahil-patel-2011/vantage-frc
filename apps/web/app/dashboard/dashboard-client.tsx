@@ -59,6 +59,7 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   classifyDashboardShell,
+  dashboardFeatureDesks,
   dashboardNextActions,
   dashboardSetupBlurb,
   dashboardSetupSteps,
@@ -1479,7 +1480,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       </header>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {orgId && meLoaded && !editing ? (
+      {meLoaded && !editing ? (
         <nav className="dash-quick-start" aria-label="Quick start">
           <div className="dash-quick-start-heading">
             <strong>Jump back in</strong>
@@ -1496,6 +1497,28 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                   <small>{item.detail}</small>
                 </span>
                 <b aria-hidden="true">→</b>
+              </a>
+            ))}
+          </div>
+        </nav>
+      ) : null}
+
+      {meLoaded && !editing ? (
+        <nav className="dash-feature-desk" aria-label="Team features">
+          <div className="dash-feature-desk-heading">
+            <strong>Open a desk</strong>
+            <span>Live numbers stay off until this workspace has data</span>
+          </div>
+          <div className="dash-feature-desk-links">
+            {dashboardFeatureDesks(orgId || null).map((item) => (
+              <a key={item.id} href={item.href} data-desk={item.id}>
+                <i aria-hidden="true">
+                  <Icon name={item.icon} />
+                </i>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
               </a>
             ))}
           </div>
@@ -1728,7 +1751,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         </section>
       ) : null}
 
-      {dashShell === "ready" || editing ? (
+      {meLoaded && (dashShell !== "no_org" || editing) ? (
         <section
           className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""

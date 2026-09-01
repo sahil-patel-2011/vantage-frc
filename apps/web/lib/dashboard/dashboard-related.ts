@@ -15,6 +15,22 @@ export type DashboardHubLink = {
   href: string;
 };
 
+export type DashboardFeatureDesk = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  icon:
+    | "swords"
+    | "stats"
+    | "clipboard"
+    | "cube"
+    | "grid"
+    | "camera"
+    | "users"
+    | "bolt";
+};
+
 export type DashboardShellKind = "loading" | "no_org" | "setup" | "tba" | "ready";
 
 export type DashboardNextAction = {
@@ -69,6 +85,71 @@ export function dashboardHubLinks(orgId?: string | null): DashboardHubLink[] {
     label,
     href: dashboardHubHref(id, orgId),
   }));
+}
+
+/**
+ * Home feature desks — destinations only, never invented scores or percents.
+ * Works without an org so the empty Home still opens real product surfaces.
+ */
+export function dashboardFeatureDesks(orgId?: string | null): DashboardFeatureDesk[] {
+  return [
+    {
+      id: "command",
+      label: "Event day",
+      detail: "Schedule and pit",
+      href: hubHref("/competition", "command", orgId),
+      icon: "swords",
+    },
+    {
+      id: "strategy",
+      label: "Strategy",
+      detail: "Predictions and matchups",
+      href: hubHref("/competition", "strategy", orgId),
+      icon: "stats",
+    },
+    {
+      id: "scout",
+      label: "Scouting",
+      detail: "Forms and coverage",
+      href: hubHref("/competition", "scouting", orgId),
+      icon: "clipboard",
+    },
+    {
+      id: "cad",
+      label: "CAD",
+      detail: "Onshape and Fusion",
+      href: hubHref("/build", "cad", orgId),
+      icon: "cube",
+    },
+    {
+      id: "finance",
+      label: "Finance",
+      detail: "Budget and orders",
+      href: hubHref("/business", "finance", orgId),
+      icon: "grid",
+    },
+    {
+      id: "media",
+      label: "Media",
+      detail: "Photos and library",
+      href: hubHref("/media", "media-library", orgId),
+      icon: "camera",
+    },
+    {
+      id: "team",
+      label: "Team",
+      detail: "Calendar and roster",
+      href: hubHref("/team", "calendar", orgId),
+      icon: "users",
+    },
+    {
+      id: "ai",
+      label: "AI",
+      detail: "Chat and routing",
+      href: hubHref("/ai", "chat", orgId),
+      icon: "bolt",
+    },
+  ];
 }
 
 export function classifyDashboardShell(input: {

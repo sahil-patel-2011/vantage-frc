@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyDashboardShell,
+  dashboardFeatureDesks,
   dashboardHubHref,
   dashboardHubLinks,
   dashboardNextActions,
@@ -34,6 +35,23 @@ describe("dashboard Soft-UI related", () => {
     expect(dashboardHubHref("competition", ORG)).toContain("tab=command");
     expect(dashboardHubHref("logistics", ORG)).toBe(`/logistics?orgId=${ORG}`);
     expect(dashboardHubHref("ai", null)).toBe("/ai?tab=chat");
+  });
+
+  it("lists eight honest feature desks without inventing metrics", () => {
+    const desks = dashboardFeatureDesks(ORG);
+    expect(desks.map((desk) => desk.id)).toEqual([
+      "command",
+      "strategy",
+      "scout",
+      "cad",
+      "finance",
+      "media",
+      "team",
+      "ai",
+    ]);
+    expect(desks.every((desk) => desk.href.includes(`orgId=${ORG}`))).toBe(true);
+    expect(desks.every((desk) => !/demo|\d+%|epa/i.test(`${desk.label} ${desk.detail}`))).toBe(true);
+    expect(dashboardFeatureDesks(null).every((desk) => !desk.href.includes("orgId="))).toBe(true);
   });
 
   it("keeps no-org next actions as one invite path", () => {
