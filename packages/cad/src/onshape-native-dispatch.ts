@@ -23,6 +23,7 @@ import {
   quantityParameter,
   type HoleEndStyle,
 } from "./onshape-features";
+import { setOnshapeNativeVariable } from "./onshape-native-variables";
 
 export type OnshapeNativeHttp = (path: string, init?: RequestInit) => Promise<Response>;
 
@@ -40,13 +41,13 @@ export const ONSHAPE_NATIVE_OPERATIONS = [
   "create_pattern",
   "create_mirror",
   "delete_feature",
+  "set_variable",
 ] as const;
 
 export type OnshapeNativeOperation = (typeof ONSHAPE_NATIVE_OPERATIONS)[number];
 
 /** Allowlisted ops with no native builder yet — refuse, do not invent FeatureScript. */
 export const ONSHAPE_UNIMPLEMENTED_NATIVE_OPERATIONS = [
-  "set_variable",
   "rollback_checkpoint",
 ] as const;
 
@@ -79,6 +80,10 @@ export async function dispatchOnshapeNativeFeature(input: {
   idempotencyKey: string;
 }): Promise<OnshapeNativeDispatchResult> {
   const { http, document, operation, parameters, idempotencyKey } = input;
+  if (operation === "set_variable") {
+    const result = await setOnshapeNativeVariable(http, { document, parameters, idempotencyKey });
+    return { featureId: result.featureId, featureScriptUsed: false };
+  }
   if (operation === "delete_feature") {
     return deleteNativeFeature(http, document, parameters, idempotencyKey);
   }
@@ -87,7 +92,10 @@ export async function dispatchOnshapeNativeFeature(input: {
   return { featureId, featureScriptUsed: false };
 }
 
-function buildNativeFeature(operation: Exclude<OnshapeNativeOperation, "delete_feature">, parameters: Record<string, unknown>) {
+function buildNativeFeature(
+  operation: Exclude<OnshapeNativeOperation, "delete_feature" | "set_variable">,
+  parameters: Record<string, unknown>,
+) {
   switch (operation) {
     case "create_fillet":
       return filletFeature({

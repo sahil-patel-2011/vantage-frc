@@ -18,6 +18,9 @@ export type UpdateFeatureInput = {
   depthMm?: unknown;
   widthMm?: unknown;
   heightMm?: unknown;
+  radiusMm?: unknown;
+  diameterMm?: unknown;
+  thicknessMm?: unknown;
 };
 
 export type UpdateFeaturePayload = {
@@ -26,6 +29,9 @@ export type UpdateFeaturePayload = {
   depthMm?: number;
   widthMm?: number;
   heightMm?: number;
+  radiusMm?: number;
+  diameterMm?: number;
+  thicknessMm?: number;
 };
 
 const DEMO_FEATURE_ID = /demo/i;
@@ -132,11 +138,17 @@ export function updateFeaturePayload(input: UpdateFeatureInput): UpdateFeaturePa
   const depthMm = optionalPositiveMm(input.depthMm, "depthMm");
   const widthMm = optionalPositiveMm(input.widthMm, "widthMm");
   const heightMm = optionalPositiveMm(input.heightMm, "heightMm");
+  const radiusMm = optionalPositiveMm(input.radiusMm, "radiusMm");
+  const diameterMm = optionalPositiveMm(input.diameterMm, "diameterMm");
+  const thicknessMm = optionalPositiveMm(input.thicknessMm, "thicknessMm");
   return {
     action: "update-onshape-feature",
     featureId,
     ...(depthMm !== undefined ? { depthMm } : {}),
     ...(widthMm !== undefined ? { widthMm } : {}),
     ...(heightMm !== undefined ? { heightMm } : {}),
+    ...(radiusMm !== undefined ? { radiusMm } : {}),
+    ...(diameterMm !== undefined ? { diameterMm } : {}),
+    ...(thicknessMm !== undefined ? { thicknessMm } : {}),
   };
 }

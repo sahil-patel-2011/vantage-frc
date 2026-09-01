@@ -12,11 +12,17 @@ import {
   listOnshapeEntities,
   type ListedOnshapeEntities,
 } from "../../lib/cad/list-entities";
+import {
+  EMPTY_LISTED_VARIABLES,
+  listOnshapeVariables,
+  type ListedOnshapeVariables,
+} from "../../lib/cad/list-variables";
 import { rememberComposerFeature } from "../../lib/cad/remember-feature";
 import { runComposerPlan } from "../../lib/cad/run-composer-plan";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadFeatureTree } from "./cad-feature-tree";
 import { CadOperationComposer } from "./cad-operation-composer";
+import { CadVariableTable } from "./cad-variable-table";
 import { CadViewport } from "./cad-viewport";
 import "./cad-agent.css";
 import "./cad-setup.css";
@@ -483,6 +489,19 @@ const TASK_STATUS_LABELS: Record<AgentTask["status"], string> = {
   failed: "Failed",
 };
 
+function withVariableStudio(
+  payload: { operation?: string; parameters?: unknown; reason?: string },
+  studioId: string,
+) {
+  if (payload.operation !== "set_variable" || !studioId) return payload;
+  const parameters =
+    payload.parameters && typeof payload.parameters === "object" && !Array.isArray(payload.parameters)
+      ? (payload.parameters as Record<string, unknown>)
+      : {};
+  if (String(parameters.variableStudioElementId ?? "").trim()) return payload;
+  return { ...payload, parameters: { ...parameters, variableStudioElementId: studioId } };
+}
+
 export default function CadWorkspace({
   orgId,
   tools = [],
@@ -512,6 +531,7 @@ export default function CadWorkspace({
   const [planAnswers, setPlanAnswers] = useState<string[]>([]);
   const [listedEntities, setListedEntities] = useState<ListedOnshapeEntities>(EMPTY_LISTED_ENTITIES);
   const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
+  const [listedVariables, setListedVariables] = useState<ListedOnshapeVariables>(EMPTY_LISTED_VARIABLES);
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -585,12 +605,18 @@ export default function CadWorkspace({
     if (!documentRef) {
       setListedEntities(EMPTY_LISTED_ENTITIES);
       setExplainedFeatures([]);
+      setListedVariables(EMPTY_LISTED_VARIABLES);
       return;
     }
     try {
       setListedEntities(await listOnshapeEntities({ orgId, documentRef }));
     } catch {
       setListedEntities(EMPTY_LISTED_ENTITIES);
+    }
+    try {
+      setListedVariables(await listOnshapeVariables({ orgId, documentRef }));
+    } catch {
+      setListedVariables(EMPTY_LISTED_VARIABLES);
     }
     try {
       const response = await fetch("/api/cad", {
@@ -1120,7 +1146,7 @@ export default function CadWorkspace({
         onAppend={async (payload) => {
           const executed = await executeComposerOp({
             orgId,
-            payload,
+            payload: withVariableStudio(payload, listedVariables.variableStudioElementId),
             documentRef: state?.bound ?? null,
           });
           applyShadedPng(executed.result.shadedPngBase64);
@@ -1135,11 +1161,14 @@ export default function CadWorkspace({
           const ran = await runComposerPlan(ops, async (step) => {
             const executed = await executeComposerOp({
               orgId,
-              payload: {
-                operation: step.operation,
-                parameters: step.parameters,
-                reason: step.reason,
-              },
+              payload: withVariableStudio(
+                {
+                  operation: step.operation,
+                  parameters: step.parameters,
+                  reason: step.reason,
+                },
+                listedVariables.variableStudioElementId,
+              ),
               documentRef: state?.bound ?? null,
             });
             applyShadedPng(executed.result.shadedPngBase64);
@@ -1180,6 +1209,35 @@ export default function CadWorkspace({
             applyShadedPng(data.shadedPngBase64);
             void refreshBoundGeometry();
             return data;
+          }}
+        />
+      ) : null}
+
+      {completeDocumentRef(state?.bound) ? (
+        <CadVariableTable
+          variables={listedVariables.variables}
+          variableStudioElementId={listedVariables.variableStudioElementId}
+          disabled={!onshapeOk || busy !== null}
+          onSet={async (payload) => {
+            await executeComposerOp({
+              orgId,
+              payload: {
+                operation: "set_variable",
+                parameters: {
+                  name: payload.name,
+                  expression: payload.expression,
+                  ...(payload.variableStudioElementId || listedVariables.variableStudioElementId
+                    ? {
+                        variableStudioElementId:
+                          payload.variableStudioElementId || listedVariables.variableStudioElementId,
+                      }
+                    : {}),
+                },
+                reason: `Update variable ${payload.name}`,
+              },
+              documentRef: state?.bound ?? null,
+            });
+            void refreshBoundGeometry();
           }}
         />
       ) : null}

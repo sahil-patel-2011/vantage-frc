@@ -107,6 +107,34 @@ describe("updateFeaturePayload", () => {
       widthMm: 80,
       heightMm: 40,
     });
+    expect(
+      updateFeaturePayload({
+        featureId: EXTRUDE_ID,
+        radiusMm: "3",
+        diameterMm: 8,
+        thicknessMm: 2,
+      }),
+    ).toEqual({
+      action: "update-onshape-feature",
+      featureId: EXTRUDE_ID,
+      radiusMm: 3,
+      diameterMm: 8,
+      thicknessMm: 2,
+    });
+    expect(
+      updateFeaturePayload({
+        featureId: EXTRUDE_ID,
+        depthMm: "",
+        widthMm: null,
+        heightMm: undefined,
+        radiusMm: "",
+        diameterMm: null,
+        thicknessMm: undefined,
+      }),
+    ).toEqual({
+      action: "update-onshape-feature",
+      featureId: EXTRUDE_ID,
+    });
   });
 
   it("refuses DEMO and blank ids without inventing a replacement", () => {
@@ -126,5 +154,8 @@ describe("updateFeaturePayload", () => {
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, depthMm: -4 })).toThrow(/millimetres/i);
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, depthMm: "abc" })).toThrow(/millimetres/i);
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, depthMm: Number.NaN })).toThrow(/millimetres/i);
+    expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, radiusMm: 0 })).toThrow(/millimetres/i);
+    expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, diameterMm: -1 })).toThrow(/millimetres/i);
+    expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, thicknessMm: "abc" })).toThrow(/millimetres/i);
   });
 });

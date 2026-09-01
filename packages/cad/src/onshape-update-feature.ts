@@ -1,6 +1,10 @@
 /**
- * Native Onshape feature update — change depth/width on a feature that was
+ * Native Onshape feature update — change quantity params on a feature that was
  * already created, then POST …/features/featureid/{fid}.
+ *
+ * Maps millimetre patches to Onshape quantity parameterIds:
+ *   depth / width / height / radius / diameter / thickness
+ * (fillet radius, hole diameter, chamfer width, shell thickness).
  *
  * This is the human re-run path: no FeatureScript, no cad_part_edit, no
  * invented ids. The featureId must be the one Onshape returned from create.
@@ -26,7 +30,22 @@ export type OnshapeNativeDimensionPatch = {
   depthMm?: unknown;
   widthMm?: unknown;
   heightMm?: unknown;
+  radiusMm?: unknown;
+  diameterMm?: unknown;
+  thicknessMm?: unknown;
 };
+
+const PATCH_PROVIDED_ERROR =
+  "Provide depthMm, widthMm, heightMm, radiusMm, diameterMm, and/or thicknessMm to update the existing native feature.";
+
+/** Onshape quantity parameterIds for each millimetre patch. First name is preferred. */
+const QUANTITY_PARAM_IDS = {
+  depth: ["depth"],
+  width: ["width"],
+  radius: ["radius"],
+  diameter: ["diameter", "holeDiameter"],
+  thickness: ["thickness"],
+} as const;
 
 const DEMO_FEATURE_ID = /demo/i;
 
@@ -139,6 +158,17 @@ function replaceQuantity(
   return [...parameters, next];
 }
 
+function replaceQuantityAlias(
+  parameters: Array<Record<string, unknown>>,
+  parameterIds: readonly string[],
+  mm: number,
+): Array<Record<string, unknown>> {
+  const existing = parameterIds.find((id) =>
+    parameters.some((entry) => String(entry.parameterId ?? "") === id),
+  );
+  return replaceQuantity(parameters, existing ?? parameterIds[0]!, mm);
+}
+
 function planeFromFeature(feature: Record<string, unknown>): string {
   const plane = parameterList(feature).find((entry) => String(entry.parameterId ?? "") === "sketchPlane");
   const query = Array.isArray(plane?.queries) ? asRecord(plane.queries[0]) : null;
@@ -182,7 +212,14 @@ function inferRectangleMm(feature: Record<string, unknown>): {
 
 export function applyNativeFeatureDimensions(
   feature: Record<string, unknown>,
-  patch: { depthMm?: number; widthMm?: number; heightMm?: number },
+  patch: {
+    depthMm?: number;
+    widthMm?: number;
+    heightMm?: number;
+    radiusMm?: number;
+    diameterMm?: number;
+    thicknessMm?: number;
+  },
 ): Record<string, unknown> {
   const featureType = String(feature.featureType ?? "");
   const isSketch = featureType === "newSketch" || feature.btType === "BTMSketch-151" || Array.isArray(feature.entities);
@@ -193,7 +230,7 @@ export function applyNativeFeatureDimensions(
     if (isSketch && featureType === "newSketch") {
       throw new Error("depthMm updates an extrude. Pass the extrude featureId from the prior create.");
     }
-    next = { ...next, parameters: replaceQuantity(parameterList(next), "depth", patch.depthMm) };
+    next = { ...next, parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.depth, patch.depthMm) };
     applied = true;
   }
 
@@ -223,21 +260,40 @@ export function applyNativeFeatureDimensions(
       };
       applied = true;
     } else if (patch.widthMm !== undefined) {
-      next = { ...next, parameters: replaceQuantity(parameterList(next), "width", patch.widthMm) };
+      next = { ...next, parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.width, patch.widthMm) };
       applied = true;
     } else {
       throw new Error("heightMm updates a sketch. Pass the sketch featureId from the prior create.");
     }
   }
 
+  if (patch.radiusMm !== undefined) {
+    next = { ...next, parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.radius, patch.radiusMm) };
+    applied = true;
+  }
+  if (patch.diameterMm !== undefined) {
+    next = {
+      ...next,
+      parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.diameter, patch.diameterMm),
+    };
+    applied = true;
+  }
+  if (patch.thicknessMm !== undefined) {
+    next = {
+      ...next,
+      parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.thickness, patch.thicknessMm),
+    };
+    applied = true;
+  }
+
   if (!applied) {
-    throw new Error("Provide depthMm and/or widthMm to update the existing native feature.");
+    throw new Error(PATCH_PROVIDED_ERROR);
   }
   return next;
 }
 
 /**
- * GET the existing native feature, patch depth/width, POST the Onshape update API.
+ * GET the existing native feature, patch quantity params, POST the Onshape update API.
  * Returns the feature id Onshape put on the update response — never a synthesized id.
  */
 export async function updateOnshapeFeature(
@@ -256,8 +312,18 @@ export async function updateOnshapeFeature(
   const depthMm = optionalPositiveMm(input.depthMm, "depthMm");
   const widthMm = optionalPositiveMm(input.widthMm, "widthMm");
   const heightMm = optionalPositiveMm(input.heightMm, "heightMm");
-  if (depthMm === undefined && widthMm === undefined && heightMm === undefined) {
-    throw new Error("Provide depthMm and/or widthMm to update the existing native feature.");
+  const radiusMm = optionalPositiveMm(input.radiusMm, "radiusMm");
+  const diameterMm = optionalPositiveMm(input.diameterMm, "diameterMm");
+  const thicknessMm = optionalPositiveMm(input.thicknessMm, "thicknessMm");
+  if (
+    depthMm === undefined &&
+    widthMm === undefined &&
+    heightMm === undefined &&
+    radiusMm === undefined &&
+    diameterMm === undefined &&
+    thicknessMm === undefined
+  ) {
+    throw new Error(PATCH_PROVIDED_ERROR);
   }
 
   const path = onshapeFeaturePath(document, featureId);
@@ -270,7 +336,14 @@ export async function updateOnshapeFeature(
   }
 
   const { feature, sourceMicroversion, serializationVersion } = unwrapFeature(existingBody);
-  const patched = applyNativeFeatureDimensions(feature, { depthMm, widthMm, heightMm });
+  const patched = applyNativeFeatureDimensions(feature, {
+    depthMm,
+    widthMm,
+    heightMm,
+    radiusMm,
+    diameterMm,
+    thicknessMm,
+  });
   patched.featureId = featureId;
 
   const updateResponse = await http(path, {

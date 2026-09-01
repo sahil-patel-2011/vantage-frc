@@ -43,7 +43,7 @@ function addFeatureHttp(featureId: string) {
 }
 
 describe("native operation classification", () => {
-  it("treats fillet/chamfer/shell/hole/pattern/mirror/delete as native", () => {
+  it("treats fillet/chamfer/shell/hole/pattern/mirror/delete/set_variable as native", () => {
     expect(
       [
         "create_fillet",
@@ -53,16 +53,17 @@ describe("native operation classification", () => {
         "create_pattern",
         "create_mirror",
         "delete_feature",
+        "set_variable",
       ].every(isOnshapeNativeOperation),
     ).toBe(true);
     expect(isOnshapeNativeUnimplemented("create_chamfer")).toBe(false);
     expect(isOnshapeNativeUnimplemented("create_shell")).toBe(false);
+    expect(isOnshapeNativeUnimplemented("set_variable")).toBe(false);
   });
 
-  it("keeps variable/rollback as honest unimplemented", () => {
-    expect(isOnshapeNativeUnimplemented("set_variable")).toBe(true);
+  it("keeps rollback as honest unimplemented", () => {
     expect(isOnshapeNativeUnimplemented("rollback_checkpoint")).toBe(true);
-    expect(onshapeNativeUnimplementedError("set_variable").message).toMatch(/will not generate FeatureScript/i);
+    expect(onshapeNativeUnimplementedError("rollback_checkpoint").message).toMatch(/will not generate FeatureScript/i);
   });
 });
 
@@ -296,6 +297,54 @@ describe("dispatchOnshapeNativeFeature", () => {
       }),
     ).rejects.toThrow(/not found/);
   });
+
+  it("dispatches set_variable through Variables REST, not FeatureScript", async () => {
+    const tables = [{ variables: [{ name: "wallThickness", expression: "2 mm", type: "LENGTH" }] }];
+    const { http, calls } = captureHttp((path, init) => {
+      if (path.startsWith("/variables/") && (init?.method ?? "GET").toUpperCase() === "GET") {
+        return jsonResponse(tables);
+      }
+      if (path.startsWith("/variables/") && init?.method === "POST") {
+        return jsonResponse({});
+      }
+      return jsonResponse({ message: `unexpected ${init?.method ?? "GET"} ${path}` }, 404);
+    });
+    const result = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "set_variable",
+      parameters: { name: "wallThickness", value: "2 mm" },
+      idempotencyKey: "job:1:var",
+    });
+    expect(result).toEqual({ featureId: "wallThickness", featureScriptUsed: false });
+    expect(calls.every((call) => call.path === "/variables/d/d1/w/w1/e/e1/variables")).toBe(true);
+    expect(calls.some((call) => call.method === "POST")).toBe(true);
+    expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
+    expect(JSON.stringify(calls.map((call) => call.body))).not.toMatch(/featurescript|opAssignVariable/i);
+  });
+
+  it("refuses a blank or DEMO variable name without calling Onshape", async () => {
+    const { http, calls } = addFeatureHttp("should-not-run");
+    await expect(
+      dispatchOnshapeNativeFeature({
+        http,
+        document: DOCUMENT,
+        operation: "set_variable",
+        parameters: { name: "", value: "2 mm" },
+        idempotencyKey: "job:1:blank-var",
+      }),
+    ).rejects.toThrow(/requires a variable name/i);
+    await expect(
+      dispatchOnshapeNativeFeature({
+        http,
+        document: DOCUMENT,
+        operation: "set_variable",
+        parameters: { name: "DEMO", value: "2 mm" },
+        idempotencyKey: "job:1:demo-var",
+      }),
+    ).rejects.toThrow(/DEMO/i);
+    expect(calls).toHaveLength(0);
+  });
 });
 
 describe("createOnshapeApiTransport native routing", () => {
@@ -368,14 +417,36 @@ describe("createOnshapeApiTransport native routing", () => {
     expect(JSON.stringify(calls.map((call) => call.body))).not.toMatch(/featurescript|opChamfer|opShell/i);
   });
 
+  it("routes set_variable through Variables REST", async () => {
+    const tables = [{ variables: [{ name: "wallThickness", expression: "2 mm", type: "LENGTH" }] }];
+    const { http, calls } = captureHttp((path, init) => {
+      if (path.startsWith("/variables/") && (init?.method ?? "GET").toUpperCase() === "GET") {
+        return jsonResponse(tables);
+      }
+      if (path.startsWith("/variables/") && init?.method === "POST") {
+        return jsonResponse({});
+      }
+      return jsonResponse({ message: `unexpected ${init?.method ?? "GET"} ${path}` }, 404);
+    });
+    const transport = transportWith(http as unknown as OnshapeHttp);
+    const result = await transport.mutate({
+      operation: "set_variable",
+      parameters: { name: "wallThickness", value: "2 mm" },
+      idempotencyKey: "job:t:var",
+    });
+    expect(result).toMatchObject({ featureId: "wallThickness", featureScriptUsed: false });
+    expect(calls.some((call) => call.path === "/variables/d/d1/w/w1/e/e1/variables" && call.method === "POST")).toBe(true);
+    expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
+  });
+
   it("keeps unimplemented ops as honest errors and does not call Onshape", async () => {
     const http = vi.fn(async () => jsonResponse({ message: "should not run" }, 500)) as unknown as OnshapeHttp;
     const transport = transportWith(http);
     await expect(
       transport.mutate({
-        operation: "set_variable",
-        parameters: { name: "wallThickness", value: "2 mm" },
-        idempotencyKey: "job:t:var",
+        operation: "rollback_checkpoint",
+        parameters: { checkpointRef: "cp-1" },
+        idempotencyKey: "job:t:rollback",
       }),
     ).rejects.toThrow(/will not generate FeatureScript/i);
     expect(http).not.toHaveBeenCalled();

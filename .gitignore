@@ -3,6 +3,8 @@ node_modules/
 dist/
 release/
 coverage/
+!apps/web/app/api/scouting/coverage/
+!apps/web/app/api/scouting/coverage/**
 playwright-report/
 test-results/
 *.tsbuildinfo
