@@ -16,6 +16,8 @@ import {
   type ComposerNativeOp,
   type ComposerOp,
 } from "../../lib/cad/composer-ops";
+import { type ListedOnshapeEntities } from "../../lib/cad/list-entities";
+import { rememberComposerFeature } from "../../lib/cad/remember-feature";
 import { CadComposerFields } from "./cad-composer-fields";
 
 export {
@@ -31,6 +33,7 @@ export function CadOperationComposer({
   onPlanChange,
   onAppend,
   onRunPlan,
+  entities,
 }: {
   platform: string;
   disabled?: boolean;
@@ -38,6 +41,7 @@ export function CadOperationComposer({
   onPlanChange?: (ops: ComposerOp[]) => void;
   onAppend?: (payload: Record<string, unknown>) => Promise<unknown>;
   onRunPlan?: (plan: unknown) => Promise<{ ok?: boolean; error?: string } | void>;
+  entities?: ListedOnshapeEntities;
 }) {
   const operations = useMemo(() => composerPalette(platform), [platform]);
   const [operation, setOperation] = useState<ComposerNativeOp>(operations[0] ?? "create_sketch");
@@ -102,7 +106,13 @@ export function CadOperationComposer({
         const added = next[next.length - 1];
         if (added && onAppend) {
           const [payload] = serializeComposerOps([added]);
-          if (payload) await onAppend(payload);
+          if (payload) {
+            const result = await onAppend(payload);
+            if (appendResultHasFeatureId(result)) {
+              rememberComposerFeature(added, result);
+              commitPlan(next);
+            }
+          }
         }
       }
       clearEditor();
@@ -171,6 +181,7 @@ export function CadOperationComposer({
           operation={operation}
           draft={draft}
           disabled={disabled}
+          entities={entities}
           onChange={(key, value) => {
             setDraft((current) => ({ ...current, [key]: value }));
             setError("");
@@ -239,4 +250,18 @@ export function CadOperationComposer({
       </div>
     </details>
   );
+}
+
+function appendResultHasFeatureId(
+  result: unknown,
+): result is { featureId?: unknown; result?: unknown } {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return false;
+  const record = result as { featureId?: unknown; result?: unknown };
+  if (record.featureId != null && record.featureId !== "") return true;
+  const nested = record.result;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const nestedId = (nested as { featureId?: unknown }).featureId;
+    return nestedId != null && nestedId !== "";
+  }
+  return false;
 }

@@ -26,6 +26,9 @@ export type FmeaFailure = {
   fix: string | null;
   status: FmeaStatus;
   inspectionItemId: string | null;
+  /** Optional spare-bin link (0512). Null falls back to subsystem-name matching. */
+  inventoryItemId?: string | null;
+  inventoryItemName?: string | null;
   eventKey: string | null;
   matchKey: string | null;
   robotLabel: string;

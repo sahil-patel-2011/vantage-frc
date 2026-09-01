@@ -4,6 +4,8 @@ export const COMPOSER_NATIVE_OPS = [
   "create_sketch",
   "create_extrude",
   "create_fillet",
+  "create_chamfer",
+  "create_shell",
   "create_hole",
   "create_part_studio",
   "create_assembly",
@@ -42,6 +44,7 @@ const FUSION_NATIVE_OPS: readonly ComposerNativeOp[] = [
   "create_sketch",
   "create_extrude",
   "create_fillet",
+  "create_chamfer",
   "verify_topology",
   "export_step",
 ];
@@ -52,12 +55,15 @@ const POSITIVE_MM_ALIASES: Record<string, string> = {
   depth: "depthMm",
   radius: "radiusMm",
   diameter: "diameterMm",
+  thickness: "thicknessMm",
 };
 
 const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_sketch: ["widthMm", "heightMm"],
   create_extrude: ["depthMm"],
   create_fillet: ["radiusMm"],
+  create_chamfer: ["widthMm"],
+  create_shell: ["thicknessMm"],
   create_hole: ["diameterMm", "depthMm"],
   create_part_studio: [],
   create_assembly: [],
@@ -71,6 +77,8 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_sketch: [],
   create_extrude: [],
   create_fillet: [],
+  create_chamfer: [],
+  create_shell: [],
   create_hole: [],
   create_part_studio: [],
   create_assembly: [],
@@ -87,7 +95,7 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   export_step: [],
 };
 
-const LIST_KEYS = new Set(["entities", "edgeIds", "views"]);
+const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "views"]);
 
 const SKETCH_PLANES = [
   { value: "Top", label: "Top" },
@@ -133,10 +141,21 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "entities", label: "Edges", kind: "idList", help: "Comma-separated edge IDs from describe / list entities." },
     { key: "name", label: "Name", kind: "text" },
   ],
+  create_chamfer: [
+    { key: "widthMm", label: "Width", kind: "mm", help: "Chamfer width in millimetres." },
+    { key: "entities", label: "Edges", kind: "idList", help: "Comma-separated edge IDs from describe / list entities." },
+    { key: "name", label: "Name", kind: "text" },
+  ],
+  create_shell: [
+    { key: "thicknessMm", label: "Thickness", kind: "mm", help: "Wall thickness in millimetres." },
+    { key: "entities", label: "Faces", kind: "idList", help: "Comma-separated face IDs to open. Leave blank to keep a closed shell." },
+    { key: "name", label: "Name", kind: "text" },
+  ],
   create_hole: [
     { key: "diameterMm", label: "Diameter", kind: "mm", help: "Hole diameter in millimetres." },
     { key: "endStyle", label: "End", kind: "select", options: HOLE_ENDS },
     { key: "depthMm", label: "Depth", kind: "mm", help: "Required for blind holes. Leave blank for through." },
+    { key: "faceIds", label: "Faces", kind: "idList", help: "Comma-separated face IDs from describe / list entities." },
     { key: "pointSketchFeatureId", label: "Point sketch feature ID", kind: "text" },
     { key: "targetFeatureId", label: "Target solid feature ID", kind: "text" },
     { key: "name", label: "Name", kind: "text" },
@@ -195,6 +214,10 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Extrude";
     case "create_fillet":
       return "Fillet";
+    case "create_chamfer":
+      return "Chamfer";
+    case "create_shell":
+      return "Shell";
     case "create_hole":
       return "Hole";
     case "create_part_studio":
@@ -219,14 +242,18 @@ export function summarizeComposerParams(operation: ComposerNativeOp, parameters:
   const depth = asFiniteNumber(parameters.depthMm);
   const radius = asFiniteNumber(parameters.radiusMm);
   const diameter = asFiniteNumber(parameters.diameterMm);
+  const thickness = asFiniteNumber(parameters.thicknessMm);
   if (operation === "create_sketch" && width != null && height != null) {
     parts.push(`${formatMm(width)} × ${formatMm(height)} mm`);
+  } else if (operation === "create_chamfer" && width != null) {
+    parts.push(`${formatMm(width)} mm`);
   } else {
     if (width != null) parts.push(`W ${formatMm(width)} mm`);
     if (height != null) parts.push(`H ${formatMm(height)} mm`);
   }
   if (diameter != null) parts.push(`⌀ ${formatMm(diameter)} mm`);
   if (radius != null) parts.push(`R ${formatMm(radius)} mm`);
+  if (thickness != null) parts.push(`${formatMm(thickness)} mm wall`);
   if (depth != null && operation !== "create_sketch") parts.push(`${formatMm(depth)} mm deep`);
   const plane = stringOrEmpty(parameters.plane);
   if (plane) parts.push(plane);

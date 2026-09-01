@@ -18,10 +18,18 @@ import { BUILD_PHASE_LABEL, type BuildPhase } from "./notebook";
 import {
   attachmentIdsFromTags,
   isNotebookAssetTag,
-  notebookEntryHasImageEvidence,
+  isNotebookImageKind,
   resolveNotebookAttachments,
   type NotebookImageAttachment,
 } from "./notebook/attachments";
+
+function isWikiPhotoCite(row: Pick<NotebookImageAttachment, "url" | "kind">): boolean {
+  return Boolean(row.url.trim()) && isNotebookImageKind(row.kind) && row.kind !== "video";
+}
+
+function isWikiVideoCite(row: Pick<NotebookImageAttachment, "url" | "kind">): boolean {
+  return Boolean(row.url.trim()) && row.kind === "video";
+}
 
 export type PromotableEntry = {
   id: string;
@@ -77,8 +85,10 @@ export function buildNotebookWikiBody(entry: PromotableEntry): string {
   lines.push("");
   lines.push("## Photos");
   lines.push("");
-  const photos = (entry.attachments ?? []).filter((row) => row.url.trim());
-  if (notebookEntryHasImageEvidence(photos)) {
+  const attachments = entry.attachments ?? [];
+  const photos = attachments.filter(isWikiPhotoCite);
+  const videos = attachments.filter(isWikiVideoCite);
+  if (photos.length) {
     for (const photo of photos) {
       lines.push(`![${photo.title}](${photo.url})`);
       lines.push("");
@@ -86,6 +96,15 @@ export function buildNotebookWikiBody(entry: PromotableEntry): string {
   } else {
     lines.push("_No photo was attached to the original notebook entry._");
     lines.push("");
+  }
+  if (videos.length) {
+    lines.push("## Videos");
+    lines.push("");
+    for (const video of videos) {
+      // Wiki MarkdownDocument is markdown-only — no <video> or image-for-clip.
+      lines.push(`[Video: ${video.title}](${video.url})`);
+      lines.push("");
+    }
   }
   lines.push("## Still true?");
   lines.push("");

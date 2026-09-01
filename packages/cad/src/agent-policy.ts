@@ -96,7 +96,8 @@ const ALLOWLISTED: readonly CadOperation[] = [
 ];
 
 /**
- * Hosted default / AI CAD plans for humans: native sketch / extrude / mate only.
+ * Hosted default / AI CAD plans for humans: native Part Studio ops only.
+ * Includes fillet / chamfer / shell now that native dispatch implements them.
  * `feature_script` stays on the full allowlist for local CLI / MCP, but must never
  * appear in a hosted starter or metered planner plan.
  */

@@ -13,6 +13,27 @@ type PurchaseRequest = {
 };
 type MonthSummary = { month: string; income: number; expense: number; net: number; overMonthlyLimit: boolean };
 type DirectoryVendor = { id: string; name: string };
+type CatalogItem = { id: string; name: string; archived?: boolean };
+
+const CATALOG_ITEM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Catalog rows from /api/inventory. Empty or malformed payloads stay empty — never invent an id. */
+function catalogItemsFromInventory(data: unknown): CatalogItem[] {
+  if (!data || typeof data !== "object") return [];
+  const items = (data as { items?: unknown }).items;
+  if (!Array.isArray(items)) return [];
+  const catalog: CatalogItem[] = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as { id?: unknown; name?: unknown; archived?: unknown };
+    const id = typeof raw.id === "string" ? raw.id.trim() : "";
+    if (!CATALOG_ITEM_ID.test(id)) continue;
+    if (raw.archived === true) continue;
+    const name = typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : id;
+    catalog.push({ id, name });
+  }
+  return catalog;
+}
 
 const STATUS_ACTIONS: Record<string, { action: string; label: string }[]> = {
   pending: [{ action: "approve", label: "Approve" }, { action: "reject", label: "Reject" }],
@@ -32,22 +53,27 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [budgetForm, setBudgetForm] = useState({ categoryName: "", monthlyLimitUsd: "", totalLimitUsd: "", notes: "" });
   const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
-  const [requestForm, setRequestForm] = useState({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "" });
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const emptyRequestForm = { title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "", inventoryItemId: "" };
+  const [requestForm, setRequestForm] = useState(emptyRequestForm);
 
   async function load() {
-    const [budgetRes, requestsRes, summaryRes, vendorsRes] = await Promise.all([
+    const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes] = await Promise.all([
       fetch(`/api/finance/budget?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/purchase-requests?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/summary?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/vendors?orgId=${orgId}`),
+      fetch(`/api/inventory?orgId=${orgId}`),
     ]);
     const budgetData = await budgetRes.json();
     const requestsData = await requestsRes.json();
     const summaryData = await summaryRes.json();
     const vendorsData = await vendorsRes.json();
+    const inventoryData = inventoryRes.ok ? await inventoryRes.json() : null;
     setCategories(budgetData.categories ?? []);
     setRequests(requestsData.requests ?? []);
     setVendors(Array.isArray(vendorsData.vendors) ? vendorsData.vendors : []);
+    setCatalogItems(catalogItemsFromInventory(inventoryData));
     setMonths(summaryData.byMonth ?? []);
     setTotals({
       totalIncome: summaryData.totalIncome ?? 0,
@@ -82,6 +108,9 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
       setMessage(sheet.error);
       return;
     }
+    const pickedCatalogId = catalogItems.some((item) => item.id === requestForm.inventoryItemId)
+      ? requestForm.inventoryItemId
+      : null;
     const response = await fetch("/api/finance/purchase-requests", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -95,11 +124,12 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         quantity: requestForm.quantity,
         categoryId: requestForm.categoryId || null,
         vendorId: requestForm.vendorId || null,
+        inventoryItemId: pickedCatalogId,
       }),
     });
     const data = await response.json();
     setMessage(response.ok ? "Purchase request submitted." : data.error);
-    if (response.ok) { setRequestForm({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "" }); await load(); }
+    if (response.ok) { setRequestForm(emptyRequestForm); await load(); }
   }
 
   async function act(id: string, action: string) {
@@ -163,6 +193,12 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
             <option value="">{vendors.length ? "Choose a vendor" : "Add a vendor first"}</option>
             {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select></label>
+          <label>Restock inventory <small>optional — receive writes stock</small>
+            <select value={requestForm.inventoryItemId} onChange={(e) => setRequestForm({ ...requestForm, inventoryItemId: e.target.value })}>
+              <option value="">{catalogItems.length ? "None — skip stock receive" : "No catalog items"}</option>
+              {catalogItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
           <label>Why<input required value={requestForm.justification} onChange={(e) => setRequestForm({ ...requestForm, justification: e.target.value })} /></label>
           <label>When <small>needed by, optional</small><input type="date" value={requestForm.neededBy} onChange={(e) => setRequestForm({ ...requestForm, neededBy: e.target.value })} /></label>
           <button className="primary-action">Submit request</button>
