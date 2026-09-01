@@ -17,6 +17,9 @@ export const COMPOSER_NATIVE_OPS = [
   "delete_feature",
   "verify_topology",
   "export_step",
+  "export_stl",
+  "export_gltf",
+  "render_views",
 ] as const;
 
 export type ComposerNativeOp = (typeof COMPOSER_NATIVE_OPS)[number];
@@ -89,6 +92,9 @@ const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   delete_feature: [],
   verify_topology: [],
   export_step: [],
+  export_stl: [],
+  export_gltf: [],
+  render_views: [],
 };
 
 const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
@@ -108,6 +114,9 @@ const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   delete_feature: [],
   verify_topology: [],
   export_step: [],
+  export_stl: [],
+  export_gltf: [],
+  render_views: [],
 };
 
 const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
@@ -132,6 +141,9 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   ],
   verify_topology: [],
   export_step: [],
+  export_stl: [],
+  export_gltf: [],
+  render_views: [],
   set_variable: [],
   delete_feature: [],
 };
@@ -142,6 +154,11 @@ const SKETCH_PLANES = [
   { value: "Top", label: "Top" },
   { value: "Front", label: "Front" },
   { value: "Right", label: "Right" },
+] as const;
+
+const SKETCH_KINDS = [
+  { value: "rectangle", label: "Rectangle" },
+  { value: "circle", label: "Circle" },
 ] as const;
 
 const EXTRUDE_TYPES = [
@@ -177,8 +194,10 @@ const PATTERN_DIRECTIONS = [
 export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerFieldSpec[]> = {
   create_sketch: [
     { key: "plane", label: "Plane", kind: "select", options: SKETCH_PLANES },
-    { key: "widthMm", label: "Width", kind: "mm", help: "Millimetres. Leave blank until you measure." },
-    { key: "heightMm", label: "Height", kind: "mm", help: "Millimetres. Leave blank until you measure." },
+    { key: "sketchKind", label: "Kind", kind: "select", options: SKETCH_KINDS },
+    { key: "widthMm", label: "Width", kind: "mm", help: "Rectangle width in millimetres. Leave blank for a circle." },
+    { key: "heightMm", label: "Height", kind: "mm", help: "Rectangle height in millimetres. Leave blank for a circle." },
+    { key: "radiusMm", label: "Radius", kind: "mm", help: "Circle radius in millimetres. Leave blank for a rectangle." },
     { key: "name", label: "Name", kind: "text" },
   ],
   create_extrude: [
@@ -229,8 +248,6 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
       kind: "idList",
       help: "Onshape hole needs scope body ids.",
     },
-    { key: "pointSketchFeatureId", label: "Point sketch feature ID", kind: "text" },
-    { key: "targetFeatureId", label: "Target solid feature ID", kind: "text" },
     { key: "name", label: "Name", kind: "text" },
   ],
   create_pattern: [
@@ -331,6 +348,9 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "explainForStudents", label: "Explain for students", kind: "checkbox" },
   ],
   export_step: [],
+  export_stl: [],
+  export_gltf: [],
+  render_views: [],
 };
 
 export function isComposerNativeOp(value: string): value is ComposerNativeOp {
@@ -382,6 +402,12 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Verify topology";
     case "export_step":
       return "Export STEP";
+    case "export_stl":
+      return "Export STL";
+    case "export_gltf":
+      return "Export glTF";
+    case "render_views":
+      return "Render views";
   }
 }
 
@@ -508,11 +534,18 @@ export function requireComposerDimensions(
   parameters: Record<string, unknown>,
 ): Record<string, unknown> {
   switch (operation) {
-    case "create_sketch":
-      if (asFiniteNumber(parameters.widthMm) == null || asFiniteNumber(parameters.heightMm) == null) {
+    case "create_sketch": {
+      const circular =
+        stringOrEmpty(parameters.sketchKind) === "circle" || asFiniteNumber(parameters.radiusMm) != null;
+      if (circular) {
+        if (asFiniteNumber(parameters.radiusMm) == null) {
+          throw new Error("Circle sketches need a positive radius in millimetres.");
+        }
+      } else if (asFiniteNumber(parameters.widthMm) == null || asFiniteNumber(parameters.heightMm) == null) {
         throw new Error("Sketch width and height are required millimetres.");
       }
       break;
+    }
     case "create_extrude":
       if (asFiniteNumber(parameters.depthMm) == null) {
         throw new Error("Extrude depth is required millimetres.");
@@ -603,6 +636,14 @@ export function requireComposerPicks(
       ) {
         throw new Error(
           "Mate needs first and second instance ids from list-onshape-assembly. Do not invent ids.",
+        );
+      }
+      if (
+        !(hasNonEmptyId(parameters.firstFaceId) || hasNonEmptyIds(parameters.firstFaceId)) ||
+        !(hasNonEmptyId(parameters.secondFaceId) || hasNonEmptyIds(parameters.secondFaceId))
+      ) {
+        throw new Error(
+          "Mate needs first and second face ids from list-onshape-entities. Do not invent ids.",
         );
       }
       break;

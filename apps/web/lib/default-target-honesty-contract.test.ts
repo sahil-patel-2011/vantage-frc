@@ -19,5 +19,8 @@ describe("Default yardstick labels stay honest", () => {
     expect(web("app/readiness-score/readiness-score-client.tsx")).toContain(
       "default 115 lb / 120 A yardstick",
     );
+    expect(web("app/leadership/leadership-client.tsx")).toContain(
+      "not a recorded team goal",
+    );
   });
 });

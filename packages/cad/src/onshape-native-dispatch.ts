@@ -68,8 +68,13 @@ export function isOnshapeNativeUnimplemented(operation: string): operation is On
 }
 
 export function onshapeNativeUnimplementedError(operation: string): Error {
+  if (operation === "rollback_checkpoint") {
+    return new Error(
+      "Rollback is not a native Onshape action. Humans delete the last feature from the Vantage feature tree instead.",
+    );
+  }
   return new Error(
-    `Onshape operation '${operation}' is not implemented as a native Part Studio feature. Vantage will not generate FeatureScript for it.`,
+    `Onshape operation '${operation}' is not implemented as a native Part Studio feature.`,
   );
 }
 
@@ -113,14 +118,7 @@ function buildNativeFeature(
     case "create_shell":
       return buildShellFeature(parameters);
     case "create_hole":
-      return holeFeature({
-        locationIds: requireEntityIds(parameters, ["locationIds", "locations", "vertices", "faceIds"], "locationIds"),
-        scopeIds: requireEntityIds(parameters, ["scopeIds", "scope", "bodyIds", "bodies"], "scopeIds"),
-        diameterMm: requireNumber(parameters, ["diameterMm", "diameter"], "Hole diameter"),
-        endStyle: holeEndStyle(parameters),
-        depthMm: firstNumber(parameters, ["depthMm", "depth"]),
-        name: optionalName(parameters, "VantageHole"),
-      });
+      return buildHoleFeature(parameters);
     case "create_pattern":
       return buildPatternFeature(parameters);
     case "create_mirror":
@@ -162,6 +160,29 @@ function buildShellFeature(parameters: Record<string, unknown>) {
       parameters: featureParameters,
     },
   };
+}
+
+/**
+ * Native Hole. Hosted holes are face + body picks from list-onshape-entities.
+ * A pointSketchFeatureId alone is not a location — we never invent a point sketch.
+ */
+function buildHoleFeature(parameters: Record<string, unknown>) {
+  const hasPointSketch = Boolean(optionalString(parameters, ["pointSketchFeatureId"]));
+  const hasLocationIds = stringList(parameters.locationIds).length > 0;
+  const hasFaceIds = stringList(parameters.faceIds).length > 0;
+  if (hasPointSketch && !hasLocationIds && !hasFaceIds) {
+    throw new Error(
+      "Hosted holes need location face ids and body ids from list-onshape-entities. A pointSketchFeatureId is not enough — resolve those picks first.",
+    );
+  }
+  return holeFeature({
+    locationIds: requireEntityIds(parameters, ["locationIds", "locations", "vertices", "faceIds"], "locationIds"),
+    scopeIds: requireEntityIds(parameters, ["scopeIds", "scope", "bodyIds", "bodies"], "scopeIds"),
+    diameterMm: requireNumber(parameters, ["diameterMm", "diameter"], "Hole diameter"),
+    endStyle: holeEndStyle(parameters),
+    depthMm: firstNumber(parameters, ["depthMm", "depth"]),
+    name: optionalName(parameters, "VantageHole"),
+  });
 }
 
 function buildPatternFeature(parameters: Record<string, unknown>) {

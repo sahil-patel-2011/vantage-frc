@@ -10,6 +10,7 @@ import {
   type OnshapeMateType,
 } from "./onshape-assemblies";
 import {
+  circleSketchFeature,
   extrudeFeature,
   onshapeFeaturePath,
   parseAddedFeatureId,
@@ -476,7 +477,7 @@ type OnshapeTransportLike = {
 
 /**
  * Hosted Onshape transport: allowlisted mutations + describe/verify + STEP/STL/GLTF export provenance.
- * Uses FeatureScript eval for custom scripts; sketch/extrude map to documented Part Studio feature APIs when possible.
+ * Sketch/extrude map to documented Part Studio feature APIs. FeatureScript is refused.
  * Real credentials must be tested only in a disposable document.
  */
 export function createOnshapeApiTransport(input: {
@@ -632,10 +633,30 @@ export function createOnshapeApiTransport(input: {
       }
       if (operation === "create_sketch" || operation === "create_extrude") {
         if (operation === "create_sketch") {
-          const widthMm = positiveMillimetres(parameters, ["widthMm", "width"], "Sketch width");
-          const heightMm = positiveMillimetres(parameters, ["heightMm", "height"], "Sketch height");
           const plane = String(parameters.plane ?? "Top").trim() || "Top";
           const name = String(parameters.name ?? jobSketchName(idempotencyKey)).trim();
+          const sketchKind = String(parameters.sketchKind ?? "").trim().toLowerCase();
+          const radiusRaw = parameters.radiusMm ?? parameters.radius;
+          const radiusHint = Number(radiusRaw);
+          const wantsCircle =
+            sketchKind === "circle" || (radiusRaw !== undefined && Number.isFinite(radiusHint) && radiusHint > 0);
+          if (wantsCircle) {
+            const radiusMm = positiveMillimetres(parameters, ["radiusMm", "radius"], "Sketch radius");
+            const circle: { diameterMm: number; centerXMm?: number; centerYMm?: number } = {
+              diameterMm: radiusMm * 2,
+            };
+            const centerX = Number(parameters.centerXMm);
+            const centerY = Number(parameters.centerYMm);
+            if (parameters.centerXMm !== undefined && Number.isFinite(centerX)) circle.centerXMm = centerX;
+            if (parameters.centerYMm !== undefined && Number.isFinite(centerY)) circle.centerYMm = centerY;
+            const featureId = await addFeature(
+              circleSketchFeature({ circles: [circle], plane, name }),
+              idempotencyKey,
+            );
+            return { featureId, featureScriptUsed: false };
+          }
+          const widthMm = positiveMillimetres(parameters, ["widthMm", "width"], "Sketch width");
+          const heightMm = positiveMillimetres(parameters, ["heightMm", "height"], "Sketch height");
           const featureId = await addFeature(
             rectangleSketchFeature({ widthMm, heightMm, plane, name }),
             idempotencyKey,
@@ -747,8 +768,9 @@ export function createOnshapeApiTransport(input: {
       };
     },
     async rollback(checkpointRef) {
-      // Onshape workspace rollback is destructive; require explicit feature_script / UI for now.
-      throw new Error(`Rollback of ${checkpointRef} must be confirmed via Onshape UI or reviewed FeatureScript`);
+      throw new Error(
+        `Rollback of ${checkpointRef} is not a native Onshape action in Vantage`,
+      );
     },
   };
 }

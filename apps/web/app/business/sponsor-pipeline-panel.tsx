@@ -181,8 +181,18 @@ export function SponsorPipelinePanel({
             <span className="biz-overline">Season fundraising</span>
             <h2>Goal vs actual — this team only</h2>
           </div>
-          <ToneBadge tone={progress.percentOfGoal >= 100 ? "good" : progress.percentOfGoal >= 50 ? "blue" : "warn"}>
-            {progress.percentOfGoal}% of goal
+          <ToneBadge
+            tone={
+              !progress.goalCents
+                ? "warn"
+                : progress.percentOfGoal >= 100
+                  ? "good"
+                  : progress.percentOfGoal >= 50
+                    ? "blue"
+                    : "warn"
+            }
+          >
+            {progress.goalCents ? `${progress.percentOfGoal}% of goal` : "Set a season goal"}
           </ToneBadge>
         </header>
         <div className="biz-pipeline-goal-stats">

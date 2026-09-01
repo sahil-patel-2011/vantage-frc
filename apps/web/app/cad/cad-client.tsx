@@ -12,6 +12,11 @@ import {
   type ListedOnshapeAssembly,
 } from "../../lib/cad/list-assembly";
 import {
+  EMPTY_LISTED_ELEMENTS,
+  listDocumentElements,
+  type ListedDocumentElements,
+} from "../../lib/cad/list-document-elements";
+import {
   EMPTY_LISTED_ENTITIES,
   completeDocumentRef,
   listOnshapeEntities,
@@ -555,6 +560,55 @@ function rememberLastAssemblyElementId(
   return realReturnedId(executed.featureId) ?? realReturnedId(executed.result?.elementId) ?? current;
 }
 
+function assemblyStorageKey(orgId: string, documentId: string): string {
+  return `vantage-cad-assembly:${orgId}:${documentId}`;
+}
+
+/** Only store/restore a real non-DEMO assembly element id. */
+function readStoredAssemblyElementId(orgId: string, documentId: string): string | undefined {
+  const oid = realReturnedId(orgId);
+  const did = realReturnedId(documentId);
+  if (!oid || !did || typeof sessionStorage === "undefined") return undefined;
+  try {
+    return realReturnedId(sessionStorage.getItem(assemblyStorageKey(oid, did)));
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredAssemblyElementId(orgId: string, documentId: string, id: string | undefined) {
+  const oid = realReturnedId(orgId);
+  const did = realReturnedId(documentId);
+  const aid = realReturnedId(id);
+  if (!oid || !did || typeof sessionStorage === "undefined") return;
+  try {
+    const key = assemblyStorageKey(oid, did);
+    if (!aid) {
+      sessionStorage.removeItem(key);
+      return;
+    }
+    sessionStorage.setItem(key, aid);
+  } catch {
+    // sessionStorage can be blocked (private mode); assembly memory stays in-session only.
+  }
+}
+
+/** Pass through a real execute checkpoint id / checkpointRef. Never invent. */
+function checkpointIdFromExecute(executed: { result?: Record<string, unknown> }): string | undefined {
+  const result = executed.result;
+  if (!result) return undefined;
+  const output = asParamRecord(result.output);
+  const candidates = [result.checkpointId, result.checkpointRef, output.checkpointId, output.checkpointRef];
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function onshapeTabUrl(documentId: string, workspaceId: string, elementId: string): string {
+  return `https://cad.onshape.com/documents/${documentId}/w/${workspaceId}/e/${elementId}`;
+}
+
 /** Fill create_mate from remembered add_assembly_instance ids. Never invent. */
 function withLastInstanceIds(
   operation: string,
@@ -617,6 +671,8 @@ export default function CadWorkspace({
   const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
   const [listedVariables, setListedVariables] = useState<ListedOnshapeVariables>(EMPTY_LISTED_VARIABLES);
   const [listedAssembly, setListedAssembly] = useState<ListedOnshapeAssembly>(EMPTY_LISTED_ASSEMBLY);
+  const [listedElements, setListedElements] = useState<ListedDocumentElements>(EMPTY_LISTED_ELEMENTS);
+  const [lastCheckpointId, setLastCheckpointId] = useState<string | null>(null);
   const [geometryError, setGeometryError] = useState("");
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
@@ -635,6 +691,8 @@ export default function CadWorkspace({
     setLoadFailure(null);
     setState(data);
     if (data.bound?.url) setUrl(data.bound.url);
+    const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? "");
+    if (stored) lastAssemblyElementId.current = stored;
     return data;
   }, [orgId]);
 
@@ -685,7 +743,15 @@ export default function CadWorkspace({
   const boundWorkspaceId = state?.bound?.workspaceId;
   const boundElementId = state?.bound?.elementId;
 
+  useEffect(() => {
+    lastAssemblyElementId.current = readStoredAssemblyElementId(orgId, boundDocumentId ?? "");
+  }, [orgId, boundDocumentId]);
+
   const refreshBoundGeometry = useCallback(async () => {
+    if (boundDocumentId && !lastAssemblyElementId.current) {
+      const stored = readStoredAssemblyElementId(orgId, boundDocumentId);
+      if (stored) lastAssemblyElementId.current = stored;
+    }
     const documentRef = completeDocumentRef({
       documentId: boundDocumentId,
       workspaceId: boundWorkspaceId,
@@ -742,6 +808,25 @@ export default function CadWorkspace({
   useEffect(() => {
     void refreshBoundGeometry();
   }, [refreshBoundGeometry]);
+
+  useEffect(() => {
+    if (!boundDocumentId || !boundWorkspaceId) {
+      setListedElements(EMPTY_LISTED_ELEMENTS);
+      return;
+    }
+    let cancelled = false;
+    void listDocumentElements({ orgId, documentId: boundDocumentId, workspaceId: boundWorkspaceId })
+      .then((listed) => {
+        if (!cancelled) setListedElements(listed);
+      })
+      .catch(() => {
+        // Keep URL paste bind if list-onshape-elements fails — never crash or invent tabs.
+        if (!cancelled) setListedElements(EMPTY_LISTED_ELEMENTS);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, boundDocumentId, boundWorkspaceId]);
 
   const modeState = state?.modeState ?? null;
   const mode: AgentMode = modeState?.mode ?? "simple";
@@ -819,11 +904,90 @@ export default function CadWorkspace({
           : prev,
       );
       if (data.bound?.url) setUrl(data.bound.url);
+      const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? "");
+      if (stored) lastAssemblyElementId.current = stored;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bind failed");
     } finally {
       setBusy(null);
     }
+  }
+
+  async function bindDocumentRef(documentRef: { documentId: string; workspaceId: string; elementId: string }) {
+    const documentId = realReturnedId(documentRef.documentId);
+    const workspaceId = realReturnedId(documentRef.workspaceId);
+    const elementId = realReturnedId(documentRef.elementId);
+    if (!documentId || !workspaceId || !elementId) return;
+    const nextUrl = onshapeTabUrl(documentId, workspaceId, elementId);
+    setUrl(nextUrl);
+    setBusy("bind");
+    setError("");
+    try {
+      const response = await fetch("/api/cad/agent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "bind", orgId, url: nextUrl }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        bound?: BoundDoc;
+        iframeUrl?: string;
+        openUrl?: string;
+        shadedPngBase64?: string | null;
+      };
+      if (!response.ok) throw new Error(data.error ?? "Bind failed");
+      setState((prev) =>
+        prev
+          ? {
+              ...prev,
+              bound: data.bound ?? prev.bound,
+              iframeUrl: null,
+              openUrl: data.openUrl ?? prev.openUrl,
+              shadedPngBase64: data.shadedPngBase64 ?? prev.shadedPngBase64,
+            }
+          : prev,
+      );
+      if (data.bound?.url) setUrl(data.bound.url);
+      const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? documentId);
+      if (stored) lastAssemblyElementId.current = stored;
+      try {
+        const jobsResponse = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
+        const jobsData = (await jobsResponse.json().catch(() => ({}))) as {
+          jobs?: Array<{ id?: string; title?: string; platform?: string }>;
+        };
+        const jobs = Array.isArray(jobsData.jobs) ? jobsData.jobs : [];
+        const job =
+          jobs.find((row) => row.platform === "onshape" && row.title === "CAD agent" && realReturnedId(row.id)) ??
+          jobs.find((row) => row.platform === "onshape" && realReturnedId(row.id));
+        const jobId = realReturnedId(job?.id);
+        if (jobId) {
+          await fetch("/api/cad", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              action: "set-document",
+              orgId,
+              jobId,
+              documentRef: { documentId, workspaceId, elementId },
+            }),
+          });
+        }
+      } catch {
+        // Agent bind already updated the tab; job set-document is best-effort.
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bind failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function switchBoundElement(elementId: string) {
+    const listed = listedElements.elements.find((element) => element.id === realReturnedId(elementId));
+    const documentId = realReturnedId(state?.bound?.documentId);
+    const workspaceId = realReturnedId(state?.bound?.workspaceId);
+    if (!listed || !documentId || !workspaceId) return;
+    await bindDocumentRef({ documentId, workspaceId, elementId: listed.id });
   }
 
   async function setModeManual(next: AgentMode) {
@@ -1000,6 +1164,30 @@ export default function CadWorkspace({
         <button className="app-button" type="button" disabled={!url.trim() || busy !== null} onClick={() => void bind()}>
           {busy === "bind" ? "Binding…" : "Bind"}
         </button>
+        {listedElements.elements.length ? (
+          <label className="cad-agent-doc">
+            <span>Onshape tab</span>
+            <select
+              value={
+                listedElements.elements.some((element) => element.id === boundElementId) ? (boundElementId ?? "") : ""
+              }
+              disabled={busy !== null}
+              onChange={(event) => {
+                const next = realReturnedId(event.target.value);
+                if (next) void switchBoundElement(next);
+              }}
+            >
+              {!listedElements.elements.some((element) => element.id === boundElementId) ? (
+                <option value="">Select a listed tab</option>
+              ) : null}
+              {listedElements.elements.map((element) => (
+                <option key={element.id} value={element.id}>
+                  {element.name || element.id} ({element.elementType || element.type})
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <div className="cad-agent-leds">
           <span className={state?.onshapeConnected ? "on" : ""}>
             {state?.onshapeConnected ? "Onshape connected" : "Onshape off"}
@@ -1251,7 +1439,7 @@ export default function CadWorkspace({
       <button type="button" className="app-button" onClick={() => void refreshBoundGeometry()}>
         Refresh geometry
       </button>
-      <CadCheckpointNote />
+      <CadCheckpointNote checkpointId={lastCheckpointId} />
       <CadOperationComposer
         platform="onshape"
         disabled={!onshapeOk || !boundOk || busy !== null}
@@ -1288,11 +1476,14 @@ export default function CadWorkspace({
             executed,
             lastAssemblyElementId.current,
           );
+          writeStoredAssemblyElementId(orgId, state?.bound?.documentId ?? "", lastAssemblyElementId.current);
           lastInstanceIds.current = rememberLastInstanceIds(
             operation,
             executed,
             lastInstanceIds.current,
           );
+          const checkpointId = checkpointIdFromExecute(executed);
+          if (checkpointId) setLastCheckpointId(checkpointId);
           rememberComposerFeature({ parameters }, executed);
           void refreshBoundGeometry();
           return executed;
@@ -1332,11 +1523,14 @@ export default function CadWorkspace({
               executed,
               lastAssemblyElementId.current,
             );
+            writeStoredAssemblyElementId(orgId, state?.bound?.documentId ?? "", lastAssemblyElementId.current);
             lastInstanceIds.current = rememberLastInstanceIds(
               step.operation,
               executed,
               lastInstanceIds.current,
             );
+            const checkpointId = checkpointIdFromExecute(executed);
+            if (checkpointId) setLastCheckpointId(checkpointId);
             return executed;
           });
           void refreshBoundGeometry();

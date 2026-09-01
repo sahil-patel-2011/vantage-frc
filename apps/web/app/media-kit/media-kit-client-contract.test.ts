@@ -10,6 +10,8 @@ describe("Media Kit asset honesty", () => {
     expect(source).toContain("Pick from Media library");
     expect(source).toContain("withOrgHref(\"/media-library\"");
     expect(source).toContain("item.src");
+    expect(source).toContain("Video from Media library");
+    expect(source).toContain('kind: item.kind === "video" ? "other" : "photo"');
     expect(source).not.toMatch(/https:\/\/demo\./i);
     expect(source).toContain("never DEMO logos");
   });

@@ -233,6 +233,25 @@ export function canAutoRunWithinAllowlist(operation: CadOperation, autoRunEnable
   return VERIFY_CAD_OPERATIONS.has(operation);
 }
 
+const INCH_TO_MM = 25.4;
+
+/**
+ * Parse a single real length into millimetres. Requires a unit (mm / in / …).
+ * Missing or unparseable input returns undefined — never invents a dimension.
+ */
+export function parseEnvelopeMm(raw: string | undefined | null): number | undefined {
+  if (typeof raw !== "string") return undefined;
+  const match = raw.trim().match(/^([+]?(?:\d+(?:\.\d+)?|\.\d+))\s*(mm|cm|m|in|inch|inches)$/i);
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  const unit = match[2]?.toLowerCase();
+  if (!Number.isFinite(value) || value <= 0 || !unit) return undefined;
+  if (unit === "mm") return value;
+  if (unit === "cm") return value * 10;
+  if (unit === "m") return value * 1000;
+  return Number((value * INCH_TO_MM).toFixed(4));
+}
+
 /** Deterministic starter plan used when no LLM planner is available (CI / mock path). */
 export function buildDefaultCadPlan(
   brief: EngineeringBriefLite,
@@ -244,29 +263,26 @@ export function buildDefaultCadPlan(
   } = {},
 ): CadAction[] {
   const envelope = brief.assumptions.find((item) => /envelope/i.test(item.name));
+  const envelopeMm = parseEnvelopeMm(envelope?.value);
   const verifyNeedsApproval = !options.autoRunVerify;
   const adaptive = buildAdaptiveCadContext(options.teamProfile, options.userPreferences);
+  const sketchParameters: Record<string, unknown> = { plane: "Top", units: adaptive.units };
+  const extrudeParameters: Record<string, unknown> = {};
+  if (envelopeMm !== undefined) {
+    sketchParameters.widthMm = envelopeMm;
+    sketchParameters.heightMm = envelopeMm;
+    extrudeParameters.depthMm = envelopeMm;
+  }
   const plan: CadAction[] = [
     {
       operation: "create_sketch",
-      parameters: {
-        plane: "Top",
-        profile: envelope?.value ?? "confirmed envelope",
-        units: adaptive.units,
-        teamConstraints: adaptive.teamConstraints,
-        reason: "Create confirmed base profile from the engineering brief",
-      },
+      parameters: sketchParameters,
       requiresApproval: true,
       reason: "Create confirmed base profile",
     },
     {
       operation: "create_extrude",
-      parameters: {
-        depth: `confirmed by user in ${adaptive.units}`,
-        units: adaptive.units,
-        preferredPlatform: adaptive.platform,
-        reason: "Create initial solid within confirmed constraints",
-      },
+      parameters: extrudeParameters,
       requiresApproval: true,
       reason: "Create initial solid",
     },

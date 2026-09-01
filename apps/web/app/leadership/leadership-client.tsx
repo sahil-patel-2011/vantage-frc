@@ -194,7 +194,8 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
           <h2 style={{ margin: "6px 0 0" }}>Succession coverage</h2>
           <small className="app-muted">
-            {view.summary.withSuccessor} of {view.summary.totalRoles} role(s) have an identified successor
+            {view.summary.withSuccessor} of {view.summary.totalRoles} role(s) have an identified successor.
+            Continuity % is derived from successor coverage and handoff stage — not a recorded team goal.
           </small>
         </div>
         <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>

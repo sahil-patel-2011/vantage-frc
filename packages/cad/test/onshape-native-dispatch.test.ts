@@ -63,7 +63,10 @@ describe("native operation classification", () => {
 
   it("keeps rollback as honest unimplemented", () => {
     expect(isOnshapeNativeUnimplemented("rollback_checkpoint")).toBe(true);
-    expect(onshapeNativeUnimplementedError("rollback_checkpoint").message).toMatch(/will not generate FeatureScript/i);
+    const message = onshapeNativeUnimplementedError("rollback_checkpoint").message;
+    expect(message).toMatch(/rollback is not a native Onshape action/i);
+    expect(message).toMatch(/delete the last feature from the Vantage feature tree/i);
+    expect(message).not.toMatch(/featurescript/i);
   });
 });
 
@@ -153,6 +156,22 @@ describe("dispatchOnshapeNativeFeature", () => {
     expect(result).toEqual({ featureId: "hole-real-1", featureScriptUsed: false });
     expect(JSON.stringify(calls[0]?.body)).toContain('"featureType":"hole"');
     expect(JSON.stringify(calls[0]?.body)).toContain("THROUGH");
+  });
+
+  it("refuses create_hole when only pointSketchFeatureId is given", async () => {
+    const { http, calls } = addFeatureHttp("should-not-run");
+    const error = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "create_hole",
+      parameters: { pointSketchFeatureId: "FPoints", diameterMm: 5 },
+      idempotencyKey: "job:1:hole-nopicks",
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/hosted holes need location face ids and body ids from list-onshape-entities/i);
+    expect(message).not.toMatch(/featurescript/i);
+    expect(calls).toHaveLength(0);
   });
 
   it("posts a linear pattern along X without FeatureScript", async () => {
@@ -455,13 +474,18 @@ describe("createOnshapeApiTransport native routing", () => {
   it("keeps unimplemented ops as honest errors and does not call Onshape", async () => {
     const http = vi.fn(async () => jsonResponse({ message: "should not run" }, 500)) as unknown as OnshapeHttp;
     const transport = transportWith(http);
-    await expect(
-      transport.mutate({
+    const error = await transport
+      .mutate({
         operation: "rollback_checkpoint",
         parameters: { checkpointRef: "cp-1" },
         idempotencyKey: "job:t:rollback",
-      }),
-    ).rejects.toThrow(/will not generate FeatureScript/i);
+      })
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toMatch(/rollback is not a native Onshape action/i);
+    expect(message).toMatch(/delete the last feature from the Vantage feature tree/i);
+    expect(message).not.toMatch(/featurescript/i);
     expect(http).not.toHaveBeenCalled();
   });
 

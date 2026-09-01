@@ -19,6 +19,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
   const client = read("app/cad/cad-client.tsx");
   const viewport = read("app/cad/cad-viewport.tsx");
   const composer = read("app/cad/cad-operation-composer.tsx");
+  const elements = read("lib/cad/list-document-elements.ts");
 
   it("imports and mounts CadViewport with a PNG, not an embed URL", () => {
     expect(client).toContain('import { CadViewport } from "./cad-viewport"');
@@ -86,9 +87,15 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("rememberComposerFeature(step, executed)");
   });
 
-  it("mounts CadCheckpointNote instead of inventing a rollback", () => {
+  it("mounts CadCheckpointNote with a real execute checkpointId", () => {
     expect(client).toContain('import { CadCheckpointNote } from "./cad-checkpoint-note"');
     expect(client).toContain("<CadCheckpointNote");
+    expect(client).toContain("checkpointId={lastCheckpointId}");
+    expect(client).toContain("checkpointIdFromExecute");
+    expect(client).toContain("result.checkpointId");
+    expect(client).toContain("result.checkpointRef");
+    expect(client).not.toMatch(/checkpointId=\{["']DEMO/i);
+    expect(client).not.toMatch(/lastCheckpointId.*=.*["']DEMO/i);
   });
 
   it("chains lastSketchFeatureId via parametersForExecute and rememberLastSketchFeatureId", () => {
@@ -116,6 +123,32 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).not.toMatch(/assemblyElementId:\s*["']DEMO/i);
   });
 
+  it("persists lastAssemblyElementId in sessionStorage across refresh", () => {
+    expect(client).toContain("sessionStorage");
+    expect(client).toContain("vantage-cad-assembly:");
+    expect(client).toContain("`vantage-cad-assembly:${orgId}:${documentId}`");
+    expect(client).toContain("readStoredAssemblyElementId");
+    expect(client).toContain("writeStoredAssemblyElementId");
+    expect(client).toContain("lastAssemblyElementId.current = stored");
+    expect(client).not.toMatch(/sessionStorage\.(setItem|getItem)\([^)]*DEMO/i);
+    expect(client).not.toMatch(/vantage-cad-assembly:[^`]*DEMO/i);
+  });
+
+  it("lists Onshape document tabs via list-onshape-elements after bind", () => {
+    expect(client).toContain("listDocumentElements");
+    expect(client).toContain('from "../../lib/cad/list-document-elements"');
+    expect(client).toContain("list-onshape-elements");
+    expect(client).toContain("switchBoundElement");
+    expect(client).toContain('action: "set-document"');
+    expect(client).toContain('action: "bind"');
+    expect(elements).toContain('action: "list-onshape-elements"');
+    expect(elements).toContain("Part Studio");
+    expect(elements).toContain("Assembly");
+    expect(elements).toContain("Variable Studio");
+    expect(elements).not.toMatch(/id:\s*["']DEMO/i);
+    expect(client).not.toMatch(/elementId:\s*["']DEMO/i);
+  });
+
   it("lists assembly instances and passes them to the composer", () => {
     expect(client).toContain("listOnshapeAssemblyInstances");
     expect(client).toContain('from "../../lib/cad/list-assembly"');
@@ -134,7 +167,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("iframeUrl: null");
     expect(viewport).not.toMatch(/<iframe\b/);
     expect(viewport).toContain("Never an Onshape iframe");
-    expect(`${client}\n${viewport}`).not.toMatch(/<iframe[^>]*cad\.onshape\.com/i);
+    expect(`${client}\n${viewport}\n${elements}`).not.toMatch(/<iframe[^>]*cad\.onshape\.com/i);
     expect(client).not.toMatch(/<iframe[\s\S]{0,200}cad\.onshape\.com/i);
     expect(client).not.toMatch(/src=["']https?:\/\/cad\.onshape\.com/i);
   });

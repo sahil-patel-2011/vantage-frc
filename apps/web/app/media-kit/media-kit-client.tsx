@@ -504,9 +504,9 @@ function AssetsPanel({
     [],
   );
   const [form, setForm] = useState(empty);
-  const [library, setLibrary] = useState<Array<{ id: string; title: string; src: string; kind: MediaKitAssetKind }>>(
-    [],
-  );
+  const [library, setLibrary] = useState<
+    Array<{ id: string; title: string; src: string; kind: MediaKitAssetKind; fromVideo: boolean }>
+  >([]);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -524,7 +524,13 @@ function AssetsPanel({
           setLibrary([]);
           return;
         }
-        const picks: Array<{ id: string; title: string; src: string; kind: MediaKitAssetKind }> = [];
+        const picks: Array<{
+          id: string;
+          title: string;
+          src: string;
+          kind: MediaKitAssetKind;
+          fromVideo: boolean;
+        }> = [];
         for (const item of data.items) {
           const id = typeof item.id === "string" ? item.id.trim() : "";
           const src = typeof item.src === "string" ? item.src.trim() : "";
@@ -535,6 +541,7 @@ function AssetsPanel({
             title: title || id,
             src,
             kind: item.kind === "video" ? "other" : "photo",
+            fromVideo: item.kind === "video",
           });
         }
         setLibrary(picks);
@@ -600,7 +607,15 @@ function AssetsPanel({
                       setForm((prev) =>
                         prev.url === item.src
                           ? { ...prev, url: "" }
-                          : { ...prev, url: item.src, title: prev.title || item.title, kind: item.kind },
+                          : {
+                              ...prev,
+                              url: item.src,
+                              title: prev.title || item.title,
+                              kind: item.kind,
+                              description:
+                                prev.description ||
+                                (item.fromVideo ? "Video from Media library" : prev.description),
+                            },
                       )
                     }
                   />{" "}

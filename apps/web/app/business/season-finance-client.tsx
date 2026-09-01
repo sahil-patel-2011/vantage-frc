@@ -20,6 +20,7 @@ import {
 } from "../../lib/business/compute-season-finance";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { formatSponsorUsd, sponsorPageTotals } from "../../lib/sponsors/totals";
 import "./season-finance.css";
 
@@ -55,6 +56,7 @@ export default function SeasonFinanceClient({
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
   const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
+  const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
 
   const load = useCallback(async () => {
     setError("");
@@ -73,9 +75,10 @@ export default function SeasonFinanceClient({
       setLoadFailure(null);
       setView(data);
       try {
-        const [sponsorsRes, contribRes] = await Promise.all([
+        const [sponsorsRes, contribRes, budgetRes] = await Promise.all([
           fetch(`/api/sponsors?orgId=${encodeURIComponent(orgId)}`),
           fetch(`/api/sponsors/contributions?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`),
+          fetch(`/api/finance/budget-vs-actual?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`),
         ]);
         const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
         const contribData = contribRes.ok ? await contribRes.json() : { contributions: [] };
@@ -92,8 +95,11 @@ export default function SeasonFinanceClient({
             .filter((row: { id: string }) => row.id)
             .sort((a: { amountUsd: number }, b: { amountUsd: number }) => b.amountUsd - a.amountUsd),
         );
+        const budgetData = (budgetRes.ok ? await budgetRes.json() : null) as BudgetVsActualView | null;
+        setBudgetLines(budgetData?.status === "ready" ? budgetData.lines : []);
       } catch {
         setSponsorLines([]);
+        setBudgetLines([]);
       }
     } catch (cause) {
       setLoadFailure({
@@ -257,6 +263,7 @@ export default function SeasonFinanceClient({
           onFunding={submitFunding}
           onPurchase={submitPurchase}
           sponsorLines={sponsorLines}
+          budgetLines={budgetLines}
         />
       ) : null}
     </div>
@@ -270,6 +277,7 @@ function LiveDesk({
   onFunding,
   onPurchase,
   sponsorLines,
+  budgetLines,
 }: {
   view: LiveView;
   busy: boolean;
@@ -277,6 +285,7 @@ function LiveDesk({
   onFunding: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onPurchase: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   sponsorLines: Array<{ id: string; name: string; amountUsd: number }>;
+  budgetLines: BudgetLine[];
 }) {
   const { rollup } = view;
   const hasPlan = rollup.plannedIncomeCents > 0 || rollup.plannedSpendCents > 0 || view.funding.length > 0;
@@ -378,6 +387,19 @@ function LiveDesk({
                 ))}
               </ul>
             )}
+            {budgetLines.length > 0 ? (
+              <div style={{ marginTop: 12 }}>
+                <span className="biz-overline">Budget vs recorded spend</span>
+                <ul className="season-finance-elsewhere">
+                  {budgetLines.map((line) => (
+                    <li key={line.categoryId ?? line.name}>
+                      <span>{line.name}</span>
+                      <strong>{describeBudgetLine(line)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </article>
         <article className="app-card">

@@ -71,6 +71,10 @@ describe("composer native ops", () => {
     expect(COMPOSER_NATIVE_OPS).toContain("create_mirror");
     expect(COMPOSER_NATIVE_OPS).toContain("set_variable");
     expect(COMPOSER_NATIVE_OPS).toContain("delete_feature");
+    expect(COMPOSER_NATIVE_OPS).toContain("export_step");
+    expect(COMPOSER_NATIVE_OPS).toContain("export_stl");
+    expect(COMPOSER_NATIVE_OPS).toContain("export_gltf");
+    expect(COMPOSER_NATIVE_OPS).toContain("render_views");
     expect(composerPalette("onshape")).toEqual(
       expect.arrayContaining([
         "create_chamfer",
@@ -79,14 +83,21 @@ describe("composer native ops", () => {
         "create_mirror",
         "set_variable",
         "delete_feature",
+        "export_stl",
+        "export_gltf",
+        "render_views",
       ]),
     );
     expect(composerPalette("fusion360")).toContain("create_chamfer");
+    expect(composerPalette("fusion360")).toContain("export_step");
     expect(composerPalette("fusion360")).not.toContain("create_shell");
     expect(composerPalette("fusion360")).not.toContain("create_pattern");
     expect(composerPalette("fusion360")).not.toContain("create_mirror");
     expect(composerPalette("fusion360")).not.toContain("set_variable");
     expect(composerPalette("fusion360")).not.toContain("delete_feature");
+    expect(composerPalette("fusion360")).not.toContain("export_stl");
+    expect(composerPalette("fusion360")).not.toContain("export_gltf");
+    expect(composerPalette("fusion360")).not.toContain("render_views");
   });
 
   it("does not invent DEMO plate sizes for empty params", () => {
@@ -219,6 +230,8 @@ describe("composer native ops", () => {
       ]),
     );
     expect(COMPOSER_OP_FIELDS.create_hole.some((field) => field.key === "source")).toBe(false);
+    expect(COMPOSER_OP_FIELDS.create_hole.some((field) => field.key === "pointSketchFeatureId")).toBe(false);
+    expect(COMPOSER_OP_FIELDS.create_hole.some((field) => field.key === "targetFeatureId")).toBe(false);
     expect(COMPOSER_OP_FIELDS.create_shell).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -412,6 +425,13 @@ describe("composer native ops", () => {
       widthMm: 80,
       heightMm: 40,
     });
+    expect(() => parametersFromDraft("create_sketch", { sketchKind: "circle" })).toThrow(
+      /Circle sketches need a positive radius/,
+    );
+    expect(parametersFromDraft("create_sketch", { sketchKind: "circle", radiusMm: "12" })).toEqual({
+      sketchKind: "circle",
+      radiusMm: 12,
+    });
     expect(parametersFromDraft("create_extrude", { depthMm: "6" })).toEqual({ depthMm: 6 });
     expect(parametersFromDraft("create_extrude", { depthMm: "6", sketchFeatureId: "Fsketch" })).toEqual({
       depthMm: 6,
@@ -440,12 +460,9 @@ describe("composer native ops", () => {
     expect(() => parametersFromDraft("create_mate", { firstFaceId: "JFC", secondFaceId: "JFD" })).toThrow(
       /instance id/i,
     );
-    expect(
+    expect(() =>
       parametersFromDraft("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
-    ).toEqual({
-      firstInstanceId: ["Mi1"],
-      secondInstanceId: ["Mi2"],
-    });
+    ).toThrow(/face id/i);
     expect(
       parametersFromDraft("create_mate", {
         firstInstanceId: "Mi1",
@@ -507,15 +524,37 @@ describe("composer native ops", () => {
     expect(() => requireComposerPicks("create_mate", { firstFaceId: ["JFC"], secondFaceId: ["JFD"] })).toThrow(
       /instance id/i,
     );
-    expect(requireComposerPicks("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" })).toEqual({
+    expect(() =>
+      requireComposerPicks("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
+    ).toThrow(/face id/i);
+    expect(() =>
+      requireComposerPicks("create_mate", { firstInstanceId: ["Mi1"], secondInstanceId: ["Mi2"] }),
+    ).toThrow(/face id/i);
+    expect(
+      requireComposerPicks("create_mate", {
+        firstInstanceId: "Mi1",
+        secondInstanceId: "Mi2",
+        firstFaceId: "JFC",
+        secondFaceId: "JFD",
+      }),
+    ).toEqual({
       firstInstanceId: "Mi1",
       secondInstanceId: "Mi2",
+      firstFaceId: "JFC",
+      secondFaceId: "JFD",
     });
     expect(
-      requireComposerPicks("create_mate", { firstInstanceId: ["Mi1"], secondInstanceId: ["Mi2"] }),
+      requireComposerPicks("create_mate", {
+        firstInstanceId: ["Mi1"],
+        secondInstanceId: ["Mi2"],
+        firstFaceId: ["JFC"],
+        secondFaceId: ["JFD"],
+      }),
     ).toEqual({
       firstInstanceId: ["Mi1"],
       secondInstanceId: ["Mi2"],
+      firstFaceId: ["JFC"],
+      secondFaceId: ["JFD"],
     });
   });
 
@@ -548,5 +587,37 @@ describe("composer native ops", () => {
       reason: "Check bodies",
     });
     expect(plan.map((step) => step.operation)).toEqual(["create_extrude", "verify_topology"]);
+  });
+
+  it("exposes export_stl, export_gltf, and render_views like export_step on Onshape only", () => {
+    expect(describeComposerOp("export_stl")).toBe("Export STL");
+    expect(describeComposerOp("export_gltf")).toBe("Export glTF");
+    expect(describeComposerOp("render_views")).toBe("Render views");
+    expect(COMPOSER_OP_FIELDS.export_step).toEqual([]);
+    expect(COMPOSER_OP_FIELDS.export_stl).toEqual([]);
+    expect(COMPOSER_OP_FIELDS.export_gltf).toEqual([]);
+    expect(COMPOSER_OP_FIELDS.render_views).toEqual([]);
+    expect(emptyComposerParameters("export_stl")).toEqual({});
+    expect(emptyComposerParameters("export_gltf")).toEqual({});
+    expect(emptyComposerParameters("render_views")).toEqual({});
+    expect(parseComposerOps([{ operation: "export_stl", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "export_stl", parameters: {}, reason: "" },
+    ]);
+    expect(parseComposerOps([{ operation: "export_gltf", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "export_gltf", parameters: {}, reason: "" },
+    ]);
+    expect(parseComposerOps([{ operation: "render_views", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "render_views", parameters: {}, reason: "" },
+    ]);
+    expect(parametersFromDraft("export_step", {})).toEqual({});
+    expect(parametersFromDraft("export_stl", {})).toEqual({});
+    expect(parametersFromDraft("export_gltf", {})).toEqual({});
+    expect(parametersFromDraft("render_views", {})).toEqual({});
+    expect(requireComposerDimensions("export_stl", {})).toEqual({});
+    expect(requireComposerPicks("export_stl", {})).toEqual({});
+    expect(requireComposerDimensions("export_gltf", {})).toEqual({});
+    expect(requireComposerPicks("export_gltf", {})).toEqual({});
+    expect(requireComposerDimensions("render_views", {})).toEqual({});
+    expect(requireComposerPicks("render_views", {})).toEqual({});
   });
 });
