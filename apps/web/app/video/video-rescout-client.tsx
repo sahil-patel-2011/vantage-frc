@@ -230,7 +230,10 @@ function NewReviewPanel({
   return (
     <Panel className="vid-new" id="video-new-review">
       <strong>New review</strong>
-      <p className="app-muted vid-tip">Real YouTube match links only — never DEMO jobs.</p>
+      <p className="app-muted vid-tip">
+        Real YouTube match links only — never DEMO jobs. Hosted photos and clips belong in the Media
+        library; this desk does not play uploaded MP4s.
+      </p>
       <FormRow label="Title">
         <input
           value={newTitle}

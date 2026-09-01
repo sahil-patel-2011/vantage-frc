@@ -18,10 +18,16 @@ import {
   type ListedOnshapeVariables,
 } from "../../lib/cad/list-variables";
 import { rememberComposerFeature } from "../../lib/cad/remember-feature";
-import { runComposerPlan } from "../../lib/cad/run-composer-plan";
+import {
+  parametersForExecute,
+  rememberLastSketchFeatureId,
+  runComposerPlan,
+} from "../../lib/cad/run-composer-plan";
+import type { ComposerOp } from "../../lib/cad/composer-ops";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadFeatureTree } from "./cad-feature-tree";
 import { CadOperationComposer } from "./cad-operation-composer";
+import { CadCheckpointNote } from "./cad-checkpoint-note";
 import { CadVariableTable } from "./cad-variable-table";
 import { CadViewport } from "./cad-viewport";
 import "./cad-agent.css";
@@ -489,17 +495,49 @@ const TASK_STATUS_LABELS: Record<AgentTask["status"], string> = {
   failed: "Failed",
 };
 
+const DEMO_RETURNED_ID = /demo/i;
+
+function asParamRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+/** Accept only a real returned id. DEMO / blank / non-strings are not ids. */
+function realReturnedId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const id = value.trim();
+  if (!id || DEMO_RETURNED_ID.test(id)) return undefined;
+  return id;
+}
+
 function withVariableStudio(
   payload: { operation?: string; parameters?: unknown; reason?: string },
   studioId: string,
 ) {
   if (payload.operation !== "set_variable" || !studioId) return payload;
-  const parameters =
-    payload.parameters && typeof payload.parameters === "object" && !Array.isArray(payload.parameters)
-      ? (payload.parameters as Record<string, unknown>)
-      : {};
+  const parameters = asParamRecord(payload.parameters);
   if (String(parameters.variableStudioElementId ?? "").trim()) return payload;
   return { ...payload, parameters: { ...parameters, variableStudioElementId: studioId } };
+}
+
+/** Fill add_assembly_instance / create_mate from a real prior create_assembly id. Never invent. */
+function withLastAssemblyElementId(
+  operation: string,
+  parameters: Record<string, unknown>,
+  lastAssemblyElementId: string | undefined,
+): Record<string, unknown> {
+  if (operation !== "add_assembly_instance" && operation !== "create_mate") return parameters;
+  if (String(parameters.assemblyElementId ?? "").trim() || !lastAssemblyElementId) return parameters;
+  return { ...parameters, assemblyElementId: lastAssemblyElementId };
+}
+
+function rememberLastAssemblyElementId(
+  operation: string,
+  executed: { featureId?: unknown; result?: Record<string, unknown> },
+  current: string | undefined,
+): string | undefined {
+  if (operation !== "create_assembly") return current;
+  return realReturnedId(executed.featureId) ?? realReturnedId(executed.result?.elementId) ?? current;
 }
 
 export default function CadWorkspace({
@@ -535,6 +573,8 @@ export default function CadWorkspace({
   const [geometryError, setGeometryError] = useState("");
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const lastSketchFeatureId = useRef<string | undefined>(undefined);
+  const lastAssemblyElementId = useRef<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/cad/agent?orgId=${encodeURIComponent(orgId)}`);
@@ -1151,36 +1191,55 @@ export default function CadWorkspace({
       <button type="button" className="app-button" onClick={() => void refreshBoundGeometry()}>
         Refresh geometry
       </button>
-      <p className="app-muted">
-        Rollback/checkpoint is not available as a native Onshape action in Vantage (no FeatureScript fallback).
-      </p>
+      <CadCheckpointNote />
       <CadOperationComposer
         platform="onshape"
         disabled={!onshapeOk || !boundOk || busy !== null}
         entities={listedEntities}
         features={explainedFeatures}
         onAppend={async (payload) => {
+          const operation = String(payload.operation ?? "");
+          const parameters = withLastAssemblyElementId(
+            operation,
+            parametersForExecute(
+              { ...payload, operation, parameters: asParamRecord(payload.parameters) } as ComposerOp,
+              lastSketchFeatureId.current,
+            ),
+            lastAssemblyElementId.current,
+          );
           const executed = await executeComposerOp({
             orgId,
-            payload: withVariableStudio(payload, listedVariables.variableStudioElementId),
+            payload: withVariableStudio({ ...payload, parameters }, listedVariables.variableStudioElementId),
             documentRef: state?.bound ?? null,
           });
           applyShadedPng(executed.result.shadedPngBase64);
-          const parameters = payload.parameters;
-          if (parameters && typeof parameters === "object" && !Array.isArray(parameters)) {
-            rememberComposerFeature({ parameters: parameters as Record<string, unknown> }, executed);
-          }
+          lastSketchFeatureId.current = rememberLastSketchFeatureId(
+            operation,
+            executed.featureId,
+            lastSketchFeatureId.current,
+          );
+          lastAssemblyElementId.current = rememberLastAssemblyElementId(
+            operation,
+            executed,
+            lastAssemblyElementId.current,
+          );
+          rememberComposerFeature({ parameters }, executed);
           void refreshBoundGeometry();
           return executed;
         }}
         onRunPlan={async (ops) => {
           const ran = await runComposerPlan(ops, async (step) => {
+            const parameters = withLastAssemblyElementId(
+              step.operation,
+              step.parameters,
+              lastAssemblyElementId.current,
+            );
             const executed = await executeComposerOp({
               orgId,
               payload: withVariableStudio(
                 {
                   operation: step.operation,
-                  parameters: step.parameters,
+                  parameters,
                   reason: step.reason,
                 },
                 listedVariables.variableStudioElementId,
@@ -1189,6 +1248,16 @@ export default function CadWorkspace({
             });
             applyShadedPng(executed.result.shadedPngBase64);
             rememberComposerFeature(step, executed);
+            lastSketchFeatureId.current = rememberLastSketchFeatureId(
+              step.operation,
+              executed.featureId,
+              lastSketchFeatureId.current,
+            );
+            lastAssemblyElementId.current = rememberLastAssemblyElementId(
+              step.operation,
+              executed,
+              lastAssemblyElementId.current,
+            );
             return executed;
           });
           void refreshBoundGeometry();

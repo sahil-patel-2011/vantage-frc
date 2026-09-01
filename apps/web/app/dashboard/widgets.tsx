@@ -479,6 +479,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
                   </li>
                 ))}
               </ul>
+              <p className="app-muted">On-demand recompute lives on Strategy — this tile is the last stored row.</p>
             </>
           ) : null}
         </Shell>

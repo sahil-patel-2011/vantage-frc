@@ -7,7 +7,12 @@
  * this helper never invents them.
  */
 
-import { parseComposerOps, type ComposerNativeOp, type ComposerOp } from "./composer-ops";
+import {
+  parseComposerOps,
+  requireComposerDimensions,
+  type ComposerNativeOp,
+  type ComposerOp,
+} from "./composer-ops";
 
 export const COMPOSER_PLAN_FEATURE_SCRIPT =
   "feature_script is not a native composer operation";
@@ -57,6 +62,7 @@ export async function runComposerPlan(
   for (const op of ops) {
     const parameters = parametersForExecute(op, lastSketchFeatureId);
     try {
+      requireComposerDimensions(op.operation, parameters);
       const result = await execute({ ...op, parameters });
       const featureId = realReturnedId(result?.featureId) ?? realReturnedId(result?.externalFeatureId);
       steps.push({
@@ -65,9 +71,7 @@ export async function runComposerPlan(
         status: "completed",
         ...(featureId ? { featureId } : {}),
       });
-      if (op.operation === "create_sketch" && featureId) {
-        lastSketchFeatureId = featureId;
-      }
+      lastSketchFeatureId = rememberLastSketchFeatureId(op.operation, featureId, lastSketchFeatureId);
     } catch (caught) {
       const error = caught instanceof Error ? caught.message : "Planned step failed";
       steps.push({
@@ -118,19 +122,49 @@ function rawPlanEntries(input: unknown): unknown[] {
  * Fill create_extrude.sketchFeatureId only from a real prior sketch result.
  * Planned IDs stay as the human wrote them. Missing IDs stay missing.
  */
-function parametersForExecute(
+export function parametersForExecute(
   op: ComposerOp,
   lastSketchFeatureId: string | undefined,
 ): Record<string, unknown> {
-  if (op.operation !== "create_extrude") return { ...op.parameters };
-  if (hasPlannedId(op.parameters.sketchFeatureId) || !lastSketchFeatureId) {
-    return { ...op.parameters };
+  if (op.operation === "create_mate") {
+    const firstFaceId = firstPlannedId(op.parameters.firstFaceId);
+    const secondFaceId = firstPlannedId(op.parameters.secondFaceId);
+    return {
+      ...op.parameters,
+      ...(firstFaceId ? { firstFaceId } : {}),
+      ...(secondFaceId ? { secondFaceId } : {}),
+    };
   }
+  if (op.operation !== "create_extrude") return { ...op.parameters };
+  const plannedSketch = firstPlannedId(op.parameters.sketchFeatureId);
+  if (plannedSketch) {
+    return { ...op.parameters, sketchFeatureId: plannedSketch };
+  }
+  if (!lastSketchFeatureId) return { ...op.parameters };
   return { ...op.parameters, sketchFeatureId: lastSketchFeatureId };
 }
 
+/** Keep a real create_sketch id for later extrude chaining. DEMO / blank stay current. */
+export function rememberLastSketchFeatureId(
+  operation: string,
+  resultFeatureId: unknown,
+  current: string | undefined,
+): string | undefined {
+  if (operation !== "create_sketch") return current;
+  return realReturnedId(resultFeatureId) ?? current;
+}
+
+function firstPlannedId(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    const first = value.find((item) => typeof item === "string" && item.trim());
+    return typeof first === "string" ? first.trim() : "";
+  }
+  return "";
+}
+
 function hasPlannedId(value: unknown): boolean {
-  return typeof value === "string" && Boolean(value.trim());
+  return Boolean(firstPlannedId(value));
 }
 
 /** Accept only a real returned id. DEMO / blank / non-strings are not ids. */

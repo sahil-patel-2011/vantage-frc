@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { describeBudgetLine, type BudgetLine } from "../../../lib/finance/budget-vs-actual";
 import { validateBuySheet } from "../../../lib/finance/buy-sheet";
-import { formatSponsorUsd, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
+import { formatSponsorUsd, sponsorPageTotals, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
 
 type Category = {
   categoryId: string; name: string; seasonYear: number; planId: string | null;
@@ -63,11 +63,12 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [budgetForm, setBudgetForm] = useState({ categoryName: "", monthlyLimitUsd: "", totalLimitUsd: "", notes: "" });
   const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
   const emptyRequestForm = { title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "", inventoryItemId: "" };
   const [requestForm, setRequestForm] = useState(emptyRequestForm);
 
   async function load() {
-    const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes, contributionsRes, budgetVsActualRes] = await Promise.all([
+    const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes, contributionsRes, budgetVsActualRes, sponsorsRes] = await Promise.all([
       fetch(`/api/finance/budget?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/purchase-requests?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/summary?orgId=${orgId}&seasonYear=${seasonYear}`),
@@ -75,6 +76,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
       fetch(`/api/inventory?orgId=${orgId}`),
       fetch(`/api/sponsors/contributions?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/budget-vs-actual?orgId=${orgId}&seasonYear=${seasonYear}`),
+      fetch(`/api/sponsors?orgId=${orgId}`),
     ]);
     const budgetData = await budgetRes.json();
     const requestsData = await requestsRes.json();
@@ -87,6 +89,20 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     setCatalogItems(catalogItemsFromInventory(inventoryData));
     const contributionsData = contributionsRes.ok ? await contributionsRes.json() : { contributions: [] };
     const budgetVsActualData = budgetVsActualRes.ok ? await budgetVsActualRes.json() : null;
+    const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
+    const sponsors = Array.isArray(sponsorsData.sponsors) ? sponsorsData.sponsors : [];
+    const contributions = Array.isArray(contributionsData.contributions) ? contributionsData.contributions : [];
+    const sponsorTotals = sponsorPageTotals(sponsors, contributions, true);
+    setSponsorLines(
+      sponsors
+        .map((row: { id?: string; name?: string }) => ({
+          id: String(row.id ?? ""),
+          name: String(row.name ?? "").trim() || String(row.id ?? ""),
+          amountUsd: sponsorTotals.amountBySponsorId[String(row.id ?? "")] ?? 0,
+        }))
+        .filter((row: { id: string }) => row.id)
+        .sort((a: { amountUsd: number }, b: { amountUsd: number }) => b.amountUsd - a.amountUsd),
+    );
     setMonths(summaryData.byMonth ?? []);
     setBudgetLines(Array.isArray(budgetVsActualData?.lines) ? budgetVsActualData.lines : []);
     setTotals({
@@ -174,6 +190,21 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
           <strong>{formatSponsorUsd(totals.sponsorContributionsUsd)}</strong>
           <small>Pipeline total — Raised already includes mirrored cash. <a href={`/team/sponsors?orgId=${orgId}`}>Per-sponsor breakdown</a></small>
         </article>
+      </section>
+      <section className="intel-panel">
+        <span className="eyebrow">PER-SPONSOR RECORDED CONTRIBUTIONS</span>
+        {sponsorLines.length === 0 ? (
+          <p>No recorded sponsor contributions this season.</p>
+        ) : (
+          sponsorLines.map((row) => (
+            <article key={row.id}>
+              <div>
+                <strong>{row.name}</strong>
+                <small>{formatSponsorUsd(row.amountUsd)}</small>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="admin-grid">

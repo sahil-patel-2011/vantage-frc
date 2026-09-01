@@ -11,6 +11,7 @@ import {
   removeComposerOp,
   replaceComposerOp,
   requireComposerDimensions,
+  requireComposerPicks,
   serializeComposerOps,
 } from "./composer-ops";
 
@@ -98,6 +99,29 @@ describe("composer native ops", () => {
     expect(emptyComposerParameters("delete_feature")).toEqual({});
     expect(() => parametersFromDraft("create_sketch", {})).toThrow(/Sketch width and height are required millimetres/);
     expect(() => parametersFromDraft("create_extrude", {})).toThrow(/Extrude depth is required millimetres/);
+    expect(COMPOSER_OP_FIELDS.create_extrude).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "sketchFeatureId",
+          kind: "idList",
+          help: "Sketch feature id from the Vantage feature tree. Leave blank to use the last sketch this session created.",
+        }),
+      ]),
+    );
+    expect(COMPOSER_OP_FIELDS.create_mate).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "firstFaceId",
+          kind: "idList",
+          help: "Face ids from list-onshape-entities.",
+        }),
+        expect.objectContaining({
+          key: "secondFaceId",
+          kind: "idList",
+          help: "Face ids from list-onshape-entities.",
+        }),
+      ]),
+    );
   });
 
   it("round-trips typed native ops and drops feature_script", () => {
@@ -186,7 +210,17 @@ describe("composer native ops", () => {
     );
     expect(COMPOSER_OP_FIELDS.create_hole.some((field) => field.key === "source")).toBe(false);
     expect(COMPOSER_OP_FIELDS.create_shell).toEqual(
-      expect.arrayContaining([expect.objectContaining({ key: "faceIds", kind: "idList", label: "Faces" })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "faceIds",
+          kind: "idList",
+          label: "Faces",
+          help: expect.stringMatching(/required face ids to open/i),
+        }),
+      ]),
+    );
+    expect(COMPOSER_OP_FIELDS.create_shell.find((field) => field.key === "faceIds")?.help).not.toMatch(
+      /leave blank|optional|closed shell/i,
     );
     expect(COMPOSER_OP_FIELDS.create_shell.some((field) => field.key === "entities")).toBe(false);
     expect(
@@ -226,6 +260,24 @@ describe("composer native ops", () => {
     expect(parseComposerOps([{ operation: "create_mirror", parameters: {} }])).toEqual([
       { id: "step-1", operation: "create_mirror", parameters: {}, reason: "" },
     ]);
+    expect(() => parametersFromDraft("create_pattern", { instanceCount: "3", spacingMm: "20" })).toThrow(
+      /feature ids/i,
+    );
+    expect(() => parametersFromDraft("create_pattern", { featureIds: "F1" })).toThrow(
+      /instance count and spacing/i,
+    );
+    expect(() =>
+      parametersFromDraft("create_pattern", { featureIds: "F1", patternKind: "circular" }),
+    ).toThrow(/axis ids/i);
+    expect(
+      parametersFromDraft("create_pattern", { featureIds: "F1", patternKind: "circular", axisIds: "JCYL" }),
+    ).toEqual({
+      featureIds: ["F1"],
+      patternKind: "circular",
+      axisIds: ["JCYL"],
+    });
+    expect(() => parametersFromDraft("create_mirror", {})).toThrow(/feature ids/i);
+    expect(parametersFromDraft("create_mirror", { featureIds: "FCut" })).toEqual({ featureIds: ["FCut"] });
   });
 
   it("exposes set_variable as name + expression text, not FeatureScript", () => {
@@ -310,6 +362,7 @@ describe("composer native ops", () => {
     expect(parseComposerOps([{ operation: "delete_feature", parameters: {} }])).toEqual([
       { id: "step-1", operation: "delete_feature", parameters: {}, reason: "" },
     ]);
+    expect(() => parametersFromDraft("delete_feature", {})).toThrow(/feature id from the Vantage feature tree/i);
     expect(parametersFromDraft("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: "FFillet" });
     expect(
       parseComposerOps([{ operation: "delete_feature", parameters: { featureId: "FFillet" } }]),
@@ -350,19 +403,73 @@ describe("composer native ops", () => {
       heightMm: 40,
     });
     expect(parametersFromDraft("create_extrude", { depthMm: "6" })).toEqual({ depthMm: 6 });
+    expect(parametersFromDraft("create_extrude", { depthMm: "6", sketchFeatureId: "Fsketch" })).toEqual({
+      depthMm: 6,
+      sketchFeatureId: ["Fsketch"],
+    });
+    expect(() => parametersFromDraft("create_fillet", { radiusMm: "2" })).toThrow(/edge id/i);
     expect(parametersFromDraft("create_fillet", { radiusMm: "2", entities: "E1" })).toEqual({
       radiusMm: 2,
       entities: ["E1"],
     });
+    expect(() => parametersFromDraft("create_chamfer", { widthMm: "1" })).toThrow(/edge id/i);
     expect(parametersFromDraft("create_chamfer", { widthMm: "1", entities: "E3" })).toEqual({
       widthMm: 1,
       entities: ["E3"],
     });
+    expect(() => parametersFromDraft("create_shell", { thicknessMm: "2" })).toThrow(/face id to open/i);
     expect(parametersFromDraft("create_shell", { thicknessMm: "2", faceIds: "F1" })).toEqual({
       thicknessMm: 2,
       faceIds: ["F1"],
     });
     expect(requireComposerDimensions("create_hole", { diameterMm: 5 })).toEqual({ diameterMm: 5 });
+    expect(() => parametersFromDraft("create_hole", { diameterMm: "5" })).toThrow(/face ids and scope body ids/i);
+    expect(() => parametersFromDraft("create_hole", { diameterMm: "5", faceIds: "F2" })).toThrow(
+      /face ids and scope body ids/i,
+    );
+    expect(parametersFromDraft("create_mate", { firstFaceId: "JFC", secondFaceId: "JFD" })).toEqual({
+      firstFaceId: ["JFC"],
+      secondFaceId: ["JFD"],
+    });
+  });
+
+  it("requires picks on the draft path only — empty stored plans still parse", () => {
+    expect(parseComposerOps([{ operation: "create_fillet", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "create_fillet", parameters: {}, reason: "" },
+    ]);
+    expect(parseComposerOps([{ operation: "create_chamfer", parameters: { widthMm: 1 } }])).toEqual([
+      { id: "step-1", operation: "create_chamfer", parameters: { widthMm: 1 }, reason: "" },
+    ]);
+    expect(parseComposerOps([{ operation: "create_shell", parameters: { thicknessMm: 2 } }])).toEqual([
+      { id: "step-1", operation: "create_shell", parameters: { thicknessMm: 2 }, reason: "" },
+    ]);
+    expect(parseComposerOps([{ operation: "create_hole", parameters: { diameterMm: 5 } }])).toEqual([
+      { id: "step-1", operation: "create_hole", parameters: { diameterMm: 5 }, reason: "" },
+    ]);
+    expect(() => requireComposerPicks("create_fillet", { radiusMm: 2 })).toThrow(/edge id/i);
+    expect(requireComposerPicks("create_fillet", { radiusMm: 2, edgeIds: ["E1"] })).toEqual({
+      radiusMm: 2,
+      edgeIds: ["E1"],
+    });
+    expect(() => requireComposerPicks("create_chamfer", { widthMm: 1 })).toThrow(/edge id/i);
+    expect(() => requireComposerPicks("create_shell", { thicknessMm: 2 })).toThrow(/face id to open/i);
+    expect(() => requireComposerPicks("create_hole", { diameterMm: 5, faceIds: ["F2"] })).toThrow(
+      /face ids and scope body ids/i,
+    );
+    expect(() => requireComposerPicks("create_pattern", { instanceCount: 3, spacingMm: 20 })).toThrow(/feature ids/i);
+    expect(() => requireComposerPicks("create_pattern", { featureIds: ["F1"], patternKind: "circular" })).toThrow(
+      /axis ids/i,
+    );
+    expect(
+      requireComposerPicks("create_pattern", { featureIds: ["F1"], instanceCount: 3, spacingMm: 20 }),
+    ).toEqual({
+      featureIds: ["F1"],
+      instanceCount: 3,
+      spacingMm: 20,
+    });
+    expect(() => requireComposerPicks("create_mirror", {})).toThrow(/feature ids/i);
+    expect(() => requireComposerPicks("delete_feature", {})).toThrow(/feature id from the Vantage feature tree/i);
+    expect(requireComposerPicks("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: "FFillet" });
   });
 
   it("maps stored shell entities to faceIds", () => {
