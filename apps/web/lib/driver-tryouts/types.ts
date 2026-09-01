@@ -37,12 +37,22 @@ export type DriverTryoutsCriterion =
   | "composure"
   | "mechanical";
 
+export const DRIVER_TRYOUTS_CRITERIA: DriverTryoutsCriterion[] = [
+  "precision",
+  "awareness",
+  "communication",
+  "composure",
+  "mechanical",
+];
+
 export type DriverTryoutsCandidateScore = {
   candidateId: string;
   candidate: DriverTryoutsCandidate;
   evaluationCount: number;
-  averages: Record<DriverTryoutsCriterion, number>;
-  overallAverage: number;
+  /** Null until at least one evaluation with logged 1–5 scores exists. */
+  averages: Record<DriverTryoutsCriterion, number> | null;
+  /** Null when there are no logged scores — never a fabricated 0. */
+  overallAverage: number | null;
   rank: number | null;
 };
 

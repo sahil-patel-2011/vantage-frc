@@ -440,3 +440,4 @@ export function hubLegacyHref(tab: HubTabDef, orgId?: string | null): string {
   const join = base.includes("?") ? "&" : "?";
   return `${base}${join}orgId=${encodeURIComponent(orgId)}`;
 }
+

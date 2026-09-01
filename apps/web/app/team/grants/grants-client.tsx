@@ -17,6 +17,7 @@ import {
   type GrantWritingView,
   type GuidedFields,
 } from "../../../lib/grant-writing";
+import { AllocateSpend } from "./allocate-spend";
 import "./grants.css";
 
 const EMPTY_FIELDS: GuidedFields = { need: "", impact: "", budget: "", timeline: "" };
@@ -463,6 +464,8 @@ function GrantWritingWorkspace({
         include={GRANTS_WRITING_RELATED_INCLUDE}
         ariaLabel="Related fundraising tools"
       />
+
+      <AllocateSpend orgId={view.orgId} seasonYear={season ?? view.seasonYear} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

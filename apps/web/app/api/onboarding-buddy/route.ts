@@ -10,6 +10,10 @@ import {
   type OnboardingBuddyView,
 } from "../../../lib/onboarding-buddy/compute-onboarding-buddy";
 import { onboardingBuddySetupSteps } from "../../../lib/onboarding-buddy/onboarding-buddy-related";
+import {
+  OnboardingBuddyError,
+  parseCreatePairingInput,
+} from "../../../lib/onboarding-buddy/roster";
 import type { OnboardingBuddyPairingStatus } from "../../../lib/onboarding-buddy/types";
 
 export type { OnboardingBuddyView };
@@ -66,6 +70,17 @@ export async function POST(request: Request) {
   const action = typeof body.action === "string" ? body.action : "";
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
+  let createInput: ReturnType<typeof parseCreatePairingInput> | null = null;
+  if (action === "create-pairing") {
+    try {
+      createInput = parseCreatePairingInput(body);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid pairing";
+      const status = error instanceof OnboardingBuddyError ? error.status : 400;
+      return Response.json({ error: message }, { status });
+    }
+  }
+
   const userId = session.user.id;
 
   try {
@@ -78,17 +93,12 @@ export async function POST(request: Request) {
 
       switch (action) {
         case "create-pairing": {
-          const newMemberId = trimmedOrNull(body.newMemberId, 64);
-          const buddyId = trimmedOrNull(body.buddyId, 64);
-          if (!newMemberId) throw new Error("newMemberId is required");
-          if (!buddyId) throw new Error("buddyId is required");
-          if (newMemberId === buddyId) throw new Error("A member cannot be their own buddy");
           await createPairing(client, {
             orgId,
             userId,
-            newMemberId,
-            buddyId,
-            notes: trimmedOrNull(body.notes, 2000),
+            newMemberId: createInput!.newMemberId,
+            buddyId: createInput!.buddyId,
+            notes: createInput!.notes,
           });
           break;
         }
@@ -121,6 +131,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof OnboardingBuddyError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     const message = error instanceof Error ? error.message : "Onboarding Buddy request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

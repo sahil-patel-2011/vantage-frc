@@ -67,12 +67,20 @@ order, one transaction each. On failure it stops, logs to `scripts/migration-fai
 2. The roles (`vantage_app`, `vantage_worker`, RLS helpers) are created by the early migrations
    (`0000_foundation.sql`, `0001_roles_and_rls.sql`) — you just need a superuser-ish admin URL to run them.
 3. Locally, put the **unpooled** admin URL in `.env.migrate.local` (or `.env.production.local`) as
-   `DATABASE_ADMIN_URL` — the runner reads exactly those two files, not your shell env.
-4. Run: `node scripts/run-migrations.mjs`. Expect a long `APPLY`/`OK` stream on first run.
+   `DATABASE_ADMIN_URL`. Shell/CI variables override those optional files; use
+   `npm run db:migrate -- --migration-env-file <path>` to load one explicit file.
+4. Run: `npm run db:migrate`. This is the authoritative apply command and invokes
+   `scripts/run-migrations.mjs`; `npm run db:generate` only generates Drizzle artifacts. Expect a
+   long `APPLY`/`OK` stream on first run.
 5. Re-run to verify it prints only `SKIP` lines (idempotent).
-6. Check `npm run deploy:preflight` — it lists the ~24 duplicate-number-prefix migration pairs as a
-   KNOWN issue. Duplicates *do* apply (the runner keys on the full filename), but same-number files
-   apply in alphabetical-slug order; do not add new files reusing an existing number.
+6. Check `npm run deploy:preflight` — it warns for the exact 24 frozen historical
+   duplicate-number prefixes and fails any new or expanded collision. Duplicates *do* apply (the
+   runner keys on the full filename), but same-number files apply in alphabetical-slug order; do not
+   add new files reusing an existing number.
+
+`npm run test:db:integration` exercises a destructive fresh-schema apply/reapply plus two-org RLS
+checks only when `TEST_DATABASE_ADMIN_URL` is set. For safety it accepts only a local host and a
+dedicated database name containing a `test` or `ci` segment; GitHub Actions provisions `vantage_ci`.
 
 There is no automatic migration on deploy — running the migration script against production Neon is a
 deliberate manual step (see the Go-Live checklist blockers).

@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { AUTO_COORDINATION_CUE, AUTO_FLEXIBILITY_CUE, DEPLOY_SAFETY_CUE, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
-import { computeMatchStrategyCardsView } from "./compute-match-strategy-cards";
+import { AUTO_COORDINATION_CUE, AUTO_FLEXIBILITY_CUE, DEPLOY_SAFETY_CUE, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, matchHasTbaResult, matchLabel, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
+import { computeMatchStrategyCardsView, upsertCard } from "./compute-match-strategy-cards";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
@@ -67,6 +67,29 @@ describe("match-strategy-cards pure helpers", () => {
     expect(deploySafetyCue({ gamePlan: "Deploy hood, stow for trench", driverNotes: "" })).toBeNull();
     expect(deploySafetyCue({ gamePlan: "Keep hood deployed", driverNotes: "" })).toBe(DEPLOY_SAFETY_CUE);
   });
+
+  it("picks our next unplayed TBA match and never invents one after results", () => {
+    expect(matchHasTbaResult({ matchKey: "a", scheduledAt: null, winningAlliance: "red" })).toBe(true);
+    expect(matchHasTbaResult({ matchKey: "b", scheduledAt: null, actualTime: "2026-03-14T17:00:00.000Z" })).toBe(true);
+    expect(matchHasTbaResult({ matchKey: "c", scheduledAt: "2026-03-14T18:00:00.000Z" })).toBe(false);
+    const now = "2026-03-14T16:00:00.000Z";
+    expect(
+      selectNextTbaMatch(
+        [
+          { matchKey: "2026casj_qm10", scheduledAt: "2026-03-14T15:00:00.000Z", winningAlliance: "blue" },
+          { matchKey: "2026casj_qm12", scheduledAt: "2026-03-14T18:00:00.000Z" },
+          { matchKey: "2026casj_qm14", scheduledAt: "2026-03-14T19:00:00.000Z" },
+        ],
+        now,
+      ),
+    ).toBe("2026casj_qm12");
+    expect(
+      selectNextTbaMatch(
+        [{ matchKey: "2026casj_qm10", scheduledAt: "2026-03-14T15:00:00.000Z", winningAlliance: "red" }],
+        now,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe("computeMatchStrategyCardsView", () => {
@@ -104,7 +127,9 @@ describe("computeMatchStrategyCardsView", () => {
   });
 
   it("returns a live view merging synced matches with any saved strategy card content", async () => {
+    const queries: string[] = [];
     const client = mockClient((sql) => {
+      queries.push(sql);
       if (sql.includes("FROM memberships")) {
         return { rows: [{ orgId: ORG, teamNumber: 254, eventKey: "2026casj", eventName: "Champs" }], rowCount: 1 };
       }
@@ -112,17 +137,31 @@ describe("computeMatchStrategyCardsView", () => {
         return {
           rows: [
             {
+              matchKey: "2026casj_qm10",
+              compLevel: "qm",
+              matchNumber: 10,
+              setNumber: 1,
+              eventKey: "2026casj",
+              scheduledAt: "2026-03-14T16:00:00.000Z",
+              actualTime: "2026-03-14T16:05:00.000Z",
+              winningAlliance: "blue",
+              redAlliance: { teamKeys: ["frc254", "frc118", "frc1114"] },
+              blueAlliance: { teamKeys: ["frc971", "frc2056", "frc33"] },
+            },
+            {
               matchKey: "2026casj_qm12",
               compLevel: "qm",
               matchNumber: 12,
               setNumber: 1,
               eventKey: "2026casj",
               scheduledAt: "2026-03-14T18:00:00.000Z",
-              redAlliance: { team_keys: ["frc254", "frc118", "frc1114"] },
-              blueAlliance: { team_keys: ["frc971", "frc2056", "frc33"] },
+              actualTime: null,
+              winningAlliance: null,
+              redAlliance: { teamKeys: ["frc254", "frc118", "frc1114"] },
+              blueAlliance: { teamKeys: ["frc971", "frc2056", "frc33"] },
             },
           ],
-          rowCount: 1,
+          rowCount: 2,
         };
       }
       if (sql.includes("FROM match_strategy_cards")) {
@@ -147,15 +186,52 @@ describe("computeMatchStrategyCardsView", () => {
 
     const view = await computeMatchStrategyCardsView(client, { userId: USER, requestedOrg: ORG });
     expect(view.status).toBe("live");
+    expect(queries.some((sql) => sql.includes("teamKeys"))).toBe(true);
     if (view.status === "live") {
       expect(view.teamNumber).toBe(254);
-      expect(view.cards).toHaveLength(1);
+      expect(view.nextMatchKey).toBe("2026casj_qm12");
+      expect(view.cards[0]?.matchKey).toBe("2026casj_qm12");
+      expect(view.cards[0]?.isNextMatch).toBe(true);
+      expect(view.cards[1]?.isNextMatch).toBe(false);
       const card = view.cards[0];
       expect(card.ownAllianceColor).toBe("red");
       expect(card.alliances.find((a) => a.color === "red")?.teamNumbers).toEqual([118, 254, 1114]);
       expect(card.hasCard).toBe(true);
       expect(card.gamePlan).toBe("Play defense on frc971 early");
       expect(card.roleAssignments).toEqual([{ role: "Driver", assignee: "Alex" }]);
+      expect(view.briefingPayload).toMatchObject({
+        matchKey: "2026casj_qm12",
+        hasCard: true,
+        gamePlan: "Play defense on frc971 early",
+        autoAssignment: "3-piece auto",
+      });
+      expect(view.briefingPayload?.cues.backup).toBe(AUTO_FLEXIBILITY_CUE);
+      expect(JSON.stringify(view.briefingPayload)).not.toMatch(/DEMO/i);
     }
+  });
+
+  it("persists a card keyed to the TBA match_key", async () => {
+    const query = vi.fn(() => Promise.resolve({ rows: [], rowCount: 0 }));
+    const client = { query } as unknown as PoolClient;
+    await upsertCard(client, {
+      orgId: ORG,
+      userId: USER,
+      matchKey: "2026casj_qm12",
+      eventKey: "2026casj",
+      gamePlan: "Cycle mid",
+      autoAssignment: "3-piece left with backup",
+      defenseFocus: null,
+      keyThreats: null,
+      driverNotes: "stow hood for trench",
+      roleAssignments: [],
+    });
+    expect(query).toHaveBeenCalledTimes(1);
+    const [sql, params] = query.mock.calls[0] as [string, unknown[]];
+    expect(sql).toMatch(/INSERT INTO match_strategy_cards/);
+    expect(sql).toMatch(/ON CONFLICT \(org_id, match_key\)/);
+    expect(params[0]).toBe(ORG);
+    expect(params[1]).toBe("2026casj_qm12");
+    expect(params[2]).toBe("2026casj");
+    expect(params[3]).toBe("Cycle mid");
   });
 });

@@ -73,7 +73,7 @@ function NextActionsPanel({ actions }: { actions: KnowledgeGapNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions kg-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Knowledge, FMEA, and Meeting Autopilot — never DEMO wiki gaps.</p>
+        <p className="app-muted">Knowledge, Work, and Meeting Autopilot — never DEMO wiki gaps.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -162,7 +162,7 @@ function GapShell({
         <Panel className="kg-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Knowledge and FMEA — never DEMO wiki gaps.</p>
+            <p className="app-muted">Knowledge and Work — never DEMO wiki gaps.</p>
           </header>
           <ul className="kg-setup-steps">
             {steps.map((step) => (
@@ -303,7 +303,7 @@ export default function KnowledgeGapClient() {
           </>
         }
         title="Knowledge-gap detective"
-        description="Scans wiki and decision log against real subsystems and scouted events — never DEMO wiki gaps. Cross-check Knowledge and FMEA."
+        description="Lists undocumented work from the real wiki vs Work (to-dos, build tasks, milestones) — never invented gaps. Cross-check Knowledge and Work."
       >
         <div className="kg-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -342,7 +342,7 @@ export default function KnowledgeGapClient() {
         <Panel className="kg-panel">
           <div className="kg-stats">
             <StatTile label="Open gaps" value={formatKnowledgeGapMetric(openCount, loaded)} />
-            <StatTile label="Tracked subjects" value={formatKnowledgeGapMetric(itemCount, loaded)} />
+            <StatTile label="Tracked work" value={formatKnowledgeGapMetric(itemCount, loaded)} />
             <StatTile
               label="Coverage"
               value={
@@ -362,21 +362,40 @@ export default function KnowledgeGapClient() {
           badge="No scan yet"
           badgeTone="setup"
           title="Run your first scan"
-          description="Diffs robot_subsystems, decision_records, and scouted events against your knowledge_pages wiki — never DEMO gap packs."
+          description="Diffs real work items against your knowledge wiki — never DEMO gap packs."
         />
       ) : view.items.length === 0 ? (
-        <EmptyState
-          soft
-          badge="Fully documented"
-          badgeTone="good"
-          title="No gaps found for this season"
-          description="Every tracked subsystem, decision, and scouted event has wiki coverage — never DEMO completeness."
+        <EmptyWorkState
+          tracked={view.scan.subsystemCount + view.scan.decisionCount + view.scan.eventCount}
         />
       ) : (
         <GapList items={view.items} busy={busy} mutate={mutate} />
       )}
       <NextActionsPanel actions={nextActions} />
     </main>
+  );
+}
+
+function EmptyWorkState({ tracked }: { tracked: number }) {
+  if (tracked === 0) {
+    return (
+      <EmptyState
+        soft
+        badge="No work items"
+        badgeTone="setup"
+        title="Nothing to scan yet"
+        description="No work items to check — add to-dos, build tasks, or milestones before gaps can appear. Never invented."
+      />
+    );
+  }
+  return (
+    <EmptyState
+      soft
+      badge="Fully documented"
+      badgeTone="good"
+      title="No gaps found for this season"
+      description="Every tracked work item has wiki coverage — never DEMO completeness."
+    />
   );
 }
 
@@ -399,8 +418,8 @@ function ScanPanel({
           <h2>Coverage — {season}</h2>
           {scan ? (
             <small className="app-muted">
-              {scan.subsystemCount} subsystem(s) · {scan.decisionCount} decision(s) · {scan.eventCount} scouted
-              event(s) · {scan.pageCount} wiki page(s) · scanned {new Date(scan.createdAt).toLocaleString()}
+              {scan.decisionCount} to-do(s) · {scan.subsystemCount} build task(s) · {scan.eventCount} milestone(s)
+              · {scan.pageCount} wiki page(s) · scanned {new Date(scan.createdAt).toLocaleString()}
             </small>
           ) : (
             <small className="app-muted">No scan has been run for {season} yet — never DEMO coverage.</small>
@@ -438,7 +457,7 @@ function GapList({
 }) {
   return (
     <Panel id="knowledge-gap-items" className="kg-panel">
-      <h2>Undocumented subjects</h2>
+      <h2>Undocumented work</h2>
       <ul className="kg-item-list">
         {items.map((item) => (
           <li key={item.id} className="app-card soft-panel kg-item-card">
@@ -451,6 +470,11 @@ function GapList({
               </div>
               {item.status === "open" ? (
                 <div className="kg-item-actions">
+                  {item.href ? (
+                    <a className="app-button secondary" href={item.href}>
+                      Open work
+                    </a>
+                  ) : null}
                   <button
                     type="button"
                     className="app-button secondary"

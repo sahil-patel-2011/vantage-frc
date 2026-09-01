@@ -9,6 +9,7 @@
 // numbers.
 
 import type { BriefingView } from "../briefing";
+import type { CounterBookFailureTrigger, CounterBookTendency } from "../counter-book/types";
 import type {
   MatchCopilotBattery,
   MatchCopilotCallout,
@@ -78,6 +79,22 @@ export type BriefingPitReport = {
   createdAt: string;
 };
 
+/** A generated opponent counter-book (counter_book_reports) for a robot in this match,
+ * trimmed to the few rows that fit on a pre-match card. Empty when the org has not
+ * generated one yet — the briefing then shows the generate step, never invented tendencies. */
+export type BriefingCounterBook = {
+  id: string;
+  teamKey: string;
+  teamNumber: number | null;
+  title: string;
+  matchesScouted: number;
+  tendencies: CounterBookTendency[];
+  failureTriggers: CounterBookFailureTrigger[];
+  counterPlan: string;
+  summary: string;
+  createdAt: string | null;
+};
+
 /** Sections added by the consolidation on top of the original briefing. */
 export type BriefingExtras = {
   /** EPA/rank rows for alliance partners (excluding us). */
@@ -89,6 +106,10 @@ export type BriefingExtras = {
   opponentsScouted: BriefingScoutedTeam[];
   tendencies: BriefingTendency[];
   card: BriefingCard | null;
+  /** Newest counter-book per opposing robot, lineup order; [] when none generated. */
+  counterBooks: BriefingCounterBook[];
+  /** Opposing robots with no counter-book yet — drives the honest generate prompt. */
+  counterBookGaps: string[];
   watchNotes: BriefingWatchNote[];
   defensePlans: BriefingDefensePlan[];
   pitReports: BriefingPitReport[];

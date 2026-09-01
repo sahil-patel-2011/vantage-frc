@@ -9,6 +9,7 @@ import {
   unitCostFromEstimate,
   validateOrderSubmit,
 } from "./evaluate";
+import { receiveToInventory } from "./receive-to-inventory";
 import type { OrderMember, OrderRequest, OrderStatus, OrdersView } from "./types";
 
 export { ORDER_STATUSES, canTransitionOrder, statusLabel, showBuyPanel, validateOrderSubmit } from "./evaluate";
@@ -636,4 +637,14 @@ export async function progressOrder(
      WHERE id = $1::uuid AND org_id = $2::uuid`,
     [input.orderId, input.orgId, input.status],
   );
+
+  if (input.status === "received") {
+    await receiveToInventory(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      orderId: input.orderId,
+      quantity: row.quantity,
+      title: row.title,
+    });
+  }
 }

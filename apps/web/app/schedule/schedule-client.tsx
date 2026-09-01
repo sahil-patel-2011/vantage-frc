@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
@@ -14,6 +14,12 @@ import {
   type ScheduleNextAction,
   type ScheduleShellKind,
 } from "../../lib/schedule/schedule-related";
+import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
+import {
+  SCHEDULE_POLL_MS,
+  scheduleCacheRequiredCopy,
+  shouldRefreshSchedule,
+} from "../../lib/schedule/tba-cache";
 import {
   allianceOf,
   compLevelLabel,
@@ -277,6 +283,7 @@ function ScheduleShell({
 }
 
 export default function ScheduleClient() {
+  const cockpit = useCockpitPrefs();
   const [view, setView] = useState<ScheduleView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -284,8 +291,11 @@ export default function ScheduleClient() {
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [scope, setScope] = useState<"all" | "ours">("all");
   const [hidePlayed, setHidePlayed] = useState(false);
+  const inFlightRef = useRef(false);
 
   const load = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -303,16 +313,51 @@ export default function ScheduleClient() {
       setView(data);
     } catch {
       setFetchFailed(true);
+    } finally {
+      inFlightRef.current = false;
     }
   }, []);
 
   useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => {
-      void load();
-    }, 60_000);
-    return () => window.clearInterval(timer);
-  }, [load]);
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (
+        !shouldRefreshSchedule({
+          visibilityState: document.visibilityState,
+          inFlight: inFlightRef.current,
+          pauseWhenHidden: cockpit.pauseLiveWhenHidden,
+        })
+      ) {
+        return;
+      }
+      await load();
+    };
+
+    void poll();
+
+    const arm = () => {
+      timer = window.setTimeout(() => {
+        void poll().finally(() => {
+          if (!cancelled) arm();
+        });
+      }, SCHEDULE_POLL_MS);
+    };
+    arm();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load, cockpit.pauseLiveWhenHidden]);
 
   if (!view) {
     return (
@@ -321,7 +366,7 @@ export default function ScheduleClient() {
         description={
           fetchFailed
             ? "A network or server issue blocked the board. Retry — never DEMO match rows."
-            : "Pulling TBA matches for your active event…"
+            : "Reading the TBA match cache for your active event…"
         }
         shell={fetchFailed ? "error" : "loading"}
         fetchFailed={fetchFailed}
@@ -434,8 +479,8 @@ export default function ScheduleClient() {
             soft
             badge="No matches yet"
             badgeTone="setup"
-            title="No matches synced for this event yet"
-            description="Once the schedule is posted and reference sync runs, matches appear here automatically — never DEMO placeholders."
+            title={scheduleCacheRequiredCopy().title}
+            description={scheduleCacheRequiredCopy().description}
           >
             <div className="sched-inline-actions">
               <ScheduleRelated orgId={orgId} include={["calendar", "command", "my-day"]} />

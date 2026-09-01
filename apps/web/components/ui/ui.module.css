@@ -523,8 +523,20 @@
 }
 .dialogClose:hover { background: var(--app-soft); }
 .dialogClose svg { width: 18px; height: 18px; }
-.dialogBody { font-size: 14px; line-height: 1.55; color: var(--soft-muted); }
+.dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--soft-muted); }
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.sheetOverlay {
+  place-items: end center;
+  padding: 0;
+}
+.sheet {
+  width: min(640px, 100vw);
+  max-height: min(72vh, 640px);
+  margin: 0;
+  padding: 18px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  border-bottom: 0;
+}
 .confirmInput {
   width: 100%;
   padding: 9px 11px;
@@ -576,6 +588,141 @@
 .btnIcon:hover:not(:disabled) { background: var(--app-soft); }
 @media (pointer: coarse) {
   .btnIcon { min-width: 44px; min-height: 44px; }
+}
+
+/* --- Field primitives (field.tsx: TextField/TextareaField/SelectField/
+   CheckboxField/RadioGroup/FileField). Token-driven so 200% browser zoom
+   reflows (ch/rem-scaled text, no fixed px min-widths) instead of clipping,
+   and every control keeps the 44px touch-target floor from soft-ui.css. --- */
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.fieldWide { grid-column: 1 / -1; }
+.fieldLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-ink);
+}
+.fieldRequired { color: var(--soft-danger); }
+.fieldControl {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  font: 500 14px var(--font-source-sans), ui-sans-serif;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.fieldControl::placeholder { color: var(--soft-muted); }
+.fieldControl:disabled { opacity: .6; cursor: not-allowed; }
+.fieldControl:focus-visible {
+  border-color: var(--soft-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--soft-accent) 22%, transparent);
+}
+.fieldControlInvalid { border-color: var(--soft-danger); }
+.fieldControlInvalid:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--soft-danger) 20%, transparent);
+}
+.fieldTextarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.fileControl {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  border-radius: var(--soft-radius-sm);
+  border: 1px dashed var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  font-size: 13px;
+}
+.fileControl:disabled { opacity: .6; cursor: not-allowed; }
+.fieldHelp {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--soft-muted);
+}
+.fieldError {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--soft-danger);
+}
+.fieldLoadingGlyph {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--soft-accent) 30%, transparent);
+  border-top-color: var(--soft-accent);
+  animation: fieldSpin .7s linear infinite;
+}
+@keyframes fieldSpin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fieldLoadingGlyph { animation-duration: 1.6s; }
+}
+
+/* Checkbox/radio: the whole row is the >=44px hit target, not just the box
+   (2.5.8 target size), and disabled state is expressed on the row so the
+   dimmed look and cursor cover the label text too, not just the input. */
+.checkboxField, .radioGroup {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 2px;
+  cursor: pointer;
+  font: 500 14px var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-ink);
+}
+.checkboxRow:has(input:disabled) { opacity: .6; cursor: not-allowed; }
+.checkboxBox {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--soft-accent);
+}
+.radioOptions { display: grid; gap: 4px; }
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 2px;
+  cursor: pointer;
+  font: 500 14px var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-ink);
+}
+.radioOption:has(input:disabled) { opacity: .6; cursor: not-allowed; }
+.radioOption input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  flex: none;
+  accent-color: var(--soft-accent);
 }
 
 /* --- Dark theme --------------------------------------------------------

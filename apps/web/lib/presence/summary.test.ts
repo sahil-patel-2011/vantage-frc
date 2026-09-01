@@ -78,6 +78,8 @@ describe("summarizePresence", () => {
       rsvpsRecorded: true,
     });
     expect(summary.noRecordCount).toBe(6);
+    // Ada (going + present + hours), Bo (going), Dee (present). Cy said no.
+    expect(summary.comingTonight).toBe(3);
     expect(summary.presentCount).toBe(2);
     expect(summary.respondedCount).toBe(3);
     expect(summary.goingCount).toBe(2);
@@ -99,6 +101,20 @@ describe("summarizePresence", () => {
       rsvpsRecorded: true,
     });
     expect(summary.totalMinutes).toBeNull();
+  });
+
+  it("answers who is coming tonight as the union, never a sum of the three stores", () => {
+    const summary = summarizePresence({
+      rows: rows(),
+      rosterCount: 10,
+      rollCallTaken: true,
+      rsvpsRecorded: true,
+    });
+    expect(summary.comingTonight).toBe(3);
+    expect(summary.comingTonight).toBeLessThan(
+      summary.goingCount + summary.presentCount + summary.clockedCount,
+    );
+    expect(summary.comingTonight).toBeLessThanOrEqual(summary.rosterCount);
   });
 
   it("has no response rate without a roster", () => {

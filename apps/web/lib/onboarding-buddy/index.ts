@@ -66,12 +66,20 @@ export function isRecentJoin(joinedAtIso: string, nowIso: string, windowDays = N
  * Picks the best buddy candidate for a new member: most tenured member with the
  * fewest currently-active pairings as a buddy, excluding the new member themselves.
  */
+/** Roster members who may be chosen as a buddy — other org user ids only. */
+export function eligibleBuddyCandidates<T extends { userId: string }>(
+  members: T[],
+  newMemberId: string,
+): T[] {
+  return members.filter((m) => m.userId && m.userId !== newMemberId);
+}
+
 export function suggestBuddy(
   candidates: OnboardingBuddyMember[],
   newMemberId: string,
   activeBuddyCounts: Record<string, number>,
 ): OnboardingBuddyMember | null {
-  const eligible = candidates.filter((m) => m.userId !== newMemberId);
+  const eligible = eligibleBuddyCandidates(candidates, newMemberId);
   if (eligible.length === 0) return null;
   const sorted = [...eligible].sort((a, b) => {
     const loadA = activeBuddyCounts[a.userId] ?? 0;

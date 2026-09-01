@@ -3,6 +3,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { alertMessage, classifyEpaChange, classifyScheduleChange, round1, summarizeWatchlist, teamLabel } from ".";
 import type { WatchlistAlert, WatchlistEntry, WatchlistSummary } from "./types";
+import { loadWatchlistTeamKeys } from "../watchlist";
 
 export type WatchlistSetupStep = {
   id: string;
@@ -25,6 +26,8 @@ export type OpponentWatchlistView =
       entries: WatchlistEntry[];
       alerts: WatchlistAlert[];
       summary: WatchlistSummary;
+      /** Org watchlist keys in scout-queue order — watched teams sort earlier on coverage. */
+      coveragePriorityTeamKeys: string[];
       computedAt: string;
     };
 
@@ -129,24 +132,27 @@ export async function computeOpponentWatchlistView(
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) return setupRequiredView();
 
-  const entryResult = await client.query<EntryRow>(
-    `SELECT id, team_key AS "teamKey", team_number AS "teamNumber", note,
-            notify_schedule AS "notifySchedule", notify_epa AS "notifyEpa",
-            created_at::text AS "createdAt"
-     FROM opponent_watchlist_entries
-     WHERE org_id = $1 AND created_by = $2
-     ORDER BY created_at DESC`,
-    [org.orgId, input.userId],
-  ).then(async (result) => {
-    if (result.rows.length === 0) return { rows: [] as (EntryRow & { nickname: string | null })[] };
-    const teamKeys = result.rows.map((r) => r.teamKey);
-    const nicknames = await client.query<{ teamKey: string; nickname: string | null }>(
-      `SELECT team_key AS "teamKey", nickname FROM teams_ref WHERE team_key = ANY($1::text[])`,
-      [teamKeys],
-    );
-    const nickByKey = new Map(nicknames.rows.map((r) => [r.teamKey, r.nickname]));
-    return { rows: result.rows.map((r) => ({ ...r, nickname: nickByKey.get(r.teamKey) ?? null })) };
-  });
+  const [entryResult, coveragePriorityTeamKeys] = await Promise.all([
+    client.query<EntryRow>(
+      `SELECT id, team_key AS "teamKey", team_number AS "teamNumber", note,
+              notify_schedule AS "notifySchedule", notify_epa AS "notifyEpa",
+              created_at::text AS "createdAt"
+       FROM opponent_watchlist_entries
+       WHERE org_id = $1 AND created_by = $2
+       ORDER BY created_at DESC`,
+      [org.orgId, input.userId],
+    ).then(async (result) => {
+      if (result.rows.length === 0) return { rows: [] as (EntryRow & { nickname: string | null })[] };
+      const teamKeys = result.rows.map((r) => r.teamKey);
+      const nicknames = await client.query<{ teamKey: string; nickname: string | null }>(
+        `SELECT team_key AS "teamKey", nickname FROM teams_ref WHERE team_key = ANY($1::text[])`,
+        [teamKeys],
+      );
+      const nickByKey = new Map(nicknames.rows.map((r) => [r.teamKey, r.nickname]));
+      return { rows: result.rows.map((r) => ({ ...r, nickname: nickByKey.get(r.teamKey) ?? null })) };
+    }),
+    loadWatchlistTeamKeys(client, org.orgId),
+  ]);
 
   const entryRows = entryResult.rows;
 
@@ -158,6 +164,7 @@ export async function computeOpponentWatchlistView(
       entries: [],
       alerts: [],
       summary: summarizeWatchlist([], []),
+      coveragePriorityTeamKeys,
       computedAt: new Date().toISOString(),
     };
   }
@@ -314,6 +321,7 @@ export async function computeOpponentWatchlistView(
     entries,
     alerts,
     summary: summarizeWatchlist(entries, alerts),
+    coveragePriorityTeamKeys,
     computedAt: new Date().toISOString(),
   };
 }

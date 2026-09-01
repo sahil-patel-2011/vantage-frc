@@ -25,14 +25,16 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.goto("/dashboard");
   // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Edit mode")).toBeVisible();
+  await expect(page.getByText("Edit mode", { exact: true }).first()).toBeVisible();
   await expect(page.locator(".dash-editor-bar")).toBeVisible();
   await expect(page.getByTestId("dash-catalog-inline").locator("button").first()).toBeVisible();
   await expect(page.getByTestId("dash-preview")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
   await expect(page.getByTestId("dash-open-library")).toBeVisible();
   await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByTestId("dash-customize")).toBeVisible();
+  await expect(page.getByTestId("dash-preview-back")).toBeVisible();
+  await expect(page.getByTestId("dash-preview-save")).toBeVisible();
+  await expect(page.getByText("Previewing unsaved changes")).toBeVisible();
 });
 
 test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) => {
@@ -55,7 +57,7 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   expect(box).toBeTruthy();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box!.x - 280, box!.y + 90, { steps: 20 });
+  await page.mouse.move(box!.x + 280, box!.y + 90, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   await page.mouse.up();
   await expect
@@ -78,17 +80,18 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps a four-app island on phone and desktop", async ({ page }) => {
+test("product shell keeps four favorite apps plus an explicit all-apps button", async ({ page }) => {
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open more destinations" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
+  await island.getByRole("button", { name: "Open all apps" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
+  await expect(drawer.getByRole("button", { name: /Find any page or action/ })).toBeVisible();
   await drawer.getByRole("button", { name: "Competition" }).click();
   await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
@@ -96,11 +99,12 @@ test("product shell keeps a four-app island on phone and desktop", async ({ page
   await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
   await expect(drawer.locator(".soft-drawer-foot a").first()).toHaveText("Account");
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await page.getByRole("button", { name: "Close navigation" }).click();
+  await drawer.getByRole("button", { name: "Close", exact: true }).click();
 
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
+  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
@@ -109,13 +113,13 @@ test("onboarding route is reachable when authenticated fixture skips incomplete 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("account route renders settings tabs and notification badge stays empty at zero", async ({ page }) => {
+test("account route keeps settings discoverable when the API session is unavailable", async ({ page }) => {
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Account", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Appearance" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Integrations" })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your session ended" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 
@@ -128,10 +132,9 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
   await expect(page.getByText("weighted-current-v1")).toHaveCount(0);
 });
 
-test("code route reviews fixtures via interactive workbench", async ({ page }) => {
+test("code route requires a real team and never falls back to fixture findings", async ({ page }) => {
   await page.goto("/code");
-  await expect(page.getByRole("heading", { name: "FRC Code Builder / Debugger" })).toBeVisible();
-  await page.getByRole("button", { name: "Run risk review" }).click();
-  await expect(page.getByText("blocking robot loop")).toBeVisible();
-  await expect(page.getByText("Review complete.")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Code" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a team" })).toBeVisible();
+  await expect(page.getByText("blocking robot loop")).toHaveCount(0);
 });

@@ -11,6 +11,9 @@ describe("parseTags", () => {
   it("returns empty for junk input", () => {
     expect(parseTags(42)).toEqual([]);
   });
+  it("does not treat reserved photo tags as user hashtags", () => {
+    expect(parseTags("cad, asset:aaaaaaaa-1111-4111-8111-111111111111")).toEqual(["cad"]);
+  });
 });
 
 describe("validateEntry", () => {
@@ -26,7 +29,22 @@ describe("validateEntry", () => {
   it("accepts a valid entry and parses tags", () => {
     const result = validateEntry({ title: "Intake v1", entryDate: "2026-01-10", phase: "design", subsystem: "Intake", tags: "cad, prototype" });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.tags).toEqual(["cad", "prototype"]);
+    if (result.ok) {
+      expect(result.value.tags).toEqual(["cad", "prototype"]);
+      expect(result.value.attachmentIds).toEqual([]);
+    }
+  });
+
+  it("parses attachment metadata separately from the text body", () => {
+    const result = validateEntry({
+      title: "Intake v1",
+      entryDate: "2026-01-10",
+      phase: "design",
+      body: "![not evidence](https://example.test/fake.png)",
+      attachments: [{ mediaAssetId: "aaaaaaaa-1111-4111-8111-111111111111" }],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.attachmentIds).toEqual(["aaaaaaaa-1111-4111-8111-111111111111"]);
   });
 });
 
@@ -50,7 +68,36 @@ describe("summarizeNotebook", () => {
 describe("parseNotebookAction", () => {
   it("parses create_entry with a season year", () => {
     const action = parseNotebookAction({ action: "create_entry", orgId: "o1", seasonYear: 2026, title: "Intake v1", entryDate: "2026-01-10", phase: "design" });
-    expect(action).toMatchObject({ action: "create_entry", seasonYear: 2026, phase: "design" });
+    expect(action).toMatchObject({ action: "create_entry", seasonYear: 2026, phase: "design", attachmentIds: [] });
+  });
+
+  it("parses create_entry attachment ids from media-kit metadata", () => {
+    const action = parseNotebookAction({
+      action: "create_entry",
+      orgId: "o1",
+      seasonYear: 2026,
+      title: "Intake v1",
+      entryDate: "2026-01-10",
+      phase: "design",
+      attachments: [{ mediaAssetId: "aaaaaaaa-1111-4111-8111-111111111111" }],
+    });
+    expect(action).toMatchObject({
+      action: "create_entry",
+      attachmentIds: ["aaaaaaaa-1111-4111-8111-111111111111"],
+    });
+  });
+
+  it("parses update_entry attachment ids as a real change", () => {
+    const action = parseNotebookAction({
+      action: "update_entry",
+      orgId: "o1",
+      id: "e1",
+      attachments: ["aaaaaaaa-1111-4111-8111-111111111111"],
+    });
+    expect(action).toMatchObject({
+      action: "update_entry",
+      patch: { attachmentIds: ["aaaaaaaa-1111-4111-8111-111111111111"] },
+    });
   });
   it("rejects create_entry with no season year", () => {
     expect(() => parseNotebookAction({ action: "create_entry", orgId: "o1", title: "x", entryDate: "2026-01-10", phase: "design" })).toThrow(/seasonYear/);

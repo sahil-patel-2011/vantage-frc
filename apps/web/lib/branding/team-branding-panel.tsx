@@ -314,7 +314,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
             <div className="brand-logo-preview">
               {logoUrl ? (
                 <span className="soft-brand-mark lg">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={logoUrl} alt={`${view.orgName ?? "Team"} logo`} />
                 </span>
               ) : (

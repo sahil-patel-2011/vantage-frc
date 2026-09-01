@@ -9,6 +9,7 @@ import {
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const E1 = "44444444-4444-4444-8444-444444444444";
+const MEMBER = "55555555-5555-4555-8555-555555555555";
 
 function event(overrides: Partial<AttendanceEvent> = {}): AttendanceEvent {
   return {
@@ -32,6 +33,7 @@ describe("summarizeAttendance", () => {
           {
             id: "a",
             eventId: E1,
+            userId: null,
             personName: "Ada",
             role: "student",
             hours: null,
@@ -40,6 +42,7 @@ describe("summarizeAttendance", () => {
           {
             id: "b",
             eventId: E1,
+            userId: null,
             personName: "Grace",
             role: "mentor",
             hours: 1.5,
@@ -69,6 +72,7 @@ describe("personAttendanceBoard", () => {
           {
             id: "a",
             eventId: E1,
+            userId: null,
             personName: "Ada",
             role: "student",
             hours: 2,
@@ -82,6 +86,7 @@ describe("personAttendanceBoard", () => {
           {
             id: "b",
             eventId: "e2",
+            userId: null,
             personName: "ada",
             role: "student",
             hours: 1,
@@ -90,6 +95,7 @@ describe("personAttendanceBoard", () => {
           {
             id: "c",
             eventId: "e2",
+            userId: null,
             personName: "Grace",
             role: "mentor",
             hours: 1,
@@ -122,11 +128,12 @@ describe("parseAttendanceAction", () => {
         action: "add_entry",
         orgId: ORG,
         eventId: E1,
+        userId: MEMBER,
         personName: "Ada Lovelace",
         role: "student",
         hours: "",
       }),
-    ).toMatchObject({ action: "add_entry", personName: "Ada Lovelace", hours: null });
+    ).toMatchObject({ action: "add_entry", userId: MEMBER, personName: "Ada Lovelace", hours: null });
   });
 
   it("rejects bad kinds and hours", () => {

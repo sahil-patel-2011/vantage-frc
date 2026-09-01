@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
+import type { PairwisePromoteResult } from "../../lib/pairwise/promote-to-pick-list";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./pairwise.css";
 
 type LiveView = Extract<PairwiseView, { status: "live" }>;
+type PairwiseResponse = PairwiseView & { promotion?: PairwisePromoteResult; error?: string };
 
 export default function PairwiseClient() {
   const [view, setView] = useState<PairwiseView | null>(null);
@@ -19,6 +21,7 @@ export default function PairwiseClient() {
   const [left, setLeft] = useState("");
   const [right, setRight] = useState("");
   const [criterionId, setCriterionId] = useState<string | null>(null);
+  const [promoteMessage, setPromoteMessage] = useState("");
 
   const load = useCallback(async (nextCriterion?: string | null) => {
     const orgId = new URLSearchParams(window.location.search).get("orgId");
@@ -28,11 +31,9 @@ export default function PairwiseClient() {
     if (selected) query.set("criterionId", selected);
     try {
       const response = await fetch(`/api/pairwise?${query.toString()}`);
-      const data = (await response.json()) as PairwiseView | { error?: string };
+      const data = (await response.json()) as PairwiseResponse;
       if (!response.ok || !("status" in data)) {
-        setError(
-          "error" in data && data.error ? data.error : "Could not load pairwise ranking.",
-        );
+        setError(data.error ? data.error : "Could not load pairwise ranking.");
         setErrorStatus(response.status);
         return;
       }
@@ -49,7 +50,7 @@ export default function PairwiseClient() {
   useEffect(() => {
     void load();
     // Initial load only — criterion changes call load explicitly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const live = view?.status === "live" ? view : null;
@@ -74,9 +75,9 @@ export default function PairwiseClient() {
           loserTeamNumber,
         }),
       });
-      const data = (await response.json()) as PairwiseView | { error?: string };
+      const data = (await response.json()) as PairwiseResponse;
       if (!response.ok || !("status" in data)) {
-        throw new Error("error" in data && data.error ? data.error : "Could not save comparison");
+        throw new Error(data.error ? data.error : "Could not save comparison");
       }
       setView(data);
     } catch (cause) {
@@ -95,8 +96,36 @@ export default function PairwiseClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", orgId: live.orgId, comparisonId, criterionId: live.criterionId }),
       });
-      const data = (await response.json()) as PairwiseView;
+      const data = (await response.json()) as PairwiseResponse;
       if (data && "status" in data) setView(data);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function promote() {
+    if (!live || busy || !live.ranks.length) return;
+    setBusy(true);
+    setError("");
+    setPromoteMessage("");
+    try {
+      const response = await fetch("/api/pairwise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "promote-to-pick-list",
+          orgId: live.orgId,
+          criterionId: live.criterionId,
+        }),
+      });
+      const data = (await response.json()) as PairwiseResponse;
+      if (!response.ok || !("status" in data)) {
+        throw new Error(data.error ? data.error : "Could not save pairwise order to the pick list");
+      }
+      setView(data);
+      setPromoteMessage(data.promotion?.message ?? "Saved pairwise order to the pick list.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save pairwise order to the pick list");
     } finally {
       setBusy(false);
     }
@@ -182,6 +211,8 @@ export default function PairwiseClient() {
           }}
           onCompare={compare}
           onRemove={remove}
+          onPromote={promote}
+          promoteMessage={promoteMessage}
         />
       ) : null}
     </main>
@@ -198,6 +229,8 @@ function LivePairwise({
   onCriterion,
   onCompare,
   onRemove,
+  onPromote,
+  promoteMessage,
 }: {
   view: LiveView;
   left: string;
@@ -208,6 +241,8 @@ function LivePairwise({
   onCriterion: (id: string) => void;
   onCompare: (winner: "left" | "right") => void;
   onRemove: (id: string) => void;
+  onPromote: () => void;
+  promoteMessage: string;
 }) {
   const suggestions = view.eventTeams;
   return (
@@ -287,8 +322,31 @@ function LivePairwise({
       <section className="app-card">
         <header>
           <h2>Rank from recorded taps</h2>
-          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams."}</p>
+          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams. No DEMO ranks."}</p>
         </header>
+        <div className="pairwise-promote">
+          <button
+            type="button"
+            className="app-button"
+            disabled={busy || !view.ranks.length || !view.eventKey}
+            onClick={onPromote}
+          >
+            Save order to pick list
+          </button>
+          {!view.ranks.length ? (
+            <p className="app-muted">Nothing to promote until a scout records a real A-beats-B tap.</p>
+          ) : !view.eventKey ? (
+            <p className="app-muted">Set an active event before writing this order to the pick list.</p>
+          ) : (
+            <p className="app-muted">Writes this tap order onto the same list the desk and Pick Clock read.</p>
+          )}
+        </div>
+        {promoteMessage ? (
+          <p className="app-muted" role="status">
+            {promoteMessage}{" "}
+            <a href={hubHref("/competition", "picklist-collab", view.orgId)}>Open pick list</a>
+          </p>
+        ) : null}
         <div className="biz-table-wrap">
           <table className="biz-table">
             <thead>

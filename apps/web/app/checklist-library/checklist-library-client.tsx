@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { CHECKLIST_LIBRARY_CATEGORIES, checklistLibraryCategoryLabel } from "../../lib/checklist-library";
+import {
+  CHECKLIST_LIBRARY_CATEGORIES,
+  checklistLibraryCategoryLabel,
+  previewPitChecklistInstantiation,
+} from "../../lib/checklist-library";
 import type { ChecklistLibraryView } from "../../lib/checklist-library/compute-checklist-library";
 import type { ChecklistLibraryCategory, ChecklistLibraryItem } from "../../lib/checklist-library/types";
 
@@ -89,7 +93,7 @@ export default function ChecklistLibraryClient() {
           </>
         }
         title="Checklist Library"
-        description="Build reusable checklists for pit setup, transport, and event load-in, then run and check them off at every event."
+        description="Store the team's SOP here. Opening a pit/match checklist writes a timed run on Event Day — this page does not keep a second copy."
       />
 
       {error ? (
@@ -146,12 +150,70 @@ export default function ChecklistLibraryClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
+          {view.lastPitInstantiation ? <PitOpenedNotice view={view} /> : null}
+          <PitChecklistPanel view={view} />
           <NewTemplateForm busy={busy} mutate={mutate} />
           <TemplatesPanel view={view} busy={busy} mutate={mutate} />
           <RunsPanel view={view} busy={busy} mutate={mutate} />
         </div>
       )}
     </main>
+  );
+}
+
+function PitOpenedNotice({ view }: { view: LiveView }) {
+  const opened = view.lastPitInstantiation;
+  if (!opened) return null;
+  return (
+    <Panel>
+      <p style={{ margin: 0 }}>
+        Opened <strong>{opened.matchLabel}</strong> on the pit checklist ({opened.itemCount} SOP
+        cue{opened.itemCount === 1 ? "" : "s"}).
+        {opened.unmappedCount > 0
+          ? ` ${opened.unmappedCount} step${opened.unmappedCount === 1 ? "" : "s"} stayed on this SOP — they are not pit cues.`
+          : null}{" "}
+        <a href={opened.href}>Open Event Day pit checklist</a>
+      </p>
+    </Panel>
+  );
+}
+
+function PitChecklistPanel({ view }: { view: LiveView }) {
+  const { pitChecklist } = view;
+  return (
+    <Panel>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+        <div>
+          <h2 style={{ marginTop: 0, marginBottom: 4 }}>Pit / match checklists</h2>
+          <p className="app-muted" style={{ margin: 0 }}>
+            Timed pre-queue runs live on Event Day. Instantiating an SOP opens a run there — this
+            library does not store a second pit ledger.
+          </p>
+        </div>
+        <a className="app-button secondary" href={pitChecklist.href}>
+          Open pit checklist
+        </a>
+      </div>
+      {pitChecklist.runs.length === 0 ? (
+        <p className="app-muted" style={{ marginBottom: 0 }}>
+          No pit runs yet. Use “Open on pit checklist” on a template that names pit cues (bumpers,
+          SB50, battery).
+        </p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "grid", gap: 8 }}>
+          {pitChecklist.runs.map((run) => (
+            <li key={run.id} className="app-card soft-panel">
+              <strong>{run.matchLabel}</strong>
+              <small className="app-muted" style={{ display: "block" }}>
+                {run.completedAt ? "Complete" : `${run.checkedCount} of ${run.itemCount} checked`} ·{" "}
+                started {new Date(run.startedAt).toLocaleString()}
+              </small>
+              <a href={run.href}>Continue on pit checklist</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }
 
@@ -187,6 +249,7 @@ function TemplatesPanel({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   const [runLabels, setRunLabels] = useState<Record<string, string>>({});
+  const [pitLabels, setPitLabels] = useState<Record<string, string>>({});
 
   if (view.templates.length === 0) {
     return (
@@ -203,7 +266,10 @@ function TemplatesPanel({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Templates</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
-        {view.templates.map((template) => (
+        {view.templates.map((template) => {
+          const pitPreview = previewPitChecklistInstantiation(template.items);
+          const canOpenPit = pitPreview.mappedCount > 0;
+          return (
           <li key={template.id} className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
               <div>
@@ -244,6 +310,41 @@ function TemplatesPanel({
                 </li>
               ))}
             </ul>
+            {canOpenPit ? (
+              <form
+                style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const matchLabel = pitLabels[template.id]?.trim();
+                  if (!matchLabel) return;
+                  mutate({ action: "instantiate-pit-checklist", templateId: template.id, matchLabel });
+                  setPitLabels((prev) => ({ ...prev, [template.id]: "" }));
+                }}
+              >
+                <input
+                  placeholder="Match label (e.g. Qual 12)"
+                  value={pitLabels[template.id] ?? ""}
+                  onChange={(event) => setPitLabels((prev) => ({ ...prev, [template.id]: event.target.value }))}
+                />
+                <button
+                  type="submit"
+                  className="app-button"
+                  disabled={busy || !template.active || !(pitLabels[template.id] ?? "").trim()}
+                >
+                  Open on pit checklist
+                </button>
+                {pitPreview.unmapped.length > 0 ? (
+                  <small className="app-muted">
+                    {pitPreview.unmapped.length} SOP step(s) stay here — not pit cues.
+                  </small>
+                ) : null}
+              </form>
+            ) : (
+              <p className="app-muted" style={{ margin: 0 }}>
+                Name items after pit cues (bumpers, SB50, battery) to open this SOP on the pit
+                checklist.
+              </p>
+            )}
             <form
               style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}
               onSubmit={(event) => {
@@ -255,16 +356,17 @@ function TemplatesPanel({
               }}
             >
               <input
-                placeholder="Run label (e.g. Week 3 Regional)"
+                placeholder="Library run label (e.g. Week 3 load-in)"
                 value={runLabels[template.id] ?? ""}
                 onChange={(event) => setRunLabels((prev) => ({ ...prev, [template.id]: event.target.value }))}
               />
               <button type="submit" className="app-button secondary" disabled={busy || !(runLabels[template.id] ?? "").trim()}>
-                Start run
+                Start SOP run
               </button>
             </form>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Panel>
   );
@@ -284,8 +386,8 @@ function RunsPanel({
       <EmptyState
         badge="No runs yet"
         badgeTone="setup"
-        title="Start a run from a template above"
-        description="Each run tracks which items have been checked off so you can see completion at a glance."
+        title="Start an SOP run from a template above"
+        description="Library runs are for transport and load-in practice. Pit/match execution opens on Event Day, not here."
       />
     );
   }
@@ -419,7 +521,7 @@ function NewTemplateForm({
           value={form.itemsText}
           onChange={set("itemsText")}
           rows={5}
-          placeholder={"Totes loaded\nBatteries charged\nDrive station packed"}
+          placeholder={"Bumpers secured\nBattery seated & strap\nSB50 locked\nTotes loaded"}
           required
         />
       </FormRow>

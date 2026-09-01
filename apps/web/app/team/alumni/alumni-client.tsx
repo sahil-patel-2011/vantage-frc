@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState } from "../../../components/ui";
+import { alumniShellCopy, classifyAlumniShell } from "../../../lib/alumni";
 
 type Alum = {
   id: string;
@@ -134,6 +136,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
 
   const mentorCount = alumni.filter((a) => a.isMentor).length;
   const shown = mentorsOnly ? alumni.filter((a) => a.isMentor) : alumni;
+  const emptyCopy = alumniShellCopy(classifyAlumniShell({ orgId, alumniCount: alumni.length }));
 
   return (
     <main className="intel-app">
@@ -157,7 +160,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
 
       {!loading && (
         <section className="admin-grid">
-          <form className="intel-panel" onSubmit={addAlum}>
+          <form id="alumni-add" className="intel-panel" onSubmit={addAlum}>
             <span className="eyebrow">ADD AN ALUM</span>
             <label>
               Full name
@@ -247,11 +250,17 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
                 </label>
               )}
             </div>
-            {!shown.length && (
-              <p className="app-muted">
-                {mentorsOnly ? "No mentors yet." : "No alumni yet. Add the first from the form."}
-              </p>
-            )}
+            {!shown.length &&
+              (mentorsOnly ? (
+                <p className="app-muted">No mentors yet.</p>
+              ) : (
+                <EmptyState
+                  badge={emptyCopy.badge}
+                  badgeTone="setup"
+                  title={emptyCopy.title}
+                  description={emptyCopy.description}
+                />
+              ))}
             {shown.map((alum) => (
               <article className="admin-org" style={rowStyle} key={alum.id}>
                 <div>

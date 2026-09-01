@@ -1,7 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { buildGrantReportSections, buildGrantReportNarrative, summarizeOutreach, summarizeSpend } from ".";
+import { buildGrantReportSections, buildGrantReportNarrative, summarizeOutreach } from ".";
+import {
+  loadMediaEvidenceReferences,
+  type MediaEvidenceReference,
+} from "../media/evidence-references";
+import {
+  computeGrantSpendAttribution,
+  GRANT_FINANCE_ALLOCATIONS_TABLE,
+  type GrantSpendAttribution,
+  type GrantTaggedTxn,
+} from "./spend-linkage";
 import type { GrantReport, GrantReportEligibleGrant } from "./types";
 
 export type GrantReportSetupStep = {
@@ -27,6 +37,7 @@ export type GrantReportView =
       seasons: number[];
       eligibleGrants: GrantReportEligibleGrant[];
       reports: GrantReport[];
+      evidenceLibrary: MediaEvidenceReference[];
       computedAt: string;
     };
 
@@ -90,7 +101,17 @@ type ReportRow = {
   createdAt: string;
 };
 
-function mapReport(row: ReportRow): GrantReport {
+function mapReport(row: ReportRow, spend: GrantSpendAttribution): GrantReport {
+  const outreachByKind = Array.isArray(row.outreachByKind) ? row.outreachByKind : [];
+  const sections = buildGrantReportSections({
+    grantName: row.grantName,
+    funder: row.funder,
+    seasonYear: row.seasonYear,
+    amountAwardedUsd: Number(row.amountAwardedUsd) || 0,
+    outreachByKind,
+    spendByCategory: spend.spendByCategory,
+    spendAttribution: spend.spendAttribution,
+  });
   return {
     id: row.id,
     grantApplicationId: row.grantApplicationId,
@@ -98,14 +119,72 @@ function mapReport(row: ReportRow): GrantReport {
     funder: row.funder,
     seasonYear: row.seasonYear,
     amountAwardedUsd: Number(row.amountAwardedUsd) || 0,
-    totalSpendUsd: Number(row.totalSpendUsd) || 0,
+    // Never replay stored total_spend_usd / spend_by_category — older rows
+    // may hold org-wide season totals. Only live grant-linked allocations count.
+    totalSpendUsd: spend.totalSpendUsd,
+    spendAttribution: spend.spendAttribution,
     outreachCount: Number(row.outreachCount) || 0,
-    outreachByKind: Array.isArray(row.outreachByKind) ? row.outreachByKind : [],
-    spendByCategory: Array.isArray(row.spendByCategory) ? row.spendByCategory : [],
-    sections: Array.isArray(row.sections) ? row.sections : [],
-    narrative: row.narrative,
+    outreachByKind,
+    spendByCategory: spend.spendByCategory,
+    sections,
+    narrative: buildGrantReportNarrative(sections),
     createdAt: row.createdAt,
   };
+}
+
+async function grantFinanceAllocationsSchemaAvailable(client: PoolClient): Promise<boolean> {
+  try {
+    const reg = await client.query<{ ok: string | null }>(
+      `SELECT to_regclass('public.${GRANT_FINANCE_ALLOCATIONS_TABLE}')::text AS ok`,
+    );
+    return Boolean(reg.rows[0]?.ok);
+  } catch {
+    return false;
+  }
+}
+
+type AllocationRow = { grantApplicationId: string; amountUsd: string; category: string };
+
+async function loadGrantLinkedTransactions(
+  client: PoolClient,
+  input: { orgId: string; grantApplicationIds: string[] },
+): Promise<{ schemaAvailable: boolean; transactions: GrantTaggedTxn[] }> {
+  if (input.grantApplicationIds.length === 0) {
+    const schemaAvailable = await grantFinanceAllocationsSchemaAvailable(client);
+    return { schemaAvailable, transactions: [] };
+  }
+  const schemaAvailable = await grantFinanceAllocationsSchemaAvailable(client);
+  if (!schemaAvailable) return { schemaAvailable: false, transactions: [] };
+  try {
+    const result = await client.query<AllocationRow>(
+      `SELECT a.grant_application_id AS "grantApplicationId",
+              a.amount_usd::text AS "amountUsd",
+              COALESCE(NULLIF(c.name, ''), 'Uncategorized') AS category
+       FROM grant_finance_allocations a
+       JOIN finance_transactions t ON t.id = a.finance_transaction_id AND t.org_id = a.org_id
+       LEFT JOIN finance_categories c ON c.id = t.category_id AND c.org_id = t.org_id
+       WHERE a.org_id = $1::uuid AND a.grant_application_id = ANY($2::uuid[])`,
+      [input.orgId, input.grantApplicationIds],
+    );
+    return {
+      schemaAvailable: true,
+      transactions: result.rows.map((row) => ({
+        grantApplicationId: row.grantApplicationId,
+        amountUsd: Number(row.amountUsd) || 0,
+        category: row.category,
+      })),
+    };
+  } catch {
+    return { schemaAvailable: false, transactions: [] };
+  }
+}
+
+function spendForGrant(
+  grantApplicationId: string,
+  schemaAvailable: boolean,
+  transactions: GrantTaggedTxn[],
+): GrantSpendAttribution {
+  return computeGrantSpendAttribution({ grantApplicationId, schemaAvailable, transactions });
 }
 
 export async function computeGrantReportView(
@@ -127,7 +206,7 @@ export async function computeGrantReportView(
     };
   }
 
-  const [eligibleResult, seasonResult, reportResult] = await Promise.all([
+  const [eligibleResult, seasonResult, reportResult, evidenceLibrary] = await Promise.all([
     client.query<EligibleGrantRow>(
       `SELECT ga.id, go.name, go.funder, ga.season_year AS "seasonYear",
               ga.amount_awarded_usd::text AS "amountAwardedUsd",
@@ -159,10 +238,16 @@ export async function computeGrantReportView(
        LIMIT 20`,
       [org.orgId, seasonYear],
     ),
+    loadMediaEvidenceReferences(client, { orgId: org.orgId }),
   ]);
 
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
+
+  const linked = await loadGrantLinkedTransactions(client, {
+    orgId: org.orgId,
+    grantApplicationIds: [...new Set(reportResult.rows.map((row) => row.grantApplicationId))],
+  });
 
   return {
     status: "live",
@@ -171,7 +256,10 @@ export async function computeGrantReportView(
     seasonYear,
     seasons,
     eligibleGrants: eligibleResult.rows.map(mapEligibleGrant),
-    reports: reportResult.rows.map(mapReport),
+    reports: reportResult.rows.map((row) =>
+      mapReport(row, spendForGrant(row.grantApplicationId, linked.schemaAvailable, linked.transactions)),
+    ),
+    evidenceLibrary,
     computedAt: new Date().toISOString(),
   };
 }
@@ -180,11 +268,9 @@ export async function computeGrantReportView(
 
 /**
  * Generate a deterministic post-grant impact report grounded only in the grant's recorded award
- * amount, outreach_messages linked to it, and finance_transactions expenses recorded for the
- * grant's season. Finance rows carry no per-grant linkage, so season expenses are reported
- * strictly as org-wide context with an explicit "spend linkage is not configured" disclosure —
- * never presented as spend attributable to this grant. Wrapped in meteredAI so the run is billed
- * and audited through the standard usage-ledger path, matching every other metered feature.
+ * amount, outreach_messages linked to it, and grant_finance_allocations rows. Untagged
+ * season expenses never count. Missing allocation schema stays setup_required at $0.
+ * Wrapped in meteredAI so the run is billed through the standard usage-ledger path.
  */
 export async function generateGrantReport(
   client: PoolClient,
@@ -211,27 +297,21 @@ export async function generateGrantReport(
   const seasonYear = grant.seasonYear;
   const amountAwardedUsd = grant.amountAwardedUsd != null ? Number(grant.amountAwardedUsd) || 0 : 0;
 
-  const [outreachResult, spendResult] = await Promise.all([
+  const [outreachResult, linked] = await Promise.all([
     client.query<{ kind: string }>(
       `SELECT kind::text AS kind FROM outreach_messages
        WHERE org_id = $1 AND grant_application_id = $2`,
       [input.orgId, input.grantApplicationId],
     ),
-    client.query<{ category: string; amountUsd: string }>(
-      `SELECT COALESCE(fc.name, 'Uncategorized') AS category, ft.amount_usd::text AS "amountUsd"
-       FROM finance_transactions ft
-       LEFT JOIN finance_categories fc ON fc.id = ft.category_id
-       WHERE ft.org_id = $1 AND ft.season_year = $2 AND ft.type = 'expense'`,
-      [input.orgId, seasonYear],
-    ),
+    loadGrantLinkedTransactions(client, {
+      orgId: input.orgId,
+      grantApplicationIds: [input.grantApplicationId],
+    }),
   ]);
 
   const outreachByKind = summarizeOutreach(outreachResult.rows);
-  const spendByCategory = summarizeSpend(
-    spendResult.rows.map((r) => ({ category: r.category, amountUsd: Number(r.amountUsd) || 0 })),
-  );
+  const spend = spendForGrant(input.grantApplicationId, linked.schemaAvailable, linked.transactions);
   const outreachCount = outreachByKind.reduce((sum, line) => sum + line.count, 0);
-  const totalSpendUsd = spendByCategory.reduce((sum, line) => sum + line.totalUsd, 0);
 
   const result = await meteredAI({
     client,
@@ -249,7 +329,8 @@ export async function generateGrantReport(
         seasonYear,
         amountAwardedUsd,
         outreachByKind,
-        spendByCategory,
+        spendByCategory: spend.spendByCategory,
+        spendAttribution: spend.spendAttribution,
       });
       const narrative = buildGrantReportNarrative(sections);
       return {
@@ -275,10 +356,10 @@ export async function generateGrantReport(
       input.grantApplicationId,
       seasonYear,
       amountAwardedUsd,
-      totalSpendUsd,
+      spend.totalSpendUsd,
       outreachCount,
       JSON.stringify(outreachByKind),
-      JSON.stringify(spendByCategory),
+      JSON.stringify(spend.spendByCategory),
       JSON.stringify(sections),
       narrative,
       input.userId,
@@ -292,10 +373,11 @@ export async function generateGrantReport(
     funder: grant.funder,
     seasonYear,
     amountAwardedUsd,
-    totalSpendUsd,
+    totalSpendUsd: spend.totalSpendUsd,
+    spendAttribution: spend.spendAttribution,
     outreachCount,
     outreachByKind,
-    spendByCategory,
+    spendByCategory: spend.spendByCategory,
     sections,
     narrative,
     createdAt: inserted.rows[0]!.createdAt,

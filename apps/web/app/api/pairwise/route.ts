@@ -8,6 +8,7 @@ import {
   deletePairwiseComparison,
   type PairwiseView,
 } from "../../../lib/pairwise/compute-pairwise";
+import { promotePairwiseOrder } from "../../../lib/pairwise/promote-to-pick-list";
 
 const FALLBACK: PairwiseView = {
   status: "setup_required",
@@ -71,20 +72,45 @@ export async function POST(request: Request) {
           loserTeamNumber: body.loserTeamNumber,
           notes: body.notes,
         });
-      } else if (action === "delete") {
+        return computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
+      }
+      if (action === "delete") {
         const comparisonId = uuidOrNull(body.comparisonId);
         if (!comparisonId) throw new Error("comparisonId is required");
         await deletePairwiseComparison(client, { orgId, comparisonId });
-      } else {
-        throw new Error("Unknown pairwise action");
+        return computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
       }
-      return computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
+      if (action === "promote-to-pick-list" || action === "save-to-pick-list") {
+        const current = await computePairwiseView(client, {
+          userId: session.user.id,
+          requestedOrg: orgId,
+          criterionId,
+        });
+        if (current.status !== "live") throw new Error(current.message);
+        const criterion = current.criteria.find((row) => row.id === current.criterionId);
+        const promotion = await promotePairwiseOrder(client, {
+          orgId,
+          userId: session.user.id,
+          eventKey: current.eventKey,
+          ranks: current.ranks,
+          criterionName: criterion?.name ?? null,
+          bucket: body.bucket,
+        });
+        if (!promotion.promoted.length) throw new Error(promotion.message);
+        const next = await computePairwiseView(client, {
+          userId: session.user.id,
+          requestedOrg: orgId,
+          criterionId,
+        });
+        return { ...next, promotion };
+      }
+      throw new Error("Unknown pairwise action");
     });
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Pairwise write failed";
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
-    if (/required|criterion|team number|outrank|Unknown pairwise/i.test(message)) {
+    if (/required|criterion|team number|outrank|Unknown pairwise|active event|Nothing to promote/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });
     }
     return Response.json(FALLBACK);

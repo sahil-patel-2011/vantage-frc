@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
+import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
@@ -328,9 +328,11 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       <div>
         <header>
           <h2 id="edc-event-title">Select active event</h2>
-          <button type="button" aria-label="Close" onClick={() => setEventOpen(false)}>
+          {/* Bare `<button>×</button>` had no min-height, so it fell short of the
+              44px touch target on the tablets this dialog runs on pit-side. */}
+          <Button variant="icon" aria-label="Close" onClick={() => setEventOpen(false)}>
             ×
-          </button>
+          </Button>
         </header>
         <p className="edc-muted">
           Only owners and admins can set the event. Empty list means sync TBA first.

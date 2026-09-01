@@ -66,12 +66,70 @@ describe("computeOnboardingBuddyView", () => {
     expect(view.summary.unpairedCount).toBe(1);
     expect(view.summary.activePairingCount).toBe(0);
   });
+
+  it("loads pairings as roster-to-roster rows, never a DEMO network", async () => {
+    let pairingSql = "";
+    const pairedAt = new Date().toISOString();
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships m") && sql.includes("JOIN organizations")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      }
+      if (sql.includes("FROM memberships m") && sql.includes("JOIN users u")) {
+        return {
+          rows: [
+            { userId: BUDDY, name: "Grace", role: "member", joinedAt: pairedAt },
+            { userId: NEW_MEMBER, name: "Ada", role: "member", joinedAt: pairedAt },
+          ],
+        };
+      }
+      if (sql.includes("FROM onboarding_buddy_pairings p")) {
+        pairingSql = sql;
+        return {
+          rows: [
+            {
+              id: "pairing-1",
+              newMemberId: NEW_MEMBER,
+              newMemberName: "Ada",
+              buddyId: BUDDY,
+              buddyName: "Grace",
+              status: "active",
+              notes: null,
+              pairedAt,
+              completedAt: null,
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM onboarding_buddy_plan_items")) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const view = await computeOnboardingBuddyView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(pairingSql).toMatch(/JOIN memberships nm/);
+    expect(pairingSql).toMatch(/JOIN memberships bm/);
+    expect(pairingSql).not.toMatch(/DEMO/i);
+    expect(view.pairings).toEqual([
+      expect.objectContaining({
+        id: "pairing-1",
+        newMemberId: NEW_MEMBER,
+        buddyId: BUDDY,
+        status: "active",
+      }),
+    ]);
+    expect(view.pairings[0]?.newMemberId).not.toMatch(/demo/i);
+    expect(view.pairings[0]?.buddyId).not.toMatch(/demo/i);
+  });
 });
 
 describe("createPairing", () => {
   it("inserts a pairing, meters the deterministic plan synthesis, and writes plan items", async () => {
     const inserts: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
+      if (sql.includes("FROM memberships") && sql.includes("user_id = ANY")) {
+        return { rows: [{ userId: NEW_MEMBER }, { userId: BUDDY }], rowCount: 2 };
+      }
       if (sql.includes("INSERT INTO onboarding_buddy_pairings")) {
         inserts.push({ sql, params });
         return { rows: [{ id: "pairing-1" }] };
@@ -96,9 +154,51 @@ describe("createPairing", () => {
     });
 
     expect(pairingId).toBe("pairing-1");
+    const pairingInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO onboarding_buddy_pairings"));
+    expect(pairingInsert?.params).toEqual([ORG, NEW_MEMBER, BUDDY, null, USER]);
+    expect(pairingInsert?.sql).toMatch(/\$2::uuid/);
+    expect(pairingInsert?.sql).toMatch(/\$3::uuid/);
     const usageInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
     expect(usageInsert).toBeDefined();
     const planInserts = inserts.filter((entry) => entry.sql.includes("INSERT INTO onboarding_buddy_plan_items"));
     expect(planInserts.length).toBeGreaterThan(0);
+  });
+
+  it("refuses a DEMO identity before writing a pairing row", async () => {
+    const query = vi.fn(async () => ({ rows: [] }));
+    const client = { query } as unknown as PoolClient;
+
+    await expect(
+      createPairing(client, {
+        orgId: ORG,
+        userId: USER,
+        newMemberId: "demo-user",
+        buddyId: BUDDY,
+        notes: null,
+      }),
+    ).rejects.toThrow(/roster member id/i);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("refuses a pairing when either id is not on the org roster", async () => {
+    const inserts: string[] = [];
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships") && sql.includes("user_id = ANY")) {
+        return { rows: [{ userId: NEW_MEMBER }], rowCount: 1 };
+      }
+      if (sql.includes("INSERT INTO")) inserts.push(sql);
+      return { rows: [] };
+    });
+
+    await expect(
+      createPairing(client, {
+        orgId: ORG,
+        userId: USER,
+        newMemberId: NEW_MEMBER,
+        buddyId: BUDDY,
+        notes: null,
+      }),
+    ).rejects.toThrow(/roster/i);
+    expect(inserts).toEqual([]);
   });
 });

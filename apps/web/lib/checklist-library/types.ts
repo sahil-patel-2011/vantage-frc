@@ -49,3 +49,71 @@ export type ChecklistLibrarySummary = {
   completedRuns: number;
   byCategory: Array<{ category: ChecklistLibraryCategory; templates: number; runs: number }>;
 };
+
+/**
+ * Pit/match item keys the Event Day checklist already understands.
+ * Kept here so match-checklist can import the instantiate helper later without
+ * this library depending on that module at runtime.
+ */
+export const PIT_CHECKLIST_ITEM_KEYS = [
+  "bumper",
+  "battery",
+  "tether",
+  "code",
+  "sb50",
+  "ds_power",
+  "ds_ethernet",
+  "ds_estop",
+  "ds_shelf",
+  "lenses",
+  "bolts",
+  "kraken_screws",
+  "anderson_lock",
+  "controller_lock",
+  "ds_usb",
+] as const;
+
+export type PitChecklistItemKey = (typeof PIT_CHECKLIST_ITEM_KEYS)[number];
+
+/** Shape match-checklist already persists on `match_checklist_runs.items`. */
+export type PitChecklistItem = {
+  key: PitChecklistItemKey;
+  label: string;
+  done: boolean;
+  checkedAt: string | null;
+  /** Original SOP key — ignored by today's pit sanitizer, kept for later import. */
+  sourceSopKey: string;
+};
+
+export type PitChecklistInstantiation = {
+  source: "checklist-library";
+  templateId: string;
+  templateName: string;
+  matchLabel: string;
+  items: PitChecklistItem[];
+  unmapped: ChecklistLibraryItem[];
+};
+
+/** Read-through of `match_checklist_runs` — the pit SoR, not a copy. */
+export type ChecklistLibraryPitRun = {
+  id: string;
+  matchLabel: string;
+  eventKey: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  itemCount: number;
+  checkedCount: number;
+  href: string;
+};
+
+export type ChecklistLibraryPitProjection = {
+  href: string;
+  openRuns: number;
+  completedRuns: number;
+  runs: ChecklistLibraryPitRun[];
+};
+
+export type TemplatePitPreview = {
+  mappedCount: number;
+  unmapped: ChecklistLibraryItem[];
+};

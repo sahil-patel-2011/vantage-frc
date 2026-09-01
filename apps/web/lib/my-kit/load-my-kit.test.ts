@@ -305,6 +305,153 @@ describe("loadMyKit", () => {
     expect(withTable.sections.find((section) => section.id === "money")!.rows).toHaveLength(1);
   });
 
+  it("tonight stays empty when this member has no assignments or packing of their own", async () => {
+    const view = await loadMyKit(fixtureClient(), { userId: USER, now: NOW });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") return;
+    expect(view.tonight.rows).toEqual([]);
+    expect(view.tonight.assignmentCount).toBe(0);
+    expect(view.tonight.packingCount).toBe(0);
+    expect(view.tonight.emptyLabel).not.toMatch(/DEMO/i);
+    expect(view.sections.find((section) => section.id === "packing")!.rows).toEqual([]);
+  });
+
+  it("surfaces packing this member requested and items they packed — never created_by template rows", async () => {
+    const seen: string[] = [];
+    const client = mockClient((sql) => {
+      seen.push(sql);
+      if (sql.includes("FROM memberships")) {
+        return {
+          rows: [
+            {
+              orgId: ORG,
+              orgName: "Team Vantage",
+              teamNumber: 9999,
+              orgRole: "member",
+              teamRole: "student",
+              displayName: "Riley Chen",
+              firstName: null,
+              lastName: null,
+              userName: "riley.chen",
+            },
+          ],
+        };
+      }
+      if (sql.includes("to_regclass")) {
+        return { rows: MY_KIT_OPTIONAL_TABLES.map((name) => ({ name })) };
+      }
+      if (sql.includes("FROM packing_requests")) {
+        return {
+          rows: [
+            {
+              id: "pr1",
+              listId: "list1",
+              listTitle: "Week 1 load-out",
+              eventKey: "2026week1",
+              category: "Batteries & Power",
+              label: "My charged pack",
+              quantity: 2,
+              status: "pending",
+              packed: false,
+              itemId: null,
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM packing_items") && sql.includes("assigned_user_id")) {
+        return { rows: [] };
+      }
+      if (sql.includes("FROM packing_items") && sql.includes("packed_by")) {
+        return {
+          rows: [
+            {
+              id: "pk1",
+              listId: "list1",
+              listTitle: "Week 1 load-out",
+              eventKey: "2026week1",
+              category: "Tools & Pit",
+              label: "My hex set",
+              quantity: 1,
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    });
+
+    const view = await loadMyKit(client, { userId: USER, now: NOW });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") return;
+    expect(view.tonight.rows.map((row) => row.title)).toEqual(["My charged pack"]);
+    expect(view.tonight.packingCount).toBe(1);
+    const packing = view.sections.find((section) => section.id === "packing")!;
+    expect(packing.rows.map((row) => row.title)).toEqual(["My charged pack", "My hex set"]);
+    for (const sql of seen) {
+      expect(sql).not.toMatch(/created_by/);
+    }
+  });
+
+  it("surfaces packing items assigned to this member and leaves unassigned master-list rows off My Kit", async () => {
+    const seen: string[] = [];
+    const client = mockClient((sql) => {
+      seen.push(sql);
+      if (sql.includes("FROM memberships")) {
+        return {
+          rows: [
+            {
+              orgId: ORG,
+              orgName: "Team Vantage",
+              teamNumber: 9999,
+              orgRole: "member",
+              teamRole: "student",
+              displayName: "Riley Chen",
+              firstName: null,
+              lastName: null,
+              userName: "riley.chen",
+            },
+          ],
+        };
+      }
+      if (sql.includes("to_regclass")) {
+        return { rows: MY_KIT_OPTIONAL_TABLES.map((name) => ({ name })) };
+      }
+      if (sql.includes("FROM packing_items") && sql.includes("assigned_user_id")) {
+        return {
+          rows: [
+            {
+              id: "as1",
+              listId: "list1",
+              listTitle: "Week 1 load-out",
+              eventKey: "2026week1",
+              category: "Tools & Pit",
+              label: "My assigned hex set",
+              quantity: 1,
+              packed: false,
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM packing_items")) {
+        return { rows: [] };
+      }
+      return { rows: [] };
+    });
+
+    const view = await loadMyKit(client, { userId: USER, now: NOW });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") return;
+    expect(view.tonight.rows.map((row) => row.title)).toEqual(["My assigned hex set"]);
+    expect(view.tonight.packingCount).toBe(1);
+    const packing = view.sections.find((section) => section.id === "packing")!;
+    expect(packing.rows.map((row) => row.title)).toEqual(["My assigned hex set"]);
+    expect(packing.rows[0]!.detail).toContain("On the list");
+    const packingSql = seen.filter((sql) => sql.includes("FROM packing_items"));
+    expect(packingSql.some((sql) => /assigned_user_id\s*=\s*\$2/.test(sql))).toBe(true);
+    for (const sql of seen) {
+      expect(sql).not.toMatch(/created_by/);
+    }
+  });
+
   it("never issues a write", async () => {
     const seen: string[] = [];
     const client = mockClient((sql) => {

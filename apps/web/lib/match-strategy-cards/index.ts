@@ -95,6 +95,42 @@ export function opponentTeams(alliances: MatchStrategyAlliance[]): number[] {
   return alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
 }
 
+/** TBA schedule row used to pick our next unplayed match. */
+export type TbaMatchForNext = {
+  matchKey: string;
+  scheduledAt: string | null;
+  actualTime?: string | null;
+  winningAlliance?: string | null;
+};
+
+/** Played once TBA posted a winner/tie or an actual_time. */
+export function matchHasTbaResult(match: TbaMatchForNext): boolean {
+  const win = (match.winningAlliance ?? "").trim().toLowerCase();
+  if (win === "red" || win === "blue" || win === "tie") return true;
+  return Boolean(match.actualTime);
+}
+
+/**
+ * Our next TBA match: earliest unplayed row, preferring a scheduled time after `now`.
+ * Returns null when every listed match already has a TBA result — never invents a match.
+ */
+export function selectNextTbaMatch(
+  matches: readonly TbaMatchForNext[],
+  now: Date | string | number = Date.now(),
+): string | null {
+  const parsed = typeof now === "number" ? now : Date.parse(String(now));
+  const nowMs = Number.isFinite(parsed) ? parsed : Date.now();
+  const unplayed = matches.filter((match) => !matchHasTbaResult(match));
+  if (!unplayed.length) return null;
+
+  const timed = unplayed
+    .map((match) => ({ match, at: match.scheduledAt ? Date.parse(match.scheduledAt) : NaN }))
+    .filter((row) => Number.isFinite(row.at));
+  const upcoming = timed.filter((row) => row.at > nowMs).sort((a, b) => a.at - b.at);
+  if (upcoming[0]) return upcoming[0].match.matchKey;
+  return unplayed[0]!.matchKey;
+}
+
 /** True once the drive team has authored any content for this card. */
 export function cardHasContent(card: Pick<
   MatchStrategyCard,

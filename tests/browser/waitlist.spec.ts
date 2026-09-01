@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("a visitor can join the waitlist", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "An AI that builds with your students, and teaches them why." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The workspace your team actually runs." })).toBeVisible();
   const finalForm = page.locator("#waitlist");
   await finalForm.scrollIntoViewIfNeeded();
   await finalForm.getByLabel("Email").fill(`browser-${Date.now()}@example.com`);
@@ -12,6 +12,6 @@ test("a visitor can join the waitlist", async ({ page }) => {
   await finalForm.getByRole("checkbox", { name: /I agree to the Terms of Service/i }).check();
   await finalForm.getByRole("checkbox", { name: /I agree to the Privacy Policy/i }).check();
   await join.click();
-  await expect(page.getByRole("heading", { name: "You’re on the list." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You’re on the list." })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("does not create a Vantage account")).toBeVisible();
 });

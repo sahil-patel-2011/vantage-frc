@@ -25,6 +25,7 @@ import {
   type BuiltInsight,
   type InsightRequest,
 } from "../../../lib/ai-insights";
+import { loadVaultDocumentCounts } from "../../../lib/cad-vault/load-vault-coverage";
 import { bomCoverage as bomCoverageFor } from "../../../lib/inventory";
 import type { EnrichedSubsystem, RobotSubsystem } from "../../../lib/robot-blueprint";
 import type { HourLog, HourMember } from "../../../lib/build-hours";
@@ -274,7 +275,7 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
     }
 
     case "robot_blueprint": {
-      const [subsystems, practiceStats, bomItems, bomEntries, failures, maintenance] = await Promise.all([
+      const [subsystems, practiceStats, bomItems, bomEntries, failures, maintenance, vaultCounts] = await Promise.all([
         client.query<RobotSubsystem>(
           `SELECT s.id, s.robot_label AS "robotLabel", s.name, s.description, s.status,
                   s.cad_url AS "cadUrl", s.code_ref AS "codeRef", s.priority_id AS "priorityId",
@@ -318,6 +319,7 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
            GROUP BY lower(subsystem)`,
           [request.orgId],
         ),
+        loadVaultDocumentCounts(client, request.orgId),
       ]);
       const practiceByAction = new Map(
         practiceStats.rows.map((stat) => [
@@ -338,6 +340,7 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
         const nameKey = subsystem.name.toLowerCase();
         return {
           ...subsystem,
+          vaultDocumentCount: vaultCounts.get(subsystem.id) ?? 0,
           ops: {
             practice: subsystem.practiceAction
               ? (practiceByAction.get(subsystem.practiceAction) ?? { reps: 0, successRate: null, avgSeconds: null })

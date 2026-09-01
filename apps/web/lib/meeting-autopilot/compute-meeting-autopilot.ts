@@ -1,13 +1,30 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { hubHref } from "../nav/hubs";
 import { AGENDA_ITEM_KINDS, buildAgendaItems, parseActionItemsFromMinutes, summarizeAgendaSources } from ".";
+import {
+  agendaForEvent,
+  attachMinutes,
+  CALENDAR_MEETING_KIND,
+  decodeAgendaPayload,
+  encodeAgendaItemsColumn,
+  encodeAgendaPayload,
+  isEmptyUntilMeeting,
+  isUuid,
+  matchAgendaToMeeting,
+  meetingOnFromStartsAt,
+  requireCalendarEventId,
+  resolveCalendarEventId,
+  utcYearFromStartsAt,
+} from "./persist";
 import type {
   ActionItem,
   ActionItemStatus,
   AgendaItem,
   AgendaSourceCounts,
   AgendaSourceInput,
+  CalendarMeeting,
   MeetingAgenda,
   MeetingAgendaStatus,
 } from "./types";
@@ -30,11 +47,21 @@ export type MeetingAutopilotView =
       seasonYear: number;
     }
   | {
+      status: "empty";
+      message: string;
+      steps: MeetingAutopilotSetupStep[];
+      orgId: string;
+      teamNumber: number | null;
+      seasonYear: number;
+      seasons: number[];
+    }
+  | {
       status: "live";
       orgId: string;
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
+      meetings: CalendarMeeting[];
       liveAgendaItems: AgendaItem[];
       sourceCounts: AgendaSourceCounts;
       agendas: MeetingAgenda[];
@@ -52,6 +79,12 @@ function isAgendaStatus(value: unknown): value is MeetingAgendaStatus {
 
 function isActionItemStatus(value: unknown): value is ActionItemStatus {
   return value === "open" || value === "done";
+}
+
+function isoFromPg(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return "";
 }
 
 async function resolveOrg(
@@ -131,7 +164,8 @@ type AgendaRow = {
   seasonYear: number;
   title: string;
   meetingOn: string | null;
-  agendaItems: AgendaItem[] | null;
+  calendarEventId?: string | null;
+  agendaItems: unknown;
   blockerCount: number;
   overdueTaskCount: number;
   decisionCount: number;
@@ -142,12 +176,15 @@ type AgendaRow = {
 };
 
 function mapAgenda(row: AgendaRow): MeetingAgenda {
+  const payload = decodeAgendaPayload(row.agendaItems);
   return {
     id: row.id,
     seasonYear: row.seasonYear,
     title: row.title,
     meetingOn: row.meetingOn,
-    agendaItems: Array.isArray(row.agendaItems) ? row.agendaItems : [],
+    calendarEventId: resolveCalendarEventId(row.calendarEventId, payload),
+    agendaItems: payload.items,
+    minutesText: payload.minutesText,
     sourceCounts: {
       blockers: Number(row.blockerCount) || 0,
       overdueTasks: Number(row.overdueTaskCount) || 0,
@@ -159,6 +196,13 @@ function mapAgenda(row: AgendaRow): MeetingAgenda {
     updatedAt: row.updatedAt,
   };
 }
+
+const AGENDA_SELECT = `SELECT id, season_year AS "seasonYear", title, meeting_on::text AS "meetingOn",
+              calendar_event_id::text AS "calendarEventId", agenda_items AS "agendaItems",
+              blocker_count AS "blockerCount", overdue_task_count AS "overdueTaskCount",
+              decision_count AS "decisionCount", fmea_count AS "fmeaCount", status,
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM meeting_autopilot_agendas`;
 
 type ActionItemRow = {
   id: string;
@@ -186,6 +230,156 @@ function mapActionItem(row: ActionItemRow): ActionItem {
   };
 }
 
+type CalendarEventRow = {
+  id: string;
+  title: string;
+  startsAt: unknown;
+  endsAt: unknown;
+  location: string | null;
+  kind: string;
+};
+
+function toMeetingRef(row: CalendarEventRow): { id: string; title: string; meetingOn: string; startsAt: string; endsAt: string | null; location: string } {
+  const startsAt = isoFromPg(row.startsAt);
+  return {
+    id: row.id,
+    title: row.title,
+    startsAt,
+    endsAt: row.endsAt == null ? null : isoFromPg(row.endsAt) || null,
+    location: row.location?.trim() || "",
+    meetingOn: meetingOnFromStartsAt(startsAt),
+  };
+}
+
+async function loadCalendarMeetings(
+  client: PoolClient,
+  orgId: string,
+  seasonYear: number,
+): Promise<CalendarEventRow[]> {
+  try {
+    const result = await client.query<CalendarEventRow>(
+      `SELECT id, title, starts_at AS "startsAt", ends_at AS "endsAt", location, kind
+       FROM subteam_calendar_events
+       WHERE org_id = $1::uuid
+         AND kind = 'meeting'
+         AND starts_at >= make_timestamptz($2, 1, 1, 0, 0, 0, 'UTC')
+         AND starts_at < make_timestamptz($2 + 1, 1, 1, 0, 0, 0, 'UTC')
+       ORDER BY starts_at ASC
+       LIMIT 50`,
+      [orgId, seasonYear],
+    );
+    return result.rows;
+  } catch {
+    return [];
+  }
+}
+
+async function loadMeetingSeasonYears(client: PoolClient, orgId: string): Promise<number[]> {
+  try {
+    const result = await client.query<{ seasonYear: number }>(
+      `SELECT DISTINCT EXTRACT(YEAR FROM starts_at AT TIME ZONE 'UTC')::int AS "seasonYear"
+       FROM subteam_calendar_events
+       WHERE org_id = $1::uuid AND kind = 'meeting'
+       ORDER BY 1 DESC`,
+      [orgId],
+    );
+    return result.rows.map((row) => row.seasonYear).filter((year) => Number.isFinite(year));
+  } catch {
+    return [];
+  }
+}
+
+async function loadMeetingEvent(
+  client: PoolClient,
+  orgId: string,
+  calendarEventId: string,
+): Promise<CalendarEventRow | null> {
+  const result = await client.query<CalendarEventRow>(
+    `SELECT id, title, starts_at AS "startsAt", ends_at AS "endsAt", location, kind
+     FROM subteam_calendar_events
+     WHERE org_id = $1::uuid AND id = $2::uuid AND kind = 'meeting'
+     LIMIT 1`,
+    [orgId, calendarEventId],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function findAgendaForEvent(
+  client: PoolClient,
+  orgId: string,
+  seasonYear: number,
+  calendarEventId: string,
+): Promise<AgendaRow | null> {
+  const result = await client.query<AgendaRow>(
+    `${AGENDA_SELECT}
+     WHERE org_id = $1 AND season_year = $2
+       AND (
+         calendar_event_id = $3::uuid
+         OR (
+           calendar_event_id IS NULL
+           AND jsonb_typeof(agenda_items) = 'object'
+           AND agenda_items->>'calendarEventId' = $3
+         )
+       )
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [orgId, seasonYear, calendarEventId],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function loadAgendaById(
+  client: PoolClient,
+  orgId: string,
+  agendaId: string,
+): Promise<AgendaRow | null> {
+  const result = await client.query<AgendaRow>(
+    `${AGENDA_SELECT}
+     WHERE org_id = $1 AND id = $2
+     LIMIT 1`,
+    [orgId, agendaId],
+  );
+  return result.rows[0] ?? null;
+}
+
+function mergeSeasons(seasonYear: number, ...lists: number[][]): number[] {
+  const years = new Set<number>([seasonYear]);
+  for (const list of lists) {
+    for (const year of list) {
+      if (Number.isFinite(year) && year > 2000) years.add(year);
+    }
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+function calendarHref(orgId: string): string {
+  return hubHref("/team", "calendar", orgId);
+}
+
+function emptyUntilMeeting(input: {
+  orgId: string;
+  teamNumber: number | null;
+  seasonYear: number;
+  seasons: number[];
+}): Extract<MeetingAutopilotView, { status: "empty" }> {
+  return {
+    status: "empty",
+    message: `No calendar meetings in ${input.seasonYear} yet. Agenda and minutes stay empty until a meeting exists.`,
+    steps: [
+      {
+        id: "calendar",
+        label: "Add a meeting",
+        detail: "Create a meeting on the team calendar. Agenda and minutes persist against that event — never DEMO notes.",
+        href: calendarHref(input.orgId),
+      },
+    ],
+    orgId: input.orgId,
+    teamNumber: input.teamNumber,
+    seasonYear: input.seasonYear,
+    seasons: input.seasons,
+  };
+}
+
 export async function computeMeetingAutopilotView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
@@ -196,7 +390,7 @@ export async function computeMeetingAutopilotView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build meeting agendas from open blockers, overdue tasks, unresolved decisions, and open FMEA.",
+      message: "Select a team workspace to attach meeting agendas and minutes to calendar events.",
       steps: [
         { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
       ],
@@ -205,14 +399,12 @@ export async function computeMeetingAutopilotView(
     };
   }
 
-  const [sources, agendaResult, actionItemResult, seasonResult] = await Promise.all([
+  const [meetings, meetingSeasons, sources, agendaResult, actionItemResult, seasonResult] = await Promise.all([
+    loadCalendarMeetings(client, org.orgId, seasonYear),
+    loadMeetingSeasonYears(client, org.orgId),
     loadAgendaSources(client, org.orgId, seasonYear),
     client.query<AgendaRow>(
-      `SELECT id, season_year AS "seasonYear", title, meeting_on::text AS "meetingOn", agenda_items AS "agendaItems",
-              blocker_count AS "blockerCount", overdue_task_count AS "overdueTaskCount",
-              decision_count AS "decisionCount", fmea_count AS "fmeaCount", status,
-              created_at AS "createdAt", updated_at AS "updatedAt"
-       FROM meeting_autopilot_agendas
+      `${AGENDA_SELECT}
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC
        LIMIT 50`,
@@ -234,8 +426,39 @@ export async function computeMeetingAutopilotView(
     ),
   ]);
 
-  const seasons = seasonResult.rows.map((r) => r.seasonYear);
-  if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
+  const seasons = mergeSeasons(
+    seasonYear,
+    meetingSeasons,
+    seasonResult.rows.map((row) => row.seasonYear),
+  );
+
+  if (isEmptyUntilMeeting(meetings)) {
+    return emptyUntilMeeting({
+      orgId: org.orgId,
+      teamNumber: org.teamNumber,
+      seasonYear,
+      seasons,
+    });
+  }
+
+  const agendas = agendaResult.rows.map(mapAgenda);
+  const meetingRefs = meetings.map(toMeetingRef);
+  const liveMeetings: CalendarMeeting[] = meetingRefs.map((meeting) => {
+    const linked =
+      agendaForEvent(agendas, meeting.id) ??
+      agendas.find((agenda) => matchAgendaToMeeting(agenda, meetingRefs) === meeting.id) ??
+      null;
+    return {
+      id: meeting.id,
+      title: meeting.title,
+      startsAt: meeting.startsAt,
+      endsAt: meeting.endsAt,
+      location: meeting.location,
+      meetingOn: meeting.meetingOn,
+      agenda: linked,
+      minutesText: linked?.minutesText ?? null,
+    };
+  });
 
   return {
     status: "live",
@@ -243,9 +466,10 @@ export async function computeMeetingAutopilotView(
     teamNumber: org.teamNumber,
     seasonYear,
     seasons,
+    meetings: liveMeetings,
     liveAgendaItems: buildAgendaItems(sources),
     sourceCounts: summarizeAgendaSources(sources),
-    agendas: agendaResult.rows.map(mapAgenda),
+    agendas: agendas.filter((agenda) => liveMeetings.some((meeting) => meeting.agenda?.id === agenda.id)),
     actionItems: actionItemResult.rows.map(mapActionItem),
     computedAt: new Date().toISOString(),
   };
@@ -253,14 +477,90 @@ export async function computeMeetingAutopilotView(
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
 
+async function persistAgendaRow(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    seasonYear: number;
+    event: CalendarEventRow;
+    items: AgendaItem[];
+    minutesText: string | null;
+    counts: AgendaSourceCounts;
+    existing: AgendaRow | null;
+  },
+): Promise<string> {
+  const meeting = toMeetingRef(input.event);
+  const payload = encodeAgendaPayload({
+    calendarEventId: input.event.id,
+    minutesText: input.minutesText,
+    items: input.items,
+  });
+  const itemsJson = encodeAgendaItemsColumn(payload);
+
+  if (input.existing) {
+    await client.query(
+      `UPDATE meeting_autopilot_agendas
+       SET title = $1, meeting_on = $2::date, calendar_event_id = $3::uuid, agenda_items = $4::jsonb,
+           blocker_count = $5, overdue_task_count = $6, decision_count = $7, fmea_count = $8,
+           updated_at = now()
+       WHERE id = $9 AND org_id = $10`,
+      [
+        meeting.title,
+        meeting.meetingOn || null,
+        input.event.id,
+        JSON.stringify(itemsJson),
+        input.counts.blockers,
+        input.counts.overdueTasks,
+        input.counts.decisions,
+        input.counts.fmea,
+        input.existing.id,
+        input.orgId,
+      ],
+    );
+    return input.existing.id;
+  }
+
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO meeting_autopilot_agendas (
+       org_id, season_year, title, meeting_on, calendar_event_id, agenda_items,
+       blocker_count, overdue_task_count, decision_count, fmea_count, created_by
+     ) VALUES ($1,$2,$3,$4::date,$5::uuid,$6::jsonb,$7,$8,$9,$10,$11)
+     RETURNING id`,
+    [
+      input.orgId,
+      input.seasonYear,
+      meeting.title,
+      meeting.meetingOn || null,
+      input.event.id,
+      JSON.stringify(itemsJson),
+      input.counts.blockers,
+      input.counts.overdueTasks,
+      input.counts.decisions,
+      input.counts.fmea,
+      input.userId,
+    ],
+  );
+  const id = inserted.rows[0]?.id;
+  if (!id) throw new Error("Could not persist agenda against the calendar meeting");
+  return id;
+}
+
 export async function generateAgenda(
   client: PoolClient,
-  input: { orgId: string; userId: string; seasonYear: number; title: string; meetingOn: string | null },
-): Promise<void> {
-  const sources = await loadAgendaSources(client, input.orgId, input.seasonYear);
+  input: { orgId: string; userId: string; seasonYear: number; calendarEventId: string },
+): Promise<string> {
+  const calendarEventId = requireCalendarEventId(input.calendarEventId);
+  const event = await loadMeetingEvent(client, input.orgId, calendarEventId);
+  if (!event || event.kind !== CALENDAR_MEETING_KIND) {
+    throw new Error("Meeting not found on the calendar — agenda persists against a calendar event");
+  }
+
+  const seasonYear = utcYearFromStartsAt(isoFromPg(event.startsAt)) ?? input.seasonYear;
+  const sources = await loadAgendaSources(client, input.orgId, seasonYear);
   const counts = summarizeAgendaSources(sources);
 
-  const agenda = await meteredAI({
+  const items = await meteredAI({
     client,
     orgId: input.orgId,
     userId: input.userId,
@@ -269,7 +569,8 @@ export async function generateAgenda(
     estimatedCostUsd: 0,
     keySource: "local_cli",
     metadata: {
-      seasonYear: input.seasonYear,
+      seasonYear,
+      calendarEventId,
       note: "Deterministic agenda built from open blockers / overdue tasks / unresolved decisions / open FMEA — no external model call",
     },
     invoke: async () => ({
@@ -282,24 +583,74 @@ export async function generateAgenda(
     }),
   });
 
-  await client.query(
-    `INSERT INTO meeting_autopilot_agendas (
-       org_id, season_year, title, meeting_on, agenda_items,
-       blocker_count, overdue_task_count, decision_count, fmea_count, created_by
-     ) VALUES ($1,$2,$3,$4::date,$5::jsonb,$6,$7,$8,$9,$10)`,
-    [
-      input.orgId,
-      input.seasonYear,
-      input.title,
-      input.meetingOn,
-      JSON.stringify(agenda),
-      counts.blockers,
-      counts.overdueTasks,
-      counts.decisions,
-      counts.fmea,
-      input.userId,
-    ],
-  );
+  const existing = await findAgendaForEvent(client, input.orgId, seasonYear, calendarEventId);
+  const existingPayload = existing ? decodeAgendaPayload(existing.agendaItems) : null;
+
+  return persistAgendaRow(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    seasonYear,
+    event,
+    items,
+    minutesText: existingPayload?.minutesText ?? null,
+    counts,
+    existing,
+  });
+}
+
+export async function saveMinutes(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    seasonYear: number;
+    calendarEventId?: string | null;
+    agendaId?: string | null;
+    minutesText: string;
+  },
+): Promise<{ agendaId: string; calendarEventId: string }> {
+  let calendarEventId = input.calendarEventId && isUuid(input.calendarEventId) ? input.calendarEventId : null;
+  let existing: AgendaRow | null = null;
+
+  if (!calendarEventId && input.agendaId && isUuid(input.agendaId)) {
+    existing = await loadAgendaById(client, input.orgId, input.agendaId);
+    if (!existing) throw new Error("Agenda not found");
+    calendarEventId = resolveCalendarEventId(existing.calendarEventId, decodeAgendaPayload(existing.agendaItems));
+  }
+
+  if (!calendarEventId) {
+    throw new Error("calendarEventId is required — agenda and minutes persist against a calendar meeting");
+  }
+
+  const event = await loadMeetingEvent(client, input.orgId, calendarEventId);
+  if (!event || event.kind !== CALENDAR_MEETING_KIND) {
+    throw new Error("Meeting not found on the calendar — minutes persist against a calendar event");
+  }
+
+  const seasonYear = utcYearFromStartsAt(isoFromPg(event.startsAt)) ?? input.seasonYear;
+  existing = existing ?? (await findAgendaForEvent(client, input.orgId, seasonYear, calendarEventId));
+  const previous = existing ? decodeAgendaPayload(existing.agendaItems) : { calendarEventId, minutesText: null, items: [] };
+  const next = attachMinutes({ ...previous, calendarEventId }, input.minutesText);
+
+  const agendaId = await persistAgendaRow(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    seasonYear,
+    event,
+    items: next.items,
+    minutesText: next.minutesText,
+    counts: existing
+      ? {
+          blockers: Number(existing.blockerCount) || 0,
+          overdueTasks: Number(existing.overdueTaskCount) || 0,
+          decisions: Number(existing.decisionCount) || 0,
+          fmea: Number(existing.fmeaCount) || 0,
+        }
+      : { blockers: 0, overdueTasks: 0, decisions: 0, fmea: 0 },
+    existing,
+  });
+
+  return { agendaId, calendarEventId };
 }
 
 export async function draftMinutesActionItems(

@@ -25,6 +25,24 @@ export function outreachKindLabel(kind: string): string {
 
 export type SpendTxnRow = { category: string; amountUsd: number };
 
+export const GRANT_SPEND_SCHEMA_BLOCKER =
+  "Grant spend needs a grant_finance_allocations table with org_id, grant_application_id, finance_transaction_id, amount_usd, created_by, timestamps, a unique grant/transaction key, and org-scoped RLS. finance_transactions currently has no grant linkage or allocation metadata.";
+
+export function grantAllocationFromMetadata(
+  metadata: unknown,
+  grantApplicationId: string,
+): { amountUsd: number; category: string } | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const row = metadata as Record<string, unknown>;
+  if (row.grantApplicationId !== grantApplicationId) return null;
+  const amountUsd = Number(row.allocatedAmountUsd);
+  if (!Number.isFinite(amountUsd) || amountUsd <= 0) return null;
+  return {
+    amountUsd: Math.round(amountUsd * 100) / 100,
+    category: typeof row.category === "string" && row.category.trim() ? row.category.trim() : "Uncategorized",
+  };
+}
+
 /** Aggregate raw finance transaction rows into per-category totals, sorted by spend descending. */
 export function summarizeSpend(rows: SpendTxnRow[]): GrantReportSpendLine[] {
   const byCategory = new Map<string, { totalUsd: number; count: number }>();
@@ -65,6 +83,7 @@ export function buildGrantReportSections(input: {
   amountAwardedUsd: number;
   outreachByKind: GrantReportOutreachLine[];
   spendByCategory: GrantReportSpendLine[];
+  spendAttribution?: "explicit" | "setup_required";
 }): GrantReportSection[] {
   const sections: GrantReportSection[] = [];
 
@@ -84,26 +103,31 @@ export function buildGrantReportSections(input: {
     });
   }
 
-  // Honesty guard: Finance transactions carry no per-grant linkage (no grant tag/category link
-  // exists in the schema), so per-grant spend cannot be computed. Say so explicitly and present
-  // season totals only as clearly-labeled org-wide context — never as this grant's spend.
   const linkageNote =
-    "Spend linkage is not configured — Finance expenses are not tagged to individual grants, so spend attributable to this specific grant cannot be reported.";
+    "Spend linkage is not configured — only explicitly grant-linked allocations can count, and no safe allocation field exists in the current Finance schema.";
   const totalSpendUsd = input.spendByCategory.reduce((sum, line) => sum + line.totalUsd, 0);
-  if (totalSpendUsd > 0) {
-    const parts = input.spendByCategory
-      .slice(0, 6)
-      .map((line) => `${line.category}: $${line.totalUsd.toLocaleString()} (${line.count} txn)`);
-    sections.push({
-      id: "spend",
-      title: "Season spending context (not grant-attributed)",
-      body: `${linkageNote} For context only, the team recorded $${totalSpendUsd.toLocaleString()} in total ${input.seasonYear} season expenses across all funding sources, by category — ${parts.join("; ")}.`,
-    });
+  if (input.spendAttribution === "explicit") {
+    if (totalSpendUsd > 0) {
+      const parts = input.spendByCategory
+        .slice(0, 6)
+        .map((line) => `${line.category}: $${line.totalUsd.toLocaleString()} (${line.count} txn)`);
+      sections.push({
+        id: "spend",
+        title: "Grant-attributed spend",
+        body: `The team explicitly allocated $${totalSpendUsd.toLocaleString()} to this grant — ${parts.join("; ")}.`,
+      });
+    } else {
+      sections.push({
+        id: "spend",
+        title: "No grant-linked expenses",
+        body: "No finance transactions are allocated to this grant. Season-wide expenses are excluded.",
+      });
+    }
   } else {
     sections.push({
       id: "spend",
-      title: "Season spending context (not grant-attributed)",
-      body: `${linkageNote} No expense transactions have been recorded for the ${input.seasonYear} season yet — log purchases in Finance for season-wide context.`,
+      title: "Grant-attributed spend unavailable",
+      body: `${linkageNote} No season-wide expense is included as a substitute.`,
     });
   }
 

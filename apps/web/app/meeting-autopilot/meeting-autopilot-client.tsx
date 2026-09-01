@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import { agendaItemKindLabel } from "../../lib/meeting-autopilot";
 import type { MeetingAutopilotView } from "../../lib/meeting-autopilot/compute-meeting-autopilot";
-import type { AgendaItem, MeetingAgenda } from "../../lib/meeting-autopilot/types";
+import type { AgendaItem, CalendarMeeting, MeetingAgenda } from "../../lib/meeting-autopilot/types";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<MeetingAutopilotView, { status: "live" }>;
 
@@ -75,6 +75,8 @@ export default function MeetingAutopilotClient() {
     [orgId, season, busy],
   );
 
+  const seasons = view && "seasons" in view ? view.seasons : [];
+
   return (
     <main className="module-page">
       <PageHeader
@@ -85,20 +87,20 @@ export default function MeetingAutopilotClient() {
           </>
         }
         title="Meeting-agenda autopilot"
-        description="Builds a meeting agenda from open blockers, overdue tasks, unresolved decisions, and open FMEA — then drafts minutes into action items."
+        description="Agenda and minutes persist against a calendar meeting. The page stays empty until a meeting exists — never DEMO notes."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
+        {seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
-              value={season ?? view.seasonYear}
+              value={season ?? view?.seasonYear}
               onChange={(event) => {
                 const next = Number(event.target.value);
                 setSeason(next);
                 load(next);
               }}
             >
-              {view.seasons.map((year) => (
+              {seasons.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
@@ -123,9 +125,7 @@ export default function MeetingAutopilotClient() {
           });
           const copy = loadFailureCopy(kind, {
             nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
+              typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
             message: error,
           });
           return (
@@ -145,24 +145,12 @@ export default function MeetingAutopilotClient() {
         })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+      ) : view.status === "setup_required" || view.status === "empty" ? (
+        <SetupOrEmpty view={view} />
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          <LiveAgendaPreview view={view} busy={busy} mutate={mutate} />
-          <AgendasPanel view={view} busy={busy} mutate={mutate} />
+          <SuggestedAgenda view={view} />
+          <MeetingsPanel view={view} busy={busy} mutate={mutate} />
           <ActionItemsPanel view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -170,81 +158,71 @@ export default function MeetingAutopilotClient() {
   );
 }
 
+function SetupOrEmpty({ view }: { view: Extract<MeetingAutopilotView, { status: "setup_required" | "empty" }> }) {
+  return (
+    <EmptyState
+      badge={view.status === "empty" ? "No meetings yet" : "Setup required"}
+      badgeTone="setup"
+      title={view.message}
+      description={
+        view.status === "empty"
+          ? "Add a meeting on the team calendar. Agenda snapshots and minutes attach to that event."
+          : undefined
+      }
+    >
+      <ol className="strategy-setup-steps">
+        {view.steps.map((step) => (
+          <li key={step.id}>
+            <div>
+              <strong>{step.label}</strong>
+              <span>{step.detail}</span>
+            </div>
+            <a href={step.href}>Open</a>
+          </li>
+        ))}
+      </ol>
+    </EmptyState>
+  );
+}
+
 function agendaItemKey(item: AgendaItem): string {
   return `${item.kind}:${item.sourceId}`;
 }
 
-function LiveAgendaPreview({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  const [title, setTitle] = useState("Weekly build sync");
-  const [meetingOn, setMeetingOn] = useState("");
-
+function SuggestedAgenda({ view }: { view: LiveView }) {
   return (
     <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Current agenda preview</h2>
-          <small className="app-muted">
-            {view.sourceCounts.blockers} blocker(s) · {view.sourceCounts.overdueTasks} overdue task(s) ·{" "}
-            {view.sourceCounts.decisions} unresolved decision(s) · {view.sourceCounts.fmea} open FMEA
-          </small>
-        </div>
+      <header>
+        <h2 style={{ margin: 0 }}>Suggested agenda items</h2>
+        <small className="app-muted">
+          {view.sourceCounts.blockers} blocker(s) · {view.sourceCounts.overdueTasks} overdue task(s) ·{" "}
+          {view.sourceCounts.decisions} unresolved decision(s) · {view.sourceCounts.fmea} open FMEA — snapshot these onto
+          a calendar meeting below.
+        </small>
       </header>
-
       {view.liveAgendaItems.length === 0 ? (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          No open blockers, overdue tasks, unresolved decisions, or open FMEA right now — nothing to put on the agenda.
+          No open blockers, overdue tasks, unresolved decisions, or open FMEA right now — nothing extra to put on the
+          agenda.
         </p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "grid", gap: 8 }}>
           {view.liveAgendaItems.map((item) => (
-            <li key={agendaItemKey(item)} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
-              <div>
-                <span className="app-badge demo">{agendaItemKindLabel(item.kind)}</span>{" "}
-                <strong>{item.title}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
-                  {item.detail}
-                </small>
-              </div>
+            <li key={agendaItemKey(item)}>
+              <span className="app-badge setup">{agendaItemKindLabel(item.kind)}</span>{" "}
+              <strong>{item.title}</strong>
+              <small className="app-muted" style={{ display: "block" }}>
+                {item.detail}
+              </small>
             </li>
           ))}
         </ul>
       )}
-
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!title.trim()) return;
-          mutate({ action: "generate-agenda", title, meetingOn: meetingOn || undefined });
-        }}
-        style={{ display: "grid", gap: 10, marginTop: 16 }}
-      >
-        <FormGrid min={160}>
-          <FormRow label="Meeting title">
-            <input value={title} onChange={(event) => setTitle(event.target.value)} required />
-          </FormRow>
-          <FormRow label="Meeting date (optional)">
-            <input type="date" value={meetingOn} onChange={(event) => setMeetingOn(event.target.value)} />
-          </FormRow>
-        </FormGrid>
-        <div>
-          <button type="submit" className="app-button" disabled={busy || !title.trim()}>
-            Generate agenda
-          </button>
-        </div>
-      </form>
     </Panel>
   );
 }
 
-function AgendasPanel({
+function MeetingsPanel({
   view,
   busy,
   mutate,
@@ -253,104 +231,159 @@ function AgendasPanel({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  const [minutesByAgenda, setMinutesByAgenda] = useState<Record<string, string>>({});
-
-  if (view.agendas.length === 0) {
-    return (
-      <EmptyState
-        badge="No agendas yet"
-        badgeTone="setup"
-        title="Generate your first agenda"
-        description="Use the preview above to snapshot the current blockers, overdue tasks, decisions, and FMEA into a meeting agenda."
-      />
-    );
-  }
+  const [minutesByEvent, setMinutesByEvent] = useState<Record<string, string>>({});
 
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Meeting agendas</h2>
+      <h2 style={{ marginTop: 0 }}>Calendar meetings</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 14 }}>
-        {view.agendas.map((agenda: MeetingAgenda) => (
-          <li key={agenda.id} className="app-card soft-panel" style={{ display: "grid", gap: 8, padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div>
-                <strong>{agenda.title}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
-                  {agenda.meetingOn ? `${agenda.meetingOn} · ` : ""}
-                  {agenda.sourceCounts.blockers + agenda.sourceCounts.overdueTasks + agenda.sourceCounts.decisions + agenda.sourceCounts.fmea} item(s) ·{" "}
-                  <span className={`app-badge ${agenda.status === "finalized" ? "good" : "setup"}`}>{agenda.status}</span>
-                </small>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {agenda.status === "draft" ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => mutate({ action: "update-agenda-status", agendaId: agenda.id, status: "finalized" })}
-                  >
-                    Finalize
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete agenda "${agenda.title}"?`)) {
-                      mutate({ action: "delete-agenda", agendaId: agenda.id });
-                    }
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
-              {agenda.agendaItems.map((item) => (
-                <li key={agendaItemKey(item)}>
-                  <small className="app-muted">
-                    <span className="app-badge demo">{agendaItemKindLabel(item.kind)}</span> {item.title}
-                  </small>
-                </li>
-              ))}
-            </ul>
-
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                const minutesText = minutesByAgenda[agenda.id]?.trim();
-                if (!minutesText) return;
-                mutate({ action: "draft-minutes", agendaId: agenda.id, minutesText });
-                setMinutesByAgenda((prev) => ({ ...prev, [agenda.id]: "" }));
-              }}
-              style={{ display: "grid", gap: 6, marginTop: 6 }}
-            >
-              <FormRow label="Paste post-meeting minutes to draft action items">
-                <textarea
-                  rows={3}
-                  placeholder={"- Order replacement belt @Alex due 2026-07-25\nTODO: Finish wiring diagram review"}
-                  value={minutesByAgenda[agenda.id] ?? ""}
-                  onChange={(event) =>
-                    setMinutesByAgenda((prev) => ({ ...prev, [agenda.id]: event.target.value }))
-                  }
-                />
-              </FormRow>
-              <div>
-                <button
-                  type="submit"
-                  className="app-button secondary"
-                  disabled={busy || !(minutesByAgenda[agenda.id] ?? "").trim()}
-                >
-                  Draft action items
-                </button>
-              </div>
-            </form>
-          </li>
+        {view.meetings.map((meeting) => (
+          <MeetingCard
+            key={meeting.id}
+            meeting={meeting}
+            busy={busy}
+            minutes={minutesByEvent[meeting.id] ?? meeting.minutesText ?? ""}
+            onMinutesChange={(value) => setMinutesByEvent((prev) => ({ ...prev, [meeting.id]: value }))}
+            mutate={mutate}
+          />
         ))}
       </ul>
     </Panel>
+  );
+}
+
+function MeetingCard({
+  meeting,
+  busy,
+  minutes,
+  onMinutesChange,
+  mutate,
+}: {
+  meeting: CalendarMeeting;
+  busy: boolean;
+  minutes: string;
+  onMinutesChange: (value: string) => void;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  const agenda: MeetingAgenda | null = meeting.agenda;
+  const persistedMinutes = meeting.minutesText ?? "";
+
+  return (
+    <li className="app-card soft-panel" style={{ display: "grid", gap: 8, padding: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div>
+          <strong>{meeting.title}</strong>
+          <small className="app-muted" style={{ display: "block" }}>
+            {meeting.meetingOn || meeting.startsAt.slice(0, 10)}
+            {meeting.location ? ` · ${meeting.location}` : ""}
+            {agenda
+              ? ` · ${agenda.sourceCounts.blockers + agenda.sourceCounts.overdueTasks + agenda.sourceCounts.decisions + agenda.sourceCounts.fmea} item(s)`
+              : " · no agenda snapshot yet"}
+            {agenda ? (
+              <>
+                {" · "}
+                <span className={`app-badge ${agenda.status === "finalized" ? "good" : "setup"}`}>{agenda.status}</span>
+              </>
+            ) : null}
+          </small>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="app-button"
+            disabled={busy}
+            onClick={() => mutate({ action: "generate-agenda", calendarEventId: meeting.id })}
+          >
+            {agenda ? "Refresh agenda" : "Generate agenda"}
+          </button>
+          {agenda?.status === "draft" ? (
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy}
+              onClick={() => mutate({ action: "update-agenda-status", agendaId: agenda.id, status: "finalized" })}
+            >
+              Finalize
+            </button>
+          ) : null}
+          {agenda ? (
+            <button
+              type="button"
+              className="text-button"
+              disabled={busy}
+              onClick={() => {
+                if (window.confirm(`Delete agenda for "${meeting.title}"?`)) {
+                  mutate({ action: "delete-agenda", agendaId: agenda.id });
+                }
+              }}
+            >
+              Delete agenda
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {agenda && agenda.agendaItems.length > 0 ? (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 4 }}>
+          {agenda.agendaItems.map((item) => (
+            <li key={agendaItemKey(item)}>
+              <small className="app-muted">
+                <span className="app-badge setup">{agendaItemKindLabel(item.kind)}</span> {item.title}
+              </small>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          const minutesText = minutes.trim();
+          if (!minutesText) return;
+          mutate({
+            action: "draft-minutes",
+            calendarEventId: meeting.id,
+            agendaId: agenda?.id,
+            minutesText,
+          });
+        }}
+        style={{ display: "grid", gap: 6, marginTop: 6 }}
+      >
+        <FormRow label="Meeting minutes">
+          <textarea
+            rows={4}
+            placeholder="Paste the real minutes. Bulleted, TODO:, or Action: lines become action items. Other lines stay as minutes."
+            value={minutes}
+            onChange={(event) => onMinutesChange(event.target.value)}
+          />
+        </FormRow>
+        {persistedMinutes ? (
+          <small className="app-muted">Saved minutes are stored on this calendar event.</small>
+        ) : (
+          <small className="app-muted">Minutes stay empty until you write them — nothing is invented.</small>
+        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={busy || !minutes.trim()}
+            onClick={() =>
+              mutate({
+                action: "save-minutes",
+                calendarEventId: meeting.id,
+                agendaId: agenda?.id,
+                minutesText: minutes.trim(),
+              })
+            }
+          >
+            Save minutes
+          </button>
+          <button type="submit" className="app-button secondary" disabled={busy || !minutes.trim()}>
+            Save and draft action items
+          </button>
+        </div>
+      </form>
+    </li>
   );
 }
 
@@ -367,7 +400,7 @@ function ActionItemsPanel({
     return (
       <EmptyState
         title="No action items yet"
-        description="Draft minutes on an agenda above to extract action items automatically."
+        description="Save minutes on a calendar meeting above. Only bulleted / TODO / Action lines become action items."
       />
     );
   }

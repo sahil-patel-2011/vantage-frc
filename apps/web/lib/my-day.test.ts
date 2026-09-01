@@ -7,6 +7,7 @@ import {
   matchAlertBody,
   matchAlertTitle,
   myDayMatchToCalendarEvent,
+  myDayTimeLabel,
   scheduleFingerprint,
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";
@@ -48,6 +49,16 @@ describe("buildMyDayMatch", () => {
     expect(built!.links.command).toContain("/command?orgId=org-1");
     expect(built!.links.briefing).toContain("matchKey=2026casd_qm12");
   });
+
+  it("labels missing TBA time as Time TBD — never DEMO", () => {
+    const built = buildMyDayMatch(match({ scheduledTime: null }), {
+      orgId: "org-1",
+      teamKey: US,
+      isNext: true,
+    });
+    expect(built?.timeLabel).toBe("Time TBD");
+    expect(built?.scheduledTime).toBeNull();
+  });
 });
 
 describe("buildMyDayMatches", () => {
@@ -84,6 +95,17 @@ describe("scheduleFingerprint", () => {
     const a = scheduleFingerprint([match()], US);
     const b = scheduleFingerprint([match({ scheduledTime: "2026-03-14T17:00:00.000Z" })], US);
     expect(a).not.toBe(b);
+  });
+});
+
+describe("myDayTimeLabel", () => {
+  it("never invents DEMO clocks when TBA has no time", () => {
+    expect(myDayTimeLabel(null)).toBe("Time TBD");
+    expect(myDayTimeLabel(undefined)).toBe("Time TBD");
+    expect(myDayTimeLabel("not-a-date")).toBe("Time TBD");
+    expect(myDayTimeLabel("2026-03-14T16:30:00.000Z")).not.toBe("Time TBD");
+    expect(myDayTimeLabel("2026-03-14T16:30:00.000Z")).not.toMatch(/DEMO/i);
+    expect(myDayTimeLabel(null)).not.toMatch(/DEMO/i);
   });
 });
 

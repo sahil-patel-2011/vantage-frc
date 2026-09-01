@@ -87,6 +87,30 @@ describe("Bugbot never pushes", () => {
   });
 });
 
+/**
+ * The code route used to meter Bugbot with `context: []` — file in the user
+ * message and nothing else. The builder + assert at complete() are the lock
+ * so a future empty-array fallback has to break this test first.
+ */
+describe("Bugbot model context is never empty", () => {
+  const route = read("app/api/code/route.ts");
+
+  it("builds context and refuses context: [] at complete()", () => {
+    expect(route).toContain("buildBugbotModelContext");
+    expect(route).toContain("loadBugbotContextSources");
+    expect(route).toMatch(/context:\s*assertBugbotModelContext\(modelContext\)/);
+    expect(route).not.toMatch(/context:\s*\[\s*\]/);
+    expect(route).not.toMatch(/context:\s*modelContext\s*\?\?\s*\[\s*\]/);
+  });
+
+  it("keeps subscription on org BYOK/local and Ultra on hosted keys", () => {
+    expect(route).toMatch(/preferPlatform:\s*mode === ["']ultra["']/);
+    expect(route).toContain('feature: mode === "ultra" ? "bugbot_ultra" : "coding"');
+    expect(route).toContain('keySource: mode === "ultra" ? "platform" : undefined');
+    expect(route).not.toMatch(/preferPlatform:\s*true/);
+  });
+});
+
 describe("finding delta labelling", () => {
   it("marks only the fingerprints this scan had not seen before as new", () => {
     const review = mergeBugbotReview({

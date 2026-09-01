@@ -3,11 +3,15 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   canTransitionPurchaseRequest,
-  validatePurchaseRequestInput,
   type PurchaseRequestStatus,
 } from "../../../../lib/finance";
+import {
+  insertDirectoryPurchaseRequest,
+  updateDirectoryPurchaseRequest,
+} from "../../../../lib/finance/purchase-request";
 import { recordMoney, removeMoney } from "../../../../lib/finance/ledger";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
+import { receiveToInventory } from "../../../../lib/orders/receive-to-inventory";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -20,14 +24,11 @@ const fail = (error: unknown) =>
 const LIST_FIELDS = `pr.id, pr.season_year AS "seasonYear", pr.category_id AS "categoryId", c.name AS "categoryName",
   pr.requested_by AS "requestedBy",
   CASE WHEN pr.requested_by=current_app_user_id() THEN 'You' ELSE 'Team member' END AS "requestedByName",
-  pr.title, pr.vendor, pr.item_url AS "itemUrl",
+  pr.title, pr.vendor, pr.vendor_id AS "vendorId", pr.item_url AS "itemUrl",
   pr.quantity, pr.unit_cost_usd AS "unitCostUsd", pr.total_cost_usd AS "totalCostUsd", pr.justification,
+  pr.needed_by::text AS "neededBy",
   pr.status, pr.reviewed_by AS "reviewedBy", pr.reviewed_at AS "reviewedAt", pr.review_notes AS "reviewNotes",
   pr.ordered_at AS "orderedAt", pr.received_at AS "receivedAt", pr.created_at AS "createdAt"`;
-
-const INSERT_RETURNING = `id, season_year AS "seasonYear", category_id AS "categoryId", requested_by AS "requestedBy",
-  title, vendor, item_url AS "itemUrl", quantity, unit_cost_usd AS "unitCostUsd", total_cost_usd AS "totalCostUsd",
-  justification, status, created_at AS "createdAt"`;
 
 export async function GET(request: Request) {
   try {
@@ -61,20 +62,15 @@ export async function POST(request: Request) {
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const seasonYear = Number(body.seasonYear ?? new Date().getFullYear());
-    const validated = validatePurchaseRequestInput(body);
-    if (!validated.ok) throw new Error(validated.error);
-    const created = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const result = await client.query(
-        `INSERT INTO purchase_requests(org_id, season_year, category_id, requested_by, title, vendor,
-           item_url, quantity, unit_cost_usd, total_cost_usd, justification)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         RETURNING ${INSERT_RETURNING}`,
-        [orgId, seasonYear, body.categoryId ?? null, current.user.id, validated.value.title, validated.value.vendor,
-          validated.value.itemUrl, validated.value.quantity, validated.value.unitCostUsd, validated.value.totalCostUsd,
-          validated.value.justification],
-      );
-      return result.rows[0];
-    });
+    const created = await withRls({ userId: current.user.id, orgId }, (client) =>
+      insertDirectoryPurchaseRequest(client, {
+        orgId,
+        userId: current.user.id,
+        seasonYear,
+        categoryId: typeof body.categoryId === "string" && body.categoryId.trim() ? body.categoryId : null,
+        body,
+      }),
+    );
     return Response.json({ request: created });
   } catch (error) { return fail(error); }
 }
@@ -101,17 +97,15 @@ export async function PATCH(request: Request) {
       if (action === "edit") {
         if (row.requestedBy !== current.user.id) throw new Error("Only the requester can edit this request");
         if (row.status !== "pending") throw new Error("Only a pending request can be edited");
-        const validated = validatePurchaseRequestInput(body);
-        if (!validated.ok) throw new Error(validated.error);
-        const result = await client.query(
-          `UPDATE purchase_requests SET title=$1, vendor=$2, item_url=$3, quantity=$4, unit_cost_usd=$5,
-             total_cost_usd=$6, justification=$7, category_id=$8, updated_at=now()
-           WHERE id=$9 RETURNING id, status`,
-          [validated.value.title, validated.value.vendor, validated.value.itemUrl, validated.value.quantity,
-            validated.value.unitCostUsd, validated.value.totalCostUsd, validated.value.justification,
-            body.categoryId ?? row.categoryId, id],
-        );
-        return result.rows[0];
+        return updateDirectoryPurchaseRequest(client, {
+          orgId,
+          id,
+          categoryId:
+            typeof body.categoryId === "string" && body.categoryId.trim()
+              ? body.categoryId
+              : row.categoryId,
+          body,
+        });
       }
 
       const admin = await client.query(
@@ -137,6 +131,14 @@ export async function PATCH(request: Request) {
          WHERE id=$4 RETURNING id, status`,
         [to, current.user.id, body.reviewNotes ?? null, id],
       );
+
+      if (to === "received") {
+        await receiveToInventory(client, {
+          orgId,
+          userId: current.user.id,
+          orderId: id,
+        });
+      }
 
       if (to === "approved") {
         // Mirror onto the unified money ledger (0461) in the same transaction —

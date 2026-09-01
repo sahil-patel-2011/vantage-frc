@@ -1,24 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../components/ui";
-import { DUTY_KIND_LABELS, type DutyAssignment, type DutyRosterView } from "../../lib/duty-roster-shared";
+import { useCallback, useEffect, useState } from "react";
+import {
+  EmptyState,
+  FormGrid,
+  PageHeader,
+  Panel,
+  SelectField,
+  TextareaField,
+  TextField,
+} from "../../components/ui";
+import {
+  ROSTER_KIND_LABELS,
+  WATCH_KIND_LABELS,
+  type DutiesView,
+  type DutyRosterSlot,
+  type DutyWatch,
+  type WatchKind,
+} from "../../lib/duties";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
-export default function DutiesClient() {
-  const [view, setView] = useState<DutyRosterView | null>(null);
-  const [error, setError] = useState("");
-  // Kept so an expired session offers sign-in instead of a dead-end setup card.
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+type ReadyView = Extract<DutiesView, { status: "ready" }>;
 
-  useEffect(() => {
+function memberLabel(member: { name: string | null; email: string | null }): string {
+  return member.name?.trim() || member.email?.trim() || "Teammate";
+}
+
+function formatWhen(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export default function DutiesClient() {
+  const [view, setView] = useState<DutiesView | null>(null);
+  const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    setError("");
+    setErrorStatus(null);
     void fetch(`/api/duties${qs}`)
       .then(async (response) => {
-        const data = (await response.json()) as DutyRosterView & { error?: string };
+        const data = (await response.json()) as DutiesView & { error?: string };
         if (!response.ok) {
           setErrorStatus(response.status);
           throw new Error(data.error ?? "Could not load duties");
@@ -28,8 +60,37 @@ export default function DutiesClient() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load duties"));
   }, []);
 
-  if (error) {
-    // Retry cannot fix an expired session, so the failure decides its own action.
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const mutate = useCallback(
+    (payload: Record<string, unknown>) => {
+      if (busy) return;
+      const orgId = view && view.status === "ready" ? view.orgId : null;
+      if (!orgId) return;
+      setBusy(true);
+      setError("");
+      void fetch("/api/duties", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, ...payload }),
+      })
+        .then(async (response) => {
+          const data = (await response.json()) as DutiesView & { error?: string };
+          if (!response.ok) {
+            setErrorStatus(response.status);
+            throw new Error(data.error ?? "Could not save assignment");
+          }
+          setView(data);
+        })
+        .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not save assignment"))
+        .finally(() => setBusy(false));
+    },
+    [busy, view],
+  );
+
+  if (error && !view) {
     const failure = loadFailureCopy(
       classifyLoadFailure({
         status: errorStatus,
@@ -38,23 +99,17 @@ export default function DutiesClient() {
       }),
       {
         nextPath:
-          typeof window === "undefined"
-            ? null
-            : `${window.location.pathname}${window.location.search}`,
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
         message: error,
       },
     );
     return (
       <main className="module-page duties-page">
-        <PageHeader navPath="/duties" title="Duty roster" />
+        <PageHeader navPath="/duties" title="Duties" />
         <EmptyState
           soft
           badge={
-            failure.kind === "auth"
-              ? "Signed out"
-              : failure.kind === "forbidden"
-                ? "No access"
-                : "Setup"
+            failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Setup"
           }
           badgeTone="setup"
           title={failure.title}
@@ -69,9 +124,6 @@ export default function DutiesClient() {
             <a className="app-button secondary" href="/workspace">
               Choose workspace
             </a>
-            <a className="app-button secondary" href="/docs">
-              App manual
-            </a>
           </div>
         </EmptyState>
       </main>
@@ -81,8 +133,8 @@ export default function DutiesClient() {
   if (!view) {
     return (
       <main className="module-page duties-page">
-        <PageHeader navPath="/duties" title="Duty roster" />
-        <EmptyState soft title="Opening duty roster…" description="Loading upcoming scouting, pit, and drive-team slots." aria-busy />
+        <PageHeader navPath="/duties" title="Duties" />
+        <EmptyState soft title="Opening duties…" description="Loading on-duty and chaperone assignments." aria-busy />
       </main>
     );
   }
@@ -90,14 +142,20 @@ export default function DutiesClient() {
   if (view.status !== "ready") {
     return (
       <main className="module-page duties-page">
-        <PageHeader navPath="/duties" title="Duty roster" />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message} description="Pick a team workspace, then return here or assign slots from Team Calendar.">
+        <PageHeader navPath="/duties" title="Duties" />
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title={view.message}
+          description="Pick a team workspace, then post who is on duty. My Day stays empty until someone is assigned."
+        >
           <div className="soft-btn-row">
             <a className="app-button" href="/workspace">
               Choose workspace
             </a>
-            <a className="app-button secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
-              Team calendar
+            <a className="app-button secondary" href={withOrgHref("/my-day", view.orgId)}>
+              My Day
             </a>
           </div>
         </EmptyState>
@@ -105,90 +163,291 @@ export default function DutiesClient() {
     );
   }
 
-  const needsAssignment = view.duties.filter((duty) => !duty.assignedUserId);
+  return <ReadyDuties view={view} busy={busy} error={error} onAssign={mutate} />;
+}
+
+function ReadyDuties({
+  view,
+  busy,
+  error,
+  onAssign,
+}: {
+  view: ReadyView;
+  busy: boolean;
+  error: string;
+  onAssign: (payload: Record<string, unknown>) => void;
+}) {
   const orgQ = `?orgId=${encodeURIComponent(view.orgId)}`;
-  const calendarDutiesHref = `/team/calendar${orgQ}&tab=duties`;
+  const assigned = view.watches.filter((watch) => watch.assignedUserId);
+  const open = view.watches.filter((watch) => !watch.assignedUserId);
 
   return (
     <main className="module-page duties-page">
       <PageHeader
         navPath="/duties"
-        title="Duty roster"
-        description="Upcoming scouting, pit, drive-team, and outreach slots — assign open ones from Team Calendar."
+        title="Duties"
+        description="Who is on duty or chaperoning. My Day reads the assigned adult — nothing is shown there until you post someone."
       >
         <div className="duties-links">
-          <a className="app-button" href={calendarDutiesHref}>
-            Assign on calendar
+          <a className="app-button secondary" href={`/my-day${orgQ}`}>
+            My Day
           </a>
           <a className="app-button secondary" href={`/logistics${orgQ}`}>
             Logistics
           </a>
-          <a className="app-button secondary" href={`/packing${orgQ}`}>
-            Packing
+          <a className="app-button secondary" href={`/team/calendar${orgQ}&tab=duties`}>
+            Shift roster
           </a>
         </div>
       </PageHeader>
 
-      {needsAssignment.length > 0 ? (
-        <p className="duties-warn" role="status">
-          {needsAssignment.length} slot{needsAssignment.length === 1 ? "" : "s"} need assignment.{" "}
-          <a href={calendarDutiesHref}>Open calendar duties</a>
+      {error ? (
+        <p className="duties-warn" role="alert">
+          {error}
         </p>
       ) : null}
 
-      <section className="soft-panel">
-        <h2>Needs assignment</h2>
-        {needsAssignment.length === 0 ? (
-          <p className="app-muted">Every upcoming duty has someone on it.</p>
+      <section className="soft-panel duties-now">
+        <h2>Who is on</h2>
+        {view.activeWatch ? (
+          <p className="duties-active" role="status">
+            <strong>
+              {WATCH_KIND_LABELS[view.activeWatch.kind]} · {view.activeWatch.assignedUserName || "Teammate"}
+            </strong>
+            <span>
+              {formatWhen(view.activeWatch.startsAt)}
+              {view.activeWatch.phone ? ` · ${view.activeWatch.phone}` : ""}
+              {view.activeWatch.locationNote ? ` · ${view.activeWatch.locationNote}` : ""}
+            </span>
+          </p>
         ) : (
-          <DutyList duties={needsAssignment} calendarHref={calendarDutiesHref} />
+          <EmptyState
+            soft
+            title="No one is posted yet"
+            description="My Day stays empty until an owner or admin assigns an on-duty mentor or chaperone."
+          />
         )}
       </section>
 
-      <section className="soft-panel">
-        <h2>All upcoming</h2>
-        {view.duties.length === 0 ? (
-          <EmptyState
-            soft
-            title="No duties scheduled yet"
-            description="Create scouting, pit, or outreach slots on Team Calendar — this roster only shows real assignments."
-          >
-            <a className="app-button" href={calendarDutiesHref}>
-              Open calendar duties
-            </a>
-          </EmptyState>
+      {view.canManage ? (
+        <AssignWatchForm
+          members={view.members}
+          busy={busy}
+          onSubmit={(payload) => onAssign({ action: "assign_watch", ...payload })}
+        />
+      ) : null}
+
+      <Panel>
+        <h2>On-duty and chaperone</h2>
+        {view.watches.length === 0 ? (
+          <p className="app-muted">No on-duty or chaperone slots yet. Assign someone above when travel starts.</p>
         ) : (
-          <DutyList duties={view.duties} calendarHref={calendarDutiesHref} />
+          <ul className="duties-list">
+            {assigned.map((watch) => (
+              <WatchRow
+                key={watch.id}
+                watch={watch}
+                canManage={view.canManage}
+                busy={busy}
+                onUnassign={() => onAssign({ action: "update_watch", id: watch.id, assignedUserId: null })}
+                onDelete={() => onAssign({ action: "delete_watch", id: watch.id })}
+              />
+            ))}
+            {open.map((watch) => (
+              <WatchRow
+                key={watch.id}
+                watch={watch}
+                canManage={view.canManage}
+                busy={busy}
+                onUnassign={() => undefined}
+                onDelete={() => onAssign({ action: "delete_watch", id: watch.id })}
+              />
+            ))}
+          </ul>
         )}
-      </section>
+      </Panel>
+
+      <Panel>
+        <h2>Other upcoming slots</h2>
+        {view.roster.length === 0 ? (
+          <p className="app-muted">Scouting, pit, drive-team, and outreach slots are assigned on Team Calendar.</p>
+        ) : (
+          <ul className="duties-list">
+            {view.roster.map((slot) => (
+              <RosterRow key={slot.id} slot={slot} calendarHref={`/team/calendar${orgQ}&tab=duties`} />
+            ))}
+          </ul>
+        )}
+      </Panel>
     </main>
   );
 }
 
-function DutyList({ duties, calendarHref }: { duties: DutyAssignment[]; calendarHref: string }) {
+function AssignWatchForm({
+  members,
+  busy,
+  onSubmit,
+}: {
+  members: ReadyView["members"];
+  busy: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  const [kind, setKind] = useState<WatchKind>("on_duty");
+  const [assignedUserId, setAssignedUserId] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [phone, setPhone] = useState("");
+  const [locationNote, setLocationNote] = useState("");
+  const [notes, setNotes] = useState("");
+
   return (
-    <ul className="duties-list">
-      {duties.map((duty) => (
-        <li key={duty.id}>
-          <strong>{duty.title}</strong>
-          <span>
-            {DUTY_KIND_LABELS[duty.kind]}
-            {duty.subteamName ? ` · ${duty.subteamName}` : ""}
-            {" · "}
-            {new Date(duty.startsAt).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </span>
-          {duty.assignedUserName ? (
-            <span>{duty.assignedUserName}</span>
-          ) : (
-            <a href={calendarHref}>Unassigned — assign</a>
-          )}
-        </li>
-      ))}
-    </ul>
+    <Panel>
+      <h2>Assign who is on</h2>
+      <form
+        className="duties-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!assignedUserId || !startsAt) return;
+          onSubmit({
+            kind,
+            assignedUserId,
+            startsAt: new Date(startsAt).toISOString(),
+            endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+            phone,
+            locationNote,
+            notes,
+          });
+          setAssignedUserId("");
+          setPhone("");
+          setLocationNote("");
+          setNotes("");
+        }}
+      >
+        <FormGrid min={160}>
+          <SelectField
+            label="Kind"
+            value={kind}
+            onChange={(event) => setKind(event.target.value as WatchKind)}
+            options={[
+              { value: "on_duty", label: WATCH_KIND_LABELS.on_duty },
+              { value: "chaperone", label: WATCH_KIND_LABELS.chaperone },
+            ]}
+          />
+          <SelectField
+            label="Teammate"
+            required
+            value={assignedUserId}
+            onChange={(event) => setAssignedUserId(event.target.value)}
+            placeholder="Pick who is on"
+            options={members.map((member) => ({
+              value: member.userId,
+              label: memberLabel(member),
+            }))}
+          />
+          <TextField
+            label="Starts"
+            type="datetime-local"
+            required
+            value={startsAt}
+            onChange={(event) => setStartsAt(event.target.value)}
+          />
+          <TextField
+            label="Ends"
+            type="datetime-local"
+            value={endsAt}
+            onChange={(event) => setEndsAt(event.target.value)}
+          />
+          <TextField
+            label="Phone"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="Optional contact"
+          />
+          <TextField
+            label="Where"
+            value={locationNote}
+            onChange={(event) => setLocationNote(event.target.value)}
+            placeholder="Pit, hotel lobby…"
+          />
+        </FormGrid>
+        <TextareaField
+          label="Notes"
+          rows={2}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
+        <button type="submit" className="app-button" disabled={busy || !assignedUserId || !startsAt}>
+          {busy ? "Saving…" : "Post assignment"}
+        </button>
+      </form>
+    </Panel>
+  );
+}
+
+function WatchRow({
+  watch,
+  canManage,
+  busy,
+  onUnassign,
+  onDelete,
+}: {
+  watch: DutyWatch;
+  canManage: boolean;
+  busy: boolean;
+  onUnassign: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li>
+      <strong>
+        {watch.title || WATCH_KIND_LABELS[watch.kind]}
+        {watch.mine ? " · yours" : ""}
+      </strong>
+      <span>
+        {WATCH_KIND_LABELS[watch.kind]}
+        {" · "}
+        {formatWhen(watch.startsAt)}
+        {watch.locationNote ? ` · ${watch.locationNote}` : ""}
+      </span>
+      {watch.assignedUserName ? (
+        <span>
+          {watch.assignedUserName}
+          {watch.phone ? ` · ${watch.phone}` : ""}
+        </span>
+      ) : (
+        <span>Unassigned — My Day will not show this slot</span>
+      )}
+      {canManage ? (
+        <div className="duties-row-actions">
+          {watch.assignedUserId ? (
+            <button type="button" className="app-button secondary" disabled={busy} onClick={onUnassign}>
+              Clear assignment
+            </button>
+          ) : null}
+          <button type="button" className="app-button secondary" disabled={busy} onClick={onDelete}>
+            Remove
+          </button>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+function RosterRow({ slot, calendarHref }: { slot: DutyRosterSlot; calendarHref: string }) {
+  return (
+    <li>
+      <strong>{slot.title}</strong>
+      <span>
+        {ROSTER_KIND_LABELS[slot.kind]}
+        {slot.subteamName ? ` · ${slot.subteamName}` : ""}
+        {" · "}
+        {formatWhen(slot.startsAt)}
+      </span>
+      {slot.assignedUserName ? (
+        <span>{slot.assignedUserName}</span>
+      ) : (
+        <a href={calendarHref}>Unassigned — assign on calendar</a>
+      )}
+    </li>
   );
 }

@@ -289,6 +289,7 @@ export type GitHubScanBundle = {
   filesScanned: number;
   truncated: boolean;
   files: string[];
+  fileContents: Array<{ path: string; content: string }>;
   /** Files the plan chose that could not be read (binary / encoding / gone). */
   unreadable: Array<{ path: string; reason: BugbotSkipReason }>;
   fullName: string;
@@ -305,13 +306,14 @@ export async function planGitHubBugbotScan(
   http: GitHubHttp,
   fullName: string,
   ref: string,
-  options?: { chunkFiles?: number; maxChunks?: number },
+  options?: { chunkFiles?: number; maxChunks?: number; includeTests?: boolean },
 ): Promise<BugbotScanPlan> {
   const tree = await fetchGitHubTree(http, fullName, ref, { maxEntries: GITHUB_MAX_SCAN_TREE_ENTRIES });
   return planBugbotScan(tree.entries, {
     chunkFiles: options?.chunkFiles,
     maxChunks: options?.maxChunks,
     treeTruncated: tree.truncated,
+    includeTests: options?.includeTests,
   });
 }
 
@@ -326,14 +328,19 @@ export async function fetchGitHubScanBundle(
   http: GitHubHttp,
   fullName: string,
   ref: string,
-  options?: { files?: string[] },
+  options?: { files?: string[]; includeTests?: boolean },
 ): Promise<GitHubScanBundle> {
   let paths: string[];
   let treeTruncated = false;
   if (options?.files?.length) {
-    paths = options.files.filter((path) => isBugbotScanPath(path)).slice(0, BUGBOT_SCAN_CHUNK_FILES);
+    paths = options.files
+      .filter((path) => isBugbotScanPath(path, { includeTests: options.includeTests }))
+      .slice(0, BUGBOT_SCAN_CHUNK_FILES);
   } else {
-    const plan = await planGitHubBugbotScan(http, fullName, ref, { maxChunks: 1 });
+    const plan = await planGitHubBugbotScan(http, fullName, ref, {
+      maxChunks: 1,
+      includeTests: options?.includeTests,
+    });
     paths = plan.chunks[0] ?? [];
     treeTruncated = plan.treeTruncated;
   }
@@ -353,6 +360,7 @@ export async function fetchGitHubScanBundle(
   return {
     ...bundle,
     files: files.map((file) => file.path),
+    fileContents: files,
     unreadable,
     fullName,
     ref,
@@ -363,4 +371,32 @@ export async function fetchGitHubScanBundle(
         ? "Robot-code files in this repo could not be read (binary or encoding)."
         : "No robot-code files (.java, .cpp, .py, …) in the connected repo tree.",
   };
+}
+
+const OVERVIEW_FETCH_PATHS = [
+  "README.md",
+  "README",
+  ".wpilib/wpilib_preferences.json",
+  "build.gradle",
+] as const;
+
+/**
+ * Read a few well-known files so Bugbot can say what the repo is.
+ * Missing files stay missing — never a DEMO README.
+ */
+export async function fetchGitHubRepoOverviewFiles(
+  http: GitHubHttp,
+  fullName: string,
+  ref: string,
+): Promise<Array<{ path: string; content: string }>> {
+  const files: Array<{ path: string; content: string }> = [];
+  for (const path of OVERVIEW_FETCH_PATHS) {
+    try {
+      const snippet = await fetchGitHubFileSnippet(http, fullName, path, ref, 4_000);
+      if (snippet.content.trim()) files.push({ path: snippet.path, content: snippet.content });
+    } catch {
+      /* 404 / binary — skip */
+    }
+  }
+  return files;
 }

@@ -3,6 +3,8 @@
 // its own and as concrete evidence when writing the Impact award. Pure helpers
 // (validation, tag parsing, rollups) live here and are shared by API + UI.
 
+import { parseNotebookAttachmentIds } from "./notebook/attachments";
+
 export const BUILD_PHASES = [
   "brainstorm",
   "design",
@@ -39,7 +41,9 @@ export function parseTags(input: unknown): string[] {
   const tags: string[] = [];
   for (const item of raw) {
     if (typeof item !== "string") continue;
-    const tag = item.trim().toLowerCase().slice(0, MAX_TAG_LEN);
+    const rawTag = item.trim().toLowerCase();
+    if (!rawTag || rawTag.startsWith("asset:")) continue;
+    const tag = rawTag.slice(0, MAX_TAG_LEN);
     if (!tag || seen.has(tag)) continue;
     seen.add(tag);
     tags.push(tag);
@@ -48,7 +52,15 @@ export function parseTags(input: unknown): string[] {
   return tags;
 }
 
-export type EntryInput = { title: string; entryDate: string; phase: BuildPhase; subsystem: string; body: string; tags: string[] };
+export type EntryInput = {
+  title: string;
+  entryDate: string;
+  phase: BuildPhase;
+  subsystem: string;
+  body: string;
+  tags: string[];
+  attachmentIds: string[];
+};
 
 export function validateEntry(
   raw: Record<string, unknown>,
@@ -61,7 +73,18 @@ export function validateEntry(
   if (!BUILD_PHASES.includes(phase as BuildPhase)) return { ok: false, error: "Invalid build phase" };
   const subsystem = typeof raw.subsystem === "string" ? raw.subsystem.trim() : "";
   const body = typeof raw.body === "string" ? raw.body.trim() : "";
-  return { ok: true, value: { title, entryDate, phase: phase as BuildPhase, subsystem, body, tags: parseTags(raw.tags) } };
+  return {
+    ok: true,
+    value: {
+      title,
+      entryDate,
+      phase: phase as BuildPhase,
+      subsystem,
+      body,
+      tags: parseTags(raw.tags),
+      attachmentIds: parseNotebookAttachmentIds(raw.attachments ?? raw.attachmentIds),
+    },
+  };
 }
 
 export function summarizeNotebook(entries: { subsystem: string; phase: BuildPhase; entryDate: string }[]) {
@@ -86,9 +109,11 @@ export function summarizeNotebook(entries: { subsystem: string; phase: BuildPhas
 // ---- request validation --------------------------------------------------
 
 export type NotebookAction =
-  | { action: "create_entry"; orgId: string; seasonYear: number; title: string; entryDate: string; phase: BuildPhase; subsystem: string; body: string; tags: string[] }
-  | { action: "update_entry"; orgId: string; id: string; patch: { title?: string; phase?: BuildPhase; subsystem?: string; body?: string; tags?: string[] } }
-  | { action: "delete_entry"; orgId: string; id: string };
+  | { action: "create_entry"; orgId: string; seasonYear: number; title: string; entryDate: string; phase: BuildPhase; subsystem: string; body: string; tags: string[]; attachmentIds: string[] }
+  | { action: "update_entry"; orgId: string; id: string; patch: { title?: string; phase?: BuildPhase; subsystem?: string; body?: string; tags?: string[]; attachmentIds?: string[] } }
+  | { action: "delete_entry"; orgId: string; id: string }
+  /** Lift a journal entry into the knowledge wiki so it outlives the season. */
+  | { action: "promote_entry"; orgId: string; id: string };
 
 function reqStr(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} is required`);
@@ -110,7 +135,7 @@ export function parseNotebookAction(raw: unknown): NotebookAction {
       return { action, orgId, seasonYear, ...validated.value };
     }
     case "update_entry": {
-      const patch: { title?: string; phase?: BuildPhase; subsystem?: string; body?: string; tags?: string[] } = {};
+      const patch: { title?: string; phase?: BuildPhase; subsystem?: string; body?: string; tags?: string[]; attachmentIds?: string[] } = {};
       if (body.title !== undefined) patch.title = reqStr(body.title, "title");
       if (body.phase !== undefined) {
         const phase = String(body.phase);
@@ -120,10 +145,14 @@ export function parseNotebookAction(raw: unknown): NotebookAction {
       if (body.subsystem !== undefined) patch.subsystem = typeof body.subsystem === "string" ? body.subsystem.trim() : "";
       if (body.body !== undefined) patch.body = typeof body.body === "string" ? body.body.trim() : "";
       if (body.tags !== undefined) patch.tags = parseTags(body.tags);
+      if (body.attachments !== undefined || body.attachmentIds !== undefined) {
+        patch.attachmentIds = parseNotebookAttachmentIds(body.attachments ?? body.attachmentIds);
+      }
       if (Object.keys(patch).length === 0) throw new Error("No changes provided");
       return { action, orgId, id: reqStr(body.id, "id"), patch };
     }
     case "delete_entry":
+    case "promote_entry":
       return { action, orgId, id: reqStr(body.id, "id") };
     default:
       throw new Error("Unsupported notebook action");

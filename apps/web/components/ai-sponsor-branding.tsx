@@ -48,7 +48,7 @@ export function AiSponsorBranding({ className }: { className?: string }) {
           const inner = (
             <>
               {sponsor.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- remote partner logos; URLs are https-only from admin
+                 
                 <img src={sponsor.logoUrl} alt="" className="ai-sponsor-branding__logo" />
               ) : null}
               <span className="ai-sponsor-branding__name">{sponsor.name}</span>

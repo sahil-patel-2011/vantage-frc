@@ -33,5 +33,7 @@ export type MatchStrategyCard = {
   driverNotes: string | null;
   roleAssignments: MatchStrategyRoleAssignment[];
   hasCard: boolean;
+  /** True when this card is our next unplayed TBA match at the active event. */
+  isNextMatch: boolean;
   updatedAt: string | null;
 };

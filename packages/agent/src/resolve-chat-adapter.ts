@@ -37,6 +37,7 @@ import {
   type BridgeDegradedReason,
   type SubscriptionBridgeTransport,
 } from "./subscription-bridge-adapter";
+import { classifyTaskDifficulty, consultingAllowed, type AutoRole } from "./auto-mode";
 
 export class ChatProviderResolutionError extends Error {
   constructor(message: string) {
@@ -146,6 +147,12 @@ export type ResolveOrgChatAdapterInput = {
   promptCachingEnabled: boolean;
   /** Feature tag for Automode (cad, coding, strategy, chat, …). */
   feature?: string;
+  /** Current user ask, used only to select Automode difficulty. Never persisted here. */
+  taskText?: string;
+  /** Execute is the normal production role; think is for an explicit consultant pass. */
+  autoRole?: AutoRole;
+  consultEnabled?: boolean;
+  lockRun?: boolean;
   /**
    * Skip org BYOK / local connectors and use hosted Vantage keys only.
    * Used by Bugbot Ultra (flat-fee SKU). Honest error when no hosted key exists.
@@ -804,6 +811,13 @@ export async function resolveOrgChatAdapterWithProvenance(
     fixedModelId: prefs.fixedModelId,
     enabledModelIds: prefs.enabledModelIds,
     availableProviders: available.filter((p) => p !== "openai-compatible") as ByokModelProvider[],
+    difficulty: input.taskText ? classifyTaskDifficulty(input.taskText, input.feature) : undefined,
+    role: input.autoRole ?? "execute",
+    consulting: consultingAllowed({
+      mode: prefs.mode,
+      consultEnabled: input.consultEnabled,
+      lockRun: input.lockRun,
+    }),
   });
 
   // Prefer explicit OpenAI-compatible / local connector when configured.

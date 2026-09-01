@@ -76,6 +76,9 @@
   display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;
   background:var(--soft-bg,var(--app-bg));border:1px solid color-mix(in srgb,var(--soft-line,var(--app-line)) 80%,transparent);
 }
+.kb-view-toggle{display:inline-flex;padding:3px;border-radius:10px;background:var(--soft-card,var(--app-surface));border:1px solid var(--soft-line,var(--app-line))}
+.kb-view-toggle button{min-height:30px;padding:5px 12px;border:0;border-radius:7px;background:transparent;color:var(--soft-muted,var(--app-muted));font:700 12px inherit;cursor:pointer}
+.kb-view-toggle button[aria-pressed="true"]{background:var(--soft-accent,var(--app-accent));color:#fff}
 .kb-chip{
   min-height:30px;padding:5px 10px;border-radius:999px;border:1px solid var(--soft-line,var(--app-line));
   background:var(--soft-card,var(--app-surface));color:var(--soft-ink,var(--app-ink));font:700 11px inherit;cursor:pointer;
@@ -90,6 +93,14 @@
 .kb-row select{width:auto;min-width:150px}
 .kb-row input[type="checkbox"]{width:auto;min-height:0}
 .kb-body{min-height:360px;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.kb-document{min-height:280px;padding:20px;border:1px solid var(--soft-line,var(--app-line));border-radius:14px;background:var(--soft-bg,var(--app-bg));color:var(--soft-ink,var(--app-ink));line-height:1.65}
+.kb-document h1,.kb-document h2,.kb-document h3{margin:1.2em 0 .45em;line-height:1.25;letter-spacing:-.015em}
+.kb-document h1:first-child,.kb-document h2:first-child,.kb-document h3:first-child{margin-top:0}
+.kb-document h1{font-size:24px}.kb-document h2{font-size:19px}.kb-document h3{font-size:16px}
+.kb-document p,.kb-document ul,.kb-document ol,.kb-document blockquote,.kb-document pre{margin:.7em 0}
+.kb-document ul,.kb-document ol{padding-left:24px}
+.kb-document blockquote{padding:8px 12px;border-left:3px solid var(--soft-accent,var(--app-accent));color:var(--soft-muted,var(--app-muted));background:color-mix(in srgb,var(--soft-accent,var(--app-accent)) 6%,transparent)}
+.kb-document pre{overflow:auto;padding:12px;border-radius:10px;background:color-mix(in srgb,var(--soft-ink,var(--app-ink)) 8%,var(--soft-card,var(--app-surface)));font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .kb-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .kb-link{padding:0;border:0;background:none;color:var(--soft-accent,var(--app-accent));font:700 12px inherit;cursor:pointer}
 .kb-link.danger{color:var(--app-critical)}

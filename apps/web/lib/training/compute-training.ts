@@ -40,6 +40,8 @@ export type TrainingView =
       certifications: TrainingCertification[];
       members: TrainingMemberOption[];
       summary: TrainingSummary;
+      /** Writes are owner/admin; the matrix itself stays readable by the whole team. */
+      canManage: boolean;
       computedAt: string;
     };
 
@@ -100,9 +102,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -176,6 +178,7 @@ export async function computeTrainingView(
     certifications,
     members: memberResult.rows,
     summary,
+    canManage: org.role === "owner" || org.role === "admin",
     computedAt: now.toISOString(),
   };
 }

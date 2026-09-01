@@ -317,7 +317,7 @@ export default function OutreachCalendarClient() {
           </>
         }
         title="Outreach Calendar"
-        description="Plan outreach events ahead of time and track their projected hours and reach. Projections use only what you schedule — never DEMO reach metrics."
+        description="Plan outreach events with projected hours and reach. Completing an event writes it to Community Impact; planned events stay empty until then — never DEMO hours."
       >
         <div className="outreach-calendar-header-actions">
           {view.seasons.length > 0 ? (
@@ -523,8 +523,23 @@ function AllEvents({
                 {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()}{" "}
                 projected reach
               </small>
+              {item.status === "completed" ? (
+                <small className="app-muted" style={{ display: "block" }}>
+                  Logged to Community Impact
+                </small>
+              ) : null}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {item.status !== "completed" && item.status !== "canceled" ? (
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => mutate({ action: "complete", eventId: item.id })}
+                >
+                  Complete
+                </button>
+              ) : null}
               <select
                 value={item.status}
                 disabled={busy}

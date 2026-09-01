@@ -10,13 +10,13 @@ import {
 } from "./knowledge-gap-related";
 
 describe("knowledgeGapRelatedLinks", () => {
-  it("builds Knowledge / FMEA / Meeting Autopilot cross-links", () => {
+  it("builds Knowledge / Work / Meeting Autopilot cross-links", () => {
     const links = knowledgeGapRelatedLinks("org-1", {
       include: [...KNOWLEDGE_GAP_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["knowledge", "fmea", "meeting-autopilot"]);
+    expect(links.map((l) => l.id)).toEqual(["knowledge", "todos", "meeting-autopilot"]);
     expect(links.find((l) => l.id === "knowledge")?.href).toBe("/team?tab=knowledge&orgId=org-1");
-    expect(links.find((l) => l.id === "fmea")?.href).toBe("/build?tab=fmea&orgId=org-1");
+    expect(links.find((l) => l.id === "todos")?.href).toBe("/team?tab=todos&orgId=org-1");
   });
 
   it("never uses DEMO labels or hrefs", () => {

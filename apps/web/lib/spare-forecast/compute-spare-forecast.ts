@@ -7,6 +7,7 @@ import type {
   PurchaseRequestDraft,
   PurchaseRequestLineItem,
   PurchaseRequestStatus,
+  SeasonHorizon,
   SpareForecastLine,
 } from "./types";
 
@@ -37,6 +38,8 @@ export type SpareForecastView =
       spareBinCount: number;
       forecastLines: SpareForecastLine[];
       purchaseRequests: PurchaseRequestDraft[];
+      /** Closed 200-day window → offseason; remaining-season risk is null, not "no risk". */
+      seasonHorizon: SeasonHorizon;
       computedAt: string;
     };
 
@@ -59,9 +62,53 @@ type InventoryRow = {
 };
 
 type FmeaCountRow = {
+  inventoryItemId: string | null;
   subsystemName: string;
   failureCount: string;
 };
+
+export type FmeaMatchRow = {
+  inventoryItemId?: string | null;
+  subsystemName: string;
+  failureCount: string | number;
+};
+
+export type IndexedFmeaFailures = {
+  byItemId: Map<string, number>;
+  bySubsystem: Map<string, number>;
+};
+
+/**
+ * Split FMEA aggregates into item-id counts vs free-text subsystem counts.
+ * Rows with inventory_item_id only feed the id map so a linked failure is not
+ * also reused by the name join.
+ */
+export function indexFmeaFailureCounts(rows: FmeaMatchRow[]): IndexedFmeaFailures {
+  const byItemId = new Map<string, number>();
+  const bySubsystem = new Map<string, number>();
+  for (const row of rows) {
+    const count = Number(row.failureCount) || 0;
+    const itemId = row.inventoryItemId?.trim() ?? "";
+    if (itemId) {
+      byItemId.set(itemId, (byItemId.get(itemId) ?? 0) + count);
+      continue;
+    }
+    const key = row.subsystemName.trim().toLowerCase();
+    if (key) bySubsystem.set(key, (bySubsystem.get(key) ?? 0) + count);
+  }
+  return { byItemId, bySubsystem };
+}
+
+/** Prefer inventory_item_id matches; otherwise the existing subsystem-name join. */
+export function failureCountForSpareBin(
+  item: { id: string; subsystem: string | null },
+  indexed: IndexedFmeaFailures,
+): number {
+  const byId = indexed.byItemId.get(item.id) ?? 0;
+  if (byId > 0) return byId;
+  const subsystemKey = (item.subsystem ?? "").trim().toLowerCase();
+  return subsystemKey ? (indexed.bySubsystem.get(subsystemKey) ?? 0) : 0;
+}
 
 type PurchaseRequestRow = {
   id: string;
@@ -112,8 +159,8 @@ async function loadForecastLines(
   orgId: string,
   seasonYear: number,
   asOf: Date = new Date(),
-): Promise<{ spareBinCount: number; forecastLines: SpareForecastLine[] }> {
-  const { daysElapsed, daysRemaining } = seasonWindow(seasonYear, asOf);
+): Promise<{ spareBinCount: number; forecastLines: SpareForecastLine[]; seasonHorizon: SeasonHorizon }> {
+  const { daysElapsed, daysRemaining, horizon } = seasonWindow(seasonYear, asOf);
 
   const [inventoryResult, fmeaResult] = await Promise.all([
     client.query<InventoryRow>(
@@ -126,23 +173,23 @@ async function loadForecastLines(
       [orgId],
     ),
     client.query<FmeaCountRow>(
-      `SELECT subsystem_name AS "subsystemName", count(*)::text AS "failureCount"
+      `SELECT inventory_item_id AS "inventoryItemId",
+              subsystem_name AS "subsystemName", count(*)::text AS "failureCount"
        FROM fmea_failures
        WHERE org_id = $1 AND season_year = $2
-       GROUP BY subsystem_name`,
+       GROUP BY inventory_item_id, subsystem_name`,
       [orgId, seasonYear],
     ),
   ]);
 
-  const failureBySubsystem = new Map<string, number>();
-  for (const row of fmeaResult.rows) {
-    failureBySubsystem.set(row.subsystemName.trim().toLowerCase(), Number(row.failureCount) || 0);
-  }
+  const indexedFailures = indexFmeaFailureCounts(fmeaResult.rows);
 
   const lines: SpareForecastLine[] = [];
   for (const row of inventoryResult.rows) {
-    const subsystemKey = (row.subsystem ?? "").trim().toLowerCase();
-    const failureCount = subsystemKey ? (failureBySubsystem.get(subsystemKey) ?? 0) : 0;
+    const failureCount = failureCountForSpareBin(
+      { id: row.id, subsystem: row.subsystem },
+      indexedFailures,
+    );
     // Skip bins with no matched FMEA history — never fabricate a consumption rate.
     if (failureCount <= 0) continue;
     const quantityOnHand = Number(row.quantity) || 0;
@@ -167,6 +214,7 @@ async function loadForecastLines(
   return {
     spareBinCount: inventoryResult.rows.length,
     forecastLines: sortForecastLines(lines),
+    seasonHorizon: horizon,
   };
 }
 
@@ -230,6 +278,7 @@ export async function computeSpareForecastView(
     spareBinCount: forecastBundle.spareBinCount,
     forecastLines: forecastBundle.forecastLines,
     purchaseRequests: purchaseRequestResult.rows.map(mapPurchaseRequest),
+    seasonHorizon: forecastBundle.seasonHorizon,
     computedAt: new Date().toISOString(),
   };
 }

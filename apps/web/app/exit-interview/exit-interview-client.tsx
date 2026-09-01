@@ -286,18 +286,40 @@ function RecentResponses({
                 <a href={exitInterviewWikiHref(view.orgId, item.knowledgePageId)}>Open wiki handoff</a>
               ) : null}
             </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.memberName}"'s exit interview?`)) {
-                  mutate({ action: "delete-response", recordId: item.id });
-                }
-              }}
-            >
-              Delete
-            </button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {item.status === "draft" ? (
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Submit "${item.memberName}"'s exit interview? This publishes the handoff page to the team wiki and cannot be moved back to a draft.`,
+                      )
+                    ) {
+                      mutate({ action: "submit-response", recordId: item.id });
+                    }
+                  }}
+                >
+                  Submit &amp; publish
+                </button>
+              ) : null}
+              {view.canManage ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${item.memberName}"'s exit interview?`)) {
+                      mutate({ action: "delete-response", recordId: item.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
+            </div>
           </li>
         ))}
       </ul>

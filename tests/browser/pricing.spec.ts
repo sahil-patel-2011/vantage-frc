@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("pricing leads with every-feature-every-plan and the hosted AI ladder", async ({ page }) => {
   await page.goto("/pricing");
-  await expect(page.getByRole("heading", { name: "Every feature. Every plan. Even Free." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Start free. Buy AI credits when you need them." })).toBeVisible();
   await expect(page.getByText(/Everything is included on every plan/i).first()).toBeVisible();
 
   // The four-plan ladder: Free $0 · Pro $20 · Pro+ $60 · Max $100.
@@ -23,6 +23,6 @@ test("pricing leads with every-feature-every-plan and the hosted AI ladder", asy
   await expect(page.getByText(/budget models/i).first()).toBeVisible();
   await expect(page.getByText(/hard (cut-?off|stop)/i).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /Try team hosted AI for 7 days/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Buy AI credits" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Buy AI credits", exact: true })).toBeVisible();
   await expect(page.getByText("Is anything locked behind a paid plan?")).toBeVisible();
 });

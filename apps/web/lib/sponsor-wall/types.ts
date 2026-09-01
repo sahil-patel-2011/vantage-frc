@@ -10,6 +10,7 @@ export type SponsorWallEntry = {
   id: string;
   sponsorName: string;
   tier: SponsorWallTier;
+  mediaAssetId?: string | null;
   logoUrl: string | null;
   websiteUrl: string | null;
   message: string | null;

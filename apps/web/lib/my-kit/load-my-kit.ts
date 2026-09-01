@@ -27,6 +27,7 @@ import type {
   MyKitMediaRecord,
   MyKitMoneyRecord,
   MyKitOnboardingRecord,
+  MyKitPackingRecord,
   MyKitScoutAccuracyRecord,
   MyKitScoutAssignmentRecord,
   MyKitSkillRecord,
@@ -59,6 +60,9 @@ export const MY_KIT_OPTIONAL_TABLES = [
   "reimbursement_requests",
   "member_onboarding_tracks",
   "member_onboarding_checks",
+  "packing_lists",
+  "packing_items",
+  "packing_requests",
 ] as const;
 
 export type MyKitOptionalTable = (typeof MY_KIT_OPTIONAL_TABLES)[number];
@@ -154,6 +158,7 @@ function availabilityFrom(present: Set<MyKitOptionalTable>): MyKitAvailability {
   return {
     ...EMPTY_AVAILABILITY,
     tasks: present.has("build_tasks") || present.has("team_todos"),
+    packing: present.has("packing_lists") && present.has("packing_items"),
     calendar: present.has("subteam_calendar_events"),
     duties: present.has("duty_assignments"),
     scouting: present.has("scout_assignments"),
@@ -714,6 +719,156 @@ async function loadOnboarding(
   return open.length > 0 ? open : out.slice(0, 1);
 }
 
+/**
+ * Personal packing only.
+ *
+ * A member owns a row when they requested it, they were assigned it
+ * (`assigned_user_id`), or they packed it. `created_by` is ignored on purpose:
+ * seeding the standard competition template stamps the list creator on every
+ * item, and treating that as "their kit" would render a DEMO load-out as if it
+ * were assigned to them. Unassigned master-list rows stay off My Kit.
+ */
+async function loadPacking(
+  client: PoolClient,
+  present: Set<MyKitOptionalTable>,
+  orgId: string,
+  userId: string,
+): Promise<MyKitPackingRecord[]> {
+  if (!present.has("packing_lists") || !present.has("packing_items")) return [];
+
+  const out: MyKitPackingRecord[] = [];
+  const seenItem = new Set<string>();
+
+  if (present.has("packing_requests")) {
+    const requests = await safely(async () => {
+      const result = await client.query<{
+        id: string;
+        listId: string;
+        listTitle: string;
+        eventKey: string | null;
+        category: string;
+        label: string;
+        quantity: number;
+        status: "pending" | "accepted" | "packed";
+        packed: boolean | null;
+        itemId: string | null;
+      }>(
+        `SELECT r.id::text AS id, r.list_id::text AS "listId", l.title AS "listTitle",
+                l.event_key AS "eventKey", r.category, r.label, r.quantity,
+                r.status, i.packed, i.id::text AS "itemId"
+         FROM packing_requests r
+         JOIN packing_lists l ON l.id = r.list_id
+         LEFT JOIN packing_items i ON i.id = r.packing_item_id
+         WHERE r.org_id = $1::uuid
+           AND r.requested_by = $2::uuid
+           AND r.status IN ('pending', 'accepted')
+         ORDER BY r.created_at DESC
+         LIMIT 20`,
+        [orgId, userId],
+      );
+      return result.rows;
+    });
+    for (const row of requests) {
+      const packed = Boolean(row.packed);
+      if (row.itemId) seenItem.add(row.itemId);
+      out.push({
+        id: row.id,
+        source: "request",
+        listId: row.listId,
+        listTitle: row.listTitle,
+        eventKey: row.eventKey,
+        category: row.category,
+        label: row.label,
+        quantity: row.quantity,
+        status: packed ? "packed" : row.status,
+        packed,
+      });
+    }
+  }
+
+  const assignedToMe = await safely(async () => {
+    const result = await client.query<{
+      id: string;
+      listId: string;
+      listTitle: string;
+      eventKey: string | null;
+      category: string;
+      label: string;
+      quantity: number;
+      packed: boolean;
+    }>(
+      `SELECT i.id::text AS id, i.list_id::text AS "listId", l.title AS "listTitle",
+              l.event_key AS "eventKey", i.category, i.label, i.quantity, i.packed
+       FROM packing_items i
+       JOIN packing_lists l ON l.id = i.list_id
+       WHERE i.org_id = $1::uuid
+         AND i.assigned_user_id = $2::uuid
+       ORDER BY i.packed ASC, i.created_at DESC
+       LIMIT 20`,
+      [orgId, userId],
+    );
+    return result.rows;
+  });
+  for (const row of assignedToMe) {
+    if (seenItem.has(row.id)) continue;
+    seenItem.add(row.id);
+    const packed = Boolean(row.packed);
+    out.push({
+      id: row.id,
+      source: packed ? "packed" : "request",
+      listId: row.listId,
+      listTitle: row.listTitle,
+      eventKey: row.eventKey,
+      category: row.category,
+      label: row.label,
+      quantity: row.quantity,
+      status: packed ? "packed" : "accepted",
+      packed,
+    });
+  }
+
+  const packedByMe = await safely(async () => {
+    const result = await client.query<{
+      id: string;
+      listId: string;
+      listTitle: string;
+      eventKey: string | null;
+      category: string;
+      label: string;
+      quantity: number;
+    }>(
+      `SELECT i.id::text AS id, i.list_id::text AS "listId", l.title AS "listTitle",
+              l.event_key AS "eventKey", i.category, i.label, i.quantity
+       FROM packing_items i
+       JOIN packing_lists l ON l.id = i.list_id
+       WHERE i.org_id = $1::uuid
+         AND i.packed_by = $2::uuid
+         AND i.packed
+       ORDER BY i.packed_at DESC NULLS LAST
+       LIMIT 20`,
+      [orgId, userId],
+    );
+    return result.rows;
+  });
+  for (const row of packedByMe) {
+    if (seenItem.has(row.id)) continue;
+    out.push({
+      id: row.id,
+      source: "packed",
+      listId: row.listId,
+      listTitle: row.listTitle,
+      eventKey: row.eventKey,
+      category: row.category,
+      label: row.label,
+      quantity: row.quantity,
+      status: "packed",
+      packed: true,
+    });
+  }
+
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -744,6 +899,7 @@ export async function loadMyKit(
     tools,
     money,
     onboarding,
+    packing,
   ] = await Promise.all([
     loadTasks(client, present, org.orgId, input.userId, displayName),
     loadEvents(client, present, org.orgId, input.userId, subteamIds),
@@ -758,6 +914,7 @@ export async function loadMyKit(
     loadTools(client, present, org.orgId, displayName),
     loadMoney(client, present, org.orgId, input.userId),
     loadOnboarding(client, present, org.orgId, input.userId),
+    loadPacking(client, present, org.orgId, input.userId),
   ]);
 
   return composeMyKit({
@@ -784,5 +941,6 @@ export async function loadMyKit(
     tools,
     money,
     onboarding,
+    packing,
   });
 }

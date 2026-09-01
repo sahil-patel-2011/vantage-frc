@@ -1,36 +1,62 @@
 // Pure, framework-free helpers for the knowledge-gap detective. No I/O here — DB access
 // lives in compute-knowledge-gap.ts.
 
+import type { WorkItemSource } from "../work-items/types";
 import type {
   KnowledgeGapCandidate,
-  KnowledgeGapDecision,
-  KnowledgeGapEvent,
   KnowledgeGapPage,
   KnowledgeGapSubjectKind,
-  KnowledgeGapSubsystem,
   KnowledgeGapTemplateKind,
+  KnowledgeGapWorkItem,
 } from "./types";
 
 export const KNOWLEDGE_GAP_SUBJECT_KINDS: KnowledgeGapSubjectKind[] = ["subsystem", "decision", "event"];
 
+/** Work-item source → persisted subject_kind (CHECK constraint on knowledge_gap_items). */
+export const WORK_SOURCE_SUBJECT_KIND: Record<WorkItemSource, KnowledgeGapSubjectKind> = {
+  build_task: "subsystem",
+  todo: "decision",
+  milestone: "event",
+};
+
+const WORK_SOURCE_TEMPLATE: Record<WorkItemSource, KnowledgeGapTemplateKind> = {
+  build_task: "subsystem",
+  todo: "blank",
+  milestone: "season_handoff",
+};
+
+const SUBJECT_KIND_WORK_SOURCE: Record<KnowledgeGapSubjectKind, WorkItemSource> = {
+  subsystem: "build_task",
+  decision: "todo",
+  event: "milestone",
+};
+
 export function knowledgeGapSubjectLabel(kind: KnowledgeGapSubjectKind): string {
   switch (kind) {
     case "subsystem":
-      return "Subsystem";
+      return "Build task";
     case "decision":
-      return "Decision";
+      return "To-do";
     case "event":
-      return "Event";
+      return "Milestone";
     default:
       return kind;
   }
+}
+
+export function workSourceForSubjectKind(kind: KnowledgeGapSubjectKind): WorkItemSource {
+  return SUBJECT_KIND_WORK_SOURCE[kind];
+}
+
+export function subjectKindForWorkSource(source: WorkItemSource): KnowledgeGapSubjectKind {
+  return WORK_SOURCE_SUBJECT_KIND[source];
 }
 
 function normalize(value: string): string {
   return value.toLowerCase().trim();
 }
 
-/** A subject is "covered" when any wiki page's title/body/tags mentions its name. */
+/** A work item is "covered" when any wiki page's title/body/tags mentions its title. */
 function isCoveredByPages(name: string, haystacks: string[]): boolean {
   const needle = normalize(name);
   if (!needle) return true;
@@ -38,62 +64,76 @@ function isCoveredByPages(name: string, haystacks: string[]): boolean {
 }
 
 /**
- * Deterministically diffs the real subsystem / decision / event corpus against the wiki
- * page corpus and returns undocumented subjects. Pure function — safe to unit test with
- * mock rows and reused by the metered scan in compute-knowledge-gap.ts.
+ * Dropped work was never done; blank titles cannot be documented without inventing a name.
+ * Everything else that already exists on a tracker is eligible to be a gap.
+ */
+export function isEligibleWorkItem(item: KnowledgeGapWorkItem): boolean {
+  if (item.status === "dropped") return false;
+  return Boolean(item.title.trim());
+}
+
+function undocumentedReason(item: KnowledgeGapWorkItem): string {
+  const title = item.title.trim();
+  const grouping = item.grouping?.trim();
+  const suffix = grouping ? ` (${grouping})` : "";
+  switch (item.source) {
+    case "todo":
+      return `To-do "${title}"${suffix} has no wiki page documenting the work.`;
+    case "build_task":
+      return `Build task "${title}"${suffix} has no wiki page documenting the work.`;
+    case "milestone":
+      return `Milestone "${title}"${suffix} has no wiki page documenting the work.`;
+  }
+}
+
+/**
+ * Diffs real work items against the real wiki. Returns only undocumented work that
+ * already exists on a tracker — never invents DEMO subjects, never pads empty orgs.
  */
 export function findKnowledgeGaps(input: {
-  subsystems: KnowledgeGapSubsystem[];
-  decisions: KnowledgeGapDecision[];
-  events: KnowledgeGapEvent[];
+  workItems: KnowledgeGapWorkItem[];
   pages: KnowledgeGapPage[];
+  seasonYear: number;
 }): KnowledgeGapCandidate[] {
   const haystacks = input.pages.map((page) =>
     normalize(`${page.title} ${page.body} ${page.tags.join(" ")}`),
   );
 
   const gaps: KnowledgeGapCandidate[] = [];
-
-  for (const subsystem of input.subsystems) {
-    if (isCoveredByPages(subsystem.name, haystacks)) continue;
+  for (const item of input.workItems) {
+    if (!isEligibleWorkItem(item)) continue;
+    if (isCoveredByPages(item.title, haystacks)) continue;
     gaps.push({
-      subjectKind: "subsystem",
-      subjectId: subsystem.id,
-      subjectRef: subsystem.name,
-      seasonYear: subsystem.seasonYear,
-      reason: `No wiki page mentions the "${subsystem.name}" (${subsystem.category}) subsystem.`,
-      suggestedTemplate: "subsystem",
+      subjectKind: WORK_SOURCE_SUBJECT_KIND[item.source],
+      subjectId: item.id,
+      subjectRef: item.title.trim(),
+      seasonYear: input.seasonYear,
+      reason: undocumentedReason(item),
+      suggestedTemplate: WORK_SOURCE_TEMPLATE[item.source],
     });
   }
-
-  for (const decision of input.decisions) {
-    if (isCoveredByPages(decision.title, haystacks)) continue;
-    gaps.push({
-      subjectKind: "decision",
-      subjectId: decision.id,
-      subjectRef: decision.title,
-      seasonYear: decision.seasonYear,
-      reason: `Decision "${decision.title}" has no linked wiki page explaining it to future members.`,
-      suggestedTemplate: "blank",
-    });
-  }
-
-  for (const event of input.events) {
-    if (isCoveredByPages(event.name, haystacks)) continue;
-    gaps.push({
-      subjectKind: "event",
-      subjectId: event.eventKey,
-      subjectRef: event.name,
-      seasonYear: event.seasonYear,
-      reason: `Team has scouted matches at "${event.name}" but has no season-handoff notes for it.`,
-      suggestedTemplate: "season_handoff",
-    });
-  }
-
   return gaps;
 }
 
-/** 0..1 share of tracked subjects that already have wiki coverage. 1 when there is nothing to track. */
+export function countEligibleWorkBySource(items: KnowledgeGapWorkItem[]): {
+  todos: number;
+  buildTasks: number;
+  milestones: number;
+  total: number;
+} {
+  let todos = 0;
+  let buildTasks = 0;
+  let milestones = 0;
+  for (const item of items) {
+    if (!isEligibleWorkItem(item)) continue;
+    if (item.source === "todo") todos += 1;
+    else if (item.source === "build_task") buildTasks += 1;
+    else milestones += 1;
+  }
+  return { todos, buildTasks, milestones, total: todos + buildTasks + milestones };
+}
+
+/** 0..1 share of tracked work that already has wiki coverage. 1 when there is nothing to track. */
 export function computeCoverageScore(totalSubjects: number, gapCount: number): number {
   if (totalSubjects <= 0) return 1;
   const covered = Math.max(0, totalSubjects - gapCount);
@@ -102,12 +142,12 @@ export function computeCoverageScore(totalSubjects: number, gapCount: number): n
 
 export function summarizeScan(input: { totalSubjects: number; gapCount: number; coverageScore: number }): string {
   if (input.totalSubjects <= 0) {
-    return "No subsystems, decisions, or scouted events yet — nothing to check documentation against.";
+    return "No work items yet — nothing to check documentation against.";
   }
   if (input.gapCount === 0) {
-    return `All ${input.totalSubjects} tracked subject(s) have wiki coverage.`;
+    return `All ${input.totalSubjects} work item(s) have wiki coverage.`;
   }
-  return `${input.gapCount} of ${input.totalSubjects} tracked subject(s) have no wiki coverage (${Math.round(
+  return `${input.gapCount} of ${input.totalSubjects} work item(s) have no wiki coverage (${Math.round(
     input.coverageScore * 100,
   )}% documented).`;
 }
@@ -134,10 +174,10 @@ export function buildStubPageBody(input: {
 }): string {
   const heading =
     input.subjectKind === "subsystem"
-      ? `## ${input.subjectRef} subsystem`
+      ? `## ${input.subjectRef}`
       : input.subjectKind === "decision"
-        ? `## Decision: ${input.subjectRef}`
-        : `## Event: ${input.subjectRef}`;
+        ? `## To-do: ${input.subjectRef}`
+        : `## Milestone: ${input.subjectRef}`;
   return [
     "_Stub page drafted by Knowledge-gap detective — fill this in._",
     "",
@@ -154,7 +194,7 @@ export function buildStubPageBody(input: {
 }
 
 export function stubTitleFor(kind: KnowledgeGapSubjectKind, ref: string): string {
-  const prefix = kind === "subsystem" ? "Subsystem" : kind === "decision" ? "Decision" : "Event";
+  const prefix = kind === "subsystem" ? "Build task" : kind === "decision" ? "To-do" : "Milestone";
   return `${prefix}: ${ref}`.slice(0, 200);
 }
 

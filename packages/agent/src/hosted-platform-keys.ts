@@ -2,6 +2,8 @@ import { preferredTierForFeature } from "./byok-model-routing";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+export const GROQ_FREE_MODEL = "llama-3.1-8b-instant";
 /** Official free-model router — avoids pinning a rotating `:free` slug. */
 export const OPENROUTER_FREE_MODEL = "openrouter/free";
 export const HOSTED_ANTHROPIC_SONNET = "claude-sonnet-4-20250514";
@@ -36,6 +38,26 @@ export function readAnthropicPlatformKey(env: NodeJS.ProcessEnv = process.env): 
 
 export function openRouterFreeModel(env: NodeJS.ProcessEnv = process.env): string {
   return env.OPENROUTER_FREE_MODEL?.trim() || OPENROUTER_FREE_MODEL;
+}
+
+export type FreeRelayConfig = {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  providerLabel: string;
+};
+
+export function readFreeRelayConfig(
+  env: NodeJS.ProcessEnv = process.env,
+): FreeRelayConfig | null {
+  const baseUrl = env.FREE_RELAY_BASE_URL?.trim().replace(/\/+$/, "");
+  if (!baseUrl) return null;
+  return {
+    baseUrl,
+    apiKey: env.FREE_RELAY_API_KEY?.trim() || "local-relay",
+    model: env.FREE_RELAY_MODEL?.trim() || OPENROUTER_FREE_MODEL,
+    providerLabel: env.FREE_RELAY_PROVIDER?.trim() || "free-relay",
+  };
 }
 
 export function hostedAnthropicModel(feature?: string | null): string {
@@ -74,6 +96,49 @@ export function tryCreateOpenRouterFreeAdapter(input?: {
     providerLabel: "openrouter",
     capability: input?.capability ?? "chat",
     extraHeaders: openRouterRequestHeaders(env),
+  });
+}
+
+export function tryCreateGroqFreeAdapter(input?: {
+  promptCachingEnabled?: boolean;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  capability?: string;
+}): HttpChatAdapter | null {
+  const env = input?.env ?? process.env;
+  const apiKey = env.GROQ_API_KEY?.trim();
+  if (!apiKey) return null;
+  return new HttpChatAdapter({
+    provider: "openai-compatible",
+    model: env.GROQ_MODEL?.trim() || GROQ_FREE_MODEL,
+    apiKey,
+    baseUrl: GROQ_BASE_URL,
+    promptCachingEnabled: input?.promptCachingEnabled ?? true,
+    prices: OPENROUTER_PRICES,
+    fetchImpl: input?.fetchImpl,
+    providerLabel: "groq",
+    capability: input?.capability ?? "chat",
+  });
+}
+
+export function tryCreateFreeRelayAdapter(input?: {
+  promptCachingEnabled?: boolean;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  capability?: string;
+}): HttpChatAdapter | null {
+  const config = readFreeRelayConfig(input?.env ?? process.env);
+  if (!config) return null;
+  return new HttpChatAdapter({
+    provider: "openai-compatible",
+    model: config.model,
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    promptCachingEnabled: input?.promptCachingEnabled ?? true,
+    prices: OPENROUTER_PRICES,
+    fetchImpl: input?.fetchImpl,
+    providerLabel: config.providerLabel,
+    capability: input?.capability ?? "chat",
   });
 }
 

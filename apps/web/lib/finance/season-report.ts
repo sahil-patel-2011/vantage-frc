@@ -5,19 +5,13 @@
  * one file: every dollar in and out, oldest first, with a running balance that
  * ends on the number the app shows today. That is the entire spec.
  *
- * The rows come from TWO places, and both are required for the running balance
- * to be trustworthy:
- *  1. computeFinanceBalance()'s unified ledger — every expense (orders,
- *     receipts, paid season costs, paid reimbursements, manual) plus manual
- *     income, already deduped against the legacy tables by the 0461 rule.
- *  2. Income recorded outside the ledger spine — sponsor cash, fundraiser
- *     proceeds, funding-desk receipts, awarded grants. balance.ts counts these
- *     in totalInUsd from their own tables but deliberately keeps them OUT of
- *     `ledger` (double-count guard). A report built from `ledger` alone would
- *     therefore show a running balance that never matches the app.
+ * computeFinanceBalance() supplies the unified ledger only. Rows without a
+ * finance_transactions mirror are skipped — this module does not re-read
+ * sponsor, fundraiser, funding, or grant tables.
  *
- * The invariant this module exists to hold: the LAST row's running balance
- * equals the balance view's balanceUsd. It is asserted in season-report.test.ts.
+ * The invariant this module exists to hold: when there are real rows, the LAST
+ * row's running balance equals the balance view's balanceUsd. Empty books close
+ * at $0 but that is not a successful tie-out (isHonestTieOut).
  *
  * NEVER FABRICATED: nothing is estimated, prorated, or filled in. Rows without a
  * category export an empty category cell rather than a guess, and BOM estimates
@@ -26,7 +20,12 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import type { CsvColumn } from "../export/to-csv";
+import {
+  loadMediaEvidenceReferences,
+  type MediaEvidenceReference,
+} from "../media/evidence-references";
 import { computeFinanceBalance, type FinanceBalanceView } from "./balance";
+import { isHonestTieOut, keepRealLedgerEntries } from "./honesty";
 import { MONEY_SOURCE_LABELS, type MoneySource, type UnifiedLedgerEntry } from "./ledger";
 
 export type SeasonReportRow = {
@@ -57,14 +56,12 @@ function compareEntries(a: UnifiedLedgerEntry, b: UnifiedLedgerEntry): number {
 }
 
 /**
- * Pure: ledger entries -> report rows with a running balance. Cents arithmetic
- * throughout so a 400-row season cannot drift by a penny.
+ * Pure: real ledger entries -> report rows with a running balance. Cents
+ * arithmetic throughout so a 400-row season cannot drift by a penny.
+ * Unmirrored fallback rows and $0 amounts are skipped.
  */
 export function buildSeasonReportRows(entries: readonly UnifiedLedgerEntry[]): SeasonReportRow[] {
-  const usable = entries.filter((entry) => {
-    const cents = Math.round(entry.amountUsd * 100);
-    return Number.isFinite(cents) && cents > 0;
-  });
+  const usable = keepRealLedgerEntries(entries);
   const ordered = [...usable].sort(compareEntries);
   let runningCents = 0;
   return ordered.map((entry) => {
@@ -104,71 +101,6 @@ export const SEASON_REPORT_COLUMNS: readonly CsvColumn<SeasonReportRow>[] = [
   { key: "runningBalanceUsd", header: "Running balance (USD)", hint: "Cumulative balance after this row" },
 ];
 
-// ---------------------------------------------------------------- data access
-
-/**
- * Income recorded outside the unified spine. This is the SAME union
- * balance.ts uses for its activity feed, without the LIMIT 10 — the report
- * needs every row, not a preview. Kept in lockstep with the aggregate queries
- * in computeFinanceBalance so the totals and the rows describe one reality.
- */
-export const EXTERNAL_INCOME_SQL = `
-  WITH income AS (
-    SELECT sc.id::text AS id,
-           sc.received_at AS happened_at,
-           'Sponsor cash — ' || s.name AS label,
-           sc.amount_usd AS amount_usd,
-           'sponsor_contribution' AS source
-    FROM sponsor_contributions sc
-    JOIN sponsors s ON s.id = sc.sponsor_id
-    WHERE sc.org_id = $1::uuid AND sc.type = 'cash' AND COALESCE(sc.amount_usd, 0) > 0
-    UNION ALL
-    SELECT id::text, event_date::timestamptz, 'Fundraiser — ' || name, proceeds_usd, 'fundraiser'
-    FROM fundraiser_events
-    WHERE org_id = $1::uuid AND status <> 'cancelled' AND proceeds_usd > 0
-    UNION ALL
-    SELECT id::text, COALESCE(received_on::timestamptz, updated_at), 'Funding — ' || name, received_usd, 'other'
-    FROM finance_funding_sources
-    WHERE org_id = $1::uuid AND received_usd > 0
-    UNION ALL
-    SELECT id::text, COALESCE(decision_at, updated_at), 'Grant awarded', amount_awarded_usd, 'other'
-    FROM grant_applications
-    WHERE org_id = $1::uuid AND status = 'awarded' AND COALESCE(amount_awarded_usd, 0) > 0
-  )
-  SELECT id, happened_at::text AS "date", label, amount_usd::text AS "amountUsd", source
-  FROM income
-  ORDER BY happened_at
-  LIMIT 5000`;
-
-type ExternalIncomeRow = {
-  id: string;
-  date: string;
-  label: string;
-  amountUsd: string;
-  source: string;
-};
-
-function toEntry(row: ExternalIncomeRow): UnifiedLedgerEntry {
-  const amount = Number(row.amountUsd ?? 0);
-  const source: MoneySource =
-    row.source === "sponsor_contribution" || row.source === "fundraiser" ? row.source : "other";
-  return {
-    // Prefixed so an external income id can never collide with a ledger row id.
-    id: `income:${row.id}`,
-    date: row.date,
-    label: row.label,
-    amountUsd: Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0,
-    direction: "in",
-    source,
-    // Deliberately null: these rows are NOT ledger mirrors, and giving them a
-    // sourceId would invite dedupeLedgerEntries to merge them with one.
-    sourceId: null,
-    categoryId: null,
-    categoryName: null,
-    mirrored: false,
-  };
-}
-
 export type SeasonReport =
   | { status: "setup_required"; message: string; orgId: string | null }
   | {
@@ -178,7 +110,8 @@ export type SeasonReport =
       totalInUsd: number;
       totalOutUsd: number;
       balanceUsd: number;
-      /** True when the running balance agrees with the balance view's total. */
+      evidenceLibrary: MediaEvidenceReference[];
+      /** True when real rows tie out to the balance view. Empty books are false. */
       reconciles: boolean;
       generatedAt: string;
     };
@@ -197,20 +130,8 @@ export async function computeSeasonReport(
     return { status: "setup_required", message: balance.message, orgId: balance.orgId };
   }
 
-  let external: UnifiedLedgerEntry[] = [];
-  try {
-    const result = await client.query<ExternalIncomeRow>(EXTERNAL_INCOME_SQL, [orgId]);
-    external = result.rows.map(toEntry);
-  } catch (error) {
-    // A missing income table means that income source is not installed for this
-    // deployment; the report is still honest, it just has fewer rows. Anything
-    // else is a real failure and must surface.
-    if (typeof error !== "object" || error === null || !("code" in error)) throw error;
-    const code = String((error as { code: unknown }).code);
-    if (code !== "42P01" && code !== "42703") throw error;
-  }
-
-  const rows = buildSeasonReportRows([...balance.ledger, ...external]);
+  const evidenceLibrary = await loadMediaEvidenceReferences(client, { orgId });
+  const rows = buildSeasonReportRows(balance.ledger);
   const closing = closingBalanceUsd(rows);
   return {
     status: "ready",
@@ -219,9 +140,12 @@ export async function computeSeasonReport(
     totalInUsd: balance.totalInUsd,
     totalOutUsd: balance.totalOutUsd,
     balanceUsd: balance.balanceUsd,
-    // Reported, never silently corrected: if an income table went missing above,
-    // the treasurer sees that the file does not tie out rather than trusting it.
-    reconciles: Math.round(closing * 100) === Math.round(balance.balanceUsd * 100),
+    evidenceLibrary,
+    reconciles: isHonestTieOut({
+      closingUsd: closing,
+      reportedBalanceUsd: balance.balanceUsd,
+      rowCount: rows.length,
+    }),
     generatedAt: new Date().toISOString(),
   };
 }

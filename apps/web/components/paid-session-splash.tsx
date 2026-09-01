@@ -102,7 +102,7 @@ export default function PaidSessionSplash() {
       if (exitTimer.current) clearTimeout(exitTimer.current);
     };
     // dismiss is stable enough for mount-only fetch; intentional once-per-mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function PaidSessionSplash() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [visible]);
 
   if (!visible || teamNumber == null) return null;

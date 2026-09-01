@@ -53,3 +53,21 @@ export function tagsForTeam(assignments: TeamTagAssignment[], teamNumber: number
     ),
   ].sort((a, b) => a.localeCompare(b));
 }
+
+/** Tags that apply to robots at a named event. No event key → nothing to read. */
+export function assignmentsForEvent(
+  assignments: readonly TeamTagAssignment[],
+  eventKey: string | null | undefined,
+): TeamTagAssignment[] {
+  if (!eventKey) return [];
+  return assignments.filter((row) => row.eventKey === eventKey);
+}
+
+/** Board columns for the active event, or unscoped tags when no event is set. */
+export function assignmentsForBoard(
+  assignments: readonly TeamTagAssignment[],
+  eventKey: string | null | undefined,
+): TeamTagAssignment[] {
+  if (eventKey) return assignmentsForEvent(assignments, eventKey);
+  return assignments.filter((row) => row.eventKey == null);
+}

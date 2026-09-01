@@ -165,7 +165,7 @@ async function fetchLinkJson(path: string, body: unknown): Promise<{ status: num
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   });
-  let json: unknown = null;
+  let json: unknown;
   try {
     json = await response.json();
   } catch {

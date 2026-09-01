@@ -55,7 +55,9 @@ npx vantage-cad login
 A real Chromium window opens on Onshape. You sign in yourself — password, SSO, 2FA, whatever your
 school or team uses. Nothing is typed for you. When Onshape reports a signed-in user, the session
 cookies are written to `~/.vantage-cad/onshape-session.json` with mode `0600`, and the CLI then proves
-the saved session works **outside** the browser with one call to `/users/current`.
+the saved session works by reopening a local Playwright Onshape page and calling `/users/current`
+with `window.fetch`. CAD requests use that same browser page; they are not replayed by Node as
+standalone cookie-authenticated REST requests.
 
 ```text
 npx vantage-cad login --status    # is a session saved, and what has this machine spent?
@@ -71,18 +73,18 @@ claude mcp add vantage-cad -- node packages/vantage-cad-cli/bin/vantage-cad.mjs 
 
 This repo also ships `.mcp.json` with that exact command, so from the repo root it is enough to start a
 new Claude Code session. `/mcp` lists the connected servers — `vantage-cad` should be there with
-**35 tools** (27 per-operation, 8 pipeline). If it is missing or the new tools are not listed, restart
+**41 tools** (33 per-operation, 8 pipeline). If it is missing or the new tools are not listed, restart
 Claude Code rather than retrying a tool call.
 
 ### What the browser-session path is, honestly
 
-Onshape publishes no supported contract for a third-party process replaying browser session cookies
-against `/api/`, and their Terms of Use prohibit accessing the service "by any robot, spider, scraper
-or other automated means". This flow drives **your own account, in a window you signed into yourself,
-at your own instruction** — but it is not an Onshape-blessed integration path, and that is a judgement
-for the account owner to make. Nothing about the cookie names is hardcoded (every `onshape.com` cookie
-the browser holds is stored), and expiry is detected from a real 401 or sign-in redirect rather than
-guessed, because Onshape does not publish a cookie lifetime either.
+The local CLI opens a real Playwright Chromium window, restores only the saved `onshape.com` cookies,
+and executes requests from the Onshape page with `window.fetch`. Onshape's published limit page says
+calls made from the Onshape browser with session authentication are not deducted from the annual API
+allowance. This is still browser automation of **your own account**, so use it only for documents you
+are allowed to edit and at your own instruction. Vantage does not type credentials, bypass 2FA, scrape
+public documents, or upload the session to the hosted app. Expiry is detected from a real 401 or
+sign-in redirect because Onshape does not publish session-cookie lifetimes.
 
 If that trade is not one you want to make, use API keys and watch the ledger.
 
@@ -100,7 +102,7 @@ Keys come from <https://dev-portal.onshape.com/keys>. `ONSHAPE_API_KEY` / `ONSHA
 aliases. **Every successful call on this path is deducted from the annual allowance above.** The tools
 still work; they just say so in every result, and `cad_auth_status` names the path it resolved.
 
-Resolution order is fixed: saved browser session → OAuth → API keys. A saved-but-expired session never
+Resolution order is fixed: saved Playwright browser session → OAuth → API keys. A saved-but-expired session never
 quietly falls through to a paid path — either it raises "run `vantage-cad login` again", or, if keys
 are also configured, it uses them *and warns that the run is now spending the cap*.
 
@@ -283,6 +285,22 @@ working by design.
 Use these when the part schema does not fit, or on Fusion. **Each one is a REST call**, so a five-step
 build is five calls; on the API-key path that is five off the annual allowance.
 
+The native manual path does not require FeatureScript:
+
+```text
+onshape_create_part_studio
+→ onshape_sketch_rectangle
+→ onshape_extrude
+→ onshape_body_details
+→ onshape_create_assembly
+→ onshape_add_assembly_instance (twice)
+→ onshape_mate
+→ onshape_get_assembly
+```
+
+These tools create ordinary Onshape sketches, extrudes, Part Studios, instances, mate connectors, and
+mates. A student can open every result in Onshape and continue editing it manually.
+
 Every Onshape tool works on the **bound Part Studio**. `onshape_bind` (or `cad_open_document`) stores
 the document, workspace and element ids in `~/.vantage-cad/claude-session.json` — ids only, never
 secrets. Binding also scopes **undo**: `onshape_delete_feature` will only delete a feature Vantage
@@ -296,6 +314,12 @@ created in the current binding, so it can never eat hand-built history.
 | `onshape_list_documents` | yes | — | Recent documents for the connected account. |
 | `onshape_list_elements` | yes | — | Elements (Part Studios) in a document workspace. |
 | `onshape_bind` | yes | — | Remember the Part Studio this session edits. |
+| `onshape_create_part_studio` | yes | — | Create and bind a native Part Studio element. |
+| `onshape_body_details` | yes | — | Native part and face ids used for insertion and mating. |
+| `onshape_create_assembly` | yes | — | Create a native Assembly element. |
+| `onshape_add_assembly_instance` | yes | — | Insert a part, whole Part Studio, or sub-assembly. |
+| `onshape_mate` | yes | — | FASTENED / REVOLUTE / SLIDER / CYLINDRICAL mate between two instance faces. |
+| `onshape_get_assembly` | yes | — | Verify instances, occurrences, and mate features. |
 | `onshape_describe` | yes | yes | The feature tree, with plain-English explanations. |
 | `onshape_sketch_rectangle` | yes | yes | Rectangle sketch on Front/Top/Right, in mm. |
 | `onshape_sketch_circle` | yes | yes | One or more circles. <br>_Fusion draws one per sketch._ |
@@ -318,9 +342,10 @@ created in the current binding, so it can never eat hand-built history.
 | `fusion_chamfer` | — | yes | Bevel every edge of the most recent body. |
 | `fusion_undo_last` | — | yes | Delete the most recent feature the relay created. |
 
-Selections are never guessed. Edges, faces and vertices are resolved by evaluating a read-only
-FeatureScript query against the real model first (`packages/cad/src/onshape-resolve.ts`); if nothing
-matches, the tool says so and changes nothing.
+Selections are never guessed. `onshape_body_details` obtains native part and face ids without
+FeatureScript for assembly work. Fillet/chamfer/pattern convenience selectors still use a read-only
+FeatureScript query (`packages/cad/src/onshape-resolve.ts`); callers can avoid that path by supplying
+explicit ids where the tool accepts them.
 
 ---
 
@@ -371,7 +396,7 @@ vantage-cad <login|setup|start|status|diagnose|doctor|update|logout|claude|mcp|a
 | `vantage-cad start` | Run the relay bridge (and the in-process mock plugin under `VANTAGE_CAD_MOCK=1`). |
 | `vantage-cad update` | Reinstall the CLI and the Fusion add-in so both match the server. |
 | `vantage-cad logout` | Forget this device's pairing. |
-| `vantage-cad onshape docs\|elements\|bind\|describe\|sketch\|extrude` | Direct Onshape subcommands. |
+| `vantage-cad onshape docs\|elements\|bind\|describe\|sketch\|extrude\|create-part-studio\|body-details\|create-assembly\|add-instance\|mate\|assembly` | Direct native Onshape subcommands. |
 | `vantage-cad fusion ping\|describe\|sketch\|extrude` | Direct Fusion subcommands. |
 
 `vantage-cad status` and `vantage-cad login --status` both print the call ledger: how many calls this

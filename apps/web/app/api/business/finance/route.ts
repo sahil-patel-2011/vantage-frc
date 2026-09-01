@@ -3,6 +3,10 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 import {
+  syncFundingSourceMoney,
+  syncPurchaseLogMoney,
+} from "../../../../lib/finance/source-mirrors";
+import {
   computeSeasonFinanceView,
   parseFundingSourceInput,
   parsePurchaseLogInput,
@@ -72,10 +76,11 @@ export async function POST(request: Request) {
         if (!admin) throw new Error("Only owners and admins can post funding sources.");
         const parsed = parseFundingSourceInput(raw);
         if (action === "add-funding") {
-          await client.query(
+          const inserted = await client.query<{ id: string }>(
             `INSERT INTO finance_funding_sources
                (org_id, season_year, kind, name, planned_usd, received_usd, received_on, notes, created_by)
-             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::date, $8, $9::uuid)`,
+             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::date, $8, $9::uuid)
+             RETURNING id`,
             [
               orgId,
               seasonYear,
@@ -88,14 +93,32 @@ export async function POST(request: Request) {
               session.user.id,
             ],
           );
+          await syncFundingSourceMoney(client, {
+            orgId,
+            fundingSourceId: inserted.rows[0]!.id,
+            seasonYear,
+            kind: parsed.kind,
+            name: parsed.name,
+            receivedUsd: parsed.receivedUsd,
+            receivedOn: parsed.receivedOn,
+            userId: session.user.id,
+          });
         } else {
           const fundingId = uuidOrNull(raw.fundingId);
           if (!fundingId) throw new Error("fundingId is required");
-          await client.query(
+          const updated = await client.query<{
+            seasonYear: number;
+            kind: string;
+            name: string;
+            receivedUsd: string;
+            receivedOn: string | null;
+          }>(
             `UPDATE finance_funding_sources
              SET kind = $3, name = $4, planned_usd = $5, received_usd = $6, received_on = $7::date,
                  notes = $8, updated_at = now()
-             WHERE id = $1::uuid AND org_id = $2::uuid`,
+             WHERE id = $1::uuid AND org_id = $2::uuid
+             RETURNING season_year AS "seasonYear", kind, name, received_usd::text AS "receivedUsd",
+                       received_on::text AS "receivedOn"`,
             [
               fundingId,
               orgId,
@@ -107,6 +130,18 @@ export async function POST(request: Request) {
               parsed.notes,
             ],
           );
+          if (!updated.rows[0]) throw new Error("Funding source not found");
+          const row = updated.rows[0];
+          await syncFundingSourceMoney(client, {
+            orgId,
+            fundingSourceId: fundingId,
+            seasonYear: row.seasonYear,
+            kind: row.kind,
+            name: row.name,
+            receivedUsd: Number(row.receivedUsd) || 0,
+            receivedOn: row.receivedOn,
+            userId: session.user.id,
+          });
         }
       } else if (action === "delete-funding") {
         if (!admin) throw new Error("Only owners and admins can remove funding sources.");
@@ -116,6 +151,15 @@ export async function POST(request: Request) {
           `DELETE FROM finance_funding_sources WHERE id = $1::uuid AND org_id = $2::uuid`,
           [fundingId, orgId],
         );
+        await syncFundingSourceMoney(client, {
+          orgId,
+          fundingSourceId: fundingId,
+          seasonYear,
+          kind: "other",
+          name: "Removed funding source",
+          receivedUsd: 0,
+          userId: session.user.id,
+        });
       } else if (action === "add-purchase") {
         const parsed = parsePurchaseLogInput(raw);
         if (parsed.categoryId) {
@@ -125,11 +169,12 @@ export async function POST(request: Request) {
           );
           if (!category.rowCount) throw new Error("Budget category was not found for this season.");
         }
-        await client.query(
+        const inserted = await client.query<{ id: string }>(
           `INSERT INTO finance_purchase_log
              (org_id, season_year, purchased_on, vendor, item, category_id, amount_usd, payment_method,
               receipt_url, notes, created_by)
-           VALUES ($1::uuid, $2, $3::date, $4, $5, $6::uuid, $7, $8, $9, $10, $11::uuid)`,
+           VALUES ($1::uuid, $2, $3::date, $4, $5, $6::uuid, $7, $8, $9, $10, $11::uuid)
+           RETURNING id`,
           [
             orgId,
             seasonYear,
@@ -144,6 +189,17 @@ export async function POST(request: Request) {
             session.user.id,
           ],
         );
+        await syncPurchaseLogMoney(client, {
+          orgId,
+          purchaseLogId: inserted.rows[0]!.id,
+          seasonYear,
+          vendor: parsed.vendor,
+          item: parsed.item,
+          amountUsd: parsed.amountUsd,
+          purchasedOn: parsed.purchasedOn,
+          categoryId: parsed.categoryId,
+          userId: session.user.id,
+        });
       } else if (action === "mark-reimbursed") {
         if (!admin) throw new Error("Only owners and admins can mark reimbursements repaid.");
         const purchaseId = uuidOrNull(raw.purchaseId);
@@ -162,6 +218,16 @@ export async function POST(request: Request) {
           `DELETE FROM finance_purchase_log WHERE id = $1::uuid AND org_id = $2::uuid`,
           [purchaseId, orgId],
         );
+        await syncPurchaseLogMoney(client, {
+          orgId,
+          purchaseLogId: purchaseId,
+          seasonYear,
+          vendor: "Removed",
+          item: "purchase",
+          amountUsd: 0,
+          purchasedOn: new Date(),
+          userId: session.user.id,
+        });
       } else {
         throw new Error("Unknown finance action");
       }

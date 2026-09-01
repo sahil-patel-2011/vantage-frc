@@ -22,7 +22,6 @@ import {
   DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
   WIDGET_CATALOG,
-  WIDGET_SIZE_KEYS,
   WIDGET_SIZE_LABEL,
   applyWidgetSize,
   canAccessWidget,
@@ -64,18 +63,26 @@ import {
   dashboardSetupBlurb,
   dashboardSetupSteps,
   dashboardSetupTitle,
+  type DashboardShellKind,
 } from "../../lib/dashboard/dashboard-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { Icon } from "../../components/app-shell";
+import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
-import { DashboardWidgetView, LiveCountdown } from "./widgets";
+import { DashboardGridItem } from "./dashboard-grid-item";
+import { LiveCountdown } from "./widgets";
 import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
-import { Badge } from "../../components/ui";
+import { Badge, Modal } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
-import "./dashboard-editor.css";
+import {
+  mergeDashboardContext,
+  mergeDashboardWidgets,
+  snapshotPollWidgetTypes,
+} from "../../lib/dashboard/refresh";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import "./dashboard-dnd.css";
 
 type Me = {
@@ -115,6 +122,7 @@ type SnapFeedback = {
 };
 
 const POLL_MS = 30_000;
+const CONTEXT_REFRESH_MS = 5 * 60_000;
 
 /** Below this container width the board becomes a single scrollable column. */
 const SINGLE_COLUMN_MAX = 720;
@@ -169,8 +177,11 @@ function greeting() {
 
 /** Phone/tablet/laptop grid, collapsed to one column on a narrow canvas. */
 function resolveGrid(width: number) {
-  const base = dashboardGridForWidth(width || 1280);
-  if (width > 0 && width < SINGLE_COLUMN_MAX) {
+  if (width <= 0) {
+    return { ...dashboardGridForWidth(390), cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
+  }
+  const base = dashboardGridForWidth(width);
+  if (width < SINGLE_COLUMN_MAX) {
     return { ...base, cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
   }
   return base;
@@ -250,14 +261,15 @@ type DragView = {
   size: { width: number; height: number };
 };
 
-export default function DashboardClient() {
+export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
-  const [me, setMe] = useState<Me>({});
+  const [me, setMe] = useState<Me>({ orgId: initialOrgId || undefined });
   const [board, setBoard] = useState<BoardState | null>(null);
   const [layout, setLayout] = useState<DashboardWidgetLayout[]>(DEFAULT_DASHBOARD_LAYOUT);
   const [widgets, setWidgets] = useState<Record<string, WidgetPayload>>({});
   const [context, setContext] = useState<Record<string, unknown>>({});
   const [editing, setEditing] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [scope, setScope] = useState<"personal" | "org">("personal");
   const [canShareOrg, setCanShareOrg] = useState(false);
@@ -291,55 +303,60 @@ export default function DashboardClient() {
   const layoutRef = useRef(layout);
   const displayRef = useRef<DashboardWidgetLayout[]>([]);
   const grabBaseRef = useRef<DashboardWidgetLayout[] | null>(null);
+  const shellRef = useRef<DashboardShellKind>("loading");
 
-  const loadBoard = useCallback(async (id: string, preferredBoardId?: string | null) => {
+  const loadSnapshot = useCallback(async (
+    id: string,
+    types?: DashboardWidgetType[],
+    opts?: { fullContext?: boolean; signal?: AbortSignal },
+  ) => {
+    const requested = types ?? snapshotPollWidgetTypes(layoutRef.current, { shell: shellRef.current });
+    const qs = new URLSearchParams({ orgId: id, mode: "snapshot" });
+    if (requested.length) qs.set("widgets", [...new Set(requested)].join(","));
+    if (opts?.fullContext) qs.set("context", "full");
+    const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal: opts?.signal });
+    if (!response.ok) return;
+    const data = await response.json();
+    setWidgets((current) => mergeDashboardWidgets(current, data.widgets));
+    setContext((current) => mergeDashboardContext(current, data.context));
+    setUpdatedAt(new Date().toISOString());
+  }, []);
+
+  const loadHome = useCallback(async (id: string, preferredBoardId?: string | null) => {
     const stored = preferredBoardId === undefined ? readStoredBoardId(id, userId) : preferredBoardId;
-    const qs = new URLSearchParams({ orgId: id });
+    const qs = new URLSearchParams({ orgId: id, mode: "home" });
     if (stored) qs.set("boardId", stored);
     const response = await fetch(`/api/dashboards?${qs.toString()}`);
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       setMessageKind("error");
       setMessage(err.error ?? "Could not load dashboard");
-      setLayout(DEFAULT_DASHBOARD_LAYOUT);
-      setBoards([]);
-      setBoard({
-        id: null,
-        name: "Default home",
-        scope: "personal",
-        layout: DEFAULT_DASHBOARD_LAYOUT,
-        isDefault: true,
-      });
       return;
     }
     const data = await response.json();
+    const nextLayout = data.active?.layout?.length ? data.active.layout : DEFAULT_DASHBOARD_LAYOUT;
     setRole(data.role ?? null);
     setCanShareOrg(Boolean(data.canShareOrg));
     setBoards(Array.isArray(data.boards) ? data.boards : []);
     setBoard(data.active);
     setScope(data.active?.scope === "org" ? "org" : "personal");
-    setLayout(data.active?.layout?.length ? data.active.layout : DEFAULT_DASHBOARD_LAYOUT);
-    if (data.active?.id) writeStoredBoardId(id, userId, data.active.id);
-  }, [userId]);
-
-  const loadSnapshot = useCallback(async (id: string) => {
-    const response = await fetch(`/api/dashboards?orgId=${encodeURIComponent(id)}&mode=snapshot`);
-    if (!response.ok) return;
-    const data = await response.json();
+    setLayout(nextLayout);
     setWidgets(data.widgets ?? {});
     setContext(data.context ?? {});
     setUpdatedAt(new Date().toISOString());
-  }, []);
+    if (data.active?.id) writeStoredBoardId(id, userId, data.active.id);
+  }, [userId]);
 
   useEffect(() => {
-    void fetch("/api/me")
-      .then(async (response) => (response.ok ? await response.json() : null))
+    const fromUrl = readOrgIdFromSearch(window.location.search) ?? initialOrgId;
+    void fetchProductSession(fromUrl || null)
       .then((data) => {
         if (!data) return;
+        const nextOrg = typeof data.orgId === "string" && data.orgId ? data.orgId : fromUrl;
         setMe({
           userId: typeof data.userId === "string" ? data.userId : undefined,
-          name: data.firstName || data.name,
-          orgId: data.orgId,
+          name: data.firstName || data.name || undefined,
+          orgId: nextOrg || undefined,
           orgName: data.orgName,
           teamNumber: data.teamNumber,
           role: data.role,
@@ -349,10 +366,11 @@ export default function DashboardClient() {
         if (typeof data.tbaConfigured === "boolean") {
           setContext((current) => ({ ...current, tbaConfigured: data.tbaConfigured }));
         }
+        if (nextOrg && !readOrgIdFromSearch(window.location.search)) persistOrgIdInUrl(nextOrg);
       })
       .catch(() => undefined)
       .finally(() => setMeLoaded(true));
-  }, []);
+  }, [initialOrgId]);
 
   useEffect(() => {
     if (!orgId) {
@@ -366,16 +384,53 @@ export default function DashboardClient() {
       });
       return;
     }
-    void loadBoard(orgId);
-    void loadSnapshot(orgId);
-    const timer = window.setInterval(() => void loadSnapshot(orgId), POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [orgId, loadBoard, loadSnapshot]);
+    void loadHome(orgId);
+    let cancelled = false;
+    let timer: number | null = null;
+    let inFlight: AbortController | null = null;
+    let lastFull = Date.now();
+
+    const poll = async () => {
+      if (cancelled || document.visibilityState === "hidden" || inFlight) return;
+      const controller = new AbortController();
+      inFlight = controller;
+      const fullContext = Date.now() - lastFull >= CONTEXT_REFRESH_MS;
+      try {
+        await loadSnapshot(orgId, undefined, { fullContext, signal: controller.signal });
+        if (fullContext) lastFull = Date.now();
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      } finally {
+        if (inFlight === controller) inFlight = null;
+      }
+    };
+
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        void poll().finally(() => {
+          if (!cancelled) schedule();
+        });
+      }, POLL_MS);
+    };
+    schedule();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
+      inFlight?.abort();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [orgId, loadHome, loadSnapshot]);
 
   useEffect(() => {
-    document.body.classList.toggle("dash-editing", editing);
+    document.body.classList.toggle("dash-editing", editing || previewing);
     return () => document.body.classList.remove("dash-editing");
-  }, [editing]);
+  }, [editing, previewing]);
 
   useEffect(() => {
     layoutRef.current = layout;
@@ -445,6 +500,7 @@ export default function DashboardClient() {
     setMessage(`${entry?.label ?? type} added to the board.`);
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
+    if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type));
   }
 
   function tidyLayout() {
@@ -555,7 +611,8 @@ export default function DashboardClient() {
       setGrabbedId(null);
       setMessageKind("success");
       setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
-      await loadBoard(orgId, data.id);
+      setPreviewing(false);
+      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
@@ -589,7 +646,7 @@ export default function DashboardClient() {
       setBoardsOpen(false);
       setMessageKind("success");
       setMessage(`Switched to ${data.name}`);
-      await loadBoard(orgId, data.id);
+      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
@@ -632,7 +689,7 @@ export default function DashboardClient() {
       setBoardsOpen(false);
       setMessageKind("success");
       setMessage(`Created ${data.name}. Arrange widgets, then Done.`);
-      await loadBoard(orgId, data.id);
+      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
@@ -677,7 +734,7 @@ export default function DashboardClient() {
       setBoardsOpen(false);
       setMessageKind("success");
       setMessage(`Duplicated to ${data.name}. It is yours to edit.`);
-      await loadBoard(orgId, data.id);
+      await loadHome(orgId, data.id);
     } finally {
       setSaving(false);
     }
@@ -742,7 +799,7 @@ export default function DashboardClient() {
       setRenameId(null);
       setMessageKind("success");
       setMessage(`Deleted ${target.name}`);
-      await loadBoard(orgId, data.activatedId ?? null);
+      await loadHome(orgId, data.activatedId ?? null);
     } finally {
       setSaving(false);
     }
@@ -751,6 +808,7 @@ export default function DashboardClient() {
   function cancelEditing() {
     setLayout(board?.layout ?? DEFAULT_DASHBOARD_LAYOUT);
     setEditing(false);
+    setPreviewing(false);
     setLibraryOpen(false);
     setGrabbedId(null);
     setMessage("");
@@ -758,6 +816,7 @@ export default function DashboardClient() {
 
   function enterEditMode() {
     setEditing(true);
+    setPreviewing(false);
     setLibraryOpen(false);
     setMessageKind("success");
     setMessage(
@@ -791,13 +850,17 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Reset failed");
         return;
       }
-      const nextLayout = data.layout ?? DEFAULT_DASHBOARD_LAYOUT;
+      const nextLayout: DashboardWidgetLayout[] = Array.isArray(data.layout)
+        ? data.layout
+        : DEFAULT_DASHBOARD_LAYOUT;
       setLayout(nextLayout);
       setBoard((current) => (current ? { ...current, layout: nextLayout } : current));
       setMessageKind("success");
       setMessage("Reset to default home widgets.");
       setEditing(false);
+      setPreviewing(false);
       setLibraryOpen(false);
+      if (orgId) await loadSnapshot(orgId, nextLayout.map((item) => item.type), { fullContext: true });
     } finally {
       setSaving(false);
     }
@@ -832,11 +895,12 @@ export default function DashboardClient() {
   const nextMatchData =
     nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
   const dashShell = classifyDashboardShell({
-    loaded: meLoaded,
+    loaded: meLoaded || Boolean(orgId && updatedAt),
     orgId: orgId || null,
     setupRequired,
     tbaConfigured,
   });
+  shellRef.current = dashShell;
   const nextActions = dashboardNextActions({
     orgId: orgId || null,
     shell: dashShell,
@@ -853,17 +917,19 @@ export default function DashboardClient() {
     role,
   });
 
-  const viewLayout = homeViewLayout(layout, { editing, shell: dashShell, widgets });
-  const grid = resolveGrid(mounted ? width : 1280);
+  const viewLayout = useMemo(
+    () => homeViewLayout(layout, { editing, shell: dashShell, widgets }),
+    [layout, editing, dashShell, widgets],
+  );
+  const grid = resolveGrid(width);
   const gap = grid.margin[0];
   const cols = grid.cols;
-  const canvasWidth = width > 0 ? width : 960;
+  const canvasWidth = width;
 
   /** What is actually painted: the saved 12-column board scaled to this screen. */
   const displayLayout = useMemo(
     () => compactLayout(scaleLayoutToCols(viewLayout, DASHBOARD_COLUMNS, cols), cols),
-    // viewLayout is derived each render; keying on its shape keeps this cheap.
-    [JSON.stringify(viewLayout), cols],
+    [viewLayout, cols],
   );
 
   useEffect(() => {
@@ -1277,6 +1343,36 @@ export default function DashboardClient() {
       ? cellBox({ x: drag.cell.col, y: drag.cell.row, ...drag.span }, canvasWidth, cols, grid.rowHeight, gap)
       : null;
   const boardIsEmpty = layout.length === 0;
+  const quickStart = [
+    {
+      id: "my-day",
+      label: "My day",
+      detail: "Assignments and next match",
+      href: withOrgHref("/my-day", orgId || null),
+      icon: "calendar" as const,
+    },
+    {
+      id: "scout",
+      label: "Scout",
+      detail: "Open your event form",
+      href: hubHref("/competition", "scouting", orgId || null),
+      icon: "clipboard" as const,
+    },
+    {
+      id: "work",
+      label: "Work",
+      detail: "Your open team tasks",
+      href: withOrgHref("/todos", orgId || null),
+      icon: "grid" as const,
+    },
+    {
+      id: "messages",
+      label: "Messages",
+      detail: "Team channels and DMs",
+      href: hubHref("/team", "messages", orgId || null),
+      icon: "chat" as const,
+    },
+  ];
 
   return (
     <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
@@ -1344,7 +1440,7 @@ export default function DashboardClient() {
               {tbaConfigured === false ? "Connect TBA" : "Select event"}
             </a>
           ) : null}
-          {!editing ? (
+          {!editing && !previewing ? (
             <button
               className="app-button secondary dash-edit-trigger"
               type="button"
@@ -1382,6 +1478,29 @@ export default function DashboardClient() {
         </div>
       </header>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
+
+      {orgId && meLoaded && !editing ? (
+        <nav className="dash-quick-start" aria-label="Quick start">
+          <div className="dash-quick-start-heading">
+            <strong>Jump back in</strong>
+            <span>Four common team jobs, always one tap away</span>
+          </div>
+          <div className="dash-quick-start-links">
+            {quickStart.map((item) => (
+              <a key={item.id} href={item.href}>
+                <i aria-hidden="true">
+                  <Icon name={item.icon} />
+                </i>
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </span>
+                <b aria-hidden="true">→</b>
+              </a>
+            ))}
+          </div>
+        </nav>
+      ) : null}
 
       {orgId && !editing && homeStripItems.length > 0 ? (
         <section
@@ -1669,17 +1788,18 @@ export default function DashboardClient() {
               ref={setCanvasNode}
               className="dash-grid dash-pgrid"
               data-editing={editing ? "true" : "false"}
-              data-measured={measured ? "true" : "false"}
+              data-measured={measured && width > 0 ? "true" : "false"}
               style={
                 {
-                  height: `${Math.max(gridHeight, grid.rowHeight)}px`,
+                  height: `${Math.max(width > 0 ? gridHeight : 240, grid.rowHeight)}px`,
                   "--dash-cols": cols,
                   "--dash-row-h": `${grid.rowHeight}px`,
                   "--dash-gap": `${gap}px`,
                 } as CSSProperties
               }
             >
-              {dropBox ? (
+              {width <= 0 ? <div className="dash-grid-skeleton" aria-hidden="true" /> : null}
+              {width > 0 && dropBox ? (
                 <div
                   className="dash-drop-slot"
                   aria-hidden="true"
@@ -1693,143 +1813,47 @@ export default function DashboardClient() {
                 </div>
               ) : null}
 
-              {displayLayout.map((item) => {
-                const box = cellBox(item, canvasWidth, cols, grid.rowHeight, gap);
-                const label = catalogEntry(item.type)?.label ?? item.type;
-                const isDraggingThis = drag?.kind === "move" && drag.id === item.i;
-                const isGrabbed = grabbedId === item.i;
-                // Deliberately no `jiggling` class: it animates `transform`,
-                // which is what places this card on the grid.
-                return (
-                  <article
-                    key={item.i}
-                    className={`dash-grid-item${editing ? " is-editing" : ""}${
-                      isDraggingThis ? " is-dragging" : ""
-                    }${isGrabbed ? " is-grabbed" : ""}`}
-                    data-testid="dash-grid-item"
-                    data-widget-type={item.type}
-                    data-widget-x={item.x}
-                    data-widget-y={item.y}
-                    style={{
-                      transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
-                      width: `${box.width}px`,
-                      height: `${box.height}px`,
-                    }}
-                    onPointerDown={(event) => {
-                      if (!editing) return;
-                      const target = event.target as HTMLElement;
-                      if (target.closest("button, a, input, select, textarea")) return;
-                      beginCardDrag(event, item, "longpress");
-                    }}
-                    onPointerMove={onDragPointerMove}
-                    onPointerUp={onDragPointerUp}
-                    onPointerCancel={onDragPointerCancel}
-                  >
-                    {editing ? (
-                      <>
-                        <div className="dash-item-tools">
-                          <button
-                            type="button"
-                            className="dash-remove-btn"
-                            data-testid="dash-remove-widget"
-                            title="Remove widget"
-                            aria-label={`Remove ${label}`}
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              removeWidget(item.i);
-                            }}
-                          >
-                            <Icon name="x" />
-                            <span>Remove</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="dash-drag-handle dash-drag-surface"
-                            data-testid="dash-drag-handle"
-                            aria-label={`Move ${label}. Press space to pick up, then use the arrow keys.`}
-                            aria-pressed={isGrabbed}
-                            title="Drag to rearrange, or press space and use arrow keys"
-                            onPointerDown={(event) => {
-                              event.stopPropagation();
-                              beginCardDrag(event, item, "immediate");
-                            }}
-                            onPointerMove={onDragPointerMove}
-                            onPointerUp={onDragPointerUp}
-                            onPointerCancel={onDragPointerCancel}
-                            onKeyDown={(event) => onHandleKeyDown(event, item)}
-                            onClick={(event) => event.preventDefault()}
-                          >
-                            <span className="dash-drag-dots" aria-hidden="true" />
-                            <span className="dash-drag-label">{isGrabbed ? "Moving" : "Drag"}</span>
-                          </button>
-                        </div>
-                        <div
-                          className="dash-item-sizes"
-                          role="group"
-                          aria-label={`Resize ${label}`}
-                          onPointerDown={(event) => event.stopPropagation()}
-                        >
-                          <span aria-hidden="true">Size</span>
-                          <div className="dash-size-chips">
-                            {WIDGET_SIZE_KEYS.map((size) => {
-                              const current = inferWidgetSize(
-                                layout.find((entry) => entry.i === item.i) ?? item,
-                              );
-                              return (
-                                <button
-                                  key={size}
-                                  type="button"
-                                  className="dash-size-btn"
-                                  data-active={current === size}
-                                  title={`${WIDGET_SIZE_LABEL[size]} widget`}
-                                  aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
-                                  aria-pressed={current === size}
-                                  onClick={() => setWidgetSize(item.i, size)}
-                                >
-                                  {WIDGET_SIZE_LABEL[size]}
-                                </button>
-                              );
-                            })}
-                            {(() => {
-                              const entry = catalogEntry(item.type);
-                              const saved = layout.find((row) => row.i === item.i) ?? item;
-                              const atDefault =
-                                !entry || (saved.w === entry.defaultW && saved.h === entry.defaultH);
-                              return (
-                                <button
-                                  type="button"
-                                  className="dash-size-btn dash-size-reset"
-                                  data-testid="dash-reset-widget-size"
-                                  disabled={atDefault}
-                                  title={
-                                    atDefault
-                                      ? `${label} is already at its default size`
-                                      : `Reset ${label} to its default size`
-                                  }
-                                  aria-label={`Reset ${label} to its default size`}
-                                  onClick={() => resetWidgetSize(item.i)}
-                                >
-                                  Reset
-                                </button>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      </>
-                    ) : null}
-                    <div className="dash-widget-hit">
-                      <DashboardWidgetView
-                        type={item.type}
+              {width > 0
+                ? displayLayout.map((item) => {
+                    const box = cellBox(item, canvasWidth, cols, grid.rowHeight, gap);
+                    const label = catalogEntry(item.type)?.label ?? item.type;
+                    const saved = layout.find((row) => row.i === item.i) ?? item;
+                    const entry = catalogEntry(item.type);
+                    return (
+                      <DashboardGridItem
+                        key={item.i}
+                        item={item}
+                        box={box}
+                        label={label}
+                        editing={editing}
+                        isDragging={drag?.kind === "move" && drag.id === item.i}
+                        isGrabbed={grabbedId === item.i}
+                        currentSize={inferWidgetSize(saved)}
+                        atDefault={!entry || (saved.w === entry.defaultW && saved.h === entry.defaultH)}
                         payload={widgets[item.type]}
                         orgId={orgId}
                         tbaConfigured={tbaConfigured}
+                        onCardPointerDown={(event, target) => {
+                          if (!editing) return;
+                          const node = event.target as HTMLElement;
+                          if (node.closest("button, a, input, select, textarea")) return;
+                          beginCardDrag(event, target, "longpress");
+                        }}
+                        onHandlePointerDown={(event, target) => {
+                          event.stopPropagation();
+                          beginCardDrag(event, target, "immediate");
+                        }}
+                        onDragPointerMove={onDragPointerMove}
+                        onDragPointerUp={onDragPointerUp}
+                        onDragPointerCancel={onDragPointerCancel}
+                        onHandleKeyDown={onHandleKeyDown}
+                        onRemove={removeWidget}
+                        onResize={setWidgetSize}
+                        onResetSize={resetWidgetSize}
                       />
-                    </div>
-                  </article>
-                );
-              })}
+                    );
+                  })
+                : null}
             </div>
           )}
         </section>
@@ -1882,6 +1906,7 @@ export default function DashboardClient() {
             data-testid="dash-preview"
             onClick={() => {
               setEditing(false);
+              setPreviewing(true);
               setLibraryOpen(false);
             }}
           >
@@ -1898,90 +1923,85 @@ export default function DashboardClient() {
         </div>
       ) : null}
 
-      {!editing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
-
-      {editing && libraryOpen ? (
-        <>
-          <button className="dash-library-scrim" type="button" aria-label="Close widget library" onClick={() => setLibraryOpen(false)} />
-          <aside className="dash-library-sheet" role="dialog" aria-modal="true" aria-labelledby="dash-library-title">
-            <header>
-              <div>
-                <h2 id="dash-library-title">Widget library</h2>
-                <p>One of each type per board. Tap to add, then drag the card into place.</p>
-              </div>
-              <button type="button" className="soft-icon-btn" aria-label="Close" onClick={() => setLibraryOpen(false)}>
-                <Icon name="x" />
-              </button>
-            </header>
-            {addableEntries.length === 0 ? (
-              <p className="dash-library-empty">Every widget you can use is already on your Home Screen.</p>
-            ) : (
-              <ul className="dash-library-grid">
-                {addableEntries.map(({ entry }) => {
-                  const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
-                  return (
-                    <li key={entry.type}>
-                      <button type="button" onClick={() => addWidget(entry.type)} title={entry.description}>
-                        <i>
-                          <Icon name={icon} />
-                        </i>
-                        <strong>{entry.label}</strong>
-                        <span>{entry.description}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="dash-library-onboard">
-              <p>Not addable right now</p>
-              <div className="dash-catalog">
-                {paletteEntries
-                  .filter((row) => row.status !== "add")
-                  .map(({ entry, status, reason }) => (
-                    <button key={entry.type} type="button" disabled title={reason ?? undefined}>
-                      {status === "placed" ? `On board · ${entry.label}` : `${entry.label} · ${reason}`}
-                    </button>
-                  ))}
-                {paletteEntries.every((row) => row.status === "add") ? (
-                  <p className="dash-library-empty">Nothing is held back — every widget is available.</p>
-                ) : null}
-              </div>
-            </div>
-          </aside>
-        </>
+      {previewing ? (
+        <div className="dash-edit-dock dash-preview-dock" role="status" aria-label="Previewing unsaved home changes">
+          <span>Previewing unsaved changes</span>
+          <button
+            className="dash-dock-ghost"
+            type="button"
+            data-testid="dash-preview-back"
+            onClick={enterEditMode}
+          >
+            Back to edit
+          </button>
+          <button
+            className="dash-dock-done"
+            type="button"
+            disabled={saving}
+            data-testid="dash-preview-save"
+            onClick={() => void save("personal")}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
       ) : null}
 
-      {boardsOpen ? (
-        <>
-          <button
-            className="dash-library-scrim"
-            type="button"
-            aria-label="Close board manager"
-            onClick={() => {
-              setBoardsOpen(false);
-              setRenameId(null);
-            }}
-          />
-          <aside className="dash-boards-sheet" role="dialog" aria-modal="true" aria-labelledby="dash-boards-title">
-            <header>
-              <div>
-                <h2 id="dash-boards-title">Home Screens</h2>
-                <p>Personal boards are yours. Team boards are shared — owner/admin can create and edit them.</p>
-              </div>
-              <button
-                type="button"
-                className="soft-icon-btn"
-                aria-label="Close"
-                onClick={() => {
-                  setBoardsOpen(false);
-                  setRenameId(null);
-                }}
-              >
-                <Icon name="x" />
-              </button>
-            </header>
+      {!editing && !previewing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
 
+      <Modal
+        open={editing && libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        title="Widget library"
+        description="One of each type per board. Tap to add, then drag the card into place."
+        variant="sheet"
+      >
+        {addableEntries.length === 0 ? (
+          <p className="dash-library-empty">Every widget you can use is already on your Home Screen.</p>
+        ) : (
+          <ul className="dash-library-grid">
+            {addableEntries.map(({ entry }) => {
+              const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
+              return (
+                <li key={entry.type}>
+                  <button type="button" onClick={() => addWidget(entry.type)} title={entry.description}>
+                    <i>
+                      <Icon name={icon} />
+                    </i>
+                    <strong>{entry.label}</strong>
+                    <span>{entry.description}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="dash-library-onboard">
+          <p>Not addable right now</p>
+          <div className="dash-catalog">
+            {paletteEntries
+              .filter((row) => row.status !== "add")
+              .map(({ entry, status, reason }) => (
+                <button key={entry.type} type="button" disabled title={reason ?? undefined}>
+                  {status === "placed" ? `On board · ${entry.label}` : `${entry.label} · ${reason}`}
+                </button>
+              ))}
+            {paletteEntries.every((row) => row.status === "add") ? (
+              <p className="dash-library-empty">Nothing is held back — every widget is available.</p>
+            ) : null}
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={boardsOpen}
+        onClose={() => {
+          setBoardsOpen(false);
+          setRenameId(null);
+        }}
+        title="Home Screens"
+        description="Personal boards are yours. Team boards are shared — owner/admin can create and edit them."
+        variant="sheet"
+      >
             <section className="dash-boards-group">
               <p>Personal</p>
               {personalBoards.length === 0 ? (
@@ -2156,9 +2176,7 @@ export default function DashboardClient() {
                 </div>
               ) : null}
             </section>
-          </aside>
-        </>
-      ) : null}
+      </Modal>
     </main>
   );
 }

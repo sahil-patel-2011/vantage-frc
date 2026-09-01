@@ -15,6 +15,7 @@ import {
   updateActionStatus,
   type RetroView,
 } from "../../../lib/retro/compute-retro";
+import { handoffLearnedItems } from "../../../lib/retro/handoff";
 import { RETRO_ITEM_KINDS } from "../../../lib/retro";
 import type { RetroActionStatus, RetroItemKind } from "../../../lib/retro/types";
 
@@ -164,6 +165,26 @@ export async function POST(request: Request) {
         case "generate-postmortem": {
           await generatePostmortem(client, { orgId, userId, seasonYear });
           break;
+        }
+        case "handoff-lessons": {
+          const itemIds = Array.isArray(body.itemIds)
+            ? body.itemIds.filter((id): id is string => typeof id === "string")
+            : null;
+          const lastHandoff = await handoffLearnedItems(client, {
+            orgId,
+            userId,
+            seasonYear,
+            target: body.target,
+            itemIds,
+          });
+          const view = await computeRetroView(client, {
+            userId,
+            requestedOrg: orgId,
+            seasonYear,
+            sessionId,
+          });
+          if (view.status === "live") return { ...view, lastHandoff };
+          return view;
         }
         default:
           throw new Error("Unknown action");

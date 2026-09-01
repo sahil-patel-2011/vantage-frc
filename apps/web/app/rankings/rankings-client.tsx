@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -13,6 +13,12 @@ import {
   type RankedTeam,
   type RankingsView,
 } from "../../lib/rankings";
+import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
+import {
+  RANKINGS_POLL_MS,
+  rankingsCacheRequiredCopy,
+  shouldRefreshRankings,
+} from "../../lib/rankings/tba-cache";
 
 function fmtEpa(value: number | null): string {
   return value == null ? "—" : value.toFixed(1);
@@ -111,14 +117,18 @@ function PlayoffCard({ match, teamKey }: { match: PlayoffMatch; teamKey: string 
 }
 
 export default function RankingsClient() {
+  const cockpit = useCockpitPrefs();
   const [view, setView] = useState<RankingsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [tab, setTab] = useState<"rankings" | "playoffs">("rankings");
+  const inFlightRef = useRef(false);
 
   const load = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -136,16 +146,51 @@ export default function RankingsClient() {
       setView(data);
     } catch {
       setFetchFailed(true);
+    } finally {
+      inFlightRef.current = false;
     }
   }, []);
 
   useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => {
-      void load();
-    }, 60_000);
-    return () => window.clearInterval(timer);
-  }, [load]);
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (
+        !shouldRefreshRankings({
+          visibilityState: document.visibilityState,
+          inFlight: inFlightRef.current,
+          pauseWhenHidden: cockpit.pauseLiveWhenHidden,
+        })
+      ) {
+        return;
+      }
+      await load();
+    };
+
+    void poll();
+
+    const arm = () => {
+      timer = window.setTimeout(() => {
+        void poll().finally(() => {
+          if (!cancelled) arm();
+        });
+      }, RANKINGS_POLL_MS);
+    };
+    arm();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load, cockpit.pauseLiveWhenHidden]);
 
   if (!view) {
     return (
@@ -270,8 +315,8 @@ export default function RankingsClient() {
       {tab === "rankings" ? (
         view.teams.length === 0 ? (
           <div className="app-card rank-empty">
-            <strong>Reference metrics not synced yet</strong>
-            <p className="app-muted">Sync TBA/Statbotics under Team → Data to populate event rankings.</p>
+            <strong>{rankingsCacheRequiredCopy().title}</strong>
+            <p className="app-muted">{rankingsCacheRequiredCopy().description}</p>
             <a className="app-button" href="/team/data">
               Open Team → Data
             </a>
@@ -308,7 +353,7 @@ export default function RankingsClient() {
       ) : groups.length === 0 ? (
         <div className="app-card rank-empty">
           <strong>No elimination matches synced yet</strong>
-          <p className="app-muted">Brackets appear once playoffs begin.</p>
+          <p className="app-muted">The bracket stays blank until TBA cache has playoff rows — never invented slots.</p>
         </div>
       ) : (
         <div className="rank-bracket">

@@ -8,6 +8,7 @@ type Category = {
 type PurchaseRequest = {
   id: string; seasonYear: number; categoryId: string | null; categoryName: string | null; requestedByName: string;
   title: string; itemUrl: string | null; quantity: number; unitCostUsd: string; totalCostUsd: string; status: string;
+  neededBy?: string | null;
 };
 type MonthSummary = { month: string; income: number; expense: number; net: number; overMonthlyLimit: boolean };
 
@@ -28,7 +29,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [totals, setTotals] = useState({ totalIncome: 0, totalExpense: 0, remaining: null as number | null, sponsorCashUsd: 0 });
   const [message, setMessage] = useState("");
   const [budgetForm, setBudgetForm] = useState({ categoryName: "", monthlyLimitUsd: "", totalLimitUsd: "", notes: "" });
-  const [requestForm, setRequestForm] = useState({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "" });
+  const [requestForm, setRequestForm] = useState({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "", neededBy: "" });
 
   async function load() {
     const [budgetRes, requestsRes, summaryRes] = await Promise.all([
@@ -71,7 +72,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     });
     const data = await response.json();
     setMessage(response.ok ? "Purchase request submitted." : data.error);
-    if (response.ok) { setRequestForm({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "" }); await load(); }
+    if (response.ok) { setRequestForm({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "", neededBy: "" }); await load(); }
   }
 
   async function act(id: string, action: string) {
@@ -132,6 +133,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
           </div>
           <label>Category<select value={requestForm.categoryId} onChange={(e) => setRequestForm({ ...requestForm, categoryId: e.target.value })}><option value="">Uncategorized</option>{categories.map((c) => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}</select></label>
           <label>Why do we need this?<input value={requestForm.justification} onChange={(e) => setRequestForm({ ...requestForm, justification: e.target.value })} /></label>
+          <label>Needed by<input required type="date" value={requestForm.neededBy} onChange={(e) => setRequestForm({ ...requestForm, neededBy: e.target.value })} /></label>
           <button className="primary-action">Submit request</button>
         </form>
         <section className="intel-panel invite-list">
@@ -141,7 +143,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
             <article key={r.id}>
               <div>
                 <strong>{r.title}</strong>
-                <small>{r.requestedByName} · {r.quantity} × ${Number(r.unitCostUsd).toFixed(2)} = ${Number(r.totalCostUsd).toFixed(2)} · {r.categoryName ?? "uncategorized"} · {r.status}</small>
+                <small>{r.requestedByName} · {r.quantity} × ${Number(r.unitCostUsd).toFixed(2)} = ${Number(r.totalCostUsd).toFixed(2)} · {r.categoryName ?? "uncategorized"}{r.neededBy ? ` · needed ${r.neededBy}` : ""} · {r.status}</small>
                 {r.itemUrl && <div><a href={r.itemUrl} target="_blank" rel="noreferrer">View item ↗</a></div>}
               </div>
               <div>{(STATUS_ACTIONS[r.status] ?? []).map((a) => <button key={a.action} onClick={() => void act(r.id, a.action)}>{a.label}</button>)}</div>

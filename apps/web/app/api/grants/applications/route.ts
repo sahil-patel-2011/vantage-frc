@@ -1,4 +1,5 @@
 import { withRls } from "@vantage/db";
+import { syncGrantAwardMoney } from "../../../../lib/finance/source-mirrors";
 import {
   requireGrantOpportunityInOrg,
   requireOrgAdmin,
@@ -77,7 +78,14 @@ export async function PATCH(request: Request) {
     if (status && !VALID_STATUSES.includes(status)) throw new Error("Invalid status");
     const application = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await requireOrgAdmin(client, orgId, current.user.id);
-      const result = await client.query(
+      const result = await client.query<{
+        id: string;
+        grantOpportunityId: string | null;
+        seasonYear: number;
+        status: string;
+        amountAwardedUsd: string | null;
+        decisionAt: string | null;
+      }>(
         `UPDATE grant_applications SET
            status=COALESCE($1,status),
            amount_requested_usd=COALESCE($2,amount_requested_usd),
@@ -88,14 +96,33 @@ export async function PATCH(request: Request) {
            decision_at=CASE WHEN $1 IN ('awarded','declined') AND decision_at IS NULL THEN now() ELSE decision_at END,
            updated_at=now()
          WHERE id=$6::uuid AND org_id=$7::uuid
-         RETURNING id, status, amount_requested_usd AS "amountRequestedUsd", amount_awarded_usd AS "amountAwardedUsd"`,
+         RETURNING id, grant_opportunity_id AS "grantOpportunityId", season_year AS "seasonYear", status,
+                   amount_requested_usd AS "amountRequestedUsd",
+                   amount_awarded_usd::text AS "amountAwardedUsd", decision_at::text AS "decisionAt"`,
         [
           status ?? null, body.amountRequestedUsd ?? null, body.amountAwardedUsd ?? null, body.ownerUserId ?? null,
           body.summary ?? null, id, orgId,
         ],
       );
       if (!result.rowCount) throw new Error("Grant application not found");
-      return result.rows[0];
+      const row = result.rows[0]!;
+      const opportunity = row.grantOpportunityId
+        ? await client.query<{ name: string }>(
+            `SELECT name FROM grant_opportunities WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [row.grantOpportunityId, orgId],
+          )
+        : null;
+      await syncGrantAwardMoney(client, {
+        orgId,
+        grantApplicationId: id,
+        seasonYear: row.seasonYear,
+        name: opportunity?.rows[0]?.name ?? "Grant",
+        status: row.status,
+        amountAwardedUsd: Number(row.amountAwardedUsd) || 0,
+        decisionAt: row.decisionAt,
+        userId: current.user.id,
+      });
+      return row;
     });
     return Response.json({ success: true, application });
   } catch (error) {

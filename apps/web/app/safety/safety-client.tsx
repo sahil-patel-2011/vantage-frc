@@ -10,6 +10,7 @@ import {
   type IncidentStatus,
   type Treatment,
 } from "../../lib/safety";
+import { canDeleteSafetyIncident } from "../../lib/safety/authorization";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Incident = {
@@ -120,6 +121,8 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }
 
+  const canDeleteIncidents = canDeleteSafetyIncident(view.context.role);
+
   return (
     <main className="intel-app">
       <header className="intel-header">
@@ -178,6 +181,17 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
             </div>
             <div>
               {NEXT_STATUS[i.status] && <button onClick={() => void post({ action: "set_incident_status", id: i.id, status: NEXT_STATUS[i.status] }, "Incident updated.")}>Mark {NEXT_STATUS[i.status]}</button>}
+              {canDeleteIncidents ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!window.confirm("Delete this incident? The log entry cannot be recovered.")) return;
+                    void post({ action: "delete_incident", id: i.id }, "Incident deleted.");
+                  }}
+                >
+                  Delete
+                </button>
+              ) : null}
               {(i.severity === "serious" || i.severity === "moderate") && i.status !== "closed" && <b>REVIEW</b>}
             </div>
           </article>

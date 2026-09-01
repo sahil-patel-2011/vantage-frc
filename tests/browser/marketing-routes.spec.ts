@@ -11,7 +11,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "How it works" }).click();
   await expect(page).toHaveURL(/\/workflow$/);
-  await expect(page.getByRole("heading", { name: "How it works." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One team. One event. Then the rest of the season." })).toBeVisible();
 
   await page.goto("/features/cad");
   await expect(page).toHaveURL(/\/features\/cad$/);
@@ -19,10 +19,10 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await expect(page.getByText("DEMO DATA")).toHaveCount(0);
 });
 
-test("marketing header has no hamburger; routes stay in the footer", async ({ page }) => {
+test("marketing header keeps mobile navigation and footer routes discoverable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.locator("summary[aria-label='Open navigation']")).toHaveCount(0);
+  await expect(page.locator("summary[aria-label='Open navigation']")).toBeVisible();
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
   await page.getByRole("contentinfo").getByRole("link", { name: "How it works" }).click();
   await expect(page).toHaveURL(/\/workflow$/);

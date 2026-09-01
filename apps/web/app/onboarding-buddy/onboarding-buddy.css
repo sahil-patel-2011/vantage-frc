@@ -9,6 +9,7 @@
 .onboarding-buddy-panel{display:grid;gap:12px}
 .onboarding-buddy-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .onboarding-buddy-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.onboarding-buddy-pick{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 .onboarding-buddy-tip{margin:0}
 .onboarding-buddy-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .onboarding-buddy-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}

@@ -1,4 +1,5 @@
 ﻿import type { PoolClient } from "@neondatabase/serverless";
+import { loadOnDutyForMyDay, type MyDayDutyCue } from "./duties";
 import {
   buildMyDayMatches,
   freshnessLabel,
@@ -31,17 +32,7 @@ export type MyDayTravelStop = {
   tripTitle: string;
 };
 
-export type MyDayOnDuty = {
-  id: string;
-  tripId: string | null;
-  mentorUserId: string | null;
-  mentorName: string;
-  phone: string;
-  startsAt: string;
-  endsAt: string | null;
-  locationNote: string;
-  notes: string;
-};
+export type MyDayOnDuty = MyDayDutyCue;
 
 export type MyDayLogisticsBundle = {
   lodging: MyDayLodging;
@@ -63,22 +54,6 @@ function allianceScore(alliance: AllianceJson): number | null {
   return score == null ? null : Number(score);
 }
 
-function pickActiveOnDuty(slots: MyDayOnDuty[], now = new Date()): MyDayOnDuty | null {
-  if (!slots.length) return null;
-  const t = now.getTime();
-  const active = slots.find((slot) => {
-    const start = new Date(slot.startsAt).getTime();
-    const end = slot.endsAt ? new Date(slot.endsAt).getTime() : Number.POSITIVE_INFINITY;
-    return Number.isFinite(start) && start <= t && t <= end;
-  });
-  if (active) return active;
-  return (
-    [...slots]
-      .filter((slot) => new Date(slot.startsAt).getTime() > t)
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null
-  );
-}
-
 function pickNextTravel(stops: MyDayTravelStop[], now = new Date()): MyDayTravelStop | null {
   const t = now.getTime();
   return (
@@ -94,7 +69,13 @@ function pickNextTravel(stops: MyDayTravelStop[], now = new Date()): MyDayTravel
 /** Lodging / travel / on-duty cues for Command + My Day. Missing tables â†’ empty cues. */
 export async function loadMyDayLogistics(
   client: PoolClient,
-  input: { orgId: string; userId: string; teamRole: string | null; eventKey: string | null },
+  input: {
+    orgId: string;
+    userId: string;
+    teamRole: string | null;
+    eventKey: string | null;
+    now?: Date;
+  },
 ): Promise<MyDayLogisticsBundle> {
   const empty: MyDayLogisticsBundle = {
     lodging: null,
@@ -159,23 +140,11 @@ export async function loadMyDayLogistics(
       nextTravel = null;
     }
 
-    let onDuty: MyDayOnDuty | null = null;
-    try {
-      const duty = await client.query<MyDayOnDuty>(
-        `SELECT id::text AS id, trip_id::text AS "tripId", mentor_user_id::text AS "mentorUserId",
-                mentor_name AS "mentorName", phone,
-                starts_at::text AS "startsAt", ends_at::text AS "endsAt",
-                location_note AS "locationNote", notes
-         FROM logistics_on_duty
-         WHERE org_id = $1::uuid
-         ORDER BY starts_at ASC
-         LIMIT 40`,
-        [input.orgId],
-      );
-      onDuty = pickActiveOnDuty(duty.rows);
-    } catch {
-      onDuty = null;
-    }
+    const onDuty = await loadOnDutyForMyDay(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      now: input.now,
+    });
 
     let checklistPercent: number | null = null;
     try {

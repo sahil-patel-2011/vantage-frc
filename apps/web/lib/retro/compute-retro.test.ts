@@ -53,6 +53,24 @@ describe("computeRetroView", () => {
           ],
         };
       }
+      if (sql.includes("FROM retro_items li")) {
+        return {
+          rows: [
+            {
+              id: "i1",
+              sessionId: "s1",
+              sessionTitle: "Week 3 retro",
+              kind: "start",
+              content: "Start doing standups",
+              authorName: "Ada",
+              createdAt: "2026-01-18T12:00:00.000Z",
+              voteCount: 3,
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM season_report_entries")) return { rows: [{ count: "0" }] };
+      if (sql.includes("FROM knowledge_pages")) return { rows: [] };
       if (sql.includes("FROM retro_items")) {
         return {
           rows: [
@@ -111,6 +129,10 @@ describe("computeRetroView", () => {
     expect(view.itemsByKind.start[0]?.votedByMe).toBe(true);
     expect(view.actionItems).toHaveLength(1);
     expect(view.actionItems[0]?.owner).toBe("Grace");
+    expect(view.learnedItems).toHaveLength(1);
+    expect(view.learnedItems[0]?.content).toBe("Start doing standups");
+    expect(view.handoff.seasonReportCount).toBe(0);
+    expect(view.handoff.playbookPageId).toBeNull();
     expect(view.postmortems).toHaveLength(0);
   });
 });

@@ -26,7 +26,7 @@ Excluded: API keys, BYO envelopes, sessions, invite tokens, other orgs.
 1. Create the project on **PostgreSQL 17** (see "Postgres version" below).
 2. In the SQL editor, run `packages/db/supabase/00_roles.sql`. Set LOGIN passwords for `vantage_app` and `vantage_worker`.
 3. **Project Settings → Data API**: disable or leave unused. Migration `0432` revokes `anon` / `authenticated` on `public` if those roles exist.
-4. `DATABASE_ADMIN_URL` = **direct or session-pooler** URI as `vantage_worker` (port **5432**, never 6543). Run `npm run db:migrate` — this applies every file in `packages/db/migrations/` in filename order (~297 files, `0000` … `0451` and growing) and records each in `schema_migrations`.
+4. `DATABASE_ADMIN_URL` = **direct or session-pooler** URI as `vantage_worker` (port **5432**, never 6543). Run `npm run db:migrate` — the authoritative `scripts/run-migrations.mjs` runner applies every file in `packages/db/migrations/` in filename order (~340 files, `0000` … `0496` and growing) and records each full filename in `schema_migrations`.
 5. `DATABASE_URL` / `DATABASE_AUTH_URL` = **session-mode pooler** URI as `vantage_app` (port **5432** on the `pooler.supabase.com` host). Port 6543 is the transaction-mode pooler — see "Connection pooling and withRls" below before considering it.
 6. `node scripts/supabase-preflight.mjs` — every line must be PASS (WARN lines reviewed). See "Preflight" below.
 7. `node scripts/map-supabase-env.mjs` writes `.env.migrate.local`. Do **not** pass `--vercel` until you are ready to cut over production (`SUPABASE_CUTOVER_CONFIRM=I_UNDERSTAND`). Map the same aliases in the Vercel dashboard yourself if you prefer.

@@ -84,6 +84,7 @@ export type ContextItem = {
   type:
     | "private_memory"
     | "team_memory"
+    | "chat_turn"
     | "module_data"
     | "module_fact"
     | "artifact"
@@ -107,23 +108,64 @@ export function boundedContext(items: ContextItem[], tokenBudget: number) {
   return { items: selected, estimatedTokens: used };
 }
 
+export type ChatMessage = {
+  id?: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type ChatToolDefinition = {
+  name: string;
+  description: string;
+  inputSchema?: Record<string, unknown>;
+};
+
+export type ChatToolCall = {
+  name: string;
+  input: unknown;
+  callId?: string;
+};
+
+export type ChatCompletionResult = {
+  text: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  toolCalls?: ChatToolCall[];
+  cacheReadInputTokens?: number;
+  cacheWriteInputTokens?: number;
+  uncachedInputTokens?: number;
+  cacheCostBasis?: string;
+};
+
 export interface ChatAdapter {
   readonly provider: string;
   readonly model: string;
+  readonly supportsNativeTools?: boolean;
+  estimateCostUsd?(promptTokens: number, completionTokens: number): number;
   complete(input: {
     message: string;
     context: ContextItem[];
+    history?: ChatMessage[];
+    tools?: ChatToolDefinition[];
     promptCachingEnabled?: boolean;
-  }): Promise<{
-    text: string;
-    promptTokens: number;
-    completionTokens: number;
-    costUsd: number;
-    cacheReadInputTokens?: number;
-    cacheWriteInputTokens?: number;
-    uncachedInputTokens?: number;
-    cacheCostBasis?: string;
-  }>;
+  }): Promise<ChatCompletionResult>;
+}
+
+export const UNKNOWN_MODEL_PREFLIGHT_USD = 0.01;
+
+export function estimateAdapterCostUsd(
+  adapter: Pick<ChatAdapter, "estimateCostUsd">,
+  promptTokens: number,
+  completionTokens: number,
+): number {
+  const estimated = adapter.estimateCostUsd?.(
+    Math.max(0, Math.floor(promptTokens)),
+    Math.max(0, Math.floor(completionTokens)),
+  );
+  return typeof estimated === "number" && Number.isFinite(estimated) && estimated >= 0
+    ? estimated
+    : UNKNOWN_MODEL_PREFLIGHT_USD;
 }
 
 export class LocalDeterministicChatAdapter implements ChatAdapter {
@@ -132,6 +174,7 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
   async complete(input: {
     message: string;
     context: ContextItem[];
+    history?: ChatMessage[];
     promptCachingEnabled?: boolean;
   }) {
     const { formatGroundedReply } = await import("./auto-tools");
@@ -185,7 +228,8 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
       text = formatGroundedReply(input.message, annotated);
     } else {
       const sources = input.context.map((item) => `${item.type}:${item.id}`).join(", ");
-      text = `Vantage response: ${input.message.trim()}${sources ? ` Context used: ${sources}.` : ""}`;
+      const prior = input.history?.at(-1);
+      text = `Vantage response: ${input.message.trim()}${prior ? ` Prior ${prior.role} turn: ${prior.content.slice(0, 120)}.` : ""}${sources ? ` Context used: ${sources}.` : ""}`;
     }
     const usage = simulateLocalCacheUsage({
       message: input.message,
@@ -206,7 +250,7 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
   }
 }
 
-export { AgentRepository } from "./repository";
+export * from "./repository";
 export * from "./providers";
 export * from "./orchestrator";
 export * from "./tools";
@@ -236,3 +280,7 @@ export * from "./autonomous-agent-store";
 export * from "./autonomous-loop";
 export * from "./org-agent-rules";
 export * from "./subscription-bridge-adapter";
+export * from "./auto-mode";
+export * from "./context-compact";
+export * from "./design-research";
+export * from "./task-finish";

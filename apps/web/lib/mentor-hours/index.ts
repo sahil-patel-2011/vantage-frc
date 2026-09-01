@@ -1,8 +1,9 @@
-// Mentor Hours & Engagement rollups. Pure aggregation over logged entries — deterministic
-// given its input (recency uses an explicit date sort, no clock). This never fabricates a
-// score: an empty log yields 0 across the board.
+// Mentor Hours & Engagement rollups. Pure aggregation over logged mentor_hours_entries —
+// never student hour_logs. Deterministic given its input (recency uses an explicit date
+// sort, no clock). An empty log stays empty: the view is `empty`, not a 0% scoreboard.
 
 export * from "./types";
+export { MENTOR_HOURS_LEDGER, positiveDurationMinutes } from "./ledger";
 
 import type {
   MentorHoursCategory,

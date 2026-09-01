@@ -257,6 +257,17 @@ body.has-app-shell .app-topbar{display:none}
   color:var(--soft-ink);font:600 11px var(--font-source-sans),ui-sans-serif;text-decoration:none;
 }
 .soft-workspace-links a:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line))}
+.soft-drawer-search{
+  display:flex;align-items:center;gap:10px;width:calc(100% - 4px);min-height:52px;margin:0 2px 8px;
+  padding:8px 10px;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-card);
+  color:var(--soft-ink);text-align:left;cursor:pointer;box-shadow:var(--soft-shadow);
+}
+.soft-drawer-search:hover{border-color:color-mix(in srgb,var(--soft-accent) 42%,var(--soft-line));background:var(--soft-accent-soft)}
+.soft-drawer-search>svg{width:19px;height:19px;flex:none;color:var(--soft-accent)}
+.soft-drawer-search>span{display:grid;gap:2px;min-width:0;flex:1}
+.soft-drawer-search strong{font:700 12px/1.2 var(--font-source-sans),ui-sans-serif}
+.soft-drawer-search small{overflow:hidden;color:var(--soft-muted);font:600 10px/1.25 var(--font-source-sans),ui-sans-serif;text-overflow:ellipsis;white-space:nowrap}
+.soft-drawer-search kbd{padding:2px 5px;border:1px solid var(--soft-line);border-radius:6px;background:var(--soft-bg);color:var(--soft-muted);font:700 9px/1.3 var(--font-source-sans),ui-sans-serif}
 .soft-drawer-pillars{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 10px;padding:0 2px;
 }
@@ -803,8 +814,10 @@ body.has-app-shell .dash-widget:hover{
     linear-gradient(165deg,color-mix(in srgb,var(--soft-accent-soft) 42%,var(--soft-card)),var(--soft-card) 70%);
   border-color:color-mix(in srgb,var(--soft-accent) 18%,var(--soft-line));
 }
-.dash-widget.hero.is-empty .dash-empty{min-height:0;align-content:start;padding-top:4px}
-.dash-widget.hero.is-empty .dash-empty strong{font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em}
+.dash-widget.hero.is-empty .dash-empty,
+.dash-widget.hero.is-empty .soft-empty-compact{min-height:0;align-content:start;padding-top:4px}
+.dash-widget.hero.is-empty .dash-empty strong,
+.dash-widget.hero.is-empty .soft-empty-compact h2{font-size:clamp(20px,2.4vw,28px);letter-spacing:-.03em}
 /* Calm header: icon, title and status badge all centre on one optical line, and
    the meta line is the only thing allowed to be a second row. */
 .dash-widget>header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
@@ -830,6 +843,13 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .dash-empty p{margin:0;color:var(--soft-muted);font-size:13px;line-height:1.4;max-width:44ch}
 .dash-empty.calm{min-height:72px}
 .dash-empty-cta{display:inline-flex;align-items:center;width:max-content;min-height:36px;margin-top:2px;padding:0 12px;border-radius:10px;background:color-mix(in srgb,var(--soft-accent) 12%,transparent);color:var(--soft-accent);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+/* EmptyState `compact` variant (components/ui/empty-state.tsx) — same rhythm as
+   .dash-empty above, for slots that render the shared component instead of
+   hand-rolled markup, without doubling the widget's own card border/shadow. */
+.soft-empty-compact{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px;text-align:left;background:transparent;border:0}
+.soft-empty-compact h2{margin:0;font:700 14px/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em;color:var(--soft-ink)}
+.soft-empty-compact p{margin:0;color:var(--soft-muted);font-size:13px;line-height:1.4;max-width:44ch}
+.soft-empty-compact .app-badge{margin-bottom:2px}
 .dash-empty-board{
   display:grid;justify-items:center;gap:8px;width:100%;min-height:280px;padding:40px 20px;border:2px dashed color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));
   border-radius:22px;background:color-mix(in srgb,var(--soft-card) 70%,transparent);color:var(--soft-ink);cursor:pointer;
@@ -932,8 +952,8 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 }
 @media(max-width:560px){
   .dash-library-grid{grid-template-columns:1fr}
-  .dash-edit-dock{gap:6px;padding:8px}
-  .dash-dock-ghost,.dash-dock-done,.dash-dock-add,.dash-dock-team{min-height:38px;padding:0 10px;font-size:11px}
+  .dash-edit-dock{gap:8px;padding:10px}
+  .dash-dock-ghost,.dash-dock-done,.dash-dock-add,.dash-dock-team{min-height:44px;padding:0 12px;font-size:12px}
 }
 
 /* First-login onboarding + invite / join */

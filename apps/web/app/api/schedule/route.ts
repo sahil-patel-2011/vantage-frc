@@ -1,7 +1,9 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import type { ScheduleMatch, ScheduleView } from "../../../lib/schedule-board";
+import type { ScheduleContext } from "../../../lib/schedule-board";
+import { buildScheduleView, type TbaMatchCacheRow } from "../../../lib/schedule/tba-cache";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
 class HttpError extends Error {
   constructor(
@@ -23,34 +25,15 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Schedule request failed" }, { status });
 }
 
-type AllianceJson = { teamKeys?: unknown; score?: unknown } | null;
-
-function teamKeys(alliance: AllianceJson): string[] {
-  const keys = alliance?.teamKeys;
-  if (!Array.isArray(keys)) return [];
-  return keys.map((key) => String(key));
-}
-
-function allianceScore(alliance: AllianceJson): number | null {
-  const score = alliance?.score;
-  return score == null ? null : Number(score);
-}
-
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
-      const membership = await client.query<{
-        orgId: string;
-        orgName: string;
-        teamNumber: number | null;
-        role: string;
-        eventKey: string | null;
-        eventName: string | null;
-      }>(
+      const membership = await client.query<ScheduleContext>(
         `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role,
                 c.active_event_key AS "eventKey", e.name AS "eventName"
          FROM memberships m
@@ -65,40 +48,20 @@ export async function GET(request: Request) {
 
       const row = membership.rows[0];
       if (!row) {
-        return {
-          status: "setup_required",
-          message: "Select a team workspace to view the match schedule.",
+        return buildScheduleView({
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
-        } satisfies ScheduleView;
+          setupMessage: "Select a team workspace to view the match schedule.",
+        });
       }
-
-      const context = {
-        orgId: row.orgId,
-        orgName: row.orgName,
-        teamNumber: row.teamNumber,
-        role: row.role,
-        eventKey: row.eventKey,
-        eventName: row.eventName,
-      };
 
       if (!row.eventKey) {
-        return {
-          status: "setup_required",
-          message: "Select an active event in Workspace.",
-          context,
-        } satisfies ScheduleView;
+        return buildScheduleView({
+          context: row,
+          setupMessage: "Select an active event in Workspace.",
+        });
       }
 
-      const matches = await client.query<{
-        matchKey: string;
-        compLevel: string;
-        matchNumber: number;
-        scheduledTime: string | null;
-        redAlliance: AllianceJson;
-        blueAlliance: AllianceJson;
-        winningAlliance: string | null;
-        scoutCount: number | null;
-      }>(
+      const matches = await client.query<TbaMatchCacheRow>(
         `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
                 COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
                 m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
@@ -114,20 +77,7 @@ export async function GET(request: Request) {
         [row.eventKey, row.orgId],
       );
 
-      const mapped: ScheduleMatch[] = matches.rows.map((entry) => ({
-        matchKey: entry.matchKey,
-        compLevel: entry.compLevel,
-        matchNumber: entry.matchNumber,
-        scheduledTime: entry.scheduledTime,
-        red: teamKeys(entry.redAlliance),
-        blue: teamKeys(entry.blueAlliance),
-        redScore: allianceScore(entry.redAlliance),
-        blueScore: allianceScore(entry.blueAlliance),
-        winningAlliance: entry.winningAlliance === "red" || entry.winningAlliance === "blue" ? entry.winningAlliance : null,
-        scoutCount: entry.scoutCount == null ? 0 : Number(entry.scoutCount),
-      }));
-
-      return { status: "ready", context, matches: mapped } satisfies ScheduleView;
+      return buildScheduleView({ context: row, rows: matches.rows });
     });
 
     return Response.json(view);

@@ -26,17 +26,33 @@ export type AgendaSourceCounts = {
 
 export type MeetingAgendaStatus = "draft" | "finalized";
 
-/** A persisted agenda snapshot generated for a specific meeting. */
+/** A persisted agenda snapshot generated for a specific calendar meeting. */
 export type MeetingAgenda = {
   id: string;
   seasonYear: number;
   title: string;
   meetingOn: string | null;
+  /** Calendar event this agenda/minutes row is persisted against. */
+  calendarEventId: string | null;
   agendaItems: AgendaItem[];
+  /** Human-authored minutes text; null until someone writes them — never DEMO notes. */
+  minutesText: string | null;
   sourceCounts: AgendaSourceCounts;
   status: MeetingAgendaStatus;
   createdAt: string;
   updatedAt: string;
+};
+
+/** A team calendar meeting (`subteam_calendar_events.kind = 'meeting'`). */
+export type CalendarMeeting = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string;
+  meetingOn: string;
+  agenda: MeetingAgenda | null;
+  minutesText: string | null;
 };
 
 export type ActionItemStatus = "open" | "done";

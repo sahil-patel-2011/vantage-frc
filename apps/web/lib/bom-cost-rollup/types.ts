@@ -40,7 +40,8 @@ export type BomRollupSummary = {
   totalCostUsd: number;
   budgetUsd: number;
   remainingUsd: number;
-  percentUsed: number;
+  /** committed / budget, or null when no season budget is set — never a DEMO %. */
+  percentUsed: number | null;
   status: BomStatus;
   itemCount: number;
   bySubsystem: BomSubsystemRollup[];

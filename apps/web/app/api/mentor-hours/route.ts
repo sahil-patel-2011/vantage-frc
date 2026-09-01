@@ -10,6 +10,7 @@ import {
   logEntry,
   type MentorHoursView,
 } from "../../../lib/mentor-hours/compute-mentor-hours";
+import { positiveDurationMinutes } from "../../../lib/mentor-hours/ledger";
 import type { MentorHoursCategory, MentorHoursRole } from "../../../lib/mentor-hours/types";
 
 export type { MentorHoursView };
@@ -26,11 +27,6 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : null;
-}
-
-function nonNegativeInt(value: unknown): number {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
 function seasonFrom(value: unknown): number {
@@ -88,10 +84,10 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
+      const member = await client.query(
+        `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+        [orgId, userId],
+      );
       if (!member.rowCount) throw new Error("forbidden");
 
       switch (action) {
@@ -102,6 +98,8 @@ export async function POST(request: Request) {
           if (!occurredOn) throw new Error("occurredOn (YYYY-MM-DD) is required");
           const role = oneOf<MentorHoursRole>(MENTOR_HOURS_ROLES, body.role) ?? "mentor";
           const category = oneOf<MentorHoursCategory>(MENTOR_HOURS_CATEGORIES, body.category) ?? "build";
+          const durationMinutes = positiveDurationMinutes(body.durationMinutes);
+          if (durationMinutes == null) throw new Error("durationMinutes must be a positive number of minutes.");
           await logEntry(client, {
             orgId,
             userId,
@@ -109,7 +107,7 @@ export async function POST(request: Request) {
             role,
             category,
             occurredOn,
-            durationMinutes: nonNegativeInt(body.durationMinutes),
+            durationMinutes,
             notes: trimmedOrNull(body.notes, 4000),
             seasonYear,
           });

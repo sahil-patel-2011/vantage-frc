@@ -26,19 +26,29 @@ export const VERCEL_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
 /** The database-schema ceiling for one db-stored file (0483/0489 CHECKs). */
 export const DB_ROW_CAP_BYTES = 100 * 1024 * 1024;
 
-type CapEnv = { VERCEL?: string; STORAGE_CLOUD_UPLOAD_CAP_BYTES?: string };
+export type CapEnv = { VERCEL?: string; STORAGE_CLOUD_UPLOAD_CAP_BYTES?: string };
+
+/**
+ * What this process can actually accept on the cloud (function) path.
+ * On Vercel that is 4 MiB — never the 100 MB schema ceiling.
+ */
+export function platformUploadCeilingBytes(env: CapEnv = process.env as CapEnv): number {
+  return env.VERCEL ? VERCEL_SAFE_UPLOAD_BYTES : DB_ROW_CAP_BYTES;
+}
 
 /**
  * The honest cloud upload cap for THIS deployment:
- * - explicit STORAGE_CLOUD_UPLOAD_CAP_BYTES override wins (clamped to the
- *   schema ceiling — the database CHECK is not negotiable),
- * - on Vercel (VERCEL env var set) the platform body limit governs,
- * - elsewhere (local dev, self-hosted Node) the schema ceiling governs.
+ * - on Vercel the platform body limit governs (4 MiB). An env override cannot
+ *   raise that — advertising 6–100 MB there is a lie the edge answers with 413,
+ * - elsewhere (local dev, self-hosted Node) the schema ceiling governs,
+ * - STORAGE_CLOUD_UPLOAD_CAP_BYTES may lower the cap, never raise it past the
+ *   platform ceiling.
  */
 export function cloudUploadCapBytes(env: CapEnv = process.env as CapEnv): number {
+  const ceiling = platformUploadCeilingBytes(env);
   const override = Number(env.STORAGE_CLOUD_UPLOAD_CAP_BYTES);
   if (Number.isFinite(override) && override >= 1) {
-    return Math.min(Math.floor(override), DB_ROW_CAP_BYTES);
+    return Math.min(Math.floor(override), ceiling);
   }
-  return env.VERCEL ? VERCEL_SAFE_UPLOAD_BYTES : DB_ROW_CAP_BYTES;
+  return ceiling;
 }

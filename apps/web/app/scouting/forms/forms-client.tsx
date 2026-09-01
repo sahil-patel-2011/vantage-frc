@@ -724,7 +724,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   useEffect(() => {
     void load();
     // Mount / org only — type switches reuse the loaded schema list.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+     
   }, [orgId]);
 
   function switchType(next: EntryType) {

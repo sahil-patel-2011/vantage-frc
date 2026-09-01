@@ -1,0 +1,19 @@
+{
+  "name": "@vantage/free-relay",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./production-worker": "./src/production-worker.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "sweep": "tsx src/cli-sweep.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "latest",
+    "@vantage/agent": "*",
+    "@vantage/db": "*"
+  }
+}

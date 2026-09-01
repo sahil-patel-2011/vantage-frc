@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { resolveOwnAllianceColor, teamNumbersFromAllianceJson } from ".";
+import { alliancePartners, resolveOwnAllianceColor, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
+import { toBriefingMatchCardPayload, type MatchStrategyBriefingPayload } from "./briefing-payload";
 import type { MatchStrategyAlliance, MatchStrategyCard, MatchStrategyRoleAssignment } from "./types";
 
 export type MatchStrategySetupStep = {
@@ -25,6 +26,8 @@ export type MatchStrategyCardsView =
       eventKey: string;
       eventName: string | null;
       cards: MatchStrategyCard[];
+      nextMatchKey: string | null;
+      briefingPayload: MatchStrategyBriefingPayload | null;
       computedAt: string;
     };
 
@@ -61,6 +64,8 @@ type MatchRow = {
   setNumber: number;
   eventKey: string;
   scheduledAt: string | null;
+  actualTime: string | null;
+  winningAlliance: string | null;
   redAlliance: unknown;
   blueAlliance: unknown;
 };
@@ -150,12 +155,18 @@ export async function computeMatchStrategyCardsView(
   const matchResult = await client.query<MatchRow>(
     `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
             m.set_number AS "setNumber", m.event_key AS "eventKey",
-            COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledAt",
+            COALESCE(m.predicted_time, m.event_time, m.actual_time)::text AS "scheduledAt",
+            m.actual_time::text AS "actualTime", m.winning_alliance AS "winningAlliance",
             m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
      FROM matches_ref m
      WHERE m.event_key = $1
-       AND (m.red_alliance->'team_keys' ? $2 OR m.blue_alliance->'team_keys' ? $2)
-     ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) NULLS LAST, m.match_number`,
+       AND (
+         COALESCE(m.red_alliance->'teamKeys', '[]'::jsonb) ? $2
+         OR COALESCE(m.blue_alliance->'teamKeys', '[]'::jsonb) ? $2
+         OR COALESCE(m.red_alliance->'team_keys', '[]'::jsonb) ? $2
+         OR COALESCE(m.blue_alliance->'team_keys', '[]'::jsonb) ? $2
+       )
+     ORDER BY COALESCE(m.predicted_time, m.event_time, m.actual_time) NULLS LAST, m.match_number`,
     [context.eventKey, teamKey],
   );
 
@@ -179,7 +190,8 @@ export async function computeMatchStrategyCardsView(
   );
   const cardsByMatch = new Map(cardResult.rows.map((row) => [row.matchKey, row]));
 
-  const cards: MatchStrategyCard[] = matchResult.rows.map((row) => {
+  const nextMatchKey = selectNextTbaMatch(matchResult.rows);
+  const mapped: MatchStrategyCard[] = matchResult.rows.map((row) => {
     const alliances = buildAlliances(row, context.teamNumber as number);
     const existing = cardsByMatch.get(row.matchKey);
     return {
@@ -199,9 +211,29 @@ export async function computeMatchStrategyCardsView(
       driverNotes: existing?.driverNotes ?? null,
       roleAssignments: mapRoleAssignments(existing?.roleAssignments),
       hasCard: Boolean(existing),
+      isNextMatch: row.matchKey === nextMatchKey,
       updatedAt: existing?.updatedAt ?? null,
     };
   });
+  const cards =
+    nextMatchKey == null
+      ? mapped
+      : [...mapped.filter((card) => card.isNextMatch), ...mapped.filter((card) => !card.isNextMatch)];
+  const nextCard = cards.find((card) => card.isNextMatch) ?? null;
+  const briefingPayload = nextCard
+    ? toBriefingMatchCardPayload({
+        matchKey: nextCard.matchKey,
+        partnerNumbers: alliancePartners(nextCard.alliances, context.teamNumber as number),
+        gamePlan: nextCard.gamePlan,
+        autoAssignment: nextCard.autoAssignment,
+        defenseFocus: nextCard.defenseFocus,
+        keyThreats: nextCard.keyThreats,
+        driverNotes: nextCard.driverNotes,
+        roleAssignments: nextCard.roleAssignments,
+        updatedAt: nextCard.updatedAt,
+        hasCard: nextCard.hasCard,
+      })
+    : null;
 
   return {
     status: "live",
@@ -210,6 +242,8 @@ export async function computeMatchStrategyCardsView(
     eventKey: context.eventKey,
     eventName: context.eventName,
     cards,
+    nextMatchKey,
+    briefingPayload,
     computedAt: new Date().toISOString(),
   };
 }

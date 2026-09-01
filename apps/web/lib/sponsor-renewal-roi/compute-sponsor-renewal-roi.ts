@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import {
+  loadMediaEvidenceReferences,
+  type MediaEvidenceReference,
+} from "../media/evidence-references";
 import { buildSponsorRoiSections, computeSponsorRenewalRiskScore, renderSponsorRoiHtml } from ".";
 import type { SponsorRenewalRiskScore, SponsorRenewalRoiReport, SponsorRenewalRoiSponsorSummary } from "./types";
 
@@ -30,6 +34,7 @@ export type SponsorRenewalRoiView =
       seasonYear: number;
       seasons: number[];
       sponsors: SponsorRenewalRoiSponsorSummary[];
+      evidenceLibrary: MediaEvidenceReference[];
       computedAt: string;
     };
 
@@ -102,7 +107,9 @@ async function loadSponsorSignals(client: PoolClient, orgId: string) {
     client.query<ContributionAggRow>(
       `SELECT sponsor_id AS "sponsorId", MAX(received_at)::text AS "lastContributionAt",
               COUNT(*) AS "contributionCount",
-              COALESCE(SUM(COALESCE(amount_usd, 0) + COALESCE(estimated_value_usd, 0)), 0) AS "totalUsd"
+              COALESCE(SUM(CASE WHEN type = 'cash'
+                                THEN COALESCE(amount_usd, 0)
+                                ELSE COALESCE(estimated_value_usd, amount_usd, 0) END), 0) AS "totalUsd"
        FROM sponsor_contributions WHERE org_id = $1 GROUP BY sponsor_id`,
       [orgId],
     ),
@@ -166,7 +173,7 @@ export async function computeSponsorRenewalRoiView(
     };
   }
 
-  const [{ sponsors, interactionsBySponsor, contributionsBySponsor, mentionsBySponsor }, reportsResult, seasonResult] =
+  const [{ sponsors, interactionsBySponsor, contributionsBySponsor, mentionsBySponsor }, reportsResult, seasonResult, evidenceLibrary] =
     await Promise.all([
       loadSponsorSignals(client, org.orgId),
       client.query<ReportRow>(
@@ -183,6 +190,7 @@ export async function computeSponsorRenewalRoiView(
         `SELECT DISTINCT season_year AS "seasonYear" FROM sponsor_renewal_roi_reports WHERE org_id = $1 ORDER BY 1 DESC`,
         [org.orgId],
       ),
+      loadMediaEvidenceReferences(client, { orgId: org.orgId }),
     ]);
 
   if (sponsors.length === 0) {
@@ -228,6 +236,7 @@ export async function computeSponsorRenewalRoiView(
     seasonYear,
     seasons,
     sponsors: sponsorSummaries,
+    evidenceLibrary,
     computedAt: now.toISOString(),
   };
 }

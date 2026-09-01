@@ -10,6 +10,7 @@ import {
   updateRole,
   type RolesView,
 } from "../../../lib/roles/compute-roles";
+import { assertOrgManager, orgRole } from "../../../lib/team-admin/permissions";
 import type { Subteam } from "../../../lib/roles/types";
 
 export type { RolesView };
@@ -79,14 +80,14 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
-      if (!member.rowCount) throw new Error("forbidden");
+      const role = await orgRole(client, orgId, userId);
+      if (!role) throw new Error("forbidden");
 
       switch (action) {
         case "create-role": {
+          // Who holds Safety Captain is a mentor decision, not something a viewer assigns
+          // themselves. Reading the role map stays open to the whole team.
+          assertOrgManager(role, "create a team role");
           const title = trimmedOrNull(body.title, 200);
           if (!title) throw new Error("title is required");
           await createRole(client, {
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
             seasonYear,
             title,
             subteam: oneOf<Subteam>(SUBTEAMS, body.subteam) ?? "other",
+            holderUserId: trimmedOrNull(body.holderUserId, 64),
             holderName: trimmedOrNull(body.holderName, 200),
             isLead: body.isLead === true,
             responsibilities: trimmedOrNull(body.responsibilities),
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
           break;
         }
         case "update-role": {
+          assertOrgManager(role, "change a team role");
           const roleId = trimmedOrNull(body.roleId, 64);
           if (!roleId) throw new Error("roleId is required");
           const subteam = body.subteam === undefined ? undefined : oneOf<Subteam>(SUBTEAMS, body.subteam);
@@ -111,6 +114,8 @@ export async function POST(request: Request) {
             roleId,
             title: body.title === undefined ? undefined : (trimmedOrNull(body.title, 200) ?? undefined),
             subteam: subteam ?? undefined,
+            holderUserId:
+              body.holderUserId === undefined ? undefined : trimmedOrNull(body.holderUserId, 64),
             holderName: body.holderName === undefined ? undefined : trimmedOrNull(body.holderName, 200),
             isLead: body.isLead === undefined ? undefined : body.isLead === true,
             responsibilities: body.responsibilities === undefined ? undefined : trimmedOrNull(body.responsibilities),
@@ -119,6 +124,7 @@ export async function POST(request: Request) {
           break;
         }
         case "delete-role": {
+          assertOrgManager(role, "delete a team role");
           const roleId = trimmedOrNull(body.roleId, 64);
           if (!roleId) throw new Error("roleId is required");
           await deleteRole(client, { orgId, roleId });
@@ -134,7 +140,8 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Roles request failed";
-    const status = message === "forbidden" ? 403 : 400;
+    const status =
+      message === "forbidden" || message.startsWith("Only an owner or admin can") ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

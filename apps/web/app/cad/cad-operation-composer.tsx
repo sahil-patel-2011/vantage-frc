@@ -1,112 +1,210 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  appendComposerOp,
+  composerPalette,
+  describeComposerOp,
+  draftFromParameters,
+  emptyComposerDraft,
+  parametersFromDraft,
+  parseComposerOps,
+  removeComposerOp,
+  replaceComposerOp,
+  serializeComposerOps,
+  summarizeComposerParams,
+  type ComposerNativeOp,
+  type ComposerOp,
+} from "../../lib/cad/composer-ops";
+import { CadComposerFields } from "./cad-composer-fields";
 
-const ALL_OPERATIONS = [
-  "create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern",
-  "set_variable","create_assembly","feature_script","verify_topology","render_views","create_checkpoint",
-  "rollback_checkpoint","export_step","export_stl","export_gltf",
-] as const;
-const FUSION_OPERATIONS = [
-  "create_sketch",
-  "create_extrude",
-  "create_fillet",
-  "create_chamfer",
-  "create_shell",
-  "create_pattern",
-  "set_variable",
-  "create_assembly",
-  "verify_topology",
-  "render_views",
-  "create_checkpoint",
-  "rollback_checkpoint",
-  "export_step",
-  "export_stl",
-  "export_gltf",
-] as const;
-
-const STARTERS: Record<string, Record<string, unknown>> = {
-  create_sketch: { plane: "Top", profile: "Describe the dimensioned closed profile", units: "mm" },
-  create_extrude: { depth: "25 mm", direction: "new" },
-  create_fillet: { radius: "3 mm", entities: ["select after describe/list entities"] },
-  create_chamfer: { distance: "1 mm", entities: ["select after describe/list entities"] },
-  create_shell: { thickness: "2 mm", openFaces: ["select after describe/list entities"] },
-  create_pattern: { count: 4, spacing: "25 mm", direction: "x" },
-  set_variable: { name: "wallThickness", value: "2 mm" },
-  create_assembly: { name: "Mechanism assembly", instances: [] },
-  feature_script: { source: "// Paste reviewed FeatureScript source", parameters: {} },
-  verify_topology: { views: ["iso", "top", "front"], explainForStudents: true },
-  render_views: { views: ["iso", "top", "front"] },
-  create_checkpoint: { label: "Reviewed checkpoint" },
-  rollback_checkpoint: { checkpointRef: "select a prior checkpoint" },
-  export_step: { format: "STEP" },
-  export_stl: { format: "STL" },
-  export_gltf: { format: "GLTF" },
-};
+export {
+  COMPOSER_NATIVE_OPS,
+  parseComposerOps,
+  serializeComposerOps,
+} from "../../lib/cad/composer-ops";
 
 export function CadOperationComposer({
   platform,
-  disabled,
+  disabled = false,
+  plan,
+  onPlanChange,
   onAppend,
 }: {
   platform: string;
-  disabled: boolean;
-  onAppend: (payload: Record<string, unknown>) => Promise<unknown>;
+  disabled?: boolean;
+  plan?: ComposerOp[] | unknown;
+  onPlanChange?: (ops: ComposerOp[]) => void;
+  onAppend?: (payload: Record<string, unknown>) => Promise<unknown>;
 }) {
-  const operations = useMemo(
-    () => (platform === "fusion360" ? [...FUSION_OPERATIONS] : [...ALL_OPERATIONS]),
-    [platform],
-  );
-  const [operation, setOperation] = useState<string>(operations[0] ?? "verify_topology");
-  const [parameters, setParameters] = useState(() => JSON.stringify(STARTERS[operation], null, 2));
-  const [reason, setReason] = useState("Add a small, reversible feature and verify it before continuing.");
+  const operations = useMemo(() => composerPalette(platform), [platform]);
+  const [operation, setOperation] = useState<ComposerNativeOp>(operations[0] ?? "create_sketch");
+  const [draft, setDraft] = useState<Record<string, string | boolean>>(() => emptyComposerDraft(operations[0] ?? "create_sketch"));
+  const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [internalPlan, setInternalPlan] = useState<ComposerOp[]>([]);
 
-  function choose(next: string) {
+  const steps = useMemo(() => {
+    if (plan === undefined) return internalPlan;
+    try {
+      return parseComposerOps(plan);
+    } catch {
+      return [];
+    }
+  }, [plan, internalPlan]);
+
+  function commitPlan(next: ComposerOp[]) {
+    if (plan === undefined) setInternalPlan(next);
+    onPlanChange?.(next);
+  }
+
+  function choose(next: ComposerNativeOp) {
     setOperation(next);
-    setParameters(JSON.stringify(STARTERS[next] ?? {}, null, 2));
+    setDraft(emptyComposerDraft(next));
+    setError("");
+    setEditingId(null);
+  }
+
+  function loadStep(step: ComposerOp) {
+    setOperation(step.operation);
+    setDraft(draftFromParameters(step.operation, step.parameters));
+    setReason(step.reason);
+    setEditingId(step.id);
     setError("");
   }
 
+  function clearEditor() {
+    setDraft(emptyComposerDraft(operation));
+    setReason("");
+    setEditingId(null);
+    setError("");
+  }
+
+  function buildDraftOp(): Omit<ComposerOp, "id"> {
+    return {
+      operation,
+      parameters: parametersFromDraft(operation, draft),
+      reason,
+    };
+  }
+
+  async function saveStep() {
+    try {
+      if (editingId) {
+        commitPlan(replaceComposerOp(steps, editingId, buildDraftOp()));
+      } else {
+        const next = appendComposerOp(steps, buildDraftOp());
+        commitPlan(next);
+        const added = next[next.length - 1];
+        if (added && onAppend) {
+          const [payload] = serializeComposerOps([added]);
+          if (payload) await onAppend(payload);
+        }
+      }
+      clearEditor();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save this operation");
+    }
+  }
+
+  function deleteStep(id: string) {
+    commitPlan(removeComposerOp(steps, id));
+    if (editingId === id) clearEditor();
+  }
+
   return (
-    <details className="cad-operation-studio">
+    <details className="cad-operation-studio" open>
       <summary>
-        <div><span className="eyebrow">MANIPULATION STUDIO</span><strong>Add an API operation</strong></div>
+        <div>
+          <span className="eyebrow">MANIPULATION STUDIO</span>
+          <strong>Native Onshape operations</strong>
+        </div>
         <span className={`app-badge ${platform === "onshape" ? "good" : "setup"}`}>
-          {platform === "onshape" ? "Hosted API" : platform === "fusion360" ? "Local add-in" : "Demo adapter"}
+          {platform === "onshape" ? "Onshape OAuth" : platform === "fusion360" ? "Local add-in" : "Demo adapter"}
         </span>
       </summary>
       <div className="cad-operation-body">
         <p className="app-muted">
           {platform === "fusion360"
-            ? "Operations listed here match the paired Fusion add-in allowlist. Execution occurs on your desktop."
+            ? "Typed millimetre fields match the paired Fusion add-in allowlist. Execution stays on your desktop."
             : platform === "onshape"
-              ? "Operations execute through the bound Onshape document after approval, then return a render and topology checkpoint."
-              : "Mock operations prove the approval and verification loop; they are not production geometry."}
+              ? "Edit millimetres and IDs the way Onshape's feature dialog does. Empty fields stay empty — no placeholder plates."
+              : "Plan native operations with typed millimetre fields. Mock adapters do not create production geometry."}
         </p>
-        <div className="cad-operation-grid">
-          <label>Operation<select value={operation} onChange={(e) => choose(e.target.value)}>{operations.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
-          <label>Engineering reason<input value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)} /></label>
+        <div role="group" aria-label="Native operations">
+          {operations.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className="app-button"
+              aria-pressed={operation === item}
+              disabled={disabled}
+              onClick={() => choose(item)}
+            >
+              {describeComposerOp(item)}
+            </button>
+          ))}
         </div>
-        <label>Parameters (explicit units; use described entity IDs)<textarea rows={8} value={parameters} onChange={(e) => setParameters(e.target.value)} spellCheck={false} /></label>
-        {error ? <p className="telemetry-status" role="alert">{error}</p> : null}
-        <button
-          type="button"
-          className="app-button"
+        <CadComposerFields
+          operation={operation}
+          draft={draft}
           disabled={disabled}
-          onClick={() => {
-            try {
-              const parsed = JSON.parse(parameters) as unknown;
-              if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Parameters must be a JSON object");
-              setError("");
-              void onAppend({ operation, parameters: parsed, reason });
-            } catch (caught) {
-              setError(caught instanceof Error ? caught.message : "Parameters must be valid JSON");
-            }
+          onChange={(key, value) => {
+            setDraft((current) => ({ ...current, [key]: value }));
+            setError("");
           }}
-        >
-          Add reviewed operation to plan
-        </button>
+        />
+        <label>
+          Engineering reason
+          <input
+            value={reason}
+            maxLength={1000}
+            disabled={disabled}
+            placeholder="Why this feature exists"
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </label>
+        {error ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div className="cad-operation-grid">
+          <button type="button" className="app-button" disabled={disabled} onClick={() => void saveStep()}>
+            {editingId ? "Save planned step" : "Add to plan"}
+          </button>
+          {editingId ? (
+            <button type="button" className="app-button" disabled={disabled} onClick={clearEditor}>
+              Cancel edit
+            </button>
+          ) : null}
+        </div>
+        <section aria-label="Planned operations">
+          {steps.length ? (
+            <ol>
+              {steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{describeComposerOp(step.operation)}</strong>
+                    <p className="app-muted">{summarizeComposerParams(step.operation, step.parameters)}</p>
+                    {step.reason ? <p className="app-muted">{step.reason}</p> : null}
+                  </div>
+                  <div className="cad-operation-grid">
+                    <button type="button" className="app-button" disabled={disabled} onClick={() => loadStep(step)}>
+                      Edit step
+                    </button>
+                    <button type="button" className="app-button" disabled={disabled} onClick={() => deleteStep(step.id)}>
+                      Delete step
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="app-muted">No planned steps yet. Empty plan stays empty until you add a native operation.</p>
+          )}
+        </section>
       </div>
     </details>
   );

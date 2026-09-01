@@ -58,6 +58,12 @@ export type PickBoardSlot = {
   pickSlot: "captain" | "first" | "second";
 };
 
+/** Glanceable clock line — same shape as PickClockReason so pick-clock can assign without mapping. */
+export type PickClockJustificationReason = {
+  label: string;
+  tone: "strong" | "caution" | "neutral";
+};
+
 export type JustifiedEntry = {
   id: string;
   teamKey: string;
@@ -73,6 +79,8 @@ export type JustifiedEntry = {
   generatedAt: string | null;
   /** Null until the alliance-selection desk actually drafts this team. */
   boardSlot: PickBoardSlot | null;
+  /** Glanceable lines Pick Clock should show — empty until a stored justification exists. */
+  pickClockReasons: PickClockJustificationReason[];
 };
 
 export type PickListSummary = {

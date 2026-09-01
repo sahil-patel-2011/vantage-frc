@@ -330,7 +330,7 @@ export default function MatchStrategyCardsClient() {
           </>
         }
         title="Match Strategy Cards"
-        description="Printable per-match game plans for the drive team — roles, auto assignment, defense focus, key threats. Never DEMO game plans. Cross-check Strategy, Match checklist, and Command."
+        description="Printable game plan for our next TBA match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only. Never DEMO game plans."
       >
         <div className="msc-header-actions">
           {relatedLinks.map((link) => (
@@ -359,8 +359,10 @@ export default function MatchStrategyCardsClient() {
       <div id="match-strategy-cards-list" className="msc-layout">
         <Panel className="msc-panel">
           <span className="app-muted">
-            {view.eventName ?? view.eventKey} · Team {view.teamNumber} · {view.cards.length} scheduled
-            match(es)
+            {view.eventName ?? view.eventKey} · Team {view.teamNumber} ·{" "}
+            {view.nextMatchKey
+              ? `next ${view.nextMatchKey}`
+              : `${view.cards.length} scheduled match(es) — no upcoming TBA match`}
           </span>
         </Panel>
         {view.cards.map((card) => (
@@ -407,7 +409,7 @@ function StrategyCardPanel({
   const deployCue = deploySafetyCue({ gamePlan, driverNotes });
 
   return (
-    <Panel className="print-strategy-card msc-panel msc-card">
+    <Panel className={`print-strategy-card msc-panel msc-card${card.isNextMatch ? " msc-card-next" : ""}`}>
       <header className="msc-card-head">
         <div>
           <h2 style={{ margin: 0 }}>{matchLabel(card)}</h2>
@@ -415,17 +417,20 @@ function StrategyCardPanel({
             {card.scheduledAt ? new Date(card.scheduledAt).toLocaleString() : "Time TBD"}
           </small>
         </div>
-        <Badge
-          tone={
-            card.ownAllianceColor === "red"
-              ? "danger"
-              : card.ownAllianceColor === "blue"
-                ? "info"
-                : "neutral"
-          }
-        >
-          {card.ownAllianceColor ? card.ownAllianceColor.toUpperCase() : "TBD"} alliance
-        </Badge>
+        <div className="msc-card-badges">
+          {card.isNextMatch ? <Badge tone="info">Next match</Badge> : null}
+          <Badge
+            tone={
+              card.ownAllianceColor === "red"
+                ? "danger"
+                : card.ownAllianceColor === "blue"
+                  ? "info"
+                  : "neutral"
+            }
+          >
+            {card.ownAllianceColor ? card.ownAllianceColor.toUpperCase() : "TBD"} alliance
+          </Badge>
+        </div>
       </header>
 
       <div className="msc-alliances">

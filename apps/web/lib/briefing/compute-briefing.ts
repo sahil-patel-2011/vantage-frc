@@ -46,14 +46,26 @@ import {
   loadTeams,
 } from "../match-copilot/compute-match-copilot";
 import type { MatchCopilotCallout, MatchCopilotTeam } from "../match-copilot/types";
+import { selectBriefingCard, type MatchStrategyCardRow } from "./card-section";
+import {
+  counterBookGaps as computeCounterBookGaps,
+  selectBriefingCounterBooks,
+  type CounterBookReportRow,
+} from "./counter-book-section";
+import {
+  selectBriefingDefensePlans,
+  type DefensePlannerMatchupRow,
+} from "./defense-planner-section";
 import {
   normalizePlanOperations,
   normalizePlanTendencies,
   splitScoutedByAlliance,
   teamNumberFromKey,
 } from "./plan-sections";
+import { selectBriefingWatchNotes, type WatchlistEntryRow } from "./watchlist-section";
 import type {
   BriefingCard,
+  BriefingCounterBook,
   BriefingDefensePlan,
   BriefingPitReport,
   BriefingScoutedTeam,
@@ -145,16 +157,13 @@ async function loadOpponentIntel(
 }
 
 /** The human-authored strategy card for this match, or null. */
-async function loadCard(client: PoolClient, orgId: string, matchKey: string): Promise<BriefingCard | null> {
-  const result = await client.query<{
-    gamePlan: string | null;
-    autoAssignment: string | null;
-    defenseFocus: string | null;
-    keyThreats: string | null;
-    driverNotes: string | null;
-    roleAssignments: unknown;
-    updatedAt: string | null;
-  }>(
+async function loadCard(
+  client: PoolClient,
+  orgId: string,
+  matchKey: string,
+  partnerKeys: string[] = [],
+): Promise<BriefingCard | null> {
+  const result = await client.query<MatchStrategyCardRow>(
     `SELECT game_plan AS "gamePlan", auto_assignment AS "autoAssignment",
             defense_focus AS "defenseFocus", key_threats AS "keyThreats",
             driver_notes AS "driverNotes", role_assignments AS "roleAssignments",
@@ -164,35 +173,16 @@ async function loadCard(client: PoolClient, orgId: string, matchKey: string): Pr
      LIMIT 1`,
     [orgId, matchKey],
   );
-  const row = result.rows[0];
-  if (!row) return null;
-  const roleAssignments = Array.isArray(row.roleAssignments)
-    ? row.roleAssignments
-        .filter((entry): entry is { role?: unknown; assignee?: unknown } => typeof entry === "object" && entry !== null)
-        .map((entry) => ({
-          role: typeof entry.role === "string" ? entry.role : "",
-          assignee: typeof entry.assignee === "string" ? entry.assignee : "",
-        }))
-        .filter((entry) => entry.role || entry.assignee)
-    : [];
-  const card: BriefingCard = {
-    gamePlan: row.gamePlan,
-    autoAssignment: row.autoAssignment,
-    defenseFocus: row.defenseFocus,
-    keyThreats: row.keyThreats,
-    driverNotes: row.driverNotes,
-    roleAssignments,
-    updatedAt: row.updatedAt,
-  };
-  const usable =
-    card.gamePlan || card.autoAssignment || card.defenseFocus || card.keyThreats || card.driverNotes || roleAssignments.length;
-  return usable ? card : null;
+  const partnerNumbers = partnerKeys
+    .map((key) => teamNumberFromKey(key))
+    .filter((value): value is number => value != null);
+  return selectBriefingCard(result.rows[0] ?? null, { partnerNumbers });
 }
 
 /** Watchlist notes members left about opponents in this match. */
 async function loadWatchNotes(client: PoolClient, orgId: string, opponents: string[]): Promise<BriefingWatchNote[]> {
   if (!opponents.length) return [];
-  const result = await client.query<BriefingWatchNote>(
+  const result = await client.query<WatchlistEntryRow>(
     `SELECT team_key AS "teamKey", team_number AS "teamNumber", note, created_at::text AS "createdAt"
      FROM opponent_watchlist_entries
      WHERE org_id = $1 AND team_key = ANY($2::text[]) AND note IS NOT NULL AND btrim(note) <> ''
@@ -200,7 +190,7 @@ async function loadWatchNotes(client: PoolClient, orgId: string, opponents: stri
      LIMIT 12`,
     [orgId, opponents],
   );
-  return result.rows;
+  return selectBriefingWatchNotes(result.rows, opponents);
 }
 
 /** Latest defense-planner recommendation per opponent this season. */
@@ -211,7 +201,7 @@ async function loadDefensePlans(
   opponentNumbers: number[],
 ): Promise<BriefingDefensePlan[]> {
   if (!opponentNumbers.length) return [];
-  const result = await client.query<BriefingDefensePlan>(
+  const result = await client.query<DefensePlannerMatchupRow>(
     `SELECT DISTINCT ON (opponent_team_number)
             opponent_team_number AS "opponentTeamNumber",
             opponent_team_name AS "opponentTeamName",
@@ -222,7 +212,34 @@ async function loadDefensePlans(
      ORDER BY opponent_team_number, updated_at DESC`,
     [orgId, seasonYear, opponentNumbers],
   );
-  return result.rows;
+  return selectBriefingDefensePlans(result.rows, opponentNumbers);
+}
+
+/**
+ * Newest counter-book per opposing robot in this match.
+ *
+ * Reads the same counter_book_reports rows /counter-book writes, scoped by RLS to this org, so a
+ * counter-book generated once shows up on the briefing without regenerating (or metering) it. An
+ * opponent with no report simply has no row.
+ */
+async function loadCounterBooks(
+  client: PoolClient,
+  orgId: string,
+  opponents: string[],
+): Promise<BriefingCounterBook[]> {
+  if (!opponents.length) return [];
+  const result = await client.query<CounterBookReportRow>(
+    `SELECT id, team_key AS "teamKey", team_number AS "teamNumber", event_key AS "eventKey",
+            title, matches_scouted AS "matchesScouted", tendencies,
+            failure_triggers AS "failureTriggers", counter_plan AS "counterPlan", summary,
+            created_at::text AS "createdAt"
+     FROM counter_book_reports
+     WHERE org_id = $1 AND team_key = ANY($2::text[])
+     ORDER BY created_at DESC
+     LIMIT 24`,
+    [orgId, opponents],
+  );
+  return selectBriefingCounterBooks(result.rows, opponents);
 }
 
 /** Open/staged pit-repair triage reports for OUR robot this season. */
@@ -475,7 +492,7 @@ export async function computeBriefingView(
     if (computed) strategySections = computed;
   }
 
-  const [play, sessions, cycles, opponentIntel, scoutCount, card, watchNotes, defensePlans, pitReports, openRisks, batteries, teamsByKey, persistedBrief] =
+  const [play, sessions, cycles, opponentIntel, scoutCount, card, counterBooks, watchNotes, defensePlans, pitReports, openRisks, batteries, teamsByKey, persistedBrief] =
     await Promise.all([
       client.query<{ id: string; title: string; description: string; strokeCount: number | null; updatedAt: string }>(
         `SELECT p.id, p.title, p.description,
@@ -516,7 +533,8 @@ export async function computeBriefingView(
         `SELECT count(*)::int AS count FROM scout_assignments WHERE org_id = $1 AND match_key = $2`,
         [row.orgId, match.matchKey],
       ),
-      loadCard(client, row.orgId, match.matchKey),
+      loadCard(client, row.orgId, match.matchKey, allyKeys),
+      loadCounterBooks(client, row.orgId, opponents),
       loadWatchNotes(client, row.orgId, opponents),
       loadDefensePlans(client, row.orgId, seasonYear, opponentNumbers),
       loadPitReports(client, row.orgId, seasonYear),
@@ -604,6 +622,8 @@ export async function computeBriefingView(
     opponentsScouted,
     tendencies: strategySections.tendencies,
     card,
+    counterBooks,
+    counterBookGaps: computeCounterBookGaps(counterBooks, opponents),
     watchNotes,
     defensePlans,
     pitReports,

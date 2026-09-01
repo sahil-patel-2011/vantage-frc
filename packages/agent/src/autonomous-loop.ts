@@ -6,7 +6,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { isToolAllowed, loadOrgAiPolicy, meteredAI } from "@vantage/billing";
-import type { ChatAdapter, ContextItem } from "./index";
+import { estimateAdapterCostUsd, type ChatAdapter, type ContextItem } from "./index";
 import {
   DEFAULT_MAX_STEPS,
   finishAutonomousRun,
@@ -26,8 +26,11 @@ import {
 import { executeWebFetch, executeWebSearch } from "./web-tools";
 import { annotateToolOutput, toolOutputsToContextContent } from "./auto-tools";
 import type { AIToolRegistry } from "./orchestrator";
+import { compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
+import { executeDesignResearch } from "./design-research";
+import { evaluateRunCompletion, shouldRefuseEarlyFinal } from "./task-finish";
 
-export const AUTONOMOUS_AGENT_TOOLS = ["web.search", "web.fetch"] as const;
+export const AUTONOMOUS_AGENT_TOOLS = ["web.search", "web.fetch", "design.research"] as const;
 
 export type AutonomousAgentAction =
   | { type: "tool_call"; tool: string; input: Record<string, unknown> }
@@ -152,6 +155,26 @@ async function invokeNamedTool(
       output: result,
     };
   }
+  if (name === "design.research") {
+    const result = await executeDesignResearch({
+      topic: String(input.topic ?? input.query ?? ""),
+      mechanism: typeof input.mechanism === "string" ? input.mechanism : undefined,
+      limit: input.limit != null ? Number(input.limit) : 5,
+    });
+    return {
+      status:
+        result.status === "ok"
+          ? "ok"
+          : result.status === "setup_required"
+            ? "setup_required"
+            : result.status === "empty"
+              ? "empty"
+              : "error",
+      summary: result.message ?? `${result.results.length} grounded design source(s)`,
+      excerpt: summarizeJson({ concepts: result.concepts, results: result.results }, 4000) ?? undefined,
+      output: result,
+    };
+  }
   if (!registry) {
     return {
       status: "error",
@@ -242,7 +265,7 @@ export async function runAutonomousAgent(
   try {
     for (let stepIndex = 0; stepIndex < maxSteps; stepIndex++) {
       const stepRequestId = `${input.requestId}:step:${stepIndex}`;
-      const context: ContextItem[] = [
+      const rawContext: ContextItem[] = [
         ...(sessionItem ? [sessionItem] : []),
         ...(input.extraContext ?? []),
         ...toolResultItems,
@@ -258,11 +281,16 @@ export async function runAutonomousAgent(
           importance: 400,
         },
       ];
+      const context = compactContextItems(
+        rawContext,
+        contextTokenBudgetForAdapter(adapter),
+      ).items;
 
       const message = buildStepMessage(goal, stepIndex, maxSteps);
       const estimatedPrompt =
         Math.ceil(message.length / 4) +
         context.reduce((sum, item) => sum + Math.ceil(item.content.length / 4), 0);
+      const estimatedCompletion = 700;
 
       const text = await meteredAI({
         client,
@@ -270,9 +298,9 @@ export async function runAutonomousAgent(
         userId,
         feature: "agent",
         requestId: stepRequestId,
-        estimatedCostUsd: 0.01,
+        estimatedCostUsd: estimateAdapterCostUsd(adapter, estimatedPrompt, estimatedCompletion),
         estimatedPromptTokens: estimatedPrompt,
-        estimatedCompletionTokens: 700,
+        estimatedCompletionTokens: estimatedCompletion,
         provider: adapter.provider,
         model: adapter.model,
         billingOwner: { type: "org", id: orgId },
@@ -348,6 +376,25 @@ export async function runAutonomousAgent(
 
       if (action.type === "final") {
         const answer = truncateField(action.answer, MAX_ANSWER_CHARS) || "Done.";
+        const completion = evaluateRunCompletion({
+          goal,
+          answer,
+          toolsUsed: steps.map((step) => step.toolName).filter((name): name is string => Boolean(name)),
+          feature: "agent",
+        });
+        if (shouldRefuseEarlyFinal(completion, goal, "agent") && stepIndex + 1 < maxSteps) {
+          toolResultItems.push({
+            type: "module_fact",
+            id: `completion-gate-${stepIndex}`,
+            content: JSON.stringify({
+              status: "incomplete",
+              missing: completion.left,
+              instruction: "Continue working; use design.research before another final answer.",
+            }),
+            importance: 1000,
+          });
+          continue;
+        }
         await insertAutonomousStep(client, {
           orgId,
           runId,

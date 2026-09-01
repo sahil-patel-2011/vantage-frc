@@ -53,7 +53,6 @@ await esbuild.build({
   target: "node22",
   format: "esm",
   outfile: join(outDir, "cli.js"),
-  banner: { js: "#!/usr/bin/env node" },
   packages: "external",
   logLevel: "info",
 });

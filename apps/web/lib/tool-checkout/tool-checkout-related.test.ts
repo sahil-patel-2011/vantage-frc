@@ -10,12 +10,13 @@ import {
 } from "./tool-checkout-related";
 
 describe("toolCheckoutRelatedLinks", () => {
-  it("builds Equipment / Checklist / Safety cross-links", () => {
+  it("builds Equipment / Training / Checklist / Safety cross-links", () => {
     const links = toolCheckoutRelatedLinks("org-1", {
       include: [...TOOL_CHECKOUT_RELATED_INCLUDE],
     });
     expect(links.map((l) => l.id)).toEqual([
       "equipment-maintenance",
+      "training",
       "checklist-library",
       "safety-training",
     ]);

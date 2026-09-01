@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../lib/youtube";
-import { Icon, type IconName } from "../../components/app-shell";
+import { Icon, type IconName } from "../../components/icon";
+import { Badge, EmptyState } from "../../components/ui";
 
 type EmptyHint = {
   title: string;
@@ -84,6 +85,8 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   notifications: {
     title: "No notifications",
     body: "Alerts appear when they are sent.",
+    ctaHref: "/notifications",
+    ctaLabel: "Open notifications",
   },
   robot_readiness: {
     title: "No checklist data",
@@ -94,6 +97,8 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   alerts: {
     title: "No new alerts",
     body: "Org alerts list here when they exist.",
+    ctaHref: "/command",
+    ctaLabel: "Open command",
   },
   team_todos: {
     title: "No open todos",
@@ -129,11 +134,15 @@ function emptyHintFor(type: string): EmptyHint {
 }
 
 function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }) {
-  if (status === "live") return <span className="app-badge good">Live</span>;
+  // icon={null}: the "good" tone's default checkmark glyph would be new visual
+  // noise on every live widget header — keep the text-only pill this replaced.
+  if (status === "live") return <Badge tone="good" icon={null}>Live</Badge>;
   return null;
 }
 
-function EmptyState({
+/** Widget-scoped empty slot — the shared `EmptyState` in `compact` mode, so it drops
+ * into a widget that is already an `app-card` without doubling the border/shadow. */
+function WidgetEmptyState({
   hint,
   message,
   href,
@@ -148,15 +157,13 @@ function EmptyState({
     orgId ? `${path}${path.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : path;
   const ctaHref = hint.ctaHref ? withOrg(hint.ctaHref) : href;
   return (
-    <div className="dash-empty">
-      <strong>{hint.title}</strong>
-      <p>{message || hint.body}</p>
+    <EmptyState compact title={hint.title} description={message || hint.body}>
       {ctaHref && hint.ctaLabel ? (
         <a className="dash-empty-cta" href={ctaHref}>
           {hint.ctaLabel}
         </a>
       ) : null}
-    </div>
+    </EmptyState>
   );
 }
 
@@ -211,11 +218,11 @@ function Shell({
       {useChildren ? (
         children
       ) : (
-        <EmptyState hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
+        <WidgetEmptyState hint={emptyHint} message={payload?.message} href={href} orgId={orgId} />
       )}
       {href && showLive ? (
         <a className="dash-widget-link" href={href}>
-          Open →
+          {emptyHint.ctaLabel ?? "Open"} →
         </a>
       ) : null}
     </article>
@@ -241,13 +248,34 @@ export function countdownLabel(iso: string | null | undefined) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const countdownListeners = new Set<() => void>();
+let countdownTimer: number | null = null;
+
+function startSharedCountdown() {
+  if (countdownTimer !== null || typeof window === "undefined") return;
+  countdownTimer = window.setInterval(() => {
+    for (const listener of countdownListeners) listener();
+  }, 1000);
+}
+
+function stopSharedCountdown() {
+  if (countdownListeners.size > 0 || countdownTimer === null || typeof window === "undefined") return;
+  window.clearInterval(countdownTimer);
+  countdownTimer = null;
+}
+
 /** Tick once per second so countdownLabel stays live (next match, leave times, etc.). */
 export function useCountdownTick(active = true) {
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!active) return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
-    return () => window.clearInterval(id);
+    const listener = () => setTick((n) => n + 1);
+    countdownListeners.add(listener);
+    startSharedCountdown();
+    return () => {
+      countdownListeners.delete(listener);
+      stopSharedCountdown();
+    };
   }, [active]);
 }
 
@@ -255,6 +283,29 @@ export function useCountdownTick(active = true) {
 export function LiveCountdown({ iso }: { iso: string | null | undefined }) {
   useCountdownTick(Boolean(iso));
   return <>{countdownLabel(iso)}</>;
+}
+
+function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
+  const [play, setPlay] = useState(false);
+  if (!play) {
+    return (
+      <button className="dash-pit-facade" type="button" onClick={() => setPlay(true)}>
+        Load {title}
+      </button>
+    );
+  }
+  return (
+    <div className="dash-pit-frame">
+      <iframe
+        title={title}
+        src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}mute=1`}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
+    </div>
+  );
 }
 
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
@@ -271,7 +322,7 @@ function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
   return links;
 }
 
-export function DashboardWidgetView({
+export const DashboardWidgetView = memo(function DashboardWidgetView({
   type,
   payload,
   orgId,
@@ -557,17 +608,7 @@ export function DashboardWidgetView({
       const embed = url ? parseYouTubeEmbed(url)?.embedUrl : null;
       return (
         <Shell type={type} title={String(data.title ?? "Pit stream")} payload={payload} href={withOrg("/display")} emptyHint={hint} orgId={orgId}>
-          {embed ? (
-            <div className="dash-pit-frame">
-              <iframe
-                title={String(data.title ?? "Pit stream")}
-                src={`${embed}${embed.includes("?") ? "&" : "?"}mute=1`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            </div>
-          ) : null}
+          {embed ? <PitStreamEmbed title={String(data.title ?? "Pit stream")} embedUrl={embed} /> : null}
         </Shell>
       );
     }
@@ -852,4 +893,4 @@ export function DashboardWidgetView({
         </Shell>
       );
   }
-}
+});

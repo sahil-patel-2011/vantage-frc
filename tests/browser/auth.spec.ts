@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("landing sign in reaches dashboard with local auth fixture", async ({ context, page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/signin$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
@@ -21,5 +21,7 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
 
 test("protected routes preserve their requested destination", async ({ page }) => {
   await page.goto("/scouting?orgId=fixture-team");
-  await expect(page).toHaveURL(/\/signin\?next=%2Fscouting%3ForgId%3Dfixture-team$/);
+  await expect(page).toHaveURL(
+    /\/signin\?next=%2Fcompetition%3ForgId%3Dfixture-team%26tab%3Dscouting$/,
+  );
 });

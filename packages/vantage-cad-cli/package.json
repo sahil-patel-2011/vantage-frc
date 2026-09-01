@@ -19,6 +19,7 @@
     "doctor": "tsx src/cli.ts doctor"
   },
   "dependencies": {
-    "@vantage/cad": "*"
+    "@vantage/cad": "*",
+    "playwright": "^1.61.1"
   }
 }

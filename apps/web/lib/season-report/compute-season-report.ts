@@ -114,6 +114,11 @@ function mapSnapshot(row: SnapshotRow): SeasonReportSnapshot {
   };
 }
 
+/**
+ * Every logged row for the season, including retro-handoff lessons
+ * (`category = 'lessons'`, detail contains `[source:retro:…]`). Pass-through
+ * only — empty retro writes nothing, and this loader never synthesizes a lesson.
+ */
 export async function loadEntries(client: PoolClient, orgId: string, seasonYear: number): Promise<SeasonReportEntry[]> {
   const result = await client.query<EntryRow>(
     `SELECT id, season_year AS "seasonYear", category, title, detail,

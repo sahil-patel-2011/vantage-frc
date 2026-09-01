@@ -162,10 +162,18 @@ export default function TrainingClient() {
         <div style={{ display: "grid", gap: 16 }}>
           <CoveragePanel view={view} />
           <SummaryTiles view={view} />
-          <AddSkillForm busy={busy} mutate={mutate} />
-          {view.skills.length > 0 ? <CertifyForm view={view} busy={busy} mutate={mutate} /> : null}
-          <SkillsList view={view} busy={busy} mutate={mutate} />
-          <CertificationsList view={view} busy={busy} mutate={mutate} />
+          {view.canManage ? (
+            <>
+              <AddSkillForm busy={busy} mutate={mutate} />
+              {view.skills.length > 0 ? <CertifyForm view={view} busy={busy} mutate={mutate} /> : null}
+            </>
+          ) : (
+            <p className="app-muted">
+              Certifications are recorded by an owner or admin. You can see the whole matrix here.
+            </p>
+          )}
+          <SkillsList view={view} busy={busy || !view.canManage} mutate={mutate} />
+          <CertificationsList view={view} busy={busy || !view.canManage} mutate={mutate} />
         </div>
       )}
     </main>

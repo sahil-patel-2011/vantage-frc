@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { computeMatchChecklistView } from "./compute-match-checklist";
+import { computeMatchChecklistView, startChecklistRun } from "./compute-match-checklist";
 
 type QueryCall = { text: string; values: unknown[] };
 
@@ -150,5 +150,90 @@ describe("computeMatchChecklistView", () => {
     expect(view.upcomingMatches).toEqual([
       { matchKey: "2026miket_qm12", eventKey: "2026miket", label: "Qual 12", bumperColor: "red" },
     ]);
+  });
+
+  it("keeps unmapped SOP keys when reading a stored run — they do not vanish", async () => {
+    const started = "2026-03-21T15:00:00.000Z";
+    const { client } = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 254 }] },
+      {
+        rows: [
+          {
+            id: "run-sop",
+            matchLabel: "Qual 12",
+            eventKey: "2026miket",
+            teamNumber: 254,
+            startedAt: started,
+            completedAt: null,
+            items: [
+              { key: "bumper", label: "Bumpers on", done: false, checkedAt: null, sourceSopKey: "bumper" },
+              { key: "tote", label: "Totes loaded", done: false, checkedAt: null, sourceSopKey: "tote" },
+            ],
+          },
+        ],
+      },
+      { rows: [{ activeEventKey: "2026miket" }] },
+      { rows: [] },
+    ]);
+
+    const view = await computeMatchChecklistView(client, { userId: "user-1", requestedOrg: "org-1" });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.runs[0]?.items.map((item) => item.key)).toEqual(["bumper", "tote"]);
+    expect(view.runs[0]?.items.find((item) => item.key === "tote")?.label).toBe("Totes loaded");
+    expect(JSON.stringify(view.runs[0]?.items).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("startChecklistRun", () => {
+  it("instantiates from the active pit SOP and stores unmapped steps as custom items", async () => {
+    const { client, calls } = makeClient([
+      {
+        rows: [
+          {
+            id: "tmpl-1",
+            name: "Pre-queue SOP",
+            items: [
+              { key: "bumper", label: "Bumpers on" },
+              { key: "tote", label: "Totes loaded" },
+            ],
+          },
+        ],
+      },
+      { rows: [] },
+    ]);
+
+    await startChecklistRun(client, {
+      orgId: "org-1",
+      userId: "user-1",
+      matchLabel: "Qual 12",
+      eventKey: "2026miket",
+      teamNumber: 254,
+    });
+
+    const insert = calls.find((call) => call.text.includes("INSERT INTO match_checklist_runs"));
+    expect(insert).toBeDefined();
+    const items = JSON.parse(String(insert?.values[4])) as Array<{ key: string; label: string }>;
+    expect(items.map((item) => item.key)).toEqual(["bumper", "tote"]);
+    expect(items.find((item) => item.key === "tote")?.label).toBe("Totes loaded");
+    expect(JSON.stringify(items).toLowerCase()).not.toContain("demo");
+    expect(items.some((item) => item.key === "sb50")).toBe(false);
+  });
+
+  it("falls back to default pit cues when no SOP exists — still never DEMO", async () => {
+    const { client, calls } = makeClient([{ rows: [] }, { rows: [] }]);
+
+    await startChecklistRun(client, {
+      orgId: "org-1",
+      userId: "user-1",
+      matchLabel: "Qual 12",
+      eventKey: null,
+      teamNumber: 254,
+    });
+
+    const insert = calls.find((call) => call.text.includes("INSERT INTO match_checklist_runs"));
+    const items = JSON.parse(String(insert?.values[4])) as Array<{ key: string; label: string }>;
+    expect(items.map((item) => item.key)).toContain("bumper");
+    expect(items.every((item) => !/demo/i.test(`${item.key} ${item.label}`))).toBe(true);
   });
 });

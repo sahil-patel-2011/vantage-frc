@@ -82,7 +82,7 @@ export default function WallClient({ publicId }: { publicId: string }) {
             <article key={entry.id} className="public-wall-card">
               <span className="public-wall-tier">{sponsorWallTierLabel(entry.tier)}</span>
               {entry.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img src={entry.logoUrl} alt={`${entry.sponsorName} logo`} />
               ) : null}
               <strong>

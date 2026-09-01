@@ -1,5 +1,10 @@
 import DashboardClient from "./dashboard-client";
 
-export default function DashboardPage() {
-  return <DashboardClient />;
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orgId?: string }>;
+}) {
+  const { orgId } = await searchParams;
+  return <DashboardClient initialOrgId={orgId ?? ""} />;
 }

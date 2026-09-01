@@ -1,17 +1,27 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { computeCoverageScore, findKnowledgeGaps, slugifyGapTitle, stubTitleFor, summarizeScan, buildStubPageBody } from ".";
+import { loadWorkItems } from "../work-items/service";
+import { workItemHref } from "../work-items/canonical";
+import type { WorkItem, WorkItemSource } from "../work-items/types";
+import {
+  computeCoverageScore,
+  countEligibleWorkBySource,
+  findKnowledgeGaps,
+  slugifyGapTitle,
+  stubTitleFor,
+  summarizeScan,
+  buildStubPageBody,
+} from ".";
 import type {
-  KnowledgeGapDecision,
-  KnowledgeGapEvent,
   KnowledgeGapItem,
   KnowledgeGapPage,
   KnowledgeGapScan,
   KnowledgeGapStatus,
   KnowledgeGapSubjectKind,
-  KnowledgeGapSubsystem,
   KnowledgeGapTemplateKind,
+  KnowledgeGapWorkItem,
+  KnowledgeGapWorkKind,
 } from "./types";
 
 export type KnowledgeGapSetupStep = {
@@ -44,8 +54,29 @@ export function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-function isSubjectKind(value: unknown): value is KnowledgeGapSubjectKind {
-  return value === "subsystem" || value === "decision" || value === "event";
+function isWorkKind(value: unknown): value is KnowledgeGapWorkKind {
+  return value === "todo" || value === "build_task" || value === "milestone";
+}
+
+/** Alias or native kind → persisted work source. Null for unknown — never invent DEMO subjects. */
+export function toPersistedSubjectKind(kind: string): KnowledgeGapWorkKind | null {
+  if (isWorkKind(kind)) return kind;
+  if (kind === "subsystem") return "build_task";
+  if (kind === "decision") return "todo";
+  if (kind === "event") return "milestone";
+  return null;
+}
+
+/** Persisted work source or leftover 0242 alias → client badge kind. */
+export function fromPersistedSubjectKind(kind: string): KnowledgeGapSubjectKind | null {
+  if (kind === "todo" || kind === "decision") return "decision";
+  if (kind === "build_task" || kind === "subsystem") return "subsystem";
+  if (kind === "milestone" || kind === "event") return "event";
+  return null;
+}
+
+function workSourceFromStoredKind(kind: string): WorkItemSource | null {
+  return toPersistedSubjectKind(kind);
 }
 
 function isStatus(value: unknown): value is KnowledgeGapStatus {
@@ -111,10 +142,17 @@ type ItemRow = {
   createdAt: string;
 };
 
-function mapItem(row: ItemRow): KnowledgeGapItem {
+function itemHref(orgId: string, row: ItemRow): string | null {
+  if (!row.subjectId) return null;
+  const source = workSourceFromStoredKind(row.subjectKind);
+  if (!source) return null;
+  return workItemHref(source, orgId, row.subjectId);
+}
+
+function mapItem(row: ItemRow, orgId: string): KnowledgeGapItem {
   return {
     id: row.id,
-    subjectKind: isSubjectKind(row.subjectKind) ? row.subjectKind : "subsystem",
+    subjectKind: fromPersistedSubjectKind(row.subjectKind) ?? "subsystem",
     subjectRef: row.subjectRef,
     subjectId: row.subjectId,
     seasonYear: row.seasonYear,
@@ -123,6 +161,17 @@ function mapItem(row: ItemRow): KnowledgeGapItem {
     status: isStatus(row.status) ? row.status : "open",
     draftPageId: row.draftPageId,
     createdAt: row.createdAt,
+    href: itemHref(orgId, row),
+  };
+}
+
+function asGapWorkItem(item: WorkItem): KnowledgeGapWorkItem {
+  return {
+    id: item.id,
+    source: item.source,
+    title: item.title,
+    status: item.status,
+    grouping: item.grouping,
   };
 }
 
@@ -136,7 +185,7 @@ export async function computeKnowledgeGapView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to scan for undocumented knowledge.",
+      message: "Select a team workspace to scan work items against the wiki.",
       steps: [
         { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
       ],
@@ -188,42 +237,12 @@ export async function computeKnowledgeGapView(
     seasonYear,
     seasons,
     scan,
-    items: itemsResult ? itemsResult.rows.map(mapItem) : [],
+    items: itemsResult ? itemsResult.rows.map((row) => mapItem(row, org.orgId)) : [],
     computedAt: new Date().toISOString(),
   };
 }
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
-
-async function loadSubsystems(client: PoolClient, orgId: string, seasonYear: number): Promise<KnowledgeGapSubsystem[]> {
-  const result = await client.query<{ id: string; name: string; category: string; seasonYear: number }>(
-    `SELECT id, name, category, season_year AS "seasonYear"
-     FROM robot_subsystems WHERE org_id = $1 AND season_year = $2 ORDER BY name`,
-    [orgId, seasonYear],
-  );
-  return result.rows;
-}
-
-async function loadDecisions(client: PoolClient, orgId: string, seasonYear: number): Promise<KnowledgeGapDecision[]> {
-  const result = await client.query<{ id: string; title: string; seasonYear: number }>(
-    `SELECT id, title, season_year AS "seasonYear"
-     FROM decision_records WHERE org_id = $1 AND season_year = $2 ORDER BY created_at DESC`,
-    [orgId, seasonYear],
-  );
-  return result.rows;
-}
-
-async function loadEvents(client: PoolClient, orgId: string, seasonYear: number): Promise<KnowledgeGapEvent[]> {
-  const result = await client.query<{ eventKey: string; name: string; seasonYear: number }>(
-    `SELECT DISTINCT e.event_key AS "eventKey", e.name, e.year AS "seasonYear"
-     FROM match_scout_entries m
-     JOIN events_ref e ON e.event_key = m.event_key
-     WHERE m.org_id = $1 AND e.year = $2
-     ORDER BY e.name`,
-    [orgId, seasonYear],
-  );
-  return result.rows;
-}
 
 async function loadPages(client: PoolClient, orgId: string): Promise<KnowledgeGapPage[]> {
   const result = await client.query<{ id: string; title: string; body: string; tags: string[] | null; seasonYear: number | null }>(
@@ -244,14 +263,12 @@ export async function runKnowledgeGapScan(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
 ): Promise<KnowledgeGapView> {
-  const [subsystems, decisions, events, pages] = await Promise.all([
-    loadSubsystems(client, input.orgId, input.seasonYear),
-    loadDecisions(client, input.orgId, input.seasonYear),
-    loadEvents(client, input.orgId, input.seasonYear),
+  const [{ items: rawWorkItems }, pages] = await Promise.all([
+    loadWorkItems(client, { orgId: input.orgId, seasonYear: input.seasonYear }),
     loadPages(client, input.orgId),
   ]);
-
-  const totalSubjects = subsystems.length + decisions.length + events.length;
+  const workItems = rawWorkItems.map(asGapWorkItem);
+  const counts = countEligibleWorkBySource(workItems);
 
   const receipt = await meteredAI({
     client,
@@ -263,16 +280,16 @@ export async function runKnowledgeGapScan(
     keySource: "local_cli",
     metadata: {
       seasonYear: input.seasonYear,
-      subsystemCount: subsystems.length,
-      decisionCount: decisions.length,
-      eventCount: events.length,
+      todoCount: counts.todos,
+      buildTaskCount: counts.buildTasks,
+      milestoneCount: counts.milestones,
       pageCount: pages.length,
-      note: "Deterministic wiki/decision-corpus vs subsystem/event diff — no external model call",
+      note: "Deterministic wiki vs work-items diff — no external model call, no invented gaps",
     },
     invoke: async () => {
-      const gaps = findKnowledgeGaps({ subsystems, decisions, events, pages });
-      const coverageScore = computeCoverageScore(totalSubjects, gaps.length);
-      const summary = summarizeScan({ totalSubjects, gapCount: gaps.length, coverageScore });
+      const gaps = findKnowledgeGaps({ workItems, pages, seasonYear: input.seasonYear });
+      const coverageScore = computeCoverageScore(counts.total, gaps.length);
+      const summary = summarizeScan({ totalSubjects: counts.total, gapCount: gaps.length, coverageScore });
       return {
         value: { gaps, coverageScore, summary },
         promptTokens: 0,
@@ -294,9 +311,9 @@ export async function runKnowledgeGapScan(
     [
       input.orgId,
       input.seasonYear,
-      subsystems.length,
-      decisions.length,
-      events.length,
+      counts.buildTasks,
+      counts.todos,
+      counts.milestones,
       pages.length,
       gaps.length,
       coverageScore,
@@ -307,6 +324,8 @@ export async function runKnowledgeGapScan(
   const scanId = scanResult.rows[0]!.id;
 
   for (const gap of gaps) {
+    const subjectKind = toPersistedSubjectKind(gap.subjectKind);
+    if (!subjectKind) continue;
     await client.query(
       `INSERT INTO knowledge_gap_items (
          org_id, scan_id, subject_kind, subject_ref, subject_id, season_year, reason, suggested_template
@@ -314,7 +333,7 @@ export async function runKnowledgeGapScan(
       [
         input.orgId,
         scanId,
-        gap.subjectKind,
+        subjectKind,
         gap.subjectRef,
         gap.subjectId,
         gap.seasonYear,
@@ -342,7 +361,7 @@ export async function draftStubPage(
   if (!item) throw new Error("Knowledge-gap item not found");
   if (item.status === "drafted" && item.draftPageId) return;
 
-  const kind = isSubjectKind(item.subjectKind) ? item.subjectKind : "subsystem";
+  const kind = fromPersistedSubjectKind(item.subjectKind) ?? "subsystem";
   const title = stubTitleFor(kind, item.subjectRef);
   const body = buildStubPageBody({
     subjectKind: kind,

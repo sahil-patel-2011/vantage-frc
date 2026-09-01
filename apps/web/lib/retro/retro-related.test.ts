@@ -12,6 +12,13 @@ import {
 } from "./retro-related";
 
 describe("retroRelatedLinks", () => {
+  it("builds Season report / Playbook handoff links via hubHref / withOrgHref", () => {
+    const links = retroRelatedLinks("org-1", { include: ["season-report", "playbook"] });
+    expect(links.map((l) => l.id)).toEqual(["season-report", "playbook"]);
+    expect(links.find((l) => l.id === "season-report")?.href).toBe("/season-report?orgId=org-1");
+    expect(links.find((l) => l.id === "playbook")?.href).toBe("/team?tab=knowledge&orgId=org-1");
+  });
+
   it("builds Messages / FMEA / Decisions via hubHref / withOrgHref", () => {
     const links = retroRelatedLinks("org-1", {
       include: [...RETRO_RELATED_INCLUDE],
@@ -119,5 +126,21 @@ describe("retroNextActions", () => {
     expect(actions[0]?.id).toBe("actions");
     expect(actions.some((a) => a.id === "decisions")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+  });
+
+  it("points ready boards with real lessons at Season report / Playbook handoff", () => {
+    const actions = retroNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      sessionCount: 2,
+      openActionCount: 0,
+      learnedItemCount: 4,
+    });
+    const handoff = actions.find((a) => a.id === "handoff");
+    expect(handoff?.label).toBe("Hand off lessons");
+    expect(handoff?.href).toBe("#retro-learned");
+    expect(actions.find((a) => a.id === "season-report")?.href).toBe("/season-report?orgId=org-1");
+    expect(actions.find((a) => a.id === "playbook")?.href).toBe("/team?tab=knowledge&orgId=org-1");
+    expect(actions.every((a) => !/invent/i.test(a.label))).toBe(true);
   });
 });

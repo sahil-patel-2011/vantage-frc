@@ -160,8 +160,9 @@ export type LineupMatchRow = {
   matchKey: string;
   matchNumber: number;
   compLevel: string;
-  redAlliance: { teamKeys?: string[] } | null;
-  blueAlliance: { teamKeys?: string[] } | null;
+  setNumber?: number;
+  redAlliance: { teamKeys?: string[]; team_keys?: string[] } | string[] | null;
+  blueAlliance: { teamKeys?: string[]; team_keys?: string[] } | string[] | null;
   eventTime?: string | null;
 };
 
@@ -178,6 +179,15 @@ export type LineupEntryScoutRow = {
   scoutUserId: string;
   scoutName: string | null;
 };
+
+function lineupTeamKeys(
+  alliance: LineupMatchRow["redAlliance"] | LineupMatchRow["blueAlliance"],
+): string[] {
+  if (Array.isArray(alliance)) return alliance.filter((value): value is string => typeof value === "string");
+  if (!alliance || typeof alliance !== "object") return [];
+  const keys = alliance.teamKeys ?? alliance.team_keys ?? [];
+  return keys.filter((value): value is string => typeof value === "string");
+}
 
 /**
  * Assemble coverage slots from real schedule + assignment + entry rows only.
@@ -203,8 +213,8 @@ export function buildLineupCoverageSlots(input: {
   const slots: CoverageSlotInput[] = [];
   for (const match of input.matches) {
     const alliances: Array<{ alliance: "red" | "blue"; teamKeys: string[] }> = [
-      { alliance: "red", teamKeys: match.redAlliance?.teamKeys ?? [] },
-      { alliance: "blue", teamKeys: match.blueAlliance?.teamKeys ?? [] },
+      { alliance: "red", teamKeys: lineupTeamKeys(match.redAlliance) },
+      { alliance: "blue", teamKeys: lineupTeamKeys(match.blueAlliance) },
     ];
     for (const { alliance, teamKeys } of alliances) {
       for (const teamKey of teamKeys) {
@@ -223,6 +233,7 @@ export function buildLineupCoverageSlots(input: {
           teamKey,
           matchNumber: match.matchNumber,
           compLevel: match.compLevel,
+          setNumber: match.setNumber,
           alliance,
           assignmentCount: assignmentCounts.get(key) ?? 0,
           entryCount: entries.length,

@@ -1,0 +1,131 @@
+/* Team channel controls in the chat sidebar and header. Design tokens only, correct in light and
+   dark, 44px targets, readable at 360px. Kept in its own file so the shared styles.css stays
+   untouched. */
+
+.messages-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 14px 0 6px;
+}
+
+.messages-group-heading:first-of-type {
+  margin-top: 8px;
+}
+
+.messages-group-heading .eyebrow {
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.messages-channel-add,
+.messages-channel-archive-toggle {
+  min-height: 32px;
+  padding: 6px 10px;
+  color: var(--app-accent);
+  background: transparent;
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.messages-channel-archive-toggle {
+  width: 100%;
+  margin-top: 6px;
+  color: var(--app-muted);
+  text-align: left;
+}
+
+.messages-channel-add:hover,
+.messages-channel-archive-toggle:hover {
+  background: var(--app-soft);
+}
+
+.messages-channel-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.messages-channel-form input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 10px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.messages-channel-form button {
+  min-height: 36px;
+  padding: 6px 12px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.messages-channel-form button[type="submit"] {
+  color: var(--app-on-accent, #fff);
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
+.messages-channel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.messages-channel-actions button {
+  min-height: 32px;
+  padding: 6px 12px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.messages-channel-actions button:hover:not(:disabled) {
+  background: var(--app-soft);
+}
+
+.messages-channel-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Archived channels stay selectable — their history is still readable — but read as inactive. */
+.chat-sidebar button.is-archived {
+  opacity: 0.68;
+}
+
+.chat-sidebar button.is-archived:hover,
+.chat-sidebar button.is-archived.active {
+  opacity: 1;
+}
+
+.messages-group-empty {
+  margin: 2px 0 4px;
+  color: var(--app-muted);
+  font-size: 12px;
+}

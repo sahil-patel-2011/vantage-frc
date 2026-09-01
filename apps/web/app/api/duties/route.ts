@@ -2,15 +2,21 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  applyWatchAction,
+  computeDutiesView,
+  isWatchActionName,
+  parseWatchAction,
+  type DutiesView,
+} from "../../../lib/duties";
+import {
   computeDutyRosterView,
   createDuty,
   deleteDuty,
   parseDutyAction,
   updateDuty,
-  type DutyRosterView,
 } from "../../../lib/duty-roster";
 
-export type { DutyRosterView };
+export type { DutiesView };
 
 class HttpError extends Error {
   constructor(
@@ -23,11 +29,14 @@ class HttpError extends Error {
 
 function fail(error: unknown) {
   const message = error instanceof Error ? error.message : "Duty roster request failed";
-  if (/duty_assignments|relation .* does not exist/i.test(message)) {
+  if (/duty_assignments|relation .* does not exist|0500_duty_on_duty_chaperone|0145_duty_roster/i.test(message)) {
     return Response.json(
-      { error: "Apply the duty roster migration first (0145_duty_roster)." },
+      { error: message.includes("0500") ? message : "Apply the duty roster migration first (0145_duty_roster)." },
       { status: 503 },
     );
+  }
+  if (/Only an owner or admin/i.test(message)) {
+    return Response.json({ error: message }, { status: 403 });
   }
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: message }, { status });
@@ -40,7 +49,7 @@ export async function GET(request: Request) {
 
     const requestedOrg = new URL(request.url).searchParams.get("orgId");
     const view = await withRls({ userId: session.user.id }, (client) =>
-      computeDutyRosterView(client, { userId: session.user.id, requestedOrg }),
+      computeDutiesView(client, { userId: session.user.id, requestedOrg }),
     );
     return Response.json(view);
   } catch (error) {
@@ -60,9 +69,22 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const action = parseDutyAction(body);
     const userId = session.user.id;
+    const watchNamed =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? (body as { action?: unknown }).action
+        : null;
 
+    if (isWatchActionName(watchNamed)) {
+      const action = parseWatchAction(body);
+      const view = await withRls({ userId, orgId: action.orgId }, async (client) => {
+        await applyWatchAction(client, { ...action, userId });
+        return computeDutiesView(client, { userId, requestedOrg: action.orgId });
+      });
+      return Response.json(view);
+    }
+
+    const action = parseDutyAction(body);
     const view = await withRls({ userId, orgId: action.orgId }, async (client) => {
       switch (action.action) {
         case "create_duty":

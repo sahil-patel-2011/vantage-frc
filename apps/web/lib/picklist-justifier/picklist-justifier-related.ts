@@ -8,6 +8,7 @@ export const PICKLIST_JUSTIFIER_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, hub: "/competition" as const, tab: "scouting" },
   { id: "chemistry", label: "Chemistry", kind: "hub" as const, hub: "/competition" as const, tab: "chemistry" },
   { id: "draft", label: "Alliance board", kind: "path" as const, path: "/strategy/draft" },
+  { id: "pick-clock", label: "Pick clock", kind: "path" as const, path: "/pick-clock" },
 ] as const;
 
 export type PicklistJustifierRelatedId = (typeof PICKLIST_JUSTIFIER_RELATED_LINKS)[number]["id"];
@@ -286,6 +287,12 @@ export function picklistJustifierNextActions(input: {
       label: "Open Scouting",
       detail: "Add match observations that feed source citations.",
       href: hubHref("/competition", "scouting", orgId),
+    },
+    {
+      id: "pick-clock",
+      label: "Open Pick clock",
+      detail: "Stored rationales appear as recommendation reasons — never DEMO picks.",
+      href: withOrgHref("/pick-clock", orgId),
     },
     {
       id: "draft",

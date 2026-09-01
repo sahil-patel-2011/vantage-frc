@@ -8,10 +8,12 @@ import {
   deleteAgenda,
   draftMinutesActionItems,
   generateAgenda,
+  saveMinutes,
   updateActionItemStatus,
   updateAgendaStatus,
   type MeetingAutopilotView,
 } from "../../../lib/meeting-autopilot/compute-meeting-autopilot";
+import { requireCalendarEventId } from "../../../lib/meeting-autopilot/persist";
 import type { ActionItemStatus, MeetingAgendaStatus } from "../../../lib/meeting-autopilot/types";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
@@ -21,10 +23,6 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : null;
-}
-
-function isoDateOrNull(value: unknown): string | null {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
 function seasonFrom(value: unknown): number {
@@ -94,17 +92,35 @@ export async function POST(request: Request) {
 
       switch (action) {
         case "generate-agenda": {
-          const title = trimmedOrNull(body.title, 200) ?? "Team meeting";
-          const meetingOn = isoDateOrNull(body.meetingOn);
-          await generateAgenda(client, { orgId, userId, seasonYear, title, meetingOn });
+          const calendarEventId = requireCalendarEventId(body.calendarEventId);
+          await generateAgenda(client, { orgId, userId, seasonYear, calendarEventId });
+          break;
+        }
+        case "save-minutes": {
+          const minutesText = trimmedOrNull(body.minutesText, 20_000);
+          if (!minutesText) throw new Error("minutesText is required");
+          await saveMinutes(client, {
+            orgId,
+            userId,
+            seasonYear,
+            calendarEventId: trimmedOrNull(body.calendarEventId, 64),
+            agendaId: trimmedOrNull(body.agendaId, 64),
+            minutesText,
+          });
           break;
         }
         case "draft-minutes": {
-          const agendaId = trimmedOrNull(body.agendaId, 64);
           const minutesText = trimmedOrNull(body.minutesText, 20_000);
-          if (!agendaId) throw new Error("agendaId is required");
           if (!minutesText) throw new Error("minutesText is required");
-          await draftMinutesActionItems(client, { orgId, userId, agendaId, minutesText });
+          const saved = await saveMinutes(client, {
+            orgId,
+            userId,
+            seasonYear,
+            calendarEventId: trimmedOrNull(body.calendarEventId, 64),
+            agendaId: trimmedOrNull(body.agendaId, 64),
+            minutesText,
+          });
+          await draftMinutesActionItems(client, { orgId, userId, agendaId: saved.agendaId, minutesText });
           break;
         }
         case "update-action-item": {

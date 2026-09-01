@@ -3,6 +3,11 @@ import { assertHubTabAccess, assertSponsorsAllowed, auth, emitPreferredNotificat
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
+import { recordMoney, removeMoney } from "../../../lib/finance/ledger";
+import {
+  syncGrantAwardMoney,
+  syncSponsorContributionMoney,
+} from "../../../lib/finance/source-mirrors";
 import { loadBusinessView, validSeason } from "../../../lib/business-data";
 import {
   DRAFT_TYPES,
@@ -296,15 +301,17 @@ export async function POST(request: Request) {
             [purchaseId, orgId, dbStatus, session.user.id, reviewNote],
           );
           if (dbStatus === "approved") {
-            await client.query(
-              `INSERT INTO finance_transactions(
-                 org_id, season_year, type, source, amount_usd, category_id, purchase_request_id, description, created_by
-               ) SELECT $1,$2,'expense','purchase_request',$3,$4,$5,$6,$7
-               WHERE NOT EXISTS (
-                 SELECT 1 FROM finance_transactions WHERE org_id = $1 AND purchase_request_id = $5 AND type = 'expense'
-               )`,
-              [orgId, purchase.seasonYear, purchase.totalCostUsd, purchase.categoryId, purchaseId, purchase.title, session.user.id],
-            );
+            await recordMoney(client, {
+              orgId,
+              source: "purchase_request",
+              sourceId: purchaseId,
+              direction: "out",
+              amountUsd: Number(purchase.totalCostUsd) || 0,
+              seasonYear: purchase.seasonYear,
+              categoryId: purchase.categoryId,
+              label: `Order — ${purchase.title}`,
+              createdBy: session.user.id,
+            });
             const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(purchaseId)}&season=${purchase.seasonYear}`;
             await emitPreferredNotification(client, {
               userId: purchase.requestedBy,
@@ -318,6 +325,11 @@ export async function POST(request: Request) {
               },
             });
           } else if (dbStatus === "rejected") {
+            await removeMoney(client, {
+              orgId,
+              source: "purchase_request",
+              sourceId: purchaseId,
+            });
             const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(purchaseId)}&season=${purchase.seasonYear}`;
             await emitPreferredNotification(client, {
               userId: purchase.requestedBy,
@@ -474,17 +486,16 @@ export async function POST(request: Request) {
           );
           if (!inserted.rows[0]) throw new Error("Sponsor not found");
           entityId = inserted.rows[0].id;
-          if (contributionType === "cash") {
-            await client.query(
-              `INSERT INTO finance_transactions(
-                 org_id, season_year, type, source, amount_usd, occurred_at, sponsor_contribution_id, description, created_by
-               ) SELECT $1,$2,'income','sponsor_contribution',$3,$4::date,$5,$6,$7
-               WHERE NOT EXISTS (
-                 SELECT 1 FROM finance_transactions WHERE org_id = $1 AND sponsor_contribution_id = $5 AND type = 'income'
-               )`,
-              [orgId, seasonYear, amountUsd, receivedOn, entityId, text(body.description, 1_000) ?? "Sponsor contribution", session.user.id],
-            );
-          }
+          await syncSponsorContributionMoney(client, {
+            orgId,
+            contributionId: entityId,
+            seasonYear,
+            contributionType,
+            amountUsd: contributionType === "cash" ? amountUsd : null,
+            receivedAt: receivedOn,
+            label: text(body.description, 1_000) ?? "Sponsor contribution",
+            userId: session.user.id,
+          });
           const thankYouDue = defaultThankYouDueOn(receivedOn);
           await client.query(
             `UPDATE sponsors SET
@@ -639,15 +650,42 @@ export async function POST(request: Request) {
           const awardedCents = cents(body.awardedCents);
           if ((status === "awarded" || awardedCents > 0) && !member.admin) requireAdmin(member);
           const dbStatus = grantDbStatus[status];
-          const updated = await client.query(
+          const updated = await client.query<{
+            grantOpportunityId: string | null;
+            seasonYear: number;
+            amountAwardedUsd: string;
+            status: string;
+            decisionAt: string | null;
+          }>(
             `UPDATE grant_applications SET status = $3::grant_status,
                amount_awarded_usd = CASE WHEN $3 = 'awarded' THEN $4 ELSE amount_awarded_usd END,
                submitted_at = CASE WHEN $3 = 'submitted' THEN COALESCE(submitted_at, now()) ELSE submitted_at END,
                decision_at = CASE WHEN $3 IN ('awarded','declined') THEN now() ELSE decision_at END,
-               updated_at = now() WHERE id = $1 AND org_id = $2`,
+               updated_at = now()
+             WHERE id = $1 AND org_id = $2
+             RETURNING grant_opportunity_id AS "grantOpportunityId", season_year AS "seasonYear",
+                       COALESCE(amount_awarded_usd, 0)::text AS "amountAwardedUsd",
+                       status::text AS status, decision_at::text AS "decisionAt"`,
             [grantId, orgId, dbStatus, Math.round((awardedCents / 100) * 100) / 100],
           );
           if (!updated.rowCount) throw new Error("Grant not found");
+          const grant = updated.rows[0]!;
+          const opportunity = grant.grantOpportunityId
+            ? await client.query<{ name: string }>(
+                `SELECT name FROM grant_opportunities WHERE id = $1 AND org_id = $2`,
+                [grant.grantOpportunityId, orgId],
+              )
+            : null;
+          await syncGrantAwardMoney(client, {
+            orgId,
+            grantApplicationId: grantId,
+            seasonYear: grant.seasonYear,
+            name: opportunity?.rows[0]?.name ?? "Grant",
+            status: grant.status,
+            amountAwardedUsd: Number(grant.amountAwardedUsd) || 0,
+            decisionAt: grant.decisionAt,
+            userId: session.user.id,
+          });
           await audit(client, { orgId, userId: session.user.id, action, entityType: "grant_application", entityId: grantId, metadata: { status } });
           break;
         }

@@ -2,12 +2,16 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { buildPostmortemNarrative, countItemsByKind, countOpenActions, groupItemsByKind } from ".";
+import { loadHandoffStatus, loadSeasonLearnedItems } from "./handoff";
 import { retroSetupSteps, type RetroSetupStep } from "./retro-related";
 import type {
   RetroActionItem,
   RetroActionStatus,
+  RetroHandoffResult,
+  RetroHandoffStatus,
   RetroItem,
   RetroItemKind,
+  RetroLearnedItem,
   RetroPostmortem,
   RetroPostmortemCounts,
   RetroSession,
@@ -33,6 +37,9 @@ export type RetroView =
       activeSession: RetroSession | null;
       itemsByKind: Record<RetroItemKind, RetroItem[]>;
       actionItems: RetroActionItem[];
+      learnedItems: RetroLearnedItem[];
+      handoff: RetroHandoffStatus;
+      lastHandoff?: RetroHandoffResult;
       postmortems: RetroPostmortem[];
       computedAt: string;
     };
@@ -199,6 +206,11 @@ export async function computeRetroView(
     }));
   }
 
+  const [learnedItems, handoff] = await Promise.all([
+    loadSeasonLearnedItems(client, org.orgId, seasonYear),
+    loadHandoffStatus(client, { orgId: org.orgId, seasonYear }),
+  ]);
+
   const postmortemResult = await client.query<{
     id: string;
     seasonYear: number;
@@ -233,6 +245,8 @@ export async function computeRetroView(
     activeSession,
     itemsByKind,
     actionItems,
+    learnedItems,
+    handoff,
     postmortems,
     computedAt: new Date().toISOString(),
   };

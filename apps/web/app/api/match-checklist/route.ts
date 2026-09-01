@@ -1,7 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { CHECKLIST_ITEM_KEYS } from "../../../lib/match-checklist";
 import {
   computeMatchChecklistView,
   deleteChecklistRun,
@@ -9,7 +8,6 @@ import {
   toggleChecklistItem,
   type MatchChecklistView,
 } from "../../../lib/match-checklist/compute-match-checklist";
-import type { ChecklistItemKey } from "../../../lib/match-checklist/types";
 
 export type { MatchChecklistView };
 
@@ -24,10 +22,10 @@ function intOrNull(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }
 
-function oneOfItemKey(value: unknown): ChecklistItemKey | null {
-  return typeof value === "string" && (CHECKLIST_ITEM_KEYS as string[]).includes(value)
-    ? (value as ChecklistItemKey)
-    : null;
+function itemKeyOrNull(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const key = value.trim();
+  return key && key.length <= 80 ? key : null;
 }
 
 export async function GET(request: Request) {
@@ -92,12 +90,13 @@ export async function POST(request: Request) {
             matchLabel,
             eventKey: trimmedOrNull(body.eventKey, 100),
             teamNumber: intOrNull(body.teamNumber),
+            templateId: trimmedOrNull(body.templateId, 64),
           });
           break;
         }
         case "toggle-item": {
           const runId = trimmedOrNull(body.runId, 64);
-          const itemKey = oneOfItemKey(body.itemKey);
+          const itemKey = itemKeyOrNull(body.itemKey);
           if (!runId) throw new Error("runId is required");
           if (!itemKey) throw new Error("itemKey is invalid");
           await toggleChecklistItem(client, { orgId, runId, itemKey });

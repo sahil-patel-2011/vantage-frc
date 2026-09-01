@@ -166,6 +166,8 @@ export type PackingItem = {
   packedByName: string | null;
   packedAt: string | null;
   sortOrder: number;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
 };
 
 export type PackingRequestStatus = "pending" | "accepted" | "dismissed";
@@ -289,6 +291,13 @@ function uuid(value: unknown, label: string) {
   return text;
 }
 
+function optionalUuid(value: unknown, label: string): string | null {
+  if (value == null) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  return uuid(text, label);
+}
+
 export type PackingAction =
   | { action: "create_list"; orgId: string; title: string; eventKey: string | null; seedTemplate: boolean }
   | { action: "delete_list"; orgId: string; id: string }
@@ -298,6 +307,7 @@ export type PackingAction =
   | { action: "accept_request"; orgId: string; id: string }
   | { action: "dismiss_request"; orgId: string; id: string }
   | { action: "toggle_item"; orgId: string; id: string; packed: boolean }
+  | { action: "assign_item"; orgId: string; id: string; assignedUserId: string | null }
   | { action: "delete_item"; orgId: string; id: string };
 
 export function parsePackingAction(input: unknown): PackingAction {
@@ -357,6 +367,14 @@ export function parsePackingAction(input: unknown): PackingAction {
 
     case "toggle_item":
       return { action, orgId, id: uuid(body.id, "Item"), packed: Boolean(body.packed) };
+
+    case "assign_item":
+      return {
+        action,
+        orgId,
+        id: uuid(body.id, "Item"),
+        assignedUserId: optionalUuid(body.assignedUserId, "Assignee"),
+      };
 
     case "delete_item":
       return { action, orgId, id: uuid(body.id, "Item") };

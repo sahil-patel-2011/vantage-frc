@@ -24,6 +24,7 @@ import {
   type PresenceFigure,
   type PresenceMemberRow,
 } from "../../lib/presence/types";
+import { comingTonightLabel, isComingTonight } from "../../lib/presence/unify";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./presence.css";
@@ -33,7 +34,7 @@ type Mutate = (payload: Record<string, unknown>) => void;
 
 const PAGE_TITLE = "Presence";
 const PAGE_DESCRIPTION =
-  "Who is coming and who was here, on one screen. RSVPs, the roll call, and clocked shop hours for the same meeting — nothing is guessed from the others.";
+  "One number for who is coming tonight: RSVP, roll call, and clocked hours, counted once. Nobody is invented from silence.";
 
 function todayIso(): string {
   const now = new Date();
@@ -142,7 +143,7 @@ export default function PresenceClient() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -268,13 +269,14 @@ function Live({
   onPickDate: (date: string) => void;
   onPickEvent: (eventId: string) => void;
 }) {
-  const { selected, summary, rows } = view;
+  const { selected, summary, rows, unification } = view;
 
-  const coming = useMemo(() => rows.filter((row) => row.rsvp != null), [rows]);
+  const coming = useMemo(() => rows.filter((row) => isComingTonight(row)), [rows]);
   const here = useMemo(
     () => rows.filter((row) => row.attended === true || (row.minutes != null && row.minutes > 0)),
     [rows],
   );
+  const tonightLabel = comingTonightLabel(unification);
 
   // The one primary action: commit what this screen currently shows as the
   // reconciled record for the meeting. Nothing is written until a human presses it.
@@ -370,6 +372,11 @@ function Live({
               ) : (
                 <Badge tone="info">Nothing recorded for this meeting yet</Badge>
               )}
+              <div className="prs-coming-hero" aria-label="Coming tonight">
+                <strong>{view.comingTonight}</strong>
+                <span>coming tonight</span>
+                <p className="app-muted prs-tip">{tonightLabel}</p>
+              </div>
             </div>
             <div className="prs-hero-action">
               <Button
@@ -392,10 +399,14 @@ function Live({
 
           {summary ? (
             <section className="prs-stats" aria-label="Presence figures">
+              <StatTile
+                label="Coming tonight"
+                value={String(summary.comingTonight)}
+                footer="RSVP + roll call + hours, counted once"
+              />
               <StatTile label="Said going" value={String(summary.goingCount)} />
-              <StatTile label="Maybe" value={String(summary.maybeCount)} />
               <StatTile label="On the roll call" value={String(summary.presentCount)} />
-              <StatTile label="Clocked hours" value={formatMinutes(summary.totalMinutes)} />
+              <StatTile label="Clocked hours" value={String(summary.clockedCount)} />
               <StatTile label="No record" value={String(summary.noRecordCount)} />
               <StatTile label="Needs a look" value={String(summary.discrepancyCount)} />
             </section>
@@ -409,37 +420,42 @@ function Live({
           ) : null}
 
           <div className="prs-two-up">
-            <Panel className="prs-panel" aria-label="Who is coming">
-              <h2 className="prs-panel-title">Who is coming</h2>
+            <Panel className="prs-panel" aria-label="Who is coming tonight">
+              <h2 className="prs-panel-title">Coming tonight ({view.comingTonight})</h2>
               <p className="app-muted prs-tip">
-                From the calendar RSVPs.
+                The same people from RSVP, the roll call, and clocked hours — each member once.
                 {selected.recurring
-                  ? " This is a repeating meeting, so an RSVP is a standing answer for the series rather than a promise about tonight."
+                  ? " A repeating meeting RSVP is a standing series answer, not a promise about this night."
                   : ""}
               </p>
               {coming.length === 0 ? (
                 <p className="app-muted prs-tip">
-                  Nobody has answered the invite yet. That is not the same as nobody coming.
+                  Nobody has said they are going, been marked present, or clocked time. That is not a
+                  roster of absences.
                 </p>
               ) : (
                 <ul className="prs-list">
-                  {coming.map((row) => {
-                    const answer = row.rsvp;
-                    if (answer == null) return null;
-                    return (
-                      <li key={row.userId} className="prs-row">
-                        <span className="prs-name">{displayName(row)}</span>
-                        <span className="prs-marks">
-                          <Badge
-                            tone={answer === "going" ? "good" : answer === "maybe" ? "info" : "neutral"}
-                          >
-                            {PRESENCE_RSVP_LABELS[answer]}
+                  {coming.map((row) => (
+                    <li key={row.userId} className="prs-row">
+                      <span className="prs-name">{displayName(row)}</span>
+                      <span className="prs-marks">
+                        {row.rsvp === "going" ? (
+                          <Badge tone="good">
+                            {PRESENCE_RSVP_LABELS.going}
+                            {row.rsvpScope === "series" ? " · series" : ""}
                           </Badge>
-                          {row.rsvpScope === "series" ? <Badge tone="neutral">Series answer</Badge> : null}
-                        </span>
-                      </li>
-                    );
-                  })}
+                        ) : row.rsvp != null ? (
+                          <Badge tone={row.rsvp === "maybe" ? "info" : "neutral"}>
+                            {PRESENCE_RSVP_LABELS[row.rsvp]}
+                          </Badge>
+                        ) : null}
+                        {row.attended === true ? <Badge tone="good">On the roll call</Badge> : null}
+                        {row.minutes != null && row.minutes > 0 ? (
+                          <Badge tone="info">{formatMinutes(row.minutes)}</Badge>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               )}
             </Panel>

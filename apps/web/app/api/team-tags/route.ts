@@ -6,6 +6,7 @@ import {
   computeTeamTagsView,
   currentTeamTagsSeason,
   deleteTeamTag,
+  teamTagsPickReasonsPayload,
   type TeamTagsView,
 } from "../../../lib/team-tags/compute-team-tags";
 
@@ -27,11 +28,15 @@ function uuidOrNull(value: unknown): string | null {
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const requestedOrg = new URL(request.url).searchParams.get("orgId");
+  const url = new URL(request.url);
+  const requestedOrg = url.searchParams.get("orgId");
   try {
     const view = await withRls({ userId: session.user.id }, (client) =>
       computeTeamTagsView(client, { userId: session.user.id, requestedOrg }),
     );
+    if (url.searchParams.get("as") === "pick-reasons") {
+      return Response.json(teamTagsPickReasonsPayload(view, url.searchParams.get("teamNumber")));
+    }
     return Response.json(view);
   } catch {
     return Response.json(FALLBACK);

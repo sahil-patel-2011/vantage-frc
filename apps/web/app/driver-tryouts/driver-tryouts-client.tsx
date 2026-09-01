@@ -10,6 +10,7 @@ import {
   driverTryoutsCriterionLabel,
   driverTryoutsRoleLabel,
   driverTryoutsStatusLabel,
+  parseRubricScore,
 } from "../../lib/driver-tryouts";
 import type { DriverTryoutsView } from "../../lib/driver-tryouts/compute-driver-tryouts";
 import type { DriverTryoutsReadinessTier, DriverTryoutsRole } from "../../lib/driver-tryouts/types";
@@ -254,7 +255,8 @@ function Rankings({
                   {row.candidate.gradeLevel ? ` · Grade ${row.candidate.gradeLevel}` : ""}
                 </small>
                 <small className="app-muted">
-                  {row.evaluationCount} evaluation(s){row.evaluationCount > 0 ? ` · avg ${row.overallAverage.toFixed(2)}/5` : ""}
+                  {row.evaluationCount} evaluation(s)
+                  {row.overallAverage != null ? ` · avg ${row.overallAverage.toFixed(2)}/5` : " · not scored"}
                 </small>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -289,7 +291,7 @@ function Rankings({
                 </button>
               </div>
             </div>
-            {row.evaluationCount > 0 ? (
+            {row.averages ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginTop: 8 }}>
                 {DRIVER_TRYOUTS_CRITERIA.map((criterion) => (
                   <div key={criterion}>
@@ -321,11 +323,11 @@ function EvaluationForm({
   const empty = useMemo(
     () => ({
       evaluatedOn: "",
-      scorePrecision: "3",
-      scoreAwareness: "3",
-      scoreCommunication: "3",
-      scoreComposure: "3",
-      scoreMechanical: "3",
+      scorePrecision: "",
+      scoreAwareness: "",
+      scoreCommunication: "",
+      scoreComposure: "",
+      scoreMechanical: "",
       notes: "",
     }),
     [],
@@ -333,12 +335,17 @@ function EvaluationForm({
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const scoresReady =
+    Boolean(form.evaluatedOn) &&
+    [form.scorePrecision, form.scoreAwareness, form.scoreCommunication, form.scoreComposure, form.scoreMechanical].every(
+      (value) => parseRubricScore(value) != null,
+    );
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.evaluatedOn) return;
+        if (!scoresReady) return;
         mutate({
           action: "add-evaluation",
           candidateId,
@@ -359,26 +366,26 @@ function EvaluationForm({
           <input type="date" value={form.evaluatedOn} onChange={set("evaluatedOn")} required />
         </FormRow>
         <FormRow label="Precision">
-          <input type="number" min={1} max={5} value={form.scorePrecision} onChange={set("scorePrecision")} />
+          <input type="number" min={1} max={5} step={1} value={form.scorePrecision} onChange={set("scorePrecision")} required />
         </FormRow>
         <FormRow label="Awareness">
-          <input type="number" min={1} max={5} value={form.scoreAwareness} onChange={set("scoreAwareness")} />
+          <input type="number" min={1} max={5} step={1} value={form.scoreAwareness} onChange={set("scoreAwareness")} required />
         </FormRow>
         <FormRow label="Communication">
-          <input type="number" min={1} max={5} value={form.scoreCommunication} onChange={set("scoreCommunication")} />
+          <input type="number" min={1} max={5} step={1} value={form.scoreCommunication} onChange={set("scoreCommunication")} required />
         </FormRow>
         <FormRow label="Composure">
-          <input type="number" min={1} max={5} value={form.scoreComposure} onChange={set("scoreComposure")} />
+          <input type="number" min={1} max={5} step={1} value={form.scoreComposure} onChange={set("scoreComposure")} required />
         </FormRow>
         <FormRow label="Mechanical">
-          <input type="number" min={1} max={5} value={form.scoreMechanical} onChange={set("scoreMechanical")} />
+          <input type="number" min={1} max={5} step={1} value={form.scoreMechanical} onChange={set("scoreMechanical")} required />
         </FormRow>
       </FormGrid>
       <FormRow label="Notes (optional)">
         <input value={form.notes} onChange={set("notes")} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button secondary" disabled={busy || !form.evaluatedOn}>
+        <button type="submit" className="app-button secondary" disabled={busy || !scoresReady}>
           Log evaluation
         </button>
       </div>

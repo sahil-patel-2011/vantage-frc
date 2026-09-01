@@ -119,6 +119,10 @@ actual hops in code with file evidence, and an honest PASS/FAIL. Companion docs:
 - [ ] Stripe webhook test event returns `{"received":true}`
 - [ ] Resend domain verified; a real OTP email arrives
 - [ ] External cron ticker firing (check `team_dream_runs` rows the next morning)
+- [ ] `/admin/integrations` (platform admin) shows no unexpected `error`/`degraded` rows — it aggregates
+      config + already-persisted live signals for DB roles, Better Auth/Resend/Google, TBA/Statbotics/
+      Nexus/FIRST, Stripe/KMS, VAPID/Twilio, GitHub/Slack/Discord, Onshape/Fusion relay, AI providers/
+      bridge, Redis, storage, and cron freshness — without exposing any secret value
 - [ ] Function duration decided: the deploy plan allows the 300 s `maxDuration` the bridged AI
       routes declare, **or** `VANTAGE_BRIDGE_MAX_WAIT_MS` is set below the plan's cap (blocker 8)
 

@@ -166,6 +166,14 @@ export class BillingDisabledError extends Error {
   }
 }
 
+export class DuplicateMeteredRequestError extends Error {
+  readonly code = "duplicate_metered_request" as const;
+  constructor(readonly requestId: string) {
+    super(`Metered request ${requestId} has already completed or is still in progress`);
+    this.name = "DuplicateMeteredRequestError";
+  }
+}
+
 /** Map meteredAI / budget errors to HTTP 402 bodies with stable `code` fields. */
 export function describeBillingError(error: unknown): {
   code: string;
@@ -624,6 +632,18 @@ export function findBudgetViolation(
  */
 export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (input.estimatedCostUsd < 0) throw new Error("Estimated cost cannot be negative");
+
+  // One request id may reach this service only once, including concurrent retries.
+  // The request-scoped lock is separate from the non-blocking org budget lock below:
+  // duplicates wait for the first transaction, then observe its committed usage row.
+  await input.client.query(`SELECT pg_advisory_xact_lock($1::bigint)`, [
+    orgBillingLockKey(`metered-request:${input.requestId}`),
+  ]);
+  const priorUsage = await input.client.query<{ id: string }>(
+    `SELECT id FROM ai_usage_events WHERE request_id=$1 LIMIT 1`,
+    [input.requestId],
+  );
+  if (priorUsage.rows[0]) throw new DuplicateMeteredRequestError(input.requestId);
 
   if (input.keySource === "local_cli") {
     const receipt = await input.invoke("local_cli");

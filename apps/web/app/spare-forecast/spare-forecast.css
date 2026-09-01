@@ -18,6 +18,7 @@
 .spare-forecast-line-items li{display:flex;justify-content:space-between;gap:8px}
 .spare-forecast-status-actions{display:flex;gap:8px;flex-wrap:wrap}
 .spare-forecast-tip{margin:0}
+.spare-forecast-offseason-note{margin:0;max-width:36rem}
 .spare-forecast-requests{margin:0}
 @media(max-width:900px){
   .spare-forecast-layout{grid-template-columns:1fr}

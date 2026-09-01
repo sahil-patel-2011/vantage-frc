@@ -63,6 +63,17 @@ export type ClaudeCadSession = {
   elementName?: string;
   /** Deep link back to the bound Part Studio. */
   url?: string;
+  /** Most recently created/selected Assembly in the same document workspace. */
+  assemblyElementId?: string;
+  assemblyName?: string;
+  /** Instances added by Vantage, newest last, so a later mate can use real ids. */
+  assemblyInstances?: Array<{
+    instanceId: string;
+    sourceElementId: string;
+    partId?: string;
+    isAssembly: boolean;
+    at: string;
+  }>;
   /** Features added by Vantage in this binding, oldest first. Bounded to 200. */
   features?: CadSessionFeature[];
   /** Bumped by every tree mutation; cached geometry ids from an older value are stale. */
@@ -149,9 +160,24 @@ export function bindClaudeCadSession(
   at = new Date().toISOString(),
 ): ClaudeCadSession {
   const resumed = isBoundToSameElement(session, document);
+  const sameWorkspace =
+    session.documentId === document.documentId && session.workspaceId === document.workspaceId;
   const base: ClaudeCadSession = resumed
     ? session
-    : { calls: session.calls, features: [], geometry: [], rebuild: 0, lastSketchFeatureId: undefined };
+    : {
+        calls: session.calls,
+        features: [],
+        geometry: [],
+        rebuild: 0,
+        lastSketchFeatureId: undefined,
+        ...(sameWorkspace
+          ? {
+              assemblyElementId: session.assemblyElementId,
+              assemblyName: session.assemblyName,
+              assemblyInstances: session.assemblyInstances,
+            }
+          : {}),
+      };
   return {
     ...base,
     documentId: document.documentId,

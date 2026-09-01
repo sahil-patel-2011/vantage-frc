@@ -3,6 +3,17 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseNotebookAction, summarizeNotebook, type BuildPhase } from "../../../lib/notebook";
+import {
+  assertNotebookImageAttachments,
+  listNotebookImageLibrary,
+  mergeNotebookTags,
+  notebookEntryHasImageEvidence,
+  resolveNotebookAttachments,
+  splitNotebookTags,
+  summarizeNotebookEvidence,
+  type NotebookImageAttachment,
+} from "../../../lib/notebook/attachments";
+import { promoteNotebookEntry } from "../../../lib/notebook-wiki";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -29,6 +40,11 @@ function fail(error: unknown) {
 type EntryRow = {
   id: string; seasonYear: number; entryDate: string; phase: BuildPhase; subsystem: string;
   title: string; body: string; tags: string[]; byName: string | null; updatedAt: string;
+};
+
+type NotebookEntryView = EntryRow & {
+  attachments: NotebookImageAttachment[];
+  hasImageEvidence: boolean;
 };
 
 export async function GET(request: Request) {
@@ -60,15 +76,34 @@ export async function GET(request: Request) {
         [row.orgId, subsystemFilter],
       );
 
-      const summary = summarizeNotebook(
-        entries.rows.map((e) => ({ subsystem: e.subsystem, phase: e.phase, entryDate: e.entryDate })),
-      );
+      const allAttachmentIds = entries.rows.flatMap((entry) => splitNotebookTags(entry.tags).attachmentIds);
+      const [resolved, imageLibrary] = await Promise.all([
+        resolveNotebookAttachments(client, { orgId: row.orgId, assetIds: allAttachmentIds }),
+        listNotebookImageLibrary(client, { orgId: row.orgId }),
+      ]);
+      const byId = new Map(resolved.map((asset) => [asset.assetId.toLowerCase(), asset]));
+      const viewed: NotebookEntryView[] = entries.rows.map((entry) => {
+        const split = splitNotebookTags(entry.tags);
+        const attachments = split.attachmentIds.flatMap((id) => {
+          const asset = byId.get(id);
+          return asset ? [asset] : [];
+        });
+        return {
+          ...entry,
+          tags: split.tags,
+          attachments,
+          hasImageEvidence: notebookEntryHasImageEvidence(attachments),
+        };
+      });
+      const counts = summarizeNotebook(viewed.map((e) => ({ subsystem: e.subsystem, phase: e.phase, entryDate: e.entryDate })));
+      const evidence = summarizeNotebookEvidence(viewed);
 
       return {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
-        entries: entries.rows,
-        summary,
+        entries: viewed,
+        imageLibrary,
+        summary: { ...counts, ...evidence },
       };
     });
 
@@ -89,14 +124,40 @@ export async function POST(request: Request) {
 
       switch (action.action) {
         case "create_entry": {
+          const photos = await assertNotebookImageAttachments(client, {
+            orgId: action.orgId,
+            assetIds: action.attachmentIds,
+          });
+          const tags = mergeNotebookTags(
+            { tags: [], attachmentIds: [] },
+            { tags: action.tags, attachmentIds: photos.map((photo) => photo.assetId) },
+          );
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO notebook_entries (org_id, season_year, entry_date, phase, subsystem, title, body, tags, author_user_id)
              VALUES ($1, $2, $3::date, $4, $5, $6, $7, $8::text[], $9) RETURNING id`,
-            [action.orgId, action.seasonYear, action.entryDate, action.phase, action.subsystem, action.title, action.body, action.tags, userId],
+            [action.orgId, action.seasonYear, action.entryDate, action.phase, action.subsystem, action.title, action.body, tags, userId],
           );
-          return { id: inserted.rows[0]!.id };
+          return { id: inserted.rows[0]!.id, hasImageEvidence: photos.length > 0 };
         }
         case "update_entry": {
+          const existing = await client.query<{ tags: string[] }>(
+            `SELECT tags FROM notebook_entries WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          if (!existing.rowCount) throw new HttpError(404, "Entry not found");
+          const split = splitNotebookTags(existing.rows[0]!.tags);
+          let attachmentIds = split.attachmentIds;
+          if (action.patch.attachmentIds !== undefined) {
+            const photos = await assertNotebookImageAttachments(client, {
+              orgId: action.orgId,
+              assetIds: action.patch.attachmentIds,
+            });
+            attachmentIds = photos.map((photo) => photo.assetId);
+          }
+          const tags = mergeNotebookTags(split, {
+            tags: action.patch.tags,
+            attachmentIds: action.patch.attachmentIds !== undefined ? attachmentIds : undefined,
+          });
           const sets: string[] = [];
           const values: unknown[] = [];
           const add = (col: string, val: unknown, cast = "") => {
@@ -107,18 +168,39 @@ export async function POST(request: Request) {
           if (action.patch.phase !== undefined) add("phase", action.patch.phase);
           if (action.patch.subsystem !== undefined) add("subsystem", action.patch.subsystem);
           if (action.patch.body !== undefined) add("body", action.patch.body);
-          if (action.patch.tags !== undefined) add("tags", action.patch.tags, "::text[]");
+          if (action.patch.tags !== undefined || action.patch.attachmentIds !== undefined) {
+            add("tags", tags, "::text[]");
+          }
           const updated = await client.query(
             `UPDATE notebook_entries SET ${sets.join(", ")}, updated_at = now() WHERE id = $${values.length + 1} AND org_id = $${values.length + 2}`,
             [...values, action.id, action.orgId],
           );
           if (!updated.rowCount) throw new HttpError(404, "Entry not found");
-          return { ok: true };
+          const photos = await resolveNotebookAttachments(client, {
+            orgId: action.orgId,
+            assetIds: splitNotebookTags(tags).attachmentIds,
+          });
+          return { ok: true, hasImageEvidence: notebookEntryHasImageEvidence(photos) };
         }
         case "delete_entry": {
           const deleted = await client.query(`DELETE FROM notebook_entries WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this entry");
           return { ok: true };
+        }
+        case "promote_entry": {
+          try {
+            const promoted = await promoteNotebookEntry(client, {
+              orgId: action.orgId,
+              userId,
+              entryId: action.id,
+            });
+            return { ok: true, ...promoted };
+          } catch (error) {
+            if (error instanceof Error && error.message === "Entry not found") {
+              throw new HttpError(404, "Entry not found");
+            }
+            throw error;
+          }
         }
         default:
           throw new HttpError(400, "Unsupported notebook action");

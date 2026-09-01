@@ -172,15 +172,23 @@ export type BriefingChecklistInput = {
   practiceReps: number;
   intelCount: number;
   scoutCount: number;
+  hasCard?: boolean;
+  hasCounterBooks?: boolean;
+  hasWatchNotes?: boolean;
+  hasDefensePlans?: boolean;
 };
 
 export type BriefingChecklistRow = { label: string; ok: boolean; hint: string };
 
-/** Five readiness rows with honest do-this-next hints for whatever is missing. */
+/** Readiness rows with honest do-this-next hints for whatever is missing. */
 export function briefingChecklist(input: BriefingChecklistInput): BriefingChecklistRow[] {
   return [
     { label: "Prediction", ok: input.hasPrediction, hint: "Run /strategy" },
     { label: "Strategy plan", ok: input.hasPlan, hint: "Save a playbook in /strategy" },
+    { label: "Match card", ok: Boolean(input.hasCard), hint: "Write one in /match-strategy-cards" },
+    { label: "Counter-book", ok: Boolean(input.hasCounterBooks), hint: "Log how we beat them in /counter-book" },
+    { label: "Watchlist", ok: Boolean(input.hasWatchNotes), hint: "Add a threat in /opponent-watchlist" },
+    { label: "Defense plan", ok: Boolean(input.hasDefensePlans), hint: "Plan in /defense-planner" },
     { label: "Whiteboard play", ok: input.hasPlay, hint: "Draw one in /whiteboard and link the match" },
     { label: "Practice data", ok: input.practiceReps > 0, hint: "Log reps in /practice" },
     { label: "Opponent video", ok: input.intelCount > 0, hint: "Tag opponent reviews in /video" },

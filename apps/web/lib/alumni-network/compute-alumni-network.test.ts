@@ -106,6 +106,25 @@ describe("computeAlumniNetworkView", () => {
     }
   });
 
+  it("returns a live empty directory when no alumni rows are persisted", async () => {
+    const client = mockClient([
+      [{ orgId: "org-1", teamNumber: 254 }],
+      [], // profiles
+      [], // mentor slots
+      [], // team directory
+    ]);
+    const view = await computeAlumniNetworkView(client, { userId: "user-1", requestedOrg: "org-1" });
+    expect(view.status).toBe("live");
+    if (view.status === "live") {
+      expect(view.profiles).toEqual([]);
+      expect(view.mentorSlots).toEqual([]);
+      expect(view.teamDirectory).toEqual([]);
+      expect(view.summary.totalAlumni).toBe(0);
+      expect(view.summary.mentorsAvailable).toBe(0);
+      expect(JSON.stringify(view.profiles)).not.toMatch(/DEMO/i);
+    }
+  });
+
   it("returns a live view with summarized directory over mock rows", async () => {
     const client = mockClient([
       [{ orgId: "org-1", teamNumber: 254 }], // resolveOrg

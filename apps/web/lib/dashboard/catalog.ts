@@ -164,8 +164,9 @@ export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardW
 const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
 
 /**
- * View-mode Home: live widgets plus next-match. Empty/setup cards stay off the
- * board until Edit Home — never a wall of DEMO-looking placeholders.
+ * View-mode Home keeps every user-placed widget, including honest empty
+ * states with a destination CTA. Setup-only cards hide once the workspace
+ * is ready. Next match stays a full-width hero.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
@@ -177,12 +178,7 @@ export function homeViewLayout(
 ): DashboardWidgetLayout[] {
   if (input.editing) return layout.map((item) => ({ ...item }));
   const ready = input.shell === "ready";
-  const widgets = input.widgets ?? {};
-  const visible = layout.filter((item) => {
-    if (SETUP_ONLY_WIDGETS.has(item.type)) return !ready;
-    if (item.type === "next_match") return true;
-    return widgets[item.type]?.status === "live";
-  });
+  const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
   return packDashboardLayout(
     visible.map((item) =>
       item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,

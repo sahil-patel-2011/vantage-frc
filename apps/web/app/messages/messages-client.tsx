@@ -29,6 +29,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import ChatSafetyPanel from "./chat-safety-panel";
 import "./youth-protection.css";
+import "./channels.css";
 
 type Conversation = {
   id: string;
@@ -40,6 +41,8 @@ type Conversation = {
   peerUserId: string | null;
   peerName: string | null;
   unreadCount: number;
+  archivedAt?: string | null;
+  isDefaultChannel?: boolean;
 };
 
 type Message = {
@@ -101,6 +104,10 @@ function MessageBody({
 function labelFor(conversation: Conversation) {
   if (conversation.kind === "team") return conversation.title ?? "Team";
   return conversation.peerName ?? "Private chat";
+}
+
+function isArchived(conversation: Conversation) {
+  return Boolean(conversation.archivedAt);
 }
 
 function formatTime(value: string | null | undefined) {
@@ -197,6 +204,10 @@ export default function MessagesClient({
   // both parties must be able to see the second adult for the whole time the room exists.
   const [supervisionNotice, setSupervisionNotice] = useState("");
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [canManageChannels, setCanManageChannels] = useState(false);
+  const [channelArchiveSupported, setChannelArchiveSupported] = useState(false);
+  const [showArchivedChannels, setShowArchivedChannels] = useState(false);
+  const [channelDraft, setChannelDraft] = useState<{ mode: "create" | "rename"; value: string } | null>(null);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
@@ -211,6 +222,9 @@ export default function MessagesClient({
 
   const active = conversations.find((item) => item.id === activeId) ?? null;
   const inboxUnread = totalUnread(conversations);
+  const channels = conversations.filter((item) => item.kind === "team");
+  const directMessages = conversations.filter((item) => item.kind === "dm");
+  const activeChannelArchived = active?.kind === "team" && isArchived(active);
   const activeMention =
     active?.kind === "team" && mentionMenuOpen ? findActiveMention(text, composerCursor) : null;
   const mentionSuggestions = activeMention
@@ -282,8 +296,44 @@ export default function MessagesClient({
     setLoadErrorStatus(null);
     applyInbox(data.conversations ?? []);
     if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
+    if (typeof data.canManageChannels === "boolean") setCanManageChannels(data.canManageChannels);
+    if (typeof data.channelArchiveSupported === "boolean") {
+      setChannelArchiveSupported(data.channelArchiveSupported);
+    }
     return data.conversations as Conversation[];
   }, [applyInbox, orgId]);
+
+  /** Archived channels are fetched on demand so the default sidebar stays the working list. */
+  const loadArchivedChannels = useCallback(async () => {
+    const params = new URLSearchParams({ orgId, mode: "channels", includeArchived: "1" });
+    const response = await fetch(`/api/messages?${params}`);
+    const data = await response.json();
+    if (!response.ok) {
+      setStatus(data.error || "Could not load archived channels.");
+      return;
+    }
+    const archived = ((data.channels ?? []) as Array<{ id: string; title: string; archivedAt: string | null }>)
+      .filter((channel) => channel.archivedAt);
+    setConversations((prev) => {
+      const known = new Set(prev.map((item) => item.id));
+      const extras: Conversation[] = archived
+        .filter((channel) => !known.has(channel.id))
+        .map((channel) => ({
+          id: channel.id,
+          kind: "team",
+          title: channel.title,
+          updatedAt: channel.archivedAt ?? "",
+          lastMessageAt: null,
+          lastBody: null,
+          peerUserId: null,
+          peerName: null,
+          unreadCount: 0,
+          archivedAt: channel.archivedAt,
+          isDefaultChannel: false,
+        }));
+      return extras.length ? [...prev, ...extras] : prev;
+    });
+  }, [orgId]);
 
   const loadThread = useCallback(
     async (
@@ -645,6 +695,63 @@ export default function MessagesClient({
     setPinned((prev) => prev.filter((item) => item.id !== messageId));
   }
 
+  async function submitChannelDraft() {
+    if (!channelDraft) return;
+    const title = channelDraft.value.trim();
+    if (!title) {
+      setChannelDraft(null);
+      return;
+    }
+    setSending(true);
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        channelDraft.mode === "create"
+          ? { action: "create_channel", orgId, title }
+          : { action: "rename_channel", orgId, conversationId: activeId, title },
+      ),
+    });
+    const data = await response.json();
+    setSending(false);
+    if (!response.ok) {
+      setStatus(data.error || "Could not save the channel.");
+      return;
+    }
+    setChannelDraft(null);
+    setStatus("");
+    await loadInbox();
+    if (channelDraft.mode === "create" && data.conversationId) {
+      await selectConversation(data.conversationId);
+    }
+  }
+
+  async function setChannelArchived(archived: boolean) {
+    if (!active || active.kind !== "team") return;
+    setSending(true);
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: archived ? "archive_channel" : "unarchive_channel",
+        orgId,
+        conversationId: active.id,
+      }),
+    });
+    const data = await response.json();
+    setSending(false);
+    if (!response.ok) {
+      setStatus(data.error || "Could not update the channel.");
+      return;
+    }
+    setStatus(archived ? "Channel archived. Its history is still readable." : "Channel reopened.");
+    const list = await loadInbox();
+    if (archived) {
+      const fallback = list?.find((item) => item.isDefaultChannel) ?? list?.[0] ?? null;
+      if (fallback) await selectConversation(fallback.id);
+    }
+  }
+
   async function togglePin(message: Message) {
     if (!pinsSupported || !active || active.kind !== "team") return;
     const action = message.pinnedAt ? "unpin" : "pin";
@@ -731,16 +838,58 @@ export default function MessagesClient({
             >
               New Message
             </button>
-            {conversations.map((item) => (
+            <div className="messages-group-heading">
+              <span className="eyebrow">Channels</span>
+              {canManageChannels ? (
+                <button
+                  type="button"
+                  className="messages-channel-add"
+                  onClick={() => setChannelDraft({ mode: "create", value: "" })}
+                  disabled={sending}
+                >
+                  New channel
+                </button>
+              ) : null}
+            </div>
+
+            {channelDraft?.mode === "create" ? (
+              <form
+                className="messages-channel-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void submitChannelDraft();
+                }}
+              >
+                <input
+                  autoFocus
+                  value={channelDraft.value}
+                  maxLength={60}
+                  placeholder="Channel name"
+                  aria-label="New channel name"
+                  onChange={(event) => setChannelDraft({ mode: "create", value: event.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setChannelDraft(null);
+                  }}
+                />
+                <button type="submit" disabled={sending}>
+                  Create
+                </button>
+                <button type="button" onClick={() => setChannelDraft(null)}>
+                  Cancel
+                </button>
+              </form>
+            ) : null}
+
+            {channels.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className={activeId === item.id ? "active" : ""}
+                className={`${activeId === item.id ? "active" : ""}${isArchived(item) ? " is-archived" : ""}`}
                 aria-current={activeId === item.id ? "true" : undefined}
                 onClick={() => void selectConversation(item.id)}
               >
                 <span>
-                  {item.kind === "team" ? "Team" : "Private"}
+                  {isArchived(item) ? "Archived" : "Channel"}
                   {item.unreadCount > 0 ? (
                     <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
                       {item.unreadCount > 99 ? "99+" : item.unreadCount}
@@ -751,6 +900,49 @@ export default function MessagesClient({
                 {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
               </button>
             ))}
+
+            {channelArchiveSupported && !showArchivedChannels ? (
+              <button
+                type="button"
+                className="messages-channel-archive-toggle"
+                onClick={() => {
+                  setShowArchivedChannels(true);
+                  void loadArchivedChannels();
+                }}
+              >
+                Show archived channels
+              </button>
+            ) : null}
+
+            <div className="messages-group-heading">
+              <span className="eyebrow">Direct messages</span>
+            </div>
+
+            {directMessages.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={activeId === item.id ? "active" : ""}
+                aria-current={activeId === item.id ? "true" : undefined}
+                onClick={() => void selectConversation(item.id)}
+              >
+                <span>
+                  Private
+                  {item.unreadCount > 0 ? (
+                    <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
+                      {item.unreadCount > 99 ? "99+" : item.unreadCount}
+                    </b>
+                  ) : null}
+                </span>
+                {labelFor(item)}
+                {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
+              </button>
+            ))}
+
+            {directMessages.length === 0 ? (
+              <p className="messages-group-empty">No private conversations yet.</p>
+            ) : null}
+
             {conversations.length === 0 ? (
               <EmptyState
                 soft
@@ -787,13 +979,75 @@ export default function MessagesClient({
               <>
                 <header>
                   <div>
-                    <span className="eyebrow">{active.kind === "team" ? "Team channel" : "Private chat"}</span>
-                    <h1>{labelFor(active)}</h1>
+                    <span className="eyebrow">
+                      {active.kind !== "team"
+                        ? "Private chat"
+                        : activeChannelArchived
+                          ? "Archived channel"
+                          : "Team channel"}
+                    </span>
+                    {channelDraft?.mode === "rename" ? (
+                      <form
+                        className="messages-channel-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void submitChannelDraft();
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          value={channelDraft.value}
+                          maxLength={60}
+                          aria-label="Channel name"
+                          onChange={(event) => setChannelDraft({ mode: "rename", value: event.target.value })}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") setChannelDraft(null);
+                          }}
+                        />
+                        <button type="submit" disabled={sending}>
+                          Save
+                        </button>
+                        <button type="button" onClick={() => setChannelDraft(null)}>
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <h1>{labelFor(active)}</h1>
+                    )}
                   </div>
                   {active.kind === "team" ? (
-                    <strong className="shared-warning">Visible to all org members</strong>
+                    <div className="messages-channel-actions">
+                      <strong className="shared-warning">Visible to all org members</strong>
+                      {canManageChannels && !active.isDefaultChannel && !channelDraft ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setChannelDraft({ mode: "rename", value: labelFor(active) })}
+                            disabled={sending}
+                          >
+                            Rename
+                          </button>
+                          {channelArchiveSupported ? (
+                            <button
+                              type="button"
+                              onClick={() => void setChannelArchived(!activeChannelArchived)}
+                              disabled={sending}
+                            >
+                              {activeChannelArchived ? "Reopen" : "Archive"}
+                            </button>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
                   ) : null}
                 </header>
+
+                {activeChannelArchived ? (
+                  <div className="chat-supervision-banner" role="note">
+                    <span>Archived channel</span>
+                    History stays readable and exportable. Reopen the channel to post again.
+                  </div>
+                ) : null}
 
                 {active.kind === "dm" && supervisionNotice ? (
                   // No dismiss control by design: the two-adult rule is only meaningful if both
@@ -1056,10 +1310,13 @@ export default function MessagesClient({
                       onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
                       onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
                       onKeyDown={onComposerKeyDown}
+                      disabled={activeChannelArchived}
                       placeholder={
-                        active.kind === "team"
-                          ? "Message the team… use @name to notify someone"
-                          : "Private message…"
+                        activeChannelArchived
+                          ? "This channel is archived. Reopen it to post."
+                          : active.kind === "team"
+                            ? "Message the team… use @name to notify someone"
+                            : "Private message…"
                       }
                       maxLength={8000}
                     />
@@ -1074,7 +1331,7 @@ export default function MessagesClient({
                       Link
                     </button>
                   ) : null}
-                  <button type="submit" disabled={!text.trim() || sending}>
+                  <button type="submit" disabled={!text.trim() || sending || activeChannelArchived}>
                     Send
                   </button>
                 </form>

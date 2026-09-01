@@ -90,7 +90,11 @@ describe("computeScoutCoverageLiveView", () => {
       }
       if (sql.includes("FROM match_scout_entries")) {
         return {
-          rows: [{ matchKey: `${EVENT}_qm1`, teamKey: "frc254", entryCount: 3 }],
+          rows: [
+            { matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: "scout-1", scoutName: "Ada" },
+            { matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: "scout-2", scoutName: "Grace" },
+            { matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: "scout-3", scoutName: "Katherine" },
+          ],
         };
       }
       if (sql.includes("FROM scout_coverage_live_nudges")) return { rows: [] };

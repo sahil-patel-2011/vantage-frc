@@ -3,6 +3,7 @@ import { expandOccurrences, localDateOf, normalizeTimeZone, safeParseRRule } fro
 import { matchNameBacklog, type NameMatchResult } from "./match-names";
 import { noRecordMembers, presenceDiscrepancies, reconcilePresence } from "./reconcile";
 import { memberGoalBoard, summarizePresence, type MemberGoalRow, type PresenceSummary } from "./summary";
+import { unifyPresence, type PresenceUnification } from "./unify";
 import type {
   PresenceHourSignal,
   PresenceMemberRow,
@@ -68,6 +69,9 @@ export type PresenceView =
       rows: PresenceMemberRow[];
       discrepancies: PresenceMemberRow[];
       noRecord: { userId: string; name: string | null }[];
+      /** Distinct members coming or already here — the one "who is coming tonight" number. */
+      comingTonight: number;
+      unification: PresenceUnification;
       summary: PresenceSummary | null;
       rollCall: PresenceRollCallInfo;
       unlinkedHourLogs: PresenceUnlinkedHourLog[];
@@ -347,6 +351,12 @@ export async function computePresenceView(
   };
 
   if (!selected) {
+    const emptyUnification = unifyPresence({
+      rsvps: [],
+      rollCall: [],
+      hourLogs: [],
+      occurrenceDate: presenceDate,
+    });
     return {
       status: "live",
       orgId: org.orgId,
@@ -358,6 +368,8 @@ export async function computePresenceView(
       rows: [],
       discrepancies: [],
       noRecord: [],
+      comingTonight: 0,
+      unification: emptyUnification,
       summary: null,
       rollCall: emptyRollCall,
       unlinkedHourLogs: [],
@@ -509,13 +521,15 @@ export async function computePresenceView(
   );
 
   const rollCallTaken = attendanceEventIds.length > 0;
-  const rows = reconcilePresence({
+  const reconcileInput = {
     rsvps,
     rollCall,
     hourLogs,
     occurrenceDate: presenceDate,
     rollCallTaken,
-  });
+  };
+  const rows = reconcilePresence(reconcileInput);
+  const unification = unifyPresence(reconcileInput);
 
   return {
     status: "live",
@@ -531,6 +545,8 @@ export async function computePresenceView(
       roster.map((member) => ({ userId: member.userId, name: member.name })),
       rows,
     ),
+    comingTonight: unification.comingTonight,
+    unification,
     summary: summarizePresence({
       rows,
       rosterCount: roster.length,

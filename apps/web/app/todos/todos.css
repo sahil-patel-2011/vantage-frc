@@ -15,6 +15,93 @@
   font-size: 1.45rem;
   line-height: 1.1;
 }
+.todos-unified-work {
+  display: grid;
+  gap: 14px;
+}
+.todos-unified-work > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.todos-unified-work > header h2 {
+  margin: 8px 0 3px;
+}
+.todos-unified-work > header p {
+  margin: 0;
+}
+.todos-unified-work > header > .app-button {
+  flex: none;
+}
+.todos-unified-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.todos-cross-tracker-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.todos-cross-tracker-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 12px;
+  background: var(--soft-bg);
+}
+.todos-cross-tracker-list li > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.todos-cross-tracker-list li span {
+  color: var(--soft-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.todos-cross-tracker-list li strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.todos-cross-tracker-list li small {
+  color: var(--soft-muted);
+  font-size: 12px;
+}
+.todos-cross-tracker-list li .app-button {
+  flex: none;
+  min-height: 38px;
+}
+.todos-unified-empty {
+  margin: 0;
+}
+@media (max-width: 650px) {
+  .todos-unified-work > header {
+    flex-direction: column;
+  }
+  .todos-unified-work > header > .app-button {
+    width: 100%;
+  }
+  .todos-unified-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .todos-cross-tracker-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .todos-cross-tracker-list li .app-button {
+    width: 100%;
+  }
+}
 .todos-next-actions {
   display: grid;
   gap: 10px;

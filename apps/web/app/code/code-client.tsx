@@ -16,7 +16,9 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
-import { resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot/grounding";
+import { enforceBugbotFileCap, prepareBugbotWritePr, resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot";
+import { BUGBOT_INSTRUCTION_MAX } from "../../lib/cockpit/prefs";
+import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import {
   describeBugbotCoverage,
   mergeBugbotScanRun,
@@ -142,6 +144,7 @@ type BugbotResponse = {
   phase?: BugbotPhase;
   chargeUsd?: number;
   proposedDiff?: string | null;
+  reviewId?: string | null;
   filesScanned?: number;
   fixDropped?: boolean;
   githubRepo?: string | null;
@@ -151,6 +154,7 @@ type BugbotResponse = {
   coverage?: ScanCoverage;
   delta?: { new: number; known: number; fixed: number; fixedFindings?: FixedFinding[] };
   dismissals?: Dismissal[];
+  repoOverview?: string | null;
 };
 
 const EMPTY_COVERAGE: ScanCoverage = {
@@ -187,6 +191,7 @@ export function CodeClient({
   /** Scroll the Bugbot workbench into view when opened from the Bugbot hub tab. */
   focusBugbot?: boolean;
 }) {
+  const cockpit = useCockpitPrefs();
   const [path, setPath] = useState("src/main/java/frc/robot/subsystems/DriveSubsystem.java");
   const [content, setContent] = useState(CODE_COACH_SAMPLE);
   const [review, setReview] = useState<Review | null>(null);
@@ -199,10 +204,12 @@ export function CodeClient({
     phase?: BugbotPhase;
     chargeUsd?: number;
     proposedDiff?: string | null;
+    reviewId?: string | null;
     filesScanned?: number;
     githubRepo?: string | null;
     githubSha?: string | null;
     branchMoved?: boolean;
+    repoOverview?: string | null;
   } | null>(null);
   /** What the last Bugbot scan actually ran against — a paid fix must target the same source. */
   const [lastScan, setLastScan] = useState<BugbotScanTarget | null>(null);
@@ -211,6 +218,8 @@ export function CodeClient({
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [bugbotMode, setBugbotMode] = useState<BugbotMode>("subscription");
+  const [instructions, setInstructions] = useState("");
+  const [includeScanTests, setIncludeScanTests] = useState(false);
   const [githubConnected, setGithubConnected] = useState(false);
   const [githubLogin, setGithubLogin] = useState<string | null>(null);
   const [repos, setRepos] = useState<GitHubRepoOption[]>([]);
@@ -228,6 +237,7 @@ export function CodeClient({
   const [delta, setDelta] = useState<{ new: number; known: number; fixed: number } | null>(null);
   const [fixedFindings, setFixedFindings] = useState<FixedFinding[]>([]);
   const [dismissals, setDismissals] = useState<Dismissal[]>([]);
+  const [writePrConfirming, setWritePrConfirming] = useState(false);
   const [dismissTarget, setDismissTarget] = useState<BugbotFinding | null>(null);
   const [dismissReason, setDismissReason] = useState("");
   const [showCoverage, setShowCoverage] = useState(false);
@@ -244,7 +254,10 @@ export function CodeClient({
   const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
 
   const githubHref = orgId ? githubConnectionHref(orgId) : "/team/admin#github-connection";
-  const robotFiles = useMemo(() => repoFiles.filter((file) => isBugbotScanPath(file)).slice(0, 80), [repoFiles]);
+  const robotFiles = useMemo(
+    () => enforceBugbotFileCap(repoFiles.filter((file) => isBugbotScanPath(file))).included,
+    [repoFiles],
+  );
 
   /**
    * Show-your-work narration. Derived from findings that actually matched evidence in the source —
@@ -272,6 +285,12 @@ export function CodeClient({
     });
     return () => cancelAnimationFrame(frame);
   }, [focusBugbot]);
+
+  useEffect(() => {
+    setBugbotMode(cockpit.defaultBugbotMode);
+    setInstructions(cockpit.bugbotInstructions);
+    setIncludeScanTests(cockpit.includeScanTests);
+  }, [cockpit.defaultBugbotMode, cockpit.bugbotInstructions, cockpit.includeScanTests]);
 
   useEffect(() => {
     if (!orgId) return;
@@ -369,6 +388,7 @@ export function CodeClient({
       repo: selectedRepo,
       ref: selectedRef || "main",
       tier: bugbotMode,
+      includeTests: includeScanTests ? "1" : "0",
     });
     void fetch(`/api/code?${params}`)
       .then(async (response) => {
@@ -399,7 +419,7 @@ export function CodeClient({
     return () => {
       cancelled = true;
     };
-  }, [orgId, githubConnected, selectedRepo, selectedRef, bugbotMode]);
+  }, [orgId, githubConnected, selectedRepo, selectedRef, bugbotMode, includeScanTests]);
 
   async function loadGithubFile(filePath: string) {
     if (!orgId || !selectedRepo || !filePath) return;
@@ -581,6 +601,7 @@ export function CodeClient({
 
     const outcomes: BugbotChunkOutcome[] = [];
     let stoppedReason: string | null = null;
+    const operationRequestId = crypto.randomUUID();
 
     function postChunk(chunkIndex: number, spentUsd: number) {
       return fetch("/api/code", {
@@ -601,7 +622,10 @@ export function CodeClient({
           findings: bugbot?.findings,
           chunkIndex,
           spentUsd,
+          requestId: `${operationRequestId}:chunk:${chunkIndex}`,
           parentReviewId: history[0]?.id && history[0].id !== "latest" ? history[0].id : undefined,
+          includeTests: includeScanTests,
+          customInstructions: instructions.trim() || undefined,
         }),
       });
     }
@@ -614,10 +638,12 @@ export function CodeClient({
         phase: data.phase ?? phase,
         chargeUsd: data.chargeUsd,
         proposedDiff: data.proposedDiff,
+        reviewId: data.reviewId,
         filesScanned: data.filesScanned,
         githubRepo: data.githubRepo ?? (useRepo ? targetRepo ?? null : null),
         githubSha: data.githubSha ?? null,
         branchMoved: Boolean(data.branchMoved),
+        repoOverview: data.repoOverview ?? null,
       });
       setLastScan(
         useRepo
@@ -630,6 +656,7 @@ export function CodeClient({
           : { scanRepo: false, repo: null, ref: null, sha: null },
       );
       if (data.dismissals) setDismissals(data.dismissals);
+      setWritePrConfirming(false);
     }
 
     function billedNote(chargeUsd: number | undefined, modeUsed: BugbotMode | undefined): string {
@@ -788,6 +815,52 @@ export function CodeClient({
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "AI Bugbot failed");
       setProgress((prev) => (prev ? { ...prev, running: false } : prev));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestWritePr() {
+    if (!orgId || !bugbotMeta?.proposedDiff) return;
+    try {
+      const draft = prepareBugbotWritePr({
+        phase: "fix",
+        lastScan,
+        humanApproved: writePrConfirming || !cockpit.confirmWrites,
+        unifiedDiff: bugbotMeta.proposedDiff,
+      });
+      if (cockpit.confirmWrites && !writePrConfirming) {
+        setWritePrConfirming(true);
+        setMessage(
+          `Approve opening a pull request on ${draft.repo}@${draft.baseSha.slice(0, 7)}? This uses the scanned commit, not the editor.`,
+        );
+        return;
+      }
+      const reviewId =
+        bugbotMeta.reviewId ?? (history[0]?.id && history[0].id !== "latest" ? history[0].id : undefined);
+      if (!reviewId) {
+        setMessage("Save a fix review before opening a pull request.");
+        return;
+      }
+      setBusy(true);
+      const response = await fetch("/bugbot/pr", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, reviewId, humanApproved: true }),
+      });
+      const data = (await response.json()) as { error?: string; htmlUrl?: string; number?: number };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not open the pull request.");
+        return;
+      }
+      setWritePrConfirming(false);
+      setMessage(
+        data.htmlUrl
+          ? `Opened pull request #${data.number} on ${draft.repo}. Never merged. ${data.htmlUrl}`
+          : `Opened pull request #${data.number} on ${draft.repo}. Never merged.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not open the pull request.");
     } finally {
       setBusy(false);
     }
@@ -1247,6 +1320,54 @@ export function CodeClient({
             </button>
           </div>
 
+          <div className="cdc-cockpit">
+            <label className="appearance-check">
+              <input
+                type="checkbox"
+                checked={includeScanTests}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setIncludeScanTests(next);
+                  void fetch("/api/account/cockpit", {
+                    method: "PUT",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      cockpit: { ...cockpit, includeScanTests: next, bugbotInstructions: instructions },
+                    }),
+                  });
+                }}
+              />
+              Include our tests in the repo scan
+            </label>
+            <label>
+              Custom instructions
+              <textarea
+                value={instructions}
+                maxLength={BUGBOT_INSTRUCTION_MAX}
+                rows={2}
+                disabled={busy}
+                placeholder="Short notes Bugbot must follow. Empty is fine."
+                onChange={(event) => setInstructions(event.target.value)}
+                onBlur={() => {
+                  if (instructions === cockpit.bugbotInstructions) return;
+                  void fetch("/api/account/cockpit", {
+                    method: "PUT",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      cockpit: { ...cockpit, bugbotInstructions: instructions, includeScanTests },
+                    }),
+                  });
+                }}
+              />
+            </label>
+            <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+              Subscription / your key uses the team or member key on{" "}
+              <a href="/team/ai-keys">AI keys</a> (Ollama, LM Studio, OpenAI, …). Ultra is the hosted SKU.
+              More knobs live under Account → Appearance → Cockpit.
+            </p>
+          </div>
+
           {!orgId ? (
             <EmptyState
               soft
@@ -1462,6 +1583,12 @@ export function CodeClient({
               {lastScan.sha ? ` (fix pinned to ${lastScan.sha.slice(0, 7)})` : ""} — not the editor buffer.
             </p>
           ) : null}
+          {bugbotMeta?.repoOverview ? (
+            <section className="cdc-repo-overview" aria-label="What this repo looks like">
+              <h3>What this repo looks like</h3>
+              <pre>{bugbotMeta.repoOverview}</pre>
+            </section>
+          ) : null}
 
           {/* Running cost and coverage while a chunked scan is in flight. */}
           {progress ? (
@@ -1573,6 +1700,20 @@ export function CodeClient({
                 </p>
               ) : null}
               <pre aria-label="Bugbot unified diff">{bugbotMeta.proposedDiff}</pre>
+              {lastScan?.scanRepo ? (
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy || !orgId}
+                  onClick={() => void requestWritePr()}
+                >
+                  {writePrConfirming ? "Confirm open pull request" : "Approve and open pull request"}
+                </button>
+              ) : (
+                <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+                  Open pull request is only available after a repo scan (repo + sha), not the editor sample.
+                </p>
+              )}
             </div>
           ) : null}
 

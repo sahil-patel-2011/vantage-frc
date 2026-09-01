@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { interpolateShot, parseShooterAction, summarizeTable, validatePoint } from "./shooter-table";
+import { interpolateShot, parseShooterAction, summarizeTable, validatePoint } from "./points";
 
 describe("validatePoint", () => {
   it("requires a positive distance", () => {

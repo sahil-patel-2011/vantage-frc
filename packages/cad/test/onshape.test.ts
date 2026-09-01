@@ -166,19 +166,117 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     expect(elements[0]).toMatchObject({ id: "el-1", elementType: "PARTSTUDIO" });
   });
 
-  it("soft-fails placeholder sketch when FeatureScript is rejected", async () => {
+  it("does not report success when Onshape rejects a geometry mutation", async () => {
     const http: OnshapeHttp = vi.fn(async () =>
-      Response.json({ message: "bad script" }, { status: 400 }),
+      Response.json({ message: "bad feature" }, { status: 400 }),
     ) as unknown as OnshapeHttp;
     const transport = createOnshapeApiTransport({
       http,
       document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
     });
-    const result = await transport.mutate({
-      operation: "create_sketch",
-      parameters: { widthMm: 40 },
-      idempotencyKey: "idem-sketch",
+    await expect(
+      transport.mutate({
+        operation: "create_sketch",
+        parameters: { widthMm: 40, heightMm: 20 },
+        idempotencyKey: "job-1:1:sketch",
+      }),
+    ).rejects.toThrow(/bad feature/);
+  });
+
+  it("creates real sketch and extrude features with returned Onshape ids", async () => {
+    const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith("/features") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        requests.push({ path, body });
+        const feature = body.feature as { featureType?: string };
+        return Response.json({
+          featureId: feature.featureType === "newSketch" ? "sketch-real-1" : "extrude-real-1",
+        });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
     });
-    expect(result.featureId).toMatch(/^intent-create_sketch-/);
+
+    const sketch = await transport.mutate({
+      operation: "create_sketch",
+      parameters: { widthMm: 80, heightMm: 50, plane: "Top" },
+      idempotencyKey: "job-1:1:sketch",
+    });
+    const extrude = await transport.mutate({
+      operation: "create_extrude",
+      parameters: { sketchFeatureId: sketch.featureId, depthMm: 6 },
+      idempotencyKey: "job-1:2:extrude",
+    });
+
+    expect(sketch.featureId).toBe("sketch-real-1");
+    expect(extrude.featureId).toBe("extrude-real-1");
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.path).toContain("/features");
+    expect(JSON.stringify(requests[0]?.body)).toContain("newSketch");
+    expect(JSON.stringify(requests[1]?.body)).toContain("sketch-real-1");
+  });
+
+  it("creates and verifies native assemblies and mates without FeatureScript", async () => {
+    const paths: string[] = [];
+    let assemblyFeature = 0;
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      paths.push(`${init?.method ?? "GET"} ${path}`);
+      if (path === "/api/v9/assemblies/d/d1/w/w1" && init?.method === "POST") {
+        return Response.json({ id: "assembly-1" });
+      }
+      if (path.endsWith("/instances") && init?.method === "POST") {
+        return Response.json({ id: "instance-1" });
+      }
+      if (path.endsWith("/features") && init?.method === "POST") {
+        assemblyFeature += 1;
+        return Response.json({ featureId: `assembly-feature-${assemblyFeature}` });
+      }
+      if (path.includes("/api/v9/assemblies/") && !init?.method) {
+        return Response.json({ rootAssembly: { instances: [{ id: "instance-1" }] } });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "ps-1" },
+    });
+
+    const assembly = await transport.mutate({
+      operation: "create_assembly",
+      parameters: { name: "Drivebase" },
+      idempotencyKey: "job-2:1:assembly",
+    });
+    const instance = await transport.mutate({
+      operation: "add_assembly_instance",
+      parameters: {
+        assemblyElementId: assembly.featureId,
+        sourceElementId: "ps-1",
+        partId: "part-1",
+      },
+      idempotencyKey: "job-2:2:instance",
+    });
+    const mate = await transport.mutate({
+      operation: "create_mate",
+      parameters: {
+        assemblyElementId: assembly.featureId,
+        mateType: "FASTENED",
+        firstInstanceId: instance.featureId,
+        secondInstanceId: "instance-2",
+        firstFaceId: "face-1",
+        secondFaceId: "face-2",
+      },
+      idempotencyKey: "job-2:3:mate",
+    });
+    const described = await transport.describe();
+
+    expect(assembly.featureId).toBe("assembly-1");
+    expect(instance.featureId).toBe("instance-1");
+    expect(mate.featureId).toBe("assembly-feature-3");
+    expect(described.summary.validation).toBe("onshape-live-assembly");
+    expect(paths.some((path) => path.includes("featurescript"))).toBe(false);
   });
 });

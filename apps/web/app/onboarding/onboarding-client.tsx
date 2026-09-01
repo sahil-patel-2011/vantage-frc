@@ -315,7 +315,7 @@ export default function OnboardingClient() {
 
   useEffect(() => {
     loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial secure session load only
+     
   }, []);
 
   const locked = state?.lockedTeamNumber != null;

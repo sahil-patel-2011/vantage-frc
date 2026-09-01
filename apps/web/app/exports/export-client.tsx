@@ -102,7 +102,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     void load();
     const timer = setInterval(() => void load(), 3000);
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- poll by org only
+     
   }, [orgId]);
 
   const available = useMemo(() => domains.filter((domain) => domain.scope === scope), [domains, scope]);

@@ -1,5 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeMentorEngagement, summarizeMentorHours } from ".";
+import {
+  deleteMentorHoursEntry,
+  insertMentorHoursEntry,
+  listMentorHoursEntries,
+  listMentorHoursSeasons,
+} from "./ledger";
 import type {
   MentorHoursCategory,
   MentorHoursEngagement,
@@ -42,6 +48,15 @@ export type MentorHoursView =
       seasonYear: number;
     }
   | {
+      status: "empty";
+      message: string;
+      orgId: string;
+      teamNumber: number | null;
+      seasonYear: number;
+      seasons: number[];
+      computedAt: string;
+    }
+  | {
       status: "live";
       orgId: string;
       teamNumber: number | null;
@@ -57,32 +72,6 @@ export function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-type EntryRow = {
-  id: string;
-  mentorName: string;
-  mentorUserId: string | null;
-  role: MentorHoursRole;
-  category: MentorHoursCategory;
-  occurredOn: string;
-  durationMinutes: number;
-  seasonYear: number;
-  notes: string | null;
-};
-
-function mapEntry(row: EntryRow): MentorHoursEntry {
-  return {
-    id: row.id,
-    mentorName: row.mentorName,
-    mentorUserId: row.mentorUserId,
-    role: row.role,
-    category: row.category,
-    occurredOn: row.occurredOn,
-    durationMinutes: Number(row.durationMinutes) || 0,
-    seasonYear: row.seasonYear,
-    notes: row.notes,
-  };
-}
-
 async function resolveOrg(
   client: PoolClient,
   userId: string,
@@ -92,7 +81,7 @@ async function resolveOrg(
     `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
-     WHERE m.user_id = $1
+     WHERE m.user_id = $1::uuid
        AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
      LIMIT 1`,
@@ -120,27 +109,28 @@ export async function computeMentorHoursView(
     };
   }
 
-  const [entryResult, seasonResult] = await Promise.all([
-    client.query<EntryRow>(
-      `SELECT id, mentor_name AS "mentorName", mentor_user_id AS "mentorUserId", role, category,
-              occurred_on::text AS "occurredOn", duration_minutes AS "durationMinutes",
-              season_year AS "seasonYear", notes
-       FROM mentor_hours_entries
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY occurred_on DESC, created_at DESC`,
-      [org.orgId, seasonYear],
-    ),
-    client.query<{ seasonYear: number }>(
-      `SELECT DISTINCT season_year AS "seasonYear" FROM mentor_hours_entries WHERE org_id = $1 ORDER BY season_year DESC`,
-      [org.orgId],
-    ),
+  const [entries, seasonYears] = await Promise.all([
+    listMentorHoursEntries(client, { orgId: org.orgId, seasonYear }),
+    listMentorHoursSeasons(client, org.orgId),
   ]);
 
-  const entries = entryResult.rows.map(mapEntry);
+  const seasons = [...seasonYears];
+  if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
+
+  if (entries.length === 0) {
+    return {
+      status: "empty",
+      message: "No mentor or volunteer hours logged for this season yet.",
+      orgId: org.orgId,
+      teamNumber: org.teamNumber,
+      seasonYear,
+      seasons,
+      computedAt: new Date().toISOString(),
+    };
+  }
+
   const summary = summarizeMentorHours(entries);
   const engagement = computeMentorEngagement(summary);
-  const seasons = seasonResult.rows.map((r) => r.seasonYear);
-  if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
   return {
     status: "live",
@@ -163,6 +153,7 @@ export async function logEntry(
     orgId: string;
     userId: string;
     mentorName: string;
+    mentorUserId?: string | null;
     role: MentorHoursRole;
     category: MentorHoursCategory;
     occurredOn: string;
@@ -171,30 +162,12 @@ export async function logEntry(
     seasonYear: number;
   },
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO mentor_hours_entries (
-       org_id, mentor_name, role, category, occurred_on, duration_minutes, notes, season_year, logged_by
-     ) VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8,$9)`,
-    [
-      input.orgId,
-      input.mentorName,
-      input.role,
-      input.category,
-      input.occurredOn,
-      Math.max(0, Math.round(input.durationMinutes)),
-      input.notes,
-      input.seasonYear,
-      input.userId,
-    ],
-  );
+  await insertMentorHoursEntry(client, input);
 }
 
 export async function deleteEntry(
   client: PoolClient,
   input: { orgId: string; entryId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM mentor_hours_entries WHERE id = $1 AND org_id = $2`, [
-    input.entryId,
-    input.orgId,
-  ]);
+  await deleteMentorHoursEntry(client, input);
 }

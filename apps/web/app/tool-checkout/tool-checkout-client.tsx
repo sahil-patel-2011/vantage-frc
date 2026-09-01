@@ -16,7 +16,12 @@ import {
 import { toolCategoryLabel } from "../../lib/tool-checkout";
 import { TOOL_CATEGORIES } from "../../lib/tool-checkout/compute-tool-checkout";
 import type { ToolCheckoutView } from "../../lib/tool-checkout/compute-tool-checkout";
-import type { ToolCategory, ToolCheckoutStatus } from "../../lib/tool-checkout/types";
+import type {
+  ToolCategory,
+  ToolCheckoutMemberOption,
+  ToolCheckoutStatus,
+  ToolRequiredSkill,
+} from "../../lib/tool-checkout/types";
 import {
   TOOL_CHECKOUT_RELATED_INCLUDE,
   classifyToolCheckoutShell,
@@ -367,6 +372,11 @@ function ToolsPanel({
                 </small>
               ) : null}
               {tool.notes ? <small className="app-muted tc-block">{tool.notes}</small> : null}
+              {(tool.requiredSkills ?? []).length > 0 ? (
+                <small className="app-muted tc-block">
+                  Requires {tool.requiredSkills.map((skill) => skill.name).join(" or ")}
+                </small>
+              ) : null}
             </div>
             <div className="tc-actions">
               {tool.currentLoan ? (
@@ -379,7 +389,13 @@ function ToolsPanel({
                   Return
                 </button>
               ) : (
-                <CheckoutButton toolId={tool.id} busy={busy} mutate={mutate} />
+                <CheckoutButton
+                  toolId={tool.id}
+                  busy={busy}
+                  mutate={mutate}
+                  members={view.members ?? []}
+                  requiredSkills={tool.requiredSkills ?? []}
+                />
               )}
               <button
                 type="button"
@@ -401,12 +417,17 @@ function CheckoutButton({
   toolId,
   busy,
   mutate,
+  members,
+  requiredSkills,
 }: {
   toolId: string;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  members: ToolCheckoutMemberOption[];
+  requiredSkills: ToolRequiredSkill[];
 }) {
   const [open, setOpen] = useState(false);
+  const [borrowerUserId, setBorrowerUserId] = useState("");
   const [borrowerName, setBorrowerName] = useState("");
   const [dueAt, setDueAt] = useState("");
 
@@ -418,31 +439,53 @@ function CheckoutButton({
     );
   }
 
+  const selected = members.find((member) => member.userId === borrowerUserId) ?? null;
+  const name = selected?.name ?? borrowerName;
+  const canConfirm = Boolean(name.trim()) && (requiredSkills.length === 0 || Boolean(selected));
+
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (!borrowerName.trim()) return;
+        if (!canConfirm) return;
         mutate({
           action: "checkout-tool",
           toolId,
-          borrowerName,
+          borrowerName: name,
+          borrowerUserId: selected?.userId,
           dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
         });
+        setBorrowerUserId("");
         setBorrowerName("");
         setDueAt("");
         setOpen(false);
       }}
       className="tc-checkout-form"
     >
-      <input
-        value={borrowerName}
-        onChange={(event) => setBorrowerName(event.target.value)}
-        placeholder="Borrower"
-        required
-      />
+      {members.length > 0 ? (
+        <select
+          value={borrowerUserId}
+          onChange={(event) => setBorrowerUserId(event.target.value)}
+          required={requiredSkills.length > 0}
+          aria-label="Borrower"
+        >
+          <option value="">{requiredSkills.length > 0 ? "Certified member" : "Borrower"}</option>
+          {members.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          value={borrowerName}
+          onChange={(event) => setBorrowerName(event.target.value)}
+          placeholder="Borrower"
+          required
+        />
+      )}
       <input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
-      <button type="submit" className="app-button" disabled={busy || !borrowerName.trim()}>
+      <button type="submit" className="app-button" disabled={busy || !canConfirm}>
         Confirm
       </button>
       <button type="button" className="text-button" onClick={() => setOpen(false)}>

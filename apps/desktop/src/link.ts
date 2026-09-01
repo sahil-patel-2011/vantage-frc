@@ -261,7 +261,7 @@ export async function runLinkFlow(deps: LinkFlowDeps): Promise<LinkState> {
     const response = await deps.fetchJson("/api/desktop/link/exchange", { authCode, verifier });
     exchange = response.status === 200 ? parseExchangeResponse(response.json) : null;
   } catch {
-    exchange = null;
+    // A transient/invalid exchange is handled by the null check below.
   }
   if (!exchange) {
     return finish({ phase: "error", message: "Sign-in could not be completed. Start again." });

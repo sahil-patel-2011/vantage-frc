@@ -189,6 +189,15 @@ export type ResolveOnshapeAuthOptions = {
   fetchImpl?: typeof fetch;
   now?: () => number;
   loadSession?: (env: NodeJS.ProcessEnv) => Promise<OnshapeBrowserSession | null>;
+  /**
+   * Local clients can keep requests inside a real signed-in browser context.
+   * The web/server build leaves this unset and uses cookie replay for backwards
+   * compatibility; the CLI supplies a Playwright-backed implementation.
+   */
+  sessionHttpFactory?: (
+    session: OnshapeBrowserSession,
+    options: OnshapeSessionHttpOptions,
+  ) => Promise<OnshapeHttpFn>;
   /** Hosted runtimes hand in an org OAuth access token; terminal runs leave this unset. */
   oauthToken?: string | null | (() => Promise<string | null>);
   /** Force one path — diagnostics and tests only. */
@@ -222,11 +231,14 @@ export async function resolveOnshapeAuth(options: ResolveOnshapeAuthOptions = {}
 
   if (session && !sessionExpired) {
     const expiresAt = onshapeSessionExpiresAt(session);
+    const sessionHttp = options.sessionHttpFactory
+      ? await options.sessionHttpFactory(session, httpOptions)
+      : createOnshapeSessionHttp(session, httpOptions);
     return {
       authPath: "session",
       countsAgainstAnnualCap: false,
       baseUrl: session.baseUrl,
-      http: budget.attribute(createOnshapeSessionHttp(session, httpOptions), "session"),
+      http: budget.attribute(sessionHttp, "session"),
       label: expiresAt
         ? `Onshape browser session (${session.baseUrl}, valid until ${new Date(expiresAt).toISOString()})`
         : `Onshape browser session (${session.baseUrl})`,

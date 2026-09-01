@@ -1,3 +1,5 @@
+import { countMissingCad } from "./cad-vault/blueprint-coverage";
+
 // Robot Blueprint (digital twin) — framework-free domain logic shared by the API
 // route, the client UI, and unit tests. Ties CAD, code, strategy, and operational
 // data together per robot subsystem. No server or React imports belong here.
@@ -49,6 +51,8 @@ export type RobotSubsystem = {
   description: string;
   status: SubsystemStatus;
   cadUrl: string | null;
+  /** Non-archived cad_documents rows linked to this subsystem. Optional for callers that only have a URL. */
+  vaultDocumentCount?: number;
   codeRef: string;
   priorityId: string | null;
   priorityCapability: string | null;
@@ -166,7 +170,7 @@ export function robotRollup(subsystems: EnrichedSubsystem[]): RobotRollup {
     total: subsystems.length,
     ready: subsystems.filter((subsystem) => subsystem.status === "competition_ready").length,
     blockers: readiness.reduce((sum, value) => sum + value.blockers.length, 0),
-    missingCad: subsystems.filter((subsystem) => !subsystem.cadUrl).length,
+    missingCad: countMissingCad(subsystems),
     missingCode: subsystems.filter((subsystem) => !subsystem.codeRef.trim()).length,
     unlinkedStrategy: subsystems.filter((subsystem) => !subsystem.priorityId).length,
     untested: subsystems.filter((subsystem) => (subsystem.ops.practice?.reps ?? 0) === 0).length,

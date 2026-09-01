@@ -7,10 +7,11 @@ import {
   bugbotRecheckUserMessage,
   bugbotUltraChargeUsd,
   bugbotUserMessage,
+  estimateAdapterCostUsd,
   getOrgPromptCachingEnabled,
   groundBugbotFix,
   mergeBugbotReview,
-  resolveOrgChatAdapter,
+  resolveOrgChatAdapterWithProvenance,
   reviewFrcCode,
   type BugbotFinding,
   type BugbotTier,
@@ -33,6 +34,7 @@ import { headers } from "next/headers";
 import {
   createGitHubHttp,
   fetchGitHubFileSnippet,
+  fetchGitHubRepoOverviewFiles,
   fetchGitHubScanBundle,
   getGitHubAccessToken,
   loadEditorContextItems,
@@ -41,7 +43,15 @@ import {
   requireOrgMember,
   resolveGitHubCommitSha,
 } from "../../../lib/github";
-import { asCommitSha } from "../../../lib/bugbot/grounding";
+import { asCommitSha, assertBugbotPhaseGrounding } from "../../../lib/bugbot/grounding";
+import {
+  assertBugbotModelContext,
+  buildBugbotModelContext,
+  loadBugbotContextSources,
+} from "../../../lib/bugbot/model-context";
+import { bugbotQualityNotice } from "../../../lib/bugbot/quality-notice";
+import { buildRepoOverview } from "../../../lib/bugbot/repo-overview";
+import { loadCockpitPrefs } from "../../../lib/cockpit/prefs";
 import {
   dismissBugbotFinding,
   labelBugbotFindings,
@@ -133,6 +143,8 @@ type HydratedSource = {
   /** True when the request pinned a scanned sha and the branch head has moved past it. */
   branchMoved: boolean;
   coverage: ScanCoverage;
+  contextFiles?: Array<{ path: string; content: string }>;
+  repoOverview?: string | null;
 };
 
 async function hydrateSource(
@@ -148,6 +160,7 @@ async function hydrateSource(
     githubSha?: string;
     scanRepo?: boolean;
     chunkIndex?: number;
+    includeTests?: boolean;
   },
 ): Promise<HydratedSource> {
   let path = String(body.path ?? "Robot.java").slice(0, 260);
@@ -158,6 +171,8 @@ async function hydrateSource(
   let githubRef: string | null = body.githubRef?.trim() || null;
   let githubSha: string | null = null;
   let branchMoved = false;
+  let contextFiles: Array<{ path: string; content: string }> = [];
+  let repoOverview: string | null = null;
   const chunkIndex = Math.min(
     BUGBOT_SCAN_MAX_CHUNKS - 1,
     Math.max(0, Math.floor(Number(body.chunkIndex ?? 0)) || 0),
@@ -190,6 +205,8 @@ async function hydrateSource(
             githubSha: null,
             branchMoved: false,
             coverage: bufferCoverage(editorPath),
+            contextFiles: first.content.trim() ? [{ path: editorPath, content: first.content }] : [],
+            repoOverview: null,
           };
         }
       }
@@ -235,7 +252,9 @@ async function hydrateSource(
       if (body.scanRepo) {
         // Plan first, on the server: the chunk's file list is derived from the tree
         // we just read, never from the client, and the skip list is reported back.
-        const plan = await planGitHubBugbotScan(http, fullName, fetchSha ?? ref);
+        const plan = await planGitHubBugbotScan(http, fullName, fetchSha ?? ref, {
+          includeTests: body.includeTests,
+        });
         const chunkFiles = plan.chunks[chunkIndex] ?? [];
         if (!chunkFiles.length) {
           return {
@@ -251,9 +270,21 @@ async function hydrateSource(
             githubSha: fetchSha,
             branchMoved: moved,
             coverage: coverageFromPlan(plan, chunkIndex, [], []),
+            contextFiles: [],
+            repoOverview: null,
           };
         }
-        const bundle = await fetchGitHubScanBundle(http, fullName, fetchSha ?? ref, { files: chunkFiles });
+        const [bundle, overviewFiles] = await Promise.all([
+          fetchGitHubScanBundle(http, fullName, fetchSha ?? ref, {
+            files: chunkFiles,
+            includeTests: body.includeTests,
+          }),
+          chunkIndex === 0 ? fetchGitHubRepoOverviewFiles(http, fullName, fetchSha ?? ref) : Promise.resolve([]),
+        ]);
+        const treePaths = [
+          ...plan.reviewed.map((file) => file.path),
+          ...plan.skipped.map((file) => file.path),
+        ];
         return {
           path: bundle.path,
           content: bundle.content,
@@ -270,6 +301,12 @@ async function hydrateSource(
           githubSha: fetchSha,
           branchMoved: moved,
           coverage: coverageFromPlan(plan, chunkIndex, bundle.files, bundle.unreadable),
+          contextFiles: bundle.fileContents,
+          repoOverview: buildRepoOverview({
+            repo: fullName,
+            paths: treePaths,
+            files: overviewFiles,
+          }),
         };
       }
       if (body.githubPath) {
@@ -307,6 +344,8 @@ async function hydrateSource(
     githubSha = hydrated.githubSha;
     branchMoved = hydrated.branchMoved;
     coverage = hydrated.coverage;
+    contextFiles = hydrated.contextFiles ?? [];
+    repoOverview = hydrated.repoOverview ?? null;
     if (!content.trim()) {
       throw new Error(
         ("empty" in hydrated && hydrated.empty) ||
@@ -319,6 +358,9 @@ async function hydrateSource(
 
   if (!content.trim()) throw new Error("content is required");
   if (content.length > 200_000) throw new Error("content exceeds the 200KB analysis limit");
+  if (!contextFiles.length && content.trim()) {
+    contextFiles = [{ path, content }];
+  }
   return {
     path,
     content,
@@ -329,6 +371,8 @@ async function hydrateSource(
     githubSha,
     branchMoved,
     coverage,
+    contextFiles,
+    repoOverview,
   };
 }
 
@@ -370,7 +414,10 @@ export async function GET(request: Request) {
           url.searchParams.get("ref")?.trim() || authToken.connection.defaultRepoDefaultBranch || "main";
         const http = createGitHubHttp(authToken.accessToken);
         const sha = await resolveGitHubCommitSha(http, fullName, ref);
-        const scanPlan = await planGitHubBugbotScan(http, fullName, sha ?? ref);
+        const cockpit = await loadCockpitPrefs(client, session.user.id);
+        const includeTests =
+          url.searchParams.get("includeTests") === "1" || cockpit.includeScanTests;
+        const scanPlan = await planGitHubBugbotScan(http, fullName, sha ?? ref, { includeTests });
         return {
           empty: false as const,
           repo: fullName,
@@ -389,6 +436,7 @@ export async function GET(request: Request) {
           skipReasons: BUGBOT_SKIP_REASONS,
           cost: bugbotScanCostUsd({ chunkCount: scanPlan.chunkCount, tier }),
           tier,
+          includeTests,
         };
       });
       return Response.json(plan);
@@ -494,6 +542,10 @@ type BugbotBody = {
   reason?: string;
   filePath?: string;
   rule?: string;
+  /** Stable client-generated key for safe network retries. */
+  requestId?: string;
+  includeTests?: boolean;
+  customInstructions?: string;
 };
 
 /**
@@ -536,9 +588,29 @@ export async function POST(request: Request) {
       return Response.json({ ...result, scopeKey, fingerprint }, { status: 201 });
     }
 
+    let cockpitInstructions = "";
+    if (body.orgId && (body.action === "bugbot" || body.scanRepo)) {
+      const cockpit = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
+        await requireOrgMember(client, body.orgId!, session.user.id);
+        return loadCockpitPrefs(client, session.user.id);
+      });
+      body.includeTests = body.includeTests ?? cockpit.includeScanTests;
+      cockpitInstructions = cockpit.bugbotInstructions;
+    }
     const hydrated = await hydrateSource(session.user.id, body);
-    const { path, content, provenance, filesScanned, githubRepo, githubRef, githubSha, branchMoved, coverage } =
-      hydrated;
+    const {
+      path,
+      content,
+      provenance,
+      filesScanned,
+      githubRepo,
+      githubRef,
+      githubSha,
+      branchMoved,
+      coverage,
+      contextFiles,
+      repoOverview,
+    } = hydrated;
 
     if (body.action === "bugbot") {
       if (!body.orgId) throw new Error("orgId is required");
@@ -549,19 +621,45 @@ export async function POST(request: Request) {
       const scopeKey = bugbotScopeKey({ githubRepo, path });
       const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
         await requireOrgMember(client, orgId, session.user.id);
+        const digest = createHash("sha256").update(content).digest("hex");
+        const parentId = asReviewId(body.parentReviewId);
+        const parent =
+          phase === "scan" || !parentId
+            ? null
+            : (
+                await client.query<{
+                  path: string;
+                  contentSha256: string;
+                  githubRepo: string | null;
+                  githubSha: string | null;
+                }>(
+                  `SELECT path, content_sha256 AS "contentSha256",
+                          github_repo AS "githubRepo", github_sha AS "githubSha"
+                     FROM code_bugbot_reviews
+                    WHERE id=$1::uuid AND org_id=$2::uuid`,
+                  [parentId, orgId],
+                )
+              ).rows[0] ?? null;
+        assertBugbotPhaseGrounding({
+          phase,
+          parent,
+          source: { path, contentSha256: digest, githubRepo, githubSha },
+        });
         const local = reviewFrcCode({ path, content });
         const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-        const adapter = await resolveOrgChatAdapter(client, {
+        const { adapter, provenance: modelProvenance } = await resolveOrgChatAdapterWithProvenance(client, {
           orgId,
+          userId: session.user.id,
           promptCachingEnabled,
           feature: mode === "ultra" ? "bugbot_ultra" : "coding",
           preferPlatform: mode === "ultra",
           bridgeTransport: createBridgeTransport(),
         });
-        const requestId = randomUUID();
+        const requestId =
+          typeof body.requestId === "string" && /^[a-zA-Z0-9:_-]{12,160}$/.test(body.requestId)
+            ? body.requestId
+            : randomUUID();
         const chargeUsd = mode === "ultra" ? bugbotUltraChargeUsd(phase) : 0;
-        const estimatedCostUsd =
-          mode === "ultra" ? chargeUsd : phase === "fix" ? 0.04 : 0.02;
         const message =
           phase === "fix"
             ? bugbotFixUserMessage({
@@ -587,6 +685,27 @@ export async function POST(request: Request) {
                       ? `${githubRepo ?? path} chunk ${coverage.chunkIndex + 1} of ${coverage.chunkCount}`
                       : null,
                 });
+        const sources = await loadBugbotContextSources(client, { orgId, scopeKey });
+        const modelContext = buildBugbotModelContext({
+          files: contextFiles.length ? contextFiles : [{ path, content }],
+          priorFindings: sources.priorFindings,
+          knowledge: sources.knowledge,
+          fmea: sources.fmea,
+          githubRepo,
+          githubSha,
+          reviewedFiles: coverage.reviewedFiles,
+          customInstructions: body.customInstructions?.trim() || cockpitInstructions,
+          repoOverview,
+        });
+        const estimatedPromptTokens = Math.ceil(
+          (message.length + modelContext.reduce((sum, item) => sum + item.content.length, 0)) / 4,
+        );
+        const estimatedCompletionTokens = phase === "fix" ? 1200 : 800;
+        const estimatedCostUsd =
+          mode === "ultra"
+            ? chargeUsd
+            : estimateAdapterCostUsd(adapter, estimatedPromptTokens, estimatedCompletionTokens);
+        let validatedFix: ReturnType<typeof groundBugbotFix> | null = null;
         const text = await meteredAI({
           client,
           orgId,
@@ -594,8 +713,8 @@ export async function POST(request: Request) {
           feature: mode === "ultra" ? "bugbot_ultra" : "coding",
           requestId,
           estimatedCostUsd,
-          estimatedPromptTokens: Math.ceil(message.length / 4),
-          estimatedCompletionTokens: phase === "fix" ? 1200 : 800,
+          estimatedPromptTokens,
+          estimatedCompletionTokens,
           provider: adapter.provider,
           model: adapter.model,
           keySource: mode === "ultra" ? "platform" : undefined,
@@ -614,9 +733,19 @@ export async function POST(request: Request) {
           invoke: async () => {
             const result = await adapter.complete({
               message,
-              context: [],
+              context: assertBugbotModelContext(modelContext),
               promptCachingEnabled,
             });
+            if (phase === "fix") {
+              validatedFix = groundBugbotFix({ path, content, modelText: result.text });
+              if (!validatedFix.unifiedDiff) {
+                throw new Error(
+                  validatedFix.dropped
+                    ? "Bugbot returned a diff that was not grounded in the scanned source"
+                    : "Bugbot did not return a valid unified diff",
+                );
+              }
+            }
             return {
               value: result.text,
               promptTokens: result.promptTokens,
@@ -632,7 +761,9 @@ export async function POST(request: Request) {
         });
         const merged = mergeBugbotReview({ path, content, modelText: text });
         const fix =
-          phase === "fix" ? groundBugbotFix({ path, content, modelText: text }) : { unifiedDiff: null, dropped: false };
+          phase === "fix"
+            ? validatedFix ?? groundBugbotFix({ path, content, modelText: text })
+            : { unifiedDiff: null, dropped: false };
 
         // Dismissals are per fingerprint and persist across commits: a team that
         // said "this one is deliberate" should not be told again every scan.
@@ -655,7 +786,6 @@ export async function POST(request: Request) {
             ? `${coverage.deferredCount} robot-code file(s) are beyond this scan's chunk budget`
             : null;
 
-        const digest = createHash("sha256").update(content).digest("hex");
         const saved = await client.query<{ id: string }>(
           `INSERT INTO code_bugbot_reviews
             (org_id, created_by, path, content_sha256, provider, model, risk_level, findings,
@@ -682,7 +812,7 @@ export async function POST(request: Request) {
             phase,
             githubRepo,
             githubRef,
-            asReviewId(body.parentReviewId),
+            parentId,
             fix.unifiedDiff,
             chargeUsd,
             filesScanned,
@@ -736,6 +866,12 @@ export async function POST(request: Request) {
           reviewId,
           provider: adapter.provider,
           model: adapter.model,
+          notice: bugbotQualityNotice({
+            mode,
+            provider: adapter.provider,
+            modelId: adapter.model,
+            baseUrlOrigin: modelProvenance.baseUrlOrigin,
+          }),
           provenance,
           mode,
           phase,
@@ -763,6 +899,7 @@ export async function POST(request: Request) {
           dismissals,
           proposedDiff: fix.unifiedDiff,
           fixDropped: phase === "fix" ? fix.dropped : false,
+          repoOverview,
           // The fix contract, restated on every response that carries a diff.
           executionState: "proposal_only" as const,
           requiresHumanApproval: true,

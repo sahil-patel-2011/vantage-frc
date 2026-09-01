@@ -11,6 +11,12 @@ type EmptyStateProps = {
   className?: string;
   /** Use dashed soft-empty shell instead of a raised soft-panel. */
   soft?: boolean;
+  /**
+   * Inline variant with no border/background/padding of its own — for a slot that
+   * already lives inside a chromed card (e.g. a dashboard widget), where a nested
+   * `app-card`/`soft-empty` box would double the border. Takes over `soft`.
+   */
+  compact?: boolean;
   "aria-busy"?: boolean;
 };
 
@@ -23,9 +29,10 @@ export function EmptyState({
   children,
   className,
   soft = false,
+  compact = false,
   "aria-busy": ariaBusy,
 }: EmptyStateProps) {
-  const shell = soft ? "soft-empty" : "app-card soft-panel";
+  const shell = compact ? "soft-empty-compact" : soft ? "soft-empty" : "app-card soft-panel";
   return (
     <section className={[shell, className].filter(Boolean).join(" ")} aria-busy={ariaBusy}>
       {badge != null && badge !== "" ? (

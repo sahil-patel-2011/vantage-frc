@@ -25,6 +25,20 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import "./lineup.css";
 
+type CoverageScout = {
+  userId: string;
+  name: string;
+  role: string;
+  assignedCount: number;
+  isMe: boolean;
+};
+
+type SchemaRoleWarning = {
+  id: string;
+  severity: "blocking" | "warning";
+  message: string;
+};
+
 type CoverageView =
   | {
       status: "setup_required";
@@ -37,6 +51,7 @@ type CoverageView =
       eventKey: string;
       generatedAt: string;
       qualsOnly: boolean;
+      canAssign: boolean;
       summary: CoverageGapSummary;
       live: {
         focusMatchKeys: string[];
@@ -45,6 +60,8 @@ type CoverageView =
         doubleSlots: CoverageGapSlot[];
       };
       slots: CoverageGapSlot[];
+      scouts: CoverageScout[];
+      schemaRoles: { status: string; warnings: SchemaRoleWarning[] };
     };
 
 function teamLabel(slot: CoverageGapSlot): string {
@@ -244,6 +261,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const [qualsOnly, setQualsOnly] = useState(true);
   const [focusMatch, setFocusMatch] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ orgId, window: "4" });
@@ -271,6 +289,36 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       setError("Network error — coverage will retry.");
     }
   }, [focusMatch, orgId, qualsOnly]);
+
+  /**
+   * Coverage mutations go to the same canonical route as the read, so the response IS the
+   * refreshed board — no optimistic second source of truth to drift.
+   */
+  const mutate = useCallback(
+    async (body: Record<string, unknown>) => {
+      setBusy(true);
+      try {
+        const response = await fetch("/api/scouting/coverage", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, focusMatchKey: focusMatch, qualsOnly, ...body }),
+        });
+        const data = (await response.json()) as CoverageView & { error?: string };
+        if (!response.ok) {
+          setError(data.error ?? "Could not update coverage.");
+          return;
+        }
+        setView(data);
+        setUpdatedAt(data.generatedAt);
+        setError("");
+      } catch {
+        setError("Network error — the assignment was not saved.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [focusMatch, orgId, qualsOnly],
+  );
 
   useEffect(() => {
     void load();
@@ -429,8 +477,45 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           />
           Quals only
         </label>
+        {view.canAssign ? (
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={busy || !view.live.gapSlots.length}
+            onClick={() => void mutate({ action: "auto-assign" })}
+          >
+            {busy ? "Assigning…" : "Auto-assign open gaps"}
+          </button>
+        ) : null}
         <span className="app-muted">{view.eventKey}</span>
       </section>
+
+      {view.schemaRoles.warnings.length ? (
+        <section className="lineup-panel" aria-label="Form to strategy mapping">
+          <header>
+            <h2>Form mapping</h2>
+            <p className="app-muted">
+              What your published form actually hands Strategy — a missing mapping reads as null,
+              not as zero.
+            </p>
+          </header>
+          <ul className="lineup-setup-steps">
+            {view.schemaRoles.warnings.map((warning) => (
+              <li key={warning.id}>
+                <div>
+                  <strong>
+                    {warning.severity === "blocking" ? "Strategy reads null" : "Heads up"}
+                  </strong>
+                  <p className="app-muted lineup-tip">{warning.message}</p>
+                </div>
+                <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
+                  Open Form builder
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {showTiles ? (
         <section className="lineup-kpis" aria-label="Coverage summary">
@@ -474,6 +559,32 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                   </strong>
                   <span>{statusLabel(slot.status)}</span>
                   <a href={lineupScoutNowHref(orgId, slot.matchKey, slot.teamKey)}>Scout now</a>
+                  {view.canAssign ? (
+                    <label className="lineup-assign">
+                      <span className="app-muted">Assign</span>
+                      <select
+                        value=""
+                        disabled={busy}
+                        onChange={(event) => {
+                          const assignee = event.target.value;
+                          if (!assignee) return;
+                          void mutate({
+                            action: "assign",
+                            matchKey: slot.matchKey,
+                            teamKey: slot.teamKey,
+                            userId: assignee,
+                          });
+                        }}
+                      >
+                        <option value="">Pick a scout…</option>
+                        {view.scouts.map((scout) => (
+                          <option key={scout.userId} value={scout.userId}>
+                            {scout.isMe ? `${scout.name} (me)` : scout.name} · {scout.assignedCount}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                 </li>
               ))}
             </ul>

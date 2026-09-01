@@ -62,6 +62,17 @@ describe("secure CSV exports", () => {
     expect(adapter?.columns).not.toContain("created_by");
   });
 
+  it("offers redacted business bundles without multiplying contribution totals", () => {
+    const registry = createExportRegistry();
+    for (const id of ["accounting-ledger", "grant-artifacts", "award-artifacts", "sponsor-artifacts"]) {
+      expect(registry.get(id)).toMatchObject({ scope: "team", category: "business" });
+    }
+    const sponsor = registry.get("sponsor-artifacts");
+    expect(sponsor?.columns).not.toEqual(expect.arrayContaining(["contact_email", "created_by"]));
+    expect(JSON.stringify(sponsor)).toContain("LEFT JOIN LATERAL");
+    expect(JSON.stringify(sponsor)).not.toContain("sponsor_contacts");
+  });
+
   it("exports shared CAD standards but never private user preferences", () => {
     const registry = createExportRegistry();
     expect(registry.get("cad-team-profile")?.columns).toContain("manufacturing_processes_json");

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import type { CsvValue } from "./csv";
 
 export type ExportScope = "team" | "private";
-export type ExportCategory = "scouting" | "reference" | "strategy" | "ai" | "ops";
+export type ExportCategory = "scouting" | "reference" | "strategy" | "business" | "ai" | "ops";
 export type ExportFilters = { eventKey?: string; from?: string; to?: string; excelBom?: boolean };
 export type ExportContext = { client: PoolClient; orgId: string; userId: string; scope: ExportScope; filters: ExportFilters };
 
@@ -21,6 +21,7 @@ export const EXPORT_CATEGORY_LABELS: Record<ExportCategory, string> = {
   scouting: "Scouting",
   reference: "Official reference (TBA)",
   strategy: "Strategy & research",
+  business: "Business & finance",
   ai: "AI artifacts",
   ops: "Ops & billing",
 };
@@ -220,6 +221,90 @@ export function createExportRegistry() {
       columns: ["list_id", "event_key", "list_name", "team_key", "rank", "tier", "notes", "updated_at"],
       query: `SELECT l.id AS list_id,l.event_key,l.name AS list_name,e.team_key,e.rank,e.tier,e.notes,e.updated_at FROM pick_lists l JOIN pick_list_entries e ON e.pick_list_id=l.id AND e.org_id=l.org_id WHERE l.org_id=$1 AND ($2::text IS NULL OR l.event_key=$2) ORDER BY l.name,e.rank`,
       params: (c) => [c.orgId, c.filters.eventKey ?? null],
+    }),
+    sqlAdapter({
+      id: "accounting-ledger",
+      fileName: "accounting_ledger.csv",
+      description: "Canonical finance ledger with source provenance and non-cash estimates identified",
+      scope: "team",
+      category: "business",
+      provenance: "Unified Finance transactions (finance_transactions); receipt bytes and member reimbursement identity excluded",
+      columns: ["id", "season_year", "occurred_at", "direction", "amount_usd", "category", "description", "source_kind", "source_id", "counts_in_balance"],
+      query: `SELECT t.id,t.season_year,t.occurred_at,
+        CASE WHEN t.type='income' THEN 'in' ELSE 'out' END AS direction,
+        t.amount_usd,c.name AS category,t.description,t.source_kind,t.source_id,t.counts_in_balance
+        FROM finance_transactions t
+        LEFT JOIN finance_categories c ON c.id=t.category_id AND c.org_id=t.org_id
+        WHERE t.org_id=$1 ORDER BY t.occurred_at,t.id`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "grant-artifacts",
+      fileName: "grant_artifacts.csv",
+      description: "Grant pipeline, awarded amounts, and generated report copy",
+      scope: "team",
+      category: "business",
+      provenance: "Grant opportunities/applications and post-grant reports; spend is exported only from report allocation output",
+      columns: ["application_id", "season_year", "grant_name", "funder", "status", "requested_usd", "awarded_usd", "deadline", "report_id", "report_narrative", "report_created_at"],
+      query: `SELECT ga.id AS application_id,ga.season_year,go.name AS grant_name,go.funder,
+        ga.status,ga.amount_requested_usd AS requested_usd,ga.amount_awarded_usd AS awarded_usd,
+        go.deadline,r.id AS report_id,r.narrative AS report_narrative,r.created_at AS report_created_at
+        FROM grant_applications ga
+        LEFT JOIN grant_opportunities go ON go.id=ga.grant_opportunity_id AND go.org_id=ga.org_id
+        LEFT JOIN LATERAL (
+          SELECT id,narrative,created_at FROM grant_report_reports
+          WHERE org_id=ga.org_id AND grant_application_id=ga.id
+          ORDER BY created_at DESC LIMIT 1
+        ) r ON true
+        WHERE ga.org_id=$1 ORDER BY ga.season_year,go.deadline,ga.id`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "award-artifacts",
+      fileName: "award_artifacts.csv",
+      description: "Award submissions, copy, source links, and outcomes",
+      scope: "team",
+      category: "business",
+      provenance: "Awards workbench records (award_submissions); member identity excluded",
+      columns: ["id", "season_year", "award_type", "title", "status", "event_name", "award_level", "summary", "source_url", "submitted_at", "created_at"],
+      query: `SELECT id,season_year,award_type,title,status,event_name,award_level,summary,source_url,submitted_at,created_at
+        FROM award_submissions WHERE org_id=$1 ORDER BY season_year,created_at,id`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "sponsor-artifacts",
+      fileName: "sponsor_artifacts.csv",
+      description: "Sponsor asks, received value, benefit status, public recognition, and renewal copy",
+      scope: "team",
+      category: "business",
+      provenance: "Sponsor CRM joined to contribution, benefit, wall, and latest renewal-report outputs without contact PII",
+      columns: ["sponsor_id", "name", "status", "pipeline_stage", "tier", "ask_usd", "pledged_usd", "cash_received_usd", "in_kind_value_usd", "benefits_json", "public_wall_published", "renewal_due_on", "latest_renewal_report", "latest_renewal_report_at"],
+      query: `SELECT s.id AS sponsor_id,s.name,s.status,s.pipeline_stage,s.tier,
+        s.ask_amount_usd AS ask_usd,s.pledged_amount_usd AS pledged_usd,
+        COALESCE(contrib.cash_received_usd,0) AS cash_received_usd,
+        COALESCE(contrib.in_kind_value_usd,0) AS in_kind_value_usd,
+        COALESCE(benefits.items,'[]'::jsonb)::text AS benefits_json,
+        EXISTS (SELECT 1 FROM sponsor_wall_entries w
+                WHERE w.org_id=s.org_id AND w.sponsor_name=s.name AND w.published) AS public_wall_published,
+        s.renewal_due_on,renewal.title AS latest_renewal_report,
+        renewal.created_at AS latest_renewal_report_at
+        FROM sponsors s
+        LEFT JOIN LATERAL (
+          SELECT COALESCE(SUM(amount_usd) FILTER (WHERE type='cash'),0) AS cash_received_usd,
+                 COALESCE(SUM(estimated_value_usd) FILTER (WHERE type IN ('in_kind','discount')),0) AS in_kind_value_usd
+          FROM sponsor_contributions WHERE org_id=s.org_id AND sponsor_id=s.id
+        ) contrib ON true
+        LEFT JOIN LATERAL (
+          SELECT jsonb_agg(jsonb_build_object('seasonYear',season_year,'benefit',benefit,'fulfilled',fulfilled)
+                           ORDER BY season_year,benefit) AS items
+          FROM sponsor_tier_calculator_fulfillments WHERE org_id=s.org_id AND sponsor_id=s.id
+        ) benefits ON true
+        LEFT JOIN LATERAL (
+          SELECT title,created_at FROM sponsor_renewal_roi_reports
+          WHERE org_id=s.org_id AND sponsor_id=s.id ORDER BY created_at DESC LIMIT 1
+        ) renewal ON true
+        WHERE s.org_id=$1 ORDER BY s.name,s.id`,
+      params: (c) => [c.orgId],
     }),
     sqlAdapter({
       id: "displays",

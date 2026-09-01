@@ -18,7 +18,18 @@ import {
   mediaKindLabel,
   oversizeMediaReason,
 } from "./scouting/media-downscale";
+import {
+  drainOutboxChunks,
+  parseOutboxChunkBody,
+  type OutboxChunkOutcome,
+} from "./scouting/outbox-chunk";
 import { withSyncBackoff } from "./scouting/sync-backoff";
+
+export {
+  OUTBOX_CHUNK_SIZE as SYNC_BATCH_SIZE,
+  chunkOutbox as sliceIntoBatches,
+  parseOutboxChunkBody as parseSyncResponseBody,
+} from "./scouting/outbox-chunk";
 
 const DB_NAME = "vantage-scouting";
 // v3 adds the quarantine stores for entries/media the server permanently rejected.
@@ -164,12 +175,18 @@ export async function pendingCounts(): Promise<{
   media: number;
   quarantined: number;
 }> {
-  const [entryStore, mediaStore, entryQuarantine, mediaQuarantine] = await Promise.all([
-    store("readonly", OUTBOX),
-    store("readonly", MEDIA),
-    store("readonly", ENTRY_QUARANTINE),
-    store("readonly", MEDIA_QUARANTINE),
-  ]);
+  // Create one transaction and enqueue every request synchronously. Returning
+  // object stores from separate awaited transactions lets IndexedDB auto-close
+  // the early transactions before count() is called.
+  const db = await openDatabase();
+  const transaction = db.transaction(
+    [OUTBOX, MEDIA, ENTRY_QUARANTINE, MEDIA_QUARANTINE],
+    "readonly",
+  );
+  const entryStore = transaction.objectStore(OUTBOX);
+  const mediaStore = transaction.objectStore(MEDIA);
+  const entryQuarantine = transaction.objectStore(ENTRY_QUARANTINE);
+  const mediaQuarantine = transaction.objectStore(MEDIA_QUARANTINE);
   const [entries, media, quarantinedEntries, quarantinedMedia] = await Promise.all([
     requestValue(entryStore.count()),
     requestValue(mediaStore.count()),
@@ -424,51 +441,9 @@ export async function getQueuedMediaBlob(clientId: string): Promise<Blob | null>
   return quarantined?.blob ?? null;
 }
 
-/** A weekend outbox syncs in slices this size so no batch trips server caps. */
-export const SYNC_BATCH_SIZE = 50;
+export type SyncBatchOutcome = OutboxChunkOutcome;
 
-/** Pure batching helper (tested): slices preserve order, last may be short. */
-export function sliceIntoBatches<T>(items: T[], size: number = SYNC_BATCH_SIZE): T[][] {
-  if (!Number.isFinite(size) || size < 1) size = SYNC_BATCH_SIZE;
-  const batches: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    batches.push(items.slice(index, index + size));
-  }
-  return batches;
-}
-
-export type SyncBatchOutcome = {
-  acknowledgements: Array<{ clientId: string; validations?: SyncValidation[] }>;
-  rejected: Array<{ clientId: string; reason: string }>;
-};
-
-/**
- * Pure response parser (tested). Feature-detects servers: per-entry servers
- * return { acknowledgements, rejected }; an older deployment returns only
- * { acknowledgements } and rejections simply stay queued for a later pass.
- */
-export function parseSyncResponseBody(body: unknown): SyncBatchOutcome {
-  const record = (body ?? {}) as {
-    acknowledgements?: Array<{ clientId?: unknown; validations?: SyncValidation[] }>;
-    rejected?: Array<{ clientId?: unknown; reason?: unknown }>;
-  };
-  const acknowledgements = (Array.isArray(record.acknowledgements) ? record.acknowledgements : [])
-    .filter((ack): ack is { clientId: string; validations?: SyncValidation[] } =>
-      typeof ack?.clientId === "string" && ack.clientId.length > 0,
-    );
-  const rejected = (Array.isArray(record.rejected) ? record.rejected : [])
-    .filter((row) => typeof row?.clientId === "string" && row.clientId.length > 0)
-    .map((row) => ({
-      clientId: row.clientId as string,
-      reason:
-        typeof row.reason === "string" && row.reason.trim()
-          ? row.reason
-          : "Server rejected this entry",
-    }));
-  return { acknowledgements, rejected };
-}
-
-async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<SyncBatchOutcome> {
+async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<OutboxChunkOutcome> {
   const response = await fetch("/api/scouting/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -478,7 +453,7 @@ async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<SyncBa
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? `Sync failed (${response.status})`);
   }
-  return parseSyncResponseBody(await response.json().catch(() => ({})));
+  return parseOutboxChunkBody(await response.json().catch(() => ({})));
 }
 
 async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
@@ -486,25 +461,19 @@ async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "at
   const all = await requestValue<SyncEntry[]>(objectStore.getAll());
   const { allowed: entries } = partitionByOrgId(all, orgId);
   if (!entries.length) return { count: 0, validations: [], quarantined: 0 };
-  let count = 0;
-  let quarantined = 0;
+  const drain = await drainOutboxChunks(entries, (batch) => pushEntryBatch(orgId, batch));
   const validations: SyncValidation[] = [];
-  for (const batch of sliceIntoBatches(entries)) {
-    const outcome = await pushEntryBatch(orgId, batch);
-    for (const acknowledgement of outcome.acknowledgements) {
-      validations.push(...(acknowledgement.validations ?? []));
-      const deleteStore = await store("readwrite", OUTBOX);
-      await requestValue(deleteStore.delete(acknowledgement.clientId));
-      count += 1;
-    }
-    for (const rejection of outcome.rejected) {
-      const entry = batch.find((candidate) => candidate.clientId === rejection.clientId);
-      if (!entry) continue;
-      await quarantineEntry(entry, rejection.reason);
-      quarantined += 1;
-    }
+  for (const { entry, acknowledgement } of drain.accepted) {
+    validations.push(...((acknowledgement.validations ?? []) as SyncValidation[]));
+    const deleteStore = await store("readwrite", OUTBOX);
+    await requestValue(deleteStore.delete(entry.clientId));
   }
-  return { count, validations, quarantined };
+  let quarantined = 0;
+  for (const { entry, reason } of [...drain.rejected, ...drain.isolated]) {
+    await quarantineEntry(entry, reason);
+    quarantined += 1;
+  }
+  return { count: drain.accepted.length, validations, quarantined };
 }
 
 /**

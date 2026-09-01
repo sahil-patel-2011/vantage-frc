@@ -5,6 +5,13 @@ import {
   CONNECTIONS_RELATED_INCLUDE,
   connectionsRelatedLinks,
 } from "../../../lib/account";
+import {
+  ONSHAPE_LOCAL_PLAYWRIGHT_HINT,
+  ONSHAPE_OAUTH_CTA,
+  onshapeHostedBadge,
+  onshapeOauthCtaEnabled,
+  withLocalPlaywrightHint,
+} from "../../../lib/cad/onshape-setup-copy";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
@@ -40,7 +47,7 @@ type OsRow = {
 export default function CadConnections({ orgId }: { orgId: string }) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [message, setMessage] = useState("");
-  const [onshapeConfigured, setOnshapeConfigured] = useState(false);
+  const [onshapeOauthReady, setOnshapeOauthReady] = useState(false);
   const [onshapeConnections, setOnshapeConnections] = useState<
     Array<{ id: string; status: string; label: string }>
   >([]);
@@ -57,11 +64,16 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     const d = await r.json();
     if (r.ok) {
       setDevices(d.devices ?? []);
-      setOnshapeConfigured(Boolean(d.onshapeConfigured ?? d.onshape?.configured));
+      const oauthReady = onshapeOauthCtaEnabled(d.onshape);
+      setOnshapeOauthReady(oauthReady);
       setOnshapeConnections(d.onshapeConnections ?? []);
       setOnshapeSetupMessage(
-        d.onshape?.setupRequired
-          ? String(d.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
+        d.onshape?.setupRequired || !oauthReady
+          ? withLocalPlaywrightHint(
+              oauthReady
+                ? String(d.onshape?.message ?? "Setup required — connect Onshape OAuth in CAD Connections.")
+                : ONSHAPE_OAUTH_CTA.disabledDetail,
+            )
           : "",
       );
       setOsSupport(d.osSupport ?? []);
@@ -105,8 +117,12 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     }
   }
 
-  // Connected only when a real cad_connections row reports status=connected — never DEMO.
+  // Connected only when a real cad_connections row reports status=connected — never keys, never DEMO.
   const onshapeConnected = onshapeConnections.some((c) => c.status === "connected");
+  const hostedBadge = onshapeHostedBadge({
+    sessionConnected: onshapeConnected,
+    oauthCtaEnabled: onshapeOauthReady,
+  });
 
   return (
     <main className="module-page cad-connections-page">
@@ -150,11 +166,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       {onshapeSetupMessage ? (
         <aside className="cad-setup-required" role="status">
           <strong>Setup required · Onshape OAuth</strong>
-          <p>
-            {onshapeSetupMessage} Set <code>ONSHAPE_OAUTH_CLIENT_ID</code> and{" "}
-            <code>ONSHAPE_OAUTH_CLIENT_SECRET</code> on Vercel, then redeploy. Fusion stays a local desktop relay —
-            never hosted.
-          </p>
+          <p>{onshapeSetupMessage}</p>
         </aside>
       ) : null}
 
@@ -162,19 +174,19 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         <article className="app-card cad-connection-tile" id="onshape">
           <div>
             <span className="path-number">01</span>
-            <span className={`app-badge ${onshapeConnected ? "good" : onshapeConfigured ? "setup" : "setup"}`}>
-              {onshapeConnected ? "Connected" : onshapeConfigured ? "OAuth ready" : "Admin setup"}
+            <span className={`app-badge ${hostedBadge.kind === "connected" ? "good" : "setup"}`}>
+              {hostedBadge.label}
             </span>
             <h2>Onshape hosted</h2>
             <p className="app-muted">
               Authorize least-privilege Onshape OAuth in the browser, then select a document, workspace, and element. The
-              Vantage server runs approved jobs. No always-running desktop relay is required.
+              Vantage server runs approved jobs. {ONSHAPE_LOCAL_PLAYWRIGHT_HINT}
             </p>
           </div>
-          {onshapeConfigured ? (
+          {onshapeOauthReady ? (
             <>
               <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
-                {onshapeConnected ? "Reconnect Onshape OAuth" : "Connect Onshape OAuth"}
+                {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
               </button>
               <small className="app-muted">
                 {onshapeConnected
@@ -184,13 +196,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </>
           ) : (
             <>
-              <button type="button" className="primary-action" disabled title="Configure Onshape OAuth environment credentials first">
-                Connect Onshape OAuth
+              <button type="button" className="primary-action" disabled title={ONSHAPE_OAUTH_CTA.disabledTitle}>
+                {ONSHAPE_OAUTH_CTA.connect}
               </button>
-              <small className="app-muted">
-                Setup required — admin must set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on Vercel, then
-                redeploy.
-              </small>
+              <small className="app-muted">{ONSHAPE_OAUTH_CTA.disabledDetail}</small>
             </>
           )}
         </article>

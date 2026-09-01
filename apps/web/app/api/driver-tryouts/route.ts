@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import {
   DRIVER_TRYOUTS_ROLES,
   DRIVER_TRYOUTS_STATUSES,
+  parseLoggedRubricScores,
 } from "../../../lib/driver-tryouts";
 import {
   addCandidate,
@@ -15,6 +16,7 @@ import {
   updateCandidateStatus,
   type DriverTryoutsView,
 } from "../../../lib/driver-tryouts/compute-driver-tryouts";
+import { promoteSelectedCandidateToSeasonRole } from "../../../lib/driver-tryouts/promote-role";
 import type { DriverTryoutsRole, DriverTryoutsStatus } from "../../../lib/driver-tryouts/types";
 
 export type { DriverTryoutsView };
@@ -33,9 +35,16 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   return trimmed ? trimmed.slice(0, max) : null;
 }
 
-function scoreOf(value: unknown): number {
-  const n = Number(value);
-  return Number.isFinite(n) ? Math.min(5, Math.max(1, Math.round(n))) : 1;
+function requireLoggedScores(body: Record<string, unknown>) {
+  const scores = parseLoggedRubricScores({
+    scorePrecision: body.scorePrecision,
+    scoreAwareness: body.scoreAwareness,
+    scoreCommunication: body.scoreCommunication,
+    scoreComposure: body.scoreComposure,
+    scoreMechanical: body.scoreMechanical,
+  });
+  if (!scores) throw new Error("each rubric score must be an integer from 1 to 5");
+  return scores;
 }
 
 function seasonFrom(value: unknown): number {
@@ -121,6 +130,15 @@ export async function POST(request: Request) {
           if (!candidateId) throw new Error("candidateId is required");
           if (!status) throw new Error("status is invalid");
           await updateCandidateStatus(client, { orgId, candidateId, status });
+          if (status === "selected") {
+            await promoteSelectedCandidateToSeasonRole(client, {
+              orgId,
+              userId,
+              candidateId,
+              status,
+              seasonYear,
+            });
+          }
           break;
         }
         case "delete-candidate": {
@@ -134,16 +152,17 @@ export async function POST(request: Request) {
           const evaluatedOn = isoDateOrNull(body.evaluatedOn);
           if (!candidateId) throw new Error("candidateId is required");
           if (!evaluatedOn) throw new Error("evaluatedOn (YYYY-MM-DD) is required");
+          const scores = requireLoggedScores(body);
           await addEvaluation(client, {
             orgId,
             userId,
             candidateId,
             evaluatedOn,
-            scorePrecision: scoreOf(body.scorePrecision),
-            scoreAwareness: scoreOf(body.scoreAwareness),
-            scoreCommunication: scoreOf(body.scoreCommunication),
-            scoreComposure: scoreOf(body.scoreComposure),
-            scoreMechanical: scoreOf(body.scoreMechanical),
+            scorePrecision: scores.precision,
+            scoreAwareness: scores.awareness,
+            scoreCommunication: scores.communication,
+            scoreComposure: scores.composure,
+            scoreMechanical: scores.mechanical,
             notes: trimmedOrNull(body.notes, 4000),
           });
           break;

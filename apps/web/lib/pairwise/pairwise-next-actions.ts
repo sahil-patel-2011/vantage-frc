@@ -48,6 +48,16 @@ export function pairwiseNextActions(ctx: {
     });
   }
 
+  if ((ctx.rankCount ?? 0) > 0) {
+    actions.push({
+      id: "pick-list",
+      label: "Open the pick list",
+      detail: "This tap order can be written onto the same list the desk and Pick Clock read.",
+      href: hubHref("/competition", "picklist-collab", orgId),
+      primary: (ctx.comparisonCount ?? 0) > 0,
+    });
+  }
+
   actions.push({
     id: "scouting",
     label: "Open match scouting",

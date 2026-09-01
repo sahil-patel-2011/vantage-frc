@@ -11,15 +11,12 @@ import {
   OnshapeHostedCadAdapter,
   parseCadActionPlan,
   createOnshapeApiTransport,
-  createOnshapeHttp,
-  getOnshapeOAuthConfig,
-  isOnshapeOAuthConfigured,
   onshapeSetupStatus,
   cadOsSupportMatrix,
-  refreshOnshapeToken,
   listOnshapeDocuments,
   listOnshapeElements,
   listOnshapeFeatures,
+  updateOnshapeFeature,
   explainFeatureTreeForStudents,
   FUSION_RELAY_IMPLEMENTED_OPERATIONS,
   fusionRelayImplements,
@@ -27,7 +24,6 @@ import {
   type CadBrainMode,
   type EngineeringBrief,
   type OnshapeDocumentRef,
-  type OnshapeTokenSet,
 } from "@vantage/cad";
 import {
   getOrgPromptCachingEnabled,
@@ -35,8 +31,7 @@ import {
   type ContextSource,
 } from "@vantage/agent";
 import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
-import { createKms, decryptSecret, encryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
-import type { PoolClient } from "@neondatabase/serverless";
+import { meteredAI } from "@vantage/billing";
 import { headers } from "next/headers";
 import {
   loadCadAdaptiveContext,
@@ -44,6 +39,8 @@ import {
   parseCadUserPreferences,
 } from "../../../lib/cad/adaptive-context";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
+import { hostedOnshapeEnvAuth, readHostedOnshapeEnvFlags } from "../../../lib/cad/hosted-auth";
+import { loadCadAgentOnshape } from "../../../lib/cad/onshape-tokens";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -51,36 +48,6 @@ async function current() {
   return value;
 }
 const fail = (error: unknown) => failMeteredAi(error, "CAD request failed");
-
-async function loadOnshapeTokens(
-  client: PoolClient,
-  orgId: string,
-  userId: string,
-): Promise<{ connectionId: string; tokens: OnshapeTokenSet }> {
-  const config = getOnshapeOAuthConfig();
-  if (!config) throw new Error("Onshape OAuth is not configured (setup required)");
-  const row = (
-    await client.query<{ id: string; encrypted_credentials: string }>(
-      `SELECT id,encrypted_credentials FROM cad_connections
-       WHERE org_id=$1 AND user_id=$2 AND platform='onshape' AND status='connected' AND disabled_at IS NULL
-       ORDER BY updated_at DESC LIMIT 1`,
-      [orgId, userId],
-    )
-  ).rows[0];
-  if (!row?.encrypted_credentials) throw new Error("Connect Onshape OAuth in CAD Connections first");
-  let tokens = JSON.parse(
-    await decryptSecret(JSON.parse(row.encrypted_credentials) as EncryptedSecret, createKms()),
-  ) as OnshapeTokenSet;
-  if (tokens.expiresAt < Date.now() + 60_000) {
-    tokens = await refreshOnshapeToken(config, tokens.refreshToken);
-    const encrypted = await encryptSecret(JSON.stringify(tokens), createKms());
-    await client.query(
-      `UPDATE cad_connections SET encrypted_credentials=$2,last_tested_at=now(),updated_at=now() WHERE id=$1`,
-      [row.id, JSON.stringify(encrypted)],
-    );
-  }
-  return { connectionId: row.id, tokens };
-}
 
 /**
  * CAD planning can reach a real upstream model (BYOK/hosted adapter). A bridged turn (a paired device with
@@ -168,10 +135,18 @@ export async function GET(request: Request) {
         adaptive: await loadCadAdaptiveContext(client, orgId, session.user.id),
       };
     });
+    const hosted = hostedOnshapeEnvAuth(readHostedOnshapeEnvFlags());
     return Response.json({
       ...data,
-      onshape: onshapeSetupStatus(),
-      onshapeConfigured: isOnshapeOAuthConfigured(),
+      onshape: {
+        ...onshapeSetupStatus(),
+        configured: hosted.configured,
+        setupRequired: hosted.setupRequired,
+        message: hosted.setupRequired
+          ? "Connect Onshape with OAuth in /cad/connections. Server API keys do not count as hosted CAD."
+          : onshapeSetupStatus().message,
+      },
+      onshapeConfigured: hosted.configured,
       osSupport: cadOsSupportMatrix(),
     });
   } catch (error) {
@@ -509,7 +484,7 @@ export async function POST(request: Request) {
         if (!documentRef?.documentId || !documentRef?.workspaceId || !documentRef?.elementId) {
           throw new Error("documentRef requires documentId, workspaceId, and elementId");
         }
-        const { connectionId } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const { connectionId } = await loadCadAgentOnshape(client, orgId, session.user.id);
         await client.query(
           `UPDATE cad_jobs SET document_ref=$3::jsonb,connection_id=$4,updated_at=now()
            WHERE id=$1 AND org_id=$2 AND created_by=$5 AND platform='onshape'`,
@@ -518,7 +493,6 @@ export async function POST(request: Request) {
         return { success: true, documentRef };
       }
       if (action === "execute-onshape") {
-        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
         const job = (
           await client.query<{ document_ref: OnshapeDocumentRef | null; platform: string }>(
             `SELECT document_ref,platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
@@ -529,10 +503,10 @@ export async function POST(request: Request) {
         if (!job.document_ref?.documentId) {
           throw new Error("Select an Onshape document/workspace/element before execute");
         }
-        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
         const adapter = new OnshapeHostedCadAdapter(
           createOnshapeApiTransport({
-            http: createOnshapeHttp(tokens.accessToken),
+            http: onshape.http,
             document: job.document_ref,
           }),
         );
@@ -554,6 +528,7 @@ export async function POST(request: Request) {
             JSON.stringify({
               ledgerTag: `cad:onshape:${String(body.jobId).slice(0, 8)}`,
               action: "execute-onshape",
+              authPath: onshape.via,
               jobId: body.jobId,
               stepId: body.stepId,
             }),
@@ -562,24 +537,25 @@ export async function POST(request: Request) {
         return executed;
       }
       if (action === "list-onshape-documents") {
-        if (!isOnshapeOAuthConfigured()) {
-          return { ...onshapeSetupStatus(), documents: [], error: "Setup required" };
-        }
-        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
-        const documents = await listOnshapeDocuments(createOnshapeHttp(tokens.accessToken));
-        return { documents, ...onshapeSetupStatus() };
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const documents = await listOnshapeDocuments(onshape.http);
+        return {
+          documents,
+          configured: true,
+          setupRequired: false,
+          message: `Onshape connected via ${onshape.via === "oauth" ? "OAuth" : "server API key"}.`,
+          authPath: onshape.via,
+        };
       }
       if (action === "list-onshape-elements") {
-        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
         const documentId = String(body.documentId ?? "");
         const workspaceId = String(body.workspaceId ?? "");
         if (!documentId || !workspaceId) throw new Error("documentId and workspaceId are required");
-        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
-        const elements = await listOnshapeElements(createOnshapeHttp(tokens.accessToken), documentId, workspaceId);
-        return { elements };
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const elements = await listOnshapeElements(onshape.http, documentId, workspaceId);
+        return { elements, authPath: onshape.via };
       }
-      if (action === "explain-onshape-features") {
-        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
+      if (action === "update-onshape-feature") {
         const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
         const jobId = body.jobId ? String(body.jobId) : "";
         let ref = documentRef;
@@ -595,9 +571,40 @@ export async function POST(request: Request) {
         if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
           throw new Error("Bind an Onshape document/workspace/element first");
         }
-        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
-        const features = await listOnshapeFeatures(createOnshapeHttp(tokens.accessToken), ref);
-        return { features, explain: explainFeatureTreeForStudents(features), documentRef: ref };
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const updated = await updateOnshapeFeature(onshape.http, {
+          document: ref,
+          featureId: body.featureId,
+          depthMm: body.depthMm ?? body.depth,
+          widthMm: body.widthMm ?? body.width,
+          heightMm: body.heightMm ?? body.height,
+        });
+        return { ...updated, documentRef: ref, authPath: onshape.via };
+      }
+      if (action === "explain-onshape-features") {
+        const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
+        const jobId = body.jobId ? String(body.jobId) : "";
+        let ref = documentRef;
+        if (!ref?.documentId && jobId) {
+          const job = (
+            await client.query<{ document_ref: OnshapeDocumentRef | null }>(
+              `SELECT document_ref FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+              [jobId, orgId, session.user.id],
+            )
+          ).rows[0];
+          ref = job?.document_ref ?? undefined;
+        }
+        if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
+          throw new Error("Bind an Onshape document/workspace/element first");
+        }
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const features = await listOnshapeFeatures(onshape.http, ref);
+        return {
+          features,
+          explain: explainFeatureTreeForStudents(features),
+          documentRef: ref,
+          authPath: onshape.via,
+        };
       }
       if (action === "cancel") {
         await client.query(

@@ -61,6 +61,17 @@ describe("Bugbot scan planning", () => {
       include: true,
       role: "entry_point",
     });
+    expect(
+      classifyBugbotPath("src/test/java/frc/robot/DriveTest.java", 1500, undefined, { includeTests: true }),
+    ).toMatchObject({ include: true });
+  });
+
+  it("includes the team's own tests when the cockpit asks for them", () => {
+    const without = planBugbotScan(wpilibTree(), { chunkFiles: 8, maxChunks: 1 });
+    expect(without.reviewed.some((file) => file.path.includes("DriveTest"))).toBe(false);
+    const withTests = planBugbotScan(wpilibTree(), { chunkFiles: 8, maxChunks: 1, includeTests: true });
+    expect(withTests.reviewed.some((file) => file.path.includes("DriveTest"))).toBe(true);
+    expect(withTests.candidateCount).toBe(without.candidateCount + 1);
   });
 
   it("puts robot entry points in the first chunk and reports the whole skip list", () => {

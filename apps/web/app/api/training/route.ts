@@ -10,6 +10,7 @@ import {
   revokeCertification,
   type TrainingView,
 } from "../../../lib/training/compute-training";
+import { assertOrgManager, orgRole } from "../../../lib/team-admin/permissions";
 import type { TrainingCategory } from "../../../lib/training/types";
 
 export type { TrainingView };
@@ -79,14 +80,14 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
-      if (!member.rowCount) throw new Error("forbidden");
+      const role = await orgRole(client, orgId, userId);
+      if (!role) throw new Error("forbidden");
 
       switch (action) {
         case "add-skill": {
+          // A certification record is a safety claim about a person. Every write here is
+          // owner/admin; reading the matrix stays open to the whole team.
+          assertOrgManager(role, "add a skill to the Training Matrix");
           const name = trimmedOrNull(body.name, 120);
           if (!name) throw new Error("name is required");
           const category = oneOf<TrainingCategory>(TRAINING_CATEGORIES, body.category) ?? "other";
@@ -101,12 +102,14 @@ export async function POST(request: Request) {
           break;
         }
         case "delete-skill": {
+          assertOrgManager(role, "remove a skill from the Training Matrix");
           const skillId = trimmedOrNull(body.skillId, 64);
           if (!skillId) throw new Error("skillId is required");
           await deleteSkill(client, { orgId, skillId });
           break;
         }
         case "certify": {
+          assertOrgManager(role, "certify a member");
           const skillId = trimmedOrNull(body.skillId, 64);
           const memberUserId = trimmedOrNull(body.memberUserId, 64);
           const certifiedAt = isoDateOrNull(body.certifiedAt);
@@ -125,6 +128,7 @@ export async function POST(request: Request) {
           break;
         }
         case "revoke-certification": {
+          assertOrgManager(role, "revoke a certification");
           const certificationId = trimmedOrNull(body.certificationId, 64);
           if (!certificationId) throw new Error("certificationId is required");
           await revokeCertification(client, { orgId, certificationId });
@@ -140,7 +144,8 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Training Matrix request failed";
-    const status = message === "forbidden" ? 403 : 400;
+    const status =
+      message === "forbidden" || message.startsWith("Only an owner or admin can") ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

@@ -1,7 +1,11 @@
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { onshapeBasicAuthorization, onshapeApiKeysStatus, readOnshapeApiKeys } from "../src/onshape-api-keys";
 import { extrudeFeature, onshapePlaneId, parseAddedFeatureId, rectangleSketchFeature } from "../src/onshape-features";
 import { CLAUDE_CAD_INSTRUCTIONS, CLAUDE_CAD_TOOLS, callClaudeCadTool } from "../src/claude-cad";
+import type { ClaudeCadSession } from "../src/claude-session";
 import { signFusionRelayJob, verifyFusionRelayJob, FUSION_RELAY_PROTOCOL_VERSION } from "../src/fusion-relay";
 
 describe("Onshape API keys for Claude Code", () => {
@@ -51,6 +55,7 @@ describe("Claude CAD tools", () => {
     const names = CLAUDE_CAD_TOOLS.map((tool) => tool.name);
     expect(names).toContain("onshape_sketch_rectangle");
     expect(names).toContain("fusion_extrude");
+    expect(CLAUDE_CAD_INSTRUCTIONS).toMatch(/vantage-cad login/);
     expect(CLAUDE_CAD_INSTRUCTIONS).toMatch(/dev-portal.onshape.com\/keys/);
     expect(CLAUDE_CAD_INSTRUCTIONS).toMatch(/VantageCadRelay/);
   });
@@ -73,24 +78,110 @@ describe("Claude CAD tools", () => {
     expect(paths[0]).toMatch(/documents\?/);
   });
 
+  it("uses the resolved browser-session transport before API keys", async () => {
+    const paths: string[] = [];
+    const http = async (path: string) => {
+      paths.push(path);
+      return Response.json({ items: [] });
+    };
+    const result = (await callClaudeCadTool(
+      "onshape_list_documents",
+      { limit: 2 },
+      {
+        resolveAuth: async () =>
+          ({
+            http,
+            authPath: "session",
+            countsAgainstAnnualCap: false,
+          }) as never,
+      },
+    )) as { documents: unknown[] };
+
+    expect(result.documents).toEqual([]);
+    expect(paths[0]).toContain("/documents?");
+  });
+
+  it("creates and mates assembly instances without FeatureScript", async () => {
+    let session: ClaudeCadSession = {
+      documentId: "d1",
+      workspaceId: "w1",
+      elementId: "ps-1",
+      documentName: "Robot",
+    };
+    let instanceCount = 0;
+    let featureCount = 0;
+    const paths: string[] = [];
+    const http = async (path: string, init?: RequestInit) => {
+      paths.push(path);
+      if (path.endsWith("/instances")) {
+        instanceCount += 1;
+        return Response.json({ id: `instance-${instanceCount}` });
+      }
+      if (path.endsWith("/features") && init?.method === "POST") {
+        featureCount += 1;
+        return Response.json({ featureId: `assembly-feature-${featureCount}` });
+      }
+      if (path.includes("/assemblies/d/") && !path.includes("/e/")) {
+        return Response.json({ id: "assembly-1" });
+      }
+      return Response.json({ rootAssembly: { instances: [] } });
+    };
+    const runtime = {
+      http,
+      loadSession: async () => session,
+      saveSession: async (next: ClaudeCadSession) => {
+        session = next;
+      },
+    };
+
+    await callClaudeCadTool("onshape_create_assembly", { name: "Drivebase" }, runtime);
+    const first = (await callClaudeCadTool(
+      "onshape_add_assembly_instance",
+      { partId: "part-left" },
+      runtime,
+    )) as { instanceId: string };
+    const second = (await callClaudeCadTool(
+      "onshape_add_assembly_instance",
+      { partId: "part-right" },
+      runtime,
+    )) as { instanceId: string };
+    const mate = (await callClaudeCadTool(
+      "onshape_mate",
+      {
+        mateType: "FASTENED",
+        firstInstanceId: first.instanceId,
+        secondInstanceId: second.instanceId,
+        firstFaceId: "face-left",
+        secondFaceId: "face-right",
+      },
+      runtime,
+    )) as { mateFeatureId: string; featureScriptUsed: boolean };
+
+    expect(mate.mateFeatureId).toBe("assembly-feature-3");
+    expect(mate.featureScriptUsed).toBe(false);
+    expect(paths.some((path) => path.includes("featurescript"))).toBe(false);
+  });
+
   it("skips Fusion loopback when hosted", async () => {
     const status = (await callClaudeCadTool("fusion_status", {}, { hosted: true })) as { setupRequired: boolean };
     expect(status.setupRequired).toBe(true);
   });
 
-  it("refuses Onshape calls when API keys are missing", async () => {
+  it("refuses Onshape calls when no browser session, OAuth, or API keys exist", async () => {
     const saved = {
       ONSHAPE_ACCESS_KEY: process.env.ONSHAPE_ACCESS_KEY,
       ONSHAPE_SECRET_KEY: process.env.ONSHAPE_SECRET_KEY,
       ONSHAPE_API_KEY: process.env.ONSHAPE_API_KEY,
       ONSHAPE_API_SECRET: process.env.ONSHAPE_API_SECRET,
+      VANTAGE_CAD_HOME: process.env.VANTAGE_CAD_HOME,
     };
     delete process.env.ONSHAPE_ACCESS_KEY;
     delete process.env.ONSHAPE_SECRET_KEY;
     delete process.env.ONSHAPE_API_KEY;
     delete process.env.ONSHAPE_API_SECRET;
+    process.env.VANTAGE_CAD_HOME = join(tmpdir(), `vantage-cad-no-auth-${randomUUID()}`);
     try {
-      await expect(callClaudeCadTool("onshape_list_documents")).rejects.toThrow(/Setup required/i);
+      await expect(callClaudeCadTool("onshape_list_documents")).rejects.toThrow(/not connected|pick one/i);
     } finally {
       for (const [key, value] of Object.entries(saved)) {
         if (value === undefined) delete process.env[key];

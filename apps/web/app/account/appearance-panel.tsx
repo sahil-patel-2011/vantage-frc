@@ -25,6 +25,13 @@ import {
   pathAllowedBySponsors,
 } from "../../lib/nav/hub-access-filter";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
+import {
+  BUGBOT_INSTRUCTION_MAX,
+  DEFAULT_COCKPIT_PREFS,
+  cockpitEquals,
+  parseCockpitPrefs,
+  type CockpitPrefs,
+} from "../../lib/cockpit/prefs";
 import { ThemeToggle } from "../theme-provider";
 
 type Status = { tone: "ok" | "error"; text: string } | null;
@@ -48,6 +55,10 @@ export default function AppearancePanel() {
   const [islandBusy, setIslandBusy] = useState(false);
   const [islandNote, setIslandNote] = useState<string | null>(null);
   const [islandLoaded, setIslandLoaded] = useState(false);
+  const [cockpitSaved, setCockpitSaved] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
+  const [cockpit, setCockpit] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
+  const [cockpitBusy, setCockpitBusy] = useState(false);
+  const [cockpitNote, setCockpitNote] = useState<Status>(null);
 
   const access = useClientAccessProfile();
 
@@ -67,6 +78,18 @@ export default function AppearancePanel() {
       })
       .finally(() => {
         if (!cancelled) setLoaded(true);
+      });
+
+    void fetch("/api/account/cockpit", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { cockpit?: unknown } | null) => {
+        if (cancelled) return;
+        const next = parseCockpitPrefs(data?.cockpit);
+        setCockpitSaved(next);
+        setCockpit(next);
+      })
+      .catch(() => {
+        /* defaults stay */
       });
 
     void fetch("/api/navigation/preferences", { cache: "no-store" })
@@ -140,6 +163,34 @@ export default function AppearancePanel() {
       setStatus({ tone: "error", text: "Could not save appearance settings." });
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveCockpit(next: CockpitPrefs) {
+    setCockpitBusy(true);
+    setCockpitNote(null);
+    try {
+      const response = await fetch("/api/account/cockpit", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cockpit: next }),
+      });
+      const data = (await response.json()) as { cockpit?: unknown; error?: string };
+      if (!response.ok) {
+        setCockpitNote({ tone: "error", text: data.error ?? "Could not save cockpit settings." });
+        return;
+      }
+      const stored = parseCockpitPrefs(data.cockpit);
+      setCockpitSaved(stored);
+      setCockpit(stored);
+      setCockpitNote({
+        tone: "ok",
+        text: "Saved. Bugbot and live boards will use these next time they load.",
+      });
+    } catch {
+      setCockpitNote({ tone: "error", text: "Could not save cockpit settings." });
+    } finally {
+      setCockpitBusy(false);
     }
   }
 
@@ -238,7 +289,7 @@ export default function AppearancePanel() {
         {logoUrl && org?.showLogoInHeader ? (
           <p className="app-muted" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="soft-brand-mark" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={logoUrl} alt="" />
             </span>
             Your team logo appears wherever this workspace is named.
@@ -320,6 +371,92 @@ export default function AppearancePanel() {
         {status ? (
           <p className={`brand-notice ${status.tone === "ok" ? "ok" : "error"}`} role="status">
             {status.text}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
+        <h3 id="appearance-cockpit-title">Cockpit</h3>
+        <p>
+          A few useful switches — like the car, not the factory. These stay small on purpose so nothing
+          surprising breaks.
+        </p>
+        <label className="appearance-check">
+          <input
+            type="checkbox"
+            checked={cockpit.confirmWrites}
+            disabled={cockpitBusy}
+            onChange={(event) => setCockpit({ ...cockpit, confirmWrites: event.target.checked })}
+          />
+          Confirm before Bugbot opens a pull request
+        </label>
+        <label className="appearance-check">
+          <input
+            type="checkbox"
+            checked={cockpit.pauseLiveWhenHidden}
+            disabled={cockpitBusy}
+            onChange={(event) => setCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
+          />
+          Pause live boards (My Day, schedule, rankings) when this tab is hidden
+        </label>
+        <label className="appearance-check">
+          <input
+            type="checkbox"
+            checked={cockpit.includeScanTests}
+            disabled={cockpitBusy}
+            onChange={(event) => setCockpit({ ...cockpit, includeScanTests: event.target.checked })}
+          />
+          Include our own tests when Bugbot scans a repo
+        </label>
+        <label>
+          Default Bugbot mode
+          <select
+            value={cockpit.defaultBugbotMode}
+            disabled={cockpitBusy}
+            onChange={(event) =>
+              setCockpit({
+                ...cockpit,
+                defaultBugbotMode: event.target.value === "ultra" ? "ultra" : "subscription",
+              })
+            }
+          >
+            <option value="subscription">Your key / subscription</option>
+            <option value="ultra">Bugbot Ultra (hosted)</option>
+          </select>
+        </label>
+        <label>
+          Bugbot instructions
+          <textarea
+            value={cockpit.bugbotInstructions}
+            maxLength={BUGBOT_INSTRUCTION_MAX}
+            rows={3}
+            disabled={cockpitBusy}
+            placeholder="e.g. Never retune CAN id 3. Phoenix 6 current limit is 40 A."
+            onChange={(event) => setCockpit({ ...cockpit, bugbotInstructions: event.target.value })}
+          />
+          <small className="app-muted">
+            {cockpit.bugbotInstructions.length}/{BUGBOT_INSTRUCTION_MAX} · empty means no extra rules
+          </small>
+        </label>
+        <div className="appearance-actions">
+          <button
+            type="button"
+            className="primary"
+            disabled={cockpitBusy || cockpitEquals(cockpit, cockpitSaved)}
+            onClick={() => void saveCockpit(parseCockpitPrefs(cockpit))}
+          >
+            {cockpitBusy ? "Saving…" : "Save cockpit"}
+          </button>
+          <a className="app-button secondary" href="/team/ai-keys">
+            AI keys (BYOK / local)
+          </a>
+          <a className="app-button secondary" href="/cad/setup">
+            Onshape CAD
+          </a>
+        </div>
+        {cockpitNote ? (
+          <p className={`brand-notice ${cockpitNote.tone === "ok" ? "ok" : "error"}`} role="status">
+            {cockpitNote.text}
           </p>
         ) : null}
       </section>

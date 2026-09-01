@@ -8,6 +8,17 @@ import {
   type HourLog,
   type HourPolicy,
 } from "../../../lib/build-hours";
+import {
+  ENROLL_SCAN_SETUP_MESSAGE,
+  canEnrollScanCodes,
+  enrollConflictMessage,
+  enrollSuccessPayload,
+  isEnrollScanBody,
+  isMissingScanCodeSchema,
+  isScanCodeUniqueViolation,
+  parseEnrollScanAction,
+} from "../../../lib/hours/enroll";
+import { sweepOpenSessions } from "../../../lib/hours/sweep";
 
 class HttpError extends Error {
   constructor(
@@ -127,8 +138,56 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const action = parseBuildHoursAction(await request.json());
+    const body = await request.json();
     const userId = session.user.id;
+
+    if (isEnrollScanBody(body)) {
+      const enroll = parseEnrollScanAction(body);
+      try {
+        const result = await withRls({ userId, orgId: enroll.orgId }, async (client) => {
+          const role = await membershipRole(client, enroll.orgId, userId);
+          if (!canEnrollScanCodes(role)) {
+            throw new HttpError(403, "Owner/admin access required to enroll a scan card");
+          }
+          const member = await client.query(
+            `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+            [enroll.orgId, enroll.userId],
+          );
+          if (!member.rowCount) throw new HttpError(400, "That member is not in this organization");
+          const existing = await client.query<{ userName: string | null }>(
+            `SELECT u.name AS "userName" FROM member_scan_codes c
+             JOIN users u ON u.id = c.user_id
+             WHERE c.org_id = $1::uuid AND c.code = $2`,
+            [enroll.orgId, enroll.code],
+          );
+          if (existing.rowCount) {
+            throw new HttpError(409, enrollConflictMessage(existing.rows[0]!.userName));
+          }
+          try {
+            const inserted = await client.query<{ id: string }>(
+              `INSERT INTO member_scan_codes (org_id, user_id, code, code_kind, label, created_by)
+               VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid)
+               RETURNING id`,
+              [enroll.orgId, enroll.userId, enroll.code, enroll.codeKind, enroll.label, userId],
+            );
+            return enrollSuccessPayload(inserted.rows[0]!.id, enroll.code);
+          } catch (error) {
+            if (isScanCodeUniqueViolation(error)) {
+              throw new HttpError(409, enrollConflictMessage(null));
+            }
+            throw error;
+          }
+        });
+        return Response.json(result);
+      } catch (error) {
+        if (isMissingScanCodeSchema(error)) {
+          return Response.json({ error: ENROLL_SCAN_SETUP_MESSAGE }, { status: 503 });
+        }
+        return fail(error);
+      }
+    }
+
+    const action = parseBuildHoursAction(body);
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
       const role = await membershipRole(client, action.orgId, userId);
@@ -224,12 +283,22 @@ export async function POST(request: Request) {
 
         case "close_all_open": {
           if (!isAdmin(role)) throw new HttpError(403, "Owner/admin access required");
-          const updated = await client.query(
-            `UPDATE hour_logs SET clock_out = now(), closed_by = $2
-             WHERE org_id = $1 AND clock_out IS NULL`,
-            [action.orgId, userId],
-          );
-          return { closed: updated.rowCount ?? 0 };
+          // "End meeting" is a mentor attesting that everyone left now, so sessions from this
+          // meeting close at now() with their real elapsed time. A session that was already open
+          // past the policy cutoff was not part of this meeting — it was forgotten — so it is
+          // capped and flagged instead of being credited the full overnight span.
+          const swept = await sweepOpenSessions(client, {
+            orgId: action.orgId,
+            callerId: userId,
+            attestedCloseAt: new Date(),
+          });
+          return {
+            closed: swept.applied + swept.attested,
+            capped: swept.applied,
+            attested: swept.attested,
+            policy: swept.policy,
+            summary: swept.summary,
+          };
         }
 
         case "set_policy": {

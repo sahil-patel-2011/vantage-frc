@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   briefingChecklist,
   matchLabel,
-  winProbabilityFor,
   type BriefingChecklistRow,
 } from "../../lib/briefing";
 import { capabilityLabel } from "../../lib/briefing/plan-sections";
+import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
 import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
 import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
@@ -18,6 +18,10 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 const CHECKLIST_HREFS: Record<string, string> = {
   Prediction: "/strategy",
   "Strategy plan": "/strategy",
+  "Match card": "/match-strategy-cards",
+  "Counter-book": "/counter-book",
+  Watchlist: "/opponent-watchlist",
+  "Defense plan": "/defense-planner",
   "Whiteboard play": "/whiteboard",
   "Practice data": "/practice",
   "Opponent video": "/video",
@@ -294,25 +298,41 @@ export default function BriefingClient() {
   const oppKeys = side === "red" ? view.match.blue : side === "blue" ? view.match.red : [];
   const partners = ourKeys.filter((key) => key !== teamKey).map(stripFrc);
   const opponents = oppKeys.map(stripFrc);
-  const prob = winProbabilityFor(view.prediction, side);
+  const prob = briefingWinProbability(view.prediction, side);
+  const stored = includeStoredBriefingSections({
+    card: view.card,
+    counterBooks: view.counterBooks,
+    watchNotes: view.watchNotes,
+    defensePlans: view.defensePlans,
+  });
   const checklist = briefingChecklist({
-    hasPrediction: view.prediction != null,
+    hasPrediction: prob != null,
     hasPlan: view.plan != null,
     hasPlay: view.play != null,
     practiceReps: view.practice.reps,
     intelCount: view.opponentIntel.length,
     scoutCount: view.scoutCount,
+    hasCard: stored.included.includes("card"),
+    hasCounterBooks: stored.included.includes("counterBooks"),
+    hasWatchNotes: stored.included.includes("watchNotes"),
+    hasDefensePlans: stored.included.includes("defensePlans"),
   });
   const rowFor = (label: string) => checklist.find((row) => row.label === label);
+  const showCard = stored.included.includes("card");
+  const showWatchNotes = stored.included.includes("watchNotes");
+  const showCounterBooks = stored.included.includes("counterBooks");
+  const showDefensePlans = stored.included.includes("defensePlans");
 
   const batteryCritical = view.batteries.filter((battery) => battery.flag === "critical");
   const batteryWatch = view.batteries.filter((battery) => battery.flag === "watch");
+  const hasTbaOpponentMetrics = view.opponentTeams.some((team) => team.epaTotal != null || team.rank != null);
   const hasOpponentNotes =
     view.opponentsScouted.length > 0 ||
     view.tendencies.length > 0 ||
-    view.watchNotes.length > 0 ||
-    view.defensePlans.length > 0 ||
-    view.opponentTeams.some((team) => team.epaTotal != null || team.rank != null);
+    showCounterBooks ||
+    showWatchNotes ||
+    showDefensePlans ||
+    hasTbaOpponentMetrics;
   const hasRobotHealth = view.pitReports.length > 0 || view.openRisks.length > 0 || view.batteries.length > 0;
 
   return (
@@ -423,8 +443,8 @@ export default function BriefingClient() {
       <ChecklistCard rows={checklist} orgId={orgId} />
 
       <div className="brief-grid">
-        <Section title="Match card" badge={view.card?.updatedAt ? "saved" : null}>
-          {view.card ? (
+        <Section title="Match card" badge={showCard && view.card?.updatedAt ? "saved" : null}>
+          {showCard && view.card ? (
             <>
               {view.card.gamePlan ? <p className="brief-plan-title">{view.card.gamePlan}</p> : null}
               <dl className="brief-card-fields">
@@ -578,7 +598,7 @@ export default function BriefingClient() {
                   ))}
                 </ul>
               ) : null}
-              {view.watchNotes.length > 0 ? (
+              {showWatchNotes ? (
                 <div className="brief-subblock">
                   <h3>Watchlist notes</h3>
                   <ul className="brief-notes">
@@ -590,8 +610,55 @@ export default function BriefingClient() {
                     ))}
                   </ul>
                 </div>
-              ) : null}
-              {view.defensePlans.length > 0 ? (
+              ) : (
+                <EmptyHint>
+                  No watchlist notes for these opponents —{" "}
+                  <a href={withOrg("/opponent-watchlist", orgId)}>add one on Watchlist</a>
+                </EmptyHint>
+              )}
+              {showCounterBooks ? (
+                <div className="brief-subblock">
+                  <h3>Counter-books</h3>
+                  <ul className="brief-notes">
+                    {view.counterBooks.map((book) => (
+                      <li key={book.id}>
+                        <i className="brief-tag">{book.teamNumber ?? stripFrc(book.teamKey)}</i>
+                        <span className="brief-note-body">
+                          <b>{book.counterPlan || book.summary}</b>
+                          {book.tendencies.length > 0 ? (
+                            <span className="brief-chip-row">
+                              {book.tendencies.map((tendency) => (
+                                <span key={tendency.field} className="brief-chip">
+                                  {tendency.field} ~{Math.round(tendency.average * 10) / 10} (n=
+                                  {tendency.sampleSize})
+                                </span>
+                              ))}
+                            </span>
+                          ) : null}
+                          {book.failureTriggers.length > 0 ? (
+                            <span className="app-muted brief-no-notes">
+                              Breaks down: {book.failureTriggers.map((t) => t.detail).join("; ")}
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {view.counterBookGaps.length > 0 ? (
+                    <p className="app-muted brief-no-notes">
+                      No counter-book yet for {view.counterBookGaps.map(stripFrc).join(", ")} —{" "}
+                      <a href={withOrg("/counter-book", orgId)}>generate one</a>
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <EmptyHint>
+                  No counter-book yet
+                  {oppKeys.length ? ` for ${opponents.join(", ")}` : ""} —{" "}
+                  <a href={withOrg("/counter-book", orgId)}>generate one</a>
+                </EmptyHint>
+              )}
+              {showDefensePlans ? (
                 <div className="brief-subblock">
                   <h3>Defense plan</h3>
                   <ul className="brief-notes">
@@ -613,12 +680,18 @@ export default function BriefingClient() {
                     ))}
                   </ul>
                 </div>
-              ) : null}
+              ) : (
+                <EmptyHint>
+                  No defense plan for these opponents —{" "}
+                  <a href={withOrg("/defense-planner", orgId)}>plan in Defense</a>
+                </EmptyHint>
+              )}
             </>
           ) : (
             <EmptyHint>
               Nothing on these opponents yet — <a href={withOrg("/scouting", orgId)}>scout them</a>, add{" "}
-              <a href={withOrg("/opponent-watchlist", orgId)}>watchlist notes</a>, or plan defense in{" "}
+              <a href={withOrg("/opponent-watchlist", orgId)}>watchlist notes</a>, generate a{" "}
+              <a href={withOrg("/counter-book", orgId)}>counter-book</a>, or plan defense in{" "}
               <a href={withOrg("/defense-planner", orgId)}>Defense</a>
             </EmptyHint>
           )}

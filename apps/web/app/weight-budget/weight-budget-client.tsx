@@ -1,6 +1,14 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { stale125WeightLimitCue } from "../../lib/weight-budget";
+import {
+  NO_WEIGH_IN_CLOSE_CUE,
+  closePlannedAgainstWeighIn,
+  isCloseBlank,
+  scaleEntriesFromWeighInPayload,
+  type WeighInScaleEntry,
+} from "../../lib/weight-budget/close-vs-weigh-in";
+import { hubHref } from "../../lib/nav/hubs";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Component = { id: string; name: string; subsystem: string; weightLbs: number; quantity: number; notes: string; byName: string | null };
@@ -20,15 +28,28 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
   const [limitDraft, setLimitDraft] = useState("");
+  const [scaleEntries, setScaleEntries] = useState<WeighInScaleEntry[]>([]);
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/weight-budget?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
+    const weighInQuery = new URLSearchParams({ season: String(seasonYear) });
+    if (orgId) weighInQuery.set("orgId", orgId);
+    const [response, weighInResponse] = await Promise.all([
+      fetch(`/api/weight-budget?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`),
+      fetch(`/api/robot-weigh-in?${weighInQuery.toString()}`).catch(() => null),
+    ]);
     const data = (await response.json()) as View & { error?: string };
     if (!response.ok) { setMessage(data.error ?? "Failed to load weight budget"); setErrorStatus(response.status); setLoadFailed(true); return; }
     setErrorStatus(null);
     setLoadFailed(false);
     setView(data);
     if (data.status === "ready") setLimitDraft(String(data.summary.limitLbs));
+    // Scale side stays blank when weigh-in is missing — never invent a logged lb.
+    if (!weighInResponse || !weighInResponse.ok) {
+      setScaleEntries([]);
+    } else {
+      const weighIn = await weighInResponse.json().catch(() => null);
+      setScaleEntries(scaleEntriesFromWeighInPayload(weighIn));
+    }
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
 
@@ -78,12 +99,15 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
   }
 
   const s = view.summary;
+  const close = closePlannedAgainstWeighIn(s.totalLbs, scaleEntries);
+  const closeBlank = isCloseBlank(close);
+  const weighInHref = hubHref("/build", "robot-weigh-in", view.context.orgId);
 
   return (
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / WEIGHT</span><h1>Weight budget — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={`/inspection${orgId ? `?orgId=${orgId}` : ""}`}>Inspection</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={weighInHref}>Weigh-in</a><a href={`/inspection${orgId ? `?orgId=${orgId}` : ""}`}>Inspection</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
       {stale125WeightLimitCue(s.limitLbs) ? (
@@ -95,6 +119,41 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
         <article><span>Limit</span><strong>{s.limitLbs} lb</strong></article>
         <article><span>Remaining</span><strong>{s.remainingLbs} lb</strong></article>
         <article><span>Used</span><strong>{s.percentUsed}%</strong></article>
+        <article>
+          <span>Scale (weigh-in)</span>
+          <strong>{closeBlank ? "" : `${close.loggedLbs} lb`}</strong>
+        </article>
+        <article>
+          <span>Planned vs scale</span>
+          <strong>{closeBlank || close.deltaLbs == null ? "" : `${close.deltaLbs > 0 ? "+" : ""}${close.deltaLbs} lb`}</strong>
+        </article>
+      </section>
+
+      <section className="intel-panel" aria-label="Planned vs weigh-in">
+        <span className="eyebrow">PLANNED VS WEIGH-IN</span>
+        {closeBlank ? (
+          <article>
+            <div>
+              <strong>Planned {close.plannedLbs} lb</strong>
+              <small>{NO_WEIGH_IN_CLOSE_CUE}</small>
+            </div>
+            <a className="app-button secondary" href={weighInHref}>Log a weigh-in</a>
+          </article>
+        ) : (
+          <article>
+            <div>
+              <strong>Planned {close.plannedLbs} lb · Scale {close.loggedLbs} lb</strong>
+              <small>
+                {close.deltaLbs == null
+                  ? ""
+                  : close.deltaLbs === 0
+                    ? `On plan as of ${close.loggedOn}.`
+                    : `${close.deltaLbs > 0 ? "+" : ""}${close.deltaLbs} lb vs plan as of ${close.loggedOn}.`}
+              </small>
+            </div>
+            <a className="app-button secondary" href={weighInHref}>Open weigh-in</a>
+          </article>
+        )}
       </section>
 
       {s.overLimit && (
