@@ -10,5 +10,8 @@ describe("Strategy on-demand prediction", () => {
     expect(source).toContain('action: "recompute"');
     expect(source).toContain('fetch("/api/strategy"');
     expect(source).toContain("method: \"POST\"");
+    expect(source).toContain("predictionWinDisplay");
+    expect(source).toContain("redWinDisplay");
+    expect(source).not.toMatch(/view\.prediction\.pRed \* 100/);
   });
 });

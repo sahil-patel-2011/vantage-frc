@@ -362,6 +362,8 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
            FROM predictions p
            JOIN matches_ref m ON m.match_key = p.match_key
            WHERE p.org_id = $1 AND m.winning_alliance IN ('red', 'blue')
+             AND COALESCE(p.model_version, '') !~* 'demo'
+             AND COALESCE(p.caveats::text, '') !~* 'demo'
            ORDER BY p.match_key, p.scored_at DESC
            LIMIT 200`,
           [request.orgId],
@@ -370,7 +372,9 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
           `SELECT count(*)::int AS count
            FROM predictions p
            JOIN matches_ref m ON m.match_key = p.match_key
-           WHERE p.org_id = $1 AND (m.winning_alliance IS NULL OR m.winning_alliance NOT IN ('red', 'blue'))`,
+           WHERE p.org_id = $1 AND (m.winning_alliance IS NULL OR m.winning_alliance NOT IN ('red', 'blue'))
+             AND COALESCE(p.model_version, '') !~* 'demo'
+             AND COALESCE(p.caveats::text, '') !~* 'demo'`,
           [request.orgId],
         ),
       ]);
