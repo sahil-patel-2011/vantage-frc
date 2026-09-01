@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { describeBudgetLine, type BudgetLine } from "../../../lib/finance/budget-vs-actual";
 import { validateBuySheet } from "../../../lib/finance/buy-sheet";
+import { formatSponsorUsd, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
 
 type Category = {
   categoryId: string; name: string; seasonYear: number; planId: string | null;
@@ -10,6 +12,7 @@ type PurchaseRequest = {
   id: string; seasonYear: number; categoryId: string | null; categoryName: string | null; requestedByName: string;
   title: string; itemUrl: string | null; quantity: number; unitCostUsd: string; totalCostUsd: string; status: string;
   neededBy?: string | null;
+  justification?: string | null;
 };
 type MonthSummary = { month: string; income: number; expense: number; net: number; overMonthlyLimit: boolean };
 type DirectoryVendor = { id: string; name: string };
@@ -49,7 +52,13 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [months, setMonths] = useState<MonthSummary[]>([]);
-  const [totals, setTotals] = useState({ totalIncome: 0, totalExpense: 0, remaining: null as number | null, sponsorCashUsd: 0 });
+  const [totals, setTotals] = useState({
+    totalIncome: 0,
+    totalExpense: 0,
+    remaining: null as number | null,
+    sponsorContributionsUsd: 0,
+  });
+  const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
   const [message, setMessage] = useState("");
   const [budgetForm, setBudgetForm] = useState({ categoryName: "", monthlyLimitUsd: "", totalLimitUsd: "", notes: "" });
   const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
@@ -58,12 +67,14 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [requestForm, setRequestForm] = useState(emptyRequestForm);
 
   async function load() {
-    const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes] = await Promise.all([
+    const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes, contributionsRes, budgetVsActualRes] = await Promise.all([
       fetch(`/api/finance/budget?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/purchase-requests?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/summary?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/vendors?orgId=${orgId}`),
       fetch(`/api/inventory?orgId=${orgId}`),
+      fetch(`/api/sponsors/contributions?orgId=${orgId}&seasonYear=${seasonYear}`),
+      fetch(`/api/finance/budget-vs-actual?orgId=${orgId}&seasonYear=${seasonYear}`),
     ]);
     const budgetData = await budgetRes.json();
     const requestsData = await requestsRes.json();
@@ -74,12 +85,17 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     setRequests(requestsData.requests ?? []);
     setVendors(Array.isArray(vendorsData.vendors) ? vendorsData.vendors : []);
     setCatalogItems(catalogItemsFromInventory(inventoryData));
+    const contributionsData = contributionsRes.ok ? await contributionsRes.json() : { contributions: [] };
+    const budgetVsActualData = budgetVsActualRes.ok ? await budgetVsActualRes.json() : null;
     setMonths(summaryData.byMonth ?? []);
+    setBudgetLines(Array.isArray(budgetVsActualData?.lines) ? budgetVsActualData.lines : []);
     setTotals({
       totalIncome: summaryData.totalIncome ?? 0,
       totalExpense: summaryData.totalExpense ?? 0,
       remaining: summaryData.remaining ?? null,
-      sponsorCashUsd: summaryData.sponsorCashUsd ?? 0,
+      sponsorContributionsUsd: teamContributionTotalUsd(
+        Array.isArray(contributionsData.contributions) ? contributionsData.contributions : [],
+      ),
     });
     if (!budgetRes.ok) setMessage(budgetData.error);
   }
@@ -153,7 +169,11 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         <article><span>Raised this season</span><strong>${totals.totalIncome.toLocaleString()}</strong></article>
         <article><span>Spent this season</span><strong>${totals.totalExpense.toLocaleString()}</strong></article>
         <article><span>Remaining vs. total budget</span><strong>{totals.remaining === null ? "—" : `$${totals.remaining.toLocaleString()}`}</strong></article>
-        <article><span>Sponsor cash this season</span><strong>${totals.sponsorCashUsd.toLocaleString()}</strong></article>
+        <article>
+          <span>Recorded sponsor contributions</span>
+          <strong>{formatSponsorUsd(totals.sponsorContributionsUsd)}</strong>
+          <small>Pipeline total — Raised already includes mirrored cash. <a href={`/team/sponsors?orgId=${orgId}`}>Per-sponsor breakdown</a></small>
+        </article>
       </section>
 
       <section className="admin-grid">
@@ -170,10 +190,26 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         </form>
         <section className="intel-panel">
           <span className="eyebrow">CATEGORY BUDGETS — {seasonYear}</span>
-          {categories.length === 0 && <p>No categories yet — set one to start tracking spend.</p>}
-          {categories.map((c) => (
-            <article key={c.categoryId}>
-              <div><strong>{c.name}</strong><small>{c.monthlyLimitUsd ? `$${Number(c.monthlyLimitUsd).toLocaleString()}/mo` : "no monthly cap"} · {c.totalLimitUsd ? `$${Number(c.totalLimitUsd).toLocaleString()} season` : "no season cap"}</small></div>
+          {categories.length === 0 && budgetLines.length === 0 && <p>No categories yet — set one to start tracking spend.</p>}
+          {categories.map((c) => {
+            const line = budgetLines.find((row) => row.categoryId === c.categoryId);
+            return (
+              <article key={c.categoryId}>
+                <div>
+                  <strong>{c.name}</strong>
+                  <small>
+                    {c.monthlyLimitUsd ? `$${Number(c.monthlyLimitUsd).toLocaleString()}/mo` : "no monthly cap"}
+                    {" · "}
+                    {c.totalLimitUsd ? `$${Number(c.totalLimitUsd).toLocaleString()} season` : "no season cap"}
+                    {line ? ` · ${describeBudgetLine(line)}` : ""}
+                  </small>
+                </div>
+              </article>
+            );
+          })}
+          {budgetLines.filter((line) => !line.categoryId || !categories.some((c) => c.categoryId === line.categoryId)).map((line) => (
+            <article key={line.categoryId ?? line.name}>
+              <div><strong>{line.name}</strong><small>{describeBudgetLine(line)}</small></div>
             </article>
           ))}
         </section>
@@ -210,7 +246,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
             <article key={r.id}>
               <div>
                 <strong>{r.title}</strong>
-                <small>{r.requestedByName} · {r.quantity} × ${Number(r.unitCostUsd).toFixed(2)} = ${Number(r.totalCostUsd).toFixed(2)} · {r.categoryName ?? "uncategorized"}{r.neededBy ? ` · needed ${r.neededBy}` : ""} · {r.status}</small>
+                <small>{r.requestedByName} · {r.quantity} × ${Number(r.unitCostUsd).toFixed(2)} = ${Number(r.totalCostUsd).toFixed(2)} · {r.categoryName ?? "uncategorized"}{r.neededBy ? ` · needed ${r.neededBy}` : ""}{r.justification ? ` · why: ${r.justification}` : ""} · {r.status}</small>
                 {r.itemUrl && <div><a href={r.itemUrl} target="_blank" rel="noreferrer">View item ↗</a></div>}
               </div>
               <div>{(STATUS_ACTIONS[r.status] ?? []).map((a) => <button key={a.action} onClick={() => void act(r.id, a.action)}>{a.label}</button>)}</div>

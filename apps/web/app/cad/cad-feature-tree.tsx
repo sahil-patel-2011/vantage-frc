@@ -18,9 +18,19 @@ type MmDraft = {
   depthMm: string;
   widthMm: string;
   heightMm: string;
+  radiusMm: string;
+  diameterMm: string;
+  thicknessMm: string;
 };
 
-const EMPTY_DRAFT: MmDraft = { depthMm: "", widthMm: "", heightMm: "" };
+const EMPTY_DRAFT: MmDraft = {
+  depthMm: "",
+  widthMm: "",
+  heightMm: "",
+  radiusMm: "",
+  diameterMm: "",
+  thicknessMm: "",
+};
 
 function isExplainedFeature(value: unknown): value is ExplainedFeature {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -66,6 +76,9 @@ export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeat
         depthMm: draft.depthMm.trim() || undefined,
         widthMm: draft.widthMm.trim() || undefined,
         heightMm: draft.heightMm.trim() || undefined,
+        radiusMm: draft.radiusMm.trim() || undefined,
+        diameterMm: draft.diameterMm.trim() || undefined,
+        thicknessMm: draft.thicknessMm.trim() || undefined,
       });
       await onUpdate(payload);
     } catch (caught) {
@@ -88,8 +101,8 @@ export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeat
       </summary>
       <div className="cad-operation-body">
         <p className="app-muted">
-          Depth, width, and height are millimetres on the feature Onshape already created. Empty fields stay
-          empty — IDs are never invented.
+          Depth, width, height, radius, diameter, and thickness are millimetres on the feature Onshape already
+          created. Empty fields stay empty — IDs are never invented.
         </p>
         {error ? (
           <p className="telemetry-status" role="alert">
@@ -149,6 +162,45 @@ export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeat
                           value={draft.heightMm}
                           disabled={disabled || busy}
                           onChange={(event) => setField(row.featureId, "heightMm", event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Radius (mm)
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min="0"
+                          placeholder="mm"
+                          value={draft.radiusMm}
+                          disabled={disabled || busy}
+                          onChange={(event) => setField(row.featureId, "radiusMm", event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Diameter (mm)
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min="0"
+                          placeholder="mm"
+                          value={draft.diameterMm}
+                          disabled={disabled || busy}
+                          onChange={(event) => setField(row.featureId, "diameterMm", event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Thickness (mm)
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min="0"
+                          placeholder="mm"
+                          value={draft.thicknessMm}
+                          disabled={disabled || busy}
+                          onChange={(event) => setField(row.featureId, "thicknessMm", event.target.value)}
                         />
                       </label>
                       <button

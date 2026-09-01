@@ -170,6 +170,25 @@ describe("executeComposerOp", () => {
     expect(JSON.stringify(calls)).not.toMatch(/feature_script/i);
   });
 
+  it("forwards fillet/hole/shell millimetres on update-onshape-feature", async () => {
+    const calls = pipelineFetch();
+    await executeComposerOp({
+      orgId: ORG,
+      payload: {
+        operation: "create_fillet",
+        parameters: { featureId: FEATURE, radiusMm: 2, diameterMm: 5, thicknessMm: 1.5 },
+      },
+      documentRef: DOCUMENT,
+    });
+    expect(calls[0]!.body).toMatchObject({
+      action: "update-onshape-feature",
+      featureId: FEATURE,
+      radiusMm: 2,
+      diameterMm: 5,
+      thicknessMm: 1.5,
+    });
+  });
+
   it("does not invent a featureId when none was returned", async () => {
     expect(existingFeatureId(undefined, null, "")).toBeUndefined();
     const calls = pipelineFetch({ execute: { output: { operation: "create_sketch" } } });

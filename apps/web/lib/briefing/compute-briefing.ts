@@ -331,11 +331,14 @@ async function computeStrategyFallback(
 ): Promise<StrategySections | null> {
   try {
     const { computeStrategyView } = await import("../strategy/compute-strategy");
-    const view = await computeStrategyView(client, {
-      userId: input.userId,
-      requestedOrg: input.orgId,
-      matchKey: input.matchKey,
-    });
+    const { finalizeStrategyRecompute } = await import("../strategy/recompute");
+    const view = finalizeStrategyRecompute(
+      await computeStrategyView(client, {
+        userId: input.userId,
+        requestedOrg: input.orgId,
+        matchKey: input.matchKey,
+      }),
+    );
     if (view.status !== "live") return null;
     const planJson = {
       playbook: view.playbook,

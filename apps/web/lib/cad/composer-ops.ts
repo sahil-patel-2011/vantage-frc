@@ -7,10 +7,13 @@ export const COMPOSER_NATIVE_OPS = [
   "create_chamfer",
   "create_shell",
   "create_hole",
+  "create_pattern",
+  "create_mirror",
   "create_part_studio",
   "create_assembly",
   "add_assembly_instance",
   "create_mate",
+  "set_variable",
   "verify_topology",
   "export_step",
 ] as const;
@@ -30,7 +33,7 @@ export type SerializedComposerOp = {
   reason: string;
 };
 
-export type ComposerFieldKind = "mm" | "signedMm" | "text" | "select" | "checkbox" | "idList";
+export type ComposerFieldKind = "mm" | "signedMm" | "count" | "text" | "select" | "checkbox" | "idList";
 
 export type ComposerFieldSpec = {
   key: string;
@@ -56,6 +59,16 @@ const POSITIVE_MM_ALIASES: Record<string, string> = {
   radius: "radiusMm",
   diameter: "diameterMm",
   thickness: "thicknessMm",
+  spacing: "spacingMm",
+};
+
+const COUNT_ALIASES: Record<string, string> = {
+  count: "instanceCount",
+};
+
+const LIST_ALIASES: Record<string, string> = {
+  features: "featureIds",
+  axis: "axisIds",
 };
 
 const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
@@ -65,10 +78,31 @@ const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_chamfer: ["widthMm"],
   create_shell: ["thicknessMm"],
   create_hole: ["diameterMm", "depthMm"],
+  create_pattern: ["spacingMm"],
+  create_mirror: [],
   create_part_studio: [],
   create_assembly: [],
   add_assembly_instance: [],
   create_mate: [],
+  set_variable: [],
+  verify_topology: [],
+  export_step: [],
+};
+
+const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
+  create_sketch: [],
+  create_extrude: [],
+  create_fillet: [],
+  create_chamfer: [],
+  create_shell: [],
+  create_hole: [],
+  create_pattern: ["instanceCount"],
+  create_mirror: [],
+  create_part_studio: [],
+  create_assembly: [],
+  add_assembly_instance: [],
+  create_mate: [],
+  set_variable: [],
   verify_topology: [],
   export_step: [],
 };
@@ -80,6 +114,8 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_chamfer: [],
   create_shell: [],
   create_hole: [],
+  create_pattern: [],
+  create_mirror: [],
   create_part_studio: [],
   create_assembly: [],
   add_assembly_instance: [],
@@ -93,9 +129,10 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   ],
   verify_topology: [],
   export_step: [],
+  set_variable: [],
 };
 
-const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "views"]);
+const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "views", "featureIds", "axisIds", "planeIds"]);
 
 const SKETCH_PLANES = [
   { value: "Top", label: "Top" },
@@ -120,6 +157,17 @@ const MATE_TYPES = [
   { value: "REVOLUTE", label: "Revolute" },
   { value: "SLIDER", label: "Slider" },
   { value: "CYLINDRICAL", label: "Cylindrical" },
+] as const;
+
+const PATTERN_KINDS = [
+  { value: "linear", label: "Linear" },
+  { value: "circular", label: "Circular" },
+] as const;
+
+const PATTERN_DIRECTIONS = [
+  { value: "X", label: "X" },
+  { value: "Y", label: "Y" },
+  { value: "Z", label: "Z" },
 ] as const;
 
 export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerFieldSpec[]> = {
@@ -160,6 +208,42 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "targetFeatureId", label: "Target solid feature ID", kind: "text" },
     { key: "name", label: "Name", kind: "text" },
   ],
+  create_pattern: [
+    {
+      key: "featureIds",
+      label: "Features",
+      kind: "idList",
+      help: "Comma-separated feature IDs from describe. Leave blank until you have real IDs.",
+    },
+    { key: "patternKind", label: "Kind", kind: "select", options: PATTERN_KINDS },
+    { key: "spacingMm", label: "Spacing", kind: "mm", help: "Linear pitch in millimetres." },
+    { key: "instanceCount", label: "Count", kind: "count", help: "Number of instances. Leave blank until you measure." },
+    { key: "direction", label: "Direction", kind: "select", options: PATTERN_DIRECTIONS },
+    { key: "oppositeDirection", label: "Opposite direction", kind: "checkbox" },
+    {
+      key: "axisIds",
+      label: "Axis IDs",
+      kind: "idList",
+      help: "Comma-separated cylindrical-face IDs for circular patterns. Leave blank for linear.",
+    },
+    { key: "name", label: "Name", kind: "text" },
+  ],
+  create_mirror: [
+    {
+      key: "featureIds",
+      label: "Features",
+      kind: "idList",
+      help: "Comma-separated feature IDs from describe. Leave blank until you have real IDs.",
+    },
+    { key: "plane", label: "Plane", kind: "select", options: SKETCH_PLANES },
+    {
+      key: "planeIds",
+      label: "Plane IDs",
+      kind: "idList",
+      help: "Comma-separated plane-face IDs from describe. Leave blank to use a standard plane.",
+    },
+    { key: "name", label: "Name", kind: "text" },
+  ],
   create_part_studio: [{ key: "name", label: "Name", kind: "text" }],
   create_assembly: [{ key: "name", label: "Name", kind: "text" }],
   add_assembly_instance: [
@@ -183,6 +267,21 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "secondOffsetXMm", label: "Second offset X", kind: "signedMm" },
     { key: "secondOffsetYMm", label: "Second offset Y", kind: "signedMm" },
     { key: "secondOffsetZMm", label: "Second offset Z", kind: "signedMm" },
+  ],
+  set_variable: [
+    { key: "name", label: "Name", kind: "text", help: "Onshape variable identifier. Not FeatureScript." },
+    {
+      key: "expression",
+      label: "Expression",
+      kind: "text",
+      help: 'Onshape expression with units, e.g. "25 mm". Not a millimetre number field.',
+    },
+    {
+      key: "variableStudioElementId",
+      label: "Variable Studio element ID",
+      kind: "text",
+      help: "Onshape Variable Studio tab. POST writes here — not FeatureScript, not a guessed Part Studio.",
+    },
   ],
   verify_topology: [
     { key: "views", label: "Views", kind: "idList", help: "Comma-separated view names, e.g. iso, top, front." },
@@ -220,6 +319,10 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Shell";
     case "create_hole":
       return "Hole";
+    case "create_pattern":
+      return "Pattern";
+    case "create_mirror":
+      return "Mirror";
     case "create_part_studio":
       return "Part studio";
     case "create_assembly":
@@ -228,6 +331,8 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Instance";
     case "create_mate":
       return "Mate";
+    case "set_variable":
+      return "Variable";
     case "verify_topology":
       return "Verify topology";
     case "export_step":
@@ -243,6 +348,8 @@ export function summarizeComposerParams(operation: ComposerNativeOp, parameters:
   const radius = asFiniteNumber(parameters.radiusMm);
   const diameter = asFiniteNumber(parameters.diameterMm);
   const thickness = asFiniteNumber(parameters.thicknessMm);
+  const spacing = asFiniteNumber(parameters.spacingMm);
+  const instanceCount = asFiniteNumber(parameters.instanceCount);
   if (operation === "create_sketch" && width != null && height != null) {
     parts.push(`${formatMm(width)} × ${formatMm(height)} mm`);
   } else if (operation === "create_chamfer" && width != null) {
@@ -254,6 +361,8 @@ export function summarizeComposerParams(operation: ComposerNativeOp, parameters:
   if (diameter != null) parts.push(`⌀ ${formatMm(diameter)} mm`);
   if (radius != null) parts.push(`R ${formatMm(radius)} mm`);
   if (thickness != null) parts.push(`${formatMm(thickness)} mm wall`);
+  if (instanceCount != null) parts.push(`${formatMm(instanceCount)}×`);
+  if (spacing != null) parts.push(`${formatMm(spacing)} mm pitch`);
   if (depth != null && operation !== "create_sketch") parts.push(`${formatMm(depth)} mm deep`);
   const plane = stringOrEmpty(parameters.plane);
   if (plane) parts.push(plane);
@@ -261,6 +370,8 @@ export function summarizeComposerParams(operation: ComposerNativeOp, parameters:
   if (mateType) parts.push(mateType);
   const name = stringOrEmpty(parameters.name);
   if (name) parts.push(name);
+  const expression = stringOrEmpty(parameters.expression);
+  if (operation === "set_variable" && expression) parts.push(expression);
   return parts.join(" · ") || "No dimensions yet";
 }
 
@@ -338,6 +449,15 @@ export function parseSignedMm(value: unknown, label: string): number | undefined
   return parsed;
 }
 
+export function parsePositiveCount(value: unknown, label: string): number | undefined {
+  if (isEmptyMm(value)) return undefined;
+  const parsed = parseBareNumber(value);
+  if (parsed == null || parsed <= 0 || !Number.isInteger(parsed)) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+  return parsed;
+}
+
 export function parametersFromDraft(
   operation: ComposerNativeOp,
   draft: Record<string, string | boolean>,
@@ -355,6 +475,11 @@ export function parametersFromDraft(
       if (parsed != null) parameters[field.key] = parsed;
       continue;
     }
+    if (field.kind === "count") {
+      const parsed = parsePositiveCount(text, field.label);
+      if (parsed != null) parameters[field.key] = parsed;
+      continue;
+    }
     if (field.kind === "signedMm") {
       const parsed = parseSignedMm(text, field.label);
       if (parsed != null) parameters[field.key] = parsed;
@@ -363,6 +488,16 @@ export function parametersFromDraft(
     if (field.kind === "idList") {
       const list = asStringArray(text);
       if (list) parameters[field.key] = list;
+      continue;
+    }
+    if (operation === "set_variable" && (field.key === "name" || field.key === "expression")) {
+      const parsed = refuseDemoVariableText(text, field.key);
+      if (parsed) parameters[field.key] = parsed;
+      continue;
+    }
+    if (operation === "set_variable" && field.key === "variableStudioElementId") {
+      const parsed = refuseDemoVariableStudioId(text);
+      if (parsed) parameters[field.key] = parsed;
       continue;
     }
     if (text.trim()) parameters[field.key] = text.trim();
@@ -437,7 +572,7 @@ function normalizeParameters(operation: ComposerNativeOp, raw: unknown): Record<
   const source = asParamRecord(raw);
   const aliased: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(source)) {
-    const canonical = POSITIVE_MM_ALIASES[key] ?? key;
+    const canonical = POSITIVE_MM_ALIASES[key] ?? COUNT_ALIASES[key] ?? LIST_ALIASES[key] ?? key;
     if (aliased[canonical] === undefined) aliased[canonical] = value;
   }
   const parameters: Record<string, unknown> = {};
@@ -452,9 +587,24 @@ function normalizeParameters(operation: ComposerNativeOp, raw: unknown): Record<
       if (parsed != null) parameters[key] = parsed;
       continue;
     }
+    if (COUNT_BY_OP[operation].includes(key)) {
+      const parsed = parsePositiveCount(value, countLabel(key));
+      if (parsed != null) parameters[key] = parsed;
+      continue;
+    }
     if (SIGNED_MM_BY_OP[operation].includes(key)) {
       const parsed = parseSignedMm(value, mmLabel(key));
       if (parsed != null) parameters[key] = parsed;
+      continue;
+    }
+    if (operation === "set_variable" && (key === "name" || key === "expression")) {
+      const parsed = refuseDemoVariableText(value, key);
+      if (parsed) parameters[key] = parsed;
+      continue;
+    }
+    if (operation === "set_variable" && key === "variableStudioElementId") {
+      const parsed = refuseDemoVariableStudioId(value);
+      if (parsed) parameters[key] = parsed;
       continue;
     }
     if (isEmptyMm(value)) continue;
@@ -500,6 +650,32 @@ function isEmptyMm(value: unknown): boolean {
   return value == null || value === "" || (typeof value === "string" && !value.trim());
 }
 
+const DEMO_VARIABLE = /demo/i;
+
+function refuseDemoVariableText(value: unknown, kind: "name" | "expression"): string | undefined {
+  if (isEmptyMm(value)) return undefined;
+  const text = String(value).trim();
+  if (!text) return undefined;
+  if (DEMO_VARIABLE.test(text)) {
+    throw new Error(
+      kind === "name"
+        ? "Refusing DEMO variable name. Pass a real Onshape variable name."
+        : 'Refusing DEMO variable value. Pass a real Onshape expression such as "25 mm".',
+    );
+  }
+  return text;
+}
+
+function refuseDemoVariableStudioId(value: unknown): string | undefined {
+  if (isEmptyMm(value)) return undefined;
+  const text = String(value).trim();
+  if (!text) return undefined;
+  if (DEMO_VARIABLE.test(text)) {
+    throw new Error("Refusing DEMO Variable Studio id. Use an element Onshape listed.");
+  }
+  return text;
+}
+
 /** Bare millimetre number only — `30` or `"30.5"`, never `"30 mm"`. */
 function parseBareNumber(value: unknown): number | null {
   if (typeof value === "number") {
@@ -528,6 +704,10 @@ function formatMm(value: number): string {
 
 function mmLabel(key: string): string {
   return key.replace(/Mm$/, "").replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
+}
+
+function countLabel(key: string): string {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
 }
 
 function uniqueId(preferred: string, used: Set<string>, index: number): string {

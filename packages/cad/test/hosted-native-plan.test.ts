@@ -8,9 +8,10 @@ const BRIEF = {
 };
 
 describe("hosted native CAD plans", () => {
-  it("allows native create_shell and create_chamfer on the hosted allowlist", () => {
+  it("allows native create_shell, create_chamfer, and set_variable on the hosted allowlist", () => {
     expect(HOSTED_NATIVE).toContain("create_shell");
     expect(HOSTED_NATIVE).toContain("create_chamfer");
+    expect(HOSTED_NATIVE).toContain("set_variable");
     expect(HOSTED_NATIVE).not.toContain("feature_script");
   });
 
@@ -36,6 +37,7 @@ describe("hosted native CAD plans", () => {
     expect(message).toContain("create_sketch");
     expect(message).toContain("create_extrude");
     expect(message).toContain("create_mate");
+    expect(message).toContain("set_variable");
     expect(HOSTED_NATIVE).not.toContain("feature_script");
   });
 

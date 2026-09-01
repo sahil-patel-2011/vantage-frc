@@ -188,7 +188,7 @@ function completeDocumentRef(ref: ComposerDocumentRef | null | undefined): Compo
 
 function dimensionPatch(parameters: Record<string, unknown>): Record<string, number> {
   const patch: Record<string, number> = {};
-  for (const key of ["depthMm", "widthMm", "heightMm"] as const) {
+  for (const key of ["depthMm", "widthMm", "heightMm", "radiusMm", "diameterMm", "thicknessMm"] as const) {
     const value = parameters[key];
     if (typeof value === "number" && Number.isFinite(value)) patch[key] = value;
   }

@@ -373,10 +373,13 @@ function ResultPanel({ view }: { view: LiveView }) {
         <div>
           <h2 style={{ margin: "0 0 4px" }}>Optimal role assignment</h2>
           <small className="app-muted">
-            Coverage {pct(result.coverageRatio)} · Essential roles filled {pct(result.essentialCoverage)}
+            Coverage {pct(result.coverageRatio)} · Essential roles filled {pct(result.essentialCoverage)}. This is
+            role fill, not a match win prediction.
           </small>
         </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(result.winProbability)}</strong>
+        <strong style={{ fontSize: "2rem" }} aria-label="Role coverage score">
+          {pct(result.coverageRatio)}
+        </strong>
       </header>
       <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
         {result.assignments.length === 0 ? (

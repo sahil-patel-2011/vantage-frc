@@ -17,6 +17,8 @@ import {
   listOnshapeElements,
   listOnshapeFeatures,
   listOnshapeNativeEntities,
+  listOnshapeNativeVariables,
+  pickVariableStudioElementId,
   updateOnshapeFeature,
   explainFeatureTreeForStudents,
   FUSION_RELAY_IMPLEMENTED_OPERATIONS,
@@ -581,8 +583,12 @@ export async function POST(request: Request) {
           depthMm: body.depthMm ?? body.depth,
           widthMm: body.widthMm ?? body.width,
           heightMm: body.heightMm ?? body.height,
-        });
-        return { ...updated, documentRef: ref, authPath: onshape.via };
+          radiusMm: body.radiusMm ?? body.radius,
+          diameterMm: body.diameterMm ?? body.diameter,
+          thicknessMm: body.thicknessMm ?? body.thickness,
+        } as Parameters<typeof updateOnshapeFeature>[1]);
+        const shadedPngBase64 = await refreshShadedPngBase64(onshape.http, ref);
+        return { ...updated, documentRef: ref, authPath: onshape.via, shadedPngBase64 };
       }
       if (action === "explain-onshape-features") {
         const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
@@ -628,6 +634,41 @@ export async function POST(request: Request) {
         const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
         const entities = await listOnshapeNativeEntities(onshape.http, ref);
         return { entities, documentRef: ref, authPath: onshape.via };
+      }
+      if (action === "list-onshape-variables") {
+        const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
+        const jobId = body.jobId ? String(body.jobId) : "";
+        let ref = documentRef;
+        if (!ref?.documentId && jobId) {
+          const job = (
+            await client.query<{ document_ref: OnshapeDocumentRef | null }>(
+              `SELECT document_ref FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+              [jobId, orgId, session.user.id],
+            )
+          ).rows[0];
+          ref = job?.document_ref ?? undefined;
+        }
+        if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
+          throw new Error("Bind an Onshape document/workspace/element first");
+        }
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const elements = await listOnshapeElements(onshape.http, ref.documentId, ref.workspaceId);
+        const variableStudioElementId = pickVariableStudioElementId(
+          elements,
+          body.variableStudioElementId ?? body.elementId,
+        );
+        const target = {
+          documentId: ref.documentId,
+          workspaceId: ref.workspaceId,
+          elementId: variableStudioElementId || ref.elementId,
+        };
+        const variables = await listOnshapeNativeVariables(onshape.http, target);
+        return {
+          variables,
+          documentRef: ref,
+          variableStudioElementId: variableStudioElementId || null,
+          authPath: onshape.via,
+        };
       }
       if (action === "cancel") {
         await client.query(
