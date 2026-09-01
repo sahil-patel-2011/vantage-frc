@@ -14,7 +14,11 @@ ENV_FILE="${FREE_RELAY_ENV_FILE:-$REPO_ROOT/.env.free-relay}"
 PROXY_PORT="${FREE_RELAY_PROXY_PORT:-8080}"
 PROXY_IMAGE="${FREE_RELAY_PROXY_IMAGE:-ghcr.io/quorinex/freebuff2api:latest}"
 PROXY_NAME="${FREE_RELAY_PROXY_NAME:-vantage-freebuff-proxy}"
-MODEL="${FREE_RELAY_MODEL:-deepseek/deepseek-v4-flash}"
+# Default to an UNMETERED model. Per Codebuff's README, GLM 5.3 Flash and MiMo 2.5 cost
+# no session at all, while DeepSeek V4 Flash draws on daily sessions and pauses at peak
+# hours — the wrong default for a relay that backs a whole team. Proxy projects namespace
+# ids differently, so confirm against /v1/models via `npm run free-relay:verify`.
+MODEL="${FREE_RELAY_MODEL:-glm/glm-5.3-flash}"
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 warn() { printf '\033[33m!! %s\033[0m\n' "$1" >&2; }

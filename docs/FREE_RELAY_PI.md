@@ -90,6 +90,45 @@ chain Vantage actually uses rather than a hand-rolled `curl`:
 
 It never prints the relay key or the upstream token. Exit code is 0 on pass, 1 on failure.
 
+## Which model to point it at
+
+This is the setting that decides whether the relay is effectively unlimited, and it is easy
+to get backwards. Per Codebuff's README:
+
+| Model | Metering |
+| --- | --- |
+| **GLM 5.3 Flash** | **Unmetered — costs no session at all.** Full-mode default. |
+| **MiMo 2.5** | **Unmetered — costs no session at all.** Limited-mode default. |
+| DeepSeek V4 Flash 07/31 | Draws on your normal daily sessions; pauses during peak hours. |
+| DeepSeek V4 Pro | Retired from the catalog. |
+
+So if the goal is "always on, never runs out," `FREE_RELAY_MODEL` wants one of the two
+**unmetered** models — not DeepSeek V4 Flash, which is the one that spends sessions. Region
+matters too: full access is region-gated, and outside those regions (or on a VPN) you get
+limited mode, currently MiMo 2.5 with three one-hour sessions a day, earnable up to seven.
+
+Do not guess the slug. Each proxy project namespaces model ids differently
+(`deepseek/deepseek-v4-flash` vs `deepseek-v4-flash-free` vs a `glm→flash` alias), so run
+`npm run free-relay:verify` and use an id from the `/v1/models` catalog it prints. The
+verifier warns when `FREE_RELAY_MODEL` is absent from that catalog, which is the difference
+between a working relay and every request 404ing.
+
+## Two product-level caveats
+
+Neither is a code problem, and both matter more here than they would for a personal tool,
+because this relay serves other people's teams.
+
+**Ads.** FreeBuff is ad-supported — Codebuff describes text ads in the terminal as what pays
+for the models. Through an OpenAI-compatible proxy there is no terminal, so confirm ad text
+is not being appended into completion content before granting the relay to a team. Check the
+verifier's completion output: it prints exactly what came back.
+
+**Training on submissions.** The README's data-use answer is that submissions may be
+retained to train and improve models "when a model or feature says data may be used for AI
+training." Vantage is multi-tenant and the prompts carry other teams' scouting, strategy,
+and chat. Read the applicable notice before pointing team traffic at it, and prefer granting
+the relay for background jobs over interactive chat if that clause is unresolved.
+
 ## Granting it to a team
 
 `/admin/ai-grants` → open a `platform_relay` window for one team for N days. Teams without
@@ -98,8 +137,9 @@ precedence over the relay, so lending someone the relay never overrides a key th
 
 ## What happens when it breaks
 
-Assume it will: the free pool is roughly **5 sessions/day per account**, and the box is on a
-home connection. `RelayFailoverChatAdapter` treats that as normal. On an unreachable host
+Assume it will: metered models consume daily sessions, DeepSeek V4 Flash "pauses during
+peak hours" per Codebuff's own README, and the box is on a home connection.
+`RelayFailoverChatAdapter` treats that as normal. On an unreachable host
 (`ECONNREFUSED`, dead tunnel DNS, TLS failure, timeout), a spent pool (402/429/503), or a
 rejected operator token (401/403, including `free_mode_cli_required`), it falls through to
 the platform free pools — OpenRouter free, then Groq — and the usage ledger records the
@@ -117,10 +157,13 @@ If every upstream fails, the error names each attempt so you can tell "Pi asleep
 
 ## Limits and risk
 
-- The premium free pool is small and per-account. This is not an unmetered supply.
-- Proxy projects scale past it by rotating tokens across multiple accounts. That is
+- Two models are genuinely unmetered (see above); the rest spend daily sessions. Pick the
+  unmetered ones and this is a real supply, not a trickle.
+- Full access is region-gated. A VPN drops you to limited mode, so a relay that works from
+  home may behave differently from a hosted box in another region.
+- Proxy projects also support rotating tokens across multiple accounts. That is
   multi-accounting to defeat a quota, and if it goes wrong every granted team loses AI at
-  once. Keep the relay off the paid path and grant it narrowly.
+  once. Prefer one account on an unmetered model over many accounts on a metered one.
 - Check FreeBuff/Codebuff's terms before pointing a product you bill for at their free tier.
 - Background jobs contain the blast radius by construction; interactive chat does not.
   Prefer granting relay access to teams you can afford to have degrade.

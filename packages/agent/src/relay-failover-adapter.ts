@@ -12,9 +12,11 @@ import {
  * Failover wrapper for the platform free relay (FreeBuff/Codebuff proxy on a Pi).
  *
  * The relay is not a cloud provider: it is a single self-hosted box on a home
- * connection, drawing on a small per-account daily pool. Being unreachable or spent
- * is its normal steady state, not an exception, so a team holding a `platform_relay`
- * grant must degrade to the next free pool instead of seeing a failed request.
+ * connection. Even on an unmetered upstream model it goes away when the box sleeps, the
+ * tunnel drops, or the provider pauses at peak hours — and on a metered model it also
+ * runs out of daily sessions. Being unavailable is its normal steady state, not an
+ * exception, so a team holding a `platform_relay` grant must degrade to the next free
+ * pool instead of seeing a failed request.
  *
  * Ordering is caller-supplied. `provider` / `model` track whoever actually served the
  * call so metering and the usage ledger record the real upstream rather than the
