@@ -653,6 +653,62 @@ export function findBudgetViolation(
  * applies when no BYOK is present).
  */
 export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
+  const authorization = await authorizeMeteredAI(input);
+  const receipt = await input.invoke(authorization.keySource);
+  return settleMeteredAI(input, authorization, receipt);
+}
+
+/**
+ * What the pre-call phase decided, and all that the post-call phase needs from it.
+ *
+ * Deliberately tiny and serializable: a streaming caller authorizes inside its
+ * `withRls` transaction, returns the HTTP response, and settles later from a fresh
+ * transaction once the stream closes. Anything richer here (a wallet snapshot, a
+ * budget row) would be stale by settle time and must be re-read under lock instead —
+ * see readCreditWallet on why the pre-call read is never a debit basis.
+ */
+export type MeteredAuthorization = {
+  keySource: MeterKeySource;
+  /** False when another call for this org already held the budget lock. */
+  serialized: boolean;
+  /** True when a row in ai_usage_reservations is holding budget for this request. */
+  reserved: boolean;
+};
+
+export type AuthorizeMeteredAIOptions = {
+  /**
+   * Hold an estimate against the org's caps until settle, and make the request-id
+   * claim durable rather than transaction-scoped.
+   *
+   * Required whenever authorize and settle run in different transactions — otherwise
+   * the request is invisible to concurrent cap checks for the whole model call, and a
+   * retry can slip past the advisory lock the instant authorize commits.
+   */
+  reserve?: boolean;
+  /**
+   * How long the hold survives without a settle. A client that disconnects mid-stream
+   * never settles, and the cap sum ignores expired rows, so this is the longest an
+   * abandoned stream can consume budget. Should exceed the slowest expected response.
+   */
+  reservationTtlMs?: number;
+};
+
+/** Long enough for a slow agentic turn, short enough that an abandoned hold clears. */
+export const DEFAULT_RESERVATION_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Pre-call phase of {@link meteredAI}: claim the request id, resolve the key source,
+ * and enforce every cap. Throws exactly what meteredAI throws before `invoke`.
+ *
+ * Split out so a streamed response can be authorized before the first byte and settled
+ * after the last one. Callers that can settle in the same transaction should keep using
+ * meteredAI; this pair exists for the case where the handler must return a Response
+ * before the token count exists.
+ */
+export async function authorizeMeteredAI<T>(
+  input: MeteredAIInput<T>,
+  options?: AuthorizeMeteredAIOptions,
+): Promise<MeteredAuthorization> {
   if (input.estimatedCostUsd < 0) throw new Error("Estimated cost cannot be negative");
 
   // One request id may reach this service only once, including concurrent retries.
@@ -667,31 +723,15 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   );
   if (priorUsage.rows[0]) throw new DuplicateMeteredRequestError(input.requestId);
 
+  // Vantage never charges for a local CLI turn, so there is no cap to check and no
+  // budget lock to contend for. settleMeteredAI writes the $0 ledger row.
   if (input.keySource === "local_cli") {
-    const receipt = await input.invoke("local_cli");
-    await input.client.query(
-      `INSERT INTO ai_usage_events
-        (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
-         completion_tokens, total_tokens, cost_usd, request_id, metadata,
-         cache_read_input_tokens, cache_write_input_tokens, uncached_input_tokens)
-       VALUES ($1,$2,$3,$4,$5,'local_cli',$6,$7,$8,0,$9,$10::jsonb,$11,$12,$13)`,
-      [
-        input.orgId,
-        input.userId,
-        input.feature,
-        receipt.model,
-        receipt.provider,
-        receipt.promptTokens,
-        receipt.completionTokens,
-        receipt.promptTokens + receipt.completionTokens,
-        input.requestId,
-        JSON.stringify({ ...(input.metadata ?? {}), vantageChargeUsd: 0, path: "local_cli" }),
-        receipt.cacheReadInputTokens ?? 0,
-        receipt.cacheWriteInputTokens ?? 0,
-        receipt.uncachedInputTokens ?? receipt.promptTokens,
-      ],
-    );
-    return receipt.value;
+    // Still claim the request id when the phases are split: a $0 path must not be
+    // replayable either, and the advisory lock above dies with this transaction.
+    const reserved = options?.reserve
+      ? await reserveMeteredAI(input, "local_cli", 0, options)
+      : false;
+    return { keySource: "local_cli", serialized: false, reserved };
   }
 
   const lock = await input.client.query<{ locked: boolean }>(
@@ -782,14 +822,24 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     metadata: input.metadata,
   });
   if (keySource === "platform") {
-    const totals = await input.client.query<{ used: string; grants: string }>(
+    const totals = await input.client.query<{ used: string; reserved: string; grants: string }>(
+      // Open reservations are added to committed usage: a streamed response that has
+      // not settled yet is real spend in progress, and a concurrent cap check that
+      // cannot see it will let through a request the cap should have denied. Expired
+      // rows are excluded so an abandoned stream stops charging the org on its own.
       `SELECT
          COALESCE((SELECT SUM(cost_usd) FROM ai_usage_events
            WHERE org_id = $1 AND created_at >= $2 AND created_at < $3), 0)::text AS used,
+         COALESCE((SELECT SUM(estimated_cost_usd) FROM ai_usage_reservations
+           WHERE org_id = $1 AND settled_at IS NULL AND released_at IS NULL
+             AND expires_at > now()), 0)::text AS reserved,
          COALESCE((SELECT SUM(amount_usd) FROM ai_credit_grants WHERE org_id = $1), 0)::text AS grants`,
       [input.orgId, account.period_start, account.period_end]
     );
-    const used = Number(totals.rows[0]?.used ?? 0);
+    // This request's own hold is inserted after the cap check, so `reserved` is other
+    // callers' in-flight spend only and never double-counts the current call.
+    const used =
+      Number(totals.rows[0]?.used ?? 0) + Number(totals.rows[0]?.reserved ?? 0);
     const grants = Number(totals.rows[0]?.grants ?? 0);
     // Included allowance is the period credit cap only — grants/credits are prepaid, not silent overage.
     const includedCap = Number(account.credit_cap_usd);
@@ -849,7 +899,110 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     }
   }
 
-  const receipt = await input.invoke(keySource);
+  const reserved = options?.reserve
+    ? await reserveMeteredAI(input, keySource, input.estimatedCostUsd, options)
+    : false;
+  return { keySource, serialized, reserved };
+}
+
+/**
+ * Records the in-flight hold. Returns false if this request id already holds one,
+ * which means a concurrent authorize won the race — the caller is a duplicate.
+ */
+async function reserveMeteredAI<T>(
+  input: MeteredAIInput<T>,
+  keySource: MeterKeySource,
+  estimatedCostUsd: number,
+  options: AuthorizeMeteredAIOptions,
+): Promise<boolean> {
+  const ttlMs = options.reservationTtlMs ?? DEFAULT_RESERVATION_TTL_MS;
+  const inserted = await input.client.query<{ id: string }>(
+    `INSERT INTO ai_usage_reservations
+       (org_id, user_id, feature, request_id, estimated_cost_usd, key_source,
+        expires_at, metadata)
+     VALUES ($1,$2,$3,$4,$5,$6, now() + ($7::bigint * interval '1 millisecond'), $8::jsonb)
+     ON CONFLICT (request_id) DO NOTHING
+     RETURNING id`,
+    [
+      input.orgId,
+      input.userId,
+      input.feature,
+      input.requestId,
+      estimatedCostUsd,
+      keySource,
+      ttlMs,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
+  if (!inserted.rows[0]) throw new DuplicateMeteredRequestError(input.requestId);
+  return true;
+}
+
+/**
+ * Drops a hold for a call that never reached the provider — a stream that failed
+ * before its first token, or an aborted request. Idempotent, and deliberately does not
+ * touch a reservation that already settled.
+ *
+ * Not calling this is survivable (the hold expires) but wasteful: until expiry the org
+ * is paying cap space for a request that produced nothing.
+ */
+export async function releaseMeteredAI(
+  client: PoolClient,
+  requestId: string,
+  reason?: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE ai_usage_reservations
+        SET released_at = now(),
+            metadata = metadata || jsonb_build_object('releaseReason', $2::text)
+      WHERE request_id = $1 AND settled_at IS NULL AND released_at IS NULL`,
+    [requestId, reason ?? "released"],
+  );
+}
+
+/**
+ * Post-call phase of {@link meteredAI}: record the usage event, debit the wallet, and
+ * roll up plan-period cost from the receipt the provider actually produced.
+ *
+ * Safe to run in a different transaction from {@link authorizeMeteredAI} — it re-reads
+ * the wallet under `FOR UPDATE` rather than trusting anything the pre-call phase saw.
+ * A call the provider already billed is always recorded, so this never throws to deny;
+ * an uncovered remainder surfaces as `creditShortfallUsd` on the usage event.
+ */
+export async function settleMeteredAI<T>(
+  input: MeteredAIInput<T>,
+  authorization: MeteredAuthorization,
+  receipt: UsageReceipt<T>,
+): Promise<T> {
+  const { keySource, serialized } = authorization;
+
+  if (keySource === "local_cli") {
+    await input.client.query(
+      `INSERT INTO ai_usage_events
+        (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
+         completion_tokens, total_tokens, cost_usd, request_id, metadata,
+         cache_read_input_tokens, cache_write_input_tokens, uncached_input_tokens)
+       VALUES ($1,$2,$3,$4,$5,'local_cli',$6,$7,$8,0,$9,$10::jsonb,$11,$12,$13)`,
+      [
+        input.orgId,
+        input.userId,
+        input.feature,
+        receipt.model,
+        receipt.provider,
+        receipt.promptTokens,
+        receipt.completionTokens,
+        receipt.promptTokens + receipt.completionTokens,
+        input.requestId,
+        JSON.stringify({ ...(input.metadata ?? {}), vantageChargeUsd: 0, path: "local_cli" }),
+        receipt.cacheReadInputTokens ?? 0,
+        receipt.cacheWriteInputTokens ?? 0,
+        receipt.uncachedInputTokens ?? receipt.promptTokens,
+      ],
+    );
+    if (authorization.reserved) await closeReservation(input.client, input.requestId);
+    return receipt.value;
+  }
+
   if (receipt.costUsd < 0) throw new Error("Provider returned a negative cost");
   // The bridge adapter falls through to the resolved key chain whenever the paired
   // subscription cannot serve the turn, and receipt.provider names who actually did.
@@ -930,9 +1083,22 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       [input.orgId, receipt.costUsd],
     );
   }
+  // Close the hold only after the real usage row exists, so the org is never
+  // momentarily charged for neither the estimate nor the actual.
+  if (authorization.reserved) await closeReservation(input.client, input.requestId);
   await emitBudgetWarnings(input.client, input.orgId);
   await emitAbsoluteSpendAlerts(input.client, input.orgId);
   return receipt.value;
+}
+
+/** Idempotent: a settle retried after a partial failure must not error. */
+async function closeReservation(client: PoolClient, requestId: string): Promise<void> {
+  await client.query(
+    `UPDATE ai_usage_reservations
+        SET settled_at = now()
+      WHERE request_id = $1 AND settled_at IS NULL AND released_at IS NULL`,
+    [requestId],
+  );
 }
 
 export interface KeyManagementService {
