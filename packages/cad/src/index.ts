@@ -63,6 +63,8 @@ export {
   onshapeMateFeature,
   createOnshapeMate,
 } from "./onshape-assemblies";
+export { parseOnshapeAssemblyInstances, listOnshapeAssemblyInstances } from "./onshape-assembly-list";
+export type { OnshapeAssemblyInstance } from "./onshape-assembly-list";
 export * from "./onshape-features";
 export * from "./onshape-update-feature";
 export * from "./onshape-resolve";

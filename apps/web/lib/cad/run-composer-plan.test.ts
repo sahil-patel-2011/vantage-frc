@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { parseComposerOps, type ComposerOp } from "./composer-ops";
 import {
   COMPOSER_PLAN_FEATURE_SCRIPT,
+  parametersForExecute,
+  rememberLastSketchFeatureId,
   runComposerPlan,
   type ComposerPlanExecutor,
 } from "./run-composer-plan";
@@ -142,7 +144,7 @@ describe("runComposerPlan", () => {
 
     const result = await runComposerPlan(
       [
-        { operation: "create_sketch", parameters: {} },
+        { operation: "create_sketch", parameters: { widthMm: 80, heightMm: 40 } },
         { operation: "create_extrude", parameters: { depthMm: 4 } },
       ],
       execute,
@@ -184,5 +186,62 @@ describe("runComposerPlan", () => {
     );
 
     expect(calls.map((step) => step.operation)).toEqual(["verify_topology", "create_sketch"]);
+  });
+
+  it("fails a Run-plan create_extrude without depthMm before execute", async () => {
+    const execute = vi.fn();
+    const result = await runComposerPlan(
+      [{ operation: "create_extrude", parameters: {}, reason: "Solid" }],
+      execute,
+    );
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    expect(result.completed).toBe(0);
+    expect(result.error).toBe("Extrude depth is required millimetres.");
+    expect(result.steps).toEqual([
+      {
+        id: "step-1",
+        operation: "create_extrude",
+        status: "failed",
+        error: "Extrude depth is required millimetres.",
+      },
+    ]);
+  });
+});
+
+describe("parametersForExecute", () => {
+  it("fills sketchFeatureId from a prior real sketch id", () => {
+    const extrude: ComposerOp = {
+      id: "step-2",
+      operation: "create_extrude",
+      parameters: { depthMm: 6 },
+      reason: "Solid",
+    };
+
+    expect(parametersForExecute(extrude, "Fsketch-real").sketchFeatureId).toBe("Fsketch-real");
+    expect(parametersForExecute(extrude, undefined)).toEqual({ depthMm: 6 });
+    expect(
+      parametersForExecute(
+        { ...extrude, parameters: { depthMm: 8, sketchFeatureId: "Fhuman-typed" } },
+        "Fsketch-real",
+      ).sketchFeatureId,
+    ).toBe("Fhuman-typed");
+    expect(
+      parametersForExecute(
+        { ...extrude, parameters: { depthMm: 8, sketchFeatureId: ["Fpicked"] } },
+        "Fsketch-real",
+      ).sketchFeatureId,
+    ).toBe("Fpicked");
+  });
+});
+
+describe("rememberLastSketchFeatureId", () => {
+  it("keeps a real create_sketch id and refuses DEMO", () => {
+    expect(rememberLastSketchFeatureId("create_sketch", "Fsketch-real", undefined)).toBe("Fsketch-real");
+    expect(rememberLastSketchFeatureId("create_sketch", "DEMO-plate", undefined)).toBeUndefined();
+    expect(rememberLastSketchFeatureId("create_sketch", "DEMO-plate", "Fkeep")).toBe("Fkeep");
+    expect(rememberLastSketchFeatureId("create_sketch", "  ", "Fkeep")).toBe("Fkeep");
+    expect(rememberLastSketchFeatureId("create_extrude", "Fextrude-real", "Fkeep")).toBe("Fkeep");
   });
 });

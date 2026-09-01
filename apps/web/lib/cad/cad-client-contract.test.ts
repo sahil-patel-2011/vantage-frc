@@ -86,6 +86,35 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("rememberComposerFeature(step, executed)");
   });
 
+  it("mounts CadCheckpointNote instead of inventing a rollback", () => {
+    expect(client).toContain('import { CadCheckpointNote } from "./cad-checkpoint-note"');
+    expect(client).toContain("<CadCheckpointNote");
+  });
+
+  it("chains lastSketchFeatureId via parametersForExecute and rememberLastSketchFeatureId", () => {
+    expect(client).toContain("parametersForExecute");
+    expect(client).toContain("rememberLastSketchFeatureId");
+    expect(client).toContain('from "../../lib/cad/run-composer-plan"');
+    expect(client).toContain("lastSketchFeatureId");
+    expect(client).toMatch(/parametersForExecute\(\s*\{[\s\S]*operation[\s\S]*parameters/);
+    expect(client).toMatch(
+      /lastSketchFeatureId\.current = rememberLastSketchFeatureId\(\s*operation,\s*executed\.featureId/,
+    );
+    expect(client).not.toMatch(/sketchFeatureId:\s*["']DEMO/i);
+  });
+
+  it("fills assemblyElementId from lastAssemblyElementId after create_assembly", () => {
+    expect(client).toContain("lastAssemblyElementId");
+    expect(client).toContain("assemblyElementId");
+    expect(client).toContain("create_assembly");
+    expect(client).toContain("add_assembly_instance");
+    expect(client).toContain("create_mate");
+    expect(client).toContain("withLastAssemblyElementId");
+    expect(client).toContain("rememberLastAssemblyElementId");
+    expect(client).toMatch(/executed\.featureId[\s\S]{0,80}result\?\.elementId/);
+    expect(client).not.toMatch(/assemblyElementId:\s*["']DEMO/i);
+  });
+
   it("never mounts an Onshape iframe in the client or the viewport", () => {
     expect(client).not.toMatch(/<iframe\b/);
     expect(client).not.toMatch(/src=\{[^}]*iframeUrl/);
@@ -94,5 +123,6 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(viewport).toContain("Never an Onshape iframe");
     expect(`${client}\n${viewport}`).not.toMatch(/<iframe[^>]*cad\.onshape\.com/i);
     expect(client).not.toMatch(/<iframe[\s\S]{0,200}cad\.onshape\.com/i);
+    expect(client).not.toMatch(/src=["']https?:\/\/cad\.onshape\.com/i);
   });
 });

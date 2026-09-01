@@ -197,6 +197,7 @@ function EventDayShell({
 export default function CommandClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [me, setMe] = useState<Me>({});
   const [orgId, setOrgId] = useState("");
+  const [recomputing, setRecomputing] = useState(false);
   const [snap, setSnap] = useState<CommandSnapshot | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -248,6 +249,28 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       setLoading(false);
     }
   }, []);
+
+  const recomputePrediction = useCallback(async () => {
+    if (!orgId) return;
+    setRecomputing(true);
+    try {
+      const response = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "recompute", orgId }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? "Could not recompute this prediction.");
+        return;
+      }
+      await load(orgId);
+    } catch {
+      setError("Could not recompute this prediction.");
+    } finally {
+      setRecomputing(false);
+    }
+  }, [orgId, load]);
 
   useEffect(() => {
     if (!orgId) {
@@ -735,6 +758,14 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
                 ))}
               </ul>
               {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
+              <button
+                type="button"
+                className="edc-link"
+                disabled={recomputing}
+                onClick={() => void recomputePrediction()}
+              >
+                {recomputing ? "Recomputing…" : "Recompute prediction"}
+              </button>
               <a className="edc-link" href={strategyHref}>
                 Open full strategy →
               </a>

@@ -183,7 +183,12 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
   ],
   create_extrude: [
     { key: "depthMm", label: "Depth", kind: "mm", help: "Extrude distance in millimetres." },
-    { key: "sketchFeatureId", label: "Sketch feature ID", kind: "text" },
+    {
+      key: "sketchFeatureId",
+      label: "Sketch feature ID",
+      kind: "idList",
+      help: "Sketch feature id from the Vantage feature tree. Leave blank to use the last sketch this session created.",
+    },
     { key: "operationType", label: "Operation", kind: "select", options: EXTRUDE_TYPES },
     { key: "oppositeDirection", label: "Opposite direction", kind: "checkbox" },
     { key: "name", label: "Name", kind: "text" },
@@ -200,7 +205,12 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
   ],
   create_shell: [
     { key: "thicknessMm", label: "Thickness", kind: "mm", help: "Wall thickness in millimetres." },
-    { key: "faceIds", label: "Faces", kind: "idList", help: "Comma-separated face IDs to open. Leave blank to keep a closed shell." },
+    {
+      key: "faceIds",
+      label: "Faces",
+      kind: "idList",
+      help: "Required face ids to open, from list-onshape-entities. Do not invent ids.",
+    },
     { key: "name", label: "Name", kind: "text" },
   ],
   create_hole: [
@@ -274,8 +284,8 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "name", label: "Name", kind: "text" },
     { key: "firstInstanceId", label: "First instance ID", kind: "text" },
     { key: "secondInstanceId", label: "Second instance ID", kind: "text" },
-    { key: "firstFaceId", label: "First face ID", kind: "text" },
-    { key: "secondFaceId", label: "Second face ID", kind: "text" },
+    { key: "firstFaceId", label: "First face ID", kind: "idList", help: "Face ids from list-onshape-entities." },
+    { key: "secondFaceId", label: "Second face ID", kind: "idList", help: "Face ids from list-onshape-entities." },
     { key: "firstOffsetXMm", label: "First offset X", kind: "signedMm" },
     { key: "firstOffsetYMm", label: "First offset Y", kind: "signedMm" },
     { key: "firstOffsetZMm", label: "First offset Z", kind: "signedMm" },
@@ -524,6 +534,69 @@ export function requireComposerDimensions(
   return parameters;
 }
 
+/** Draft-path only. Empty stored plans must still parse — do not call from parseComposerOps. */
+export function requireComposerPicks(
+  operation: ComposerNativeOp,
+  parameters: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (operation) {
+    case "create_fillet":
+      if (!hasNonEmptyIds(parameters.entities) && !hasNonEmptyIds(parameters.edgeIds)) {
+        throw new Error(
+          "Fillet needs at least one edge id from list-onshape-entities (entities or edgeIds). Do not invent ids.",
+        );
+      }
+      break;
+    case "create_chamfer":
+      if (!hasNonEmptyIds(parameters.entities) && !hasNonEmptyIds(parameters.edgeIds)) {
+        throw new Error(
+          "Chamfer needs at least one edge id from list-onshape-entities (entities or edgeIds). Do not invent ids.",
+        );
+      }
+      break;
+    case "create_shell":
+      if (!hasNonEmptyIds(parameters.faceIds)) {
+        throw new Error("Shell needs at least one face id to open from list-onshape-entities. Do not invent ids.");
+      }
+      break;
+    case "create_hole":
+      if (!hasNonEmptyIds(parameters.faceIds) || !hasNonEmptyIds(parameters.bodyIds)) {
+        throw new Error(
+          "Hole needs location face ids and scope body ids from list-onshape-entities. Do not invent ids.",
+        );
+      }
+      break;
+    case "create_pattern": {
+      if (!hasNonEmptyIds(parameters.featureIds)) {
+        throw new Error("Pattern needs feature ids from the Vantage feature tree. Do not invent ids.");
+      }
+      const circular =
+        stringOrEmpty(parameters.patternKind) === "circular" || hasNonEmptyIds(parameters.axisIds);
+      if (circular) {
+        if (!hasNonEmptyIds(parameters.axisIds)) {
+          throw new Error("Circular pattern needs axis ids from list-onshape-entities. Do not invent ids.");
+        }
+      } else if (asFiniteNumber(parameters.instanceCount) == null || asFiniteNumber(parameters.spacingMm) == null) {
+        throw new Error("Linear pattern needs instance count and spacing in millimetres.");
+      }
+      break;
+    }
+    case "create_mirror":
+      if (!hasNonEmptyIds(parameters.featureIds)) {
+        throw new Error("Mirror needs feature ids from the Vantage feature tree. Do not invent ids.");
+      }
+      break;
+    case "delete_feature":
+      if (!hasNonEmptyId(parameters.featureId)) {
+        throw new Error("Delete feature needs a feature id from the Vantage feature tree. Do not invent ids.");
+      }
+      break;
+    default:
+      break;
+  }
+  return parameters;
+}
+
 export function parametersFromDraft(
   operation: ComposerNativeOp,
   draft: Record<string, string | boolean>,
@@ -573,7 +646,7 @@ export function parametersFromDraft(
     }
     if (text.trim()) parameters[field.key] = text.trim();
   }
-  return requireComposerDimensions(operation, parameters);
+  return requireComposerPicks(operation, requireComposerDimensions(operation, parameters));
 }
 
 export function draftFromParameters(operation: ComposerNativeOp, parameters: Record<string, unknown>): Record<string, string | boolean> {
@@ -721,6 +794,14 @@ function compactParameters(parameters: Record<string, unknown>): Record<string, 
     next[key] = value;
   }
   return next;
+}
+
+function hasNonEmptyIds(value: unknown): boolean {
+  return Boolean(asStringArray(value)?.length);
+}
+
+function hasNonEmptyId(value: unknown): boolean {
+  return typeof value === "string" && Boolean(value.trim());
 }
 
 function asStringArray(value: unknown): string[] | undefined {

@@ -523,6 +523,10 @@ function ForecastPanel({
             >
               Draft purchase request
             </button>
+            <p className="app-muted">
+              This draft is a restock reminder. Enter what / why / when / cost on the{" "}
+              <a href={withOrgHref("/team/finance", view.orgId)}>Team Finance buy sheet</a>.
+            </p>
           </div>
         )}
       </header>

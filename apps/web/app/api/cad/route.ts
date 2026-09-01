@@ -17,6 +17,7 @@ import {
   listOnshapeElements,
   listOnshapeFeatures,
   listOnshapeNativeEntities,
+  listOnshapeAssemblyInstances,
   listOnshapeNativeVariables,
   pickVariableStudioElementId,
   updateOnshapeFeature,
@@ -669,6 +670,31 @@ export async function POST(request: Request) {
           variableStudioElementId: variableStudioElementId || null,
           authPath: onshape.via,
         };
+      }
+      if (action === "list-onshape-assembly") {
+        const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
+        const jobId = body.jobId ? String(body.jobId) : "";
+        let ref = documentRef;
+        if (!ref?.documentId && jobId) {
+          const job = (
+            await client.query<{ document_ref: OnshapeDocumentRef | null }>(
+              `SELECT document_ref FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+              [jobId, orgId, session.user.id],
+            )
+          ).rows[0];
+          ref = job?.document_ref ?? undefined;
+        }
+        if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
+          throw new Error("Bind an Onshape document/workspace/element first");
+        }
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const assemblyElementId = String(body.assemblyElementId ?? "").trim() || ref.elementId;
+        const instances = await listOnshapeAssemblyInstances(onshape.http, {
+          documentId: ref.documentId,
+          workspaceId: ref.workspaceId,
+          elementId: assemblyElementId,
+        });
+        return { instances, documentRef: ref, assemblyElementId, authPath: onshape.via };
       }
       if (action === "cancel") {
         await client.query(
