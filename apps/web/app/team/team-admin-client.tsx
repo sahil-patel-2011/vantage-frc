@@ -27,6 +27,7 @@ import {
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
 import { TeamBrandingPanel } from "../../lib/branding/team-branding-panel";
+import { JoinCodesPanel } from "./join-codes-panel";
 import { TeamProfilePanel } from "./team-profile-panel";
 import "./github-connection.css";
 import "./team-access-requests.css";
@@ -923,6 +924,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           )}
         </Panel>
       </section>
+      <JoinCodesPanel orgId={orgId} />
       <section className="compare-panel github-panel" id="github-connection">
         <h2>GitHub</h2>
         <p className="app-muted">Connect so calendar due dates and code tools can use this team’s repo.</p>

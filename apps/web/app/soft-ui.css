@@ -1957,6 +1957,16 @@ body.has-app-shell .admin-org b{
 }
 body.has-app-shell .admin-org strong{display:block;font-size:14px}
 body.has-app-shell .admin-org small{color:var(--soft-muted);font-size:12px}
+/* Pushed to the far edge and left unstyled-as-danger until hover: deleting a workspace
+   is irreversible, so the control should not read as a routine row action. */
+body.has-app-shell .admin-org-remove{
+  margin-left:auto;padding:6px 12px;border:1px solid var(--soft-line);border-radius:8px;
+  background:var(--soft-bg);color:var(--soft-muted);font:600 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+body.has-app-shell .admin-org-remove:hover:not(:disabled){
+  border-color:var(--soft-critical,#c0392b);color:var(--soft-critical,#c0392b);
+}
+body.has-app-shell .admin-org-remove:disabled{opacity:.55;cursor:not-allowed}
 body.has-app-shell .admin-empty{
   min-height:120px;padding:22px;text-align:center;color:var(--soft-muted);
   border:1px dashed var(--soft-line);border-radius:12px;background:var(--soft-bg);font-size:13px;

@@ -117,6 +117,7 @@ export {
   DEFAULT_REQUEST_CREDIT_WEIGHTS,
   REQUEST_KINDS,
   RequestCreditsExhaustedError,
+  authorizeRequestCredits,
   chargeRequestCredits,
   creditsForRequest,
   grantRequestCredits,
@@ -126,6 +127,7 @@ export {
   loadRequestCreditBalance,
   loadRequestCreditWeights,
   orgUsesRequestCredits,
+  recordRequestCreditConsumption,
   requestKindForFeature,
   resolveRequestCreditBalance,
   type CreditLedgerRow,
@@ -133,6 +135,11 @@ export {
   type OrgAiAccessKind,
   type RequestCreditBalance,
   type RequestKind,
+} from "./request-credits";
+
+import {
+  authorizeRequestCredits,
+  recordRequestCreditConsumption,
 } from "./request-credits";
 
 import {
@@ -253,7 +260,12 @@ export type MeterKeySource =
   | "local_cli"
   | "sponsored"
   /** A paired member's Claude/ChatGPT subscription served the turn (AI bridge, 0486). */
-  | "subscription_bridge";
+  | "subscription_bridge"
+  /**
+   * AI the platform lent this org — the free relay or a hosted-platform window from
+   * /admin/ai-grants (0518). Costs the team no dollars; metered in request credits.
+   */
+  | "platform_grant";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -341,7 +353,9 @@ function isExternalKeySource(source: MeterKeySource): boolean {
     source === "local" ||
     source === "local_cli" ||
     source === "sponsored" ||
-    source === "subscription_bridge"
+    source === "subscription_bridge" ||
+    // The relay or the platform's own account paid the provider, not this org's wallet.
+    source === "platform_grant"
   );
 }
 const ORG_BILLING_LOCK_NAMESPACE = "vantage:org_billing:";
@@ -673,6 +687,12 @@ export type MeteredAuthorization = {
   serialized: boolean;
   /** True when a row in ai_usage_reservations is holding budget for this request. */
   reserved: boolean;
+  /**
+   * Request credits this call will consume at settle. 0 when the org was never granted
+   * any, which is the normal case — see orgUsesRequestCredits on why absence of a grant
+   * means "not on the credit plan" rather than "out of credits".
+   */
+  requestCredits: number;
 };
 
 export type AuthorizeMeteredAIOptions = {
@@ -731,7 +751,8 @@ export async function authorizeMeteredAI<T>(
     const reserved = options?.reserve
       ? await reserveMeteredAI(input, "local_cli", 0, options)
       : false;
-    return { keySource: "local_cli", serialized: false, reserved };
+    // A local CLI turn costs the platform nothing, so it spends no request credits.
+    return { keySource: "local_cli", serialized: false, reserved, requestCredits: 0 };
   }
 
   const lock = await input.client.query<{ locked: boolean }>(
@@ -775,6 +796,10 @@ export async function authorizeMeteredAI<T>(
       const promo = await resolveSponsoredPromoForOrg(input.client, input.orgId);
       if (promo.eligible) {
         keySource = "sponsored";
+      } else if (await hasGrantedPlatformAi(input.client, input.orgId)) {
+        // The platform opened a relay / hosted window for this team. Checked only after
+        // the promo declines, so an org with both keeps its existing sponsored path.
+        keySource = "platform_grant";
       } else if (promo.reason === "promo_expired") {
         await maybeNotifySponsoredPromoExpired(input.client, input.orgId, promo);
         throw new CommitAndThrowError(
@@ -899,10 +924,21 @@ export async function authorizeMeteredAI<T>(
     }
   }
 
+  // Request credits fund AI the platform pays for. A team spending its own key (BYOK,
+  // local, CLI) or a paired subscription must not burn credits it was granted for
+  // hosted use, so only the two platform-funded sources are charged.
+  const requestCredits =
+    keySource === "platform" || keySource === "platform_grant"
+      ? await authorizeRequestCredits(input.client, {
+          orgId: input.orgId,
+          feature: input.feature,
+        })
+      : 0;
+
   const reserved = options?.reserve
     ? await reserveMeteredAI(input, keySource, input.estimatedCostUsd, options)
     : false;
-  return { keySource, serialized, reserved };
+  return { keySource, serialized, reserved, requestCredits };
 }
 
 /**
@@ -1083,12 +1119,42 @@ export async function settleMeteredAI<T>(
       [input.orgId, receipt.costUsd],
     );
   }
+  // Keyed on the same requestId as the usage event, so a retry charges credits once.
+  if (authorization.requestCredits > 0) {
+    await recordRequestCreditConsumption(input.client, {
+      orgId: input.orgId,
+      requestId: input.requestId,
+      feature: input.feature,
+      credits: authorization.requestCredits,
+    });
+  }
   // Close the hold only after the real usage row exists, so the org is never
   // momentarily charged for neither the estimate nor the actual.
   if (authorization.reserved) await closeReservation(input.client, input.requestId);
   await emitBudgetWarnings(input.client, input.orgId);
   await emitAbsoluteSpendAlerts(input.client, input.orgId);
   return receipt.value;
+}
+
+/**
+ * Whether the platform is currently lending this org AI. Either grant kind funds a
+ * call: `platform_relay` points at the self-hosted relay, `hosted_platform` at the
+ * platform's own keys. `sponsored_pool` is excluded — the sponsored promo has its own
+ * eligibility and expiry path, checked before this one.
+ */
+async function hasGrantedPlatformAi(client: PoolClient, orgId: string): Promise<boolean> {
+  const result = await client.query<{ exists: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM org_ai_access_grants
+        WHERE org_id = $1::uuid
+          AND revoked_at IS NULL
+          AND starts_at <= now()
+          AND ends_at > now()
+          AND access_kind IN ('platform_relay','hosted_platform')
+     ) AS exists`,
+    [orgId],
+  );
+  return result.rows[0]?.exists === true;
 }
 
 /** Idempotent: a settle retried after a partial failure must not error. */

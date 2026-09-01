@@ -346,3 +346,54 @@
     width: 100%;
   }
 }
+
+/* Funding disclosure. Only renders when a grant or credit plan is in play, so it can
+   afford to be visually louder than a permanent panel would be. */
+.ai-funding-panel h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.ai-funding-grant {
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ai-funding-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin: 0 0 0.6rem;
+}
+
+.ai-funding-metrics > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--app-line);
+  border-radius: 0.75rem;
+  background: var(--app-surface);
+}
+
+.ai-funding-metrics strong {
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.ai-funding-metrics span {
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 600px) {
+  .ai-funding-metrics {
+    grid-template-columns: 1fr;
+  }
+}

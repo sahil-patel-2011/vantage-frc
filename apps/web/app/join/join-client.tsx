@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import { EmptyState, FormGrid, FormRow, PageHeader } from "../../components/ui";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
@@ -17,6 +17,14 @@ export default function JoinByCodeClient() {
   const [joined, setJoined] = useState<JoinResult | null>(null);
 
   const consentComplete = legalConsentComplete({ terms: termsAccepted, privacy: privacyAccepted });
+
+  // Owners share /join?code=ABCD2345 straight from the team admin panel. Prefill the
+  // field so the recipient only has to accept the agreements — but never auto-submit,
+  // because consent has to be a deliberate action.
+  useEffect(() => {
+    const fromLink = new URLSearchParams(window.location.search).get("code");
+    if (fromLink) setCode(fromLink.trim().toUpperCase().slice(0, 12));
+  }, []);
 
   async function submit() {
     setError("");

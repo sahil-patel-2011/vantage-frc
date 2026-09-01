@@ -78,6 +78,7 @@ function AdminClientInner() {
   const [message, setMessage] = useState("");
   const [confirmation, setConfirmation] = useState<ProvisionConfirmation | null>(null);
   const [copied, setCopied] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -142,6 +143,42 @@ function AdminClientInner() {
     setConfirmation(data);
     setForm({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
     await load();
+  }
+
+  /**
+   * Deleting a workspace cascades every row it owns and cannot be undone, so the API
+   * demands the team number back as a second factor. Asking for it here — rather than a
+   * yes/no dialog — is what makes an accidental click on the wrong row survivable.
+   */
+  async function removeOrg(org: Organization) {
+    const typed = window.prompt(
+      `Permanently delete ${org.name} and every row it owns?\n\nThis cannot be undone. Type the team number (${org.teamNumber}) to confirm.`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== String(org.teamNumber)) {
+      setMessage("Delete cancelled — the team number did not match.");
+      return;
+    }
+    setRemoving(org.id);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/organizations", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: org.id, confirmTeamNumber: org.teamNumber }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Delete failed.");
+        return;
+      }
+      setMessage(`Deleted ${org.name}.`);
+      await load();
+    } catch {
+      setMessage("Network error deleting the workspace.");
+    } finally {
+      setRemoving(null);
+    }
   }
 
   async function copyInviteLink(url: string) {
@@ -314,6 +351,15 @@ function AdminClientInner() {
                         : " · no owner yet"}
                   </small>
                 </div>
+                <button
+                  type="button"
+                  className="admin-org-remove"
+                  disabled={removing === org.id}
+                  onClick={() => void removeOrg(org)}
+                  aria-label={`Delete ${org.name}`}
+                >
+                  {removing === org.id ? "Deleting…" : "Delete"}
+                </button>
               </article>
             ))
           )}

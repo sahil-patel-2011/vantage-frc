@@ -1,0 +1,13 @@
+-- A funding source for AI the platform lends to a team: the FreeBuff/local relay or a
+-- hosted-platform window opened from /admin/ai-grants.
+--
+-- Without this, granting a free-tier team relay access accomplished nothing. The
+-- resolver in packages/agent would hand back a relay adapter, but meteredAI's key-source
+-- resolution knew only about BYOK and the sponsored promo, so a free org still hit
+-- "Free organizations must configure a BYO AI key" and the grant never took effect.
+--
+-- Vantage charges no dollars for these calls (the relay or platform account pays), so
+-- this behaves as an external key source in the USD ledger. The budget that *does*
+-- apply is the request-credit ledger from 0515 — which is the point of granting credits
+-- in requests rather than dollars.
+ALTER TYPE key_source ADD VALUE IF NOT EXISTS 'platform_grant';

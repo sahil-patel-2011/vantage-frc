@@ -25,11 +25,13 @@ import { headers } from "next/headers";
 // Reads never invent a number: a team with no ledger rows reports a zero balance and
 // an explicit "not on the credit plan" flag rather than a fabricated allowance.
 
-const ACCESS_KINDS: readonly OrgAiAccessKind[] = [
-  "platform_relay",
-  "sponsored_pool",
-  "hosted_platform",
-];
+// Only kinds the metering path actually honours are grantable. `sponsored_pool` is
+// deliberately absent: nothing reads it, so offering it would let an admin open a window
+// that changes nothing and then wonder why the team still has no AI. The sponsored promo
+// has its own eligibility and expiry path (resolveSponsoredPromoForOrg) and is not
+// something this screen can hand out. The type keeps the value so existing rows still
+// parse.
+const ACCESS_KINDS: readonly OrgAiAccessKind[] = ["platform_relay", "hosted_platform"];
 
 const MAX_GRANT_CREDITS = 1_000_000;
 const MAX_WINDOW_DAYS = 365;

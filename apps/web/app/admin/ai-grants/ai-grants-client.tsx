@@ -26,11 +26,19 @@ type AccessGrant = {
   note: string;
 };
 
+/** Every kind, so an existing row still renders with a readable name. */
 const ACCESS_LABELS: Record<string, string> = {
   platform_relay: "Platform free relay",
   sponsored_pool: "Sponsored provider pool",
   hosted_platform: "Hosted platform keys",
 };
+
+/**
+ * Only what the metering path honours. `sponsored_pool` is excluded on purpose: no
+ * resolver reads it, so opening that window would look like it worked and change
+ * nothing for the team.
+ */
+const GRANTABLE_KINDS = ["platform_relay", "hosted_platform"] as const;
 
 const num = (value: unknown) => Number(value ?? 0).toLocaleString();
 
@@ -72,10 +80,10 @@ export default function AiGrantsClient() {
     }
   }, [selectedOrg]);
 
+  // `load` is keyed on the selected team, so this also refetches when that changes.
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   async function post(body: Record<string, unknown>, successCopy: string) {
     const response = await fetch("/api/admin/ai-grants", {
@@ -267,9 +275,9 @@ export default function AiGrantsClient() {
                   value={accessKind}
                   onChange={(event) => setAccessKind(event.target.value)}
                 >
-                  {Object.entries(ACCESS_LABELS).map(([value, label]) => (
+                  {GRANTABLE_KINDS.map((value) => (
                     <option key={value} value={value}>
-                      {label}
+                      {ACCESS_LABELS[value]}
                     </option>
                   ))}
                 </select>

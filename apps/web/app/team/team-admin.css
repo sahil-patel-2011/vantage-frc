@@ -101,12 +101,14 @@
   color: var(--app-muted);
 }
 
-.team-invite-grid {
+.team-invite-grid,
+.team-join-code-grid {
   align-items: start;
 }
 
 .team-invite-form,
-.team-invite-ledger {
+.team-invite-ledger,
+.team-join-code-list {
   padding: 1.15rem 1.2rem;
   border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
   border-radius: 1rem;
@@ -227,4 +229,79 @@
   background: var(--app-surface);
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+/* Self-signup join codes. Shares the invite grid's shell; the rows carry their own
+   live/off treatment so an expired or used-up code reads as inert at a glance. */
+.team-join-code-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-join-code-row {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+}
+
+.team-join-code-row:last-child {
+  border-bottom: none;
+}
+
+.team-join-code-row.off {
+  opacity: 0.62;
+}
+
+.team-join-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.team-join-code-head code {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.team-join-code-state {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.team-join-code-state.live {
+  background: color-mix(in srgb, var(--app-positive, #1c8a4a) 16%, var(--app-surface));
+  color: var(--app-positive, #1c8a4a);
+}
+
+.team-join-code-state.off {
+  background: color-mix(in srgb, var(--app-line) 55%, var(--app-surface));
+  color: var(--app-muted);
+}
+
+.team-join-code-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.team-join-code-actions button {
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--app-line);
+  border-radius: 0.6rem;
+  background: var(--app-surface);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.team-join-code-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }

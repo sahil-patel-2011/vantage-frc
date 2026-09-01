@@ -294,6 +294,63 @@ export async function chargeRequestCredits(
   return credits;
 }
 
+/**
+ * Read-only pre-call half of {@link chargeRequestCredits}: what this call will cost,
+ * and whether the org can afford it. Returns 0 when the org is not on the credit plan
+ * or the request kind is free, in which case nothing should be recorded at settle.
+ *
+ * Separate from the write so a streamed response can be denied before its first token
+ * and recorded after its last — the same reason meteredAI splits authorize from settle.
+ */
+export async function authorizeRequestCredits(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    feature: string;
+    kind?: RequestKind;
+    steps?: number;
+    weights?: Partial<Record<RequestKind, number>>;
+  },
+): Promise<number> {
+  if (!(await orgUsesRequestCredits(client, input.orgId))) return 0;
+
+  const kind = input.kind ?? requestKindForFeature(input.feature);
+  const weights = input.weights ?? (await loadRequestCreditWeights(client));
+  const credits = creditsForRequest({ kind, weights, steps: input.steps });
+  if (credits <= 0) return 0;
+
+  const { balance } = await loadRequestCreditBalance(client, input.orgId);
+  if (balance < credits) throw new RequestCreditsExhaustedError(credits, Math.max(0, balance));
+  return credits;
+}
+
+/**
+ * Append-only settle half. Deliberately never throws to deny: the provider has already
+ * served the call, so refusing to record it would hand the org unbilled AI. A balance
+ * that went negative between authorize and settle is recorded honestly and shows up as
+ * a negative balance rather than being silently dropped.
+ */
+export async function recordRequestCreditConsumption(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    requestId: string;
+    feature: string;
+    credits: number;
+    kind?: RequestKind;
+  },
+): Promise<void> {
+  if (input.credits <= 0) return;
+  const kind = input.kind ?? requestKindForFeature(input.feature);
+  await client.query(
+    `INSERT INTO ai_request_credit_ledger
+       (org_id, entry_kind, credits, request_kind, feature, request_id, reason)
+     VALUES ($1::uuid, 'consumption', $2, $3, $4, $5, '')
+     ON CONFLICT (request_id) DO NOTHING`,
+    [input.orgId, -input.credits, kind, input.feature, input.requestId],
+  );
+}
+
 export type OrgAiAccessKind = "platform_relay" | "sponsored_pool" | "hosted_platform";
 
 export type OrgAiAccessGrant = {

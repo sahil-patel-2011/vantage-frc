@@ -80,8 +80,10 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   ai_usage: {
     title: "AI usage unavailable",
     body: "Owner/admin access required.",
-    ctaHref: "/team",
-    ctaLabel: "Team settings",
+    // The widget is about AI spend, so send people to the AI key/usage screen rather
+    // than the team hub root, which lands on the calendar.
+    ctaHref: "/team/ai-keys",
+    ctaLabel: "AI keys",
   },
   notifications: {
     title: "No notifications",
@@ -92,8 +94,10 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   robot_readiness: {
     title: "No checklist data",
     body: "Add robot checks after setup.",
-    ctaHref: "/code",
-    ctaLabel: "Open robot checks",
+    // Readiness is computed from maintenance, batteries, and failures — all pit
+    // surfaces. /code is the software workbench and has none of it.
+    ctaHref: "/pit",
+    ctaLabel: "Open pit checks",
   },
   alerts: {
     title: "No new alerts",
@@ -830,7 +834,14 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
     }
     case "ai_usage":
       return (
-        <Shell type={type} title="AI usage" payload={payload} href={withOrg("/team")} emptyHint={hint} orgId={orgId}>
+        <Shell
+          type={type}
+          title="AI usage"
+          payload={payload}
+          href={withOrg("/team/ai-keys")}
+          emptyHint={hint}
+          orgId={orgId}
+        >
           {payload?.status === "live" ? (
             <div className="dash-metric-grid">
               <div>
