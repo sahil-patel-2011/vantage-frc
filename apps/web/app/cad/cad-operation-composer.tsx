@@ -34,6 +34,7 @@ export function CadOperationComposer({
   onAppend,
   onRunPlan,
   entities,
+  features,
 }: {
   platform: string;
   disabled?: boolean;
@@ -42,6 +43,7 @@ export function CadOperationComposer({
   onAppend?: (payload: Record<string, unknown>) => Promise<unknown>;
   onRunPlan?: (plan: unknown) => Promise<{ ok?: boolean; error?: string } | void>;
   entities?: ListedOnshapeEntities;
+  features?: ReadonlyArray<{ featureId: string }>;
 }) {
   const operations = useMemo(() => composerPalette(platform), [platform]);
   const [operation, setOperation] = useState<ComposerNativeOp>(operations[0] ?? "create_sketch");
@@ -182,6 +184,7 @@ export function CadOperationComposer({
           draft={draft}
           disabled={disabled}
           entities={entities}
+          features={features}
           onChange={(key, value) => {
             setDraft((current) => ({ ...current, [key]: value }));
             setError("");

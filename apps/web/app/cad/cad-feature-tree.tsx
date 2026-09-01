@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
+  deleteFeaturePayload,
   parseExplainFeatures,
   updateFeaturePayload,
+  type DeleteFeaturePayload,
   type ExplainedFeature,
   type UpdateFeaturePayload,
 } from "../../lib/cad/feature-tree";
@@ -12,6 +14,7 @@ export type CadFeatureTreeProps = {
   features?: ExplainedFeature[] | unknown;
   disabled?: boolean;
   onUpdate: (payload: UpdateFeaturePayload) => void | Promise<unknown>;
+  onDelete?: (payload: DeleteFeaturePayload) => void | Promise<unknown>;
 };
 
 type MmDraft = {
@@ -38,7 +41,7 @@ function isExplainedFeature(value: unknown): value is ExplainedFeature {
   return typeof row.featureId === "string" && row.featureId.trim().length > 0;
 }
 
-export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeatureTreeProps) {
+export function CadFeatureTree({ features, disabled = false, onUpdate, onDelete }: CadFeatureTreeProps) {
   const rows = useMemo(() => {
     if (Array.isArray(features) && features.every(isExplainedFeature)) {
       return features.map((row) => ({
@@ -83,6 +86,22 @@ export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeat
       await onUpdate(payload);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not update this feature");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function remove(featureId: string) {
+    if (!onDelete) return;
+    const confirmed = window.confirm("Delete this native Onshape feature? This cannot be undone from here.");
+    if (!confirmed) return;
+    setError("");
+    setBusyId(featureId);
+    try {
+      const payload = deleteFeaturePayload(featureId);
+      await onDelete(payload);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete this feature");
     } finally {
       setBusyId(null);
     }
@@ -211,6 +230,16 @@ export function CadFeatureTree({ features, disabled = false, onUpdate }: CadFeat
                       >
                         {busy ? "Updating…" : "Update feature"}
                       </button>
+                      {onDelete ? (
+                        <button
+                          type="button"
+                          className="app-button"
+                          disabled={disabled || busy}
+                          onClick={() => void remove(row.featureId)}
+                        >
+                          Delete feature
+                        </button>
+                      ) : null}
                     </div>
                   </li>
                 );

@@ -4,6 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Media Kit (never DEMO asset counts). */
 export const MEDIA_KIT_RELATED_LINKS = [
   { id: "media", label: "Media workspace", kind: "path" as const, path: "/media" },
+  { id: "media-library", label: "Media library", kind: "path" as const, path: "/media-library" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
@@ -21,6 +22,7 @@ export type MediaKitRelatedLink = {
 /** Focused Soft-UI strip — Media workspace / Suite / Outreach / Impact. */
 export const MEDIA_KIT_RELATED_INCLUDE: MediaKitRelatedId[] = [
   "media",
+  "media-library",
   "sponsor-suite",
   "outreach-calendar",
   "impact",

@@ -102,12 +102,49 @@ describe("parseListedEntities", () => {
 });
 
 describe("pickableEntityIds", () => {
+  const FEATURES = [{ featureId: "Fsketch" }, { id: "Fextrude" }];
+
   it("maps fillet entities to edges and hole faces to faces", () => {
     expect(pickableEntityIds("entities", LIVE)).toEqual(["JHD", "JHE"]);
     expect(pickableEntityIds("edgeIds", LIVE)).toEqual(["JHD", "JHE"]);
     expect(pickableEntityIds("faceIds", LIVE)).toEqual(["JFC"]);
     expect(pickableEntityIds("targetFaceId", LIVE)).toEqual(["JFC"]);
     expect(pickableEntityIds("bodyIds", LIVE)).toEqual(["JBD"]);
+  });
+
+  it("maps featureIds to extras.features and sketchFeatureId if called anyway", () => {
+    expect(pickableEntityIds("featureIds", LIVE, { features: FEATURES })).toEqual(["Fsketch", "Fextrude"]);
+    expect(pickableEntityIds("featureId", LIVE, { features: FEATURES })).toEqual(["Fsketch", "Fextrude"]);
+    expect(pickableEntityIds("sketchFeatureId", LIVE, { features: FEATURES })).toEqual(["Fsketch", "Fextrude"]);
+    expect(pickableEntityIds("featureIds", LIVE)).toEqual([]);
+    expect(pickableEntityIds("featureIds", LIVE, { features: [] })).toEqual([]);
+    expect(pickableEntityIds("featureIds", LIVE, { features: [{ featureId: "  " }, { id: "" }] })).toEqual([]);
+  });
+
+  it("refuses DEMO feature extras instead of showing them in the picker", () => {
+    expect(() => pickableEntityIds("featureIds", LIVE, { features: [{ featureId: "DEMO-plate" }] })).toThrow(
+      /DEMO entity id/i,
+    );
+    expect(() => pickableEntityIds("featureId", LIVE, { features: [{ id: "demo-extrude" }] })).toThrow(
+      /DEMO entity id/i,
+    );
+  });
+
+  it("maps planeIds to plane faces and axisIds to cylinder/circle faces", () => {
+    expect(pickableEntityIds("planeIds", LIVE)).toEqual(["JFC"]);
+    expect(pickableEntityIds("planeId", LIVE)).toEqual(["JFC"]);
+    expect(pickableEntityIds("axisIds", LIVE)).toEqual([]);
+    expect(pickableEntityIds("axis", LIVE)).toEqual([]);
+    expect(
+      pickableEntityIds("axisIds", {
+        ...LIVE,
+        faces: [
+          ...LIVE.faces,
+          { id: "JFD", bodyId: "JBD", surfaceType: "cylinder" },
+          { id: "JFE", bodyId: "JBD", surfaceType: "circle" },
+        ],
+      }),
+    ).toEqual(["JFD", "JFE"]);
   });
 
   it("keeps views and empty entities as an empty picker", () => {

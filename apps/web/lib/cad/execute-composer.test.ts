@@ -100,6 +100,16 @@ describe("existingFeatureId", () => {
     expect(() => existingFeatureId("DEMO-plate")).toThrow(/DEMO feature id/i);
     expect(() => existingFeatureId({ featureId: "demo-extrude" })).toThrow(/DEMO feature id/i);
   });
+
+  it("skips a featureId on a record that already has new entity picks", () => {
+    expect(existingFeatureId({ featureId: FEATURE, edgeIds: ["JHD"] })).toBeUndefined();
+    expect(existingFeatureId({ featureId: FEATURE, parameters: { faceIds: ["JFC"] } })).toBeUndefined();
+    expect(existingFeatureId({ featureId: FEATURE, depthMm: 6 })).toBe(FEATURE);
+  });
+
+  it("still refuses DEMO even when the same record has entity picks", () => {
+    expect(() => existingFeatureId({ featureId: "DEMO-plate", entities: ["JHD"] })).toThrow(/DEMO feature id/i);
+  });
 });
 
 describe("executeComposerOp", () => {
@@ -168,6 +178,28 @@ describe("executeComposerOp", () => {
     });
     expect(calls[0]!.body).not.toHaveProperty("source");
     expect(JSON.stringify(calls)).not.toMatch(/feature_script/i);
+  });
+
+  it("runs delete_feature through execute-onshape, not update-onshape-feature", async () => {
+    const calls = pipelineFetch();
+    const result = await executeComposerOp({
+      orgId: ORG,
+      payload: { operation: "delete_feature", parameters: { featureId: FEATURE }, reason: "Remove fillet" },
+      documentRef: DOCUMENT,
+    });
+    expect(result.action).toBe("execute-onshape");
+    expect(calls.map((call) => call.body?.action)).toEqual([
+      undefined,
+      "set-document",
+      "append-step",
+      "approve",
+      "execute-onshape",
+    ]);
+    expect(calls.find((call) => call.body?.action === "append-step")?.body).toMatchObject({
+      operation: "delete_feature",
+      parameters: { featureId: FEATURE },
+    });
+    expect(JSON.stringify(calls)).not.toMatch(/update-onshape-feature/);
   });
 
   it("forwards fillet/hole/shell millimetres on update-onshape-feature", async () => {
@@ -252,5 +284,72 @@ describe("executeComposerOp", () => {
       executeComposerOp({ orgId: ORG, payload: { operation: "feature_script", parameters: { source: "opExtrude" } } }),
     ).rejects.toThrow(/FeatureScript/i);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("creates a new fillet when parameters include new edge picks even if featureId is present", async () => {
+    const calls = pipelineFetch({ confirmed: true });
+    const result = await executeComposerOp({
+      orgId: ORG,
+      payload: {
+        operation: "create_fillet",
+        parameters: { radiusMm: 2, featureId: FEATURE, entities: ["JHD"], edgeIds: ["JHE"] },
+        reason: "New edges",
+      },
+      documentRef: DOCUMENT,
+    });
+    expect(result.action).toBe("execute-onshape");
+    expect(result.stepId).toBe(STEP);
+    const actions = calls.filter((call) => call.body).map((call) => call.body!.action);
+    expect(actions).toEqual(["set-document", "append-step", "approve", "execute-onshape"]);
+    expect(calls.some((call) => call.body?.action === "update-onshape-feature")).toBe(false);
+    const appended = calls.find((call) => call.body?.action === "append-step")!.body!;
+    expect(appended.operation).toBe("create_fillet");
+    expect(appended.parameters).toEqual({
+      radiusMm: 2,
+      featureId: FEATURE,
+      entities: ["JHD"],
+      edgeIds: ["JHE"],
+    });
+    expect(JSON.stringify(calls)).not.toMatch(/feature_script/i);
+    expect(JSON.stringify(calls)).not.toMatch(/DEMO/i);
+  });
+
+  it("creates a new hole or shell when face/location/body picks are present", async () => {
+    const pickCases: Array<{ operation: string; parameters: Record<string, unknown> }> = [
+      { operation: "create_hole", parameters: { diameterMm: 5, featureId: FEATURE, faceIds: ["JFC"] } },
+      { operation: "create_shell", parameters: { thicknessMm: 1.5, featureId: FEATURE, faceIds: ["JFC"] } },
+      { operation: "create_fillet", parameters: { radiusMm: 2, featureId: FEATURE, locationIds: ["JL1"] } },
+      { operation: "create_fillet", parameters: { radiusMm: 2, featureId: FEATURE, bodyIds: ["JB1"] } },
+      { operation: "create_fillet", parameters: { radiusMm: 2, featureId: FEATURE, scopeIds: ["JS1"] } },
+      { operation: "create_pattern", parameters: { spacingMm: 10, featureId: FEATURE, featureIds: ["Fother"] } },
+    ];
+    for (const pick of pickCases) {
+      const calls = pipelineFetch({ confirmed: true });
+      const result = await executeComposerOp({
+        orgId: ORG,
+        payload: { ...pick, reason: "New picks" },
+        documentRef: DOCUMENT,
+        featureId: FEATURE,
+      });
+      expect(result.action).toBe("execute-onshape");
+      expect(calls.some((call) => call.body?.action === "update-onshape-feature")).toBe(false);
+      expect(calls.find((call) => call.body?.action === "append-step")!.body!.operation).toBe(pick.operation);
+    }
+  });
+
+  it("still updates when featureId is present and there are no entity lists", async () => {
+    const calls = pipelineFetch();
+    const result = await executeComposerOp({
+      orgId: ORG,
+      payload: { operation: "create_fillet", parameters: { featureId: FEATURE, radiusMm: 3, edgeIds: [] } },
+      documentRef: DOCUMENT,
+    });
+    expect(result.action).toBe("update-onshape-feature");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.body).toMatchObject({
+      action: "update-onshape-feature",
+      featureId: FEATURE,
+      radiusMm: 3,
+    });
   });
 });

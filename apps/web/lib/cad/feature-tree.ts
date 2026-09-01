@@ -3,8 +3,9 @@
  *
  * parseExplainFeatures reads POST /api/cad `explain-onshape-features` JSON and
  * keeps only rows that already carry a real featureId. IDs are never invented.
- * updateFeaturePayload builds the POST /api/cad `update-onshape-feature` body
- * and refuses DEMO or blank ids before anything is sent.
+ * updateFeaturePayload / deleteFeaturePayload build POST /api/cad bodies
+ * (`update-onshape-feature` / `delete-onshape-feature`) and refuse DEMO or
+ * blank ids before anything is sent.
  */
 
 export type ExplainedFeature = {
@@ -32,6 +33,11 @@ export type UpdateFeaturePayload = {
   radiusMm?: number;
   diameterMm?: number;
   thicknessMm?: number;
+};
+
+export type DeleteFeaturePayload = {
+  action: "delete-onshape-feature";
+  featureId: string;
 };
 
 const DEMO_FEATURE_ID = /demo/i;
@@ -150,5 +156,13 @@ export function updateFeaturePayload(input: UpdateFeatureInput): UpdateFeaturePa
     ...(radiusMm !== undefined ? { radiusMm } : {}),
     ...(diameterMm !== undefined ? { diameterMm } : {}),
     ...(thicknessMm !== undefined ? { thicknessMm } : {}),
+  };
+}
+
+/** Body for POST /api/cad action delete-onshape-feature. No invented ids. */
+export function deleteFeaturePayload(featureId: unknown): DeleteFeaturePayload {
+  return {
+    action: "delete-onshape-feature",
+    featureId: requireCreatedFeatureId(featureId),
   };
 }

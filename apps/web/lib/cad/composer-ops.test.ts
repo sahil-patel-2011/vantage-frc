@@ -4,11 +4,13 @@ import {
   COMPOSER_OP_FIELDS,
   appendComposerOp,
   composerPalette,
+  describeComposerOp,
   emptyComposerParameters,
   parametersFromDraft,
   parseComposerOps,
   removeComposerOp,
   replaceComposerOp,
+  requireComposerDimensions,
   serializeComposerOps,
 } from "./composer-ops";
 
@@ -67,14 +69,23 @@ describe("composer native ops", () => {
     expect(COMPOSER_NATIVE_OPS).toContain("create_pattern");
     expect(COMPOSER_NATIVE_OPS).toContain("create_mirror");
     expect(COMPOSER_NATIVE_OPS).toContain("set_variable");
+    expect(COMPOSER_NATIVE_OPS).toContain("delete_feature");
     expect(composerPalette("onshape")).toEqual(
-      expect.arrayContaining(["create_chamfer", "create_shell", "create_pattern", "create_mirror", "set_variable"]),
+      expect.arrayContaining([
+        "create_chamfer",
+        "create_shell",
+        "create_pattern",
+        "create_mirror",
+        "set_variable",
+        "delete_feature",
+      ]),
     );
     expect(composerPalette("fusion360")).toContain("create_chamfer");
     expect(composerPalette("fusion360")).not.toContain("create_shell");
     expect(composerPalette("fusion360")).not.toContain("create_pattern");
     expect(composerPalette("fusion360")).not.toContain("create_mirror");
     expect(composerPalette("fusion360")).not.toContain("set_variable");
+    expect(composerPalette("fusion360")).not.toContain("delete_feature");
   });
 
   it("does not invent DEMO plate sizes for empty params", () => {
@@ -84,12 +95,9 @@ describe("composer native ops", () => {
     expect(emptyComposerParameters("create_pattern")).toEqual({});
     expect(emptyComposerParameters("create_mirror")).toEqual({});
     expect(emptyComposerParameters("set_variable")).toEqual({});
-    expect(parseComposerOps([{ operation: "create_sketch", parameters: {} }])).toEqual([
-      { id: "step-1", operation: "create_sketch", parameters: {}, reason: "" },
-    ]);
-    expect(serializeComposerOps(parseComposerOps([{ operation: "create_extrude", parameters: {} }]))).toEqual([
-      { operation: "create_extrude", parameters: {}, reason: "" },
-    ]);
+    expect(emptyComposerParameters("delete_feature")).toEqual({});
+    expect(() => parametersFromDraft("create_sketch", {})).toThrow(/Sketch width and height are required millimetres/);
+    expect(() => parametersFromDraft("create_extrude", {})).toThrow(/Extrude depth is required millimetres/);
   });
 
   it("round-trips typed native ops and drops feature_script", () => {
@@ -102,8 +110,8 @@ describe("composer native ops", () => {
       { operation: "feature_script", parameters: { source: "opExtrude" }, reason: "escape hatch" },
       { operation: "create_fillet", parameters: { radiusMm: 2, entities: "E1, E2" }, reason: "Break edges" },
       { operation: "create_chamfer", parameters: { width: 1, entities: "E3" }, reason: "Lead-in" },
-      { operation: "create_shell", parameters: { thickness: 2, entities: "F1" }, reason: "Hollow" },
-      { operation: "create_hole", parameters: { diameterMm: 5, faceIds: "F2, F3" }, reason: "Through holes" },
+      { operation: "create_shell", parameters: { thickness: 2, faceIds: "F1" }, reason: "Hollow" },
+      { operation: "create_hole", parameters: { diameterMm: 5, faceIds: "F2, F3", bodyIds: "B1" }, reason: "Through holes" },
       {
         operation: "create_pattern",
         parameters: { features: "FHole", count: 4, spacing: 25, direction: "X" },
@@ -138,12 +146,12 @@ describe("composer native ops", () => {
       },
       {
         operation: "create_shell",
-        parameters: { thicknessMm: 2, entities: ["F1"] },
+        parameters: { thicknessMm: 2, faceIds: ["F1"] },
         reason: "Hollow",
       },
       {
         operation: "create_hole",
-        parameters: { diameterMm: 5, faceIds: ["F2", "F3"] },
+        parameters: { diameterMm: 5, faceIds: ["F2", "F3"], bodyIds: ["B1"] },
         reason: "Through holes",
       },
       {
@@ -159,12 +167,35 @@ describe("composer native ops", () => {
     ]);
   });
 
-  it("exposes an idList so humans can pick hole faces", () => {
+  it("exposes hole location and scope body id lists, not FeatureScript", () => {
     expect(COMPOSER_OP_FIELDS.create_hole).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ key: "faceIds", kind: "idList", label: "Faces" }),
+        expect.objectContaining({
+          key: "faceIds",
+          kind: "idList",
+          label: "Locations",
+          help: expect.stringMatching(/location|vertex|face ids Onshape already listed/i),
+        }),
+        expect.objectContaining({
+          key: "bodyIds",
+          kind: "idList",
+          label: "Bodies (scope)",
+          help: expect.stringMatching(/scope body ids/i),
+        }),
       ]),
     );
+    expect(COMPOSER_OP_FIELDS.create_hole.some((field) => field.key === "source")).toBe(false);
+    expect(COMPOSER_OP_FIELDS.create_shell).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: "faceIds", kind: "idList", label: "Faces" })]),
+    );
+    expect(COMPOSER_OP_FIELDS.create_shell.some((field) => field.key === "entities")).toBe(false);
+    expect(
+      parametersFromDraft("create_hole", { diameterMm: "5", faceIds: "F2, F3", bodyIds: "B1" }),
+    ).toEqual({
+      diameterMm: 5,
+      faceIds: ["F2", "F3"],
+      bodyIds: ["B1"],
+    });
   });
 
   it("exposes typed pattern and mirror fields without FeatureScript", () => {
@@ -262,6 +293,82 @@ describe("composer native ops", () => {
         variableStudioElementId: "DEMO",
       }),
     ).toThrow(/DEMO Variable Studio/i);
+  });
+
+  it("exposes delete_feature on Onshape only and refuses DEMO feature ids", () => {
+    expect(describeComposerOp("delete_feature")).toBe("Delete feature");
+    expect(COMPOSER_OP_FIELDS.delete_feature).toEqual([
+      expect.objectContaining({
+        key: "featureId",
+        kind: "text",
+        label: "Feature ID",
+        help: "Feature id from the Vantage feature tree. Never invent DEMO.",
+      }),
+    ]);
+    expect(COMPOSER_OP_FIELDS.delete_feature.some((field) => field.key === "source")).toBe(false);
+    expect(JSON.stringify(COMPOSER_OP_FIELDS.delete_feature)).not.toMatch(/featurescript|source/i);
+    expect(parseComposerOps([{ operation: "delete_feature", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "delete_feature", parameters: {}, reason: "" },
+    ]);
+    expect(parametersFromDraft("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: "FFillet" });
+    expect(
+      parseComposerOps([{ operation: "delete_feature", parameters: { featureId: "FFillet" } }]),
+    ).toEqual([
+      { id: "step-1", operation: "delete_feature", parameters: { featureId: "FFillet" }, reason: "" },
+    ]);
+    expect(() => parseComposerOps([{ operation: "delete_feature", parameters: { featureId: "DEMO" } }])).toThrow(
+      /DEMO feature id/i,
+    );
+    expect(() => parseComposerOps([{ operation: "delete_feature", parameters: { featureId: "demoCut" } }])).toThrow(
+      /DEMO feature id/i,
+    );
+    expect(() => parametersFromDraft("delete_feature", { featureId: "DEMO" })).toThrow(/DEMO feature id/i);
+    expect(() => parametersFromDraft("delete_feature", { featureId: "demo-1" })).toThrow(/DEMO feature id/i);
+  });
+
+  it("requires millimetres on draft params and does not invent them", () => {
+    expect(() => requireComposerDimensions("create_sketch", {})).toThrow(
+      /Sketch width and height are required millimetres/,
+    );
+    expect(() => requireComposerDimensions("create_sketch", { widthMm: 80 })).toThrow(
+      /Sketch width and height are required millimetres/,
+    );
+    expect(() => requireComposerDimensions("create_extrude", {})).toThrow(/Extrude depth is required millimetres/);
+    expect(() => requireComposerDimensions("create_fillet", {})).toThrow(/Fillet radius is required millimetres/);
+    expect(() => requireComposerDimensions("create_chamfer", {})).toThrow(/Chamfer width is required millimetres/);
+    expect(() => requireComposerDimensions("create_shell", {})).toThrow(/Shell thickness is required millimetres/);
+    expect(() => requireComposerDimensions("create_hole", {})).toThrow(/Hole diameter is required millimetres/);
+    expect(() => parametersFromDraft("create_fillet", {})).toThrow(/Fillet radius is required millimetres/);
+    expect(() => parametersFromDraft("create_chamfer", {})).toThrow(/Chamfer width is required millimetres/);
+    expect(() => parametersFromDraft("create_shell", {})).toThrow(/Shell thickness is required millimetres/);
+    expect(() => parametersFromDraft("create_hole", {})).toThrow(/Hole diameter is required millimetres/);
+    expect(() => parametersFromDraft("create_sketch", { widthMm: "80" })).toThrow(
+      /Sketch width and height are required millimetres/,
+    );
+    expect(parametersFromDraft("create_sketch", { widthMm: "80", heightMm: "40" })).toEqual({
+      widthMm: 80,
+      heightMm: 40,
+    });
+    expect(parametersFromDraft("create_extrude", { depthMm: "6" })).toEqual({ depthMm: 6 });
+    expect(parametersFromDraft("create_fillet", { radiusMm: "2", entities: "E1" })).toEqual({
+      radiusMm: 2,
+      entities: ["E1"],
+    });
+    expect(parametersFromDraft("create_chamfer", { widthMm: "1", entities: "E3" })).toEqual({
+      widthMm: 1,
+      entities: ["E3"],
+    });
+    expect(parametersFromDraft("create_shell", { thicknessMm: "2", faceIds: "F1" })).toEqual({
+      thicknessMm: 2,
+      faceIds: ["F1"],
+    });
+    expect(requireComposerDimensions("create_hole", { diameterMm: 5 })).toEqual({ diameterMm: 5 });
+  });
+
+  it("maps stored shell entities to faceIds", () => {
+    expect(parseComposerOps([{ operation: "create_shell", parameters: { thickness: 2, entities: "F1" } }])).toEqual([
+      { id: "step-1", operation: "create_shell", parameters: { thicknessMm: 2, faceIds: ["F1"] }, reason: "" },
+    ]);
   });
 
   it("edits and deletes an existing planned step", () => {

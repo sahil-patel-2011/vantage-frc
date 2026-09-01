@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   fmtTimestamp,
   NOTE_TAGS,
@@ -372,7 +373,8 @@ export default function VideoClient() {
           <p>
             Re-watch match footage for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — timestamped notes seek the player when
-            clicked.
+            clicked. This desk plays YouTube only. Hosted photos and clips live in the{" "}
+            <a href={withOrgHref("/media-library", orgId)}>Media library</a>.
           </p>
         </div>
       </header>
@@ -451,6 +453,7 @@ export default function VideoClient() {
             <strong>No reviews yet</strong>
             <p className="app-muted">
               Paste a YouTube match link (TBA match pages link them) and start dropping timestamped notes.
+              Hosted MP4/WebM uploads belong in the Media library, not here.
             </p>
           </div>
         )}

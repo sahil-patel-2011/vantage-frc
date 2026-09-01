@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseExplainFeatures, updateFeaturePayload } from "./feature-tree";
+import { deleteFeaturePayload, parseExplainFeatures, updateFeaturePayload } from "./feature-tree";
 
 const EXTRUDE_ID = "FWx/real-extrude-1";
 const SKETCH_ID = "FWx/real-sketch-1";
@@ -157,5 +157,28 @@ describe("updateFeaturePayload", () => {
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, radiusMm: 0 })).toThrow(/millimetres/i);
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, diameterMm: -1 })).toThrow(/millimetres/i);
     expect(() => updateFeaturePayload({ featureId: EXTRUDE_ID, thicknessMm: "abc" })).toThrow(/millimetres/i);
+  });
+});
+
+describe("deleteFeaturePayload", () => {
+  it("builds a delete-onshape-feature body from a real featureId", () => {
+    expect(deleteFeaturePayload(EXTRUDE_ID)).toEqual({
+      action: "delete-onshape-feature",
+      featureId: EXTRUDE_ID,
+    });
+    expect(deleteFeaturePayload(`  ${SKETCH_ID}  `)).toEqual({
+      action: "delete-onshape-feature",
+      featureId: SKETCH_ID,
+    });
+  });
+
+  it("refuses DEMO and blank ids without inventing a replacement", () => {
+    expect(() => deleteFeaturePayload("")).toThrow(/featureId Onshape returned/i);
+    expect(() => deleteFeaturePayload("   ")).toThrow(/featureId Onshape returned/i);
+    expect(() => deleteFeaturePayload(undefined)).toThrow(/featureId Onshape returned/i);
+    expect(() => deleteFeaturePayload(null)).toThrow(/featureId Onshape returned/i);
+    expect(() => deleteFeaturePayload("DEMO")).toThrow(/DEMO feature id/i);
+    expect(() => deleteFeaturePayload("demo-plate")).toThrow(/DEMO feature id/i);
+    expect(() => deleteFeaturePayload(12)).toThrow(/featureId Onshape returned/i);
   });
 });

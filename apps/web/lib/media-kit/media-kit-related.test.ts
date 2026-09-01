@@ -14,8 +14,9 @@ describe("mediaKitRelatedLinks", () => {
     const links = mediaKitRelatedLinks("org-1", {
       include: [...MEDIA_KIT_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["media", "sponsor-suite", "outreach-calendar", "impact"]);
+    expect(links.map((l) => l.id)).toEqual(["media", "media-library", "sponsor-suite", "outreach-calendar", "impact"]);
     expect(links.find((l) => l.id === "media")?.href).toBe("/media?orgId=org-1");
+    expect(links.find((l) => l.id === "media-library")?.href).toBe("/media-library?orgId=org-1");
     expect(links.find((l) => l.id === "sponsor-suite")?.href).toBe(
       "/business?tab=sponsor-suite&orgId=org-1",
     );

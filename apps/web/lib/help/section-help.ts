@@ -1515,7 +1515,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     hub: "media",
     tab: "media-library",
     title: "Media library",
-    what: "The team's photo and video shelf: albums, client-generated thumbnails, and honest in-database size caps (8 MB photos after downscale, 100 MB videos).",
+    what: "The team's photo and video shelf: albums, client-generated thumbnails, and honest size caps (8 MB photos after downscale, 4 MiB hosted-cloud videos; 100 MB only on a paired storage node).",
     why: "Build-season photos and event clips end up findable for the media kit, awards, and sponsors instead of scattered across phones.",
     when: "All season — upload the week the photos are taken.",
     moments: ["preseason", "build", "pre-comp", "comp-day", "after"],

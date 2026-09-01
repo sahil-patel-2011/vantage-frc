@@ -107,10 +107,15 @@ export function parseListedEntities(payload: unknown): ListedOnshapeEntities {
   };
 }
 
+export type PickableEntityExtras = {
+  features?: ReadonlyArray<{ featureId?: string; id?: string }>;
+};
+
 /** Ids a human can pick for an idList field. `views` is not geometry — stays empty. */
 export function pickableEntityIds(
   fieldKey: string,
   entities: ListedOnshapeEntities | null | undefined,
+  extras?: PickableEntityExtras,
 ): string[] {
   const safe = entities ?? EMPTY_LISTED_ENTITIES;
   const key = String(fieldKey ?? "").trim();
@@ -118,6 +123,9 @@ export function pickableEntityIds(
   if (/face/i.test(key)) return idsOf(safe.faces);
   if (/body/i.test(key)) return idsOf(safe.bodies);
   if (/edge/i.test(key) || key === "entities") return idsOf(safe.edges);
+  if (/featureIds|featureId/i.test(key)) return featureIdsFromExtras(extras);
+  if (/axis/i.test(key)) return idsOf(safe.faces.filter((face) => /cylinder|circle/i.test(face.surfaceType)));
+  if (/plane/i.test(key)) return idsOf(safe.faces.filter((face) => /plane/i.test(face.surfaceType)));
   return [];
 }
 
@@ -212,4 +220,17 @@ function readEdges(value: unknown): ListedEntityEdge[] {
 
 function idsOf(rows: ReadonlyArray<{ id: string }>): string[] {
   return rows.map((row) => row.id).filter(Boolean);
+}
+
+function featureIdsFromExtras(extras?: PickableEntityExtras): string[] {
+  const rows = extras?.features ?? [];
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const id = rejectDemoEntityId(String(row?.featureId ?? row?.id ?? ""));
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
 }

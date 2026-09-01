@@ -14,6 +14,7 @@ export const COMPOSER_NATIVE_OPS = [
   "add_assembly_instance",
   "create_mate",
   "set_variable",
+  "delete_feature",
   "verify_topology",
   "export_step",
 ] as const;
@@ -85,6 +86,7 @@ const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   add_assembly_instance: [],
   create_mate: [],
   set_variable: [],
+  delete_feature: [],
   verify_topology: [],
   export_step: [],
 };
@@ -103,6 +105,7 @@ const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   add_assembly_instance: [],
   create_mate: [],
   set_variable: [],
+  delete_feature: [],
   verify_topology: [],
   export_step: [],
 };
@@ -130,9 +133,10 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   verify_topology: [],
   export_step: [],
   set_variable: [],
+  delete_feature: [],
 };
 
-const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "views", "featureIds", "axisIds", "planeIds"]);
+const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "bodyIds", "views", "featureIds", "axisIds", "planeIds"]);
 
 const SKETCH_PLANES = [
   { value: "Top", label: "Top" },
@@ -196,14 +200,25 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
   ],
   create_shell: [
     { key: "thicknessMm", label: "Thickness", kind: "mm", help: "Wall thickness in millimetres." },
-    { key: "entities", label: "Faces", kind: "idList", help: "Comma-separated face IDs to open. Leave blank to keep a closed shell." },
+    { key: "faceIds", label: "Faces", kind: "idList", help: "Comma-separated face IDs to open. Leave blank to keep a closed shell." },
     { key: "name", label: "Name", kind: "text" },
   ],
   create_hole: [
     { key: "diameterMm", label: "Diameter", kind: "mm", help: "Hole diameter in millimetres." },
     { key: "endStyle", label: "End", kind: "select", options: HOLE_ENDS },
     { key: "depthMm", label: "Depth", kind: "mm", help: "Required for blind holes. Leave blank for through." },
-    { key: "faceIds", label: "Faces", kind: "idList", help: "Comma-separated face IDs from describe / list entities." },
+    {
+      key: "faceIds",
+      label: "Locations",
+      kind: "idList",
+      help: "Location, vertex, or face ids Onshape already listed — not FeatureScript.",
+    },
+    {
+      key: "bodyIds",
+      label: "Bodies (scope)",
+      kind: "idList",
+      help: "Onshape hole needs scope body ids.",
+    },
     { key: "pointSketchFeatureId", label: "Point sketch feature ID", kind: "text" },
     { key: "targetFeatureId", label: "Target solid feature ID", kind: "text" },
     { key: "name", label: "Name", kind: "text" },
@@ -283,6 +298,14 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
       help: "Onshape Variable Studio tab. POST writes here — not FeatureScript, not a guessed Part Studio.",
     },
   ],
+  delete_feature: [
+    {
+      key: "featureId",
+      label: "Feature ID",
+      kind: "text",
+      help: "Feature id from the Vantage feature tree. Never invent DEMO.",
+    },
+  ],
   verify_topology: [
     { key: "views", label: "Views", kind: "idList", help: "Comma-separated view names, e.g. iso, top, front." },
     { key: "explainForStudents", label: "Explain for students", kind: "checkbox" },
@@ -333,6 +356,8 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Mate";
     case "set_variable":
       return "Variable";
+    case "delete_feature":
+      return "Delete feature";
     case "verify_topology":
       return "Verify topology";
     case "export_step":
@@ -458,6 +483,47 @@ export function parsePositiveCount(value: unknown, label: string): number | unde
   return parsed;
 }
 
+export function requireComposerDimensions(
+  operation: ComposerNativeOp,
+  parameters: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (operation) {
+    case "create_sketch":
+      if (asFiniteNumber(parameters.widthMm) == null || asFiniteNumber(parameters.heightMm) == null) {
+        throw new Error("Sketch width and height are required millimetres.");
+      }
+      break;
+    case "create_extrude":
+      if (asFiniteNumber(parameters.depthMm) == null) {
+        throw new Error("Extrude depth is required millimetres.");
+      }
+      break;
+    case "create_fillet":
+      if (asFiniteNumber(parameters.radiusMm) == null) {
+        throw new Error("Fillet radius is required millimetres.");
+      }
+      break;
+    case "create_chamfer":
+      if (asFiniteNumber(parameters.widthMm) == null) {
+        throw new Error("Chamfer width is required millimetres.");
+      }
+      break;
+    case "create_shell":
+      if (asFiniteNumber(parameters.thicknessMm) == null) {
+        throw new Error("Shell thickness is required millimetres.");
+      }
+      break;
+    case "create_hole":
+      if (asFiniteNumber(parameters.diameterMm) == null) {
+        throw new Error("Hole diameter is required millimetres.");
+      }
+      break;
+    default:
+      break;
+  }
+  return parameters;
+}
+
 export function parametersFromDraft(
   operation: ComposerNativeOp,
   draft: Record<string, string | boolean>,
@@ -500,9 +566,14 @@ export function parametersFromDraft(
       if (parsed) parameters[field.key] = parsed;
       continue;
     }
+    if (operation === "delete_feature" && field.key === "featureId") {
+      const parsed = refuseDemoFeatureId(text);
+      if (parsed) parameters[field.key] = parsed;
+      continue;
+    }
     if (text.trim()) parameters[field.key] = text.trim();
   }
-  return parameters;
+  return requireComposerDimensions(operation, parameters);
 }
 
 export function draftFromParameters(operation: ComposerNativeOp, parameters: Record<string, unknown>): Record<string, string | boolean> {
@@ -575,6 +646,14 @@ function normalizeParameters(operation: ComposerNativeOp, raw: unknown): Record<
     const canonical = POSITIVE_MM_ALIASES[key] ?? COUNT_ALIASES[key] ?? LIST_ALIASES[key] ?? key;
     if (aliased[canonical] === undefined) aliased[canonical] = value;
   }
+  if (operation === "create_shell") {
+    if (aliased.faceIds === undefined) {
+      if (aliased.entities !== undefined) aliased.faceIds = aliased.entities;
+      else if (aliased.faces !== undefined) aliased.faceIds = aliased.faces;
+    }
+    delete aliased.entities;
+    delete aliased.faces;
+  }
   const parameters: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(aliased)) {
     if (LIST_KEYS.has(key)) {
@@ -604,6 +683,11 @@ function normalizeParameters(operation: ComposerNativeOp, raw: unknown): Record<
     }
     if (operation === "set_variable" && key === "variableStudioElementId") {
       const parsed = refuseDemoVariableStudioId(value);
+      if (parsed) parameters[key] = parsed;
+      continue;
+    }
+    if (operation === "delete_feature" && key === "featureId") {
+      const parsed = refuseDemoFeatureId(value);
       if (parsed) parameters[key] = parsed;
       continue;
     }
@@ -672,6 +756,16 @@ function refuseDemoVariableStudioId(value: unknown): string | undefined {
   if (!text) return undefined;
   if (DEMO_VARIABLE.test(text)) {
     throw new Error("Refusing DEMO Variable Studio id. Use an element Onshape listed.");
+  }
+  return text;
+}
+
+function refuseDemoFeatureId(value: unknown): string | undefined {
+  if (isEmptyMm(value)) return undefined;
+  const text = String(value).trim();
+  if (!text) return undefined;
+  if (DEMO_VARIABLE.test(text)) {
+    throw new Error("Refusing DEMO feature id. Pass a real feature id from the Vantage feature tree.");
   }
   return text;
 }

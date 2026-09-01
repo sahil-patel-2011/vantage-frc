@@ -532,6 +532,7 @@ export default function CadWorkspace({
   const [listedEntities, setListedEntities] = useState<ListedOnshapeEntities>(EMPTY_LISTED_ENTITIES);
   const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
   const [listedVariables, setListedVariables] = useState<ListedOnshapeVariables>(EMPTY_LISTED_VARIABLES);
+  const [geometryError, setGeometryError] = useState("");
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -606,12 +607,15 @@ export default function CadWorkspace({
       setListedEntities(EMPTY_LISTED_ENTITIES);
       setExplainedFeatures([]);
       setListedVariables(EMPTY_LISTED_VARIABLES);
+      setGeometryError("");
       return;
     }
     try {
       setListedEntities(await listOnshapeEntities({ orgId, documentRef }));
+      setGeometryError("");
     } catch {
       setListedEntities(EMPTY_LISTED_ENTITIES);
+      setGeometryError("Could not list Onshape entities. Bind a Part Studio and retry.");
     }
     try {
       setListedVariables(await listOnshapeVariables({ orgId, documentRef }));
@@ -1139,10 +1143,22 @@ export default function CadWorkspace({
         />
       </div>
 
+      {geometryError ? (
+        <p className="app-muted" role="alert">
+          {geometryError}
+        </p>
+      ) : null}
+      <button type="button" className="app-button" onClick={() => void refreshBoundGeometry()}>
+        Refresh geometry
+      </button>
+      <p className="app-muted">
+        Rollback/checkpoint is not available as a native Onshape action in Vantage (no FeatureScript fallback).
+      </p>
       <CadOperationComposer
         platform="onshape"
-        disabled={!onshapeOk || busy !== null}
+        disabled={!onshapeOk || !boundOk || busy !== null}
         entities={listedEntities}
+        features={explainedFeatures}
         onAppend={async (payload) => {
           const executed = await executeComposerOp({
             orgId,
@@ -1183,7 +1199,25 @@ export default function CadWorkspace({
       {completeDocumentRef(state?.bound) ? (
         <CadFeatureTree
           features={explainedFeatures}
-          disabled={!onshapeOk || busy !== null}
+          disabled={!onshapeOk || !boundOk || busy !== null}
+          onDelete={async (payload) => {
+            try {
+              await executeComposerOp({
+                orgId,
+                payload: {
+                  operation: "delete_feature",
+                  parameters: { featureId: payload.featureId },
+                  reason: "Delete native feature",
+                },
+                documentRef: state?.bound ?? null,
+              });
+              void refreshBoundGeometry();
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Could not delete feature";
+              setError(message);
+              throw err;
+            }
+          }}
           onUpdate={async (payload) => {
             const documentRef = completeDocumentRef(state?.bound ?? null);
             if (!documentRef) {
@@ -1217,7 +1251,7 @@ export default function CadWorkspace({
         <CadVariableTable
           variables={listedVariables.variables}
           variableStudioElementId={listedVariables.variableStudioElementId}
-          disabled={!onshapeOk || busy !== null}
+          disabled={!onshapeOk || !boundOk || busy !== null}
           onSet={async (payload) => {
             await executeComposerOp({
               orgId,
