@@ -1,5 +1,6 @@
 import { preferredTierForFeature } from "./byok-model-routing";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
+import { isLocalOrLanOrigin } from "./model-tier";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
@@ -47,14 +48,41 @@ export type FreeRelayConfig = {
   providerLabel: string;
 };
 
+/**
+ * Why a config can be present in env yet refused. Surfaced at grant time so an
+ * operator sees the reason then, rather than as a team's chat breaking later.
+ */
+export type FreeRelayRefusal = "unset" | "public_url_without_key";
+
+export function freeRelayRefusal(env: NodeJS.ProcessEnv = process.env): FreeRelayRefusal | null {
+  const baseUrl = env.FREE_RELAY_BASE_URL?.trim().replace(/\/+$/, "");
+  if (!baseUrl) return "unset";
+  if (!env.FREE_RELAY_API_KEY?.trim() && !isLocalOrLanOrigin(baseUrl)) {
+    return "public_url_without_key";
+  }
+  return null;
+}
+
+export function describeFreeRelayRefusal(refusal: FreeRelayRefusal): string {
+  if (refusal === "unset") {
+    return "This deployment has no free relay configured (FREE_RELAY_BASE_URL is unset).";
+  }
+  return "The free relay base URL is not loopback or LAN, so FREE_RELAY_API_KEY is required — an internet-reachable relay without a key would serve free AI on the platform's own upstream token to anyone who finds the URL.";
+}
+
 export function readFreeRelayConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): FreeRelayConfig | null {
   const baseUrl = env.FREE_RELAY_BASE_URL?.trim().replace(/\/+$/, "");
   if (!baseUrl) return null;
+  const apiKey = env.FREE_RELAY_API_KEY?.trim();
+  // A bare loopback/LAN relay may go unauthenticated — nothing off-box can reach it.
+  // Anything internet-reachable (a tunnel hostname, a public IP) must carry a key, or
+  // the endpoint is an open pass-through to the platform's upstream account.
+  if (!apiKey && !isLocalOrLanOrigin(baseUrl)) return null;
   return {
     baseUrl,
-    apiKey: env.FREE_RELAY_API_KEY?.trim() || "local-relay",
+    apiKey: apiKey || "local-relay",
     model: env.FREE_RELAY_MODEL?.trim() || OPENROUTER_FREE_MODEL,
     providerLabel: env.FREE_RELAY_PROVIDER?.trim() || "free-relay",
   };

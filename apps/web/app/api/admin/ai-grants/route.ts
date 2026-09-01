@@ -11,7 +11,7 @@ import {
   isRequestKind,
   type OrgAiAccessKind,
 } from "@vantage/billing";
-import { readFreeRelayConfig } from "@vantage/agent";
+import { describeFreeRelayRefusal, freeRelayRefusal } from "@vantage/agent";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -148,11 +148,16 @@ export async function POST(request: Request) {
             throw new Error(`accessKind must be one of ${ACCESS_KINDS.join(", ")}`);
           }
           // Catch the operator mistake here rather than at request time: a relay grant
-          // on a deployment with no relay would just look like a broken team.
-          if (accessKind === "platform_relay" && !readFreeRelayConfig()) {
-            throw new Error(
-              "No platform relay is configured on this deployment. Set FREE_RELAY_BASE_URL (and FREE_RELAY_MODEL) before granting relay access.",
-            );
+          // on a deployment with no usable relay would just look like a broken team.
+          // A base URL that is present but refused (internet-reachable with no key)
+          // reports its own reason so the fix is obvious.
+          if (accessKind === "platform_relay") {
+            const refusal = freeRelayRefusal();
+            if (refusal) {
+              throw new Error(
+                `${describeFreeRelayRefusal(refusal)} Set FREE_RELAY_BASE_URL, FREE_RELAY_API_KEY, and FREE_RELAY_MODEL before granting relay access.`,
+              );
+            }
           }
           const days = Math.floor(Number(body.days));
           if (!Number.isFinite(days) || days <= 0 || days > MAX_WINDOW_DAYS) {

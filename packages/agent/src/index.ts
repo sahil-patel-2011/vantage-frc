@@ -259,6 +259,7 @@ export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
 export * from "./org-ai-access";
+export * from "./relay-failover-adapter";
 export * from "./resolve-chat-adapter";
 export * from "./resolve-stt-endpoint";
 export * from "./model-tier";

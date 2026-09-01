@@ -3,6 +3,8 @@ import {
   HOSTED_ANTHROPIC_OPUS,
   HOSTED_ANTHROPIC_SONNET,
   OPENROUTER_FREE_MODEL,
+  describeFreeRelayRefusal,
+  freeRelayRefusal,
   readFreeRelayConfig,
   tryCreateFreeRelayAdapter,
   tryCreateGroqFreeAdapter,
@@ -41,6 +43,28 @@ describe("hosted platform keys", () => {
       providerLabel: "free-relay",
     });
     expect(tryCreateFreeRelayAdapter({ env })?.provider).toBe("openai-compatible");
+  });
+
+  it("refuses an internet-reachable relay that carries no key", () => {
+    // A tunnel hostname with no key is an open pass-through to the platform's own
+    // upstream account for anyone who finds the URL.
+    const exposed = { FREE_RELAY_BASE_URL: "https://relay.example.org/v1" };
+    expect(readFreeRelayConfig(exposed)).toBeNull();
+    expect(tryCreateFreeRelayAdapter({ env: exposed })).toBeNull();
+    expect(freeRelayRefusal(exposed)).toBe("public_url_without_key");
+    expect(describeFreeRelayRefusal("public_url_without_key")).toMatch(/FREE_RELAY_API_KEY/);
+
+    // Same URL with a key is accepted.
+    expect(
+      readFreeRelayConfig({ ...exposed, FREE_RELAY_API_KEY: "relay-secret" }),
+    ).toMatchObject({ baseUrl: "https://relay.example.org/v1", apiKey: "relay-secret" });
+  });
+
+  it("still allows a keyless relay on loopback or the LAN, where nothing off-box can reach it", () => {
+    expect(freeRelayRefusal({ FREE_RELAY_BASE_URL: "http://127.0.0.1:3457/v1" })).toBeNull();
+    expect(freeRelayRefusal({ FREE_RELAY_BASE_URL: "http://pi.local:8080/v1" })).toBeNull();
+    expect(freeRelayRefusal({ FREE_RELAY_BASE_URL: "http://192.168.1.42:3457/v1" })).toBeNull();
+    expect(freeRelayRefusal({})).toBe("unset");
   });
 
   it("routes paid hosted Anthropic to Sonnet, Opus for CAD/code", () => {

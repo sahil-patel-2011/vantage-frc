@@ -25,11 +25,11 @@ import {
   OPENROUTER_BASE_URL,
   openRouterFreeModel,
   openRouterRequestHeaders,
-  tryCreateFreeRelayAdapter,
   tryCreateHostedAnthropicAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 import { orgHasAiAccessGrant } from "./org-ai-access";
+import { tryCreatePlatformRelayAdapter } from "./relay-failover-adapter";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
 import {
@@ -1083,7 +1083,11 @@ export async function resolveOrgChatAdapterWithProvenance(
   // The adapter is built from env FIRST so deployments with no relay configured pay no
   // database round-trip on this hot path. Granting relay access on a deployment that has
   // no relay is refused up front by the /api/admin/ai-grants route.
-  const platformRelay = tryCreateFreeRelayAdapter({
+  //
+  // The relay is a self-hosted box on a home connection drawing on a small daily pool,
+  // so it is wrapped in a failover chain: unreachable or spent falls through to the
+  // platform free pools rather than failing a team's request.
+  const platformRelay = tryCreatePlatformRelayAdapter({
     promptCachingEnabled: input.promptCachingEnabled,
     fetchImpl: input.fetchImpl,
     capability: input.feature,
