@@ -37,7 +37,7 @@ function useHubEmbed(): "team" | "build" | null {
 }
 
 function FmeaRelated({ orgId }: { orgId: string }) {
-  const primary = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype"] });
+  const primary = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype", "inventory"] });
   return (
     <div className="fmea-related">
       <nav className="product-hub-related fmea-hub-related" aria-label="Related reliability tools">
@@ -480,6 +480,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
       fiveWhys: "",
       fix: "",
       inspectionItemId: "",
+      inventoryItemId: "",
     }),
     [],
   );
@@ -510,6 +511,7 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             fiveWhys: form.fiveWhys || null,
             fix: form.fix || null,
             inspectionItemId: form.inspectionItemId || null,
+            inventoryItemId: form.inventoryItemId || null,
           });
           setForm(empty);
         }}
@@ -647,6 +649,22 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               </select>
             </FormRow>
           ) : null}
+          {(view.inventoryItems?.length ?? 0) > 0 ? (
+            <FormRow label="Spare / inventory item">
+              <select
+                value={form.inventoryItemId}
+                onChange={(e) => setForm({ ...form, inventoryItemId: e.target.value })}
+              >
+                <option value="">None — match by subsystem name</option>
+                {view.inventoryItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                    {item.subsystem ? ` · ${item.subsystem}` : ""}
+                  </option>
+                ))}
+              </select>
+            </FormRow>
+          ) : null}
         </FormGrid>
         <div className="fmea-form-actions">
           <button type="submit" className="app-button" disabled={busy}>
@@ -725,6 +743,7 @@ function FailureCard({
           <div className="fmea-risk-meta">
             <span className={`fmea-badge ${evaluation.level}`}>{fmeaLevelLabel(evaluation.level)}</span>
             <span>{f.subsystemName}</span>
+            {f.inventoryItemName ? <span>{f.inventoryItemName}</span> : null}
             <span>{fmeaContextLabel(f.context)}</span>
             {evaluation.needsFix ? <span className="fmea-badge needs-fix">Needs fix</span> : null}
           </div>
@@ -791,6 +810,7 @@ function FailureCard({
         <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge</a>
         <a href={hubHref("/build", "cad", orgId)}>Review in CAD</a>
         <a href={hubHref("/build", "prototype", orgId)}>Prototype the fix</a>
+        <a href={withOrgHref("/inventory", orgId)}>Open Inventory</a>
       </div>
     </article>
   );

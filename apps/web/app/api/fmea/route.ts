@@ -124,6 +124,7 @@ export async function POST(request: Request) {
             fix: trimmedOrNull(body.fix),
             status: oneOf<FmeaStatus>(FMEA_STATUSES, body.status) ?? "open",
             inspectionItemId: uuidOrNull(body.inspectionItemId),
+            inventoryItemId: uuidOrNull(body.inventoryItemId),
             eventKey: trimmedOrNull(body.eventKey, 64),
             matchKey: trimmedOrNull(body.matchKey, 64),
             robotLabel: trimmedOrNull(body.robotLabel, 64) ?? "competition",
@@ -156,6 +157,8 @@ export async function POST(request: Request) {
             status: status ?? undefined,
             inspectionItemId:
               body.inspectionItemId === undefined ? undefined : uuidOrNull(body.inspectionItemId),
+            inventoryItemId:
+              body.inventoryItemId === undefined ? undefined : uuidOrNull(body.inventoryItemId),
           });
           break;
         }

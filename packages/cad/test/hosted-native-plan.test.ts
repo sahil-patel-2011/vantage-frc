@@ -8,6 +8,12 @@ const BRIEF = {
 };
 
 describe("hosted native CAD plans", () => {
+  it("allows native create_shell and create_chamfer on the hosted allowlist", () => {
+    expect(HOSTED_NATIVE).toContain("create_shell");
+    expect(HOSTED_NATIVE).toContain("create_chamfer");
+    expect(HOSTED_NATIVE).not.toContain("feature_script");
+  });
+
   it("never emits feature_script from the default hosted plan", () => {
     const variants = [
       buildDefaultCadPlan(BRIEF),
