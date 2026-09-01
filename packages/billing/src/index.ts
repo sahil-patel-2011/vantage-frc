@@ -113,6 +113,28 @@ export {
   type SponsoredPromoStatus,
 } from "./sponsored-promo";
 
+export {
+  DEFAULT_REQUEST_CREDIT_WEIGHTS,
+  REQUEST_KINDS,
+  RequestCreditsExhaustedError,
+  chargeRequestCredits,
+  creditsForRequest,
+  grantRequestCredits,
+  hasOrgAiAccess,
+  isRequestKind,
+  loadOrgAiAccessGrants,
+  loadRequestCreditBalance,
+  loadRequestCreditWeights,
+  orgUsesRequestCredits,
+  requestKindForFeature,
+  resolveRequestCreditBalance,
+  type CreditLedgerRow,
+  type OrgAiAccessGrant,
+  type OrgAiAccessKind,
+  type RequestCreditBalance,
+  type RequestKind,
+} from "./request-credits";
+
 import {
   UsageHardCutoffError,
   classifyMeteredAiError,

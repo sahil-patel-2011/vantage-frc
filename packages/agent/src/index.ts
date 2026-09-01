@@ -258,6 +258,7 @@ export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
+export * from "./org-ai-access";
 export * from "./resolve-chat-adapter";
 export * from "./resolve-stt-endpoint";
 export * from "./model-tier";

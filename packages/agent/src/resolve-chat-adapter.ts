@@ -25,9 +25,11 @@ import {
   OPENROUTER_BASE_URL,
   openRouterFreeModel,
   openRouterRequestHeaders,
+  tryCreateFreeRelayAdapter,
   tryCreateHostedAnthropicAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
+import { orgHasAiAccessGrant } from "./org-ai-access";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
 import {
@@ -54,7 +56,9 @@ export type ResolvedModelSource =
   | "sponsored"
   | "local-connector"
   | "local-fallback"
-  | "subscription-bridge";
+  | "subscription-bridge"
+  /** Platform-owned free relay, opened for this org by a time-boxed admin grant. */
+  | "platform-relay";
 
 /**
  * Provenance of a resolved chat adapter. Additive metadata alongside the
@@ -1068,6 +1072,24 @@ export async function resolveOrgChatAdapterWithProvenance(
       feature: input.feature,
     });
     if (hostedAnthropic) return resolved(hostedAnthropic, "hosted");
+  }
+
+  // A platform admin can open a time-boxed window onto the platform's own free relay
+  // (FREE_RELAY_BASE_URL — a Freebuff/OpenCode-style OpenAI-compatible proxy) for one
+  // team. Checked before the generic free pools because it is an explicit per-team
+  // operator decision, and after everything above because the team's own keys always
+  // get first refusal.
+  //
+  // The adapter is built from env FIRST so deployments with no relay configured pay no
+  // database round-trip on this hot path. Granting relay access on a deployment that has
+  // no relay is refused up front by the /api/admin/ai-grants route.
+  const platformRelay = tryCreateFreeRelayAdapter({
+    promptCachingEnabled: input.promptCachingEnabled,
+    fetchImpl: input.fetchImpl,
+    capability: input.feature,
+  });
+  if (platformRelay && (await orgHasAiAccessGrant(client, input.orgId, "platform_relay"))) {
+    return resolved(platformRelay, "platform-relay");
   }
 
   if (tier === "free") {

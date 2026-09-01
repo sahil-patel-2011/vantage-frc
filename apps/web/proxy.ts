@@ -229,6 +229,10 @@ export async function proxy(request: NextRequest) {
       pathname === "/onboarding" ||
       pathname === "/invite" ||
       pathname === "/claim" ||
+      // Join-by-code is the other way in for a user who has no membership yet;
+      // redeeming inserts one, which flips workspaceApproved on the next request.
+      pathname === "/join" ||
+      pathname === "/api/join" ||
       pathname.startsWith("/api/onboarding") ||
       pathname.startsWith("/api/invites") ||
       pathname.startsWith("/api/organizations/claim") ||

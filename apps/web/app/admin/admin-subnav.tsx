@@ -15,6 +15,7 @@ const links = [
   { href: "/admin/integrations", label: "Integrations" },
   { href: "/admin/models", label: "Models" },
   { href: "/admin/sponsored", label: "Sponsored AI" },
+  { href: "/admin/ai-grants", label: "AI credits" },
   { href: "/admin/support", label: "Support" },
   { href: "/admin/audit", label: "Audit log" },
 ] as const;

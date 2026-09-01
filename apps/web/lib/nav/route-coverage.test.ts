@@ -35,6 +35,7 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   ["/onboarding", "gated first-run flow, reached by redirect"],
   ["/start", "gated first-run flow"],
   ["/claim", "public self-serve org claim"],
+  ["/join", "self-signup by team join code, reached from a code an owner shares"],
   ["/invite", "reached from an emailed token link"],
   ["/unsubscribe", "reached from an email footer"],
   ["/offline", "service-worker fallback page"],

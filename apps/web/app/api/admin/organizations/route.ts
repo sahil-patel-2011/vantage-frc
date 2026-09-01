@@ -173,3 +173,79 @@ export async function POST(request: Request) {
     return platformAdminDeniedResponse(error);
   }
 }
+
+/**
+ * Remove a team. Cascades through every org_id FK (migration 0516), so this destroys
+ * the workspace's scouting, finance, CAD, and chat history irreversibly.
+ *
+ * Two guards make a mis-click impossible: the caller must pass the team number it
+ * believes it is deleting, and it must match the stored row. The audit entry records
+ * the team's identity in `payload`, which outlives the row itself because 0516
+ * repointed admin_actions.target_org_id to ON DELETE SET NULL.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const current = await session();
+    const url = new URL(request.url);
+    const orgId = url.searchParams.get("orgId");
+    const confirmTeamNumber = Number(url.searchParams.get("confirmTeamNumber"));
+    if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
+    if (!Number.isInteger(confirmTeamNumber)) {
+      return Response.json(
+        { error: "confirmTeamNumber is required and must match the team you are deleting" },
+        { status: 400 },
+      );
+    }
+
+    const removed = await withRls({ userId: current.user.id }, async (client) => {
+      await assertPlatformAdmin(client);
+      await assertPlatformPrivilegeMfa(client, {
+        userId: current.user.id,
+        sessionId: current.session.id,
+      });
+
+      const existing = await client.query<{
+        id: string;
+        name: string;
+        slug: string;
+        teamNumber: number;
+      }>(
+        `SELECT id, name, slug, team_number AS "teamNumber"
+           FROM organizations WHERE id = $1::uuid`,
+        [orgId],
+      );
+      const org = existing.rows[0];
+      if (!org) throw new Error("That workspace does not exist");
+      if (Number(org.teamNumber) !== confirmTeamNumber) {
+        throw new Error(
+          `confirmTeamNumber ${confirmTeamNumber} does not match team ${org.teamNumber} for this workspace`,
+        );
+      }
+
+      // Audit BEFORE the delete so the row exists even if the cascade fails partway.
+      await writeAdminAction(client, {
+        actorUserId: current.user.id,
+        action: "organization.deleted",
+        targetOrgId: org.id,
+        payload: {
+          deletedOrgId: org.id,
+          teamNumber: org.teamNumber,
+          slug: org.slug,
+          name: org.name,
+        },
+      });
+      await client.query(`DELETE FROM organizations WHERE id = $1::uuid`, [orgId]);
+      return org;
+    });
+
+    return Response.json({ success: true, deleted: removed });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      /does not match|does not exist/i.test(error.message)
+    ) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    return platformAdminDeniedResponse(error);
+  }
+}
