@@ -5,23 +5,7 @@ import { resolveOwnerNames, workItemHref } from "../work-items/canonical";
 import { loadRoster } from "../work-items/service";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 
-export const TASK_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked", "done", "archived"];
-export const TASK_PRIORITIES: TaskPriority[] = ["low", "normal", "high", "critical"];
-export const SUBSYSTEM_SUGGESTIONS = [
-  "drivetrain",
-  "intake",
-  "shooter",
-  "elevator",
-  "arm",
-  "climber",
-  "electrical",
-  "pneumatics",
-  "controls",
-  "software",
-  "vision",
-  "fabrication",
-  "general",
-];
+export { SUBSYSTEM_SUGGESTIONS, TASK_PRIORITIES, TASK_STATUSES } from "./task-fields";
 
 export type TasksSetupStep = { id: string; label: string; detail: string; href: string };
 

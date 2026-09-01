@@ -174,10 +174,6 @@ function firstPlannedId(value: unknown): string {
   return "";
 }
 
-function hasPlannedId(value: unknown): boolean {
-  return Boolean(firstPlannedId(value));
-}
-
 /** Accept only a real returned id. DEMO / blank / non-strings are not ids. */
 function realReturnedId(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;

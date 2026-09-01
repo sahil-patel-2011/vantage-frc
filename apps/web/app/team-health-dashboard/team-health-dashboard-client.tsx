@@ -38,8 +38,6 @@ function tierTone(tier: TeamHealthTier | null): BadgeTone {
   return "setup";
 }
 
-type LiveView = Extract<TeamHealthDashboardView, { status: "live" }>;
-
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = teamHealthRelatedLinks(orgId, {
     include: [...TEAM_HEALTH_RELATED_INCLUDE],

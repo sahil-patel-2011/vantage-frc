@@ -8,7 +8,7 @@ import {
   type OnshapeTokenSet,
 } from "@vantage/cad";
 import { hostedOnshapeAgentAuth } from "./hosted-auth";
-import { hostedOnshapeAgentStatus } from "./onshape-setup-copy";
+import { hostedOnshapeAgentStatus } from "./onshape-setup-status";
 
 export type CadAgentOnshapeClient = {
   http: OnshapeHttp;

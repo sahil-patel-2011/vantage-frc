@@ -3,6 +3,8 @@ import {
   hostedOnshapeAgentStatus,
   hostedOnshapeEnvStatus,
   hostedOnshapeSetup,
+} from "./onshape-setup-status";
+import {
   ONSHAPE_HOSTED_BADGE,
   ONSHAPE_HOSTED_UNCONFIGURED_TITLE,
   ONSHAPE_LOCAL_PLAYWRIGHT_HINT,

@@ -482,7 +482,7 @@ export async function updateFailure(
     if (error instanceof Error && error.message === "Failure not found") throw error;
     if (!isMissingInventoryItemColumn(error)) throw error;
     const updated = await client.query(updateWithoutInventory, updateParams);
-    if (!updated.rowCount) throw new Error("Failure not found");
+    if (!updated.rowCount) throw new Error("Failure not found", { cause: error });
   }
 }
 

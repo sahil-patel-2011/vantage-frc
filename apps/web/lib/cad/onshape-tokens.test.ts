@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { hostedOnshapeAuthFromEnv } from "./hosted-auth";
-import { hostedOnshapeEnvStatus } from "./onshape-setup-copy";
+import { hostedOnshapeEnvStatus } from "./onshape-setup-status";
 import { loadCadAgentOnshape } from "./onshape-tokens";
 
 const ORIGINAL = {

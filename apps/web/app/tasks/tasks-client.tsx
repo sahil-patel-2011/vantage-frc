@@ -9,12 +9,8 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../componen
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
-import {
-  SUBSYSTEM_SUGGESTIONS,
-  TASK_PRIORITIES,
-  TASK_STATUSES,
-  type TasksView,
-} from "../../lib/tasks/compute-tasks";
+import { SUBSYSTEM_SUGGESTIONS, TASK_PRIORITIES, TASK_STATUSES } from "../../lib/tasks/task-fields";
+import type { TasksView } from "../../lib/tasks/compute-tasks";
 import type { TaskPriority, TaskWithFlags } from "../../lib/tasks/types";
 
 type LiveView = Extract<TasksView, { status: "live" }>;

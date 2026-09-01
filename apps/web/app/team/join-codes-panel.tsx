@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, Panel } from "../../components/ui";
+import { joinCodeLimits, joinCodeState } from "../../lib/team/join-codes";
 
 /**
  * Self-signup codes for owners/admins. The redeem side (/join) and the management API
@@ -25,32 +26,6 @@ type JoinCode = {
 };
 
 type Notice = { tone: "info" | "error"; message: string };
-
-function describeState(code: JoinCode): { label: string; tone: "live" | "off" } {
-  if (code.revokedAt) return { label: "Off", tone: "off" };
-  if (code.expiresAt && new Date(code.expiresAt).getTime() <= Date.now()) {
-    return { label: "Expired", tone: "off" };
-  }
-  if (code.maxUses !== null && code.uses >= code.maxUses) {
-    return { label: "Used up", tone: "off" };
-  }
-  return { label: "Live", tone: "live" };
-}
-
-function describeLimits(code: JoinCode): string {
-  const parts: string[] = [
-    code.maxUses === null ? `${code.uses} joined` : `${code.uses} of ${code.maxUses} used`,
-  ];
-  if (code.expiresAt) {
-    const when = new Date(code.expiresAt);
-    parts.push(
-      when.getTime() <= Date.now()
-        ? `expired ${when.toLocaleDateString()}`
-        : `expires ${when.toLocaleDateString()}`,
-    );
-  }
-  return parts.join(" · ");
-}
 
 export function JoinCodesPanel({ orgId }: { orgId: string }) {
   const [codes, setCodes] = useState<JoinCode[]>([]);
@@ -209,7 +184,7 @@ export function JoinCodesPanel({ orgId }: { orgId: string }) {
         ) : (
           <ul className="team-join-code-rows">
             {codes.map((code) => {
-              const state = describeState(code);
+              const state = joinCodeState(code);
               return (
                 <li key={code.id} className={`team-join-code-row ${state.tone}`}>
                   <div className="team-join-code-head">
@@ -217,7 +192,7 @@ export function JoinCodesPanel({ orgId }: { orgId: string }) {
                     <span className={`team-join-code-state ${state.tone}`}>{state.label}</span>
                   </div>
                   <span className="app-muted">
-                    {code.role} · {describeLimits(code)}
+                    {code.role} · {joinCodeLimits(code)}
                   </span>
                   <div className="team-join-code-actions">
                     <button type="button" onClick={() => void copyLink(code.code)}>

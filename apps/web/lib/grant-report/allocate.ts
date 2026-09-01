@@ -132,7 +132,7 @@ async function requireAllocationsTable(client: PoolClient): Promise<void> {
     }
   } catch (error) {
     if (error instanceof Error && error.message === GRANT_SPEND_SCHEMA_BLOCKER) throw error;
-    throw new Error(GRANT_SPEND_SCHEMA_BLOCKER);
+    throw new Error(GRANT_SPEND_SCHEMA_BLOCKER, { cause: error });
   }
 }
 
