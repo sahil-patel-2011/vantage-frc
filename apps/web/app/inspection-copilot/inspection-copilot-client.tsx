@@ -775,7 +775,7 @@ function NewCheckForm({
         <FormRow label="Robot name">
           <input value={robotName} onChange={(e) => setRobotName(e.target.value)} placeholder="2026 Competition Bot" required />
         </FormRow>
-        <FormRow label="Weight limit (lbs)">
+        <FormRow label="Weight limit (lbs) — default 115 until you set one">
           <input type="number" min={0} value={weightLimitLbs} onChange={(e) => setWeightLimitLbs(e.target.value)} />
         </FormRow>
       </FormGrid>

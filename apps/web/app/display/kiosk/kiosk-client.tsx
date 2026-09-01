@@ -13,9 +13,11 @@ import {
   queueCue,
   rankLabel,
   recordLabel,
+  formatDisplayPrediction,
   widgetValue,
   type DisplaySnapshot,
 } from "../../../lib/display";
+import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 
 export default function KioskClient({
   params,
@@ -179,12 +181,20 @@ export default function KioskClient({
         ))}
 
       {data.board.preset === "win_prediction" &&
-        (prediction ? (
+        (prediction && formatDisplayPrediction(prediction) !== "No grounded prediction" ? (
           <>
             <section className="display-kiosk-panel">
               <article>
                 <span>WIN PREDICTION · MODEL</span>
-                <strong>{Math.round(prediction.pRed * 100)}% RED</strong>
+                <strong>
+                  {predictionWinDisplay({
+                    pRed: prediction.pRed,
+                    alliance: "red",
+                    modelVersion: prediction.modelVersion,
+                    caveats: prediction.caveats,
+                  })?.label ?? "—"}{" "}
+                  RED
+                </strong>
                 <small>
                   {prediction.modelVersion} · {Math.round(prediction.confidenceLow * 100)}–
                   {Math.round(prediction.confidenceHigh * 100)}% · {prediction.matchKey}
@@ -192,7 +202,14 @@ export default function KioskClient({
               </article>
               <article>
                 <span>BLUE</span>
-                <strong>{Math.round(prediction.pBlue * 100)}%</strong>
+                <strong>
+                  {predictionWinDisplay({
+                    pBlue: prediction.pBlue,
+                    alliance: "blue",
+                    modelVersion: prediction.modelVersion,
+                    caveats: prediction.caveats,
+                  })?.label ?? "—"}
+                </strong>
                 <em>Not a TBA result</em>
               </article>
               <article>

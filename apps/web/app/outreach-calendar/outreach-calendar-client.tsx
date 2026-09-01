@@ -380,7 +380,7 @@ export default function OutreachCalendarClient() {
           <div>
             <strong>{pct(view.summary.projectedImpactScore)}</strong>
             <span className="app-muted" style={{ display: "block" }}>
-              Projected impact
+              Projected impact (default 80h / 750 people — not a recorded team goal)
             </span>
           </div>
         </section>

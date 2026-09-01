@@ -9,6 +9,7 @@ import {
 } from "../home-workflows";
 import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
+import { isDemoPrediction } from "../strategy/prediction-display";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -371,7 +372,17 @@ export async function loadDashboardSnapshot(
       widgets.prediction_summary = stamp("empty", "prediction_summary", undefined, "No stored predictions for this event yet.");
       return;
     }
-    widgets.prediction_summary = stamp("live", "prediction_summary", prediction.rows[0] as unknown as Record<string, unknown>);
+    const row = prediction.rows[0];
+    if (isDemoPrediction({ modelVersion: row.modelVersion, pRed: row.pRed, pBlue: row.pBlue })) {
+      widgets.prediction_summary = stamp(
+        "empty",
+        "prediction_summary",
+        undefined,
+        "Last stored row is a DEMO prediction. Recompute on Strategy.",
+      );
+      return;
+    }
+    widgets.prediction_summary = stamp("live", "prediction_summary", row as unknown as Record<string, unknown>);
   }
 
   async function syncStatus() {

@@ -17,6 +17,7 @@ import {
   type MediaKitShellKind,
 } from "../../lib/media-kit/media-kit-related";
 import type { MediaKitAssetKind, MediaKitReadinessTier } from "../../lib/media-kit/types";
+import type { MediaLibraryView } from "../../lib/media-library/types";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media-kit.css";
@@ -503,8 +504,48 @@ function AssetsPanel({
     [],
   );
   const [form, setForm] = useState(empty);
+  const [library, setLibrary] = useState<Array<{ id: string; title: string; src: string; kind: MediaKitAssetKind }>>(
+    [],
+  );
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+
+  useEffect(() => {
+    if (!view.orgId) {
+      setLibrary([]);
+      return;
+    }
+    let cancelled = false;
+    void fetch(`/api/media-library?orgId=${encodeURIComponent(view.orgId)}`)
+      .then(async (response) => {
+        const data = (await response.json()) as MediaLibraryView;
+        if (cancelled) return;
+        if (!data || data.status !== "live") {
+          setLibrary([]);
+          return;
+        }
+        const picks: Array<{ id: string; title: string; src: string; kind: MediaKitAssetKind }> = [];
+        for (const item of data.items) {
+          const id = typeof item.id === "string" ? item.id.trim() : "";
+          const src = typeof item.src === "string" ? item.src.trim() : "";
+          const title = typeof item.title === "string" ? item.title.trim() : "";
+          if (!id || !src || /demo/i.test(id) || /demo/i.test(src)) continue;
+          picks.push({
+            id,
+            title: title || id,
+            src,
+            kind: item.kind === "video" ? "other" : "photo",
+          });
+        }
+        setLibrary(picks);
+      })
+      .catch(() => {
+        if (!cancelled) setLibrary([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view.orgId]);
 
   return (
     <Panel id="media-kit-assets" style={{ display: "grid", gap: 10 }}>
@@ -515,7 +556,7 @@ function AssetsPanel({
           badge="No assets yet"
           badgeTone="setup"
           title="Add your team logo and photos"
-          description="Asset library stays empty until you add real URLs — never DEMO logos."
+          description="Asset library stays empty until you pick a Media library file or add a real URL — never DEMO logos."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
@@ -544,6 +585,36 @@ function AssetsPanel({
             </li>
           ))}
         </ul>
+      )}
+      {library.length > 0 ? (
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 8 }}>
+          <legend className="app-muted">Pick from Media library</legend>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+            {library.map((item) => (
+              <label key={item.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span>
+                  <input
+                    type="checkbox"
+                    checked={form.url === item.src}
+                    onChange={() =>
+                      setForm((prev) =>
+                        prev.url === item.src
+                          ? { ...prev, url: "" }
+                          : { ...prev, url: item.src, title: prev.title || item.title, kind: item.kind },
+                      )
+                    }
+                  />{" "}
+                  {item.title}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <p className="app-muted">
+          No photos or videos in the library yet.{" "}
+          <a href={withOrgHref("/media-library", view.orgId)}>Add one in Media library</a>, or paste a URL below.
+        </p>
       )}
       <form
         onSubmit={(event) => {

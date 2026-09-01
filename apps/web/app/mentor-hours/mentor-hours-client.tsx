@@ -215,7 +215,9 @@ function EngagementPanel({ view }: { view: LiveView }) {
           <span className={`app-badge ${tierTone(engagement.tier)}`}>{engagement.tier.toUpperCase()}</span>
           <h2 style={{ margin: "6px 0 0" }}>Grant-report engagement readiness</h2>
           <small className="app-muted">
-            Active in {engagement.monthsActive} month(s) · {engagement.mentorsEngaged} mentor(s) engaged
+            Active in {engagement.monthsActive} month(s) · {engagement.mentorsEngaged} mentor(s) engaged.
+            Readiness uses a default yardstick of 200 mentor-hours over 6 months with 4 mentors — not a recorded
+            team goal.
           </small>
         </div>
         <strong style={{ fontSize: "2rem" }}>{pct(engagement.score)}</strong>

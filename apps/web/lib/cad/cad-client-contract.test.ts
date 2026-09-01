@@ -97,6 +97,7 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain('from "../../lib/cad/run-composer-plan"');
     expect(client).toContain("lastSketchFeatureId");
     expect(client).toMatch(/parametersForExecute\(\s*\{[\s\S]*operation[\s\S]*parameters/);
+    expect(client).toContain("parametersForExecute(step, lastSketchFeatureId.current)");
     expect(client).toMatch(
       /lastSketchFeatureId\.current = rememberLastSketchFeatureId\(\s*operation,\s*executed\.featureId/,
     );
@@ -113,6 +114,18 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("rememberLastAssemblyElementId");
     expect(client).toMatch(/executed\.featureId[\s\S]{0,80}result\?\.elementId/);
     expect(client).not.toMatch(/assemblyElementId:\s*["']DEMO/i);
+  });
+
+  it("lists assembly instances and passes them to the composer", () => {
+    expect(client).toContain("listOnshapeAssemblyInstances");
+    expect(client).toContain('from "../../lib/cad/list-assembly"');
+    expect(client).toContain("instances={listedAssembly.instances}");
+    expect(client).toContain("lastInstanceIds");
+    expect(client).toContain("firstInstanceId");
+    expect(client).toContain("secondInstanceId");
+    expect(client).not.toMatch(/firstInstanceId:\s*["']DEMO/i);
+    expect(client).not.toMatch(/secondInstanceId:\s*["']DEMO/i);
+    expect(client).not.toMatch(/<iframe\b/);
   });
 
   it("never mounts an Onshape iframe in the client or the viewport", () => {

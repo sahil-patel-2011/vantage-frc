@@ -6,6 +6,7 @@ import { loadMyDayLogistics } from "../my-day-load";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
+import { finalizeStrategyRecompute } from "../strategy/recompute";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { buildNexusQueueSnapshot } from "./nexus-queue";
@@ -476,11 +477,13 @@ export async function loadEventDayCommand(
     [teamKey, eventKey],
   );
 
-  const strategy = await computeStrategyView(client, {
-    userId: input.userId,
-    requestedOrg: input.orgId,
-    matchKey: focusMatch?.matchKey ?? null,
-  });
+  const strategy = finalizeStrategyRecompute(
+    await computeStrategyView(client, {
+      userId: input.userId,
+      requestedOrg: input.orgId,
+      matchKey: focusMatch?.matchKey ?? null,
+    }),
+  );
 
   let briefs: DriveCoachBrief[] = [];
   let prediction: CommandSnapshot["prediction"] = emptyPrediction("empty");
