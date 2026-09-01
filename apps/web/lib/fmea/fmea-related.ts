@@ -27,6 +27,7 @@ export const FMEA_RELATED_LINKS = [
   { id: "prototype", label: "Prototypes", kind: "build" as const, tab: "prototype" },
   { id: "batteries", label: "Batteries", kind: "team" as const, tab: "batteries" },
   { id: "inspection", label: "Inspection", kind: "path" as const, path: "/inspection" },
+  { id: "inventory", label: "Inventory", kind: "path" as const, path: "/inventory" },
   { id: "subsystems", label: "Subsystems", kind: "path" as const, path: "/subsystems" },
 ] as const;
 

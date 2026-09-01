@@ -1,17 +1,26 @@
 "use client";
 
 import { COMPOSER_OP_FIELDS, type ComposerNativeOp } from "../../lib/cad/composer-ops";
+import {
+  pickableEntityIds,
+  splitIdList,
+  toggleIdListValue,
+  type ListedOnshapeEntities,
+} from "../../lib/cad/list-entities";
 
 export function CadComposerFields({
   operation,
   draft,
   disabled,
   onChange,
+  entities,
 }: {
   operation: ComposerNativeOp;
   draft: Record<string, string | boolean>;
   disabled: boolean;
   onChange: (key: string, value: string | boolean) => void;
+  /** Live ids from list-onshape-entities. Empty / omitted → empty picker; paste still works. */
+  entities?: ListedOnshapeEntities | null;
 }) {
   const fields = COMPOSER_OP_FIELDS[operation];
   if (!fields.length) {
@@ -54,6 +63,40 @@ export function CadComposerFields({
                 ))}
               </select>
             </label>
+          );
+        }
+        if (field.kind === "idList") {
+          const text = typeof value === "string" ? value : "";
+          const selected = new Set(splitIdList(text));
+          const options = pickableEntityIds(field.key, entities);
+          return (
+            <div key={field.key}>
+              <label>
+                {field.label}
+                <textarea
+                  rows={3}
+                  value={text}
+                  placeholder={field.help}
+                  disabled={disabled}
+                  onChange={(event) => onChange(field.key, event.target.value)}
+                />
+              </label>
+              <ul aria-label={`${field.label} from the bound Part Studio`}>
+                {options.map((id) => (
+                  <li key={id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(id)}
+                        disabled={disabled}
+                        onChange={() => onChange(field.key, toggleIdListValue(text, id))}
+                      />
+                      {id}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
           );
         }
         const isMm = field.kind === "mm" || field.kind === "signedMm";

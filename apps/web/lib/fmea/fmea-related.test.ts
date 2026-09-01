@@ -16,6 +16,7 @@ describe("fmea-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "cad")?.href).toBe("/build?tab=cad&orgId=org-1");
     expect(links.find((l) => l.id === "prototype")?.href).toBe("/build?tab=prototype&orgId=org-1");
     expect(links.find((l) => l.id === "batteries")?.href).toBe("/team?tab=batteries&orgId=org-1");
+    expect(links.find((l) => l.id === "inventory")?.href).toBe("/inventory?orgId=org-1");
   });
 
   it("excludes active and respects include", () => {

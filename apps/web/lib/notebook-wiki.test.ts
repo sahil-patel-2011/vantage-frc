@@ -109,6 +109,77 @@ describe("buildNotebookWikiBody", () => {
     expect(body).toContain("![Intake CAD screenshot](https://cdn.example.test/intake.png)");
     expect(body).not.toContain("No photo was attached");
   });
+
+  it("writes a video cite as a labeled link, never as image markdown", () => {
+    const body = buildNotebookWikiBody(
+      entry({
+        attachments: [
+          {
+            assetId: "bbbbbbbb-2222-4222-8222-222222222222",
+            title: "Intake bench video",
+            kind: "video",
+            url: "https://cdn.example.test/intake.mp4",
+            description: null,
+          },
+        ],
+      }),
+    );
+    expect(body).toContain("[Video: Intake bench video](https://cdn.example.test/intake.mp4)");
+    expect(body).not.toContain("![Intake bench video](https://cdn.example.test/intake.mp4)");
+    expect(body).not.toContain("![");
+    expect(body).not.toContain("<video");
+  });
+
+  it("keeps a photo as an image and a video as a labeled link when both are attached", () => {
+    const body = buildNotebookWikiBody(
+      entry({
+        attachments: [
+          {
+            assetId: "aaaaaaaa-1111-4111-8111-111111111111",
+            title: "Intake CAD screenshot",
+            kind: "photo",
+            url: "https://cdn.example.test/intake.png",
+            description: null,
+          },
+          {
+            assetId: "bbbbbbbb-2222-4222-8222-222222222222",
+            title: "Intake bench video",
+            kind: "video",
+            url: "https://cdn.example.test/intake.mp4",
+            description: null,
+          },
+        ],
+      }),
+    );
+    expect(body).toContain("![Intake CAD screenshot](https://cdn.example.test/intake.png)");
+    expect(body).toContain("[Video: Intake bench video](https://cdn.example.test/intake.mp4)");
+    expect(body).not.toContain("![Intake bench video]");
+  });
+
+  it("does not invent a video when none was attached", () => {
+    const body = buildNotebookWikiBody(entry({ attachments: [] }));
+    expect(body).not.toContain("[Video:");
+    expect(body).not.toContain("## Videos");
+  });
+
+  it("skips a video cite with no URL rather than inventing a src", () => {
+    const body = buildNotebookWikiBody(
+      entry({
+        attachments: [
+          {
+            assetId: "bbbbbbbb-2222-4222-8222-222222222222",
+            title: "Intake bench video",
+            kind: "video",
+            url: "   ",
+            description: null,
+          },
+        ],
+      }),
+    );
+    expect(body).not.toContain("[Video:");
+    expect(body).not.toContain("![");
+    expect(body).toContain("No photo was attached");
+  });
 });
 
 describe("notebookWikiTags and template kind", () => {
@@ -229,5 +300,43 @@ describe("promoteNotebookEntry", () => {
     const body = String(insert[1]?.[3]);
     expect(body).toContain("![Intake CAD screenshot](https://cdn.example.test/intake.png)");
     expect(body).not.toContain("No photo was attached");
+  });
+
+  it("embeds a resolved video as a labeled link, never as a photo", async () => {
+    const video = {
+      assetId: "bbbbbbbb-2222-4222-8222-222222222222",
+      title: "Intake bench video",
+      kind: "video",
+      url: "https://cdn.example.test/intake.mp4",
+      description: null,
+    };
+    const query = vi.fn(async (sql: string) => {
+      if (sql.includes("FROM notebook_entries")) {
+        return {
+          rows: [entry({ tags: ["intake", `asset:${video.assetId}`] })],
+          rowCount: 1,
+        };
+      }
+      if (sql.includes("FROM media_kit_assets")) {
+        return { rows: [video], rowCount: 1 };
+      }
+      if (sql.includes("SELECT id FROM knowledge_pages")) {
+        return { rows: [], rowCount: 0 };
+      }
+      if (sql.includes("INSERT INTO knowledge_pages")) {
+        return { rows: [{ id: "page-new" }], rowCount: 1 };
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+    await promoteNotebookEntry({ query } as unknown as import("@neondatabase/serverless").PoolClient, {
+      orgId: ORG,
+      userId: USER,
+      entryId: "e1",
+    });
+    const insert = query.mock.calls.find(([sql]) => String(sql).includes("INSERT INTO knowledge_pages"))!;
+    const body = String(insert[1]?.[3]);
+    expect(body).toContain("[Video: Intake bench video](https://cdn.example.test/intake.mp4)");
+    expect(body).not.toContain("![Intake bench video](https://cdn.example.test/intake.mp4)");
+    expect(body).not.toContain("![");
   });
 });

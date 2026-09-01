@@ -43,19 +43,26 @@ function addFeatureHttp(featureId: string) {
 }
 
 describe("native operation classification", () => {
-  it("treats fillet/chamfer/hole/pattern/mirror/delete as native", () => {
+  it("treats fillet/chamfer/shell/hole/pattern/mirror/delete as native", () => {
     expect(
-      ["create_fillet", "create_chamfer", "create_hole", "create_pattern", "create_mirror", "delete_feature"].every(
-        isOnshapeNativeOperation,
-      ),
+      [
+        "create_fillet",
+        "create_chamfer",
+        "create_shell",
+        "create_hole",
+        "create_pattern",
+        "create_mirror",
+        "delete_feature",
+      ].every(isOnshapeNativeOperation),
     ).toBe(true);
+    expect(isOnshapeNativeUnimplemented("create_chamfer")).toBe(false);
+    expect(isOnshapeNativeUnimplemented("create_shell")).toBe(false);
   });
 
-  it("keeps shell/variable/rollback as honest unimplemented", () => {
-    expect(isOnshapeNativeUnimplemented("create_shell")).toBe(true);
+  it("keeps variable/rollback as honest unimplemented", () => {
     expect(isOnshapeNativeUnimplemented("set_variable")).toBe(true);
     expect(isOnshapeNativeUnimplemented("rollback_checkpoint")).toBe(true);
-    expect(onshapeNativeUnimplementedError("create_shell").message).toMatch(/will not generate FeatureScript/i);
+    expect(onshapeNativeUnimplementedError("set_variable").message).toMatch(/will not generate FeatureScript/i);
   });
 });
 
@@ -87,9 +94,50 @@ describe("dispatchOnshapeNativeFeature", () => {
       parameters: { entities: ["E1"], distance: "1 mm" },
       idempotencyKey: "job:1:chamfer",
     });
-    expect(result.featureId).toBe("chamfer-real-1");
-    expect(result.featureScriptUsed).toBe(false);
+    expect(result).toEqual({ featureId: "chamfer-real-1", featureScriptUsed: false });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.path).toBe("/partstudios/d/d1/w/w1/e/e1/features");
+    expect(calls[0]?.method).toBe("POST");
     expect(JSON.stringify(calls[0]?.body)).toContain('"featureType":"chamfer"');
+    expect(JSON.stringify(calls[0]?.body)).toContain("E1");
+    expect(JSON.stringify(calls[0]?.body)).not.toMatch(/featurescript|opChamfer/i);
+    expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
+  });
+
+  it("posts a native shell from resolved face ids + thickness", async () => {
+    const { http, calls } = addFeatureHttp("shell-real-1");
+    const result = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "create_shell",
+      parameters: { faceIds: ["JFC"], thickness: "2 mm", name: "Hollow" },
+      idempotencyKey: "job:1:shell",
+    });
+    expect(result).toEqual({ featureId: "shell-real-1", featureScriptUsed: false });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.path).toBe("/partstudios/d/d1/w/w1/e/e1/features");
+    expect(calls[0]?.method).toBe("POST");
+    const posted = JSON.stringify(calls[0]?.body);
+    expect(posted).toContain('"featureType":"shell"');
+    expect(posted).toContain("JFC");
+    expect(posted).toContain('"parameterId":"thickness"');
+    expect(posted).toContain("2 mm");
+    expect(posted).not.toMatch(/featurescript|opShell/i);
+    expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
+  });
+
+  it("refuses to guess shell face ids and never invents a feature id", async () => {
+    const { http, calls } = addFeatureHttp("should-not-run");
+    await expect(
+      dispatchOnshapeNativeFeature({
+        http,
+        document: DOCUMENT,
+        operation: "create_shell",
+        parameters: { thickness: "2 mm" },
+        idempotencyKey: "job:1:bad-shell",
+      }),
+    ).rejects.toThrow(/never guesses/i);
+    expect(calls).toHaveLength(0);
   });
 
   it("posts a native hole using resolved location and scope ids", async () => {
@@ -255,8 +303,8 @@ describe("createOnshapeApiTransport native routing", () => {
     return createOnshapeApiTransport({ http, document: DOCUMENT });
   }
 
-  it("routes fillet/chamfer/hole/pattern/mirror/delete through native builders", async () => {
-    const ids = ["fillet-1", "chamfer-1", "hole-1", "pattern-1", "mirror-1"] as const;
+  it("routes fillet/chamfer/shell/hole/pattern/mirror/delete through native builders", async () => {
+    const ids = ["fillet-1", "chamfer-1", "shell-1", "hole-1", "pattern-1", "mirror-1"] as const;
     let add = 0;
     const { http, calls } = captureHttp((path, init) => {
       if (path.endsWith("/features") && init?.method === "POST") {
@@ -281,6 +329,11 @@ describe("createOnshapeApiTransport native routing", () => {
       parameters: { edgeIds: ["JHE"], widthMm: 1 },
       idempotencyKey: "job:t:chamfer",
     });
+    const shell = await transport.mutate({
+      operation: "create_shell",
+      parameters: { faceIds: ["JFC"], thicknessMm: 2 },
+      idempotencyKey: "job:t:shell",
+    });
     const hole = await transport.mutate({
       operation: "create_hole",
       parameters: { locationIds: ["V1"], scopeIds: ["B1"], diameterMm: 5 },
@@ -304,21 +357,20 @@ describe("createOnshapeApiTransport native routing", () => {
 
     expect(fillet).toMatchObject({ featureId: "fillet-1", featureScriptUsed: false });
     expect(chamfer).toMatchObject({ featureId: "chamfer-1", featureScriptUsed: false });
+    expect(shell).toMatchObject({ featureId: "shell-1", featureScriptUsed: false });
     expect(hole).toMatchObject({ featureId: "hole-1", featureScriptUsed: false });
     expect(pattern).toMatchObject({ featureId: "pattern-1", featureScriptUsed: false });
     expect(mirror).toMatchObject({ featureId: "mirror-1", featureScriptUsed: false });
     expect(deleted).toMatchObject({ featureId: "mirror-1", featureScriptUsed: false });
     expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
-    expect(calls.filter((call) => call.method === "POST")).toHaveLength(5);
+    expect(calls.filter((call) => call.method === "POST")).toHaveLength(6);
     expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(1);
+    expect(JSON.stringify(calls.map((call) => call.body))).not.toMatch(/featurescript|opChamfer|opShell/i);
   });
 
   it("keeps unimplemented ops as honest errors and does not call Onshape", async () => {
     const http = vi.fn(async () => jsonResponse({ message: "should not run" }, 500)) as unknown as OnshapeHttp;
     const transport = transportWith(http);
-    await expect(
-      transport.mutate({ operation: "create_shell", parameters: { thickness: "2 mm" }, idempotencyKey: "job:t:shell" }),
-    ).rejects.toThrow(/will not generate FeatureScript/i);
     await expect(
       transport.mutate({
         operation: "set_variable",
@@ -326,6 +378,15 @@ describe("createOnshapeApiTransport native routing", () => {
         idempotencyKey: "job:t:var",
       }),
     ).rejects.toThrow(/will not generate FeatureScript/i);
+    expect(http).not.toHaveBeenCalled();
+  });
+
+  it("does not fall back to FeatureScript when shell is missing face ids", async () => {
+    const http = vi.fn(async () => jsonResponse({ message: "should not run" }, 500)) as unknown as OnshapeHttp;
+    const transport = transportWith(http);
+    await expect(
+      transport.mutate({ operation: "create_shell", parameters: { thickness: "2 mm" }, idempotencyKey: "job:t:shell" }),
+    ).rejects.toThrow(/never guesses/i);
     expect(http).not.toHaveBeenCalled();
   });
 });

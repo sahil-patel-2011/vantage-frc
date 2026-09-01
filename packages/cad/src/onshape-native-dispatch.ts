@@ -2,15 +2,17 @@
  * Job-transport dispatch for allowlisted Onshape mutations that already have
  * native BTM builders in onshape-features.ts (the same payloads claude-cad posts).
  *
- * Fillet / chamfer / hole / pattern / mirror / delete become ordinary Part Studio
- * features. This module never evaluates or generates FeatureScript — callers must
- * pass already-resolved deterministic ids. Missing geometry is an honest error,
- * not a guessed id and not a silent FS fallback.
+ * Fillet / chamfer / shell / hole / pattern / mirror / delete become ordinary
+ * Part Studio features. This module never evaluates or generates FeatureScript —
+ * callers must pass already-resolved deterministic ids. Missing geometry is an
+ * honest error, not a guessed id and not a silent FS fallback.
  */
 
 import {
+  booleanParameter,
   chamferFeature,
   circularPatternFeature,
+  deterministicQueryParameter,
   filletFeature,
   holeFeature,
   linearPatternFeature,
@@ -18,6 +20,7 @@ import {
   onshapeFeaturePath,
   parseAddedFeatureId,
   patternAxisPlaneId,
+  quantityParameter,
   type HoleEndStyle,
 } from "./onshape-features";
 
@@ -32,6 +35,7 @@ export type OnshapeNativeDocument = {
 export const ONSHAPE_NATIVE_OPERATIONS = [
   "create_fillet",
   "create_chamfer",
+  "create_shell",
   "create_hole",
   "create_pattern",
   "create_mirror",
@@ -42,7 +46,6 @@ export type OnshapeNativeOperation = (typeof ONSHAPE_NATIVE_OPERATIONS)[number];
 
 /** Allowlisted ops with no native builder yet — refuse, do not invent FeatureScript. */
 export const ONSHAPE_UNIMPLEMENTED_NATIVE_OPERATIONS = [
-  "create_shell",
   "set_variable",
   "rollback_checkpoint",
 ] as const;
@@ -98,9 +101,11 @@ function buildNativeFeature(operation: Exclude<OnshapeNativeOperation, "delete_f
         widthMm: requireNumber(parameters, ["widthMm", "width", "distance"], "Chamfer width"),
         name: optionalName(parameters, "VantageChamfer"),
       });
+    case "create_shell":
+      return buildShellFeature(parameters);
     case "create_hole":
       return holeFeature({
-        locationIds: requireEntityIds(parameters, ["locationIds", "locations", "vertices"], "locationIds"),
+        locationIds: requireEntityIds(parameters, ["locationIds", "locations", "vertices", "faceIds"], "locationIds"),
         scopeIds: requireEntityIds(parameters, ["scopeIds", "scope", "bodyIds", "bodies"], "scopeIds"),
         diameterMm: requireNumber(parameters, ["diameterMm", "diameter"], "Hole diameter"),
         endStyle: holeEndStyle(parameters),
@@ -117,6 +122,37 @@ function buildNativeFeature(operation: Exclude<OnshapeNativeOperation, "delete_f
         name: optionalName(parameters, "VantageMirror"),
       });
   }
+}
+
+/**
+ * Native Shell (faces-to-remove). Same BTFeatureDefinitionCall-1406 envelope as
+ * fillet/chamfer — thickness in mm, metres on the wire. Face ids must already
+ * be resolved; this never invents them or falls back to FeatureScript.
+ */
+function buildShellFeature(parameters: Record<string, unknown>) {
+  const faceIds = requireEntityIds(parameters, ["faceIds", "entities", "faces"], "faceIds");
+  const thicknessMm = requireNumber(parameters, ["thicknessMm", "thickness"], "Shell thickness");
+  if (thicknessMm <= 0 || thicknessMm > 10_000) {
+    throw new Error(`Shell thickness must be a positive number of millimetres (max 10000). Got ${String(thicknessMm)}.`);
+  }
+  const featureParameters: unknown[] = [
+    deterministicQueryParameter("entities", faceIds),
+    quantityParameter("thickness", thicknessMm, thicknessMm / 1000),
+  ];
+  if (bool(parameters.outward, false) || bool(parameters.oppositeDirection, false)) {
+    featureParameters.push(booleanParameter("oppositeDirection", true));
+  }
+  return {
+    btType: "BTFeatureDefinitionCall-1406" as const,
+    feature: {
+      btType: "BTMFeature-134",
+      featureType: "shell",
+      name: optionalName(parameters, "VantageShell"),
+      suppressed: false,
+      namespace: "",
+      parameters: featureParameters,
+    },
+  };
 }
 
 function buildPatternFeature(parameters: Record<string, unknown>) {

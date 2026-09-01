@@ -18,6 +18,27 @@ import {
 import "./orders.css";
 
 type DirectoryVendor = { id: string; name: string; preferred: boolean };
+type CatalogItem = { id: string; name: string };
+
+const CATALOG_ITEM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Catalog rows from /api/inventory. Empty or malformed payloads stay empty — never invent an id. */
+function catalogItemsFromInventory(data: unknown): CatalogItem[] {
+  if (!data || typeof data !== "object") return [];
+  const items = (data as { items?: unknown }).items;
+  if (!Array.isArray(items)) return [];
+  const catalog: CatalogItem[] = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as { id?: unknown; name?: unknown; archived?: unknown };
+    const id = typeof raw.id === "string" ? raw.id.trim() : "";
+    if (!CATALOG_ITEM_ID.test(id)) continue;
+    if (raw.archived === true) continue;
+    const name = typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : id;
+    catalog.push({ id, name });
+  }
+  return catalog;
+}
 
 type LiveView = Extract<OrdersView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -420,11 +441,13 @@ function SubmitForm({
 }) {
   const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
   const [vendorsReady, setVendorsReady] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const directoryHref = hubHref("/business", "vendors", orgId);
 
   useEffect(() => {
     let cancelled = false;
     setVendorsReady(false);
+    setCatalogItems([]);
     void fetch(`/api/vendors?orgId=${encodeURIComponent(orgId)}`)
       .then(async (response) => {
         const data = (await response.json()) as {
@@ -448,6 +471,14 @@ function SubmitForm({
       .finally(() => {
         if (!cancelled) setVendorsReady(true);
       });
+    void fetch(`/api/inventory?orgId=${encodeURIComponent(orgId)}`)
+      .then(async (response) => {
+        const data = response.ok ? await response.json() : null;
+        if (!cancelled) setCatalogItems(catalogItemsFromInventory(data));
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogItems([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -470,6 +501,10 @@ function SubmitForm({
     }
     setBusy(true);
     setError("");
+    const catalogId =
+      typeof data.inventoryItemId === "string"
+        ? catalogItems.find((item) => item.id === data.inventoryItemId)?.id
+        : undefined;
     void fetch("/api/finance/purchase-requests", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -482,6 +517,7 @@ function SubmitForm({
         vendorId: data.vendorId,
         itemUrl: data.itemUrl,
         neededBy: sheet.value.neededBy ?? undefined,
+        ...(catalogId ? { inventoryItemId: catalogId } : {}),
       }),
     })
       .then(async (response) => {
@@ -552,6 +588,19 @@ function SubmitForm({
             Buy link <small>optional product URL</small>
             <input name="itemUrl" type="url" placeholder="https://…" />
           </label>
+          {catalogItems.length > 0 ? (
+            <label>
+              Restock inventory <small>optional — receive writes stock</small>
+              <select name="inventoryItemId" defaultValue="">
+                <option value="">None — skip stock receive</option>
+                {catalogItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
         <button type="submit" className="orders-submit" disabled={busy || vendors.length === 0}>
           Add to buy sheet

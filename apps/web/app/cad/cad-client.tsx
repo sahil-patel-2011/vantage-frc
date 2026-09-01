@@ -5,8 +5,17 @@ import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usag
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { executeComposerOp } from "../../lib/cad/execute-composer";
+import { parseExplainFeatures, type ExplainedFeature } from "../../lib/cad/feature-tree";
+import {
+  EMPTY_LISTED_ENTITIES,
+  completeDocumentRef,
+  listOnshapeEntities,
+  type ListedOnshapeEntities,
+} from "../../lib/cad/list-entities";
+import { rememberComposerFeature } from "../../lib/cad/remember-feature";
 import { runComposerPlan } from "../../lib/cad/run-composer-plan";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
+import { CadFeatureTree } from "./cad-feature-tree";
 import { CadOperationComposer } from "./cad-operation-composer";
 import { CadViewport } from "./cad-viewport";
 import "./cad-agent.css";
@@ -501,6 +510,8 @@ export default function CadWorkspace({
   const [countdown, setCountdown] = useState(15);
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const [planAnswers, setPlanAnswers] = useState<string[]>([]);
+  const [listedEntities, setListedEntities] = useState<ListedOnshapeEntities>(EMPTY_LISTED_ENTITIES);
+  const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -561,6 +572,47 @@ export default function CadWorkspace({
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [state?.messages, busy]);
 
+  const boundDocumentId = state?.bound?.documentId;
+  const boundWorkspaceId = state?.bound?.workspaceId;
+  const boundElementId = state?.bound?.elementId;
+
+  const refreshBoundGeometry = useCallback(async () => {
+    const documentRef = completeDocumentRef({
+      documentId: boundDocumentId,
+      workspaceId: boundWorkspaceId,
+      elementId: boundElementId,
+    });
+    if (!documentRef) {
+      setListedEntities(EMPTY_LISTED_ENTITIES);
+      setExplainedFeatures([]);
+      return;
+    }
+    try {
+      setListedEntities(await listOnshapeEntities({ orgId, documentRef }));
+    } catch {
+      setListedEntities(EMPTY_LISTED_ENTITIES);
+    }
+    try {
+      const response = await fetch("/api/cad", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "explain-onshape-features", orgId, documentRef }),
+      });
+      const data = (await response.json().catch(() => ({}))) as unknown;
+      if (!response.ok) {
+        setExplainedFeatures([]);
+        return;
+      }
+      setExplainedFeatures(parseExplainFeatures(data));
+    } catch {
+      setExplainedFeatures([]);
+    }
+  }, [orgId, boundDocumentId, boundWorkspaceId, boundElementId]);
+
+  useEffect(() => {
+    void refreshBoundGeometry();
+  }, [refreshBoundGeometry]);
+
   const modeState = state?.modeState ?? null;
   const mode: AgentMode = modeState?.mode ?? "simple";
   const plan = useMemo(
@@ -600,6 +652,12 @@ export default function CadWorkspace({
           }
         : prev,
     );
+  }
+
+  function applyShadedPng(png: unknown) {
+    if (typeof png === "string" && png.trim()) {
+      setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
+    }
   }
 
   async function bind() {
@@ -691,6 +749,7 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
+      void refreshBoundGeometry();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -720,13 +779,14 @@ export default function CadWorkspace({
         }
         applyChatResponse(data);
         if (held.message) await load().catch(() => undefined);
+        void refreshBoundGeometry();
       } catch (err) {
         setError(err instanceof Error ? err.message : "CAD agent failed");
       } finally {
         setBusy(null);
       }
     },
-    [orgId, pendingProposal, load],
+    [orgId, pendingProposal, load, refreshBoundGeometry],
   );
 
   // 15-second countdown; expiry counts as No and the agent continues in the current mode.
@@ -769,6 +829,7 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
+      void refreshBoundGeometry();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -1055,16 +1116,19 @@ export default function CadWorkspace({
       <CadOperationComposer
         platform="onshape"
         disabled={!onshapeOk || busy !== null}
+        entities={listedEntities}
         onAppend={async (payload) => {
           const executed = await executeComposerOp({
             orgId,
             payload,
             documentRef: state?.bound ?? null,
           });
-          const png = executed.result.shadedPngBase64;
-          if (typeof png === "string" && png.trim()) {
-            setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
+          applyShadedPng(executed.result.shadedPngBase64);
+          const parameters = payload.parameters;
+          if (parameters && typeof parameters === "object" && !Array.isArray(parameters)) {
+            rememberComposerFeature({ parameters: parameters as Record<string, unknown> }, executed);
           }
+          void refreshBoundGeometry();
           return executed;
         }}
         onRunPlan={async (ops) => {
@@ -1078,15 +1142,47 @@ export default function CadWorkspace({
               },
               documentRef: state?.bound ?? null,
             });
-            const png = executed.result.shadedPngBase64;
-            if (typeof png === "string" && png.trim()) {
-              setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
-            }
+            applyShadedPng(executed.result.shadedPngBase64);
+            rememberComposerFeature(step, executed);
             return executed;
           });
+          void refreshBoundGeometry();
           return ran;
         }}
       />
+
+      {completeDocumentRef(state?.bound) ? (
+        <CadFeatureTree
+          features={explainedFeatures}
+          disabled={!onshapeOk || busy !== null}
+          onUpdate={async (payload) => {
+            const documentRef = completeDocumentRef(state?.bound ?? null);
+            if (!documentRef) {
+              throw new Error("Bind an Onshape document/workspace/element first");
+            }
+            const response = await fetch("/api/cad", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ ...payload, orgId, documentRef }),
+            });
+            const data = (await response.json().catch(() => ({}))) as {
+              error?: string;
+              message?: string;
+              shadedPngBase64?: string | null;
+            };
+            if (!response.ok) {
+              throw new Error(
+                (typeof data.error === "string" && data.error.trim()) ||
+                  (typeof data.message === "string" && data.message.trim()) ||
+                  "CAD request failed",
+              );
+            }
+            applyShadedPng(data.shadedPngBase64);
+            void refreshBoundGeometry();
+            return data;
+          }}
+        />
+      ) : null}
 
       <CadToolsPanel tools={tools} />
 
