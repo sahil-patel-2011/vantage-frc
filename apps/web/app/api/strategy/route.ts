@@ -6,6 +6,7 @@ import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
 import {
   briefingRequestsStrategyRefresh,
+  finalizeStrategyRecompute,
   recomputeStrategyView,
 } from "../../../lib/strategy/recompute";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
@@ -27,8 +28,9 @@ async function loadStrategyView(input: {
       requestedOrg: input.requestedOrg,
       matchKey: input.matchKey,
     });
-    const dataSourceHealth = await loadDataSourceHealth(client, strategy.orgId);
-    return { ...strategy, dataSourceHealth };
+    const view = input.refresh ? strategy : finalizeStrategyRecompute(strategy);
+    const dataSourceHealth = await loadDataSourceHealth(client, view.orgId);
+    return { ...view, dataSourceHealth };
   });
 }
 

@@ -29,6 +29,24 @@ export * from "./agent-loop";
 export * from "./onshape";
 export * from "./onshape-native-dispatch";
 export * from "./onshape-native-entities";
+export {
+  inferOnshapeVariableType,
+  isOnshapeVariableStudio,
+  listOnshapeNativeVariables,
+  onshapeVariablesPath,
+  parseOnshapeVariables,
+  pickVariableStudioElementId,
+  requireOnshapeVariableExpression,
+  requireOnshapeVariableName,
+  setOnshapeNativeVariable,
+} from "./onshape-native-variables";
+export type {
+  OnshapeNativeVariable,
+  OnshapeNativeVariableResult,
+  OnshapeNativeVariablesDocument,
+  OnshapeNativeVariablesHttp,
+  OnshapeVariableType,
+} from "./onshape-native-variables";
 export * from "./compatibility";
 export * from "./ai-plan";
 export * from "./onshape-api-keys";
