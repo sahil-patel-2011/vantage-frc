@@ -75,7 +75,8 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("<CadVariableTable");
     expect(client).toContain("listOnshapeVariables");
     expect(client).toContain('from "../../lib/cad/list-variables"');
-    expect(client).toContain("await listOnshapeVariables({ orgId, documentRef })");
+    expect(client).toContain("listOnshapeVariables({");
+    expect(client).toContain("variableStudioElementId: lastVariableStudioElementId.current");
     expect(client).toContain("variableStudioElementId");
   });
 
@@ -139,6 +140,10 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain('from "../../lib/cad/list-document-elements"');
     expect(client).toContain("list-onshape-elements");
     expect(client).toContain("switchBoundElement");
+    expect(client).toContain("documentTabKind");
+    expect(client).toContain('kind === "assembly"');
+    expect(client).toContain('kind === "variablestudio"');
+    expect(client).toContain("lastVariableStudioElementId");
     expect(client).toContain('action: "set-document"');
     expect(client).toContain('action: "bind"');
     expect(elements).toContain('action: "list-onshape-elements"');

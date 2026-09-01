@@ -27,7 +27,9 @@ describe("POST /api/cad list-onshape-variables", () => {
     expect(cad).toContain("const elements = await listOnshapeElements(onshape.http, ref.documentId, ref.workspaceId)");
     expect(cad).toContain("const variableStudioElementId = pickVariableStudioElementId(");
     expect(cad).toContain("const variables = await listOnshapeNativeVariables(onshape.http, target)");
-    expect(cad).toContain("variableStudioElementId: variableStudioElementId || null");
+    expect(cad).toContain("if (!variableStudioElementId)");
+    expect(cad).toContain("variableStudioElementId: null");
+    expect(cad).not.toContain("elementId: variableStudioElementId || ref.elementId");
   });
 
   it("requires a bound document/workspace/element and uses agent OAuth, not keys", () => {

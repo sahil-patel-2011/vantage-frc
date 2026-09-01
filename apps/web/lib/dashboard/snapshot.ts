@@ -348,6 +348,15 @@ export async function loadDashboardSnapshot(
       widgets.prediction_summary = stamp("setup_required", "prediction_summary", undefined, "Select an active event.");
       return;
     }
+    if (!teamKey) {
+      widgets.prediction_summary = stamp(
+        "setup_required",
+        "prediction_summary",
+        undefined,
+        "Set a team number to show your next-match prediction.",
+      );
+      return;
+    }
     const prediction = await client.query<{
       matchKey: string;
       pRed: number;
@@ -357,19 +366,30 @@ export async function loadDashboardSnapshot(
       modelVersion: string;
       keyFactors: unknown;
       scoredAt: string;
+      redAlliance: unknown;
+      blueAlliance: unknown;
     }>(
       `SELECT p.match_key AS "matchKey", p.p_red AS "pRed", p.p_blue AS "pBlue",
               p.confidence_low AS "confidenceLow", p.confidence_high AS "confidenceHigh",
-              p.model_version AS "modelVersion", p.key_factors AS "keyFactors", p.scored_at::text AS "scoredAt"
+              p.model_version AS "modelVersion", p.key_factors AS "keyFactors", p.scored_at::text AS "scoredAt",
+              m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
        FROM predictions p
        JOIN matches_ref m ON m.match_key = p.match_key
        WHERE p.org_id = $1 AND m.event_key = $2
-       ORDER BY p.scored_at DESC
+         AND (
+           m.red_alliance->'teamKeys' ? $3
+           OR m.blue_alliance->'teamKeys' ? $3
+         )
+         AND COALESCE(p.model_version, '') !~* 'demo'
+       ORDER BY
+         CASE WHEN COALESCE(m.actual_time, m.predicted_time, m.event_time) > now() THEN 0 ELSE 1 END,
+         COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC NULLS LAST,
+         p.scored_at DESC
        LIMIT 1`,
-      [input.orgId, eventKey],
+      [input.orgId, eventKey, teamKey],
     );
     if (!prediction.rows[0]) {
-      widgets.prediction_summary = stamp("empty", "prediction_summary", undefined, "No stored predictions for this event yet.");
+      widgets.prediction_summary = stamp("empty", "prediction_summary", undefined, "No stored predictions for your team at this event yet.");
       return;
     }
     const row = prediction.rows[0];
@@ -382,7 +402,24 @@ export async function loadDashboardSnapshot(
       );
       return;
     }
-    widgets.prediction_summary = stamp("live", "prediction_summary", row as unknown as Record<string, unknown>);
+    const redKeys = Array.isArray((row.redAlliance as { teamKeys?: unknown } | null)?.teamKeys)
+      ? ((row.redAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
+      : [];
+    const blueKeys = Array.isArray((row.blueAlliance as { teamKeys?: unknown } | null)?.teamKeys)
+      ? ((row.blueAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
+      : [];
+    const ourAlliance = redKeys.includes(teamKey) ? "red" : blueKeys.includes(teamKey) ? "blue" : null;
+    widgets.prediction_summary = stamp("live", "prediction_summary", {
+      matchKey: row.matchKey,
+      pRed: row.pRed,
+      pBlue: row.pBlue,
+      confidenceLow: row.confidenceLow,
+      confidenceHigh: row.confidenceHigh,
+      modelVersion: row.modelVersion,
+      keyFactors: row.keyFactors,
+      scoredAt: row.scoredAt,
+      ourAlliance,
+    });
   }
 
   async function syncStatus() {

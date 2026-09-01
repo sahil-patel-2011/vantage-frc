@@ -88,7 +88,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     setVendors(Array.isArray(vendorsData.vendors) ? vendorsData.vendors : []);
     setCatalogItems(catalogItemsFromInventory(inventoryData));
     const contributionsData = contributionsRes.ok ? await contributionsRes.json() : { contributions: [] };
-    const budgetVsActualData = budgetVsActualRes.ok ? await budgetVsActualRes.json() : null;
+    const budgetVsActualData = await budgetVsActualRes.json().catch(() => null);
     const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
     const sponsors = Array.isArray(sponsorsData.sponsors) ? sponsorsData.sponsors : [];
     const contributions = Array.isArray(contributionsData.contributions) ? contributionsData.contributions : [];
@@ -105,6 +105,13 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     );
     setMonths(summaryData.byMonth ?? []);
     setBudgetLines(Array.isArray(budgetVsActualData?.lines) ? budgetVsActualData.lines : []);
+    if (!budgetVsActualRes.ok) {
+      const budgetError =
+        budgetVsActualData && typeof budgetVsActualData.error === "string" && budgetVsActualData.error.trim()
+          ? budgetVsActualData.error
+          : "Could not load budget versus actual.";
+      setMessage(budgetError);
+    }
     setTotals({
       totalIncome: summaryData.totalIncome ?? 0,
       totalExpense: summaryData.totalExpense ?? 0,

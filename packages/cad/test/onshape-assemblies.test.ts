@@ -26,8 +26,8 @@ describe("native Onshape part and assembly payloads", () => {
       createOnshapeAssembly(http, { documentId: "d1", workspaceId: "w1", name: "Intake" }),
     ).resolves.toEqual({ elementId: "asm-1", name: "Intake" });
     expect(paths).toEqual([
-      "/api/v9/partstudios/d/d1/w/w1",
-      "/api/v9/assemblies/d/d1/w/w1",
+      "/partstudios/d/d1/w/w1",
+      "/assemblies/d/d1/w/w1",
     ]);
   });
 
@@ -56,7 +56,7 @@ describe("native Onshape part and assembly payloads", () => {
     ]);
     expect(inserted.instanceId).toBe("instance-1");
     expect(calls[1]).toMatchObject({
-      path: "/api/v9/assemblies/d/d1/w/w1/e/asm-1/instances",
+      path: "/assemblies/d/d1/w/w1/e/asm-1/instances",
       body: {
         documentId: "d1",
         elementId: "ps-1",

@@ -12,6 +12,7 @@
 
 import {
   ONSHAPE_SERIALIZATION_VERSION,
+  circleSketchFeature,
   onshapeFeaturePath,
   parseAddedFeatureId,
   quantityParameter,
@@ -210,6 +211,27 @@ function inferRectangleMm(feature: Record<string, unknown>): {
   return { originXMm, originYMm, widthMm, heightMm };
 }
 
+function inferCircleMm(feature: Record<string, unknown>): {
+  centerXMm: number;
+  centerYMm: number;
+  diameterMm: number;
+} | null {
+  const entities = Array.isArray(feature.entities) ? feature.entities : [];
+  for (const raw of entities) {
+    const entity = asRecord(raw);
+    const geometry = asRecord(entity?.geometry);
+    if (String(geometry?.btType ?? "") !== "BTCurveGeometryCircle-115") continue;
+    const radiusMm = metresToMm(geometry?.radius);
+    if (radiusMm === undefined || radiusMm <= 0) continue;
+    return {
+      centerXMm: metresToMm(geometry?.xCenter) ?? 0,
+      centerYMm: metresToMm(geometry?.yCenter) ?? 0,
+      diameterMm: radiusMm * 2,
+    };
+  }
+  return null;
+}
+
 export function applyNativeFeatureDimensions(
   feature: Record<string, unknown>,
   patch: {
@@ -268,8 +290,31 @@ export function applyNativeFeatureDimensions(
   }
 
   if (patch.radiusMm !== undefined) {
-    next = { ...next, parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.radius, patch.radiusMm) };
-    applied = true;
+    if (isSketch) {
+      const inferred = inferCircleMm(feature);
+      const diameterMm = patch.radiusMm * 2;
+      const rebuilt = circleSketchFeature({
+        name: String(feature.name ?? "VantageCircles"),
+        plane: planeFromFeature(feature),
+        circles: [
+          {
+            diameterMm,
+            centerXMm: inferred?.centerXMm ?? 0,
+            centerYMm: inferred?.centerYMm ?? 0,
+          },
+        ],
+      });
+      next = {
+        ...next,
+        ...rebuilt.feature,
+        featureId: feature.featureId,
+        name: feature.name ?? rebuilt.feature.name,
+      };
+      applied = true;
+    } else {
+      next = { ...next, parameters: replaceQuantityAlias(parameterList(next), QUANTITY_PARAM_IDS.radius, patch.radiusMm) };
+      applied = true;
+    }
   }
   if (patch.diameterMm !== undefined) {
     next = {

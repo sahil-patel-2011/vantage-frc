@@ -122,6 +122,16 @@ describe("composer native ops", () => {
     expect(COMPOSER_OP_FIELDS.create_mate).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          key: "mateType",
+          kind: "select",
+          options: [
+            { value: "FASTENED", label: "Fastened" },
+            { value: "REVOLUTE", label: "Revolute" },
+            { value: "SLIDER", label: "Slider" },
+            { value: "CYLINDRICAL", label: "Cylindrical" },
+          ],
+        }),
+        expect.objectContaining({
           key: "firstInstanceId",
           kind: "idList",
           help: "Instance ids from list-onshape-assembly.",
@@ -458,24 +468,58 @@ describe("composer native ops", () => {
       /face ids and scope body ids/i,
     );
     expect(() => parametersFromDraft("create_mate", { firstFaceId: "JFC", secondFaceId: "JFD" })).toThrow(
-      /instance id/i,
+      /FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i,
     );
     expect(() =>
       parametersFromDraft("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
-    ).toThrow(/face id/i);
-    expect(
+    ).toThrow(/FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i);
+    expect(() =>
       parametersFromDraft("create_mate", {
         firstInstanceId: "Mi1",
         secondInstanceId: "Mi2",
         firstFaceId: "JFC",
         secondFaceId: "JFD",
       }),
+    ).toThrow(/FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i);
+    expect(
+      parametersFromDraft("create_mate", {
+        mateType: "FASTENED",
+        firstInstanceId: "Mi1",
+        secondInstanceId: "Mi2",
+        firstFaceId: "JFC",
+        secondFaceId: "JFD",
+      }),
     ).toEqual({
+      mateType: "FASTENED",
       firstInstanceId: ["Mi1"],
       secondInstanceId: ["Mi2"],
       firstFaceId: ["JFC"],
       secondFaceId: ["JFD"],
     });
+    expect(
+      parametersFromDraft("create_mate", {
+        mateType: "slider",
+        firstInstanceId: "Mi1",
+        secondInstanceId: "Mi2",
+        firstFaceId: "JFC",
+        secondFaceId: "JFD",
+      }),
+    ).toEqual({
+      mateType: "SLIDER",
+      firstInstanceId: ["Mi1"],
+      secondInstanceId: ["Mi2"],
+      firstFaceId: ["JFC"],
+      secondFaceId: ["JFD"],
+    });
+    expect(() =>
+      parametersFromDraft("create_mate", {
+        mateType: "PIN",
+        firstInstanceId: "Mi1",
+        secondInstanceId: "Mi2",
+        firstFaceId: "JFC",
+        secondFaceId: "JFD",
+      }),
+    ).toThrow(/FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i);
   });
 
   it("requires picks on the draft path only — empty stored plans still parse", () => {
@@ -519,25 +563,51 @@ describe("composer native ops", () => {
     expect(parseComposerOps([{ operation: "create_mate", parameters: {} }])).toEqual([
       { id: "step-1", operation: "create_mate", parameters: {}, reason: "" },
     ]);
-    expect(() => requireComposerPicks("create_mate", {})).toThrow(/instance id/i);
-    expect(() => requireComposerPicks("create_mate", { firstInstanceId: "Mi1" })).toThrow(/instance id/i);
-    expect(() => requireComposerPicks("create_mate", { firstFaceId: ["JFC"], secondFaceId: ["JFD"] })).toThrow(
-      /instance id/i,
+    expect(
+      parseComposerOps([
+        {
+          operation: "create_mate",
+          parameters: { firstInstanceId: "Mi1", secondInstanceId: "Mi2", firstFaceId: "JFC", secondFaceId: "JFD" },
+        },
+      ]),
+    ).toEqual([
+      {
+        id: "step-1",
+        operation: "create_mate",
+        parameters: { firstInstanceId: "Mi1", secondInstanceId: "Mi2", firstFaceId: "JFC", secondFaceId: "JFD" },
+        reason: "",
+      },
+    ]);
+    expect(() => requireComposerPicks("create_mate", {})).toThrow(/FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i);
+    expect(() => requireComposerPicks("create_mate", { firstInstanceId: "Mi1" })).toThrow(
+      /FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i,
+    );
+    expect(() => requireComposerPicks("create_mate", { mateType: "PIN" })).toThrow(
+      /FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL/i,
     );
     expect(() =>
-      requireComposerPicks("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
+      requireComposerPicks("create_mate", { mateType: "FASTENED", firstFaceId: ["JFC"], secondFaceId: ["JFD"] }),
+    ).toThrow(/instance id/i);
+    expect(() =>
+      requireComposerPicks("create_mate", { mateType: "revolute", firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
     ).toThrow(/face id/i);
     expect(() =>
-      requireComposerPicks("create_mate", { firstInstanceId: ["Mi1"], secondInstanceId: ["Mi2"] }),
+      requireComposerPicks("create_mate", {
+        mateType: "SLIDER",
+        firstInstanceId: ["Mi1"],
+        secondInstanceId: ["Mi2"],
+      }),
     ).toThrow(/face id/i);
     expect(
       requireComposerPicks("create_mate", {
+        mateType: "fastened",
         firstInstanceId: "Mi1",
         secondInstanceId: "Mi2",
         firstFaceId: "JFC",
         secondFaceId: "JFD",
       }),
     ).toEqual({
+      mateType: "FASTENED",
       firstInstanceId: "Mi1",
       secondInstanceId: "Mi2",
       firstFaceId: "JFC",
@@ -545,12 +615,14 @@ describe("composer native ops", () => {
     });
     expect(
       requireComposerPicks("create_mate", {
+        mateType: "CYLINDRICAL",
         firstInstanceId: ["Mi1"],
         secondInstanceId: ["Mi2"],
         firstFaceId: ["JFC"],
         secondFaceId: ["JFD"],
       }),
     ).toEqual({
+      mateType: "CYLINDRICAL",
       firstInstanceId: ["Mi1"],
       secondInstanceId: ["Mi2"],
       firstFaceId: ["JFC"],

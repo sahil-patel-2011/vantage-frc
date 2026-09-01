@@ -23,8 +23,10 @@ describe("POST /api/cad list-onshape-assembly", () => {
 
   it("dispatches list-onshape-assembly to listOnshapeAssemblyInstances", () => {
     expect(cad).toContain('if (action === "list-onshape-assembly")');
-    expect(cad).toContain("const assemblyElementId = String(body.assemblyElementId ?? \"\").trim() || ref.elementId");
+    expect(cad).toContain("const assemblyElementId = String(body.assemblyElementId ?? \"\").trim()");
+    expect(cad).not.toContain("|| ref.elementId");
     expect(cad).toContain("const instances = await listOnshapeAssemblyInstances(onshape.http, {");
+    expect(cad).toContain('return { instances: [], assemblyElementId: "", documentRef: ref }');
     expect(cad).toContain("return { instances, documentRef: ref, assemblyElementId, authPath: onshape.via }");
   });
 

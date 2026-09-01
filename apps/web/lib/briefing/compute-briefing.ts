@@ -494,7 +494,11 @@ export async function computeBriefingView(
       orgId: row.orgId,
       matchKey: match.matchKey,
     });
-    if (refreshed) strategySections = refreshed;
+    // Refresh was requested: keep plan/scout rows, but never keep a stale
+    // stored win % after an empty or failed recompute.
+    strategySections = refreshed
+      ? refreshed
+      : { ...strategySections, prediction: null };
   } else if (!strategySections.prediction) {
     const computed = await computeStrategyFallback(client, {
       userId: input.userId,

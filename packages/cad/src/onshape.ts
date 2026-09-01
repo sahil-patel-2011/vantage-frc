@@ -636,11 +636,7 @@ export function createOnshapeApiTransport(input: {
           const plane = String(parameters.plane ?? "Top").trim() || "Top";
           const name = String(parameters.name ?? jobSketchName(idempotencyKey)).trim();
           const sketchKind = String(parameters.sketchKind ?? "").trim().toLowerCase();
-          const radiusRaw = parameters.radiusMm ?? parameters.radius;
-          const radiusHint = Number(radiusRaw);
-          const wantsCircle =
-            sketchKind === "circle" || (radiusRaw !== undefined && Number.isFinite(radiusHint) && radiusHint > 0);
-          if (wantsCircle) {
+          if (sketchKind === "circle") {
             const radiusMm = positiveMillimetres(parameters, ["radiusMm", "radius"], "Sketch radius");
             const circle: { diameterMm: number; centerXMm?: number; centerYMm?: number } = {
               diameterMm: radiusMm * 2,
