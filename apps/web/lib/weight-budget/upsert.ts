@@ -82,14 +82,14 @@ export function resolvePlannedLineWrite(
   return { kind: "insert" };
 }
 
-function parseUpsertComponent(raw: unknown): Extract<WeightWriteAction, { action: "upsert_component" }> {
+function parseUpsertComponent(raw: unknown): { action: "upsert_component"; orgId: string; seasonYear: number; id?: string } & ComponentInput {
   if (!raw || typeof raw !== "object") throw new Error("Invalid request body");
   const body = raw as Record<string, unknown>;
   const validated = validateComponent(body);
   if (!validated.ok) throw new Error(validated.error);
   const seasonYear = Number(body.seasonYear);
   if (!Number.isInteger(seasonYear)) throw new Error("seasonYear is required");
-  const parsed: Extract<WeightWriteAction, { action: "upsert_component" }> = {
+  const parsed: { action: "upsert_component"; orgId: string; seasonYear: number; id?: string } & ComponentInput = {
     action: "upsert_component",
     orgId: reqStr(body.orgId, "orgId"),
     seasonYear,

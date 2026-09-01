@@ -95,6 +95,32 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "export_gltf",
 ];
 
+/**
+ * Hosted default / AI CAD plans for humans: native sketch / extrude / mate only.
+ * `feature_script` stays on the full allowlist for local CLI / MCP, but must never
+ * appear in a hosted starter or metered planner plan.
+ */
+export const HOSTED_NATIVE: readonly CadOperation[] = [
+  "create_sketch",
+  "create_extrude",
+  "create_fillet",
+  "create_chamfer",
+  "create_shell",
+  "create_pattern",
+  "set_variable",
+  "create_part_studio",
+  "create_assembly",
+  "add_assembly_instance",
+  "create_mate",
+  "verify_topology",
+  "render_views",
+  "create_checkpoint",
+  "rollback_checkpoint",
+  "export_step",
+  "export_stl",
+  "export_gltf",
+];
+
 export const CAD_AGENT_SYSTEM_PROMPT = `You are Vantage CAD Assistant, an FRC engineering planning copilot.
 
 Hard rules:
@@ -267,7 +293,7 @@ export function buildDefaultCadPlan(
       reason: `Export ${options.includeExport.toUpperCase()} with provenance`,
     });
   }
-  return plan;
+  return plan.filter((step) => HOSTED_NATIVE.includes(step.operation));
 }
 
 export function describeCadBrainMode(mode: CadBrainMode): { title: string; billing: string; detail: string } {

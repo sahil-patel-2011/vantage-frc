@@ -28,10 +28,23 @@ export * from "./mock-fusion-plugin";
 export * from "./agent-loop";
 export * from "./onshape";
 export * from "./onshape-native-dispatch";
+export * from "./onshape-native-entities";
 export * from "./compatibility";
 export * from "./ai-plan";
 export * from "./onshape-api-keys";
-export * from "./onshape-assemblies";
+export type { OnshapeMateType, OnshapeAssemblyRef } from "./onshape-assemblies";
+export {
+  onshapeAssemblyPath,
+  createOnshapePartStudio,
+  getOnshapeBodyDetails,
+  summarizeOnshapeBodyDetails,
+  createOnshapeAssembly,
+  getOnshapeAssembly,
+  addOnshapeAssemblyInstance,
+  onshapeMateConnectorFeature,
+  onshapeMateFeature,
+  createOnshapeMate,
+} from "./onshape-assemblies";
 export * from "./onshape-features";
 export * from "./onshape-update-feature";
 export * from "./onshape-resolve";

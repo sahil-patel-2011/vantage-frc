@@ -200,9 +200,11 @@ export function applyStoredJustificationToRecommendation<T extends PickClockReas
   const row =
     stored instanceof Map
       ? (stored.get(recommendation.teamKey) ?? null)
-      : stored && stored.teamKey === recommendation.teamKey
-        ? stored
-        : null;
+      : stored && typeof stored === "object" && "get" in stored && typeof stored.get === "function"
+        ? (stored.get(recommendation.teamKey) ?? null)
+        : stored && "teamKey" in stored && stored.teamKey === recommendation.teamKey
+          ? stored
+          : null;
   if (!row) return recommendation;
   const storedReasons = pickClockReasonsFromJustification(row);
   if (!storedReasons.length) return recommendation;

@@ -63,10 +63,11 @@ function rolesFromPaths(paths: readonly string[]): string[] {
 function firstParagraph(markdown: string): string | null {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const bits: string[] = [];
+  let startedBody = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) {
-      if (bits.length) break;
+      if (startedBody) break;
       continue;
     }
     if (/^```/.test(trimmed)) break;
@@ -76,6 +77,7 @@ function firstParagraph(markdown: string): string | null {
       continue;
     }
     bits.push(trimmed.replace(/^[-*]\s+/, ""));
+    startedBody = true;
     if (bits.join(" ").length > 280) break;
   }
   const text = bits.join(" ").replace(/\s+/g, " ").trim();

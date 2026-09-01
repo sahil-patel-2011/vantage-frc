@@ -104,6 +104,33 @@ describe("receiveToInventory", () => {
     );
   });
 
+  it("writes stock from purchase_requests.inventory_item_id when the caller omits it", async () => {
+    const { client, query } = stubClient((sql) => {
+      if (sql.includes("FROM purchase_requests")) {
+        return { rows: [{ inventoryItemId: ITEM_ID, quantity: 3, title: "NEO 550" }], rowCount: 1 };
+      }
+      if (sql.includes("FROM inventory_transactions")) return { rows: [], rowCount: 0 };
+      if (sql.includes("FROM inventory_items") && sql.includes("SELECT 1")) {
+        return { rows: [{ "?column?": 1 }], rowCount: 1 };
+      }
+      if (sql.includes("UPDATE inventory_items")) {
+        return { rows: [{ quantity: 7 }], rowCount: 1 };
+      }
+      if (sql.includes("INSERT INTO inventory_transactions")) {
+        return { rows: [], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const result = await receiveToInventory(client, {
+      orgId: ORG_ID,
+      userId: USER_ID,
+      orderId: ORDER_ID,
+    });
+    expect(result).toEqual({ applied: true, itemId: ITEM_ID, delta: 3 });
+    expect(query.mock.calls[0]![0]).toMatch(/inventory_item_id/);
+    expect(query.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO inventory_transactions"))).toBe(true);
+  });
+
   it("skips when the linked purchase request has no inventory_item_id", async () => {
     const { client, query } = stubClient((sql) => {
       if (sql.includes("FROM purchase_requests")) {

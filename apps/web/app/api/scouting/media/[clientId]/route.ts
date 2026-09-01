@@ -99,7 +99,7 @@ export async function GET(
     if (payload.status === "missing") {
       return Response.json({ error: payload.reason }, { status: 404 });
     }
-    return new Response(payload.body, {
+    return new Response(Buffer.from(payload.body), {
       status: 200,
       headers: {
         "Content-Type": payload.contentType,

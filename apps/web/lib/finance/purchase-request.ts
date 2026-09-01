@@ -1,8 +1,10 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { parseInventoryItemId } from "../orders/receive-to-inventory";
 import { parseVendorId, resolveDirectoryVendor } from "../vendors/directory";
 
 export const VENDOR_ID_REQUIRED = "Choose a vendor from the vendor directory.";
 export const VENDOR_NOT_IN_DIRECTORY = "Vendor must be chosen from the vendor directory.";
+export const INVENTORY_ITEM_ID_INVALID = "Inventory item must be a catalog UUID.";
 
 export type PurchaseRequestCreateInput = {
   title: string;
@@ -13,6 +15,8 @@ export type PurchaseRequestCreateInput = {
   justification: string | null;
   /** YYYY-MM-DD, or null when the buy sheet left "when" blank. */
   neededBy: string | null;
+  /** Optional inventory catalog row restocked on receive. */
+  inventoryItemId: string | null;
 };
 
 export type PurchaseRequestCreateValue = PurchaseRequestCreateInput & {
@@ -50,6 +54,18 @@ function parseItemUrl(value: unknown): { ok: true; value: string | null } | { ok
   }
 }
 
+function parseOptionalInventoryItemId(
+  value: unknown,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (value === undefined || value === null || value === "") return { ok: true, value: null };
+  if (typeof value !== "string") return { ok: false, error: INVENTORY_ITEM_ID_INVALID };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, value: null };
+  const parsed = parseInventoryItemId(trimmed);
+  if (!parsed) return { ok: false, error: INVENTORY_ITEM_ID_INVALID };
+  return { ok: true, value: parsed };
+}
+
 /**
  * Create/edit validation for purchase requests.
  * Vendor identity is a directory UUID — free-text vendor names are ignored.
@@ -81,6 +97,9 @@ export function validatePurchaseRequestCreate(
   const neededBy = parseNeededBy(input.neededBy ?? input.needed_by);
   if (!neededBy.ok) return neededBy;
 
+  const inventoryItemId = parseOptionalInventoryItemId(input.inventoryItemId ?? input.inventory_item_id);
+  if (!inventoryItemId.ok) return inventoryItemId;
+
   return {
     ok: true,
     value: {
@@ -91,6 +110,7 @@ export function validatePurchaseRequestCreate(
       unitCostUsd,
       justification: justification || null,
       neededBy: neededBy.value,
+      inventoryItemId: inventoryItemId.value,
       totalCostUsd: round2(quantityRaw * unitCostUsd),
     },
   };
@@ -115,12 +135,14 @@ export async function insertDirectoryPurchaseRequest(
   const result = await client.query(
     `INSERT INTO purchase_requests(
        org_id, season_year, category_id, requested_by, title, vendor, vendor_id,
-       item_url, quantity, unit_cost_usd, total_cost_usd, justification, needed_by
+       item_url, quantity, unit_cost_usd, total_cost_usd, justification, needed_by,
+       inventory_item_id
      )
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      RETURNING id, season_year AS "seasonYear", category_id AS "categoryId", requested_by AS "requestedBy",
        title, vendor, vendor_id AS "vendorId", item_url AS "itemUrl", quantity, unit_cost_usd AS "unitCostUsd",
        total_cost_usd AS "totalCostUsd", justification, needed_by::text AS "neededBy",
+       inventory_item_id AS "inventoryItemId",
        status, created_at AS "createdAt"`,
     [
       input.orgId,
@@ -136,6 +158,7 @@ export async function insertDirectoryPurchaseRequest(
       validated.value.totalCostUsd,
       validated.value.justification,
       validated.value.neededBy,
+      validated.value.inventoryItemId,
     ],
   );
 
@@ -159,9 +182,10 @@ export async function updateDirectoryPurchaseRequest(
 
   const result = await client.query(
     `UPDATE purchase_requests SET title=$1, vendor=$2, vendor_id=$3, item_url=$4, quantity=$5, unit_cost_usd=$6,
-       total_cost_usd=$7, justification=$8, needed_by=$9, category_id=$10, updated_at=now()
-     WHERE id=$11 AND org_id=$12
-     RETURNING id, status, vendor_id AS "vendorId", needed_by::text AS "neededBy"`,
+       total_cost_usd=$7, justification=$8, needed_by=$9, category_id=$10, inventory_item_id=$11, updated_at=now()
+     WHERE id=$12 AND org_id=$13
+     RETURNING id, status, vendor_id AS "vendorId", needed_by::text AS "neededBy",
+       inventory_item_id AS "inventoryItemId"`,
     [
       validated.value.title,
       vendor.name,
@@ -173,6 +197,7 @@ export async function updateDirectoryPurchaseRequest(
       validated.value.justification,
       validated.value.neededBy,
       input.categoryId ?? null,
+      validated.value.inventoryItemId,
       input.id,
       input.orgId,
     ],

@@ -6,6 +6,7 @@ import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ORDERS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { validateBuySheet } from "../../lib/finance/buy-sheet";
 import { hubHref } from "../../lib/nav/hubs";
 import {
   ordersNextActions,
@@ -457,6 +458,16 @@ function SubmitForm({
     if (busy) return;
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
+    const sheet = validateBuySheet({
+      title: data.title,
+      justification: data.justification,
+      neededBy: data.neededBy,
+      estimateUsd: data.estimateUsd,
+    });
+    if (!sheet.ok) {
+      setError(sheet.error);
+      return;
+    }
     setBusy(true);
     setError("");
     void fetch("/api/finance/purchase-requests", {
@@ -465,12 +476,12 @@ function SubmitForm({
       body: JSON.stringify({
         orgId,
         seasonYear,
-        title: data.title,
-        justification: data.justification,
-        estimateUsd: data.estimateUsd,
+        title: sheet.value.title,
+        justification: sheet.value.justification,
+        estimateUsd: sheet.value.costUsd,
         vendorId: data.vendorId,
         itemUrl: data.itemUrl,
-        neededBy: data.neededBy || undefined,
+        neededBy: sheet.value.neededBy ?? undefined,
       }),
     })
       .then(async (response) => {

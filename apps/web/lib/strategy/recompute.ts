@@ -69,8 +69,8 @@ export function isEmptyEpaCoinFlip(
 }
 
 function toEmptyView(
-  view: Extract<StrategyView, { status: "live" | "setup_required" | "empty" }>,
-): Extract<StrategyView, { status: "empty" }> {
+  view: StrategyView,
+): Extract<StrategyView, { status: "setup_required" | "empty" }> {
   return {
     status: "empty",
     message: EMPTY_EPA_MESSAGE,

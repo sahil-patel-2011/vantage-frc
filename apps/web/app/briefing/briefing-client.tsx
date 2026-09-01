@@ -5,12 +5,18 @@ import {
   briefingChecklist,
   matchLabel,
   type BriefingChecklistRow,
+  type BriefingPrediction,
 } from "../../lib/briefing";
 import { capabilityLabel } from "../../lib/briefing/plan-sections";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
 import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
 import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
+import {
+  formatPredictionWinDisplay,
+  predictionWinDisplay,
+  type PredictionDisplayInput,
+} from "../../lib/strategy/prediction-display";
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -33,6 +39,21 @@ function withOrg(href: string, orgId: string | null): string {
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+/** Honest win-% input for the hero tile. DEMO / missing prediction → null (blank). */
+function briefingWinDisplayInput(
+  prediction: BriefingPrediction | null,
+  alliance: "red" | "blue" | null,
+): PredictionDisplayInput | null {
+  if (!prediction) return null;
+  return {
+    pRed: prediction.pRed,
+    pBlue: prediction.pBlue,
+    alliance,
+    modelVersion: prediction.modelVersion,
+    caveats: prediction.caveats,
+  };
 }
 
 function fmtSeconds(value: number | null): string {
@@ -181,13 +202,14 @@ export default function BriefingClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const selectedRef = useRef<string | null>(null);
 
-  const load = useCallback(async (matchKey: string | null) => {
+  const load = useCallback(async (matchKey: string | null, options?: { refresh?: boolean }) => {
     selectedRef.current = matchKey;
     const pageParams = new URLSearchParams(window.location.search);
     const orgId = pageParams.get("orgId");
     const query = new URLSearchParams();
     if (orgId) query.set("orgId", orgId);
     if (matchKey) query.set("matchKey", matchKey);
+    if (options?.refresh) query.set("refresh", "1");
     const suffix = query.toString();
     try {
       const response = await fetch(`/api/briefing${suffix ? `?${suffix}` : ""}`);
@@ -299,6 +321,9 @@ export default function BriefingClient() {
   const partners = ourKeys.filter((key) => key !== teamKey).map(stripFrc);
   const opponents = oppKeys.map(stripFrc);
   const prob = briefingWinProbability(view.prediction, side);
+  const winInput = briefingWinDisplayInput(view.prediction, side);
+  const winDisplay = predictionWinDisplay(winInput);
+  const winPct = formatPredictionWinDisplay(winInput);
   const stored = includeStoredBriefingSections({
     card: view.card,
     counterBooks: view.counterBooks,
@@ -360,6 +385,9 @@ export default function BriefingClient() {
           <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
             Refresh
           </button>
+          <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current, { refresh: true })}>
+            Recompute prediction
+          </button>
           <button type="button" className="app-button secondary" onClick={() => window.print()}>
             Print
           </button>
@@ -391,9 +419,9 @@ export default function BriefingClient() {
             {view.ourEpaTotal != null ? <span className="brief-chip">our EPA {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
-        {prob != null && view.prediction ? (
+        {winDisplay && view.prediction ? (
           <div className="brief-prob">
-            <span className="brief-prob-num">{pct(prob)}</span>
+            <span className="brief-prob-num">{winPct ?? ""}</span>
             <span className="brief-prob-label">win probability</span>
             <span className="brief-prob-range">
               confidence {pct(view.prediction.confidenceLow)}–{pct(view.prediction.confidenceHigh)} ·{" "}

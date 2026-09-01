@@ -57,7 +57,9 @@ export async function loadSeasonLearnedItems(
      ORDER BY COUNT(v.id) DESC, li.created_at DESC`,
     [orgId, seasonYear],
   );
-  return collectLearnedItems(result.rows);
+  return collectLearnedItems(
+    result.rows.map((row) => ({ ...row, voteCount: Number(row.voteCount) || 0 })),
+  );
 }
 
 export async function loadHandoffStatus(

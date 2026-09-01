@@ -7,6 +7,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { computeBriefingView } from "../../../lib/briefing/compute-briefing";
 import type { FullBriefingView } from "../../../lib/briefing/types";
+import { briefingRequestsStrategyRefresh } from "../../../lib/strategy/recompute";
 
 export type { FullBriefingView };
 
@@ -37,9 +38,10 @@ export async function GET(request: Request) {
     const requestedOrg = url.searchParams.get("orgId");
     // Canonical param is matchKey; legacy consolidation links may use ?match=.
     const requestedMatch = url.searchParams.get("matchKey") ?? url.searchParams.get("match");
+    const refresh = briefingRequestsStrategyRefresh({ refresh: url.searchParams.get("refresh") });
 
     const view = await withRls({ userId: session.user.id }, (client) =>
-      computeBriefingView(client, { userId: session.user.id, requestedOrg, requestedMatch }),
+      computeBriefingView(client, { userId: session.user.id, requestedOrg, requestedMatch, refresh }),
     );
 
     return Response.json(view);
