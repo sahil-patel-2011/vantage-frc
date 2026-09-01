@@ -180,6 +180,8 @@ const MATE_TYPES = [
   { value: "CYLINDRICAL", label: "Cylindrical" },
 ] as const;
 
+const ALLOWED_MATE_TYPES = MATE_TYPES.map((entry) => entry.value);
+
 const PATTERN_KINDS = [
   { value: "linear", label: "Linear" },
   { value: "circular", label: "Circular" },
@@ -629,7 +631,12 @@ export function requireComposerPicks(
         throw new Error("Mirror needs feature ids from the Vantage feature tree. Do not invent ids.");
       }
       break;
-    case "create_mate":
+    case "create_mate": {
+      const mateType = canonicalMateType(parameters.mateType);
+      if (!mateType) {
+        throw new Error("Mate needs a type of FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL.");
+      }
+      parameters.mateType = mateType;
       if (
         !(hasNonEmptyId(parameters.firstInstanceId) || hasNonEmptyIds(parameters.firstInstanceId)) ||
         !(hasNonEmptyId(parameters.secondInstanceId) || hasNonEmptyIds(parameters.secondInstanceId))
@@ -647,6 +654,7 @@ export function requireComposerPicks(
         );
       }
       break;
+    }
     case "delete_feature":
       if (!hasNonEmptyId(parameters.featureId) && !hasNonEmptyIds(parameters.featureId)) {
         throw new Error("Delete feature needs a feature id from the Vantage feature tree. Do not invent ids.");
@@ -860,6 +868,11 @@ function compactParameters(parameters: Record<string, unknown>): Record<string, 
     next[key] = value;
   }
   return next;
+}
+
+function canonicalMateType(value: unknown): (typeof ALLOWED_MATE_TYPES)[number] | undefined {
+  const text = stringOrEmpty(value).toUpperCase();
+  return ALLOWED_MATE_TYPES.find((type) => type === text);
 }
 
 function hasNonEmptyIds(value: unknown): boolean {

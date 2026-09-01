@@ -890,12 +890,16 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const recomputePrediction = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
+    const matchKey =
+      view && view.status === "live" && typeof view.matchKey === "string"
+        ? view.matchKey
+        : params.get("matchKey");
     setRecomputing(true);
     setError("");
     void fetch("/api/strategy", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "recompute", orgId }),
+      body: JSON.stringify({ action: "recompute", orgId, matchKey }),
     })
       .then(async (response) => {
         const data = (await response.json()) as StrategyView | { error?: string };
@@ -911,7 +915,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       .finally(() => {
         setRecomputing(false);
       });
-  }, []);
+  }, [view]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const shell = classifyStrategyShell({

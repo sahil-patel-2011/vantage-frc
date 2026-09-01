@@ -247,14 +247,14 @@ describe("Onshape export + transport (mocked HTTP)", () => {
       parameters: { sketchKind: "circle", radiusMm: 12, plane: "Front", name: "CircleKind" },
       idempotencyKey: "job-circle:1:sketch",
     });
-    const byRadius = await transport.mutate({
+    const byCase = await transport.mutate({
       operation: "create_sketch",
-      parameters: { radius: 8, plane: "Top", name: "CircleRadius" },
+      parameters: { sketchKind: "CIRCLE", radius: 8, plane: "Top", name: "CircleRadius" },
       idempotencyKey: "job-circle:2:sketch",
     });
 
     expect(byKind).toEqual({ featureId: "sketch-circle-1", featureScriptUsed: false });
-    expect(byRadius).toEqual({ featureId: "sketch-circle-1", featureScriptUsed: false });
+    expect(byCase).toEqual({ featureId: "sketch-circle-1", featureScriptUsed: false });
     expect(requests).toHaveLength(2);
     expect(requests.every((request) => request.path.endsWith("/features"))).toBe(true);
     expect(requests.some((request) => request.path.toLowerCase().includes("featurescript"))).toBe(false);
@@ -274,6 +274,57 @@ describe("Onshape export + transport (mocked HTTP)", () => {
       }),
     );
     expect(JSON.stringify(requests[0]?.body)).toContain("BTCurveGeometryCircle-115");
+  });
+
+  it("ignores leftover radiusMm when sketchKind is rectangle or omitted", async () => {
+    const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith("/features") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        requests.push({ path, body });
+        return Response.json({ featureId: "sketch-rect-1" });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+
+    const byKind = await transport.mutate({
+      operation: "create_sketch",
+      parameters: {
+        sketchKind: "rectangle",
+        widthMm: 80,
+        heightMm: 50,
+        radiusMm: 12,
+        plane: "Top",
+        name: "RectDespiteRadius",
+      },
+      idempotencyKey: "job-rect:1:sketch",
+    });
+    const omitted = await transport.mutate({
+      operation: "create_sketch",
+      parameters: {
+        widthMm: 40,
+        heightMm: 20,
+        radiusMm: 99,
+        plane: "Front",
+        name: "RectOmittedKind",
+      },
+      idempotencyKey: "job-rect:2:sketch",
+    });
+
+    expect(byKind).toEqual({ featureId: "sketch-rect-1", featureScriptUsed: false });
+    expect(omitted).toEqual({ featureId: "sketch-rect-1", featureScriptUsed: false });
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.body).toEqual(
+      rectangleSketchFeature({ widthMm: 80, heightMm: 50, plane: "Top", name: "RectDespiteRadius" }),
+    );
+    expect(requests[1]?.body).toEqual(
+      rectangleSketchFeature({ widthMm: 40, heightMm: 20, plane: "Front", name: "RectOmittedKind" }),
+    );
+    expect(JSON.stringify(requests)).not.toContain("BTCurveGeometryCircle-115");
   });
 
   it("refuses create_sketch without a positive millimetre dimension", async () => {
@@ -297,7 +348,14 @@ describe("Onshape export + transport (mocked HTTP)", () => {
         parameters: { sketchKind: "circle" },
         idempotencyKey: "job-missing:2:sketch",
       }),
-    ).rejects.toThrow(/must be a positive number in millimetres; no geometry was created/);
+    ).rejects.toThrow(/Sketch radius must be a positive number in millimetres; no geometry was created/);
+    await expect(
+      transport.mutate({
+        operation: "create_sketch",
+        parameters: { radiusMm: 12 },
+        idempotencyKey: "job-missing:3:sketch",
+      }),
+    ).rejects.toThrow(/Sketch width must be a positive number in millimetres; no geometry was created/);
     expect(http).not.toHaveBeenCalled();
   });
 
@@ -321,7 +379,7 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     let assemblyFeature = 0;
     const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
       paths.push(`${init?.method ?? "GET"} ${path}`);
-      if (path === "/api/v9/assemblies/d/d1/w/w1" && init?.method === "POST") {
+      if (path === "/assemblies/d/d1/w/w1" && init?.method === "POST") {
         return Response.json({ id: "assembly-1" });
       }
       if (path.endsWith("/instances") && init?.method === "POST") {
@@ -331,7 +389,7 @@ describe("Onshape export + transport (mocked HTTP)", () => {
         assemblyFeature += 1;
         return Response.json({ featureId: `assembly-feature-${assemblyFeature}` });
       }
-      if (path.includes("/api/v9/assemblies/") && !init?.method) {
+      if (path.includes("/assemblies/") && !init?.method) {
         return Response.json({ rootAssembly: { instances: [{ id: "instance-1" }] } });
       }
       return Response.json({ message: "unexpected request" }, { status: 404 });

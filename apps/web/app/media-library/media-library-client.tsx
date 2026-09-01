@@ -226,7 +226,11 @@ export default function MediaLibraryClient() {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/media-library");
+      const orgId =
+        typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
+      const response = await fetch(
+        orgId ? `/api/media-library?orgId=${encodeURIComponent(orgId)}` : "/api/media-library",
+      );
       if (!response.ok) throw new Error(`Request failed (${response.status})`);
       setView((await response.json()) as MediaLibraryView);
       setLoadError(null);

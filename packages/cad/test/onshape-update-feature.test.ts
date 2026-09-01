@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   chamferFeature,
+  circleSketchFeature,
   extrudeFeature,
   filletFeature,
   holeFeature,
@@ -57,6 +58,21 @@ function sketchExisting(featureId = CREATED_SKETCH_ID) {
   return {
     feature: {
       ...rectangleSketchFeature({ widthMm: 80, heightMm: 50, plane: "Top", name: "VantageSketch" }).feature,
+      featureId,
+    },
+    sourceMicroversion: "mv-create-1",
+    serializationVersion: "1.1.22",
+  };
+}
+
+function circleSketchExisting(featureId = CREATED_SKETCH_ID) {
+  return {
+    feature: {
+      ...circleSketchFeature({
+        name: "VantageCircles",
+        plane: "Top",
+        circles: [{ diameterMm: 20, centerXMm: 0, centerYMm: 0 }],
+      }).feature,
       featureId,
     },
     sourceMicroversion: "mv-create-1",
@@ -202,6 +218,19 @@ describe("applyNativeFeatureDimensions", () => {
     const thickness = quantityOf(updated, "thickness");
     expect(thickness?.expression).toBe("1.5 mm");
     expect(thickness?.value).toBeCloseTo(0.0015, 10);
+  });
+
+  it("rebuilds a circle sketch from radiusMm instead of requiring width and height", () => {
+    const updated = applyNativeFeatureDimensions(circleSketchExisting().feature, { radiusMm: 15 });
+    expect(JSON.stringify(updated)).toContain("BTCurveGeometryCircle-115");
+    expect(JSON.stringify(updated)).toContain("0.015");
+    expect(JSON.stringify(updated)).not.toContain("rect.bottom");
+  });
+
+  it("does not rebuild a circle when only leftover radius is on a rectangle update", () => {
+    const updated = applyNativeFeatureDimensions(sketchExisting().feature, { widthMm: 90, heightMm: 50 });
+    expect(JSON.stringify(updated)).toContain("rect.bottom");
+    expect(JSON.stringify(updated)).not.toContain("BTCurveGeometryCircle-115");
   });
 });
 

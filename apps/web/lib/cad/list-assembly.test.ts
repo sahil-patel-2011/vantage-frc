@@ -1,10 +1,19 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   EMPTY_LISTED_ASSEMBLY,
   listOnshapeAssemblyInstances,
   parseListedInstances,
   rejectDemoInstanceId,
+  resolveAssemblyElementId,
 } from "./list-assembly";
+
+const WEB_ROOT = join(__dirname, "..", "..");
+
+function readSource(relative: string): string {
+  return readFileSync(join(WEB_ROOT, relative), "utf8");
+}
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const JOB = "00000000-0000-0000-0000-0000000000aa";
@@ -17,6 +26,32 @@ const LIVE = [{ id: "Mabc", name: "Plate <1>" }];
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("CAD listing contracts (source)", () => {
+  const route = readSource("app/api/cad/route.ts");
+  const listAssembly = readSource("lib/cad/list-assembly.ts");
+
+  it("GET cad_jobs is scoped to the current user via created_by", () => {
+    expect(route).toContain(
+      "FROM cad_jobs WHERE org_id=$1 AND created_by=$2 ORDER BY updated_at DESC LIMIT 30",
+    );
+    expect(route).toContain("[orgId, session.user.id]");
+  });
+
+  it("list-onshape-assembly does not fall back to the bound Part Studio element", () => {
+    const start = route.indexOf('if (action === "list-onshape-assembly")');
+    expect(start).toBeGreaterThan(-1);
+    const next = route.indexOf("if (action ===", start + 1);
+    const block = route.slice(start, next === -1 ? route.length : next);
+    expect(block).not.toContain("|| ref.elementId");
+    expect(block).toContain('return { instances: [], assemblyElementId: "", documentRef: ref }');
+    expect(listAssembly).not.toMatch(/\|\|\s*ref\.elementId/);
+    expect(listAssembly).toContain("resolveAssemblyElementId");
+    expect(resolveAssemblyElementId(undefined)).toBe("");
+    expect(resolveAssemblyElementId("  ")).toBe("");
+    expect(resolveAssemblyElementId("asm-real")).toBe("asm-real");
+  });
 });
 
 describe("rejectDemoInstanceId", () => {

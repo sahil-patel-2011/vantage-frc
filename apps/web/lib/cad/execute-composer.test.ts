@@ -337,6 +337,36 @@ describe("executeComposerOp", () => {
     }
   });
 
+  it("resolves the CAD agent Onshape job without inventing a DEMO id", async () => {
+    const otherJob = "00000000-0000-0000-0000-0000000000cc";
+    const calls = installFetch((url, body) => {
+      if (!body) {
+        return jsonResponse({
+          jobs: [
+            { id: otherJob, title: "Other Onshape job", platform: "onshape", briefConfirmedAt: "2026-08-31T00:00:00.000Z" },
+            { id: JOB, title: "CAD agent", platform: "onshape", briefConfirmedAt: "2026-08-31T00:00:00.000Z" },
+          ],
+        });
+      }
+      switch (body.action) {
+        case "set-document":
+        case "approve":
+          return jsonResponse({ success: true });
+        case "append-step":
+          return jsonResponse({ id: STEP, sequence: 1 });
+        case "execute-onshape":
+          return jsonResponse({ externalFeatureId: FEATURE });
+        default:
+          return jsonResponse({ error: `unexpected action ${String(body.action)}` }, 400);
+      }
+    });
+    const result = await executeComposerOp({ orgId: ORG, payload: sketch, documentRef: DOCUMENT });
+    expect(result.jobId).toBe(JOB);
+    expect(result.jobId).not.toMatch(/DEMO/i);
+    expect(calls.filter((call) => call.body).every((call) => call.body?.jobId === JOB)).toBe(true);
+    expect(JSON.stringify(calls)).not.toMatch(/DEMO/i);
+  });
+
   it("still updates when featureId is present and there are no entity lists", async () => {
     const calls = pipelineFetch();
     const result = await executeComposerOp({

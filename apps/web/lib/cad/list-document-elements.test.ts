@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   EMPTY_LISTED_ELEMENTS,
   completeElementsDocumentRef,
+  documentTabKind,
   isBindableDocumentTab,
   listDocumentElements,
   parseListedDocumentElements,
@@ -43,6 +44,14 @@ describe("isBindableDocumentTab", () => {
     expect(isBindableDocumentTab("FEATURESTUDIO")).toBe(false);
     expect(isBindableDocumentTab("BILLOFMATERIALS")).toBe(false);
     expect(isBindableDocumentTab("")).toBe(false);
+  });
+
+  it("classifies mutation vs extra tabs", () => {
+    expect(documentTabKind("PARTSTUDIO")).toBe("partstudio");
+    expect(documentTabKind("Part Studio")).toBe("partstudio");
+    expect(documentTabKind("ASSEMBLY")).toBe("assembly");
+    expect(documentTabKind("", "VARIABLESTUDIO")).toBe("variablestudio");
+    expect(documentTabKind("FEATURESTUDIO")).toBeNull();
   });
 });
 
