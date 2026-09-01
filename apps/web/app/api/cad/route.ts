@@ -76,8 +76,8 @@ export async function GET(request: Request) {
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const jobs = await client.query(
-        `SELECT id,title,platform,execution_mode AS "executionMode",status,brief,brief_confirmed_at AS "briefConfirmedAt",current_checkpoint_id AS "currentCheckpointId",updated_at AS "updatedAt" FROM cad_jobs WHERE org_id=$1 ORDER BY updated_at DESC LIMIT 30`,
-        [orgId],
+        `SELECT id,title,platform,execution_mode AS "executionMode",status,brief,brief_confirmed_at AS "briefConfirmedAt",current_checkpoint_id AS "currentCheckpointId",updated_at AS "updatedAt" FROM cad_jobs WHERE org_id=$1 AND created_by=$2 ORDER BY updated_at DESC LIMIT 30`,
+        [orgId, session.user.id],
       );
       const detail = jobId
         ? {
@@ -663,16 +663,19 @@ export async function POST(request: Request) {
           elements,
           body.variableStudioElementId ?? body.elementId,
         );
+        if (!variableStudioElementId) {
+          return { variables: [], documentRef: ref, variableStudioElementId: null, authPath: onshape.via };
+        }
         const target = {
           documentId: ref.documentId,
           workspaceId: ref.workspaceId,
-          elementId: variableStudioElementId || ref.elementId,
+          elementId: variableStudioElementId,
         };
         const variables = await listOnshapeNativeVariables(onshape.http, target);
         return {
           variables,
           documentRef: ref,
-          variableStudioElementId: variableStudioElementId || null,
+          variableStudioElementId,
           authPath: onshape.via,
         };
       }
@@ -692,8 +695,11 @@ export async function POST(request: Request) {
         if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
           throw new Error("Bind an Onshape document/workspace/element first");
         }
+        const assemblyElementId = String(body.assemblyElementId ?? "").trim();
+        if (!assemblyElementId) {
+          return { instances: [], assemblyElementId: "", documentRef: ref };
+        }
         const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
-        const assemblyElementId = String(body.assemblyElementId ?? "").trim() || ref.elementId;
         const instances = await listOnshapeAssemblyInstances(onshape.http, {
           documentId: ref.documentId,
           workspaceId: ref.workspaceId,

@@ -52,7 +52,7 @@ function instanceId(body: unknown): string {
 }
 
 export function onshapeAssemblyPath(ref: OnshapeAssemblyRef, suffix = ""): string {
-  return `/api/v9/assemblies/d/${encodeURIComponent(required(ref.documentId, "documentId"))}/w/${encodeURIComponent(required(ref.workspaceId, "workspaceId"))}/e/${encodeURIComponent(required(ref.elementId, "assemblyElementId"))}${suffix}`;
+  return `/assemblies/d/${encodeURIComponent(required(ref.documentId, "documentId"))}/w/${encodeURIComponent(required(ref.workspaceId, "workspaceId"))}/e/${encodeURIComponent(required(ref.elementId, "assemblyElementId"))}${suffix}`;
 }
 
 export async function createOnshapePartStudio(
@@ -63,7 +63,7 @@ export async function createOnshapePartStudio(
   const workspaceId = required(input.workspaceId, "workspaceId");
   const name = required(input.name, "Part Studio name");
   const response = await http(
-    `/api/v9/partstudios/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}`,
+    `/partstudios/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}`,
     { method: "POST", body: JSON.stringify({ name }) },
   );
   const body = await jsonResponse(response, "Create Part Studio");
@@ -75,7 +75,7 @@ export async function getOnshapeBodyDetails(
   input: { documentId: string; workspaceId: string; elementId: string },
 ): Promise<unknown> {
   const response = await http(
-    `/api/v9/partstudios/d/${encodeURIComponent(required(input.documentId, "documentId"))}/w/${encodeURIComponent(required(input.workspaceId, "workspaceId"))}/e/${encodeURIComponent(required(input.elementId, "elementId"))}/bodydetails`,
+    `/partstudios/d/${encodeURIComponent(required(input.documentId, "documentId"))}/w/${encodeURIComponent(required(input.workspaceId, "workspaceId"))}/e/${encodeURIComponent(required(input.elementId, "elementId"))}/bodydetails`,
   );
   return jsonResponse(response, "Get Part Studio body details");
 }
@@ -119,7 +119,7 @@ export async function createOnshapeAssembly(
   const workspaceId = required(input.workspaceId, "workspaceId");
   const name = required(input.name, "Assembly name");
   const response = await http(
-    `/api/v9/assemblies/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}`,
+    `/assemblies/d/${encodeURIComponent(documentId)}/w/${encodeURIComponent(workspaceId)}`,
     { method: "POST", body: JSON.stringify({ name }) },
   );
   const body = await jsonResponse(response, "Create assembly");

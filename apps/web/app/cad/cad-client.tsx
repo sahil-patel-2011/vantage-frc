@@ -13,6 +13,7 @@ import {
 } from "../../lib/cad/list-assembly";
 import {
   EMPTY_LISTED_ELEMENTS,
+  documentTabKind,
   listDocumentElements,
   type ListedDocumentElements,
 } from "../../lib/cad/list-document-elements";
@@ -564,6 +565,10 @@ function assemblyStorageKey(orgId: string, documentId: string): string {
   return `vantage-cad-assembly:${orgId}:${documentId}`;
 }
 
+function variableStudioStorageKey(orgId: string, documentId: string): string {
+  return `vantage-cad-variables:${orgId}:${documentId}`;
+}
+
 /** Only store/restore a real non-DEMO assembly element id. */
 function readStoredAssemblyElementId(orgId: string, documentId: string): string | undefined {
   const oid = realReturnedId(orgId);
@@ -590,6 +595,34 @@ function writeStoredAssemblyElementId(orgId: string, documentId: string, id: str
     sessionStorage.setItem(key, aid);
   } catch {
     // sessionStorage can be blocked (private mode); assembly memory stays in-session only.
+  }
+}
+
+function readStoredVariableStudioElementId(orgId: string, documentId: string): string | undefined {
+  const oid = realReturnedId(orgId);
+  const did = realReturnedId(documentId);
+  if (!oid || !did || typeof sessionStorage === "undefined") return undefined;
+  try {
+    return realReturnedId(sessionStorage.getItem(variableStudioStorageKey(oid, did)));
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredVariableStudioElementId(orgId: string, documentId: string, id: string | undefined) {
+  const oid = realReturnedId(orgId);
+  const did = realReturnedId(documentId);
+  const sid = realReturnedId(id);
+  if (!oid || !did || typeof sessionStorage === "undefined") return;
+  try {
+    const key = variableStudioStorageKey(oid, did);
+    if (!sid) {
+      sessionStorage.removeItem(key);
+      return;
+    }
+    sessionStorage.setItem(key, sid);
+  } catch {
+    // sessionStorage can be blocked (private mode); Variable Studio memory stays in-session only.
   }
 }
 
@@ -678,7 +711,9 @@ export default function CadWorkspace({
   const logRef = useRef<HTMLDivElement>(null);
   const lastSketchFeatureId = useRef<string | undefined>(undefined);
   const lastAssemblyElementId = useRef<string | undefined>(undefined);
+  const lastVariableStudioElementId = useRef<string | undefined>(undefined);
   const lastInstanceIds = useRef<string[]>([]);
+  const [workingTabId, setWorkingTabId] = useState("");
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/cad/agent?orgId=${encodeURIComponent(orgId)}`);
@@ -693,6 +728,9 @@ export default function CadWorkspace({
     if (data.bound?.url) setUrl(data.bound.url);
     const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? "");
     if (stored) lastAssemblyElementId.current = stored;
+    const storedStudio = readStoredVariableStudioElementId(orgId, data.bound?.documentId ?? "");
+    if (storedStudio) lastVariableStudioElementId.current = storedStudio;
+    if (data.bound?.elementId) setWorkingTabId(data.bound.elementId);
     return data;
   }, [orgId]);
 
@@ -752,6 +790,10 @@ export default function CadWorkspace({
       const stored = readStoredAssemblyElementId(orgId, boundDocumentId);
       if (stored) lastAssemblyElementId.current = stored;
     }
+    if (boundDocumentId && !lastVariableStudioElementId.current) {
+      const storedStudio = readStoredVariableStudioElementId(orgId, boundDocumentId);
+      if (storedStudio) lastVariableStudioElementId.current = storedStudio;
+    }
     const documentRef = completeDocumentRef({
       documentId: boundDocumentId,
       workspaceId: boundWorkspaceId,
@@ -773,7 +815,13 @@ export default function CadWorkspace({
       setGeometryError("Could not list Onshape entities. Bind a Part Studio and retry.");
     }
     try {
-      setListedVariables(await listOnshapeVariables({ orgId, documentRef }));
+      setListedVariables(
+        await listOnshapeVariables({
+          orgId,
+          documentRef,
+          variableStudioElementId: lastVariableStudioElementId.current || undefined,
+        }),
+      );
     } catch {
       setListedVariables(EMPTY_LISTED_VARIABLES);
     }
@@ -904,8 +952,11 @@ export default function CadWorkspace({
           : prev,
       );
       if (data.bound?.url) setUrl(data.bound.url);
+      if (data.bound?.elementId) setWorkingTabId(data.bound.elementId);
       const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? "");
       if (stored) lastAssemblyElementId.current = stored;
+      const storedStudio = readStoredVariableStudioElementId(orgId, data.bound?.documentId ?? "");
+      if (storedStudio) lastVariableStudioElementId.current = storedStudio;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bind failed");
     } finally {
@@ -948,8 +999,11 @@ export default function CadWorkspace({
           : prev,
       );
       if (data.bound?.url) setUrl(data.bound.url);
+      if (data.bound?.elementId) setWorkingTabId(data.bound.elementId);
       const stored = readStoredAssemblyElementId(orgId, data.bound?.documentId ?? documentId);
       if (stored) lastAssemblyElementId.current = stored;
+      const storedStudio = readStoredVariableStudioElementId(orgId, data.bound?.documentId ?? documentId);
+      if (storedStudio) lastVariableStudioElementId.current = storedStudio;
       try {
         const jobsResponse = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
         const jobsData = (await jobsResponse.json().catch(() => ({}))) as {
@@ -987,6 +1041,20 @@ export default function CadWorkspace({
     const documentId = realReturnedId(state?.bound?.documentId);
     const workspaceId = realReturnedId(state?.bound?.workspaceId);
     if (!listed || !documentId || !workspaceId) return;
+    const kind = documentTabKind(listed.type, listed.elementType);
+    setWorkingTabId(listed.id);
+    if (kind === "assembly") {
+      lastAssemblyElementId.current = listed.id;
+      writeStoredAssemblyElementId(orgId, documentId, listed.id);
+      await refreshBoundGeometry();
+      return;
+    }
+    if (kind === "variablestudio") {
+      lastVariableStudioElementId.current = listed.id;
+      writeStoredVariableStudioElementId(orgId, documentId, listed.id);
+      await refreshBoundGeometry();
+      return;
+    }
     await bindDocumentRef({ documentId, workspaceId, elementId: listed.id });
   }
 
@@ -1169,7 +1237,11 @@ export default function CadWorkspace({
             <span>Onshape tab</span>
             <select
               value={
-                listedElements.elements.some((element) => element.id === boundElementId) ? (boundElementId ?? "") : ""
+                listedElements.elements.some((element) => element.id === workingTabId)
+                  ? workingTabId
+                  : listedElements.elements.some((element) => element.id === boundElementId)
+                    ? (boundElementId ?? "")
+                    : ""
               }
               disabled={busy !== null}
               onChange={(event) => {
@@ -1177,7 +1249,9 @@ export default function CadWorkspace({
                 if (next) void switchBoundElement(next);
               }}
             >
-              {!listedElements.elements.some((element) => element.id === boundElementId) ? (
+              {!listedElements.elements.some(
+                (element) => element.id === workingTabId || element.id === boundElementId,
+              ) ? (
                 <option value="">Select a listed tab</option>
               ) : null}
               {listedElements.elements.map((element) => (
@@ -1462,7 +1536,10 @@ export default function CadWorkspace({
           );
           const executed = await executeComposerOp({
             orgId,
-            payload: withVariableStudio({ ...payload, parameters }, listedVariables.variableStudioElementId),
+            payload: withVariableStudio(
+              { ...payload, parameters },
+              lastVariableStudioElementId.current || listedVariables.variableStudioElementId,
+            ),
             documentRef: state?.bound ?? null,
           });
           applyShadedPng(executed.result.shadedPngBase64);
@@ -1507,7 +1584,7 @@ export default function CadWorkspace({
                   parameters,
                   reason: step.reason,
                 },
-                listedVariables.variableStudioElementId,
+                lastVariableStudioElementId.current || listedVariables.variableStudioElementId,
               ),
               documentRef: state?.bound ?? null,
             });
@@ -1592,9 +1669,15 @@ export default function CadWorkspace({
       {completeDocumentRef(state?.bound) ? (
         <CadVariableTable
           variables={listedVariables.variables}
-          variableStudioElementId={listedVariables.variableStudioElementId}
+          variableStudioElementId={
+            lastVariableStudioElementId.current || listedVariables.variableStudioElementId
+          }
           disabled={!onshapeOk || !boundOk || busy !== null}
           onSet={async (payload) => {
+            const studioId =
+              payload.variableStudioElementId ||
+              lastVariableStudioElementId.current ||
+              listedVariables.variableStudioElementId;
             await executeComposerOp({
               orgId,
               payload: {
@@ -1602,12 +1685,7 @@ export default function CadWorkspace({
                 parameters: {
                   name: payload.name,
                   expression: payload.expression,
-                  ...(payload.variableStudioElementId || listedVariables.variableStudioElementId
-                    ? {
-                        variableStudioElementId:
-                          payload.variableStudioElementId || listedVariables.variableStudioElementId,
-                      }
-                    : {}),
+                  ...(studioId ? { variableStudioElementId: studioId } : {}),
                 },
                 reason: `Update variable ${payload.name}`,
               },

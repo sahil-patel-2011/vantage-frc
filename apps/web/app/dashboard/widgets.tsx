@@ -459,9 +459,11 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     case "prediction_summary": {
+      const alliance = data.ourAlliance === "blue" ? "blue" : data.ourAlliance === "red" ? "red" : null;
       const win = predictionWinDisplay({
         pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
-        alliance: "red",
+        pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
+        alliance,
         modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
       });
       const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
@@ -471,7 +473,9 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
             <>
               <div className="dash-stat-row">
                 <strong>{win.label}</strong>
-                <span>red alliance · {String(data.modelVersion ?? "")}</span>
+                <span>
+                  {alliance ? `${alliance} alliance` : "alliance TBD"} · {String(data.modelVersion ?? "")}
+                </span>
               </div>
               <div className="mini-probability">
                 <i style={{ width: `${win.percent}%` }} />

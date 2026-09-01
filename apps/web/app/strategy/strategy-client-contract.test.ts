@@ -8,6 +8,7 @@ describe("Strategy on-demand prediction", () => {
   it("POSTs recompute to /api/strategy instead of showing only a cached load", () => {
     expect(source).toContain("Recompute prediction");
     expect(source).toContain('action: "recompute"');
+    expect(source).toContain("matchKey");
     expect(source).toContain('fetch("/api/strategy"');
     expect(source).toContain("method: \"POST\"");
     expect(source).toContain("predictionWinDisplay");

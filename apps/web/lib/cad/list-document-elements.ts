@@ -43,10 +43,24 @@ export function rejectDemoElementId(id: string): string {
   return trimmed;
 }
 
+export type DocumentTabKind = "partstudio" | "assembly" | "variablestudio";
+
+function tabTokens(type: string, elementType = ""): string[] {
+  return [type, elementType].map((value) => String(value ?? "").replace(/[\s_-]+/g, "").toLowerCase());
+}
+
 /** Part Studio / Assembly / Variable Studio only — Feature Studio and other tabs stay out. */
 export function isBindableDocumentTab(type: string, elementType = ""): boolean {
-  const tokens = [type, elementType].map((value) => String(value ?? "").replace(/[\s_-]+/g, "").toLowerCase());
-  return tokens.some((token) => token === "partstudio" || token === "assembly" || token === "variablestudio");
+  return documentTabKind(type, elementType) != null;
+}
+
+/** Classify a listed tab. Mutations bind Part Studios only; assemblies and Variable Studios are extras. */
+export function documentTabKind(type: string, elementType = ""): DocumentTabKind | null {
+  const tokens = tabTokens(type, elementType);
+  if (tokens.some((token) => token === "partstudio")) return "partstudio";
+  if (tokens.some((token) => token === "assembly")) return "assembly";
+  if (tokens.some((token) => token === "variablestudio")) return "variablestudio";
+  return null;
 }
 
 export function completeElementsDocumentRef(

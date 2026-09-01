@@ -9,8 +9,12 @@ describe("Dashboard prediction honesty", () => {
   it("refuses DEMO stored rows and links to Strategy recompute", () => {
     expect(snapshot).toContain("isDemoPrediction");
     expect(snapshot).toContain("Last stored row is a DEMO prediction");
+    expect(snapshot).toContain("teamKeys");
+    expect(snapshot).toContain("ourAlliance");
     expect(widgets).toContain("predictionWinDisplay");
+    expect(widgets).toContain("data.ourAlliance");
     expect(widgets).toContain("Recompute on Strategy");
+    expect(widgets).not.toContain('alliance: "red"');
     expect(widgets).not.toMatch(/Math\.round\(pRed \* 100\)/);
   });
 });

@@ -223,6 +223,9 @@ function composerBrief(op: SerializedOp): Record<string, unknown> {
 }
 
 async function resolveOnshapeJob(orgId: string, jobId?: string | null): Promise<CadJobRow | null> {
+  // GET /api/cad is session-scoped. This helper has no current user id without a
+  // new API, so it cannot filter jobs[].createdBy here. Prefer title "CAD agent"
+  // among Onshape rows; never invent a DEMO job id.
   const data = await getCad(orgId);
   const jobs = Array.isArray(data.jobs) ? (data.jobs as CadJobRow[]) : [];
   const explicit = String(jobId ?? "").trim();

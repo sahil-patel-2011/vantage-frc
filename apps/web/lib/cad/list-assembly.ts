@@ -54,6 +54,14 @@ export function completeAssemblyDocumentRef(
   return { documentId, workspaceId, elementId };
 }
 
+/**
+ * Assembly listing requires an explicit assembly element id.
+ * Never fall back to `documentRef.elementId` — that is often a Part Studio.
+ */
+export function resolveAssemblyElementId(assemblyElementId: string | null | undefined): string {
+  return String(assemblyElementId ?? "").trim();
+}
+
 export async function listOnshapeAssemblyInstances(input: ListAssemblyInput): Promise<ListedOnshapeAssembly> {
   const orgId = String(input.orgId ?? "").trim();
   if (!orgId) throw new Error("orgId is required");
@@ -64,7 +72,7 @@ export async function listOnshapeAssemblyInstances(input: ListAssemblyInput): Pr
     throw new Error("Bind an Onshape document/workspace/element first");
   }
 
-  const assemblyElementId = String(input.assemblyElementId ?? "").trim();
+  const assemblyElementId = resolveAssemblyElementId(input.assemblyElementId);
   if (assemblyElementId && DEMO_TOKEN.test(assemblyElementId)) {
     throw new Error("Refusing DEMO assembly element id. Use an element Onshape listed.");
   }
