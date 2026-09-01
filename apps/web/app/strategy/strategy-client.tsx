@@ -287,6 +287,17 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
       ? `Qualification ${view.matchNumber}`
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
   const ourWin = view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
+  const ourWinDisplay = predictionWinDisplay({
+    winProbability: ourWin,
+    modelVersion: view.prediction.modelVersion,
+    caveats: view.prediction.caveats,
+  });
+  const redWinDisplay = predictionWinDisplay({
+    pRed: view.prediction.pRed,
+    alliance: "red",
+    modelVersion: view.prediction.modelVersion,
+    caveats: view.prediction.caveats,
+  });
   const cadHref = withOrgHref(
     `/cad?matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`,
     view.orgId,
@@ -330,33 +341,26 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         </p>
         <p className="app-muted strategy-provenance">
           <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · you are{" "}
-          {view.ourAlliance.toUpperCase()} (
-          {predictionWinDisplay({
-            winProbability: ourWin,
-            modelVersion: view.prediction.modelVersion,
-            caveats: view.prediction.caveats,
-          })?.label ?? "—"}{" "}
-          win)
+          {view.ourAlliance.toUpperCase()} ({ourWinDisplay?.label ?? "—"} win)
           {view.eventName ? ` · ${view.eventName}` : ""}
         </p>
         <div className="strategy-probability">
-          <strong>
-            {predictionWinDisplay({
-              pRed: view.prediction.pRed,
-              alliance: "red",
-              modelVersion: view.prediction.modelVersion,
-              caveats: view.prediction.caveats,
-            })?.label ?? "—"}
-          </strong>
+          <strong>{redWinDisplay?.label ?? "—"}</strong>
           <span>Red alliance</span>
-          <small>
-            {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
-            confidence · sample {view.prediction.effectiveSampleSize}
-          </small>
+          {redWinDisplay ? (
+            <small>
+              {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
+              confidence · sample {view.prediction.effectiveSampleSize}
+            </small>
+          ) : (
+            <small>No grounded prediction — recompute after TBA/Statbotics cache is live.</small>
+          )}
         </div>
-        <div className="mini-probability">
-          <i style={{ width: `${view.prediction.pRed * 100}%` }} />
-        </div>
+        {redWinDisplay ? (
+          <div className="mini-probability">
+            <i style={{ width: `${redWinDisplay.percent}%` }} />
+          </div>
+        ) : null}
         <div className="strategy-alliance-row">
           <div>
             <h3>Red</h3>
