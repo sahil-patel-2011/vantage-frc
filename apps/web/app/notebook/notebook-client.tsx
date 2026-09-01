@@ -30,6 +30,38 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function orgQuery(orgId: string | null) {
+  return orgId ? `?orgId=${orgId}` : "";
+}
+
+/** Resolved cite only — never a placeholder URL or invented poster. */
+function CiteMedia({
+  asset,
+  compact,
+}: {
+  asset: NotebookImageAttachment;
+  compact?: boolean;
+}) {
+  const url = asset.url.trim();
+  if (!url) return null;
+  const style = compact
+    ? { width: "100%", height: 80, objectFit: "cover" as const }
+    : { maxWidth: 220, maxHeight: 160, objectFit: "cover" as const };
+  if (asset.kind === "video") {
+    return (
+      <video
+        src={url}
+        controls
+        playsInline
+        preload="metadata"
+        style={style}
+        aria-label={asset.title}
+      />
+    );
+  }
+  return <img src={url} alt={asset.title} style={style} />;
+}
+
 export default function NotebookClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
@@ -89,7 +121,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     event.preventDefault();
     await post(
       { action: "create_entry", seasonYear, ...form, attachments: form.attachmentIds },
-      form.attachmentIds.length ? "Entry added." : "Entry added without a photo — judged award evidence still needs a real image.",
+      form.attachmentIds.length ? "Entry added." : "Entry added without a photo or video — judged award evidence still needs a real image or clip.",
     );
     if (view?.status === "ready") setForm({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "", attachmentIds: [] });
   }
@@ -123,7 +155,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
   async function saveEntryPhotos(entry: Entry) {
     await post(
       { action: "update_entry", id: entry.id, attachments: photosFor(entry) },
-      photosFor(entry).length ? "Photos attached." : "Photo removed. This entry has no image evidence.",
+      photosFor(entry).length ? "Photos and video attached." : "Attachment removed. This entry has no image or video evidence.",
     );
   }
 
@@ -161,14 +193,14 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / NOTEBOOK</span><h1>Engineering &amp; build notebook</h1></div>
-        <nav className="intel-actions"><a href={`/impact${orgId ? `?orgId=${orgId}` : ""}`}>Impact</a><a href={`/team/awards${orgId ? `?orgId=${orgId}` : ""}`}>Awards</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/impact${orgQuery(orgId)}`}>Impact</a><a href={`/team/awards${orgQuery(orgId)}`}>Awards</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
       {view.summary.missingPhotos > 0 && (
         <p className="telemetry-status">
           {view.summary.missingPhotos === 1
-            ? "1 entry has no photo. Text alone is not enough for judged award evidence."
-            : `${view.summary.missingPhotos} entries have no photo. Text alone is not enough for judged award evidence.`}
+            ? "1 entry has no photo or video. Text alone is not enough for judged award evidence."
+            : `${view.summary.missingPhotos} entries have no photo or video. Text alone is not enough for judged award evidence.`}
         </p>
       )}
 
@@ -193,17 +225,19 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
           </div>
           <label>What did you decide / learn?<textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></label>
           <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend className="eyebrow">PHOTOS</legend>
+            <legend className="eyebrow">PHOTOS &amp; VIDEO</legend>
             {view.imageLibrary.length === 0 ? (
               <p>
-                No photos in the media kit yet — a text write-up is not award evidence.{" "}
-                <a href={`/media?tab=kit${orgId ? `&orgId=${orgId}` : ""}`}>Add a real photo in Media kit</a>
+                No photos or videos in the media library or pit scouting yet — a text write-up is not award evidence.{" "}
+                <a href={`/media-library${orgQuery(orgId)}`}>Add a real photo or video in Media library</a>
+                {" "}or{" "}
+                <a href={`/scouting${orgQuery(orgId)}`}>pit scouting</a>.
               </p>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
                 {view.imageLibrary.map((asset) => (
                   <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <img src={asset.url} alt={asset.title} style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                    <CiteMedia asset={asset} compact />
                     <span>
                       <input
                         type="checkbox"
@@ -243,12 +277,12 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
               <small>{new Date(entry.entryDate).toLocaleDateString()} · {BUILD_PHASE_LABEL[entry.phase]}{entry.subsystem ? ` · ${entry.subsystem}` : ""}{entry.byName ? ` · ${entry.byName}` : ""}{entry.tags.length ? ` · ${entry.tags.map((t) => `#${t}`).join(" ")}` : ""}</small>
               {entry.body && <small style={{ whiteSpace: "pre-wrap" }}>{entry.body}</small>}
               {entry.attachments.length === 0 ? (
-                <small>No photo attached — judged award evidence needs a real image, not just this write-up.</small>
+                <small>No photo or video attached — judged award evidence needs a real image or clip, not just this write-up.</small>
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                   {entry.attachments.map((asset) => (
                     <figure key={asset.assetId} style={{ margin: 0 }}>
-                      <img src={asset.url} alt={asset.title} style={{ maxWidth: 220, maxHeight: 160, objectFit: "cover" }} />
+                      <CiteMedia asset={asset} />
                       <figcaption><small>{asset.title}</small></figcaption>
                     </figure>
                   ))}
@@ -256,18 +290,20 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
               )}
               {view.context.role !== "viewer" && (
                 <details style={{ marginTop: 8 }}>
-                  <summary>Attach photos</summary>
+                  <summary>Attach photos or video</summary>
                   {view.imageLibrary.length === 0 ? (
                     <p>
-                      Nothing to attach until a real photo is in the{" "}
-                      <a href={`/media?tab=kit${orgId ? `&orgId=${orgId}` : ""}`}>media kit</a>.
+                      Nothing to attach until a real photo or video is in the{" "}
+                      <a href={`/media-library${orgQuery(orgId)}`}>Media library</a>
+                      {" "}or{" "}
+                      <a href={`/scouting${orgQuery(orgId)}`}>pit scouting</a>.
                     </p>
                   ) : (
                     <>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginTop: 8 }}>
                         {view.imageLibrary.map((asset) => (
                           <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <img src={asset.url} alt={asset.title} style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                            <CiteMedia asset={asset} compact />
                             <span>
                               <input
                                 type="checkbox"
@@ -279,7 +315,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
                           </label>
                         ))}
                       </div>
-                      <button type="button" onClick={() => void saveEntryPhotos(entry)}>Save photos</button>
+                      <button type="button" onClick={() => void saveEntryPhotos(entry)}>Save photos &amp; video</button>
                     </>
                   )}
                 </details>

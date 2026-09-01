@@ -16,6 +16,7 @@ import {
   listOnshapeDocuments,
   listOnshapeElements,
   listOnshapeFeatures,
+  listOnshapeNativeEntities,
   updateOnshapeFeature,
   explainFeatureTreeForStudents,
   FUSION_RELAY_IMPLEMENTED_OPERATIONS,
@@ -41,6 +42,7 @@ import {
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 import { hostedOnshapeEnvAuth, readHostedOnshapeEnvFlags } from "../../../lib/cad/hosted-auth";
 import { loadCadAgentOnshape } from "../../../lib/cad/onshape-tokens";
+import { refreshShadedPngBase64 } from "../../../lib/cad/shaded-view";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -534,7 +536,8 @@ export async function POST(request: Request) {
             }),
           ],
         );
-        return executed;
+        const shadedPngBase64 = await refreshShadedPngBase64(onshape.http, job.document_ref);
+        return { ...executed, shadedPngBase64 };
       }
       if (action === "list-onshape-documents") {
         const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
@@ -605,6 +608,26 @@ export async function POST(request: Request) {
           documentRef: ref,
           authPath: onshape.via,
         };
+      }
+      if (action === "list-onshape-entities") {
+        const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
+        const jobId = body.jobId ? String(body.jobId) : "";
+        let ref = documentRef;
+        if (!ref?.documentId && jobId) {
+          const job = (
+            await client.query<{ document_ref: OnshapeDocumentRef | null }>(
+              `SELECT document_ref FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+              [jobId, orgId, session.user.id],
+            )
+          ).rows[0];
+          ref = job?.document_ref ?? undefined;
+        }
+        if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
+          throw new Error("Bind an Onshape document/workspace/element first");
+        }
+        const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
+        const entities = await listOnshapeNativeEntities(onshape.http, ref);
+        return { entities, documentRef: ref, authPath: onshape.via };
       }
       if (action === "cancel") {
         await client.query(

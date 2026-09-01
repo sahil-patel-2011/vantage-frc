@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { CadViewport } from "../../app/cad/cad-viewport";
 import {
   loadShadedView,
+  refreshShadedPngBase64,
   SHADED_VIEW_MISSING,
   SHADED_VIEW_UNAUTHORIZED,
   SHADED_VIEW_UNBOUND,
@@ -107,6 +108,62 @@ describe("loadShadedView", () => {
     }, { documentId: "", workspaceId: "", elementId: "" });
     assertHonestEmpty(result);
     expect(result.message).toBe(SHADED_VIEW_UNBOUND);
+  });
+});
+
+describe("refreshShadedPngBase64", () => {
+  const doc = {
+    documentId: "d1",
+    workspaceId: "w1",
+    elementId: "e1",
+  };
+
+  it("returns shadedPngBase64 from a mock shadedviews body after execute", async () => {
+    const png = await refreshShadedPngBase64(async () => {
+      return new Response(JSON.stringify({ images: [TINY_PNG] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }, doc);
+    expect(png).toBe(TINY_PNG_BYTES.toString("base64"));
+    expect(JSON.stringify(png).toLowerCase()).not.toMatch(/demo|cube/);
+  });
+
+  it("returns shadedPngBase64 from raw PNG bytes", async () => {
+    const png = await refreshShadedPngBase64(async () => {
+      return new Response(TINY_PNG_BYTES, {
+        status: 200,
+        headers: { "content-type": "image/png" },
+      });
+    }, doc);
+    expect(png).toBe(TINY_PNG_BYTES.toString("base64"));
+  });
+
+  it("returns null on 401 and never a DEMO cube", async () => {
+    const png = await refreshShadedPngBase64(async () => {
+      return new Response(JSON.stringify({ images: [TINY_PNG], message: "Unauthorized" }), {
+        status: 401,
+      });
+    }, doc);
+    expect(png).toBeNull();
+    expect(JSON.stringify(png)).not.toMatch(/demo|cube/i);
+  });
+
+  it("returns null when no Part Studio is bound", async () => {
+    const png = await refreshShadedPngBase64(async () => {
+      throw new Error("should not fetch");
+    }, { documentId: "", workspaceId: "", elementId: "" });
+    expect(png).toBeNull();
+  });
+
+  it("returns null when Onshape bytes are not a PNG", async () => {
+    const png = await refreshShadedPngBase64(async () => {
+      return new Response(JSON.stringify({ images: ["not-a-png"] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }, doc);
+    expect(png).toBeNull();
   });
 });
 

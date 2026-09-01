@@ -141,7 +141,9 @@ export function applyTeamTagReasonsToRecommendation<T extends PickClockTagReason
   const tagReasons =
     tags instanceof Map
       ? (tags.get(teamNumber) ?? [])
-      : tags.filter((reason) => reason.teamNumber === teamNumber);
+      : Array.isArray(tags)
+        ? tags.filter((reason) => reason.teamNumber === teamNumber)
+        : [];
   if (!tagReasons.length) return recommendation;
   return {
     ...recommendation,

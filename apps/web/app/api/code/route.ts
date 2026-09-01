@@ -686,8 +686,9 @@ export async function POST(request: Request) {
                       : null,
                 });
         const sources = await loadBugbotContextSources(client, { orgId, scopeKey });
+        const files = contextFiles ?? [];
         const modelContext = buildBugbotModelContext({
-          files: contextFiles.length ? contextFiles : [{ path, content }],
+          files: files.length ? files : [{ path, content }],
           priorFindings: sources.priorFindings,
           knowledge: sources.knowledge,
           fmea: sources.fmea,

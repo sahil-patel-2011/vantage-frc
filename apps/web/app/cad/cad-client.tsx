@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { executeComposerOp } from "../../lib/cad/execute-composer";
+import { runComposerPlan } from "../../lib/cad/run-composer-plan";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadOperationComposer } from "./cad-operation-composer";
 import { CadViewport } from "./cad-viewport";
@@ -1050,7 +1052,41 @@ export default function CadWorkspace({
         />
       </div>
 
-      <CadOperationComposer platform="onshape" disabled={!onshapeOk || busy !== null} />
+      <CadOperationComposer
+        platform="onshape"
+        disabled={!onshapeOk || busy !== null}
+        onAppend={async (payload) => {
+          const executed = await executeComposerOp({
+            orgId,
+            payload,
+            documentRef: state?.bound ?? null,
+          });
+          const png = executed.result.shadedPngBase64;
+          if (typeof png === "string" && png.trim()) {
+            setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
+          }
+          return executed;
+        }}
+        onRunPlan={async (ops) => {
+          const ran = await runComposerPlan(ops, async (step) => {
+            const executed = await executeComposerOp({
+              orgId,
+              payload: {
+                operation: step.operation,
+                parameters: step.parameters,
+                reason: step.reason,
+              },
+              documentRef: state?.bound ?? null,
+            });
+            const png = executed.result.shadedPngBase64;
+            if (typeof png === "string" && png.trim()) {
+              setState((prev) => (prev ? { ...prev, shadedPngBase64: png } : prev));
+            }
+            return executed;
+          });
+          return ran;
+        }}
+      />
 
       <CadToolsPanel tools={tools} />
 

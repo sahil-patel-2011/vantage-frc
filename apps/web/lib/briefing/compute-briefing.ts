@@ -62,6 +62,7 @@ import {
   splitScoutedByAlliance,
   teamNumberFromKey,
 } from "./plan-sections";
+import { refreshBriefingPrediction } from "./refresh-prediction";
 import { selectBriefingWatchNotes, type WatchlistEntryRow } from "./watchlist-section";
 import type {
   BriefingCard,
@@ -363,7 +364,7 @@ async function computeStrategyFallback(
 
 export async function computeBriefingView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; requestedMatch: string | null },
+  input: { userId: string; requestedOrg: string | null; requestedMatch: string | null; refresh?: boolean },
 ): Promise<FullBriefingView> {
   const membership = await client.query<{
     orgId: string;
@@ -480,10 +481,18 @@ export async function computeBriefingView(
     .map((key) => teamNumberFromKey(key))
     .filter((value): value is number => value != null);
 
-  // Prediction + saved plan: stored rows first, then a one-time reuse of the
-  // strategy compute (which persists what it scores) when nothing exists yet.
+  // Prediction + saved plan: stored rows first. ?refresh=1 recomputes via
+  // recomputeStrategyView (same as /api/strategy?refresh=1); empty EPA stays
+  // empty. Otherwise reuse strategy compute once when nothing is stored yet.
   let strategySections = await readStoredStrategy(client, row.orgId, match.matchKey);
-  if (!strategySections.prediction) {
+  if (input.refresh) {
+    const refreshed = await refreshBriefingPrediction(client, {
+      userId: input.userId,
+      orgId: row.orgId,
+      matchKey: match.matchKey,
+    });
+    if (refreshed) strategySections = refreshed;
+  } else if (!strategySections.prediction) {
     const computed = await computeStrategyFallback(client, {
       userId: input.userId,
       orgId: row.orgId,
