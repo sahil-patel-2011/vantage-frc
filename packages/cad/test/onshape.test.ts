@@ -14,7 +14,7 @@ import {
   verifyOnshapeOAuthState,
   type OnshapeHttp,
 } from "../src/index";
-import { circleSketchFeature, rectangleSketchFeature } from "../src/onshape-features";
+import { circleSketchFeature, polylineSketchFeature, rectangleSketchFeature } from "../src/onshape-features";
 
 describe("Onshape hosted setup", () => {
   it("reports setup-required when OAuth env is missing", () => {
@@ -325,6 +325,67 @@ describe("Onshape export + transport (mocked HTTP)", () => {
       rectangleSketchFeature({ widthMm: 40, heightMm: 20, plane: "Front", name: "RectOmittedKind" }),
     );
     expect(JSON.stringify(requests)).not.toContain("BTCurveGeometryCircle-115");
+  });
+
+  it("creates a closed polyline sketch from explicit millimetre points", async () => {
+    const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith("/features") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        requests.push({ path, body });
+        return Response.json({ featureId: "sketch-poly-1" });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+
+    const created = await transport.mutate({
+      operation: "create_sketch",
+      parameters: {
+        sketchKind: "polyline",
+        points: "0,0; 80,0; 80,40; 0,40",
+        plane: "Top",
+        name: "Gusset",
+      },
+      idempotencyKey: "job-poly:1:sketch",
+    });
+
+    expect(created).toEqual({ featureId: "sketch-poly-1", featureScriptUsed: false });
+    expect(requests[0]?.body).toEqual(
+      polylineSketchFeature({
+        name: "Gusset",
+        plane: "Top",
+        closed: true,
+        points: [
+          { xMm: 0, yMm: 0 },
+          { xMm: 80, yMm: 0 },
+          { xMm: 80, yMm: 40 },
+          { xMm: 0, yMm: 40 },
+        ],
+      }),
+    );
+    expect(JSON.stringify(requests[0]?.body).toLowerCase()).not.toContain("featurescript");
+  });
+
+  it("refuses a polyline sketch without measured points", async () => {
+    const http: OnshapeHttp = vi.fn(async () =>
+      Response.json({ message: "should not post" }, { status: 500 }),
+    ) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+    await expect(
+      transport.mutate({
+        operation: "create_sketch",
+        parameters: { sketchKind: "polyline" },
+        idempotencyKey: "job-poly:2:sketch",
+      }),
+    ).rejects.toThrow(/at least two millimetre points/i);
+    expect(http).not.toHaveBeenCalled();
   });
 
   it("refuses create_sketch without a positive millimetre dimension", async () => {

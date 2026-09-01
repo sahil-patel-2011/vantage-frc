@@ -264,6 +264,69 @@ export function circleSketchFeature(input: { name?: string; plane?: string; circ
 
 export type SketchPointMm = { xMm: number; yMm: number };
 
+function finitePointMm(value: unknown, label: string): number {
+  const number = Number(value);
+  if (!Number.isFinite(number) || Math.abs(number) > 10_000) {
+    throw new Error(`${label} must be a number of millimetres between -10000 and 10000. Got ${String(value)}.`);
+  }
+  return number;
+}
+
+function oneSketchPointMm(item: unknown, index: number): SketchPointMm {
+  if (Array.isArray(item) && item.length >= 2) {
+    return {
+      xMm: finitePointMm(item[0], `points[${index}].xMm`),
+      yMm: finitePointMm(item[1], `points[${index}].yMm`),
+    };
+  }
+  if (item && typeof item === "object") {
+    const record = item as Record<string, unknown>;
+    return {
+      xMm: finitePointMm(record.xMm ?? record.x, `points[${index}].xMm`),
+      yMm: finitePointMm(record.yMm ?? record.y, `points[${index}].yMm`),
+    };
+  }
+  if (typeof item === "string") {
+    const nums = item.trim().split(/[,\s]+/).filter(Boolean);
+    if (nums.length < 2) throw new Error(`Point ${index + 1} needs xMm and yMm in millimetres.`);
+    return {
+      xMm: finitePointMm(nums[0], `points[${index}].xMm`),
+      yMm: finitePointMm(nums[1], `points[${index}].yMm`),
+    };
+  }
+  throw new Error(`Point ${index + 1} needs xMm and yMm in millimetres.`);
+}
+
+/**
+ * Human or tool points: `[{xMm,yMm}]`, `[[x,y]]`, or `0,0; 80,0; 80,40`.
+ * Empty stays empty — this never invents corners.
+ */
+export function parseSketchPointsMm(value: unknown): SketchPointMm[] {
+  if (value == null || value === "") return [];
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[")) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        throw new Error("Points JSON is invalid. Use millimetre pairs like 0,0; 80,0; 80,40.");
+      }
+      return parseSketchPointsMm(parsed);
+    }
+    return trimmed
+      .split(/[;|\n]+/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean)
+      .map((chunk, index) => oneSketchPointMm(chunk, index));
+  }
+  if (!Array.isArray(value)) {
+    throw new Error("Points must be millimetre pairs like 0,0; 80,0; 80,40.");
+  }
+  return value.map((item, index) => oneSketchPointMm(item, index));
+}
+
 /** Sketch of bare points — the `locations` input a Hole feature drills at. */
 export function pointsSketchFeature(input: { name?: string; plane?: string; points: SketchPointMm[] }) {
   if (!input.points?.length) throw new Error("Give at least one point (xMm, yMm).");
@@ -348,6 +411,85 @@ export function extrudeFeature(input: {
     btType: "BTMFeature-134",
     featureType: "extrude",
     name: input.name?.trim() || "VantageExtrude",
+    suppressed: false,
+    namespace: "",
+    parameters,
+  });
+}
+
+export function revolveFeature(input: {
+  name?: string;
+  sketchFeatureId: string;
+  axisIds: readonly string[];
+  angleDeg?: number;
+  operationType?: ExtrudeOperation;
+  oppositeDirection?: boolean;
+}) {
+  const sketchFeatureId = input.sketchFeatureId.trim();
+  if (!sketchFeatureId) throw new Error("revolve needs the sketch feature id from the previous sketch.");
+  const axisIds = requireIds(input.axisIds, "axisIds");
+  const operationType = input.operationType ?? "NEW";
+  if (!(EXTRUDE_OPERATIONS as readonly string[]).includes(operationType)) {
+    throw new Error(`operationType must be one of ${EXTRUDE_OPERATIONS.join(", ")}.`);
+  }
+  const angleDeg = input.angleDeg ?? 360;
+  if (!Number.isFinite(angleDeg) || angleDeg <= 0 || angleDeg > 360) {
+    throw new Error(`Revolve angle must be a positive number of degrees (max 360). Got ${String(input.angleDeg)}.`);
+  }
+  const parameters: unknown[] = [
+    {
+      btType: "BTMParameterQueryList-148",
+      queries: [
+        {
+          btType: "BTMIndividualSketchRegionQuery-140",
+          filterInnerLoops: true,
+          queryString: `query = qSketchRegion(id + "${sketchFeatureId}", true);`,
+          featureId: sketchFeatureId,
+          deterministicIds: [],
+        },
+      ],
+      parameterId: "entities",
+    },
+    deterministicQueryParameter("axis", axisIds),
+    enumParameter("operationType", "NewBodyOperationType", operationType),
+    angleParameter("angle", angleDeg),
+  ];
+  if (input.oppositeDirection) parameters.push(booleanParameter("oppositeDirection", true));
+  return featureCall({
+    btType: "BTMFeature-134",
+    featureType: "revolve",
+    name: input.name?.trim() || "VantageRevolve",
+    suppressed: false,
+    namespace: "",
+    parameters,
+  });
+}
+
+export const BOOLEAN_OPERATIONS = ["UNION", "SUBTRACT", "INTERSECT"] as const;
+export type BooleanOperation = (typeof BOOLEAN_OPERATIONS)[number];
+
+export function booleanFeature(input: {
+  name?: string;
+  operationType: BooleanOperation;
+  toolBodyIds: readonly string[];
+  targetBodyIds?: readonly string[];
+}) {
+  const tools = requireIds(input.toolBodyIds, "toolBodyIds");
+  const operationType = input.operationType;
+  if (!(BOOLEAN_OPERATIONS as readonly string[]).includes(operationType)) {
+    throw new Error(`boolean operationType must be one of ${BOOLEAN_OPERATIONS.join(", ")}.`);
+  }
+  const parameters: unknown[] = [
+    enumParameter("operationType", "BooleanOperationType", operationType),
+    deterministicQueryParameter("tools", tools),
+  ];
+  if (operationType !== "UNION" || (input.targetBodyIds?.length ?? 0) > 0) {
+    parameters.push(deterministicQueryParameter("targets", requireIds(input.targetBodyIds ?? [], "targetBodyIds")));
+  }
+  return featureCall({
+    btType: "BTMFeature-134",
+    featureType: "boolean",
+    name: input.name?.trim() || "VantageBoolean",
     suppressed: false,
     namespace: "",
     parameters,

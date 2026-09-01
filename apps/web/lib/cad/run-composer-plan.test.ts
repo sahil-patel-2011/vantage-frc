@@ -233,6 +233,17 @@ describe("parametersForExecute", () => {
         "Fsketch-real",
       ).sketchFeatureId,
     ).toBe("Fpicked");
+    expect(
+      parametersForExecute(
+        {
+          id: "step-3",
+          operation: "create_revolve",
+          parameters: { axisIds: ["JHD"] },
+          reason: "Roller",
+        },
+        "Fsketch-real",
+      ).sketchFeatureId,
+    ).toBe("Fsketch-real");
   });
 
   it("coerces mate instance/face id lists and delete_feature.featureId to one string", () => {

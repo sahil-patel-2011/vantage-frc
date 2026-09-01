@@ -52,6 +52,8 @@ describe("native operation classification", () => {
         "create_hole",
         "create_pattern",
         "create_mirror",
+        "create_revolve",
+        "create_boolean",
         "delete_feature",
         "set_variable",
       ].every(isOnshapeNativeOperation),
@@ -214,6 +216,35 @@ describe("dispatchOnshapeNativeFeature", () => {
     });
     expect(result).toEqual({ featureId: "mirror-real-1", featureScriptUsed: false });
     expect(JSON.stringify(calls[0]?.body)).toContain('"featureType":"mirror"');
+  });
+
+  it("posts a native revolve around a listed axis", async () => {
+    const { http, calls } = addFeatureHttp("revolve-real-1");
+    const result = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "create_revolve",
+      parameters: { sketchFeatureId: "Fsketch", axisIds: ["JHD"], angleDeg: 360 },
+      idempotencyKey: "job:1:revolve",
+    });
+    expect(result).toEqual({ featureId: "revolve-real-1", featureScriptUsed: false });
+    expect(JSON.stringify(calls[0]?.body)).toContain('"featureType":"revolve"');
+    expect(JSON.stringify(calls[0]?.body)).toContain("JHD");
+    expect(calls.some((call) => call.path.includes("featurescript"))).toBe(false);
+  });
+
+  it("posts a native boolean subtract of listed bodies", async () => {
+    const { http, calls } = addFeatureHttp("boolean-real-1");
+    const result = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "create_boolean",
+      parameters: { operationType: "SUBTRACT", toolBodyIds: ["B2"], targetBodyIds: ["B1"] },
+      idempotencyKey: "job:1:boolean",
+    });
+    expect(result).toEqual({ featureId: "boolean-real-1", featureScriptUsed: false });
+    expect(JSON.stringify(calls[0]?.body)).toContain('"featureType":"boolean"');
+    expect(JSON.stringify(calls[0]?.body)).toContain("BooleanOperationType");
   });
 
   it("deletes with DELETE and returns the real feature id", async () => {
