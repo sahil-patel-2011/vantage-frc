@@ -13,5 +13,7 @@ describe("Team Finance honesty", () => {
     expect(source).toContain("describeBudgetLine");
     expect(source).toContain("/api/finance/budget-vs-actual");
     expect(source).toContain("why: ${r.justification}");
+    expect(source).toContain("PER-SPONSOR RECORDED CONTRIBUTIONS");
+    expect(source).toContain("sponsorPageTotals");
   });
 });
