@@ -20,6 +20,7 @@ import {
 } from "../../lib/business/compute-season-finance";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { formatSponsorUsd, sponsorPageTotals } from "../../lib/sponsors/totals";
 import "./season-finance.css";
 
 type LiveView = Extract<SeasonFinanceView, { status: "live" }>;
@@ -53,6 +54,7 @@ export default function SeasonFinanceClient({
   // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
+  const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
 
   const load = useCallback(async () => {
     setError("");
@@ -70,6 +72,29 @@ export default function SeasonFinanceClient({
       }
       setLoadFailure(null);
       setView(data);
+      try {
+        const [sponsorsRes, contribRes] = await Promise.all([
+          fetch(`/api/sponsors?orgId=${encodeURIComponent(orgId)}`),
+          fetch(`/api/sponsors/contributions?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`),
+        ]);
+        const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
+        const contribData = contribRes.ok ? await contribRes.json() : { contributions: [] };
+        const sponsors = Array.isArray(sponsorsData.sponsors) ? sponsorsData.sponsors : [];
+        const contributions = Array.isArray(contribData.contributions) ? contribData.contributions : [];
+        const totals = sponsorPageTotals(sponsors, contributions, true);
+        setSponsorLines(
+          sponsors
+            .map((row: { id?: string; name?: string }) => ({
+              id: String(row.id ?? ""),
+              name: String(row.name ?? "").trim() || String(row.id ?? ""),
+              amountUsd: totals.amountBySponsorId[String(row.id ?? "")] ?? 0,
+            }))
+            .filter((row: { id: string }) => row.id)
+            .sort((a: { amountUsd: number }, b: { amountUsd: number }) => b.amountUsd - a.amountUsd),
+        );
+      } catch {
+        setSponsorLines([]);
+      }
     } catch (cause) {
       setLoadFailure({
         status: null,
@@ -224,7 +249,16 @@ export default function SeasonFinanceClient({
         </EmptyState>
       ) : null}
 
-      {live ? <LiveDesk view={live} busy={busy} mutate={mutate} onFunding={submitFunding} onPurchase={submitPurchase} /> : null}
+      {live ? (
+        <LiveDesk
+          view={live}
+          busy={busy}
+          mutate={mutate}
+          onFunding={submitFunding}
+          onPurchase={submitPurchase}
+          sponsorLines={sponsorLines}
+        />
+      ) : null}
     </div>
   );
 }
@@ -235,12 +269,14 @@ function LiveDesk({
   mutate,
   onFunding,
   onPurchase,
+  sponsorLines,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => Promise<boolean>;
   onFunding: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onPurchase: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  sponsorLines: Array<{ id: string; name: string; amountUsd: number }>;
 }) {
   const { rollup } = view;
   const hasPlan = rollup.plannedIncomeCents > 0 || rollup.plannedSpendCents > 0 || view.funding.length > 0;
@@ -328,6 +364,21 @@ function LiveDesk({
             Use funding lines for school funds, student fees, and deposits that are not already in Sponsors, Grants, or
             Fundraisers. Totals never invent DEMO dollars.
           </p>
+          <div style={{ marginTop: 16 }}>
+            <span className="biz-overline">Per-sponsor recorded contributions</span>
+            {sponsorLines.length === 0 ? (
+              <p className="app-muted">No recorded sponsor contributions this season.</p>
+            ) : (
+              <ul className="season-finance-elsewhere">
+                {sponsorLines.map((row) => (
+                  <li key={row.id}>
+                    <span>{row.name}</span>
+                    <strong>{formatSponsorUsd(row.amountUsd)}</strong>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </article>
         <article className="app-card">
           <header className="biz-card-head">

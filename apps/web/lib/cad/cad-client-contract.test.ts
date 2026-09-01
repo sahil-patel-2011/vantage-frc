@@ -18,6 +18,7 @@ function read(relative: string): string {
 describe("cad-client mounts CadViewport and CadOperationComposer", () => {
   const client = read("app/cad/cad-client.tsx");
   const viewport = read("app/cad/cad-viewport.tsx");
+  const composer = read("app/cad/cad-operation-composer.tsx");
 
   it("imports and mounts CadViewport with a PNG, not an embed URL", () => {
     expect(client).toContain('import { CadViewport } from "./cad-viewport"');
@@ -32,15 +33,34 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain('import { CadOperationComposer } from "./cad-operation-composer"');
     expect(client).toContain("<CadOperationComposer");
     expect(client).toContain('platform="onshape"');
-    expect(client).toContain("disabled={!onshapeOk || busy !== null}");
+    expect(client).toContain("disabled={!onshapeOk || !boundOk || busy !== null}");
     expect(client).toContain("entities={listedEntities}");
+    expect(client).toContain("features={explainedFeatures}");
+    expect(composer).toContain("features={features}");
+  });
+
+  it("disables composer, feature tree, and variables until Onshape is bound", () => {
+    expect(client).toContain("const boundOk = Boolean(state?.bound?.documentId)");
+    expect(client).toContain("disabled={!onshapeOk || !boundOk || busy !== null}");
+    expect(client.match(/disabled=\{!onshapeOk \|\| !boundOk \|\| busy !== null\}/g)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it("imports and mounts CadFeatureTree for bound Onshape features", () => {
     expect(client).toContain('import { CadFeatureTree } from "./cad-feature-tree"');
     expect(client).toContain("<CadFeatureTree");
     expect(client).toContain("features={explainedFeatures}");
-    expect(client).toContain("disabled={!onshapeOk || busy !== null}");
+    expect(client).toContain("disabled={!onshapeOk || !boundOk || busy !== null}");
+    expect(client).toContain("onDelete=");
+    expect(client).toContain('operation: "delete_feature"');
+    expect(client).toContain("Delete native feature");
+  });
+
+  it("surfaces listOnshapeEntities failures and a Refresh geometry control", () => {
+    expect(client).toContain("geometryError");
+    expect(client).toContain("Could not list Onshape entities. Bind a Part Studio and retry.");
+    expect(client).toContain("Refresh geometry");
+    expect(client).toContain('type="button"');
+    expect(client).toContain("void refreshBoundGeometry()");
   });
 
   it("imports and calls listOnshapeEntities to refresh bound geometry", () => {
@@ -73,5 +93,6 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(viewport).not.toMatch(/<iframe\b/);
     expect(viewport).toContain("Never an Onshape iframe");
     expect(`${client}\n${viewport}`).not.toMatch(/<iframe[^>]*cad\.onshape\.com/i);
+    expect(client).not.toMatch(/<iframe[\s\S]{0,200}cad\.onshape\.com/i);
   });
 });

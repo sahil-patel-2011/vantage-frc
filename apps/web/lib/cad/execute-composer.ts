@@ -7,6 +7,7 @@
  */
 
 import { isComposerNativeOp, type ComposerNativeOp } from "./composer-ops";
+import { hasEntityListPicks } from "./remember-feature";
 
 export type ComposerDocumentRef = {
   documentId?: string;
@@ -55,7 +56,12 @@ export async function executeComposerOp(input: ExecuteComposerInput): Promise<Ex
 
   const op = parseSerializedComposerOp(input.payload);
   const documentRef = completeDocumentRef(input.documentRef);
-  const featureId = existingFeatureId(input.featureId, input.payload, op.parameters);
+  // New entity picks always create. A leftover featureId from a prior step
+  // must not silently update that feature.
+  const featureId =
+    op.operation === "delete_feature" || hasEntityListPicks(op.parameters)
+      ? undefined
+      : existingFeatureId(input.featureId, input.payload, op.parameters);
 
   if (featureId) {
     if (!documentRef && !String(input.jobId ?? "").trim()) {
@@ -167,6 +173,12 @@ export function existingFeatureId(...candidates: unknown[]): string | undefined 
     if (!id) continue;
     if (DEMO_FEATURE_ID.test(id)) {
       throw new Error("Refusing DEMO feature id. Pass the featureId Onshape returned from a prior create.");
+    }
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
+      const record = candidate as Record<string, unknown>;
+      if (hasEntityListPicks(record) || hasEntityListPicks(asParamRecord(record.parameters))) {
+        continue;
+      }
     }
     return id;
   }
