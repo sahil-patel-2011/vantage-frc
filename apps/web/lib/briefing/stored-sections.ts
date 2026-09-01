@@ -6,6 +6,7 @@
 // otherwise the UI shows the honest empty + setup step.
 
 import { winProbabilityFor, type BriefingPrediction } from "../briefing";
+import { isDemoPrediction } from "../strategy/prediction-display";
 import type { BriefingCard, BriefingCounterBook, BriefingDefensePlan, BriefingWatchNote } from "./types";
 
 export const STORED_BRIEFING_SECTIONS = ["card", "counterBooks", "watchNotes", "defensePlans"] as const;
@@ -69,7 +70,9 @@ export function briefingWinProbability(
   alliance: "red" | "blue" | null,
 ): number | null {
   if (!prediction || !alliance) return null;
-  if (/\bdemo\b/i.test(prediction.modelVersion)) return null;
+  if (isDemoPrediction({ modelVersion: prediction.modelVersion, caveats: prediction.caveats })) {
+    return null;
+  }
   const value = winProbabilityFor(prediction, alliance);
   return value != null && Number.isFinite(value) ? value : null;
 }

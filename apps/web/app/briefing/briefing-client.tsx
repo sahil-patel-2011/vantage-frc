@@ -430,8 +430,11 @@ export default function BriefingClient() {
           </div>
         ) : (
           <div className="brief-prob none">
-            <span className="brief-prob-label">No prediction yet</span>
+            <span className="brief-prob-label">No grounded prediction yet</span>
             <a href={withOrg("/strategy", orgId)}>Run Strategy</a>
+            <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current, { refresh: true })}>
+              Recompute prediction
+            </button>
           </div>
         )}
       </section>

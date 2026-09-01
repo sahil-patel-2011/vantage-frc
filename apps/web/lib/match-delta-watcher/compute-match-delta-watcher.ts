@@ -74,6 +74,8 @@ async function resolveEventKey(
      FROM predictions p
      JOIN matches_ref m ON m.match_key = p.match_key
      WHERE p.org_id = $1
+       AND COALESCE(p.model_version, '') !~* 'demo'
+       AND COALESCE(p.caveats::text, '') !~* 'demo'
      ORDER BY p.scored_at DESC LIMIT 1`,
     [orgId],
   );
@@ -171,6 +173,8 @@ export async function computeMatchDeltaWatcherView(
       `SELECT DISTINCT m.event_key AS "eventKey"
        FROM predictions p JOIN matches_ref m ON m.match_key = p.match_key
        WHERE p.org_id = $1
+         AND COALESCE(p.model_version, '') !~* 'demo'
+         AND COALESCE(p.caveats::text, '') !~* 'demo'
        ORDER BY m.event_key DESC`,
       [org.orgId],
     ),
@@ -199,7 +203,9 @@ export async function computeMatchDeltaWatcherView(
          ) AS "correct"
        FROM predictions p
        JOIN matches_ref m ON m.match_key = p.match_key
-       WHERE p.org_id = $1 AND m.event_key = $2`,
+       WHERE p.org_id = $1 AND m.event_key = $2
+         AND COALESCE(p.model_version, '') !~* 'demo'
+         AND COALESCE(p.caveats::text, '') !~* 'demo'`,
       [org.orgId, eventKey],
     ),
   ]);
@@ -298,7 +304,9 @@ export async function scanEventForDeltas(
               m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
        FROM predictions p
        JOIN matches_ref m ON m.match_key = p.match_key
-       WHERE p.org_id = $1 AND m.event_key = $2 AND p.actual_winner IS NOT NULL`,
+       WHERE p.org_id = $1 AND m.event_key = $2 AND p.actual_winner IS NOT NULL
+         AND COALESCE(p.model_version, '') !~* 'demo'
+         AND COALESCE(p.caveats::text, '') !~* 'demo'`,
       [input.orgId, input.eventKey],
     ),
     client.query<{ teamKey: string; rank: number }>(

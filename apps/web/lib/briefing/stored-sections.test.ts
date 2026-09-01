@@ -138,5 +138,6 @@ describe("briefingWinProbability", () => {
   it("refuses a DEMO model version even if numbers are present", () => {
     expect(briefingWinProbability(prediction({ modelVersion: "DEMO" }), "red")).toBeNull();
     expect(briefingWinProbability(prediction({ modelVersion: "demo-v1" }), "blue")).toBeNull();
+    expect(briefingWinProbability(prediction({ caveats: ["DEMO placeholder"] }), "red")).toBeNull();
   });
 });
