@@ -18,6 +18,7 @@ import {
 } from "../../lib/command/event-day-related";
 import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
+import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -737,14 +738,30 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
               </div>
             </div>
           </header>
-          {snap?.prediction.status === "live" && snap.prediction.pOur != null ? (
+          {snap?.prediction.status === "live" &&
+          predictionWinDisplay({
+            winProbability: snap.prediction.pOur,
+            modelVersion: snap.prediction.modelVersion,
+            caveats: snap.prediction.caveats,
+          }) ? (
             <>
               <div className="edc-prob">
-                <strong>{pct(snap.prediction.pOur)}</strong>
+                <strong>
+                  {predictionWinDisplay({
+                    winProbability: snap.prediction.pOur,
+                    modelVersion: snap.prediction.modelVersion,
+                    caveats: snap.prediction.caveats,
+                  })?.label}
+                </strong>
                 <span>Our win probability</span>
               </div>
               <p className="edc-muted">
-                Opp {pct(snap.prediction.pOpp)}
+                Opp{" "}
+                {predictionWinDisplay({
+                  winProbability: snap.prediction.pOpp,
+                  modelVersion: snap.prediction.modelVersion,
+                  caveats: snap.prediction.caveats,
+                })?.label ?? "—"}
                 {snap.prediction.confidenceLow != null && snap.prediction.confidenceHigh != null
                   ? ` · band ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
                   : ""}

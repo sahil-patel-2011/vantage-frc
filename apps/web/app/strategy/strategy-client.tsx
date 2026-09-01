@@ -19,6 +19,7 @@ import {
   type StrategyShellKind,
   type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
+import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 import "./strategy.css";
@@ -329,11 +330,24 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         </p>
         <p className="app-muted strategy-provenance">
           <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · you are{" "}
-          {view.ourAlliance.toUpperCase()} ({Math.round(ourWin * 100)}% win)
+          {view.ourAlliance.toUpperCase()} (
+          {predictionWinDisplay({
+            winProbability: ourWin,
+            modelVersion: view.prediction.modelVersion,
+            caveats: view.prediction.caveats,
+          })?.label ?? "—"}{" "}
+          win)
           {view.eventName ? ` · ${view.eventName}` : ""}
         </p>
         <div className="strategy-probability">
-          <strong>{Math.round(view.prediction.pRed * 100)}%</strong>
+          <strong>
+            {predictionWinDisplay({
+              pRed: view.prediction.pRed,
+              alliance: "red",
+              modelVersion: view.prediction.modelVersion,
+              caveats: view.prediction.caveats,
+            })?.label ?? "—"}
+          </strong>
           <span>Red alliance</span>
           <small>
             {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
@@ -642,7 +656,14 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         ) : scenario ? (
           <>
             <div>
-              <strong>{Math.round(scenario.pRed * 100)}%</strong>
+              <strong>
+                {predictionWinDisplay({
+                  pRed: scenario.pRed,
+                  alliance: "red",
+                  modelVersion: view.prediction.modelVersion,
+                  caveats: view.prediction.caveats,
+                })?.label ?? "—"}
+              </strong>
               <span>
                 {scenario.delta >= 0 ? "+" : ""}
                 {Math.round(scenario.delta * 100)} pts

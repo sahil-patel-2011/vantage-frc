@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cadAiPlanUserMessage, parseCadActionPlan } from "../src/ai-plan";
-import { HOSTED_NATIVE, buildDefaultCadPlan } from "../src/agent-policy";
+import { HOSTED_NATIVE, buildDefaultCadPlan, parseEnvelopeMm } from "../src/agent-policy";
 
 const BRIEF = {
   summary: "intake roller",
@@ -50,5 +50,62 @@ describe("hosted native CAD plans", () => {
     );
     expect(plan.map((step) => step.operation)).not.toContain("feature_script");
     expect(plan.map((step) => step.operation)).toEqual(["create_sketch", "create_extrude", "verify_topology"]);
+  });
+
+  it("parseEnvelopeMm converts real lengths and refuses missing or garbage values", () => {
+    expect(parseEnvelopeMm("80 mm")).toBe(80);
+    expect(parseEnvelopeMm("12 in")).toBe(304.8);
+    expect(parseEnvelopeMm(undefined)).toBeUndefined();
+    expect(parseEnvelopeMm(null)).toBeUndefined();
+    expect(parseEnvelopeMm("")).toBeUndefined();
+    expect(parseEnvelopeMm("confirmed envelope")).toBeUndefined();
+    expect(parseEnvelopeMm("ask later")).toBeUndefined();
+    expect(parseEnvelopeMm("0 mm")).toBeUndefined();
+  });
+
+  it("emits widthMm/heightMm/depthMm from a parseable envelope", () => {
+    const mmPlan = buildDefaultCadPlan({
+      summary: "plate",
+      assumptions: [{ name: "Envelope dimensions", value: "80 mm", needsConfirmation: false }],
+    });
+    const inPlan = buildDefaultCadPlan(BRIEF);
+    const mmSketch = mmPlan.find((step) => step.operation === "create_sketch");
+    const mmExtrude = mmPlan.find((step) => step.operation === "create_extrude");
+    const inSketch = inPlan.find((step) => step.operation === "create_sketch");
+    const inExtrude = inPlan.find((step) => step.operation === "create_extrude");
+    expect(mmSketch?.parameters).toMatchObject({ plane: "Top", widthMm: 80, heightMm: 80 });
+    expect(mmExtrude?.parameters).toMatchObject({ depthMm: 80 });
+    expect(inSketch?.parameters).toMatchObject({ plane: "Top", widthMm: 304.8, heightMm: 304.8 });
+    expect(inExtrude?.parameters).toMatchObject({ depthMm: 304.8 });
+    expect(mmSketch?.parameters).not.toHaveProperty("profile");
+    expect(mmExtrude?.parameters).not.toHaveProperty("depth");
+    expect(mmSketch?.requiresApproval).toBe(true);
+    expect(mmExtrude?.requiresApproval).toBe(true);
+  });
+
+  it("does not invent millimetres when the envelope is missing or unparseable", () => {
+    const variants = [
+      buildDefaultCadPlan({ summary: "plate", assumptions: [] }),
+      buildDefaultCadPlan({
+        summary: "plate",
+        assumptions: [{ name: "Envelope dimensions", value: "ask later", needsConfirmation: true }],
+      }),
+    ];
+    for (const plan of variants) {
+      const sketch = plan.find((step) => step.operation === "create_sketch");
+      const extrude = plan.find((step) => step.operation === "create_extrude");
+      expect(sketch).toBeDefined();
+      expect(extrude).toBeDefined();
+      expect(sketch?.parameters.plane).toBe("Top");
+      expect(sketch?.parameters).not.toHaveProperty("widthMm");
+      expect(sketch?.parameters).not.toHaveProperty("heightMm");
+      expect(sketch?.parameters).not.toHaveProperty("profile");
+      expect(extrude?.parameters).not.toHaveProperty("depthMm");
+      expect(extrude?.parameters).not.toHaveProperty("depth");
+      expect(JSON.stringify(sketch?.parameters)).not.toMatch(/confirmed envelope/i);
+      expect(JSON.stringify(extrude?.parameters)).not.toMatch(/confirmed by user/i);
+      expect(sketch?.requiresApproval).toBe(true);
+      expect(extrude?.requiresApproval).toBe(true);
+    }
   });
 });
