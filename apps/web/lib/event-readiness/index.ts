@@ -2,4 +2,4 @@
 export * from "./types";
 export * from "./template";
 export * from "./schedule";
-export * from "./rollup";
+export * from "./blockers";

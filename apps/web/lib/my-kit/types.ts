@@ -14,6 +14,7 @@
 
 export type MyKitSectionId =
   | "tasks"
+  | "packing"
   | "calendar"
   | "duties"
   | "scouting"
@@ -95,6 +96,17 @@ export type MyKitPerson = {
   trackKeys: string[];
 };
 
+/** Tonight's personal kit — assignments + packing that belong to this member only. */
+export type MyKitTonight = {
+  /** UTC calendar day (YYYY-MM-DD) this kit is answering. */
+  date: string;
+  rows: MyKitRow[];
+  assignmentCount: number;
+  packingCount: number;
+  /** Shown when `rows` is empty. Never names a template or DEMO kit. */
+  emptyLabel: string;
+};
+
 export type MyKitQuickLink = { id: string; label: string; href: string };
 
 export type MyKitSetupStep = { id: string; label: string; detail: string; href: string };
@@ -112,6 +124,11 @@ export type MyKitView =
       orgName: string;
       teamNumber: number | null;
       person: MyKitPerson;
+      /**
+       * What this member needs tonight: assigned work due by today plus packing
+       * items that belong to them. Empty when nothing is assigned — never a template kit.
+       */
+      tonight: MyKitTonight;
       /** Focus-first ordering; every section is always present. */
       sections: MyKitSection[];
       hours: MyKitHours;
@@ -238,6 +255,27 @@ export type MyKitOnboardingRecord = {
   total: number;
 };
 
+/**
+ * A packing row this member has a personal claim on.
+ *
+ * `request` = they submitted it (`packing_requests.requested_by`).
+ * `packed` = they checked it off (`packing_items.packed_by`).
+ * Never derived from `created_by` — seeding the standard template stamps the
+ * list creator on every row, which would dump a DEMO kit onto their page.
+ */
+export type MyKitPackingRecord = {
+  id: string;
+  source: "request" | "packed";
+  listId: string;
+  listTitle: string;
+  eventKey: string | null;
+  category: string;
+  label: string;
+  quantity: number;
+  status: "pending" | "accepted" | "packed";
+  packed: boolean;
+};
+
 /** Which sections have their backing table present in this database. */
 export type MyKitAvailability = Record<MyKitSectionId, boolean>;
 
@@ -265,4 +303,5 @@ export type MyKitComposeInput = {
   tools: MyKitToolLoanRecord[];
   money: MyKitMoneyRecord[];
   onboarding: MyKitOnboardingRecord[];
+  packing: MyKitPackingRecord[];
 };

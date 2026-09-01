@@ -14,6 +14,7 @@
  */
 
 import type { PresenceFigure, PresenceMemberRow } from "./types";
+import { comingTonightCount } from "./unify";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
@@ -28,6 +29,8 @@ export type PresenceSummaryInput = {
 
 export type PresenceSummary = {
   rosterCount: number;
+  /** Distinct members coming or already here. RSVP + roll call + hours, counted once. */
+  comingTonight: number;
   respondedCount: number;
   goingCount: number;
   maybeCount: number;
@@ -92,6 +95,7 @@ export function summarizePresence(input: PresenceSummaryInput): PresenceSummary 
 
   return {
     rosterCount,
+    comingTonight: comingTonightCount(rows),
     respondedCount: responded.length,
     goingCount: going.length,
     maybeCount: maybe.length,

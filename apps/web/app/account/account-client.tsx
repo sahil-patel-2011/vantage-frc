@@ -904,7 +904,7 @@ export default function AccountClient() {
             <Panel className="account-panel">
               <div className="account-identity">
                 {account.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+                   
                   <img className="soft-avatar lg" src={account.image} alt="" />
                 ) : (
                   <span className="soft-avatar lg">{initial}</span>
@@ -1177,6 +1177,8 @@ export default function AccountClient() {
                   {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
                   {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
                   {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
+                  {orgId ? <a href={withOrgHref("/cad/setup", orgId)}>Onshape setup</a> : null}
+                  <a href="/account?tab=appearance">Cockpit</a>
                   {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
                   <a href="/account?tab=profile">Account</a>
                   <a href="/whats-new">What’s new</a>

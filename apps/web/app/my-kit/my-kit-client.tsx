@@ -21,6 +21,7 @@ import "./my-kit.css";
 /** The surface each section hands off to — named so the button is not "Open My open work". */
 const OPEN_LABEL: Record<MyKitSectionId, string> = {
   tasks: "Open Work",
+  packing: "Open Packing",
   calendar: "Open Calendar",
   duties: "Open Duties",
   scouting: "Open Lineup",
@@ -139,7 +140,7 @@ export default function MyKitClient() {
           </>
         }
         title="My Kit"
-        description="Everything assigned to you personally, pulled from the surfaces that own it. Read-only — open a row to act on it."
+        description="What you need tonight — assignments and packing that belong to you. Read-only, never a template kit."
       >
         <nav className="product-hub-related mk-related" aria-label="Related personal views">
           <a className="app-button secondary" href={withOrgHref("/my-day", orgId)}>
@@ -185,6 +186,62 @@ export default function MyKitClient() {
       >
         {live ? (
           <>
+            <Panel className="mk-tonight" aria-label="What you need tonight">
+              <div className="mk-section-head">
+                <h2>Tonight · {live.tonight.date}</h2>
+                {live.tonight.rows.length > 0 ? (
+                  <Badge tone="setup">
+                    {live.tonight.rows.length} item{live.tonight.rows.length === 1 ? "" : "s"}
+                  </Badge>
+                ) : (
+                  <Badge tone="good">Nothing assigned</Badge>
+                )}
+              </div>
+              <p className="mk-reason">
+                {live.tonight.assignmentCount} assigned
+                {live.tonight.assignmentCount === 1 ? " item" : " items"}
+                {" · "}
+                {live.tonight.packingCount} packing
+                {live.tonight.packingCount === 1 ? " item" : " items"} still yours to pack.
+              </p>
+              {live.tonight.rows.length > 0 ? (
+                <ul className="mk-rows">
+                  {live.tonight.rows.map((row) => (
+                    <li key={row.id}>
+                      <a className={`mk-row tone-${row.tone}`} href={row.href}>
+                        <span className="mk-row-main">
+                          <span className="mk-row-title">
+                            {TONE_LABEL[row.tone] ? (
+                              <span className="sr-only">{TONE_LABEL[row.tone]}. </span>
+                            ) : null}
+                            {row.title}
+                          </span>
+                          {row.detail ? <span className="mk-row-detail">{row.detail}</span> : null}
+                        </span>
+                        {row.meta ? <span className="mk-row-meta">{row.meta}</span> : null}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState
+                  compact
+                  badge="Honest empty"
+                  badgeTone="good"
+                  title="Nothing on your kit tonight"
+                  description={live.tonight.emptyLabel}
+                />
+              )}
+              <div className="mk-section-footer">
+                <a className="app-button secondary" href={withOrgHref("/todos", orgId)}>
+                  Open Work
+                </a>
+                <a className="app-button secondary" href={withOrgHref("/packing", orgId)}>
+                  Open Packing
+                </a>
+              </div>
+            </Panel>
+
             <Panel className="mk-identity" aria-label="Who this kit is for">
               <div className="mk-section-head">
                 <h2>{live.person.displayName || "Your kit"}</h2>

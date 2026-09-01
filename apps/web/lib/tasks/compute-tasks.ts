@@ -1,5 +1,8 @@
+import { emitPreferredNotification } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
 import { buildBoard, buildMemberWorkload, summarizeMeetingOutput, visibleBenchmarkMedian } from ".";
+import { resolveOwnerNames, workItemHref } from "../work-items/canonical";
+import { loadRoster } from "../work-items/service";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 
 export const TASK_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked", "done", "archived"];
@@ -219,11 +222,63 @@ export async function createTask(
   await replaceTaskAssignees(client,{orgId:input.orgId,taskId:created.rows[0]!.id,userId:input.userId,assignees:input.assignees?.length?input.assignees:input.assignee?[input.assignee]:[]});
 }
 
+/**
+ * Replace a task's owners.
+ *
+ * `build_tasks.assignee` / `build_task_assignees.assignee` are free text (students are not always
+ * platform users), which is how one person ended up on a board three times as "sam r",
+ * "Sam R." and "Sam Rodriguez". Names are canonicalized against the roster before they are stored —
+ * an exact single match is rewritten to the member's own spelling, anything less confident is
+ * stored exactly as typed — and the members we did resolve get the same assignment notification a
+ * todo assignee gets, so the two trackers behave the same way.
+ */
 export async function replaceTaskAssignees(client:PoolClient,input:{orgId:string;taskId:string;userId:string;assignees:string[]}) {
-  const names=[...new Set(input.assignees.map((name)=>name.trim().slice(0,120)).filter(Boolean))].slice(0,12);
+  const roster = await loadRoster(client, input.orgId).catch(() => []);
+  const owners = resolveOwnerNames(
+    input.assignees.map((name) => name.trim().slice(0, 120)).filter(Boolean),
+    roster,
+  ).slice(0, 12);
+  const names = owners.map((owner) => owner.name);
+
+  const previous = await client
+    .query<{ assignee: string }>(
+      `SELECT assignee FROM build_task_assignees WHERE task_id=$1 AND org_id=$2`,
+      [input.taskId, input.orgId],
+    )
+    .catch(() => ({ rows: [] as { assignee: string }[] }));
+  const previousIds = new Set(
+    resolveOwnerNames(previous.rows.map((row) => row.assignee), roster)
+      .map((owner) => owner.userId)
+      .filter((id): id is string => Boolean(id)),
+  );
+
   await client.query(`DELETE FROM build_task_assignees WHERE task_id=$1 AND org_id=$2`,[input.taskId,input.orgId]);
   for(const name of names) await client.query(`INSERT INTO build_task_assignees(task_id,org_id,assignee,added_by) VALUES($1,$2,$3,$4)`,[input.taskId,input.orgId,name,input.userId]);
   await client.query(`UPDATE build_tasks SET assignee=$3,updated_at=now() WHERE id=$1 AND org_id=$2`,[input.taskId,input.orgId,names[0]??null]);
+
+  const task = await client.query<{ title: string }>(
+    `SELECT title FROM build_tasks WHERE id=$1 AND org_id=$2`,
+    [input.taskId, input.orgId],
+  );
+  const title = task.rows[0]?.title;
+  if (!title) return;
+  const actor = await client.query<{ name: string }>(`SELECT name FROM users WHERE id=$1`, [input.userId]);
+  const actorName = actor.rows[0]?.name ?? "A teammate";
+
+  for (const owner of owners) {
+    if (!owner.userId || owner.userId === input.userId || previousIds.has(owner.userId)) continue;
+    await emitPreferredNotification(client, {
+      userId: owner.userId,
+      orgId: input.orgId,
+      type: "todo_assigned",
+      payload: {
+        title: "Build task assigned to you",
+        body: `${actorName} assigned “${title}”.`,
+        taskId: input.taskId,
+        href: workItemHref("build_task", input.orgId, input.taskId),
+      },
+    });
+  }
 }
 
 export async function setTaskStatus(
@@ -254,6 +309,13 @@ export async function updateTaskFields(
     dueOn?: string | null;
   },
 ): Promise<void> {
+  // Single-owner edits go through the same canonicalization as the multi-assignee path, or the
+  // two write different spellings of the same person onto the same row.
+  let assignee = input.assignee;
+  if (assignee) {
+    const roster = await loadRoster(client, input.orgId).catch(() => []);
+    assignee = resolveOwnerNames([assignee], roster)[0]?.name ?? assignee;
+  }
   await client.query(
     `UPDATE build_tasks SET
        title = COALESCE($3, title),
@@ -271,7 +333,7 @@ export async function updateTaskFields(
       input.subsystem ?? null,
       input.priority ?? null,
       input.assignee !== undefined,
-      input.assignee ?? null,
+      assignee ?? null,
       input.estimateHours !== undefined,
       input.estimateHours ?? null,
       input.dueOn !== undefined,

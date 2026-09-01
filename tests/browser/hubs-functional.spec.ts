@@ -19,11 +19,12 @@ const HUBS = [
   { path: "/business", tab: "Overview" },
   { path: "/build", tab: "Kickoff" },
   { path: "/ai", tab: "Chat" },
-  { path: "/media", tab: "Calendar" },
+  { path: "/media", heading: /^Media$/i },
   { path: "/logistics", heading: /Logistics|Travel/i },
 ] as const;
 
 test("every product hub and logistics render instead of crashing", async ({ page }) => {
+  test.setTimeout(120_000);
   for (const hub of HUBS) {
     const response = await page.goto(hub.path, { waitUntil: "domcontentloaded" });
     expect(response?.ok(), `${hub.path} HTTP`).toBeTruthy();

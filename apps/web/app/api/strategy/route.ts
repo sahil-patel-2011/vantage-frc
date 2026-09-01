@@ -4,10 +4,33 @@ import { headers } from "next/headers";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
+import {
+  briefingRequestsStrategyRefresh,
+  recomputeStrategyView,
+} from "../../../lib/strategy/recompute";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import type { StrategyView } from "../../../lib/strategy/types";
 
 export type { StrategyView };
+
+async function loadStrategyView(input: {
+  userId: string;
+  requestedOrg: string | null;
+  matchKey: string | null;
+  refresh: boolean;
+}): Promise<StrategyView> {
+  await hydrateOrgActiveEvent({ userId: input.userId, requestedOrg: input.requestedOrg });
+  return withRls({ userId: input.userId }, async (client) => {
+    const compute = input.refresh ? recomputeStrategyView : computeStrategyView;
+    const strategy = await compute(client, {
+      userId: input.userId,
+      requestedOrg: input.requestedOrg,
+      matchKey: input.matchKey,
+    });
+    const dataSourceHealth = await loadDataSourceHealth(client, strategy.orgId);
+    return { ...strategy, dataSourceHealth };
+  });
+}
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -17,18 +40,15 @@ export async function GET(request: Request) {
   const requestedOrg = url.searchParams.get("orgId");
   const matchKey = url.searchParams.get("matchKey");
   const tbaConfigured = platformTbaEnvConfigured();
+  const refresh = briefingRequestsStrategyRefresh({ refresh: url.searchParams.get("refresh") });
 
   try {
-    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
-    // Strategy always reads Neon last-good cache; attach explicit health/ETag banner state.
-    const view = await withRls({ userId: session.user.id }, async (client) => {
-      const strategy = await computeStrategyView(client, {
-        userId: session.user.id,
-        requestedOrg,
-        matchKey,
-      });
-      const dataSourceHealth = await loadDataSourceHealth(client, strategy.orgId);
-      return { ...strategy, dataSourceHealth };
+    // Load computes from Neon last-good cache; ?refresh=1 is the briefing on-demand recompute.
+    const view = await loadStrategyView({
+      userId: session.user.id,
+      requestedOrg,
+      matchKey,
+      refresh,
     });
     return Response.json(view);
   } catch {
@@ -66,5 +86,37 @@ export async function GET(request: Request) {
       } satisfies StrategyView,
       { status: 200 },
     );
+  }
+}
+
+/** Explicit on-demand recompute — briefing POST { action: "recompute" } or { refresh: true }. */
+export async function POST(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (!briefingRequestsStrategyRefresh(body)) {
+    return Response.json({ error: "Unsupported action" }, { status: 400 });
+  }
+
+  const requestedOrg = typeof body.orgId === "string" ? body.orgId : null;
+  const matchKey = typeof body.matchKey === "string" ? body.matchKey : null;
+
+  try {
+    const view = await loadStrategyView({
+      userId: session.user.id,
+      requestedOrg,
+      matchKey,
+      refresh: true,
+    });
+    return Response.json(view);
+  } catch {
+    return Response.json({ error: "Could not recompute strategy from the Neon cache." }, { status: 400 });
   }
 }

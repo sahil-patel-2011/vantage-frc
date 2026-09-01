@@ -32,6 +32,7 @@ type EntryRow = {
   id: string;
   sponsorName: string;
   tier: SponsorWallTier;
+  mediaAssetId: string | null;
   logoUrl: string | null;
   websiteUrl: string | null;
   message: string | null;
@@ -60,6 +61,7 @@ function mapEntry(row: EntryRow): SponsorWallEntry {
     id: row.id,
     sponsorName: row.sponsorName,
     tier: row.tier,
+    mediaAssetId: row.mediaAssetId,
     logoUrl: row.logoUrl,
     websiteUrl: row.websiteUrl,
     message: row.message,
@@ -106,11 +108,13 @@ export async function computeSponsorWallView(
 
   const [entriesResult, settingsResult] = await Promise.all([
     client.query<EntryRow>(
-      `SELECT id, sponsor_name AS "sponsorName", tier, logo_url AS "logoUrl", website_url AS "websiteUrl",
-              message, display_order AS "displayOrder", published, created_at::text AS "createdAt"
-       FROM sponsor_wall_entries
-       WHERE org_id = $1
-       ORDER BY display_order ASC, created_at DESC`,
+      `SELECT w.id, w.sponsor_name AS "sponsorName", w.tier,
+              a.id AS "mediaAssetId", w.logo_url AS "logoUrl", w.website_url AS "websiteUrl",
+              w.message, w.display_order AS "displayOrder", w.published, w.created_at::text AS "createdAt"
+       FROM sponsor_wall_entries w
+       LEFT JOIN media_kit_assets a ON a.org_id = w.org_id AND a.url = w.logo_url
+       WHERE w.org_id = $1
+       ORDER BY w.display_order ASC, w.created_at DESC`,
       [org.orgId],
     ),
     client.query<SettingsRow>(

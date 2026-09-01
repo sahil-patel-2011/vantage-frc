@@ -203,6 +203,10 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  // Promotion to the ONE pick list: which team keys are in flight, and the last outcome.
+  const [saving, setSaving] = useState<string>("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [savedPickListId, setSavedPickListId] = useState<string>("");
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -271,7 +275,53 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       return;
     }
     void load(orgId);
-  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
+  }, [orgId]);  
+
+  /**
+   * Promote chemistry candidates onto the ONE pick list. Idempotent server-side, so a double tap
+   * updates the same entry instead of duplicating it.
+   */
+  const saveToPickList = useCallback(
+    async (teamKeys: string[], bucket: "first_pick" | "second_pick" | "unranked") => {
+      if (!orgId || !teamKeys.length) return;
+      const busyKey = teamKeys.join(",");
+      setSaving(busyKey);
+      setSaveMessage("");
+      setSavedPickListId("");
+      try {
+        const response = await fetch("/api/chemistry", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            orgId,
+            action: "promote-partner-fit",
+            teamKeys,
+            bucket,
+            selection: draft
+              .split(/[,\s]+/)
+              .map((part) => part.trim())
+              .filter(Boolean),
+          }),
+        });
+        const data = (await response.json()) as ChemistryView & {
+          error?: string;
+          promotion?: { message: string; pickListId?: string };
+        };
+        if (!response.ok) {
+          setSaveMessage(data.error ?? "Could not save to the pick list.");
+          return;
+        }
+        setView(data);
+        setSaveMessage(data.promotion?.message ?? "Saved to the pick list.");
+        setSavedPickListId(data.promotion?.pickListId ?? "");
+      } catch {
+        setSaveMessage("Network error — nothing was saved to the pick list.");
+      } finally {
+        setSaving("");
+      }
+    },
+    [draft, orgId],
+  );
 
   function scoreTone(score: number | null) {
     if (score == null) return "";
@@ -359,6 +409,19 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
+      {saveMessage ? (
+        <p className="edc-banner" role="status">
+          {saveMessage}
+          {savedPickListId ? (
+            <>
+              {" "}
+              <a className="edc-link" href={pickDeskHref}>
+                Open Pick desk
+              </a>
+            </>
+          ) : null}
+        </p>
+      ) : null}
 
       {showTiles && chemistry ? (
         <div className="chem-kpis" aria-label="Chemistry counts">
@@ -460,6 +523,25 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               </div>
             </div>
             <p className="edc-caveat">{chemistry.caveats[0] ?? chemistry.caveat}</p>
+            <p className="edc-muted">
+              Promote writes these seats onto the same pick_lists row the pick desk, Pick Clock,
+              and Draft board read — MODEL partner fit only, never DEMO scores.
+            </p>
+            <div className="edc-header-actions">
+              <button
+                type="button"
+                className="app-button"
+                disabled={Boolean(saving) || !view?.teamKeys.length}
+                onClick={() => void saveToPickList(view?.teamKeys ?? [], "first_pick")}
+              >
+                {saving === (view?.teamKeys ?? []).join(",")
+                  ? "Promoting…"
+                  : "Promote partner fit"}
+              </button>
+              <a className="app-button secondary" href={pickDeskHref}>
+                Open Pick desk
+              </a>
+            </div>
           </article>
 
           <article className="edc-card">
@@ -589,7 +671,10 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       {view?.suggestions.length ? (
         <section className="chem-suggest">
           <h2>Try high-EPA seats</h2>
-          <p className="edc-muted">Not a pick list — event metrics you can add to the scorer. Never DEMO seats.</p>
+          <p className="edc-muted">
+            Event metrics you can add to the scorer, or promote straight onto the pick_lists spine
+            the pick desk and Draft board read. Never DEMO seats.
+          </p>
           <ul className="edc-queue">
             {view.suggestions.map((s) => (
               <li key={s.teamKey}>
@@ -614,6 +699,14 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
                   }}
                 >
                   Add
+                </button>
+                <button
+                  type="button"
+                  className="edc-link"
+                  disabled={Boolean(saving)}
+                  onClick={() => void saveToPickList([s.teamKey], "second_pick")}
+                >
+                  {saving === s.teamKey ? "Promoting…" : "Promote to pick list"}
                 </button>
               </li>
             ))}

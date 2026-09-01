@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
 import {
   bomCoverage,
@@ -88,16 +88,19 @@ function ItemRow({
           ) : null}
         </div>
         <div className="inventory-item-qty">
-          <button type="button" aria-label="Decrease" disabled={busy} onClick={() => void adjust(-1, "used")}>
+          {/* Button's icon variant only grows the *hit area* on coarse pointers
+              (min-width/height, via a media query) — `.inventory-item-qty button`
+              still wins the visual 30px box, padding, and colors on a mouse. */}
+          <Button variant="icon" aria-label="Decrease" disabled={busy} onClick={() => void adjust(-1, "used")}>
             −
-          </button>
+          </Button>
           <b>
             {fmtQty(item.quantity)}
             <span>{item.unit}</span>
           </b>
-          <button type="button" aria-label="Increase" disabled={busy} onClick={() => void adjust(1, "received")}>
+          <Button variant="icon" aria-label="Increase" disabled={busy} onClick={() => void adjust(1, "received")}>
             +
-          </button>
+          </Button>
         </div>
         <div className="inventory-item-actions">
           {/* One row of controls per item: Adjust + Edit stay one tap; archive/delete live

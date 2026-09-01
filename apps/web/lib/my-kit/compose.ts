@@ -14,6 +14,7 @@ import type {
   MyKitFocus,
   MyKitHourLogRecord,
   MyKitHours,
+  MyKitPackingRecord,
   MyKitQuickLink,
   MyKitRow,
   MyKitSection,
@@ -25,6 +26,7 @@ import type {
 
 export const MY_KIT_SECTION_IDS: MyKitSectionId[] = [
   "tasks",
+  "packing",
   "calendar",
   "duties",
   "scouting",
@@ -39,6 +41,7 @@ export const MY_KIT_SECTION_IDS: MyKitSectionId[] = [
 
 export const EMPTY_AVAILABILITY: MyKitAvailability = {
   tasks: false,
+  packing: false,
   calendar: false,
   duties: false,
   scouting: false,
@@ -86,6 +89,26 @@ export function minutesBetween(startIso: string, endIso: string | null): number 
 }
 
 const DUE_SOON_MS = 72 * 60 * 60 * 1000;
+
+/**
+ * Due tonight or already overdue (UTC day). Used for assigned work that has a
+ * due date — an undated assignment is not assumed to be tonight.
+ */
+export function isDueByTonight(due: string | null | undefined, nowIso: string): boolean {
+  const today = dayKeyUtc(nowIso);
+  const key = dayKeyUtc(due);
+  return Boolean(today && key && key <= today);
+}
+
+/** Starts on tonight's UTC calendar day. Missing timestamps are not guessed. */
+export function isOnTonight(when: string | null | undefined, nowIso: string): boolean {
+  const today = dayKeyUtc(nowIso);
+  const key = dayKeyUtc(when);
+  return Boolean(today && key && key === today);
+}
+
+export const TONIGHT_EMPTY_LABEL =
+  "Nothing is assigned to you for tonight, and you have no packing items of your own.";
 
 /** Overdue / due-soon / neutral. Never guesses when the due value is absent. */
 export function dueTone(due: string | null | undefined, nowIso: string): MyKitTone {
@@ -232,16 +255,16 @@ export function deriveFocus(subteamNames: string[]): MyKitFocus {
 const BASE_ORDER: MyKitSectionId[] = [...MY_KIT_SECTION_IDS];
 
 const PROMOTIONS: Record<MyKitFocus, MyKitSectionId[]> = {
-  scouting: ["scouting", "duties", "calendar", "tasks"],
-  media: ["media", "calendar", "tasks"],
-  drive_team: ["duties", "calendar", "tasks"],
-  electrical: ["tasks", "calendar", "tools"],
-  programming: ["tasks", "calendar", "learning"],
-  mechanical: ["tasks", "tools", "calendar"],
-  cad: ["tasks", "calendar", "learning"],
-  business: ["tasks", "money", "calendar"],
-  safety: ["skills", "tasks", "calendar"],
-  general: [],
+  scouting: ["scouting", "duties", "calendar", "tasks", "packing"],
+  media: ["media", "calendar", "tasks", "packing"],
+  drive_team: ["duties", "calendar", "tasks", "packing"],
+  electrical: ["tasks", "packing", "calendar", "tools"],
+  programming: ["tasks", "packing", "calendar", "learning"],
+  mechanical: ["tasks", "packing", "tools", "calendar"],
+  cad: ["tasks", "packing", "calendar", "learning"],
+  business: ["tasks", "packing", "money", "calendar"],
+  safety: ["skills", "tasks", "packing", "calendar"],
+  general: ["tasks", "packing"],
 };
 
 const EMPHASIS_REASON: Record<MyKitFocus, string> = {
@@ -354,6 +377,11 @@ const SECTION_META: Record<MyKitSectionId, SectionMeta> = {
     href: "/todos",
     emptyLabel: "No open tasks are assigned to you right now.",
   },
+  packing: {
+    title: "My packing",
+    href: "/packing",
+    emptyLabel: "No packing items belong to you. The standard load-out template is not your kit.",
+  },
   calendar: {
     title: "My next meetings",
     href: "/team/calendar",
@@ -463,6 +491,80 @@ function joinDetail(...parts: Array<string | null | undefined>): string {
     .map((part) => (part ?? "").trim())
     .filter((part) => part.length > 0)
     .join(" · ");
+}
+
+function packingRows(items: MyKitPackingRecord[], orgId: string): MyKitRow[] {
+  return items.map((item) => {
+    const qty = item.quantity > 1 ? `×${item.quantity}` : "";
+    if (item.packed || item.status === "packed") {
+      return {
+        id: `packing:${item.source}:${item.id}`,
+        title: item.label,
+        detail: joinDetail(item.listTitle, item.category, qty),
+        meta: "Packed",
+        href: withOrgHref("/packing", orgId),
+        tone: "done" as const,
+      };
+    }
+    return {
+      id: `packing:${item.source}:${item.id}`,
+      title: item.label,
+      detail: joinDetail(
+        item.listTitle,
+        item.category,
+        qty,
+        item.status === "pending" ? "You requested this" : "On the list",
+      ),
+      meta: item.status === "pending" ? "Pending" : "Still unpacked",
+      href: withOrgHref("/packing", orgId),
+      tone: "due" as const,
+    };
+  });
+}
+
+/** Assigned work that is due by tonight, plus unpacked packing that belongs to this member. */
+export function tonightRows(input: {
+  nowIso: string;
+  taskRows: MyKitRow[];
+  tasks: MyKitComposeInput["tasks"];
+  eventRows: MyKitRow[];
+  events: MyKitComposeInput["events"];
+  dutyRows: MyKitRow[];
+  duties: MyKitComposeInput["duties"];
+  scoutRows: MyKitRow[];
+  scoutAssignments: MyKitComposeInput["scoutAssignments"];
+  mediaRows: MyKitRow[];
+  media: MyKitComposeInput["media"];
+  packingRows: MyKitRow[];
+  packing: MyKitPackingRecord[];
+}): { rows: MyKitRow[]; assignmentCount: number; packingCount: number } {
+  const now = input.nowIso;
+  const picked: MyKitRow[] = [];
+
+  input.tasks.forEach((task, index) => {
+    const dueTonight = task.dueOn ? isDueByTonight(task.dueOn, now) : true;
+    if (dueTonight) picked.push(input.taskRows[index]!);
+  });
+  input.events.forEach((event, index) => {
+    if (isOnTonight(event.startsAt, now)) picked.push(input.eventRows[index]!);
+  });
+  input.duties.forEach((duty, index) => {
+    if (isOnTonight(duty.startsAt, now)) picked.push(input.dutyRows[index]!);
+  });
+  input.scoutAssignments.forEach((entry, index) => {
+    if (!entry.startsAt || isOnTonight(entry.startsAt, now)) picked.push(input.scoutRows[index]!);
+  });
+  input.media.forEach((item, index) => {
+    if (item.dueAt ? isDueByTonight(item.dueAt, now) : true) picked.push(input.mediaRows[index]!);
+  });
+
+  const assignmentCount = picked.length;
+  const packingNeeded = input.packing
+    .map((item, index) => ({ item, row: input.packingRows[index]! }))
+    .filter(({ item }) => !item.packed && item.status !== "packed");
+  for (const { row } of packingNeeded) picked.push(row);
+
+  return { rows: picked.filter(Boolean), assignmentCount, packingCount: packingNeeded.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -630,12 +732,30 @@ export function composeMyKit(input: MyKitComposeInput): Extract<MyKitView, { sta
     tone: track.total > 0 && track.done >= track.total ? "done" : "due",
   }));
 
+  const packRows = packingRows(input.availability.packing ? input.packing : [], orgId);
+  const tonight = tonightRows({
+    nowIso: now,
+    taskRows,
+    tasks: input.tasks,
+    eventRows,
+    events: input.events,
+    dutyRows,
+    duties: input.duties,
+    scoutRows,
+    scoutAssignments: input.scoutAssignments,
+    mediaRows,
+    media: input.media,
+    packingRows: packRows,
+    packing: input.availability.packing ? input.packing : [],
+  });
+
   const order = sectionOrder(focus);
   const emphasisId = PROMOTIONS[focus][0] ?? null;
   const emphasisReason = EMPHASIS_REASON[focus];
 
   const rowsById: Record<MyKitSectionId, MyKitRow[]> = {
     tasks: taskRows,
+    packing: packRows,
     calendar: eventRows,
     duties: dutyRows,
     scouting: scoutRows,
@@ -669,6 +789,13 @@ export function composeMyKit(input: MyKitComposeInput): Extract<MyKitView, { sta
       focus,
       focusLabel: focusLabel(focus),
       trackKeys: trackKeysFor(subteamNames),
+    },
+    tonight: {
+      date: dayKeyUtc(now) ?? now.slice(0, 10),
+      rows: tonight.rows,
+      assignmentCount: tonight.assignmentCount,
+      packingCount: tonight.packingCount,
+      emptyLabel: TONIGHT_EMPTY_LABEL,
     },
     sections,
     hours,

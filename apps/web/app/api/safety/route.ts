@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { certExpiryStatus, parseSafetyAction, summarizeSafety, type CertType, type IncidentSeverity, type IncidentStatus, type Treatment } from "../../../lib/safety";
+import { deleteSafetyIncident, SafetyAuthError } from "../../../lib/safety/authorization";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -22,7 +23,8 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown) {
-  const status = error instanceof HttpError ? error.status : 400;
+  const status =
+    error instanceof HttpError || error instanceof SafetyAuthError ? error.status : 400;
   return Response.json({ error: error instanceof Error ? error.message : "Safety request failed" }, { status });
 }
 
@@ -119,8 +121,11 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "delete_incident": {
-          const deleted = await client.query(`DELETE FROM safety_incidents WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
-          if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this incident");
+          await deleteSafetyIncident(client, {
+            orgId: action.orgId,
+            incidentId: action.id,
+            userId,
+          });
           return { ok: true };
         }
         case "add_certification": {

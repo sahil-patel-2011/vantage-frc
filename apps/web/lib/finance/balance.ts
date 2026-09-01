@@ -1,47 +1,28 @@
 /**
  * Real money balance — the team's actual cash position derived from recorded
- * rows only. There is deliberately NO denormalized balance column anywhere:
- * every number here is recomputed from the underlying finance tables on read,
- * under the caller's RLS context (org membership enforced by row policies).
+ * finance_transactions rows only. There is deliberately NO denormalized
+ * balance column anywhere: every number here is recomputed from the unified
+ * ledger on read, under the caller's RLS context (org membership enforced by
+ * row policies).
  *
- * Since 0461_money_unify.sql the UNIFIED LEDGER (finance_transactions +
- * source_kind/source_id) is read FIRST for every money movement the old spend
- * tables used to hold. The legacy unions survive ONLY as a fallback for rows
- * not yet mirrored (written by a consumer that has not been repointed through
- * lib/finance/ledger.ts). The dedup rule — a legacy row whose
- * (source_kind, source_id) already exists in the ledger is the same dollar and
- * is skipped — is enforced in SQL via NOT EXISTS and re-asserted in TS by
- * dedupeLedgerEntries (unit-tested in ledger.test.ts).
+ * Since 0461_money_unify.sql the UNIFIED LEDGER is the only cash read.
+ * Legacy-table fallback unions are retired (P0-4): a source row that has not
+ * been mirrored is skipped, not invented. Source writers call recordMoney()
+ * in the same withRls transaction as their own write.
  *
- * Money in (verified against real columns — see the cited migrations):
- * - unified ledger income rows                   (0035 + 0461)
- * - sponsor_contributions type='cash'            (0035; no status column —
- *   recorded cash is treated as received, matching compute-season-finance.ts)
- * - fundraiser_events proceeds                   (0070_fundraiser_events.sql)
- * - finance_funding_sources received_usd         (0434_season_finance_desk.sql)
- * - grant_applications status='awarded'          (0036_grants_awards_outreach.sql)
+ * Money in / out: finance_transactions rows with counts_in_balance and a
+ * positive amount, whose source row still qualifies. BOM estimates
+ * (counts_in_balance=false) are never cash.
  *
- * Money out:
- * - unified ledger expense rows — committed orders, receipts, paid season
- *   costs, manual expenses                       (0035 + 0461)
- * - purchase_requests / finance_purchase_log / season_costs fallbacks for
- *   rows not yet mirrored into the ledger        (0035 / 0434 / 0070)
- *
- * Double-count guards (each dollar counted once):
- * - Ledger income rows mirroring a sponsor contribution or fundraiser are
- *   skipped — those dollars are counted from sponsor_contributions /
- *   fundraiser_events (funding-desk lines are summed as-is; the desk UI tells
- *   teams not to re-enter deposits already recorded elsewhere).
- * - Legacy-table rows already mirrored into the ledger are excluded from the
- *   fallback unions (the 0461 dedup rule).
- * - BOM rows carry counts_in_balance=false — estimates are never cash.
- * - TRANSITIONAL (remove with the legacy unions): a ledger mirror row only
+ * Double-count guards:
+ * - One table, one row per (source_kind, source_id).
+ * - TRANSITIONAL (remove once every writer is ledger-only): a mirror only
  *   counts while its source row still qualifies, because a not-yet-repointed
- *   writer can reject an order or delete a receipt without touching the
- *   ledger. Repointed writers already remove the mirror in-transaction.
+ *   writer can reject an order or delete a receipt without touching the ledger.
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { hasRealLedgerData, keepRealLedgerEntries } from "./honesty";
 import {
   dedupeLedgerEntries,
   rollupLedgerByCategory,
@@ -72,16 +53,20 @@ export type BalanceCategoryRow = {
 
 export type FinanceBalanceComponents = {
   ledgerInUsd: number;
+  /** Retired fallback field — never enters totals. */
   sponsorCashUsd: number;
+  /** Retired fallback field — never enters totals. */
   fundraiserProceedsUsd: number;
+  /** Retired fallback field — never enters totals. */
   fundingReceivedUsd: number;
+  /** Retired fallback field — never enters totals. */
   grantAwardedUsd: number;
   ledgerOutUsd: number;
-  /** Committed /orders rows NOT yet mirrored into the unified ledger. */
+  /** Retired fallback field — never enters totals. */
   purchaseRequestsUsd: number;
-  /** Business-desk receipts NOT yet mirrored into the unified ledger. */
+  /** Retired fallback field — never enters totals. */
   purchaseLogUsd: number;
-  /** Paid season costs NOT yet mirrored into the unified ledger. */
+  /** Retired fallback field — never enters totals. */
   seasonCostsPaidUsd: number;
 };
 
@@ -107,26 +92,17 @@ export function toUsd(value: string | number | null | undefined): number {
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
 }
 
+/**
+ * Ledger in/out only. Leftover fallback component fields are accepted so
+ * callers compile, but they never invent cash.
+ */
 export function sumBalanceComponents(components: FinanceBalanceComponents): {
   totalInUsd: number;
   totalOutUsd: number;
   balanceUsd: number;
 } {
-  const totalInCents = Math.round(
-    (components.ledgerInUsd +
-      components.sponsorCashUsd +
-      components.fundraiserProceedsUsd +
-      components.fundingReceivedUsd +
-      components.grantAwardedUsd) *
-      100,
-  );
-  const totalOutCents = Math.round(
-    (components.ledgerOutUsd +
-      components.purchaseRequestsUsd +
-      components.purchaseLogUsd +
-      components.seasonCostsPaidUsd) *
-      100,
-  );
+  const totalInCents = Math.round(components.ledgerInUsd * 100);
+  const totalOutCents = Math.round(components.ledgerOutUsd * 100);
   return {
     totalInUsd: totalInCents / 100,
     totalOutUsd: totalOutCents / 100,
@@ -150,6 +126,7 @@ export function assembleFinanceBalance(input: {
   ledger?: UnifiedLedgerEntry[];
   now?: Date;
 }): Extract<FinanceBalanceView, { status: "live" }> {
+  const ledger = keepRealLedgerEntries(input.ledger ?? []);
   const totals = sumBalanceComponents(input.components);
   const recentActivity = normalizeActivity(input.recentActivity);
   return {
@@ -158,8 +135,8 @@ export function assembleFinanceBalance(input: {
     ...totals,
     byCategory: input.byCategory,
     recentActivity,
-    ledger: input.ledger ?? [],
-    hasData: totals.totalInUsd > 0 || totals.totalOutUsd > 0 || recentActivity.length > 0,
+    ledger,
+    hasData: hasRealLedgerData(ledger) || totals.totalInUsd > 0 || totals.totalOutUsd > 0,
     computedAt: (input.now ?? new Date()).toISOString(),
   };
 }
@@ -173,103 +150,52 @@ function isMissingRelationOrColumn(error: unknown): boolean {
 }
 
 /**
- * One SQL pass over the unified money ledger plus the legacy fallbacks.
- *
- * The `ledger` half applies the transitional source-still-qualifies guards; the
- * `fallback` half excludes anything already mirrored (the 0461 dedup rule).
- * The LIMIT is a runaway guard only — a team's money rows number in the
- * hundreds, and the newest-first cap would drop oldest rows first.
+ * One SQL pass over finance_transactions. No legacy-table UNION. The LIMIT
+ * is a runaway guard only — a team's money rows number in the hundreds, and
+ * the newest-first cap would drop oldest rows first.
  */
-const UNIFIED_LEDGER_SQL = `
-  WITH ledger AS (
-    SELECT t.id::text AS id,
-           t.occurred_at::text AS date,
-           COALESCE(NULLIF(t.description, ''), initcap(replace(t.source_kind, '_', ' '))) AS label,
-           t.amount_usd::text AS "amountUsd",
-           CASE WHEN t.type = 'income' THEN 'in' ELSE 'out' END AS direction,
-           CASE WHEN t.purchase_request_id IS NOT NULL THEN 'purchase_request' ELSE t.source_kind END AS source,
-           COALESCE(t.source_id, t.purchase_request_id)::text AS "sourceId",
-           t.category_id::text AS "categoryId",
-           c.name AS "categoryName",
-           true AS mirrored
-    FROM finance_transactions t
-    LEFT JOIN finance_categories c ON c.id = t.category_id AND c.org_id = t.org_id
-    WHERE t.org_id = $1::uuid
-      AND t.counts_in_balance
-      AND t.amount_usd > 0
-      AND NOT (t.type = 'income' AND (t.source_kind IN ('sponsor_contribution', 'fundraiser')
-                                      OR t.sponsor_contribution_id IS NOT NULL
-                                      OR t.source = 'fundraiser'))
-      AND ((t.source_kind <> 'purchase_request' AND t.purchase_request_id IS NULL)
-           OR EXISTS (SELECT 1 FROM purchase_requests p
-                      WHERE p.org_id = t.org_id
-                        AND p.id = COALESCE(t.source_id, t.purchase_request_id)
-                        AND p.status IN ('approved', 'ordered', 'received', 'reimbursed')))
-      AND (t.source_kind <> 'purchase_log'
-           OR EXISTS (SELECT 1 FROM finance_purchase_log l
-                      WHERE l.org_id = t.org_id AND l.id = t.source_id))
-      AND (t.source_kind <> 'season_cost'
-           OR EXISTS (SELECT 1 FROM season_costs sc
-                      WHERE sc.org_id = t.org_id AND sc.id = t.source_id AND sc.status = 'paid'))
-  ), fallback AS (
-    SELECT p.id::text AS id,
-           COALESCE(p.ordered_at, p.reviewed_at, p.updated_at)::text AS date,
-           'Order — ' || p.title AS label,
-           p.total_cost_usd::text AS "amountUsd",
-           'out' AS direction,
-           'purchase_request' AS source,
-           p.id::text AS "sourceId",
-           p.category_id::text AS "categoryId",
-           c.name AS "categoryName",
-           false AS mirrored
-    FROM purchase_requests p
-    LEFT JOIN finance_categories c ON c.id = p.category_id AND c.org_id = p.org_id
-    WHERE p.org_id = $1::uuid
-      AND p.status IN ('approved', 'ordered', 'received', 'reimbursed')
-      AND p.total_cost_usd > 0
-      AND NOT EXISTS (SELECT 1 FROM finance_transactions t
-                      WHERE t.org_id = p.org_id
-                        AND (t.purchase_request_id = p.id
-                             OR (t.source_kind = 'purchase_request' AND t.source_id = p.id)))
-    UNION ALL
-    SELECT l.id::text,
-           l.purchased_on::timestamptz::text,
-           l.vendor || ' — ' || l.item,
-           l.amount_usd::text,
-           'out',
-           'purchase_log',
-           l.id::text,
-           l.category_id::text,
-           c.name,
-           false
-    FROM finance_purchase_log l
-    LEFT JOIN finance_categories c ON c.id = l.category_id AND c.org_id = l.org_id
-    WHERE l.org_id = $1::uuid
-      AND l.amount_usd > 0
-      AND l.purchase_request_id IS NULL
-      AND NOT EXISTS (SELECT 1 FROM finance_transactions t
-                      WHERE t.org_id = l.org_id
-                        AND t.source_kind = 'purchase_log' AND t.source_id = l.id)
-    UNION ALL
-    SELECT sc.id::text,
-           sc.incurred_on::timestamptz::text,
-           'Season cost — ' || sc.label,
-           sc.amount_usd::text,
-           'out',
-           'season_cost',
-           sc.id::text,
-           NULL::text,
-           NULL::text,
-           false
-    FROM season_costs sc
-    WHERE sc.org_id = $1::uuid
-      AND sc.status = 'paid'
-      AND sc.amount_usd > 0
-      AND NOT EXISTS (SELECT 1 FROM finance_transactions t
-                      WHERE t.org_id = sc.org_id
-                        AND t.source_kind = 'season_cost' AND t.source_id = sc.id)
-  )
-  SELECT * FROM (SELECT * FROM ledger UNION ALL SELECT * FROM fallback) unified
+export const UNIFIED_LEDGER_SQL = `
+  SELECT t.id::text AS id,
+         t.occurred_at::text AS date,
+         COALESCE(NULLIF(t.description, ''), initcap(replace(t.source_kind, '_', ' '))) AS label,
+         t.amount_usd::text AS "amountUsd",
+         CASE WHEN t.type = 'income' THEN 'in' ELSE 'out' END AS direction,
+         CASE WHEN t.purchase_request_id IS NOT NULL THEN 'purchase_request' ELSE t.source_kind END AS source,
+         COALESCE(t.source_id, t.purchase_request_id)::text AS "sourceId",
+         t.category_id::text AS "categoryId",
+         c.name AS "categoryName",
+         true AS mirrored
+  FROM finance_transactions t
+  LEFT JOIN finance_categories c ON c.id = t.category_id AND c.org_id = t.org_id
+  WHERE t.org_id = $1::uuid
+    AND t.counts_in_balance
+    AND t.amount_usd > 0
+    AND ((t.source_kind <> 'purchase_request' AND t.purchase_request_id IS NULL)
+         OR EXISTS (SELECT 1 FROM purchase_requests p
+                    WHERE p.org_id = t.org_id
+                      AND p.id = COALESCE(t.source_id, t.purchase_request_id)
+                      AND p.status IN ('approved', 'ordered', 'received', 'reimbursed')))
+    AND (t.source_kind <> 'purchase_log'
+         OR EXISTS (SELECT 1 FROM finance_purchase_log l
+                    WHERE l.org_id = t.org_id AND l.id = t.source_id))
+    AND (t.source_kind <> 'season_cost'
+         OR EXISTS (SELECT 1 FROM season_costs sc
+                    WHERE sc.org_id = t.org_id AND sc.id = t.source_id AND sc.status = 'paid'))
+    AND (t.source_kind <> 'sponsor_contribution'
+         OR EXISTS (SELECT 1 FROM sponsor_contributions sc
+                    WHERE sc.org_id = t.org_id AND sc.id = t.source_id
+                      AND sc.type = 'cash' AND COALESCE(sc.amount_usd, 0) > 0))
+    AND (t.source_kind <> 'fundraiser'
+         OR EXISTS (SELECT 1 FROM fundraiser_events fe
+                    WHERE fe.org_id = t.org_id AND fe.id = t.source_id
+                      AND fe.status <> 'cancelled' AND fe.proceeds_usd > 0))
+    AND (t.source_kind <> 'other' OR t.source_id IS NULL
+         OR EXISTS (SELECT 1 FROM finance_funding_sources fs
+                    WHERE fs.org_id = t.org_id AND fs.id = t.source_id
+                      AND fs.kind <> 'in_kind' AND fs.received_usd > 0)
+         OR EXISTS (SELECT 1 FROM grant_applications ga
+                    WHERE ga.org_id = t.org_id AND ga.id = t.source_id
+                      AND ga.status = 'awarded' AND COALESCE(ga.amount_awarded_usd, 0) > 0))
   ORDER BY date DESC
   LIMIT 5000`;
 
@@ -306,92 +232,29 @@ export async function computeFinanceBalance(
   orgId: string,
 ): Promise<FinanceBalanceView> {
   try {
-    const [unified, sponsor, fundraiser, funding, grants, incomeActivity] = await Promise.all([
-      client.query<UnifiedLedgerRow>(UNIFIED_LEDGER_SQL, [orgId]),
-      // No status column exists on sponsor_contributions (0035): recorded
-      // cash amounts are treated as received (received_at defaults to now()).
-      client.query<{ sponsorCashUsd: string }>(
-        `SELECT COALESCE(SUM(amount_usd) FILTER (WHERE type = 'cash'), 0)::text AS "sponsorCashUsd"
-         FROM sponsor_contributions
-         WHERE org_id = $1::uuid`,
-        [orgId],
-      ),
-      client.query<{ proceedsUsd: string }>(
-        `SELECT COALESCE(SUM(proceeds_usd), 0)::text AS "proceedsUsd"
-         FROM fundraiser_events
-         WHERE org_id = $1::uuid AND status <> 'cancelled'`,
-        [orgId],
-      ),
-      client.query<{ receivedUsd: string }>(
-        `SELECT COALESCE(SUM(received_usd), 0)::text AS "receivedUsd"
-         FROM finance_funding_sources
-         WHERE org_id = $1::uuid`,
-        [orgId],
-      ),
-      client.query<{ awardedUsd: string }>(
-        `SELECT COALESCE(SUM(amount_awarded_usd), 0)::text AS "awardedUsd"
-         FROM grant_applications
-         WHERE org_id = $1::uuid AND status = 'awarded'`,
-        [orgId],
-      ),
-      // Income recorded outside the unified spine, for the activity feed only
-      // (their totals come from the aggregate queries above).
-      client.query<{ date: string; label: string; amountUsd: string; direction: BalanceDirection }>(
-        `WITH activity AS (
-           SELECT sc.received_at AS happened_at, 'Sponsor cash — ' || s.name AS label, sc.amount_usd, 'in' AS direction
-           FROM sponsor_contributions sc
-           JOIN sponsors s ON s.id = sc.sponsor_id
-           WHERE sc.org_id = $1::uuid AND sc.type = 'cash' AND COALESCE(sc.amount_usd, 0) > 0
-           UNION ALL
-           SELECT event_date::timestamptz, 'Fundraiser — ' || name, proceeds_usd, 'in'
-           FROM fundraiser_events
-           WHERE org_id = $1::uuid AND status <> 'cancelled' AND proceeds_usd > 0
-           UNION ALL
-           SELECT COALESCE(received_on::timestamptz, updated_at), 'Funding — ' || name, received_usd, 'in'
-           FROM finance_funding_sources
-           WHERE org_id = $1::uuid AND received_usd > 0
-           UNION ALL
-           SELECT COALESCE(decision_at, updated_at), 'Grant awarded', amount_awarded_usd, 'in'
-           FROM grant_applications
-           WHERE org_id = $1::uuid AND status = 'awarded' AND COALESCE(amount_awarded_usd, 0) > 0
-         )
-         SELECT happened_at::text AS "date", label, amount_usd::text AS "amountUsd", direction
-         FROM activity
-         ORDER BY happened_at DESC
-         LIMIT 10`,
-        [orgId],
-      ),
-    ]);
+    const unified = await client.query<UnifiedLedgerRow>(UNIFIED_LEDGER_SQL, [orgId]);
 
-    // SQL already deduplicated via NOT EXISTS; this pure pass re-asserts the
-    // rule so a mirrored + unmirrored mix can never double count.
-    const ledger = dedupeLedgerEntries(unified.rows.map(mapLedgerRow));
+    const ledger = keepRealLedgerEntries(dedupeLedgerEntries(unified.rows.map(mapLedgerRow)));
     const split = splitLedgerComponents(ledger);
 
     return assembleFinanceBalance({
       orgId,
       components: {
         ...split,
-        sponsorCashUsd: toUsd(sponsor.rows[0]?.sponsorCashUsd),
-        fundraiserProceedsUsd: toUsd(fundraiser.rows[0]?.proceedsUsd),
-        fundingReceivedUsd: toUsd(funding.rows[0]?.receivedUsd),
-        grantAwardedUsd: toUsd(grants.rows[0]?.awardedUsd),
+        sponsorCashUsd: 0,
+        fundraiserProceedsUsd: 0,
+        fundingReceivedUsd: 0,
+        grantAwardedUsd: 0,
       },
       byCategory: rollupLedgerByCategory(ledger),
-      recentActivity: normalizeActivity([
-        ...ledger.map((entry) => ({
+      recentActivity: normalizeActivity(
+        ledger.map((entry) => ({
           date: entry.date,
           label: entry.label,
           amountUsd: entry.amountUsd,
           direction: entry.direction,
         })),
-        ...incomeActivity.rows.map((row) => ({
-          date: row.date,
-          label: row.label,
-          amountUsd: toUsd(row.amountUsd),
-          direction: row.direction,
-        })),
-      ]),
+      ),
       ledger,
     });
   } catch (error) {

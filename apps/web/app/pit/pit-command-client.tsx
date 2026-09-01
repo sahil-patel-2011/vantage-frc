@@ -5,6 +5,13 @@ import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
+  PIT_BOARD_POLL_MS,
+  pitTurnaroundFromSchedule,
+  pitTurnaroundLabel,
+  type PitBoardFlags,
+  type PitTurnaround,
+} from "../../lib/pit/board";
+import {
   PIT_RELATED_INCLUDE,
   classifyPitShell,
   formatPitBatteryReady,
@@ -29,7 +36,10 @@ type Data = {
     matchNumber: number;
     scheduledTime: string | null;
   } | null;
-  gate: { state: "go" | "check" | "hold"; reasons: string[] };
+  status?: "empty" | "live";
+  flags?: PitBoardFlags;
+  turnaround?: PitTurnaround | null;
+  gate: { state: "empty" | "go" | "check" | "hold"; reasons: string[] };
   summary: {
     openIssues: number;
     overdueMaintenance: number;
@@ -110,12 +120,18 @@ const matchLabel = (value: Data["nextMatch"]) =>
       ? `Qualification ${value.matchNumber}`
       : `${value.compLevel.toUpperCase()} ${value.matchNumber}`;
 
-const countdown = (value: string | null | undefined, now: number) => {
-  if (!value) return "Time pending";
-  const s = Math.round((new Date(value).getTime() - now) / 1000);
-  if (s <= 0) return "Queue now";
-  const m = Math.floor(s / 60);
-  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${s % 60}s`;
+const countdown = (
+  data: Pick<Data, "turnaround" | "flags" | "nextMatch">,
+  now: number,
+) => {
+  const turnaround =
+    data.turnaround !== undefined
+      ? data.turnaround
+      : pitTurnaroundFromSchedule(data.nextMatch?.scheduledTime, now);
+  const label = pitTurnaroundLabel(turnaround);
+  if (label) return label;
+  if (data.flags?.queue && data.nextMatch) return "Time pending";
+  return "—";
 };
 
 function PitRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -309,7 +325,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     void load();
-    const poll = window.setInterval(() => void load(), 30000);
+    const poll = window.setInterval(() => void load(), PIT_BOARD_POLL_MS);
     const clock = window.setInterval(() => setNow(Date.now()), 1000);
     return () => {
       clearInterval(poll);
@@ -366,6 +382,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
     batteryCount,
     openIssues,
     maintenanceCount,
+    flags: data?.flags,
   });
   const shellCopy = pitShellCopy(shell);
   const nextActions = pitNextActions({
@@ -448,7 +465,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <div className="pit-next">
           <span>NEXT MATCH</span>
           <strong>{matchLabel(data.nextMatch)}</strong>
-          <b>{countdown(data.nextMatch?.scheduledTime, now)}</b>
+          <b>{countdown(data, now)}</b>
         </div>
       </PageHeader>
 
@@ -502,13 +519,15 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">
           <span>RELEASE GATE</span>
-          <strong>{data.gate.state.toUpperCase()}</strong>
+          <strong>{data.gate.state === "empty" ? "—" : data.gate.state.toUpperCase()}</strong>
           <small>
-            {data.gate.state === "go"
-              ? "Evidence clear"
-              : data.gate.state === "hold"
-                ? "Do not release"
-                : "Crew review needed"}
+            {data.gate.state === "empty"
+              ? "Empty until repairs, batteries, or queue rows"
+              : data.gate.state === "go"
+                ? "Evidence clear"
+                : data.gate.state === "hold"
+                  ? "Do not release"
+                  : "Crew review needed"}
           </small>
         </div>
         <div className="pit-reasons">

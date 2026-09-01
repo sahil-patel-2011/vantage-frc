@@ -1,10 +1,16 @@
-// Compute the per-event readiness view: the org's dated countdown BEFORE an
-// event, plus a live roll-up read (never copied) from the four owning systems —
-// inspection, consent, packing, and logistics. The DURING-event hour-by-hour
-// schedule is lib/event-day-plan, not this module.
+// Compute the per-event readiness view: remaining blockers for ONE event date,
+// projected live (never copied) from consent, packing, logistics, and inspection.
+// The DURING-event hour-by-hour schedule is lib/event-day-plan, not this module.
 
 import type { PoolClient } from "@neondatabase/serverless";
-import { readinessSummary, type ReadinessSourceCounts, type SourceRollup } from "./rollup";
+import type { RecordStatus } from "../consent";
+import type { InspectionStatus } from "../inspection";
+import {
+  projectEventBlockers,
+  type EventBlockers,
+  type EventSourceSnapshots,
+  type SourceBlockers,
+} from "./blockers";
 import { isIsoDate, resolveDueDates, type ReadinessCountdown } from "./schedule";
 import { EVENT_READINESS_TEMPLATE } from "./template";
 import type {
@@ -61,7 +67,10 @@ export type EventReadinessView =
       plans: PlanRef[];
       countdown: ReadinessCountdown<ReadinessItem>;
       categories: CategorySummary[];
-      sources: SourceRollup[];
+      sources: SourceBlockers[];
+      blockers: EventBlockers;
+      remaining: number | null;
+      ready: boolean;
       today: string;
       computedAt: string;
     };
@@ -163,76 +172,85 @@ async function loadItems(client: PoolClient, orgId: string, planId: string): Pro
   }));
 }
 
-async function loadSourceCounts(
+async function loadSourceSnapshots(
   client: PoolClient,
   orgId: string,
   eventKey: string,
   seasonYear: number | null,
-): Promise<ReadinessSourceCounts> {
-  const inspectionResult = await client.query<{ totalItems: number; passedItems: number; failedItems: number }>(
-    `SELECT count(*)::int AS "totalItems",
-            count(*) FILTER (WHERE status = 'pass')::int AS "passedItems",
-            count(*) FILTER (WHERE status = 'fail')::int AS "failedItems"
-     FROM inspection_items
-     WHERE org_id = $1`,
-    [orgId],
-  );
-
-  const consentResult = await client.query<{
-    requiredForms: number;
-    peopleTracked: number;
-    peopleComplete: number;
-  }>(
-    `WITH req AS (
-       SELECT id FROM consent_forms
-       WHERE org_id = $1 AND required AND ($2::int IS NULL OR season_year = $2::int)
-     ),
-     people AS (
-       SELECT DISTINCT r.person_name
-       FROM consent_records r JOIN req ON req.id = r.form_id
-       WHERE r.org_id = $1
-     ),
-     complete AS (
-       SELECT r.person_name
-       FROM consent_records r JOIN req ON req.id = r.form_id
-       WHERE r.org_id = $1 AND r.status IN ('submitted', 'verified')
-       GROUP BY r.person_name
-       HAVING count(DISTINCT r.form_id) = (SELECT count(*) FROM req)
-     )
-     SELECT (SELECT count(*) FROM req)::int AS "requiredForms",
-            (SELECT count(*) FROM people)::int AS "peopleTracked",
-            (SELECT count(*) FROM complete)::int AS "peopleComplete"`,
-    [orgId, seasonYear],
-  );
-
-  const packingResult = await client.query<{ lists: number; totalItems: number; packedItems: number }>(
-    `SELECT count(DISTINCT l.id)::int AS "lists",
-            count(i.id)::int AS "totalItems",
-            count(i.id) FILTER (WHERE i.packed)::int AS "packedItems"
-     FROM packing_lists l
-     LEFT JOIN packing_items i ON i.list_id = l.id
-     WHERE l.org_id = $1 AND l.event_key = $2`,
-    [orgId, eventKey],
-  );
-
-  const logisticsResult = await client.query<{ trips: number; travelLegs: number; roomAssignments: number }>(
-    `WITH trips AS (
-       SELECT id FROM logistics_trips WHERE org_id = $1 AND event_key = $2
-     )
-     SELECT (SELECT count(*) FROM trips)::int AS "trips",
-            (SELECT count(*) FROM logistics_travel_legs g
-              WHERE g.org_id = $1 AND g.trip_id IN (SELECT id FROM trips))::int AS "travelLegs",
-            (SELECT count(*) FROM logistics_room_assignments ra
-              JOIN logistics_hotels h ON h.id = ra.hotel_id
-              WHERE ra.org_id = $1 AND h.trip_id IN (SELECT id FROM trips))::int AS "roomAssignments"`,
-    [orgId, eventKey],
-  );
+): Promise<EventSourceSnapshots> {
+  const [inspectionItems, weights, settings, consentForms, consentRecords, packingLists, packingItems, trips, travelLegs, rooms] =
+    await Promise.all([
+      client.query<{ status: InspectionStatus }>(
+        `SELECT status FROM inspection_items WHERE org_id = $1`,
+        [orgId],
+      ),
+      client.query<{ totalLbs: number; weighedAt: string }>(
+        `SELECT total_lbs::float8 AS "totalLbs", weighed_at::text AS "weighedAt"
+         FROM robot_weights WHERE org_id = $1
+         ORDER BY weighed_at DESC LIMIT 20`,
+        [orgId],
+      ),
+      client.query<{ weightLimitLbs: number }>(
+        `SELECT weight_limit_lbs::float8 AS "weightLimitLbs" FROM inspection_settings WHERE org_id = $1`,
+        [orgId],
+      ),
+      client.query<{ id: string; required: boolean }>(
+        `SELECT id, required FROM consent_forms
+         WHERE org_id = $1 AND ($2::int IS NULL OR season_year = $2::int)`,
+        [orgId, seasonYear],
+      ),
+      client.query<{ formId: string; personName: string; status: RecordStatus }>(
+        `SELECT r.form_id AS "formId", r.person_name AS "personName", r.status
+         FROM consent_records r
+         JOIN consent_forms f ON f.id = r.form_id
+         WHERE r.org_id = $1 AND ($2::int IS NULL OR f.season_year = $2::int)`,
+        [orgId, seasonYear],
+      ),
+      client.query<{ id: string }>(
+        `SELECT id FROM packing_lists WHERE org_id = $1 AND event_key = $2`,
+        [orgId, eventKey],
+      ),
+      client.query<{ packed: boolean }>(
+        `SELECT i.packed
+         FROM packing_items i
+         JOIN packing_lists l ON l.id = i.list_id
+         WHERE i.org_id = $1 AND l.org_id = $1 AND l.event_key = $2`,
+        [orgId, eventKey],
+      ),
+      client.query<{ id: string }>(
+        `SELECT id FROM logistics_trips WHERE org_id = $1 AND event_key = $2`,
+        [orgId, eventKey],
+      ),
+      client.query<{ n: number }>(
+        `SELECT count(*)::int AS n
+         FROM logistics_travel_legs g
+         JOIN logistics_trips t ON t.id = g.trip_id
+         WHERE g.org_id = $1 AND t.org_id = $1 AND t.event_key = $2`,
+        [orgId, eventKey],
+      ),
+      client.query<{ occupantUserId: string | null; occupantName: string }>(
+        `SELECT ra.occupant_user_id AS "occupantUserId", ra.occupant_name AS "occupantName"
+         FROM logistics_room_assignments ra
+         JOIN logistics_hotels h ON h.id = ra.hotel_id
+         JOIN logistics_trips t ON t.id = h.trip_id
+         WHERE ra.org_id = $1 AND t.org_id = $1 AND t.event_key = $2`,
+        [orgId, eventKey],
+      ),
+    ]);
 
   return {
-    inspection: inspectionResult.rows[0] ?? null,
-    consent: consentResult.rows[0] ?? null,
-    packing: packingResult.rows[0] ?? null,
-    logistics: logisticsResult.rows[0] ?? null,
+    inspection: {
+      items: inspectionItems.rows,
+      weights: weights.rows,
+      weightLimitLbs: settings.rows[0]?.weightLimitLbs ?? null,
+    },
+    consent: { forms: consentForms.rows, records: consentRecords.rows },
+    packing: { lists: packingLists.rows.length, items: packingItems.rows },
+    logistics: {
+      trips: trips.rows.length,
+      travelLegs: travelLegs.rows[0]?.n ?? 0,
+      rooms: rooms.rows,
+    },
   };
 }
 
@@ -327,7 +345,8 @@ export async function computeEventReadinessView(
   };
 
   const items = await loadItems(client, org.orgId, plan.id);
-  const counts = await loadSourceCounts(client, org.orgId, plan.eventKey, plan.seasonYear);
+  const snapshots = await loadSourceSnapshots(client, org.orgId, plan.eventKey, plan.seasonYear);
+  const blockers = projectEventBlockers({ eventStartDate: plan.eventStartDate, ...snapshots });
 
   return {
     status: "live",
@@ -337,7 +356,10 @@ export async function computeEventReadinessView(
     plans,
     countdown: resolveDueDates({ eventStartDate: plan.eventStartDate, items, today }),
     categories: summarizeCategories(items),
-    sources: readinessSummary(counts),
+    sources: blockers.sources,
+    blockers,
+    remaining: blockers.remaining,
+    ready: blockers.ready,
     today,
     computedAt: new Date().toISOString(),
   };

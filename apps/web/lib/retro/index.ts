@@ -4,6 +4,18 @@
 
 import type { RetroActionItem, RetroItem, RetroItemKind, RetroPostmortemCounts } from "./types";
 
+export {
+  buildPlaybookBody,
+  collectLearnedItems,
+  filterLearnedItems,
+  parseHandoffTarget,
+  playbookSlugForSeason,
+  playbookTitleForSeason,
+  retroSourceMarker,
+  seasonReportLessonDrafts,
+} from "./learned-items";
+export type { SeasonReportLessonDraft } from "./learned-items";
+
 export const RETRO_ITEM_KINDS: RetroItemKind[] = ["start", "stop", "continue"];
 
 export function retroItemKindLabel(kind: RetroItemKind): string {

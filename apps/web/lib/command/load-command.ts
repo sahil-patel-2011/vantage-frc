@@ -1,9 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
 import { nexusAttributionHref, parseNexusEvent, parseNexusLive } from "@vantage/reference";
-import { batteryPitFlags } from "../battery-reliability";
-import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
-import { loadBatteryFleet } from "../load-battery-fleet";
 import { bumperCue, formatMyDayWhen } from "../my-day";
 import { loadMyDayLogistics } from "../my-day-load";
 import { hubHref } from "../nav/hubs";
@@ -13,6 +10,7 @@ import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { buildNexusQueueSnapshot } from "./nexus-queue";
 import { maybeNotifyCoverageGaps } from "./notify-coverage-gaps";
+import { loadCommandPitFlags } from "./pit-flags";
 import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-queue";
 import type {
   CommandMatch,
@@ -374,39 +372,15 @@ export async function loadEventDayCommand(
     [input.orgId, eventKey],
   );
 
-  const pitFlags: PitFlag[] = [];
-  const fleet = await loadBatteryFleet(client, input.orgId);
-  for (const flag of batteryPitFlags(fleet, input.orgId)) {
-    pitFlags.push({
-      teamKey: teamKey ?? `org:${input.orgId}`,
-      teamNumber: row.teamNumber,
-      severity: flag.severity,
-      title: flag.title,
-      detail: flag.detail,
-      evidence: flag.evidence,
-      source: "battery",
-    });
-  }
-
-
-  const repeatAlerts = await loadRepeatFailureAlerts(client, input.orgId, { limit: 6 });
-  for (const alert of repeatAlerts) {
-    pitFlags.push({
-      teamKey: teamKey ?? `org:${input.orgId}`,
-      teamNumber: row.teamNumber,
-      severity: alert.level === "critical" || alert.level === "high" ? "critical" : "warning",
-      title: alert.message,
-      detail:
-        alert.openCount > 0
-          ? `${alert.openCount} still open in the FMEA log${alert.recentTitles[0] ? ` · ${alert.recentTitles[0]}` : ""}`
-          : alert.recentTitles[0] ?? "Logged across events this season — confirm the root cause stuck.",
-      evidence: `FMEA / failure log · ${alert.failureCount} entries · ${alert.href}`,
-      source: "fmea_repeat",
-    });
-  }
+  const pitFlags: PitFlag[] = await loadCommandPitFlags(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    member: { role: row.role, name: row.orgName, teamNumber: row.teamNumber },
+    teamKey,
+  });
 
   if (focusTeams.length) {
-    const [pitEntries, matchEntries, maintenance] = await Promise.all([
+    const [pitEntries, matchEntries] = await Promise.all([
       client.query<{
         teamKey: string;
         payload: Record<string, unknown>;
@@ -430,11 +404,6 @@ export async function loadEventDayCommand(
          ORDER BY synced_at DESC
          LIMIT 80`,
         [input.orgId, eventKey, focusTeams],
-      ),
-      client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM maintenance_items
-         WHERE org_id = $1 AND completed_at IS NULL AND (due_at IS NULL OR due_at <= now() + interval '1 day')`,
-        [input.orgId],
       ),
     ]);
 
@@ -478,19 +447,6 @@ export async function loadEventDayCommand(
           source: "match_scout",
         });
       }
-    }
-
-    const due = Number(maintenance.rows[0]?.count ?? 0);
-    if (due > 0) {
-      pitFlags.push({
-        teamKey,
-        teamNumber: row.teamNumber,
-        severity: "warning",
-        title: `${due} maintenance item${due === 1 ? "" : "s"} due`,
-        detail: "Your robot checklist has open items for today.",
-        evidence: "Competition operations · maintenance_items",
-        source: "maintenance",
-      });
     }
   }
 

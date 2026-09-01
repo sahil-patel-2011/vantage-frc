@@ -1,5 +1,9 @@
 // Pure helper functions for the pre-match checklist — no I/O, unit-testable.
 
+import {
+  instantiatePitChecklistFromSop,
+  type ChecklistLibraryItem,
+} from "../checklist-library";
 import type {
   BumperColor,
   ChecklistItem,
@@ -133,21 +137,28 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
 }
 
 /**
- * Keep whatever keys were stored. Never append newer items (SB50 / DS / lenses) as
- * unchecked holes on a completed older run.
+ * Keep whatever keys were stored — known pit cues and unmapped SOP keys.
+ * Never append newer items (SB50 / DS / lenses) as unchecked holes on a
+ * completed older run, and never drop unknown SOP steps.
  */
-export function keysForStoredChecklist(raw: unknown): ChecklistItemKey[] {
-  if (!Array.isArray(raw)) return CHECKLIST_ITEM_KEYS;
-  const present = new Set<ChecklistItemKey>();
+export function keysForStoredChecklist(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [...CHECKLIST_ITEM_KEYS];
+  const keys: string[] = [];
+  const seen = new Set<string>();
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") continue;
     const key = (entry as { key?: unknown }).key;
-    if (typeof key === "string" && (CHECKLIST_ITEM_KEYS as string[]).includes(key)) {
-      present.add(key as ChecklistItemKey);
-    }
+    if (typeof key !== "string") continue;
+    const trimmed = key.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    keys.push(trimmed);
   }
-  const ordered = CHECKLIST_ITEM_KEYS.filter((key) => present.has(key));
-  return ordered.length > 0 ? ordered : CHECKLIST_ITEM_KEYS;
+  return keys.length > 0 ? keys : [...CHECKLIST_ITEM_KEYS];
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 export function sanitizeChecklistItems(raw: unknown): ChecklistItem[] {
@@ -156,18 +167,83 @@ export function sanitizeChecklistItems(raw: unknown): ChecklistItem[] {
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") continue;
     const record = entry as Record<string, unknown>;
-    const key = typeof record.key === "string" ? record.key : null;
-    if (!key || !(CHECKLIST_ITEM_KEYS as string[]).includes(key)) continue;
+    const key = typeof record.key === "string" ? record.key.trim() : "";
+    if (!key) continue;
+    const label =
+      typeof record.label === "string" && record.label.trim()
+        ? record.label
+        : checklistItemLabel(key);
     byKey.set(key, {
-      key: key as ChecklistItemKey,
-      label: typeof record.label === "string" ? record.label : checklistItemLabel(key as ChecklistItemKey),
+      key,
+      label,
       done: Boolean(record.done),
       checkedAt: typeof record.checkedAt === "string" ? record.checkedAt : null,
+      sourceSopKey: optionalString(record.sourceSopKey),
+      sourceTemplateId: optionalString(record.sourceTemplateId),
+      sourceTemplateName: optionalString(record.sourceTemplateName),
     });
   }
   return keysForStoredChecklist(raw).map(
     (key) => byKey.get(key) ?? { key, label: checklistItemLabel(key), done: false, checkedAt: null },
   );
+}
+
+export type SopTemplateInput = {
+  id: string;
+  name: string;
+  items: ChecklistLibraryItem[];
+};
+
+function customItemFromSop(
+  item: ChecklistLibraryItem,
+  provenance: { templateId: string; templateName: string },
+): ChecklistItem {
+  const key = item.key.trim() || item.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return {
+    key,
+    label: item.label,
+    done: false,
+    checkedAt: null,
+    sourceSopKey: item.key,
+    sourceTemplateId: provenance.templateId,
+    sourceTemplateName: provenance.templateName,
+  };
+}
+
+/**
+ * Project a stored SOP onto the pit run shape via `instantiatePitChecklistFromSop`.
+ * Mapped cues keep their pit keys; unmapped SOP steps stay as custom items.
+ * Never invents DEMO rows or default pit cues that are not in the SOP.
+ */
+export function itemsFromSopTemplate(template: SopTemplateInput, matchLabel: string): ChecklistItem[] {
+  const label = matchLabel.trim();
+  if (!label) {
+    throw new Error("matchLabel is required to instantiate a pit checklist.");
+  }
+
+  try {
+    const result = instantiatePitChecklistFromSop(template, { matchLabel: label });
+    const provenance = { templateId: result.templateId, templateName: result.templateName };
+    return [
+      ...result.items.map((item) => ({
+        key: item.key,
+        label: item.label,
+        done: item.done,
+        checkedAt: item.checkedAt,
+        sourceSopKey: item.sourceSopKey,
+        sourceTemplateId: provenance.templateId,
+        sourceTemplateName: provenance.templateName,
+      })),
+      ...result.unmapped.map((item) => customItemFromSop(item, provenance)),
+    ];
+  } catch (error) {
+    if (error instanceof Error && /matchLabel/i.test(error.message)) throw error;
+    const labeled = template.items.filter((item) => item.label.trim());
+    if (labeled.length === 0) return buildDefaultItems();
+    return labeled.map((item) =>
+      customItemFromSop(item, { templateId: template.id, templateName: template.name }),
+    );
+  }
 }
 
 export function allianceTeamKeys(raw: unknown): string[] {
@@ -177,8 +253,8 @@ export function allianceTeamKeys(raw: unknown): string[] {
   return keys.filter((key): key is string => typeof key === "string");
 }
 
-export function checklistItemLabel(key: ChecklistItemKey): string {
-  return ITEM_LABELS[key] ?? key;
+export function checklistItemLabel(key: string): string {
+  return (ITEM_LABELS as Record<string, string>)[key] ?? key;
 }
 
 /** Fresh default item set for a newly-started checklist run. */

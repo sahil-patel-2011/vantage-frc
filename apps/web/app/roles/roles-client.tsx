@@ -177,8 +177,20 @@ export default function RolesClient() {
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
           {view.summary.openRoles.length > 0 ? <OpenRoles view={view} /> : null}
-          <AddRoleForm busy={busy} mutate={mutate} />
-          <RoleList view={view} busy={busy} mutate={mutate} />
+          {view.unlinkedHolders.length > 0 ? <UnlinkedHolders view={view} /> : null}
+          {view.canManage ? (
+            <>
+              <AddRoleForm busy={busy} members={view.members} mutate={mutate} />
+              <RoleList view={view} busy={busy} mutate={mutate} />
+            </>
+          ) : (
+            <>
+              <p className="app-muted">
+                Roles are set by an owner or admin. You can see who holds what, but not change it.
+              </p>
+              <RoleList view={view} busy readOnly mutate={mutate} />
+            </>
+          )}
         </div>
       )}
     </main>
@@ -236,9 +248,17 @@ function OpenRoles({ view }: { view: LiveView }) {
   );
 }
 
-function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+function AddRoleForm({
+  busy,
+  members,
+  mutate,
+}: {
+  busy: boolean;
+  members: LiveView["members"];
+  mutate: Mutate;
+}) {
   const empty = useMemo(
-    () => ({ title: "", subteam: "mechanical" as Subteam, holderName: "", isLead: false, responsibilities: "" }),
+    () => ({ title: "", subteam: "mechanical" as Subteam, holderUserId: "", isLead: false, responsibilities: "" }),
     [],
   );
   const [form, setForm] = useState(empty);
@@ -255,7 +275,7 @@ function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           action: "create-role",
           title: form.title,
           subteam: form.subteam,
-          holderName: form.holderName || undefined,
+          holderUserId: form.holderUserId || null,
           isLead: form.isLead,
           responsibilities: form.responsibilities || undefined,
         });
@@ -281,7 +301,14 @@ function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         </label>
         <label style={{ display: "grid", gap: 4 }}>
           <span className="app-muted">Held by</span>
-          <input value={form.holderName} onChange={set("holderName")} placeholder="Optional" />
+          <select value={form.holderUserId} onChange={set("holderUserId")}>
+            <option value="">Unassigned</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label style={{ display: "flex", gap: 6, alignItems: "center", alignSelf: "end" }}>
           <input type="checkbox" checked={form.isLead} onChange={(e) => setForm((prev) => ({ ...prev, isLead: e.target.checked }))} />
@@ -301,7 +328,44 @@ function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   );
 }
 
-function RoleList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
+function UnlinkedHolders({ view }: { view: LiveView }) {
+  return (
+    <section className="app-card soft-panel" style={{ borderLeft: "3px solid #b26a00" }}>
+      <h2 style={{ marginTop: 0 }}>Holders not linked to a member</h2>
+      <p className="app-muted">
+        These names do not match exactly one person on the roster, so Vantage will not link them.
+        Retype the name the way it appears on the roster, or leave it if the holder is a mentor,
+        parent volunteer, or alum.
+      </p>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+        {view.unlinkedHolders.map((holder) => (
+          <li key={holder.id}>
+            <strong>{holder.holderName}</strong>
+            <small className="app-muted">
+              {" "}
+              · {holder.title} ·{" "}
+              {holder.holderLink === "ambiguous"
+                ? "more than one member has this name"
+                : "no roster match"}
+            </small>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RoleList({
+  view,
+  busy,
+  mutate,
+  readOnly = false,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: Mutate;
+  readOnly?: boolean;
+}) {
   if (view.roles.length === 0) {
     return (
       <section className="app-card soft-panel">
@@ -314,13 +378,32 @@ function RoleList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutat
   return (
     <section style={{ display: "grid", gap: 12 }}>
       {view.roles.map((role) => (
-        <RoleCard key={role.id} role={role} busy={busy} mutate={mutate} />
+        <RoleCard
+          key={role.id}
+          role={role}
+          members={view.members}
+          busy={busy}
+          mutate={mutate}
+          readOnly={readOnly}
+        />
       ))}
     </section>
   );
 }
 
-function RoleCard({ role, busy, mutate }: { role: TeamRole; busy: boolean; mutate: Mutate }) {
+function RoleCard({
+  role,
+  members,
+  busy,
+  mutate,
+  readOnly = false,
+}: {
+  role: TeamRole;
+  members: LiveView["members"];
+  busy: boolean;
+  mutate: Mutate;
+  readOnly?: boolean;
+}) {
   const filled = isFilled(role);
   return (
     <article className="app-card soft-panel" style={{ borderLeft: filled ? "3px solid #1f7a3d" : "3px solid #b26a00" }}>
@@ -335,33 +418,50 @@ function RoleCard({ role, busy, mutate }: { role: TeamRole; busy: boolean; mutat
       <footer style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
         <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center", flex: "1 1 200px" }}>
           Held by
-          <input
-            defaultValue={role.holderName ?? ""}
-            placeholder="Unassigned"
-            disabled={busy}
+          <select
+            value={role.holderUserId ?? ""}
+            disabled={busy || readOnly}
             aria-label={`Holder of ${role.title}`}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-            }}
-            onBlur={(event) => {
-              const next = event.target.value.trim();
-              if (next !== (role.holderName ?? "")) {
-                mutate({ action: "update-role", roleId: role.id, holderName: next });
-              }
+            onChange={(event) => {
+              mutate({
+                action: "update-role",
+                roleId: role.id,
+                holderUserId: event.target.value || null,
+                holderName: null,
+              });
             }}
             style={{ flex: 1 }}
-          />
+          >
+            <option value="">Unassigned</option>
+            {role.holderName && !role.holderUserId ? (
+              <option value="" disabled>
+                Legacy: {role.holderName}
+              </option>
+            ) : null}
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
         </label>
-        <button
-          type="button"
-          className="text-button"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${role.title}"?`)) mutate({ action: "delete-role", roleId: role.id });
-          }}
-        >
-          Delete
-        </button>
+        {role.holderName && !role.holderUserId ? (
+          <small className="app-muted">
+            {role.holderLink === "ambiguous" ? "Name shared by more than one member" : "Not on the roster"}
+          </small>
+        ) : null}
+        {readOnly ? null : (
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm(`Delete "${role.title}"?`)) mutate({ action: "delete-role", roleId: role.id });
+            }}
+          >
+            Delete
+          </button>
+        )}
       </footer>
     </article>
   );

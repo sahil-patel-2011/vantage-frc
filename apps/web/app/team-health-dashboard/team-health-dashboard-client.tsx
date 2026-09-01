@@ -1,48 +1,186 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { moraleLabel } from "../../lib/team-health-dashboard";
-import type { TeamHealthDashboardView } from "../../lib/team-health-dashboard/compute-team-health-dashboard";
-import type { TeamHealthTier } from "../../lib/team-health-dashboard/types";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+  type BadgeTone,
+} from "../../components/ui";
+import type { TeamHealthDashboardView } from "../../lib/team-health/compute-team-health";
+import {
+  TEAM_HEALTH_RELATED_INCLUDE,
+  classifyTeamHealthShell,
+  formatTeamHealthHours,
+  formatTeamHealthMetric,
+  formatTeamHealthRate,
+  shouldShowTeamHealthSummaryTiles,
+  teamHealthNextActions,
+  teamHealthRelatedLinks,
+  teamHealthSetupSteps,
+  teamHealthShellCopy,
+  type TeamHealthNextAction,
+  type TeamHealthShellKind,
+} from "../../lib/team-health/related";
+import type { TeamHealthTier } from "../../lib/team-health/types";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./team-health-dashboard.css";
 
-function tierTone(tier: TeamHealthTier): string {
+function tierTone(tier: TeamHealthTier | null): BadgeTone {
   if (tier === "thriving") return "good";
   if (tier === "steady") return "setup";
-  return "demo";
+  if (tier === "at_risk") return "demo";
+  return "setup";
 }
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
-const COMPONENT_LABEL: Record<string, string> = {
-  attendance: "Attendance",
-  taskFlow: "Task completion",
-  engagement: "Engagement",
-  morale: "Morale",
-  cadence: "Check-in cadence",
-};
 
 type LiveView = Extract<TeamHealthDashboardView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = teamHealthRelatedLinks(orgId, {
+    include: [...TEAM_HEALTH_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related thd-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: TeamHealthNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions thd-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Attendance and My Hours — never DEMO morale scores.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function TeamHealthShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: TeamHealthShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = teamHealthNextActions({ orgId, shell });
+  const copy = teamHealthShellCopy(shell);
+  const teamHref = hubWorkbenchHref("team", "team-health-dashboard", orgId);
+  const steps = shell === "setup" ? teamHealthSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page thd-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Team Health"}
+          </>
+        }
+        title="Team Health"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading team health">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/team", "attendance", orgId)}>
+                Open Attendance
+              </a>
+              <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
+                Open My Hours
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="thd-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Attendance and My Hours — never DEMO morale scores.</p>
+          </header>
+          <ul className="thd-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted thd-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function TeamHealthDashboardClient() {
   const [view, setView] = useState<TeamHealthDashboardView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
-    setErrorStatus(null);
-    setErrorMessage(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -54,8 +192,6 @@ export default function TeamHealthDashboardClient() {
       .then(async (response) => {
         const data = (await response.json()) as TeamHealthDashboardView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setErrorMessage("error" in data && data.error ? data.error : null);
           setFetchFailed(true);
           return;
         }
@@ -69,47 +205,97 @@ export default function TeamHealthDashboardClient() {
     load();
   }, [load]);
 
-  const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return;
-      setBusy(true);
-      setError("");
-      try {
-        const response = await fetch("/api/team-health-dashboard", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
-        });
-        const data = (await response.json()) as TeamHealthDashboardView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
-          return;
-        }
-        setView(data);
-        setSeason(data.seasonYear);
-      } catch {
-        setError("Network error — please try again.");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [orgId, season, busy],
-  );
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const hasLogs = view?.status === "live" ? view.summary.hasLogs : false;
+  const checkInCount = view?.status === "live" ? view.summary.checkIns.length : 0;
+
+  const shell = classifyTeamHealthShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    hasLogs,
+  });
+  const shellCopy = teamHealthShellCopy(shell);
+  const nextActions = teamHealthNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    hasLogs,
+    checkInCount,
+  });
+  const teamHref = hubWorkbenchHref("team", "team-health-dashboard", orgId);
+  const showTiles = shouldShowTeamHealthSummaryTiles(hasLogs);
+  const loaded = view?.status === "live";
+
+  if (shell === "loading") {
+    return <TeamHealthShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <TeamHealthShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <TeamHealthShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+  if (shell === "empty") {
+    return (
+      <TeamHealthShell description={shellCopy.description} orgId={orgId} shell="empty">
+        {view.seasons.length > 1 ? (
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Season
+            <select
+              value={season ?? view.seasonYear}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setSeason(next);
+                load(next);
+              }}
+            >
+              {view.seasons.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </TeamHealthShell>
+    );
+  }
+
+  const { summary, readiness } = view;
+  const components = [
+    { key: "attendance", label: "Attendance coverage", value: readiness.components.attendance },
+    { key: "hours", label: "Hours participation", value: readiness.components.hours },
+  ] as const;
 
   return (
-    <main className="module-page">
+    <main className="module-page thd-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Team Health Dashboard"}
+            <a href={teamHref}>Team</a>
+            {" / Team Health"}
           </>
         }
-        title="Team Health Dashboard"
-        description="A unified view of attendance, task throughput, and engagement — built from the pulses your team logs, not fabricated numbers."
+        title="Team Health"
+        description="Engagement from attendance roll call and shop-hour clock-ins only — never DEMO morale scores."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -128,313 +314,134 @@ export default function TeamHealthDashboardClient() {
               </select>
             </label>
           ) : null}
+          <RelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
 
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: errorStatus,
-              message: errorMessage,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message: errorMessage,
-            },
-          );
-          return (
-            <EmptyState title={copy.title} description={copy.description}>
-              {copy.primary ? (
-                <a className="app-button" href={copy.primary.href}>
-                  {copy.primary.label}
-                </a>
-              ) : null}
-              {copy.showRetry ? (
-                <button type="button" className="app-button secondary" onClick={() => load()}>
-                  Retry
-                </button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <SummaryTiles view={view} />
-          <LogPulseForm busy={busy} mutate={mutate} />
-          {view.summary.totalPulses > 0 ? <TrendPanel view={view} /> : null}
-          <RecentPulses view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
-
-function ReadinessPanel({ view }: { view: LiveView }) {
-  const { readiness } = view;
-  const components = Object.entries(readiness.components) as Array<[string, number]>;
-  return (
-    <Panel aria-label="Team health readiness">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div>
-          <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
-          <h2 style={{ margin: "6px 0 0" }}>Team health signal</h2>
-          <small className="app-muted">{readiness.pulsesLogged} pulse(s) logged</small>
-        </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
-      </header>
-      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-        {components.map(([key, value]) => (
-          <div key={key} style={{ display: "grid", gridTemplateColumns: "160px 1fr 48px", gap: 8, alignItems: "center" }}>
-            <span className="app-muted">{COMPONENT_LABEL[key] ?? key}</span>
-            <span className="mini-probability" aria-hidden="true">
-              <i style={{ width: `${Math.max(2, value * 100)}%` }} />
-            </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>{pct(value)}</small>
-          </div>
-        ))}
-      </div>
-      {readiness.recommendations.length > 0 ? (
-        <div style={{ marginTop: 12 }}>
-          <strong className="app-muted">Next steps</strong>
-          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-            {readiness.recommendations.map((rec) => (
-              <li key={rec}>{rec}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </Panel>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Pulses logged", value: String(summary.totalPulses) },
-    { label: "Avg attendance", value: `${summary.avgAttendanceRate}%` },
-    { label: "Avg engagement", value: `${summary.avgEngagementScore}%` },
-    { label: "Avg morale", value: moraleLabel(summary.avgMoraleRating) },
-    { label: "Tasks completed", value: String(summary.totalTasksCompleted) },
-    { label: "Tasks open", value: String(summary.totalTasksOpen) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function TrendPanel({ view }: { view: LiveView }) {
-  const { summary } = view;
-  return (
-    <section className="app-card soft-panel">
-      <h2 style={{ marginTop: 0 }}>Trend by period</h2>
-      <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
-        {summary.trend.map((point) => (
-          <li key={point.periodStart} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-            <span>{point.periodLabel}</span>
-            <small className="app-muted">
-              {point.attendanceRate}% attend · {point.taskThroughput}% tasks done · {point.engagementScore}% engaged · health {point.healthScore}%
-            </small>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function RecentPulses({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  if (view.summary.totalPulses === 0) {
-    return (
-      <EmptyState
-        badge="No pulses yet"
-        badgeTone="setup"
-        title="Log your first team-health pulse"
-        description="Track attendance, task throughput, and engagement each week to build a real trend."
-      />
-    );
-  }
-  return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Recent pulses</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.pulses.slice(0, 20).map((item) => (
-          <li
-            key={item.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+      {showTiles ? (
+        <Panel className="thd-panel" aria-label="Team health signal">
+          <header className="thd-header">
             <div>
-              <strong>{item.periodLabel}</strong>
-              <small className="app-muted" style={{ display: "block" }}>
-                {item.periodStart} · {item.attendanceRate}% attendance ({item.membersPresent}/{item.membersTotal}) ·{" "}
-                {moraleLabel(item.moraleRating)} morale
-              </small>
+              <Badge tone={tierTone(readiness.tier)}>
+                {(readiness.tier ?? "empty").replace("_", " ").toUpperCase()}
+              </Badge>
+              <h2 style={{ margin: "6px 0 0" }}>Engagement from logs</h2>
               <small className="app-muted">
-                {item.tasksCompleted} completed · {item.tasksOpen} open · {item.tasksOverdue} overdue ·{" "}
-                {item.engagementScore}% engagement
-                {item.notes ? ` · ${item.notes}` : ""}
+                {summary.entryCount} attendance {summary.entryCount === 1 ? "entry" : "entries"} ·{" "}
+                {summary.hourSessionCount} closed hour {summary.hourSessionCount === 1 ? "session" : "sessions"}
               </small>
             </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.periodLabel}"?`)) {
-                  mutate({ action: "delete-pulse", pulseId: item.id });
-                }
-              }}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-    </Panel>
-  );
-}
-
-function LogPulseForm({
-  busy,
-  mutate,
-}: {
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  const empty = useMemo(
-    () => ({
-      periodLabel: "",
-      periodStart: "",
-      attendanceRate: "",
-      membersPresent: "",
-      membersTotal: "",
-      tasksCompleted: "",
-      tasksOpen: "",
-      tasksOverdue: "",
-      engagementScore: "",
-      moraleRating: "3",
-      notes: "",
-    }),
-    [],
-  );
-  const [form, setForm] = useState(empty);
-  const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
-
-  return (
-    <Panel
-      as="form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!form.periodLabel.trim() || !form.periodStart) return;
-        mutate({
-          action: "log-pulse",
-          periodLabel: form.periodLabel,
-          periodStart: form.periodStart,
-          attendanceRate: Number(form.attendanceRate) || 0,
-          membersPresent: Number(form.membersPresent) || 0,
-          membersTotal: Number(form.membersTotal) || 0,
-          tasksCompleted: Number(form.tasksCompleted) || 0,
-          tasksOpen: Number(form.tasksOpen) || 0,
-          tasksOverdue: Number(form.tasksOverdue) || 0,
-          engagementScore: Number(form.engagementScore) || 0,
-          moraleRating: Number(form.moraleRating) || 3,
-          notes: form.notes || undefined,
-        });
-        setForm(empty);
-      }}
-      style={{ display: "grid", gap: 10 }}
-    >
-      <h2 style={{ margin: 0 }}>Log a pulse</h2>
-      <FormGrid min={160}>
-        <FormRow label="Period label">
-          <input value={form.periodLabel} onChange={set("periodLabel")} placeholder="Week 3" required />
-        </FormRow>
-        <FormRow label="Period start">
-          <input type="date" value={form.periodStart} onChange={set("periodStart")} required />
-        </FormRow>
-        <FormRow label="Attendance rate (%)">
-          <input type="number" min={0} max={100} value={form.attendanceRate} onChange={set("attendanceRate")} />
-        </FormRow>
-        <FormRow label="Members present">
-          <input type="number" min={0} value={form.membersPresent} onChange={set("membersPresent")} />
-        </FormRow>
-        <FormRow label="Members total">
-          <input type="number" min={0} value={form.membersTotal} onChange={set("membersTotal")} />
-        </FormRow>
-        <FormRow label="Tasks completed">
-          <input type="number" min={0} value={form.tasksCompleted} onChange={set("tasksCompleted")} />
-        </FormRow>
-        <FormRow label="Tasks open">
-          <input type="number" min={0} value={form.tasksOpen} onChange={set("tasksOpen")} />
-        </FormRow>
-        <FormRow label="Tasks overdue">
-          <input type="number" min={0} value={form.tasksOverdue} onChange={set("tasksOverdue")} />
-        </FormRow>
-        <FormRow label="Engagement score (%)">
-          <input type="number" min={0} max={100} value={form.engagementScore} onChange={set("engagementScore")} />
-        </FormRow>
-        <FormRow label="Morale (1-5)">
-          <select value={form.moraleRating} onChange={set("moraleRating")}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} · {moraleLabel(n)}
-              </option>
+            <strong style={{ fontSize: "2rem" }}>{formatTeamHealthRate(readiness.score, loaded)}</strong>
+          </header>
+          <ul className="thd-meter-list">
+            {components.map((row) => (
+              <li key={row.key} className="thd-meter-row">
+                <span className="app-muted">{row.label}</span>
+                <small className="app-muted">{formatTeamHealthRate(row.value, loaded)}</small>
+              </li>
             ))}
-          </select>
-        </FormRow>
-      </FormGrid>
-      <FormRow label="Notes (optional)">
-        <textarea value={form.notes} onChange={set("notes")} rows={2} />
-      </FormRow>
-      <div>
-        <button type="submit" className="app-button" disabled={busy || !form.periodLabel.trim() || !form.periodStart}>
-          Log pulse
-        </button>
-      </div>
-    </Panel>
+          </ul>
+          {readiness.recommendations.length > 0 ? (
+            <div>
+              <strong className="app-muted">Next steps</strong>
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                {readiness.recommendations.map((rec) => (
+                  <li key={rec}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </Panel>
+      ) : null}
+
+      {showTiles ? (
+        <Panel className="thd-panel">
+          <div className="thd-stats">
+            <StatTile label="Attendees" value={formatTeamHealthMetric(summary.uniqueAttendees, loaded)} />
+            <StatTile label="Attendance hours" value={formatTeamHealthHours(summary.totalAttendanceHours, loaded)} />
+            <StatTile label="Hour loggers" value={formatTeamHealthMetric(summary.uniqueHourLoggers, loaded)} />
+            <StatTile label="Shop hours" value={formatTeamHealthHours(summary.totalShopHours, loaded)} />
+          </div>
+        </Panel>
+      ) : null}
+
+      {summary.checkIns.length > 0 ? (
+        <Panel className="thd-panel" id="team-health-checkins" aria-label="Members without logs">
+          <h2 style={{ margin: 0 }}>Members without logs</h2>
+          <p className="app-muted">Roster members with no attendance or closed hours this season.</p>
+          <ul className="thd-member-list">
+            {summary.checkIns.map((member) => (
+              <li key={member.key} className="thd-member-row">
+                <strong>{member.name}</strong>
+                <small className="app-muted">No attendance · no shop hours</small>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+
+      <Panel className="thd-panel" id="team-health-members" aria-label="Logged members">
+        <h2 style={{ margin: 0 }}>Logged members</h2>
+        <ul className="thd-member-list">
+          {summary.members
+            .filter((member) => member.attendanceEvents > 0 || member.hourSessions > 0)
+            .map((member) => (
+              <li key={member.key} className="thd-member-row">
+                <div>
+                  <strong>{member.name}</strong>
+                  <small className="app-muted thd-block">
+                    {member.attendanceEvents} attendance {member.attendanceEvents === 1 ? "event" : "events"} ·{" "}
+                    {formatTeamHealthHours(member.attendanceHours, loaded)}h credited
+                  </small>
+                </div>
+                <small className="app-muted">
+                  {member.hourSessions} {member.hourSessions === 1 ? "session" : "sessions"} ·{" "}
+                  {formatTeamHealthHours(member.shopHours, loaded)}h shop
+                </small>
+              </li>
+            ))}
+        </ul>
+      </Panel>
+
+      {summary.trend.length > 0 ? (
+        <section className="app-card soft-panel">
+          <h2 style={{ marginTop: 0 }}>Trend by week</h2>
+          <ul className="thd-trend-list">
+            {summary.trend.map((point) => (
+              <li key={point.weekStart} className="thd-trend-row">
+                <span>Week of {point.weekStart}</span>
+                <small className="app-muted">
+                  {point.attendanceEvents} {point.attendanceEvents === 1 ? "event" : "events"} · {point.attendees}{" "}
+                  attendees · {formatTeamHealthHours(point.shopHours, loaded)}h shop
+                </small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {view.events.length > 0 ? (
+        <Panel className="thd-panel" aria-label="Attendance events">
+          <h2 style={{ margin: 0 }}>Attendance events</h2>
+          <ul className="thd-event-list">
+            {view.events.map((event) => (
+              <li key={event.id} className="thd-event-row">
+                <div>
+                  <strong>{event.title}</strong>
+                  <small className="app-muted thd-block">
+                    {event.occurredOn} · {event.kind}
+                  </small>
+                </div>
+                <small className="app-muted">
+                  {event.entryCount} {event.entryCount === 1 ? "entry" : "entries"}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }

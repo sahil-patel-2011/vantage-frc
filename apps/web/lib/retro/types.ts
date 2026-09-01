@@ -67,3 +67,40 @@ export type RetroPostmortem = {
   generatedByName: string | null;
   createdAt: string;
 };
+
+/**
+ * A lesson taken from a real retro_items row. Content is always the author's text —
+ * never a synthesized or DEMO lesson.
+ */
+export type RetroLearnedItem = {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
+  kind: RetroItemKind;
+  content: string;
+  authorName: string | null;
+  voteCount: number;
+  createdAt: string;
+};
+
+export type RetroHandoffTarget = "season-report" | "playbook" | "both";
+
+export type RetroHandoffStatus = {
+  seasonReportCount: number;
+  playbookPageId: string | null;
+  playbookSlug: string | null;
+  playbookHref: string | null;
+};
+
+export type RetroHandoffResult = {
+  target: RetroHandoffTarget;
+  learnedCount: number;
+  seasonReport: { written: number; skipped: number } | null;
+  playbook: {
+    pageId: string;
+    slug: string;
+    href: string;
+    alreadyExisted: boolean;
+  } | null;
+  message: string;
+};

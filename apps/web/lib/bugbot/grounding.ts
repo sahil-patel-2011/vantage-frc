@@ -49,3 +49,64 @@ export function resolveBugbotTarget(input: {
     pinnedSha: input.phase === "fix" ? asCommitSha(last.sha) : null,
   };
 }
+
+export type ServerBugbotSource = {
+  path: string;
+  contentSha256: string;
+  githubRepo: string | null;
+  githubSha: string | null;
+};
+
+export function assertBugbotPhaseGrounding(input: {
+  phase: "scan" | "fix" | "recheck";
+  source: ServerBugbotSource;
+  parent: ServerBugbotSource | null;
+}): void {
+  if (input.phase === "scan") return;
+  if (!input.parent) {
+    throw new Error(`${input.phase} requires a grounded parent Bugbot review`);
+  }
+  const { source, parent } = input;
+  if (parent.githubRepo) {
+    if (source.githubRepo?.toLowerCase() !== parent.githubRepo.toLowerCase()) {
+      throw new Error(`${input.phase} source does not match the repository that was scanned`);
+    }
+    if (!asCommitSha(source.githubSha)) {
+      throw new Error(`${input.phase} requires source resolved to a full GitHub commit SHA`);
+    }
+    if (input.phase === "fix") {
+      const scannedSha = asCommitSha(parent.githubSha);
+      if (!scannedSha || source.githubSha !== scannedSha) {
+        throw new Error("fix source is not pinned to the commit that was scanned");
+      }
+    }
+    return;
+  }
+  if (source.githubRepo) {
+    throw new Error(`${input.phase} cannot retarget a buffer review to a repository`);
+  }
+  if (source.path !== parent.path) {
+    throw new Error(`${input.phase} source path does not match the buffer that was scanned`);
+  }
+  if (input.phase === "fix" && source.contentSha256 !== parent.contentSha256) {
+    throw new Error("fix source content does not match the buffer that was scanned");
+  }
+}
+
+/** Rebuild the last-scan target from a persisted review — never from the editor textarea. */
+export function lastScanFromReview(review: {
+  githubRepo?: string | null;
+  githubRef?: string | null;
+  githubSha?: string | null;
+} | null): BugbotScanTarget | null {
+  if (!review) return null;
+  if (review.githubRepo?.trim()) {
+    return {
+      scanRepo: true,
+      repo: review.githubRepo.trim(),
+      ref: review.githubRef?.trim() || null,
+      sha: asCommitSha(review.githubSha),
+    };
+  }
+  return { scanRepo: false, repo: null, ref: null, sha: null };
+}

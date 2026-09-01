@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import {
+  loadMediaEvidenceReferences,
+  type MediaEvidenceReference,
+} from "../media/evidence-references";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { JUDGE_SIM_CATEGORIES, gradeAnswer, pickJudgeQuestion } from ".";
@@ -66,6 +70,7 @@ export type JudgeSimView =
       seasonYear: number;
       seasons: number[];
       evidence: JudgeSimEvidence[];
+      evidenceLibrary: MediaEvidenceReference[];
       sessions: JudgeSimSession[];
       readiness: JudgeSimReadiness;
       computedAt: string;
@@ -183,7 +188,7 @@ export async function computeJudgeSimView(
     };
   }
 
-  const [evidenceResult, sessionResult, seasonResult] = await Promise.all([
+  const [evidenceResult, sessionResult, seasonResult, evidenceLibrary] = await Promise.all([
     client.query<EvidenceRow>(
       `SELECT id, title, claim, category, source_url AS "sourceUrl", occurred_on::text AS "occurredOn",
               tags, created_at AS "createdAt"
@@ -205,6 +210,7 @@ export async function computeJudgeSimView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM judge_sim_sessions WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    loadMediaEvidenceReferences(client, { orgId: org.orgId }),
   ]);
 
   const evidence = evidenceResult.rows.map(mapEvidence);
@@ -220,6 +226,7 @@ export async function computeJudgeSimView(
     seasonYear,
     seasons,
     evidence,
+    evidenceLibrary,
     sessions,
     readiness,
     computedAt: new Date().toISOString(),

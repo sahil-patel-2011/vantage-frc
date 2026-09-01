@@ -1,6 +1,18 @@
 // --- Existing primitives ---
 export { EmptyState } from "./empty-state";
 export { FormGrid, FormRow } from "./form-row";
+
+// Form field primitives (accessible label/aria-invalid/describedby wiring)
+export {
+  CheckboxField,
+  FieldError,
+  FieldHelp,
+  FileField,
+  RadioGroup,
+  SelectField,
+  TextareaField,
+  TextField,
+} from "./field";
 export { PageHeader } from "./page-header";
 export { Panel } from "./panel";
 export { TabBar, type SoftTab } from "./tab-bar";

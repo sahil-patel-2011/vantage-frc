@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   KNOWLEDGE_TEMPLATES,
   KNOWLEDGE_TEMPLATE_KINDS,
@@ -40,6 +40,86 @@ function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSum
   });
 }
 
+function MarkdownDocument({ source }: { source: string }) {
+  const lines = source.replace(/\r\n/g, "\n").split("\n");
+  const blocks: ReactNode[] = [];
+  const isBlockStart = (line: string) =>
+    /^#{1,3}\s+/.test(line) ||
+    /^```/.test(line) ||
+    /^[-*]\s+/.test(line) ||
+    /^\d+\.\s+/.test(line) ||
+    /^>\s?/.test(line);
+
+  for (let index = 0; index < lines.length; ) {
+    const line = lines[index] ?? "";
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+    if (line.startsWith("```")) {
+      const language = line.slice(3).trim();
+      const code: string[] = [];
+      index += 1;
+      while (index < lines.length && !lines[index]!.startsWith("```")) {
+        code.push(lines[index]!);
+        index += 1;
+      }
+      if (index < lines.length) index += 1;
+      blocks.push(
+        <pre key={`code-${index}`} data-language={language || undefined}>
+          <code>{code.join("\n")}</code>
+        </pre>,
+      );
+      continue;
+    }
+    const heading = /^(#{1,3})\s+(.+)$/.exec(line);
+    if (heading) {
+      const level = heading[1]!.length;
+      const text = heading[2]!;
+      blocks.push(
+        level === 1 ? <h1 key={`h-${index}`}>{text}</h1> : level === 2 ? <h2 key={`h-${index}`}>{text}</h2> : <h3 key={`h-${index}`}>{text}</h3>,
+      );
+      index += 1;
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^[-*]\s+/.test(lines[index]!)) {
+        items.push(lines[index]!.replace(/^[-*]\s+/, ""));
+        index += 1;
+      }
+      blocks.push(<ul key={`ul-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>);
+      continue;
+    }
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index]!)) {
+        items.push(lines[index]!.replace(/^\d+\.\s+/, ""));
+        index += 1;
+      }
+      blocks.push(<ol key={`ol-${index}`}>{items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ol>);
+      continue;
+    }
+    if (/^>\s?/.test(line)) {
+      blocks.push(<blockquote key={`quote-${index}`}>{line.replace(/^>\s?/, "")}</blockquote>);
+      index += 1;
+      continue;
+    }
+    const paragraph: string[] = [];
+    while (index < lines.length && lines[index]!.trim() && !isBlockStart(lines[index]!)) {
+      paragraph.push(lines[index]!.trim());
+      index += 1;
+    }
+    blocks.push(<p key={`p-${index}`}>{paragraph.join(" ")}</p>);
+  }
+
+  return (
+    <article className="kb-document" aria-label="Page content">
+      {blocks.length ? blocks : <p className="kb-meta">This page is empty.</p>}
+    </article>
+  );
+}
+
 export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
   const [error, setError] = useState("");
@@ -50,6 +130,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   const [tab, setTab] = useState<Tab>("wiki");
   const [searchDraft, setSearchDraft] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [listQuery, setListQuery] = useState("");
 
   const [draftTitle, setDraftTitle] = useState("");
@@ -104,6 +185,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     setDraftTags(data.selected.tags.join(", "));
     setDraftPinned(data.selected.pinned);
     setCreating(false);
+    setEditing(false);
   }, []);
 
   const load = useCallback(
@@ -211,6 +293,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
   function beginCreate() {
     setCreating(true);
+    setEditing(true);
     setDraftTitle("");
     setDraftBody(`# ${teamLabel}\n\n`);
     setDraftTemplate("blank");
@@ -237,6 +320,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   function cancelCreate() {
     if (dirty && !window.confirm("Discard this draft?")) return;
     setCreating(false);
+    setEditing(false);
     if (ready?.selected) hydrateFromSelected(ready);
     else {
       setDraftTitle("");
@@ -546,7 +630,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
               <>
                 <div className="kb-editor-head">
                   <div>
-                    <h2>{creating ? "New page" : "Edit page"}</h2>
+                    <h2>{creating ? "New page" : editing ? "Edit page" : ready.selected?.title}</h2>
                     {ready.selected && !creating ? (
                       <p className="kb-meta">
                         Updated {fmtUpdated(ready.selected.updatedAt)}
@@ -565,36 +649,53 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                 </div>
 
                 <div className="kb-editor-toolbar" role="toolbar" aria-label="Editor shortcuts">
+                  {!creating ? (
+                    <div className="kb-view-toggle" aria-label="Page mode">
+                      <button type="button" aria-pressed={!editing} onClick={() => setEditing(false)}>
+                        Read
+                      </button>
+                      <button type="button" aria-pressed={editing} onClick={() => setEditing(true)}>
+                        Edit
+                      </button>
+                    </div>
+                  ) : null}
                   {/* Five equally-loud markdown chips became three controls: the two students
                       reach for, plus the rest one keystroke away. Every insert still works. */}
-                  <ActionMenu
-                    tone="row"
-                    label="Markdown insert"
-                    overflowLabel="More formats"
-                    maxSecondary={1}
-                    actions={[
-                      { id: "heading", label: "Heading", intent: "primary", disabled: busy, onClick: () => insertMarkdown("## Heading\n") },
-                      { id: "bullet", label: "Bullet", disabled: busy, onClick: () => insertMarkdown("- \n") },
-                      { id: "bold", label: "Bold", disabled: busy, hint: "Wraps text in **", onClick: () => insertMarkdown("**bold** ") },
-                      { id: "numbered", label: "Numbered", disabled: busy, hint: "Starts an ordered list", onClick: () => insertMarkdown("1. \n") },
-                      { id: "code", label: "Code", disabled: busy, hint: "Inline `code` span", onClick: () => insertMarkdown("`code` ") },
-                    ]}
-                  />
-                  <span className="kb-charcount" aria-live="polite">
-                    {draftBody.length.toLocaleString()} / {MAX_BODY.toLocaleString()}
-                    {bodyRemaining < 2000 ? ` · ${bodyRemaining.toLocaleString()} left` : ""}
-                  </span>
+                  {editing || creating ? (
+                    <>
+                      <ActionMenu
+                        tone="row"
+                        label="Markdown insert"
+                        overflowLabel="More formats"
+                        maxSecondary={1}
+                        actions={[
+                          { id: "heading", label: "Heading", intent: "primary", disabled: busy, onClick: () => insertMarkdown("## Heading\n") },
+                          { id: "bullet", label: "Bullet", disabled: busy, onClick: () => insertMarkdown("- \n") },
+                          { id: "bold", label: "Bold", disabled: busy, hint: "Wraps text in **", onClick: () => insertMarkdown("**bold** ") },
+                          { id: "numbered", label: "Numbered", disabled: busy, hint: "Starts an ordered list", onClick: () => insertMarkdown("1. \n") },
+                          { id: "code", label: "Code", disabled: busy, hint: "Inline `code` span", onClick: () => insertMarkdown("`code` ") },
+                        ]}
+                      />
+                      <span className="kb-charcount" aria-live="polite">
+                        {draftBody.length.toLocaleString()} / {MAX_BODY.toLocaleString()}
+                        {bodyRemaining < 2000 ? ` · ${bodyRemaining.toLocaleString()} left` : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="kb-meta">Formatted page view</span>
+                  )}
                 </div>
 
                 <label className="kb-field">
                   <span>Title</span>
-                  <input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} />
+                  <input value={draftTitle} disabled={!editing && !creating} onChange={(e) => setDraftTitle(e.target.value)} />
                 </label>
                 <div className="kb-row">
                   <label className="kb-field">
                     <span>Template kind</span>
                     <select
                       value={draftTemplate}
+                      disabled={!editing && !creating}
                       onChange={(e) => setDraftTemplate(e.target.value as KnowledgeTemplateKind)}
                     >
                       {KNOWLEDGE_TEMPLATE_KINDS.map((kind) => (
@@ -608,6 +709,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     <span>Season</span>
                     <input
                       value={draftSeason}
+                      disabled={!editing && !creating}
                       onChange={(e) => setDraftSeason(e.target.value)}
                       placeholder="optional"
                     />
@@ -616,6 +718,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     <input
                       type="checkbox"
                       checked={draftPinned}
+                      disabled={!editing && !creating}
                       onChange={(e) => setDraftPinned(e.target.checked)}
                     />
                     Pinned
@@ -625,19 +728,24 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   <span>Tags</span>
                   <input
                     value={draftTags}
+                    disabled={!editing && !creating}
                     onChange={(e) => setDraftTags(e.target.value)}
                     placeholder="drivetrain, cad"
                   />
                 </label>
-                <label className="kb-field">
-                  <span>Body</span>
-                  <textarea
-                    className="kb-body"
-                    value={draftBody}
-                    maxLength={MAX_BODY}
-                    onChange={(e) => setDraftBody(e.target.value)}
-                  />
-                </label>
+                {editing || creating ? (
+                  <label className="kb-field">
+                    <span>Body</span>
+                    <textarea
+                      className="kb-body"
+                      value={draftBody}
+                      maxLength={MAX_BODY}
+                      onChange={(e) => setDraftBody(e.target.value)}
+                    />
+                  </label>
+                ) : (
+                  <MarkdownDocument source={draftBody} />
+                )}
                 <div className="kb-actions">
                   {/* Save is the one loud control. Cancel sits beside it while drafting;
                       Delete is always behind the overflow with a confirm step (no window.confirm). */}

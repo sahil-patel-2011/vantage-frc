@@ -73,7 +73,8 @@ async function loadEvents(client: PoolClient, orgId: string, seasonYear: number)
 
   const ids = events.rows.map((row) => row.id);
   const entries = await client.query<AttendanceEntry>(
-    `SELECT a.id, a.event_id AS "eventId", a.person_name AS "personName", a.role,
+    `SELECT a.id, a.event_id AS "eventId", a.user_id AS "userId",
+            a.person_name AS "personName", a.role,
             a.hours::float8 AS hours, a.created_at::text AS "createdAt"
      FROM attendance_entries a
      WHERE a.org_id = $1 AND a.event_id = ANY($2::uuid[])
@@ -249,11 +250,25 @@ export async function POST(request: Request) {
             action.orgId,
           ]);
           if (!event.rowCount) throw new HttpError(404, "Attendance event not found");
+          const linkedMember = action.userId
+            ? await client.query<{ name: string | null }>(
+                `SELECT u.name
+                 FROM memberships m
+                 INNER JOIN users u ON u.id = m.user_id
+                 WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid
+                 LIMIT 1`,
+                [action.orgId, action.userId],
+              )
+            : null;
+          if (action.userId && !linkedMember?.rowCount) {
+            throw new HttpError(400, "Member is not part of this workspace");
+          }
+          const personName = linkedMember?.rows[0]?.name?.trim() || action.personName;
           const inserted = await client.query<{ id: string }>(
-            `INSERT INTO attendance_entries (org_id, event_id, person_name, role, hours)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO attendance_entries (org_id, event_id, user_id, person_name, role, hours)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
-            [action.orgId, action.eventId, action.personName, action.role, action.hours],
+            [action.orgId, action.eventId, action.userId, personName, action.role, action.hours],
           );
           return { id: inserted.rows[0]!.id };
         }

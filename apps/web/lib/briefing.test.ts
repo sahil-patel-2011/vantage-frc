@@ -207,12 +207,20 @@ describe("briefingChecklist", () => {
       practiceReps: 12,
       intelCount: 2,
       scoutCount: 3,
+      hasCard: true,
+      hasCounterBooks: true,
+      hasWatchNotes: true,
+      hasDefensePlans: true,
     });
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(9);
     expect(rows.every((row) => row.ok)).toBe(true);
     expect(rows.map((row) => row.label)).toEqual([
       "Prediction",
       "Strategy plan",
+      "Match card",
+      "Counter-book",
+      "Watchlist",
+      "Defense plan",
       "Whiteboard play",
       "Practice data",
       "Opponent video",
@@ -232,6 +240,10 @@ describe("briefingChecklist", () => {
     expect(rows.map((row) => row.hint)).toEqual([
       "Run /strategy",
       "Save a playbook in /strategy",
+      "Write one in /match-strategy-cards",
+      "Log how we beat them in /counter-book",
+      "Add a threat in /opponent-watchlist",
+      "Plan in /defense-planner",
       "Draw one in /whiteboard and link the match",
       "Log reps in /practice",
       "Tag opponent reviews in /video",

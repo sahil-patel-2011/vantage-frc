@@ -26,7 +26,7 @@ for (const viewport of VIEWPORTS) {
       await page.goto("/scouting");
       await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Choose a team" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Choose workspace" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Choose team" })).toBeVisible();
       await expect(page.getByText("Deterministic demo")).toHaveCount(0);
     });
 

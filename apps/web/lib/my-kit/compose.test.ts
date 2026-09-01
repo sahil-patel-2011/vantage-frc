@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { PACKING_TEMPLATE } from "../packing";
 import {
   EMPTY_AVAILABILITY,
   MY_KIT_SECTION_IDS,
+  TONIGHT_EMPTY_LABEL,
   composeMyKit,
   dayKeyUtc,
   deriveFocus,
@@ -10,6 +12,8 @@ import {
   focusLinks,
   formatHours,
   formatWhen,
+  isDueByTonight,
+  isOnTonight,
   minutesBetween,
   myKitSetupRequired,
   sectionOrder,
@@ -54,6 +58,7 @@ function input(overrides: Partial<MyKitComposeInput> = {}): MyKitComposeInput {
     tools: [],
     money: [],
     onboarding: [],
+    packing: [],
     ...overrides,
   };
 }
@@ -86,6 +91,21 @@ describe("time helpers", () => {
     expect(formatWhen("2026-03-04T18:05:00.000Z", { time: true })).toBe("Mar 4, 6:05 PM");
     expect(formatWhen("2026-03-04T00:05:00.000Z", { time: true })).toBe("Mar 4, 12:05 AM");
     expect(formatWhen(null)).toBe("");
+  });
+});
+
+describe("tonight windows", () => {
+  it("flags due-by-tonight without guessing undated work", () => {
+    expect(isDueByTonight(null, NOW)).toBe(false);
+    expect(isDueByTonight("2026-03-04", NOW)).toBe(true);
+    expect(isDueByTonight("2026-03-01T10:00:00Z", NOW)).toBe(true);
+    expect(isDueByTonight("2026-03-20", NOW)).toBe(false);
+  });
+
+  it("flags on-tonight only for the same UTC day", () => {
+    expect(isOnTonight("2026-03-04T22:00:00Z", NOW)).toBe(true);
+    expect(isOnTonight("2026-03-03T22:00:00Z", NOW)).toBe(false);
+    expect(isOnTonight(null, NOW)).toBe(false);
   });
 });
 
@@ -556,6 +576,91 @@ describe("composeMyKit", () => {
     const view = composeMyKit(input());
     const ids = view.sections.map((section) => section.id as MyKitSectionId);
     expect([...ids].sort()).toEqual([...MY_KIT_SECTION_IDS].sort());
+  });
+
+  it("tonight is honestly empty when this member has no assignments and no packing", () => {
+    const view = composeMyKit(input());
+    expect(view.tonight.rows).toEqual([]);
+    expect(view.tonight.assignmentCount).toBe(0);
+    expect(view.tonight.packingCount).toBe(0);
+    expect(view.tonight.emptyLabel).toBe(TONIGHT_EMPTY_LABEL);
+    expect(view.tonight.emptyLabel).not.toMatch(/DEMO/i);
+    expect(view.tonight.emptyLabel).not.toMatch(/template kit/i);
+    const packing = view.sections.find((section) => section.id === "packing")!;
+    expect(packing.rows).toEqual([]);
+    expect(packing.emptyLabel).toContain("not your kit");
+    const blob = JSON.stringify(view);
+    for (const label of PACKING_TEMPLATE.flatMap((group) => group.items.map((item) => item.label))) {
+      expect(blob).not.toContain(label);
+    }
+  });
+
+  it("tonight lists assigned work due today plus unpacked packing that belongs to this member", () => {
+    const view = composeMyKit(
+      input({
+        tasks: [
+          {
+            id: "bt1",
+            source: "build_task",
+            title: "Charge batteries",
+            status: "todo",
+            context: "electrical",
+            dueOn: "2026-03-04",
+            priority: "high",
+          },
+          {
+            id: "bt2",
+            source: "build_task",
+            title: "Order next week's shaft",
+            status: "todo",
+            context: "drivetrain",
+            dueOn: "2026-03-20",
+            priority: "normal",
+          },
+        ],
+        packing: [
+          {
+            id: "pr1",
+            source: "request",
+            listId: "list1",
+            listTitle: "Week 1 load-out",
+            eventKey: "2026week1",
+            category: "Batteries & Power",
+            label: "My charged pack",
+            quantity: 2,
+            status: "pending",
+            packed: false,
+          },
+          {
+            id: "pk1",
+            source: "packed",
+            listId: "list1",
+            listTitle: "Week 1 load-out",
+            eventKey: "2026week1",
+            category: "Tools & Pit",
+            label: "My hex set",
+            quantity: 1,
+            status: "packed",
+            packed: true,
+          },
+        ],
+      }),
+    );
+    expect(view.tonight.assignmentCount).toBe(1);
+    expect(view.tonight.packingCount).toBe(1);
+    expect(view.tonight.rows.map((row) => row.title)).toEqual(["Charge batteries", "My charged pack"]);
+    expect(view.tonight.rows[1]!.href).toContain("/packing");
+    const packing = view.sections.find((section) => section.id === "packing")!;
+    expect(packing.rows).toHaveLength(2);
+    expect(packing.rows[0]!.tone).toBe("due");
+    expect(packing.rows[1]!.tone).toBe("done");
+    expect(packing.rows[0]!.detail).toContain("You requested this");
+  });
+
+  it("does not treat a teammate's packing row as this member's kit", () => {
+    const view = composeMyKit(input());
+    expect(view.tonight.rows).toEqual([]);
+    expect(view.sections.find((section) => section.id === "packing")!.rows).toEqual([]);
   });
 });
 

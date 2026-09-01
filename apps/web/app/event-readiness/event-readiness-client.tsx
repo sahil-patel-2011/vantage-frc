@@ -37,7 +37,7 @@ type ScheduledReadinessItem = ScheduledItem<ReadinessItem>;
 
 const PAGE_TITLE = "Event Readiness";
 const PAGE_DESCRIPTION =
-  "One dated countdown before each event — inspection, consent, roster, packing, and travel roll up here and link back to the tool that owns each one.";
+  "Remaining blockers for one event date — consent, packing, travel, and inspection roll up here and link back to the tool that owns each one.";
 
 function flagTone(flag: ReadinessFlag): BadgeTone {
   if (flag === "done") return "good";
@@ -130,12 +130,12 @@ export default function EventReadinessClient() {
         if (data.status === "live") setEventKey(data.plan.eventKey);
       })
       .catch(() => setFetchFailed(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [eventKey]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -338,6 +338,54 @@ function CreatePlanForm({
   );
 }
 
+function remainingHeadline(view: LiveView): string {
+  const date = formatGroupDate(view.plan.eventStartDate);
+  if (view.remaining == null) {
+    const unknown = view.blockers.unknownSources.length;
+    return `Remaining blockers for ${date} cannot be totaled yet — ${unknown} source${unknown === 1 ? "" : "s"} ${unknown === 1 ? "has" : "have"} no honest count.`;
+  }
+  if (view.remaining === 0) {
+    return `0 remaining blockers for ${date} — consent, packing, travel, and inspection are clear.`;
+  }
+  return `${view.remaining} remaining blocker${view.remaining === 1 ? "" : "s"} for ${date}.`;
+}
+
+function RemainingBlockers({ view }: { view: LiveView }) {
+  return (
+    <Panel className="evr-panel evr-remaining" aria-label="Remaining blockers for this event">
+      <header className="evr-remaining-head">
+        <p className="app-muted evr-tip">Remaining blockers</p>
+        <strong className="evr-remaining-value">
+          {view.remaining == null ? "Unknown" : view.remaining}
+        </strong>
+        <p className="evr-remaining-headline">{remainingHeadline(view)}</p>
+      </header>
+      <ul className="evr-remaining-list">
+        {view.sources.map((source) => (
+          <li key={source.source} className={`evr-remaining-row ${source.state}`}>
+            <div>
+              <strong>{source.label}</strong>
+              <p className="app-muted evr-tip">{source.detail}</p>
+            </div>
+            <div className="evr-remaining-row-meta">
+              {source.remaining == null ? (
+                <Badge tone="setup">{source.state === "not_set_up" ? "Not set up yet" : "Unknown"}</Badge>
+              ) : source.remaining === 0 ? (
+                <Badge tone="good">Clear</Badge>
+              ) : (
+                <Badge tone="demo">{source.remaining} remaining</Badge>
+              )}
+              <a className="app-button secondary" href={withOrgHref(source.href, view.orgId)}>
+                {source.state === "not_set_up" ? `Set up in ${source.label}` : `Open ${source.label}`}
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
 function LivePlan({
   view,
   busy,
@@ -396,28 +444,7 @@ function LivePlan({
         </p>
       ) : null}
 
-      <section className="evr-sources" aria-label="Readiness by source">
-        {view.sources.map((source) => (
-          <article key={source.source} className={`app-card evr-source ${source.state}`}>
-            <header>
-              <strong>{source.label}</strong>
-              {source.state === "not_set_up" ? (
-                <Badge tone="setup">Not set up yet</Badge>
-              ) : source.fraction ? (
-                <Badge tone={source.fraction.done >= source.fraction.total ? "good" : "info"}>
-                  {source.fraction.done}/{source.fraction.total}
-                </Badge>
-              ) : (
-                <Badge tone="info">Live</Badge>
-              )}
-            </header>
-            <p className="app-muted evr-tip">{source.detail}</p>
-            <a className="app-button secondary" href={withOrgHref(source.href, view.orgId)}>
-              {source.state === "not_set_up" ? `Set up in ${source.label}` : `Open ${source.label}`}
-            </a>
-          </article>
-        ))}
-      </section>
+      <RemainingBlockers view={view} />
 
       {view.categories.length > 0 ? (
         <section className="evr-stats" aria-label="Checklist progress by category">

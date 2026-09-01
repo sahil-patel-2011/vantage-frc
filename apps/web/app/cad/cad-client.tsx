@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { CadPurchaseRequestPanel } from "./cad-purchase-request";
+import { CadOperationComposer } from "./cad-operation-composer";
+import { CadViewport } from "./cad-viewport";
 import "./cad-agent.css";
 import "./cad-setup.css";
 import "./cad-activity.css";
@@ -61,6 +64,7 @@ type AgentState = {
   bound: BoundDoc | null;
   iframeUrl: string | null;
   openUrl: string | null;
+  shadedPngBase64?: string | null;
   messages: ChatMessage[];
   /** Narrated build steps for this session, newest turn last. */
   steps?: AgentStep[];
@@ -75,6 +79,7 @@ type ChatResponse = {
   steps?: AgentStep[];
   modeState?: ModeState | null;
   proposal?: { mode: AgentMode; reasons: string[]; expiresAt: string } | null;
+  shadedPngBase64?: string | null;
 };
 
 const MODE_LABELS: Record<AgentMode, string> = { simple: "Simple", plan: "Plan", multitask: "Multitask" };
@@ -361,6 +366,7 @@ const TOOL_GROUP_LABELS: Record<string, string> = {
   solid: "Solid",
   modify: "Modify",
   pattern: "Pattern",
+  assembly: "Assembly",
   inspect: "Inspect",
 };
 
@@ -588,6 +594,7 @@ export default function CadWorkspace({
             messages: data.messages ?? prev.messages,
             steps: data.steps ?? prev.steps,
             modeState: data.modeState !== undefined ? data.modeState : prev.modeState,
+            shadedPngBase64: data.shadedPngBase64 ?? prev.shadedPngBase64,
           }
         : prev,
     );
@@ -602,15 +609,22 @@ export default function CadWorkspace({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "bind", orgId, url }),
       });
-      const data = (await response.json()) as { error?: string; bound?: BoundDoc; iframeUrl?: string; openUrl?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        bound?: BoundDoc;
+        iframeUrl?: string;
+        openUrl?: string;
+        shadedPngBase64?: string | null;
+      };
       if (!response.ok) throw new Error(data.error ?? "Bind failed");
       setState((prev) =>
         prev
           ? {
               ...prev,
               bound: data.bound ?? prev.bound,
-              iframeUrl: data.iframeUrl ?? prev.iframeUrl,
+              iframeUrl: null,
               openUrl: data.openUrl ?? prev.openUrl,
+              shadedPngBase64: data.shadedPngBase64 ?? prev.shadedPngBase64,
             }
           : prev,
       );
@@ -760,10 +774,9 @@ export default function CadWorkspace({
     }
   }
 
-  const onshapeOk = Boolean(state?.onshapeConnected || state?.onshapeConfigured);
+  const onshapeOk = Boolean(state?.onshapeConnected);
   const boundOk = Boolean(state?.bound?.documentId);
   const connectionsHref = withOrgHref("/cad/connections", orgId);
-  const iframeUrl = state?.iframeUrl || state?.openUrl || "";
   const tasks = mode === "multitask" ? modeState?.tasks ?? null : null;
 
   const composerHint = !onshapeOk
@@ -890,8 +903,8 @@ export default function CadWorkspace({
           <div className="cad-agent-log" ref={logRef}>
             {!state?.messages.length ? (
               <div className="cad-agent-hero">
-                Specify the part in millimetres. Bind the Onshape Part Studio, then send a brief. The agent sketches and
-                extrudes live — this is not a mock job.
+                Specify the part or assembly in millimetres. Bind an Onshape Part Studio, then send a brief. The agent
+                creates native sketches, extrudes, instances, and mates that remain editable in Onshape.
                 {mode === "plan"
                   ? " Plan mode: the agent writes a numbered build plan and asks its questions before touching Onshape."
                   : mode === "multitask"
@@ -1007,7 +1020,7 @@ export default function CadWorkspace({
               rows={3}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="e.g. 80×50×6 mm plate, sketch on Top, extrude 6 mm."
+              placeholder="e.g. build an 80×50×6 mm plate, or mate these two parts with a revolute joint."
               disabled={pendingProposal !== null}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -1030,29 +1043,24 @@ export default function CadWorkspace({
           </div>
         </aside>
 
-        <section className="cad-agent-viewport">
-          <div className="cad-agent-col-head">
-            Viewport
-            {state?.openUrl ? (
-              <a href={state.openUrl} target="_blank" rel="noreferrer">
-                Open in Onshape
-              </a>
-            ) : (
-              <span>Onshape</span>
-            )}
-          </div>
-          {iframeUrl ? (
-            <iframe title="Onshape" src={iframeUrl} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
-          ) : (
-            <div className="cad-agent-empty-view">
-              No Part Studio yet. Paste an Onshape document URL and Bind — Onshape may block embedding; use Open in
-              Onshape if the frame stays blank.
-            </div>
-          )}
-        </section>
+        <CadViewport
+          pngBase64={state?.shadedPngBase64}
+          openUrl={state?.openUrl}
+          setupRequired={!onshapeOk}
+        />
       </div>
 
+      <CadOperationComposer platform="onshape" disabled={!onshapeOk || busy !== null} />
+
       <CadToolsPanel tools={tools} />
+
+      {boundOk ? (
+        <CadPurchaseRequestPanel
+          orgId={orgId}
+          defaultTitle={`${state?.bound?.documentName || "CAD build"} parts`}
+          defaultWhy={`Needed to manufacture or assemble the ${state?.bound?.documentName || "bound CAD"} design.`}
+        />
+      ) : null}
 
       <CadActivityPanel orgId={orgId} />
     </main>

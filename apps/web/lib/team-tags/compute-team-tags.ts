@@ -1,5 +1,10 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { groupTeamTags, type TagBoardColumn, type TeamTagAssignment } from "./group";
+import { assignmentsForBoard, assignmentsForEvent, groupTeamTags, type TagBoardColumn, type TeamTagAssignment } from "./group";
+import {
+  pickReasonsForEvent,
+  pickReasonsFromTeamTags,
+  type TeamTagPickReason,
+} from "./pick-reasons";
 import { parseTeamNumber } from "../pairwise/rank";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
@@ -36,6 +41,8 @@ export type TeamTagsView =
       defs: TeamTagDef[];
       assignments: TeamTagAssignment[];
       board: TagBoardColumn[];
+      /** Event-robot tags as pick-clock reasons. Empty until a tag is applied at the event. */
+      pickReasons: TeamTagPickReason[];
       nextActions: TeamTagsNextAction[];
       computedAt: string;
     };
@@ -75,6 +82,7 @@ export function teamTagsNextActions(ctx: {
   orgId?: string | null;
   assignmentCount?: number;
   eventKey?: string | null;
+  eventAssignmentCount?: number;
 }): TeamTagsNextAction[] {
   const orgId = ctx.orgId ?? null;
   if (!orgId) {
@@ -89,12 +97,21 @@ export function teamTagsNextActions(ctx: {
     ];
   }
   const actions: TeamTagsNextAction[] = [];
+  const eventAssignmentCount = ctx.eventAssignmentCount ?? 0;
   if ((ctx.assignmentCount ?? 0) === 0) {
     actions.push({
       id: "first-tag",
       label: "Tag a robot you just watched",
       detail: "The board stays empty until a scout applies a real qualitative tag.",
       href: withOrgHref("/team-tags", orgId),
+      primary: true,
+    });
+  } else if (ctx.eventKey && eventAssignmentCount > 0) {
+    actions.push({
+      id: "pick-clock",
+      label: "Read tags as pick reasons",
+      detail: "Applied drive-team tags on this event's robots are glanceable pick-clock reasons.",
+      href: hubHref("/competition", "pick-clock", orgId),
       primary: true,
     });
   }
@@ -111,6 +128,30 @@ export function teamTagsNextActions(ctx: {
     href: hubHref("/competition", "scouting", orgId),
   });
   return actions.slice(0, 5);
+}
+
+/** Slim GET payload so pick-clock (or any client) can read reasons without the board. */
+export function teamTagsPickReasonsPayload(
+  view: TeamTagsView,
+  teamNumberRaw?: unknown,
+): {
+  status: "setup_required" | "live";
+  orgId: string | null;
+  eventKey: string | null;
+  pickReasons: TeamTagPickReason[];
+} {
+  if (view.status !== "live") {
+    return { status: "setup_required", orgId: view.orgId, eventKey: null, pickReasons: [] };
+  }
+  const teamNumber = parseTeamNumber(teamNumberRaw);
+  return {
+    status: "live",
+    orgId: view.orgId,
+    eventKey: view.eventKey,
+    pickReasons: teamNumber
+      ? pickReasonsFromTeamTags(view.assignments, { teamNumber, eventKey: view.eventKey })
+      : view.pickReasons,
+  };
 }
 
 export async function computeTeamTagsView(
@@ -171,6 +212,7 @@ export async function computeTeamTagsView(
     ]);
 
     const eventKey = context.rows[0]?.eventKey ?? null;
+    const eventAssignments = assignmentsForEvent(assignments.rows, eventKey);
     return {
       status: "live",
       orgId: org.orgId,
@@ -182,11 +224,13 @@ export async function computeTeamTagsView(
         .filter((value): value is number => value != null),
       defs: defs.rows,
       assignments: assignments.rows,
-      board: groupTeamTags(assignments.rows),
+      board: groupTeamTags(assignmentsForBoard(assignments.rows, eventKey)),
+      pickReasons: pickReasonsForEvent(assignments.rows, eventKey),
       nextActions: teamTagsNextActions({
         orgId: org.orgId,
         assignmentCount: assignments.rows.length,
         eventKey,
+        eventAssignmentCount: eventAssignments.length,
       }),
       computedAt: new Date().toISOString(),
     };

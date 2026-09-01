@@ -136,6 +136,19 @@
   font-weight: 600;
 }
 
+.awards-export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.awards-export-note {
+  margin: 0;
+  color: var(--soft-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .awards-add-item {
   display: grid;
   gap: 10px;
@@ -161,5 +174,22 @@
 
   .awards-add-item-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .awards-page .business-related,
+  .awards-form,
+  .awards-list,
+  .awards-add-item,
+  .awards-export-bar,
+  .awards-next-actions,
+  .awards-stats {
+    display: none !important;
+  }
+
+  .awards-items textarea {
+    border: none;
+    background: transparent;
   }
 }

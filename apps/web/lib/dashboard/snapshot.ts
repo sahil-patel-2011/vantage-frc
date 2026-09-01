@@ -8,6 +8,7 @@ import {
   homeAudienceFromTeamRole,
 } from "../home-workflows";
 import { countLodgingGaps } from "../logistics";
+import { snapshotShouldLoadHomeStrip } from "./refresh";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -25,21 +26,47 @@ function stamp(status: WidgetDataStatus, type: DashboardWidgetType, data?: Recor
 
 export async function loadDashboardSnapshot(
   client: PoolClient,
-  input: { orgId: string; userId: string; role: string | null },
+  input: {
+    orgId: string;
+    userId: string;
+    role: string | null;
+    /** Omit to preserve the full administrative/debug snapshot. */
+    widgetTypes?: DashboardWidgetType[];
+    /** Mentor/student focus strip. Defaults on only for unfiltered snapshots. */
+    includeHomeStrip?: boolean;
+  },
 ): Promise<{ context: Record<string, unknown>; widgets: Record<string, WidgetPayload> }> {
-  const org = await client.query<{
-    name: string;
-    teamNumber: number | null;
-    eventKey: string | null;
-    eventName: string | null;
-  }>(
-    `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName"
-     FROM organizations o
-     LEFT JOIN org_active_context c ON c.org_id = o.id
-     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
-     WHERE o.id = $1`,
-    [input.orgId],
-  );
+  const [org, tbaMeta, profileMeta] = await Promise.all([
+    client.query<{
+      name: string;
+      teamNumber: number | null;
+      eventKey: string | null;
+      eventName: string | null;
+    }>(
+      `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName"
+       FROM organizations o
+       LEFT JOIN org_active_context c ON c.org_id = o.id
+       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       WHERE o.id = $1`,
+      [input.orgId],
+    ),
+    client.query<{ credential: boolean; cache: boolean }>(
+      `SELECT
+         EXISTS(
+           SELECT 1 FROM data_source_credentials
+           WHERE source = 'tba' AND disabled_at IS NULL
+             AND (org_id IS NULL OR org_id = $1)
+         ) AS credential,
+         EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
+           OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1) AS cache`,
+      [input.orgId],
+    ),
+    client.query<{ teamRole: string | null; primaryFocus: string | null }>(
+      `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus"
+       FROM profiles WHERE user_id = $1`,
+      [input.userId],
+    ),
+  ]);
   const row = org.rows[0];
   if (!row) {
     return {
@@ -51,20 +78,6 @@ export async function loadDashboardSnapshot(
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const eventKey = row.eventKey;
   const platformEnvKey = platformTbaEnvConfigured();
-  const tbaMeta = await client.query<{ credential: boolean; cache: boolean }>(
-    `SELECT
-       EXISTS(
-         SELECT 1 FROM data_source_credentials
-         WHERE source = 'tba' AND disabled_at IS NULL
-           AND (org_id IS NULL OR org_id = $1)
-       ) AS credential,
-       EXISTS(
-         SELECT 1 FROM matches_ref LIMIT 1
-       ) OR EXISTS(
-         SELECT 1 FROM team_event_metrics LIMIT 1
-       ) AS cache`,
-    [input.orgId],
-  );
   const tbaConfigured =
     platformEnvKey || Boolean(tbaMeta.rows[0]?.credential) || Boolean(tbaMeta.rows[0]?.cache);
 
@@ -91,11 +104,6 @@ export async function loadDashboardSnapshot(
   const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) > 0;
   const hasAiProvider = Boolean(aiMeta.rows[0]?.hasKey);
 
-  const profileMeta = await client.query<{ teamRole: string | null; primaryFocus: string | null }>(
-    `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus"
-     FROM profiles WHERE user_id = $1`,
-    [input.userId],
-  );
   const teamRole = profileMeta.rows[0]?.teamRole ?? null;
   const audience = homeAudienceFromTeamRole(teamRole);
 
@@ -114,6 +122,8 @@ export async function loadDashboardSnapshot(
   };
 
   const widgets: Record<string, WidgetPayload> = {};
+  const requestedTypes = input.widgetTypes ? new Set(input.widgetTypes) : null;
+  const wants = (type: DashboardWidgetType) => requestedTypes === null || requestedTypes.has(type);
 
   async function nextMatch() {
     if (!eventKey || !teamKey) {
@@ -953,25 +963,37 @@ export async function loadDashboardSnapshot(
     };
   }
 
-  // Next match first so onboarding can mark "Know your next match" from live bumper data.
-  await nextMatch();
-  await Promise.all([
-    onboardingChecklist(),
-    homeStrip(),
-    recentResult(),
-    competitionSnapshot(),
-    scoutingCoverage(),
-    predictionSummary(),
-    syncStatus(),
-    pitYoutube(),
-    aiUsage(),
-    notifications(),
-    robotReadiness(),
-    alerts(),
-    teamTodos(),
-    subteamUpcoming(),
-    quickActions(),
-  ]);
+  const jobs: Array<Promise<void>> = snapshotShouldLoadHomeStrip(input) ? [homeStrip()] : [];
+
+  // The setup checklist consumes next-match state, so resolve that dependency
+  // first only when the checklist was actually requested.
+  if (wants("onboarding_checklist")) {
+    await nextMatch();
+    jobs.push(onboardingChecklist());
+  } else if (wants("next_match")) {
+    jobs.push(nextMatch());
+  }
+
+  const widgetLoaders: Array<[DashboardWidgetType, () => Promise<void>]> = [
+    ["recent_result", recentResult],
+    ["competition_snapshot", competitionSnapshot],
+    ["scouting_coverage", scoutingCoverage],
+    ["prediction_summary", predictionSummary],
+    ["sync_status", syncStatus],
+    ["pit_youtube", pitYoutube],
+    ["ai_usage", aiUsage],
+    ["notifications", notifications],
+    ["robot_readiness", robotReadiness],
+    ["alerts", alerts],
+    ["team_todos", teamTodos],
+    ["subteam_upcoming", subteamUpcoming],
+    ["quick_actions", quickActions],
+  ];
+  for (const [type, load] of widgetLoaders) {
+    if (wants(type)) jobs.push(load());
+  }
+
+  await Promise.all(jobs);
 
   return { context, widgets };
 }

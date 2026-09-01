@@ -213,7 +213,10 @@ function SummaryTiles({
     { label: "Total cost", value: usd(summary.totalCostUsd) },
     { label: "Budget", value: summary.budgetUsd > 0 ? usd(summary.budgetUsd) : "Not set" },
     { label: "Remaining", value: usd(summary.remainingUsd) },
-    { label: "Budget used", value: `${Math.round(summary.percentUsed * 100)}%` },
+    {
+      label: "Budget used",
+      value: summary.percentUsed == null ? "—" : `${Math.round(summary.percentUsed * 100)}%`,
+    },
     { label: "Line items", value: String(summary.itemCount) },
   ];
   return (

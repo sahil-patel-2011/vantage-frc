@@ -210,6 +210,7 @@ export async function computePairwiseView(
       nextActions: pairwiseNextActions({
         orgId: org.orgId,
         comparisonCount: allForRank.rows.length,
+        rankCount: ranks.length,
         eventKey: context.rows[0]?.eventKey ?? null,
       }),
       canManage: org.role === "owner" || org.role === "admin",

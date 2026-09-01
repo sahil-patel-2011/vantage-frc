@@ -4,6 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const PAIRWISE_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", tab: "scouting" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
+  { id: "picklist-collab", label: "Pick list", tab: "picklist-collab" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
 ] as const;

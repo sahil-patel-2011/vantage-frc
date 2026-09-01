@@ -42,6 +42,9 @@ describe("summarizeFundraisers", () => {
     expect(summary.totalRaised).toBe(1000);
     expect(summary.totalGoal).toBe(1500);
     expect(summary.attainment).toBe(67);
+    expect(summary.accountingStatus).toBe("gross_only");
+    expect(summary.totalExpenses).toBeNull();
+    expect(summary.netRaised).toBeNull();
     expect(summary.completed).toBe(1);
     expect(summary.active).toBe(1);
     expect(summary.planned).toBe(1);

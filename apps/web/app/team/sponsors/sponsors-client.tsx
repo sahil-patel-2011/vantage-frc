@@ -1,6 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SPONSOR_TIERS, SPONSOR_STATUSES, tierLabel, type SponsorTier, type SponsorStatus } from "../../../lib/sponsors";
+import {
+  contributionRowUsd,
+  formatSponsorUsd,
+  sponsorPageTotals,
+  type ContributionMoneyRow,
+} from "../../../lib/sponsors/totals";
 
 type Sponsor = {
   id: string; name: string; website: string | null; tier: SponsorTier; status: SponsorStatus; industry: string | null;
@@ -8,7 +14,10 @@ type Sponsor = {
   lastInteractionAt: string | null; needsFollowUp: boolean;
 };
 type Contact = { id: string; name: string; title: string | null; email: string | null; phone: string | null; isPrimary: boolean };
-type Contribution = { id: string; seasonYear: number; type: string; amountUsd: string | null; estimatedValueUsd: string | null; description: string | null; thankYouSentAt: string | null };
+type Contribution = ContributionMoneyRow & {
+  id: string; seasonYear: number; type: string; amountUsd: string | null; estimatedValueUsd: string | null;
+  description: string | null; thankYouSentAt: string | null;
+};
 type Interaction = { id: string; type: string; subject: string | null; occurredAt: string; loggedByName: string };
 type Prospect = { id: string; companyName: string; rationale: string | null; status: string };
 type Draft = { id: string; subject: string; body: string };
@@ -19,6 +28,8 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [orgContributions, setOrgContributions] = useState<Contribution[]>([]);
+  const [contributionsLoaded, setContributionsLoaded] = useState(false);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [prospects, setProspects] = useState<Prospect[]>([]);
@@ -30,10 +41,19 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
   const [interactionForm, setInteractionForm] = useState({ type: "email", subject: "", notes: "" });
 
   async function loadSponsors() {
-    const response = await fetch(`/api/sponsors?orgId=${orgId}`);
+    const [response, contribRes] = await Promise.all([
+      fetch(`/api/sponsors?orgId=${orgId}`),
+      fetch(`/api/sponsors/contributions?orgId=${orgId}`),
+    ]);
     const data = await response.json();
+    const contribData = await contribRes.json();
     setSponsors(data.sponsors ?? []);
+    if (contribRes.ok) {
+      setOrgContributions(contribData.contributions ?? []);
+      setContributionsLoaded(true);
+    }
     if (!response.ok) setMessage(data.error);
+    else if (!contribRes.ok) setMessage(contribData.error);
   }
   async function loadProspects() {
     const response = await fetch(`/api/sponsors/prospects?orgId=${orgId}`);
@@ -126,6 +146,11 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
   }
 
   const selected = sponsors.find((s) => s.id === selectedId) ?? null;
+  const { teamTotalUsd, amountBySponsorId } = useMemo(
+    () => sponsorPageTotals(sponsors, orgContributions, contributionsLoaded),
+    [sponsors, orgContributions, contributionsLoaded],
+  );
+  const selectedAmountUsd = selected ? (amountBySponsorId[selected.id] ?? 0) : 0;
 
   return (
     <main className="intel-app">
@@ -136,7 +161,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
       {message && <p className="telemetry-status">{message}</p>}
       <section className="metric-grid">
         <article><span>Active sponsors</span><strong>{sponsors.filter((s) => s.status === "active").length}</strong></article>
-        <article><span>Lifetime raised</span><strong>${sponsors.reduce((sum, s) => sum + Number(s.lifetimeContributionUsd || 0), 0).toLocaleString()}</strong></article>
+        <article><span>Team total</span><strong>{formatSponsorUsd(teamTotalUsd)}</strong></article>
         <article><span>Need follow-up</span><strong>{sponsors.filter((s) => s.needsFollowUp && s.status !== "declined").length}</strong></article>
         <article><span>Open prospects</span><strong>{prospects.filter((p) => p.status !== "dismissed").length}</strong></article>
       </section>
@@ -161,7 +186,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
           {sponsors.length === 0 && <p>No sponsors yet.</p>}
           {sponsors.map((s) => (
             <article key={s.id} onClick={() => void loadDetail(s.id)} style={{ cursor: "pointer" }}>
-              <div><strong>{s.name}</strong><small>{tierLabel(s.tier)} · {s.status} · ${Number(s.lifetimeContributionUsd).toLocaleString()} lifetime{s.needsFollowUp ? " · needs follow-up" : ""}</small></div>
+              <div><strong>{s.name}</strong><small>{tierLabel(s.tier)} · {s.status} · {formatSponsorUsd(amountBySponsorId[s.id] ?? 0)}{s.needsFollowUp ? " · needs follow-up" : ""}</small></div>
             </article>
           ))}
         </section>
@@ -170,6 +195,7 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
       {selected && (
         <section className="compare-panel">
           <span className="eyebrow">{selected.name.toUpperCase()}</span>
+          <p className="telemetry-status">{formatSponsorUsd(selectedAmountUsd)} from recorded contributions</p>
           <div className="admin-grid">
             <section className="intel-panel">
               <span className="eyebrow">CONTACTS</span>
@@ -185,7 +211,8 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
             </section>
             <section className="intel-panel">
               <span className="eyebrow">CONTRIBUTIONS</span>
-              {contributions.map((c) => <article key={c.id}><div><strong>{c.type === "cash" ? `$${Number(c.amountUsd).toLocaleString()}` : `~$${Number(c.estimatedValueUsd ?? 0).toLocaleString()} (${c.type})`}</strong><small>{c.seasonYear} · {c.description}{c.thankYouSentAt ? " · thanked" : ""}</small></div></article>)}
+              {contributions.length === 0 && <p>No contributions logged — {formatSponsorUsd(0)}.</p>}
+              {contributions.map((c) => <article key={c.id}><div><strong>{c.type === "cash" ? formatSponsorUsd(contributionRowUsd(c)) : `~${formatSponsorUsd(contributionRowUsd(c))} (${c.type})`}</strong><small>{c.seasonYear} · {c.description}{c.thankYouSentAt ? " · thanked" : ""}</small></div></article>)}
               <form onSubmit={addContribution}>
                 <label>Type<select value={contributionForm.type} onChange={(e) => setContributionForm({ ...contributionForm, type: e.target.value })}><option value="cash">Cash</option><option value="in_kind">In-kind</option><option value="discount">Discount</option></select></label>
                 {contributionForm.type === "cash"

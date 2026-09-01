@@ -4,7 +4,16 @@
 // a value. compute-spare-forecast.ts wraps this with DB I/O; the API route and client render
 // the results and let a team draft a purchase request from what would otherwise run out.
 
-import type { ExhaustionForecast, ForecastUrgency, PurchaseRequestLineItem, PurchaseRequestStatus, SpareForecastLine } from "./types";
+import type {
+  ExhaustionForecast,
+  ForecastUrgency,
+  PurchaseRequestLineItem,
+  PurchaseRequestStatus,
+  SeasonHorizon,
+  SpareForecastLine,
+} from "./types";
+
+export type { SeasonHorizon };
 
 export const PURCHASE_REQUEST_STATUSES: PurchaseRequestStatus[] = ["draft", "approved", "ordered", "dismissed"];
 
@@ -24,13 +33,36 @@ const round = (value: number, places = 3) => {
   return Math.round(value * factor) / factor;
 };
 
-export function seasonWindow(seasonYear: number, asOf: Date = new Date()): { daysElapsed: number; daysRemaining: number } {
+export type SeasonWindow = {
+  daysElapsed: number;
+  /** Null once the 200-day window has closed — never clamp remaining days to 0. */
+  daysRemaining: number | null;
+  horizon: SeasonHorizon;
+};
+
+/**
+ * Season cadence window. After day 200, remaining-season risk is unknown (offseason)
+ * rather than a clamped 0 that would look like "no risk".
+ */
+export function seasonWindow(seasonYear: number, asOf: Date = new Date()): SeasonWindow {
   const start = Date.UTC(seasonYear, SEASON_START_MONTH_DAY.month, SEASON_START_MONTH_DAY.day);
   const end = start + SEASON_LENGTH_DAYS * 86_400_000;
   const now = asOf.getTime();
-  const daysElapsed = Math.max(1, Math.round((Math.min(Math.max(now, start), end) - start) / 86_400_000));
-  const daysRemaining = Math.max(0, Math.round((end - Math.min(Math.max(now, start), end)) / 86_400_000));
-  return { daysElapsed, daysRemaining };
+
+  if (now < start) {
+    return { daysElapsed: 1, daysRemaining: SEASON_LENGTH_DAYS, horizon: "in_season" };
+  }
+
+  if (now >= end) {
+    return { daysElapsed: SEASON_LENGTH_DAYS, daysRemaining: null, horizon: "offseason" };
+  }
+
+  const daysElapsed = Math.max(1, Math.round((now - start) / 86_400_000));
+  const daysRemaining = Math.round((end - now) / 86_400_000);
+  if (daysRemaining <= 0) {
+    return { daysElapsed: SEASON_LENGTH_DAYS, daysRemaining: null, horizon: "offseason" };
+  }
+  return { daysElapsed, daysRemaining, horizon: "in_season" };
 }
 
 function urgencyFor(willExhaust: boolean, daysRemaining: number, projectedShortfall: number): ForecastUrgency {
@@ -45,17 +77,36 @@ export type ForecastInput = {
   quantityOnHand: number;
   failureCount: number;
   daysElapsed: number;
-  daysRemaining: number;
+  daysRemaining: number | null;
 };
 
-/** Project whether a spare bin will exhaust before the season ends, at its observed failure cadence. */
+/**
+ * Project whether a spare bin will exhaust before the season ends, at its observed failure cadence.
+ * Offseason / a closed 200-day window yields null remaining-season risk — never "stable" from a clamp.
+ */
 export function forecastExhaustion(input: ForecastInput): ExhaustionForecast {
   const quantityOnHand = Math.max(0, input.quantityOnHand);
   const failureCount = Math.max(0, Math.round(input.failureCount));
   const daysElapsed = Math.max(1, Math.round(input.daysElapsed));
-  const daysRemaining = Math.max(0, Math.round(input.daysRemaining));
-
+  const remainingInput = input.daysRemaining;
+  const horizonClosed = remainingInput == null || remainingInput <= 0;
   const consumptionPerDay = round(failureCount / daysElapsed, 4);
+
+  if (horizonClosed) {
+    return {
+      consumptionPerDay,
+      daysElapsed,
+      daysRemaining: null,
+      projectedConsumptionRemaining: null,
+      projectedShortfall: null,
+      willExhaust: null,
+      recommendedOrderQty: 0,
+      urgency: failureCount > 0 ? null : "stable",
+      horizon: "offseason",
+    };
+  }
+
+  const daysRemaining = Math.round(remainingInput);
   const projectedConsumptionRemaining = round(consumptionPerDay * daysRemaining, 2);
   const projectedShortfall = round(Math.max(0, projectedConsumptionRemaining - quantityOnHand), 2);
   const willExhaust = consumptionPerDay > 0 && projectedShortfall > 0;
@@ -72,23 +123,28 @@ export function forecastExhaustion(input: ForecastInput): ExhaustionForecast {
     willExhaust,
     recommendedOrderQty,
     urgency: urgencyFor(willExhaust, daysRemaining, projectedShortfall),
+    horizon: "in_season",
   };
 }
 
 const URGENCY_RANK: Record<ForecastUrgency, number> = { critical: 0, warning: 1, watch: 2, stable: 3 };
 
+function urgencyRank(urgency: ForecastUrgency | null): number {
+  return urgency == null ? -1 : URGENCY_RANK[urgency];
+}
+
 export function sortForecastLines(lines: SpareForecastLine[]): SpareForecastLine[] {
   return [...lines].sort((a, b) => {
-    const rank = URGENCY_RANK[a.forecast.urgency] - URGENCY_RANK[b.forecast.urgency];
+    const rank = urgencyRank(a.forecast.urgency) - urgencyRank(b.forecast.urgency);
     if (rank !== 0) return rank;
-    return b.forecast.projectedShortfall - a.forecast.projectedShortfall;
+    return (b.forecast.projectedShortfall ?? 0) - (a.forecast.projectedShortfall ?? 0);
   });
 }
 
 /** Draft purchase-request line items from forecast lines that are actually projected to run out. */
 export function draftPurchaseRequestLines(lines: SpareForecastLine[]): PurchaseRequestLineItem[] {
   return sortForecastLines(lines)
-    .filter((line) => line.forecast.willExhaust)
+    .filter((line) => line.forecast.willExhaust === true && line.forecast.urgency != null)
     .map((line) => {
       const quantityToOrder = Math.max(1, line.forecast.recommendedOrderQty);
       const estimatedCost = round((line.unitCost ?? 0) * quantityToOrder, 2);
@@ -98,13 +154,13 @@ export function draftPurchaseRequestLines(lines: SpareForecastLine[]): PurchaseR
         quantityToOrder,
         unitCost: line.unitCost,
         estimatedCost,
-        urgency: line.forecast.urgency,
+        urgency: line.forecast.urgency ?? "watch",
         rationale: `${line.failureCount} FMEA failure(s) on ${line.subsystem ?? "this subsystem"} in ${line.forecast.daysElapsed} day(s) projects ${line.forecast.projectedConsumptionRemaining} unit(s) consumed over the ${line.forecast.daysRemaining} remaining season day(s), against ${line.quantityOnHand} on hand.`,
       };
     });
 }
 
-export function forecastUrgencyLabel(urgency: ForecastUrgency): string {
+export function forecastUrgencyLabel(urgency: ForecastUrgency | null): string {
   switch (urgency) {
     case "critical":
       return "Critical";
@@ -112,7 +168,9 @@ export function forecastUrgencyLabel(urgency: ForecastUrgency): string {
       return "Warning";
     case "watch":
       return "Watch";
-    default:
+    case "stable":
       return "Stable";
+    default:
+      return "No season horizon";
   }
 }

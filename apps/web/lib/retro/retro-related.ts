@@ -6,6 +6,8 @@ export const RETRO_RELATED_LINKS = [
   { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
   { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
   { id: "decisions", label: "Decisions", kind: "path" as const, path: "/decisions" },
+  { id: "season-report", label: "Season report", kind: "path" as const, path: "/season-report" },
+  { id: "playbook", label: "Playbook", kind: "team" as const, tab: "knowledge" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "retro" },
 ] as const;
 
@@ -19,6 +21,9 @@ export type RetroRelatedLink = {
 
 /** Focused Soft-UI strip — Messages · FMEA · Decisions. */
 export const RETRO_RELATED_INCLUDE: RetroRelatedId[] = ["messages", "fmea", "decisions"];
+
+/** Season report + playbook — the only honest destinations for real retro lessons. */
+export const RETRO_HANDOFF_INCLUDE: RetroRelatedId[] = ["season-report", "playbook"];
 
 /**
  * Soft-UI cross-links from Retro → Messages / FMEA / Decisions.
@@ -185,10 +190,12 @@ export function retroNextActions(input: {
   shell: RetroShellKind;
   sessionCount?: number;
   openActionCount?: number;
+  learnedItemCount?: number;
 }): RetroNextAction[] {
   const orgId = input.orgId ?? null;
   const sessionCount = input.sessionCount ?? 0;
   const openActionCount = input.openActionCount ?? 0;
+  const learnedItemCount = input.learnedItemCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
     if (!orgId) {
@@ -331,6 +338,27 @@ export function retroNextActions(input: {
       label: "Open Decisions",
       detail: "Confirm accepted/rejected decisions feeding this season's postmortem.",
       href: withOrgHref("/decisions", orgId),
+    },
+    {
+      id: "handoff",
+      label: learnedItemCount > 0 ? "Hand off lessons" : "Collect lessons first",
+      detail:
+        learnedItemCount > 0
+          ? `${learnedItemCount} learned item${learnedItemCount === 1 ? "" : "s"} from real retro rows — send to Season report or Playbook. Nothing is invented.`
+          : "Write start/stop/continue items before handing off — this never invents lessons.",
+      href: "#retro-learned",
+    },
+    {
+      id: "season-report",
+      label: "Open Season report",
+      detail: "Lessons appear there only after a real retro handoff.",
+      href: withOrgHref("/season-report", orgId),
+    },
+    {
+      id: "playbook",
+      label: "Open Playbook",
+      detail: "The wiki stays empty of retro lessons until you hand them off.",
+      href: hubHref("/team", "knowledge", orgId),
     },
   ];
 }

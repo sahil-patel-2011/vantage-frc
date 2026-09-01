@@ -79,6 +79,20 @@ describe("spareForecastNextActions", () => {
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
 
+  it("offseason ready boards skip a restock draft when remaining-season risk is unknown", () => {
+    const actions = spareForecastNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      spareBinCount: 4,
+      forecastLineCount: 2,
+      criticalCount: 0,
+      purchaseRequestCount: 0,
+      seasonHorizon: "offseason",
+    });
+    expect(actions.some((a) => a.id === "draft")).toBe(false);
+    expect(actions.some((a) => a.id === "fmea" || a.id === "orders")).toBe(true);
+  });
+
   it("ready boards prioritize Orders / Batteries / Subsystems", () => {
     const actions = spareForecastNextActions({
       orgId: "org-1",
@@ -136,6 +150,16 @@ describe("classifySpareForecastShell", () => {
         forecastLineCount: 1,
       }),
     ).toBe("ready");
+    // Offseason + logged FMEA lines is ready, never the no-risk empty state.
+    expect(
+      classifySpareForecastShell({
+        loading: false,
+        orgId: "o1",
+        status: "live",
+        spareBinCount: 2,
+        forecastLineCount: 3,
+      }),
+    ).toBe("ready");
   });
 });
 
@@ -152,6 +176,7 @@ describe("spareForecastShellCopy + formatSpareForecastMetric", () => {
 
   it("formats real counts only", () => {
     expect(formatSpareForecastMetric(null, false)).toBe("…");
+    expect(formatSpareForecastMetric(null, true)).toBe("—");
     expect(formatSpareForecastMetric(3, true)).toBe("3");
     expect(formatSpareForecastMetric(-1, true)).toBe("0");
   });

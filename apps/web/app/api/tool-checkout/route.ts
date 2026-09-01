@@ -114,6 +114,7 @@ export async function POST(request: Request) {
             userId,
             toolId,
             borrowerName,
+            borrowerUserId: trimmedOrNull(body.borrowerUserId, 64),
             dueAt: isoTimestampOrNull(body.dueAt),
             notes: trimmedOrNull(body.notes, 2000),
           });

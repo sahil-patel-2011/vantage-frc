@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { sanitizeItems as sanitizeSopTemplateItems } from "../checklist-library";
 import {
   allianceTeamKeys,
   applyBumperCue,
@@ -7,14 +8,15 @@ import {
   computeElapsedSeconds,
   formatScheduleLabel,
   isRunComplete,
+  itemsFromSopTemplate,
   parseMatchLabel,
   sanitizeChecklistItems,
   summarizeRuns,
+  type SopTemplateInput,
 } from ".";
 import type {
   BumperColor,
   ChecklistItem,
-  ChecklistItemKey,
   MatchChecklistRun,
   MatchChecklistSummary,
   UpcomingBumperMatch,
@@ -259,10 +261,69 @@ export async function computeMatchChecklistView(
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
 
+async function loadSopTemplate(
+  client: PoolClient,
+  orgId: string,
+  templateId: string | null,
+): Promise<SopTemplateInput | null> {
+  try {
+    if (templateId) {
+      const specific = await client.query<{ id: string; name: string; items: unknown }>(
+        `SELECT id, name, items
+         FROM checklist_library_templates
+         WHERE org_id = $1::uuid AND id = $2::uuid AND active = true
+         LIMIT 1`,
+        [orgId, templateId],
+      );
+      const row = specific.rows[0];
+      if (row) {
+        return { id: row.id, name: row.name, items: sanitizeSopTemplateItems(row.items) };
+      }
+    }
+    const pit = await client.query<{ id: string; name: string; items: unknown }>(
+      `SELECT id, name, items
+       FROM checklist_library_templates
+       WHERE org_id = $1::uuid AND active = true AND category = 'pit'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [orgId],
+    );
+    const row = pit.rows[0];
+    if (!row) return null;
+    return { id: row.id, name: row.name, items: sanitizeSopTemplateItems(row.items) };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveStartItems(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    matchLabel: string;
+    templateId?: string | null;
+    sop?: SopTemplateInput | null;
+  },
+): Promise<ChecklistItem[]> {
+  if (input.sop) return itemsFromSopTemplate(input.sop, input.matchLabel);
+  const template = await loadSopTemplate(client, input.orgId, input.templateId ?? null);
+  if (template) return itemsFromSopTemplate(template, input.matchLabel);
+  return buildDefaultItems();
+}
+
 export async function startChecklistRun(
   client: PoolClient,
-  input: { orgId: string; userId: string; matchLabel: string; eventKey: string | null; teamNumber: number | null },
+  input: {
+    orgId: string;
+    userId: string;
+    matchLabel: string;
+    eventKey: string | null;
+    teamNumber: number | null;
+    templateId?: string | null;
+    sop?: SopTemplateInput | null;
+  },
 ): Promise<void> {
+  const items = await resolveStartItems(client, input);
   await client.query(
     `INSERT INTO match_checklist_runs (org_id, match_label, event_key, team_number, items, created_by)
      VALUES ($1,$2,$3,$4,$5::jsonb,$6)`,
@@ -271,7 +332,7 @@ export async function startChecklistRun(
       input.matchLabel,
       input.eventKey,
       input.teamNumber,
-      JSON.stringify(buildDefaultItems()),
+      JSON.stringify(items),
       input.userId,
     ],
   );
@@ -279,7 +340,7 @@ export async function startChecklistRun(
 
 export async function toggleChecklistItem(
   client: PoolClient,
-  input: { orgId: string; runId: string; itemKey: ChecklistItemKey },
+  input: { orgId: string; runId: string; itemKey: string },
 ): Promise<void> {
   const result = await client.query<RunRow>(
     `SELECT id, match_label AS "matchLabel", event_key AS "eventKey", team_number AS "teamNumber",

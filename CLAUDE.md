@@ -19,8 +19,8 @@ npm run typecheck    # tsc --noEmit across every workspace (--workspaces --if-pr
 npm test             # vitest run (credential-free unit tests)
 npm run build        # build all workspaces
 npm run test:browser # playwright (run `npx playwright install chromium` first)
-npm run db:generate  # drizzle-kit generate
-npm run db:migrate   # drizzle-kit migrate
+npm run db:generate  # generate Drizzle artifacts only
+npm run db:migrate   # apply plain SQL via scripts/run-migrations.mjs
 npm run desktop:dev  # Electron shell around production (or VANTAGE_URL)
 npm run desktop:dist # unsigned Windows NSIS + portable under apps/desktop/release/
 npx vantage-cad claude # Onshape/Fusion connectors for Claude Code (docs/CLAUDE_CODE_CAD.md)

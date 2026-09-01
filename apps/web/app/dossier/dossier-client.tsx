@@ -265,7 +265,7 @@ export default function DossierClient() {
         load(teamFromUrl ?? undefined, fromUrl);
       });
     // Initial load only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount bootstrap
+     
   }, []);
 
   function onSearch(event: React.FormEvent) {

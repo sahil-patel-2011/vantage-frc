@@ -4,7 +4,6 @@ import { auth } from "@vantage/core";
 import {
   onshapeSetupStatus,
   parseOnshapeDocumentUrl,
-  readOnshapeApiKeys,
   resolveOnshapeBind,
 } from "@vantage/cad";
 import { isCadAgentMode } from "@vantage/cad";
@@ -21,7 +20,9 @@ import {
   saveCadAgentSession,
   type CadAgentSessionRow,
 } from "../../../../lib/cad/cad-agent-session";
+import { hostedOnshapeAgentAuth, readHostedOnshapeEnvFlags } from "../../../../lib/cad/hosted-auth";
 import { loadCadAgentOnshape } from "../../../../lib/cad/onshape-tokens";
+import { loadShadedView } from "../../../../lib/cad/shaded-view";
 import { runCadAgentTurn, type CadPlanResponseInput } from "../../../../lib/cad/run-cad-agent";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
@@ -63,8 +64,7 @@ async function assertMember(client: PoolClient, orgId: string, userId: string) {
  * setup_required instead of burning a metered AI call on a dead tool layer.
  */
 async function onshapeAvailability(client: PoolClient, orgId: string, userId: string) {
-  const setup = onshapeSetupStatus();
-  const apiKeys = Boolean(readOnshapeApiKeys());
+  const flags = readHostedOnshapeEnvFlags();
   const connection = await client.query(
     `SELECT 1 FROM cad_connections
       WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape'
@@ -72,11 +72,10 @@ async function onshapeAvailability(client: PoolClient, orgId: string, userId: st
       LIMIT 1`,
     [orgId, userId],
   );
-  const oauthReady = Boolean(connection.rowCount) && setup.configured;
-  return {
-    configured: setup.configured || apiKeys,
-    connected: oauthReady || apiKeys,
-  };
+  return hostedOnshapeAgentAuth({
+    ...flags,
+    sessionConnected: Boolean(connection.rowCount),
+  });
 }
 
 function boundFrom(stored: CadAgentSessionRow | null): BoundDoc | null {
@@ -88,6 +87,28 @@ function boundFrom(stored: CadAgentSessionRow | null): BoundDoc | null {
     documentName: stored.session.documentName ?? null,
     url: stored.url || cadAgentOpenUrl(stored.session),
   };
+}
+
+/** Best-effort shadedviews PNG. Failures stay null — never a DEMO cube. */
+async function shadedPngBase64For(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  bound: BoundDoc | null,
+  connected: boolean,
+): Promise<string | null> {
+  if (!connected || !bound?.documentId || !bound.workspaceId || !bound.elementId) return null;
+  try {
+    const onshape = await loadCadAgentOnshape(client, orgId, userId);
+    const view = await loadShadedView(onshape.http, {
+      documentId: bound.documentId,
+      workspaceId: bound.workspaceId,
+      elementId: bound.elementId,
+    });
+    return view.status === "ready" ? view.pngBase64 : null;
+  } catch {
+    return null;
+  }
 }
 
 const NOT_CONNECTED =
@@ -106,12 +127,19 @@ export async function GET(request: Request) {
         loadCadAgentModeState(client, orgId, session.user.id),
       ]);
       const bound = boundFrom(stored);
+      const shadedPngBase64 = await shadedPngBase64For(
+        client,
+        orgId,
+        session.user.id,
+        bound,
+        availability.connected,
+      );
       return {
         onshapeConfigured: availability.configured,
         onshapeConnected: availability.connected,
         bound,
-        // Onshape has no embed URL we can mint server-side; the client falls back to
-        // openUrl in the frame and offers "Open in Onshape" when Onshape blocks framing.
+        // Viewport is a shaded-view PNG (or empty) — never an Onshape iframe.
+        shadedPngBase64,
         iframeUrl: null as string | null,
         openUrl: bound?.url ?? null,
         messages: stored?.messages ?? [],
@@ -163,7 +191,7 @@ export async function POST(request: Request) {
               elementId: parsed.elementId,
             },
           });
-          return { saved } as const;
+          return { saved, shadedPngBase64: null as string | null } as const;
         }
         const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
         const bound = await resolveOnshapeBind(url, onshape.http);
@@ -179,13 +207,25 @@ export async function POST(request: Request) {
           },
           url: bound.url,
         });
-        return { saved } as const;
+        const shadedPngBase64 = await shadedPngBase64For(
+          client,
+          orgId,
+          session.user.id,
+          boundFrom(saved),
+          true,
+        );
+        return { saved, shadedPngBase64 } as const;
       });
       if ("setup" in result && typeof result.setup === "string") {
         return setupRequired(result.setup);
       }
       const bound = boundFrom(result.saved);
-      return Response.json({ bound, iframeUrl: null, openUrl: bound?.url ?? null });
+      return Response.json({
+        bound,
+        iframeUrl: null,
+        openUrl: bound?.url ?? null,
+        shadedPngBase64: result.shadedPngBase64,
+      });
     }
 
     if (action === "set-mode") {
@@ -251,16 +291,23 @@ export async function POST(request: Request) {
         await assertMember(client, orgId, session.user.id);
         const availability = await onshapeAvailability(client, orgId, session.user.id);
         if (!availability.connected) return { setup: NOT_CONNECTED } as const;
-        return {
-          turn: await runCadAgentTurn({
-            client,
-            orgId,
-            userId: session.user.id,
-            requestId: randomUUID(),
-            message,
-            planResponse,
-          }),
-        } as const;
+        const turn = await runCadAgentTurn({
+          client,
+          orgId,
+          userId: session.user.id,
+          requestId: randomUUID(),
+          message,
+          planResponse,
+        });
+        const stored = await loadCadAgentSession(client, orgId, session.user.id);
+        const shadedPngBase64 = await shadedPngBase64For(
+          client,
+          orgId,
+          session.user.id,
+          boundFrom(stored),
+          true,
+        );
+        return { turn, shadedPngBase64 } as const;
       });
       if ("setup" in result && typeof result.setup === "string") {
         return setupRequired(result.setup);
@@ -272,6 +319,7 @@ export async function POST(request: Request) {
         messages: result.turn.messages,
         modeState: result.turn.modeState,
         proposal: result.turn.proposal,
+        shadedPngBase64: result.shadedPngBase64,
       });
     }
 

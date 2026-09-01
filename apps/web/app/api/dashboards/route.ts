@@ -7,9 +7,12 @@ import {
   catalogEntry,
   DEFAULT_DASHBOARD_LAYOUT,
   filterLayoutForRole,
+  isDashboardWidgetType,
   validateDashboardLayout,
   type DashboardWidgetLayout,
+  type DashboardWidgetType,
 } from "../../../lib/dashboard/catalog";
+import { snapshotWantsFullContext } from "../../../lib/dashboard/refresh";
 import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
@@ -32,6 +35,12 @@ async function membership(client: import("@neondatabase/serverless").PoolClient,
 
 function fail(error: unknown, status = 400) {
   return Response.json({ error: error instanceof Error ? error.message : "Dashboard request failed" }, { status });
+}
+
+function requestedWidgetTypes(url: URL): DashboardWidgetType[] | undefined {
+  const raw = url.searchParams.get("widgets");
+  if (!raw) return undefined;
+  return [...new Set(raw.split(",").map((item) => item.trim()).filter(isDashboardWidgetType))];
 }
 
 function ensureOnboardingChecklist(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
@@ -129,7 +138,7 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
     if (!orgId) throw new Error("orgId is required");
-    if (mode === "snapshot") {
+    if (mode === "snapshot" || mode === "home") {
       await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     }
 
@@ -137,11 +146,17 @@ export async function GET(request: Request) {
       const role = await membership(client, orgId, session.user.id);
 
       if (mode === "snapshot") {
+        const fullContext = snapshotWantsFullContext(url);
         const snapshot = await loadDashboardSnapshot(client, {
           orgId,
           userId: session.user.id,
           role,
+          widgetTypes: requestedWidgetTypes(url),
+          includeHomeStrip: fullContext,
         });
+        if (!fullContext) {
+          return { role, ...snapshot };
+        }
         const { loadDataSourceHealth } = await import("../../../lib/reference-health");
         const dataSourceHealth = await loadDataSourceHealth(client, orgId);
         return {
@@ -162,7 +177,7 @@ export async function GET(request: Request) {
         role,
       );
 
-      return {
+      const boardState = {
         role,
         canShareOrg: canWriteOrgDashboard(role),
         boards: boards.rows.map(({ layout: _layout, ...meta }) => meta),
@@ -178,6 +193,25 @@ export async function GET(request: Request) {
               ownerUserId: session.user.id,
               isDefault: true,
             },
+      };
+
+      if (mode !== "home") return boardState;
+
+      const { loadDataSourceHealth } = await import("../../../lib/reference-health");
+      const [snapshot, dataSourceHealth] = await Promise.all([
+        loadDashboardSnapshot(client, {
+          orgId,
+          userId: session.user.id,
+          role,
+          widgetTypes: layout.map((item) => item.type),
+          includeHomeStrip: true,
+        }),
+        loadDataSourceHealth(client, orgId),
+      ]);
+      return {
+        ...boardState,
+        ...snapshot,
+        context: { ...snapshot.context, dataSourceHealth },
       };
     });
 

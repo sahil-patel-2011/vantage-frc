@@ -1,5 +1,26 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { CadOperation } from "./agent-policy";
+import {
+  addOnshapeAssemblyInstance,
+  createOnshapeAssembly,
+  createOnshapeMate,
+  createOnshapePartStudio,
+  getOnshapeAssembly,
+  type OnshapeAssemblyRef,
+  type OnshapeMateType,
+} from "./onshape-assemblies";
+import {
+  extrudeFeature,
+  onshapeFeaturePath,
+  parseAddedFeatureId,
+  rectangleSketchFeature,
+} from "./onshape-features";
+import {
+  dispatchOnshapeNativeFeature,
+  isOnshapeNativeOperation,
+  isOnshapeNativeUnimplemented,
+  onshapeNativeUnimplementedError,
+} from "./onshape-native-dispatch";
 
 export const ONSHAPE_OAUTH_AUTHORIZE = "https://oauth.onshape.com/oauth/authorize";
 export const ONSHAPE_OAUTH_TOKEN = "https://oauth.onshape.com/oauth/token";
@@ -427,6 +448,7 @@ export async function exportOnshapePartStudio(
 
 type OnshapeMutateResult = {
   featureId?: string;
+  featureScriptUsed?: boolean;
   exportArtifact?: {
     type: string;
     title: string;
@@ -463,8 +485,51 @@ export function createOnshapeApiTransport(input: {
   let version = 0;
   let lastExport: OnshapeMutateResult["exportArtifact"];
   let lastExplain: ReturnType<typeof explainFeatureTreeForStudents> | undefined;
+  let lastAssembly: OnshapeAssemblyRef | null = null;
+  let lastPartStudio: OnshapeDocumentRef | null = null;
   const { http, document } = input;
   const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
+
+  function jobSketchName(idempotencyKey: string): string {
+    const jobKey = idempotencyKey.split(":")[0] || idempotencyKey;
+    return `VantageSketch-${createHash("sha256").update(jobKey).digest("hex").slice(0, 10)}`;
+  }
+
+  function positiveMillimetres(
+    parameters: Record<string, unknown>,
+    names: string[],
+    label: string,
+  ): number {
+    const raw = names.map((name) => parameters[name]).find((value) => value !== undefined);
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`${label} must be a positive number in millimetres; no geometry was created`);
+    }
+    return value;
+  }
+
+  async function addFeature(payload: unknown, idempotencyKey: string): Promise<string> {
+    const response = await http(onshapeFeaturePath(document), {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "x-vantage-idempotency": idempotencyKey },
+    });
+    const text = await response.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = { message: text.slice(0, 400) };
+    }
+    if (!response.ok) {
+      const detail =
+        body && typeof body === "object"
+          ? String((body as Record<string, unknown>).message ?? text)
+          : text;
+      throw new Error(`Onshape feature creation failed (HTTP ${response.status}): ${detail.slice(0, 400)}`);
+    }
+    return parseAddedFeatureId(body);
+  }
 
   return {
     async mutate(args) {
@@ -511,43 +576,167 @@ export function createOnshapeApiTransport(input: {
         }
         return { featureId: `verify-${version}`, explain: lastExplain };
       }
-      if (operation === "create_sketch" || operation === "create_extrude") {
-        // Geometry mutations go through a reviewed FeatureScript wrapper so we stay on one allowlisted path.
-        const width = Number(parameters.widthMm ?? parameters.width ?? 40);
-        const height = Number(parameters.heightMm ?? parameters.height ?? 40);
-        const depth = Number(parameters.depthMm ?? parameters.depth ?? 10);
-        const script =
-          operation === "create_sketch"
-            ? `function(context is Context, queries) { opPlane(context, id + "plane", { "plane": plane(vector(0, 0, 0) * meter, vector(0, 0, 1)) }); }`
-            : `function(context is Context, queries) { /* extrude intent logged: ${width}x${height}x${depth} mm — prefer explicit FeatureScript for production geometry */ }`;
-        const response = await http(`${base}/featurescript`, {
-          method: "POST",
-          body: JSON.stringify({ script, queries: [], serializationVersion: "1.1.22" }),
-          headers: { "x-vantage-idempotency": idempotencyKey },
+      if (operation === "create_assembly") {
+        const created = await createOnshapeAssembly(http, {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          name: String(parameters.name ?? "").trim(),
         });
-        // Soft-fail to describe-only path when FeatureStudio rejects the placeholder (document still selected).
-        if (!response.ok) {
-          return { featureId: `intent-${operation}-${version}` };
-        }
-        return { featureId: `onshape-${operation}-${version}` };
+        lastAssembly = {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          elementId: created.elementId,
+        };
+        return { featureId: created.elementId };
       }
-      throw new Error(
-        `Onshape operation '${operation}' is allowlisted but requires an explicit FeatureScript body or connector update. Prefer feature_script in a disposable document.`,
-      );
+      if (operation === "create_part_studio") {
+        const created = await createOnshapePartStudio(http, {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          name: String(parameters.name ?? "").trim(),
+        });
+        lastPartStudio = { ...document, elementId: created.elementId, label: created.name };
+        return { featureId: created.elementId };
+      }
+      if (operation === "add_assembly_instance") {
+        const assemblyElementId = String(parameters.assemblyElementId ?? "").trim();
+        lastAssembly = {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          elementId: assemblyElementId,
+        };
+        const inserted = await addOnshapeAssemblyInstance(http, {
+          assembly: lastAssembly,
+          sourceDocumentId: String(parameters.sourceDocumentId ?? document.documentId),
+          sourceElementId: String(parameters.sourceElementId ?? document.elementId),
+          partId: parameters.partId ? String(parameters.partId) : undefined,
+          isAssembly: Boolean(parameters.isAssembly),
+        });
+        return { featureId: inserted.instanceId };
+      }
+      if (operation === "create_mate") {
+        const assemblyElementId = String(parameters.assemblyElementId ?? "").trim();
+        lastAssembly = {
+          documentId: document.documentId,
+          workspaceId: document.workspaceId,
+          elementId: assemblyElementId,
+        };
+        const mate = await createOnshapeMate(http, {
+          assembly: lastAssembly,
+          name: parameters.name ? String(parameters.name) : undefined,
+          mateType: String(parameters.mateType ?? "").toUpperCase() as OnshapeMateType,
+          firstInstanceId: String(parameters.firstInstanceId ?? ""),
+          secondInstanceId: String(parameters.secondInstanceId ?? ""),
+          firstFaceId: String(parameters.firstFaceId ?? ""),
+          secondFaceId: String(parameters.secondFaceId ?? ""),
+          firstFlipPrimary: Boolean(parameters.firstFlipPrimary),
+          secondFlipPrimary: Boolean(parameters.secondFlipPrimary),
+          firstOffsetXMm: Number(parameters.firstOffsetXMm ?? 0),
+          firstOffsetYMm: Number(parameters.firstOffsetYMm ?? 0),
+          firstOffsetZMm: Number(parameters.firstOffsetZMm ?? 0),
+          secondOffsetXMm: Number(parameters.secondOffsetXMm ?? 0),
+          secondOffsetYMm: Number(parameters.secondOffsetYMm ?? 0),
+          secondOffsetZMm: Number(parameters.secondOffsetZMm ?? 0),
+          ...(parameters.minLimit !== undefined ? { minLimit: Number(parameters.minLimit) } : {}),
+          ...(parameters.maxLimit !== undefined ? { maxLimit: Number(parameters.maxLimit) } : {}),
+        });
+        return { featureId: mate.mateFeatureId };
+      }
+      if (operation === "create_sketch" || operation === "create_extrude") {
+        if (operation === "create_sketch") {
+          const widthMm = positiveMillimetres(parameters, ["widthMm", "width"], "Sketch width");
+          const heightMm = positiveMillimetres(parameters, ["heightMm", "height"], "Sketch height");
+          const plane = String(parameters.plane ?? "Top").trim() || "Top";
+          const name = String(parameters.name ?? jobSketchName(idempotencyKey)).trim();
+          const featureId = await addFeature(
+            rectangleSketchFeature({ widthMm, heightMm, plane, name }),
+            idempotencyKey,
+          );
+          return { featureId, featureScriptUsed: false };
+        }
+
+        const depthMm = positiveMillimetres(parameters, ["depthMm", "depth"], "Extrude depth");
+        let sketchFeatureId = String(parameters.sketchFeatureId ?? "").trim();
+        if (!sketchFeatureId) {
+          const expectedName = jobSketchName(idempotencyKey);
+          const features = await listOnshapeFeatures(http, document);
+          sketchFeatureId =
+            [...features]
+              .reverse()
+              .find(
+                (feature) =>
+                  feature.name === expectedName &&
+                  /sketch/i.test(feature.featureType) &&
+                  !feature.suppressed,
+              )?.id ?? "";
+        }
+        if (!sketchFeatureId) {
+          throw new Error(
+            "Extrude requires sketchFeatureId (or a Vantage sketch from the same job); no geometry was created",
+          );
+        }
+        const operationType = String(parameters.operationType ?? "NEW").toUpperCase();
+        if (!["NEW", "ADD", "REMOVE", "INTERSECT"].includes(operationType)) {
+          throw new Error(`Unsupported extrude operationType '${operationType}'`);
+        }
+        const featureId = await addFeature(
+          extrudeFeature({
+            depthMm,
+            sketchFeatureId,
+            operationType: operationType as "NEW" | "ADD" | "REMOVE" | "INTERSECT",
+            oppositeDirection: Boolean(parameters.oppositeDirection),
+            name: String(parameters.name ?? "VantageExtrude").trim() || "VantageExtrude",
+          }),
+          idempotencyKey,
+        );
+        return { featureId, featureScriptUsed: false };
+      }
+      if (isOnshapeNativeUnimplemented(operation)) {
+        throw onshapeNativeUnimplementedError(operation);
+      }
+      if (isOnshapeNativeOperation(operation)) {
+        return dispatchOnshapeNativeFeature({
+          http,
+          document,
+          operation,
+          parameters,
+          idempotencyKey,
+        });
+      }
+      throw onshapeNativeUnimplementedError(operation);
     },
     async describe() {
+      if (lastAssembly) {
+        const assembly = await getOnshapeAssembly(http, lastAssembly);
+        const summary = {
+          validation: "onshape-live-assembly",
+          documentId: lastAssembly.documentId,
+          workspaceId: lastAssembly.workspaceId,
+          elementId: lastAssembly.elementId,
+          assembly,
+        };
+        const fingerprint = createHash("sha256").update(JSON.stringify(summary)).digest("hex");
+        return {
+          fingerprint,
+          summary,
+          render: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0b1115"/><text x="40" y="215" fill="#7dd3fc" font-size="28">Onshape Assembly · ${lastAssembly.elementId}</text></svg>`,
+          checkpointRef: `onshape-assembly-${fingerprint.slice(0, 16)}`,
+        };
+      }
+      const partStudio = lastPartStudio ?? document;
+      const describeBase = `/partstudios/d/${partStudio.documentId}/w/${partStudio.workspaceId}/e/${partStudio.elementId}`;
       let features: OnshapeFeatureSummary[] = [];
       try {
-        features = await listOnshapeFeatures(http, document);
+        features = await listOnshapeFeatures(http, partStudio);
         lastExplain = explainFeatureTreeForStudents(features);
       } catch {
         /* mass-only describe still useful when features endpoint is denied */
       }
-      const mass = await http(`${base}/massproperties`);
+      const mass = await http(`${describeBase}/massproperties`);
       let summary: Record<string, unknown> = {
-        documentId: document.documentId,
-        workspaceId: document.workspaceId,
-        elementId: document.elementId,
+        documentId: partStudio.documentId,
+        workspaceId: partStudio.workspaceId,
+        elementId: partStudio.elementId,
         validation: "onshape-live",
         featureCount: features.length,
         featureTree: features.slice(0, 40),
@@ -561,7 +750,7 @@ export function createOnshapeApiTransport(input: {
       const fingerprint = createHash("sha256")
         .update(JSON.stringify({ summary: { ...summary, studentExplain: undefined }, version }))
         .digest("hex");
-      const label = document.label ?? document.elementId;
+      const label = partStudio.label ?? partStudio.elementId;
       return {
         fingerprint,
         summary,

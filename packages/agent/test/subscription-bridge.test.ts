@@ -635,7 +635,7 @@ describe("resolver fall-through order with a bridge", () => {
     // The coverage gate is consulted (the device query runs) and then refuses the job:
     // nothing is ever enqueued onto the paired member's subscription.
     expect(
-      chatOnly.query.mock.calls.some(([sql]) => /FROM ai_bridge_devices/.test(sql as string)),
+      chatOnly.query.mock.calls.some((call: unknown[]) => /FROM ai_bridge_devices/.test(call[0] as string)),
     ).toBe(true);
     expect(gated.adapter).toBeInstanceOf(HttpChatAdapter);
     expect(gated.provenance.source).not.toBe("subscription-bridge");
@@ -683,7 +683,7 @@ describe("resolver fall-through order with a bridge", () => {
       decrypt,
     });
     const chainQueries = () =>
-      client.query.mock.calls.filter(([sql]) => /FROM org_llm_keys/.test(sql as string)).length;
+      client.query.mock.calls.filter((call: unknown[]) => /FROM org_llm_keys/.test(call[0] as string)).length;
     expect(chainQueries()).toBe(0);
     const answer = await resolved.adapter.complete({ message: "hi", context: [] });
     expect(answer.text).toBe("bridged");
@@ -730,7 +730,7 @@ describe("resolver fall-through order with a bridge", () => {
       fetchImpl: fetchImpl as never,
     });
     const chainQueries = () =>
-      client.query.mock.calls.filter(([sql]) => /FROM org_llm_keys/.test(sql as string)).length;
+      client.query.mock.calls.filter((call: unknown[]) => /FROM org_llm_keys/.test(call[0] as string)).length;
     expect(chainQueries()).toBe(0);
     const answer = await resolved.adapter.complete({ message: "hi", context: [] });
     expect(answer.text).toBe("chain answer");

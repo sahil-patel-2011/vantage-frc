@@ -28,6 +28,11 @@ describe("picklistJustifierRelatedLinks", () => {
     expect(links[0]?.href).toBe("/strategy/draft?orgId=org-1");
   });
 
+  it("builds Pick clock via withOrgHref so stored reasons can be reviewed on the clock", () => {
+    const links = picklistJustifierRelatedLinks("org-1", { include: ["pick-clock"] });
+    expect(links[0]?.href).toBe("/pick-clock?orgId=org-1");
+  });
+
   it("never uses DEMO labels or hrefs", () => {
     const blob = JSON.stringify(picklistJustifierRelatedLinks("org-1"));
     expect(blob).not.toMatch(/DEMO/i);
@@ -63,6 +68,8 @@ describe("picklistJustifierNextActions", () => {
       contradictionCount: 2,
     });
     expect(actions[0]?.id).toBe("review-contradictions");
+    expect(actions.some((a) => a.id === "pick-clock")).toBe(true);
+    expect(actions.find((a) => a.id === "pick-clock")?.href).toBe("/pick-clock?orgId=org-1");
     expect(actions.some((a) => a.id === "draft")).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });

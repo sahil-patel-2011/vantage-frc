@@ -10,6 +10,7 @@ import {
   awardCatalogEntry,
   awardStatusLabel,
 } from "../../../lib/awards";
+import { buildAwardExportPayload } from "../../../lib/awards/export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
 import "./awards.css";
@@ -20,6 +21,7 @@ type Submission = {
   awardType: string;
   title?: string | null;
   status: string;
+  eventKey?: string | null;
   deadline?: string | null;
   totalItems: number;
   doneItems: number;
@@ -38,6 +40,16 @@ function statusLabel(status: string) {
   return AWARD_STATUSES.includes(status as (typeof AWARD_STATUSES)[number])
     ? awardStatusLabel(status as (typeof AWARD_STATUSES)[number])
     : status;
+}
+
+function downloadBlob(body: string, fileName: string, type: string) {
+  const blob = new Blob([body], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function AwardsNextActions({
@@ -200,6 +212,59 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   }
 
   const selected = submissions.find((s) => s.id === selectedId) ?? null;
+  const exportPayload = selected ? buildAwardExportPayload({ submission: selected, items }) : null;
+  const realItemCount = exportPayload?.items.length ?? 0;
+
+  async function copyAll() {
+    if (!exportPayload) return;
+    if (realItemCount === 0) {
+      flash(false, "Nothing to copy — write an essay answer first. Empty prompts and invented hours are omitted.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(exportPayload.copyText);
+      flash(true, `Copied ${realItemCount} written item${realItemCount === 1 ? "" : "s"} — empty prompts omitted.`);
+    } catch {
+      flash(false, "Could not copy — check clipboard permission.");
+    }
+  }
+
+  function printExport() {
+    if (!exportPayload) return;
+    if (realItemCount === 0) {
+      flash(false, "Nothing to print — write an essay answer first. Empty prompts and invented hours are omitted.");
+      return;
+    }
+    const html = exportPayload.printableHtml.replace(
+      "</body>",
+      `<script>window.addEventListener("load",function(){window.focus();window.print();});</script></body>`,
+    );
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const opened = window.open(url, "_blank");
+    if (!opened) {
+      downloadBlob(exportPayload.printableHtml, `${exportPayload.fileStem}.html`, "text/html;charset=utf-8");
+      flash(true, "Pop-up blocked — downloaded printable HTML. Open it and choose Print / Save as PDF.");
+    } else {
+      flash(true, "Opened a printable packet — use the browser dialog to save PDF.");
+    }
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  function downloadExport(kind: "txt" | "html") {
+    if (!exportPayload) return;
+    if (realItemCount === 0) {
+      flash(false, "Nothing to download — write an essay answer first. Empty prompts and invented hours are omitted.");
+      return;
+    }
+    if (kind === "html") {
+      downloadBlob(exportPayload.printableHtml, `${exportPayload.fileStem}.html`, "text/html;charset=utf-8");
+    } else {
+      downloadBlob(exportPayload.copyText, `${exportPayload.fileStem}.txt`, "text/plain;charset=utf-8");
+    }
+    flash(true, `Downloaded ${realItemCount} written item${realItemCount === 1 ? "" : "s"}.`);
+  }
+
   const seasonSubs = submissions.filter((s) => s.seasonYear === seasonYear);
   const totalWon = submissions.filter((s) => s.status === "won").length;
   const inProgress = submissions.filter((s) => !["won", "not_selected"].includes(s.status)).length;
@@ -388,6 +453,25 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               <p>
                 Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award —
                 that feeds Business evidence for grant writing.
+              </p>
+              <div className="awards-export-bar">
+                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => void copyAll()}>
+                  Copy all
+                </button>
+                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={printExport}>
+                  Print / Save PDF
+                </button>
+                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => downloadExport("txt")}>
+                  Download text
+                </button>
+                <button type="button" className="app-button secondary" disabled={realItemCount === 0} onClick={() => downloadExport("html")}>
+                  Download HTML
+                </button>
+              </div>
+              <p className="awards-export-note">
+                {realItemCount === 0
+                  ? "Copy and print stay empty until an item has a written answer. Catalog prompts and impact hours are never invented."
+                  : `${realItemCount} written item${realItemCount === 1 ? "" : "s"} ready to paste into the FIRST portal. Empty prompts omitted — no invented impact hours.`}
               </p>
 
               {items.length === 0 ? (

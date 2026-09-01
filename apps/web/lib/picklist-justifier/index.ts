@@ -1,5 +1,8 @@
 // Pure, framework-free helpers for the Pick-list auto-justifier & contradiction guard.
-// No DB / network access here — everything is unit-testable with plain inputs.
+// Conversion helpers are unit-testable with plain inputs. The Pick Clock read
+// loader (loadStoredJustificationsForPickClock) is re-exported from
+// ./pick-clock-reasons for the clock to import — do not teach pick-clock-board.ts
+// how to parse justifier rows.
 
 import type {
   ComputedJustification,
@@ -124,3 +127,23 @@ export function picklistTierLabel(tier: string | null): string {
     .map((word) => word[0]!.toUpperCase() + word.slice(1))
     .join(" ");
 }
+
+export {
+  applyStoredJustificationToRecommendation,
+  applyStoredJustificationsToPickClockResult,
+  glanceableLabel,
+  loadStoredJustificationsForPickClock,
+  mergePickClockReasons,
+  parseJustificationSources,
+  pickClockReasonsByTeam,
+  pickClockReasonsFromJustification,
+  resolveJustifierPickListId,
+  storedJustificationFromEntry,
+} from "./pick-clock-reasons";
+export type {
+  PickClockJustificationReason,
+  PickClockReasonCarrier,
+  PickClockResultCarrier,
+  StoredJustificationIndex,
+  StoredPicklistJustification,
+} from "./pick-clock-reasons";

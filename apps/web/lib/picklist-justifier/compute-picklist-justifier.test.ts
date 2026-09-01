@@ -130,6 +130,7 @@ describe("computePicklistJustifierView", () => {
       expect(view.entries[0]?.tbaAvailable).toBe(true);
       expect(view.entries[0]?.scoutEntryCount).toBe(2);
       expect(view.entries[0]?.rationale).toBeNull();
+      expect(view.entries[0]?.pickClockReasons).toEqual([]);
     }
   });
 });
@@ -186,6 +187,7 @@ describe("generatePicklistJustifications", () => {
           rows: [
             {
               pickListEntryId: ENTRY_B,
+              teamKey: "frc118",
               rationale: "Team 118 is ranked #2 (Second).",
               sources: [],
               contradictionFlagged: true,
@@ -206,6 +208,8 @@ describe("generatePicklistJustifications", () => {
       expect(view.entries).toHaveLength(2);
       const flagged = view.entries.find((e) => e.teamKey === "frc118");
       expect(flagged?.contradiction?.flagged).toBe(true);
+      expect(flagged?.pickClockReasons.some((r) => r.tone === "caution")).toBe(true);
+      expect(flagged?.pickClockReasons.some((r) => /ranked #2/i.test(r.label))).toBe(true);
     }
     expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
     expect(queries.some((q) => q.includes("INSERT INTO picklist_justifier_justifications"))).toBe(true);

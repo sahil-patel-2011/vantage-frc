@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { DEFAULT_THIN_THRESHOLD, buildCoverageCells, matchLabel, rankCoverageGaps, summarizeCoverage, teamKeysFromAlliance } from ".";
+import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizeCoverage } from ".";
 import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
-import { resolveScoutOrg } from "../scout-org-access";
+import { computeScoutingCoverageView } from "../scouting/coverage";
 
 export type ScoutCoverageLiveSetupStep = {
   id: string;
@@ -30,38 +30,6 @@ export type ScoutCoverageLiveView =
       nudges: CoverageNudge[];
       computedAt: string;
     };
-
-async function resolveOrg(
-  client: PoolClient,
-  userId: string,
-  requestedOrg: string | null,
-) {
-  return resolveScoutOrg(client, userId, requestedOrg);
-}
-
-async function resolveEventKey(
-  client: PoolClient,
-  orgId: string,
-  requestedEvent: string | null,
-): Promise<string | null> {
-  if (requestedEvent) return requestedEvent;
-  const row = await client.query<{ eventKey: string }>(
-    `SELECT c.active_event_key AS "eventKey"
-     FROM org_active_context c
-     WHERE c.org_id = $1 AND c.active_event_key IS NOT NULL`,
-    [orgId],
-  );
-  return row.rows[0]?.eventKey ?? null;
-}
-
-type MatchRow = {
-  matchKey: string;
-  compLevel: string;
-  setNumber: number;
-  matchNumber: number;
-  redAlliance: { team_keys?: string[] } | string[] | null;
-  blueAlliance: { team_keys?: string[] } | string[] | null;
-};
 
 type NudgeRow = {
   id: string;
@@ -96,48 +64,24 @@ export async function computeScoutCoverageLiveView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; requestedEvent?: string | null },
 ): Promise<ScoutCoverageLiveView> {
-  const org = await resolveOrg(client, input.userId, input.requestedOrg);
-  if (!org) {
+  const coverage = await computeScoutingCoverageView(client, {
+    userId: input.userId,
+    requestedOrg: input.requestedOrg,
+    requestedEvent: input.requestedEvent,
+    qualsOnly: false,
+    windowSize: 200,
+  });
+  if (coverage.status === "setup_required") {
     return {
       status: "setup_required",
-      message: "Select a team workspace to see live scouting coverage.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
-      orgId: null,
+      message: coverage.message,
+      steps: coverage.steps,
+      orgId: coverage.orgId,
       eventKey: null,
     };
   }
 
-  const eventKey = await resolveEventKey(client, org.orgId, input.requestedEvent ?? null);
-  if (!eventKey) {
-    return {
-      status: "setup_required",
-      message: "Set an active competition event to watch live scouting coverage.",
-      steps: [
-        {
-          id: "active-event",
-          label: "Set active event",
-          detail: "Pick the event your team is competing at right now",
-          href: "/competition",
-        },
-      ],
-      orgId: org.orgId,
-      eventKey: null,
-    };
-  }
-
-  const matchesResult = await client.query<MatchRow>(
-    `SELECT match_key AS "matchKey", comp_level AS "compLevel", set_number AS "setNumber",
-            match_number AS "matchNumber", red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
-     FROM matches_ref
-     WHERE event_key = $1
-     ORDER BY comp_level, set_number, match_number
-     LIMIT 200`,
-    [eventKey],
-  );
-
-  if (matchesResult.rows.length === 0) {
+  if (coverage.slots.length === 0) {
     return {
       status: "setup_required",
       message: "No match schedule is synced for this event yet.",
@@ -149,39 +93,15 @@ export async function computeScoutCoverageLiveView(
           href: "/competition",
         },
       ],
-      orgId: org.orgId,
-      eventKey,
+      orgId: coverage.orgId,
+      eventKey: coverage.eventKey,
     };
   }
 
-  const matches = matchesResult.rows.map((row) => ({
-    matchKey: row.matchKey,
-    compLevel: row.compLevel,
-    setNumber: Number(row.setNumber) || 0,
-    matchNumber: Number(row.matchNumber) || 0,
-    redTeamKeys: teamKeysFromAlliance(row.redAlliance),
-    blueTeamKeys: teamKeysFromAlliance(row.blueAlliance),
-  }));
-
-  const allTeamKeys = Array.from(new Set(matches.flatMap((m) => [...m.redTeamKeys, ...m.blueTeamKeys])));
-
-  const [settingsResult, teamsResult, entriesResult, nudgesResult] = await Promise.all([
+  const [settingsResult, nudgesResult] = await Promise.all([
     client.query<{ thinThreshold: number }>(
       `SELECT thin_threshold AS "thinThreshold" FROM scout_coverage_live_settings WHERE org_id = $1`,
-      [org.orgId],
-    ),
-    allTeamKeys.length
-      ? client.query<{ teamKey: string; teamNumber: number }>(
-          `SELECT team_key AS "teamKey", team_number AS "teamNumber" FROM teams_ref WHERE team_key = ANY($1::text[])`,
-          [allTeamKeys],
-        )
-      : Promise.resolve({ rows: [] as Array<{ teamKey: string; teamNumber: number }> }),
-    client.query<{ matchKey: string; teamKey: string; entryCount: string }>(
-      `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::int AS "entryCount"
-       FROM match_scout_entries
-       WHERE org_id = $1 AND event_key = $2
-       GROUP BY match_key, team_key`,
-      [org.orgId, eventKey],
+      [coverage.orgId],
     ),
     client.query<NudgeRow>(
       `SELECT n.id, n.match_key AS "matchKey", m.comp_level AS "compLevel", m.set_number AS "setNumber",
@@ -194,7 +114,7 @@ export async function computeScoutCoverageLiveView(
        WHERE n.org_id = $1 AND n.event_key = $2
        ORDER BY n.sent_at DESC
        LIMIT 50`,
-      [org.orgId, eventKey],
+      [coverage.orgId, coverage.eventKey],
     ),
   ]);
 
@@ -203,19 +123,31 @@ export async function computeScoutCoverageLiveView(
       ? Number(settingsResult.rows[0].thinThreshold)
       : DEFAULT_THIN_THRESHOLD;
 
-  const teamNumbers = new Map(teamsResult.rows.map((r) => [r.teamKey, Number(r.teamNumber)]));
-  const entryCounts = new Map(entriesResult.rows.map((r) => [`${r.matchKey}::${r.teamKey}`, Number(r.entryCount)]));
-
-  const cells = buildCoverageCells({ matches, entryCounts, teamNumbers, thinThreshold });
+  const cells: CoverageCell[] = coverage.slots.map((slot) => ({
+    matchKey: slot.matchKey,
+    matchLabel: matchLabel(slot.compLevel, slot.setNumber ?? 1, slot.matchNumber),
+    compLevel: slot.compLevel,
+    matchNumber: slot.matchNumber,
+    teamKey: slot.teamKey,
+    teamNumber: slot.teamNumber ?? 0,
+    alliance: slot.alliance ?? "red",
+    entryCount: slot.entryCount,
+    status:
+      slot.entryCount === 0
+        ? "zero"
+        : slot.entryCount < thinThreshold
+          ? "thin"
+          : "covered",
+  }));
   const summary = summarizeCoverage(cells);
   const gaps = rankCoverageGaps(cells, 15);
   const nudges = nudgesResult.rows.map(mapNudge);
 
   return {
     status: "live",
-    orgId: org.orgId,
-    teamNumber: org.teamNumber,
-    eventKey,
+    orgId: coverage.orgId,
+    teamNumber: coverage.teamNumber,
+    eventKey: coverage.eventKey,
     thinThreshold,
     cells,
     summary,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  UNIFIED_LEDGER_SQL,
   assembleFinanceBalance,
   normalizeActivity,
   sumBalanceComponents,
@@ -36,7 +37,7 @@ describe("toUsd", () => {
 });
 
 describe("sumBalanceComponents", () => {
-  it("sums every in-component and every out-component", () => {
+  it("sums only ledger in and ledger out", () => {
     const totals = sumBalanceComponents({
       ledgerInUsd: 100,
       sponsorCashUsd: 250.5,
@@ -48,9 +49,27 @@ describe("sumBalanceComponents", () => {
       purchaseLogUsd: 24.75,
       seasonCostsPaidUsd: 400,
     });
-    expect(totals.totalInUsd).toBe(1900);
-    expect(totals.totalOutUsd).toBe(800);
-    expect(totals.balanceUsd).toBe(1100);
+    expect(totals.totalInUsd).toBe(100);
+    expect(totals.totalOutUsd).toBe(75.25);
+    expect(totals.balanceUsd).toBe(24.75);
+  });
+
+  it("ignores leftover fallback component fields — they are not cash", () => {
+    const totals = sumBalanceComponents({
+      ...zeroComponents,
+      ledgerInUsd: 10,
+      ledgerOutUsd: 4,
+      sponsorCashUsd: 999,
+      fundraiserProceedsUsd: 999,
+      fundingReceivedUsd: 999,
+      grantAwardedUsd: 999,
+      purchaseRequestsUsd: 999,
+      purchaseLogUsd: 999,
+      seasonCostsPaidUsd: 999,
+    });
+    expect(totals.totalInUsd).toBe(10);
+    expect(totals.totalOutUsd).toBe(4);
+    expect(totals.balanceUsd).toBe(6);
   });
 
   it("keeps cent precision without float drift", () => {
@@ -60,13 +79,13 @@ describe("sumBalanceComponents", () => {
       sponsorCashUsd: 0.2,
       ledgerOutUsd: 0.3,
     });
-    expect(totals.totalInUsd).toBe(0.3);
+    expect(totals.totalInUsd).toBe(0.1);
     expect(totals.totalOutUsd).toBe(0.3);
-    expect(totals.balanceUsd).toBe(0);
+    expect(totals.balanceUsd).toBe(-0.2);
   });
 
   it("allows a negative balance when spend exceeds income", () => {
-    const totals = sumBalanceComponents({ ...zeroComponents, ledgerInUsd: 100, purchaseRequestsUsd: 350 });
+    const totals = sumBalanceComponents({ ...zeroComponents, ledgerInUsd: 100, ledgerOutUsd: 350 });
     expect(totals.balanceUsd).toBe(-250);
   });
 });
@@ -111,17 +130,74 @@ describe("assembleFinanceBalance", () => {
     expect(view.totalOutUsd).toBe(0);
     expect(view.balanceUsd).toBe(0);
     expect(view.recentActivity).toEqual([]);
+    expect(view.ledger).toEqual([]);
     expect(view.computedAt).toBe("2026-08-23T00:00:00.000Z");
   });
 
-  it("derives the balance from components — no stored balance is trusted", () => {
+  it("does not treat leftover fallback components or activity as data", () => {
     const view = assembleFinanceBalance({
       orgId: "org-1",
       components: { ...zeroComponents, sponsorCashUsd: 1200, purchaseLogUsd: 199.99 },
+      byCategory: [],
+      recentActivity: [
+        { date: "2026-03-05T00:00:00Z", label: "Sponsor cash — Acme", amountUsd: 1200, direction: "in" },
+      ],
+      ledger: [
+        {
+          id: "legacy-1",
+          date: "2026-03-05T00:00:00Z",
+          label: "Sponsor cash — Acme",
+          amountUsd: 1200,
+          direction: "in",
+          source: "sponsor_contribution",
+          sourceId: "sc-1",
+          categoryId: null,
+          categoryName: null,
+          mirrored: false,
+        },
+      ],
+    });
+    expect(view.hasData).toBe(false);
+    expect(view.totalInUsd).toBe(0);
+    expect(view.totalOutUsd).toBe(0);
+    expect(view.balanceUsd).toBe(0);
+    expect(view.ledger).toEqual([]);
+  });
+
+  it("derives the balance from ledger components — no stored balance is trusted", () => {
+    const view = assembleFinanceBalance({
+      orgId: "org-1",
+      components: { ...zeroComponents, ledgerInUsd: 1200, ledgerOutUsd: 199.99 },
       byCategory: [{ categoryId: null, name: "Uncategorized", inUsd: 0, outUsd: 199.99 }],
       recentActivity: [
         { date: "2026-03-02T00:00:00Z", label: "Hardware", amountUsd: 199.99, direction: "out" },
         { date: "2026-03-05T00:00:00Z", label: "Sponsor cash — Acme", amountUsd: 1200, direction: "in" },
+      ],
+      ledger: [
+        {
+          id: "in-1",
+          date: "2026-03-05T00:00:00Z",
+          label: "Sponsor cash — Acme",
+          amountUsd: 1200,
+          direction: "in",
+          source: "sponsor_contribution",
+          sourceId: "sc-1",
+          categoryId: null,
+          categoryName: null,
+          mirrored: true,
+        },
+        {
+          id: "out-1",
+          date: "2026-03-02T00:00:00Z",
+          label: "Hardware",
+          amountUsd: 199.99,
+          direction: "out",
+          source: "purchase_log",
+          sourceId: "log-1",
+          categoryId: null,
+          categoryName: null,
+          mirrored: true,
+        },
       ],
     });
     expect(view.hasData).toBe(true);
@@ -130,5 +206,17 @@ describe("assembleFinanceBalance", () => {
     expect(view.balanceUsd).toBe(1000.01);
     expect(view.recentActivity[0].label).toBe("Sponsor cash — Acme");
     expect(view.byCategory).toHaveLength(1);
+    expect(view.ledger).toHaveLength(2);
+  });
+});
+
+describe("UNIFIED_LEDGER_SQL", () => {
+  it("reads only finance_transactions — no legacy fallback unions", () => {
+    expect(UNIFIED_LEDGER_SQL).toContain("$1::uuid");
+    expect(UNIFIED_LEDGER_SQL).toContain("FROM finance_transactions");
+    expect(UNIFIED_LEDGER_SQL).toContain("t.counts_in_balance");
+    expect(UNIFIED_LEDGER_SQL).not.toContain("fallback AS");
+    expect(UNIFIED_LEDGER_SQL).not.toContain("UNION ALL");
+    expect(UNIFIED_LEDGER_SQL).not.toContain("SELECT * FROM fallback");
   });
 });

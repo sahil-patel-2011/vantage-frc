@@ -13,6 +13,18 @@ import {
   type MessageObjectLink,
 } from "../../../lib/messages/object-links";
 import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/history";
+import {
+  assertChannelWritable,
+  canManageChannels,
+  channelNotificationTitle,
+  createChannel,
+  isDefaultChannelName,
+  listChannels,
+  memberRole,
+  renameChannel,
+  setChannelArchived,
+  supportsChannelArchive,
+} from "../../../lib/messages/channels";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
 import {
   attachSupervisor,
@@ -47,6 +59,8 @@ type ConversationRow = {
   peerUserId: string | null;
   peerName: string | null;
   unreadCount: number;
+  archivedAt: string | null;
+  isDefaultChannel: boolean;
 };
 
 type MessageRow = {
@@ -190,10 +204,13 @@ async function enrichObjectLink(
     if (!label) label = row.rows[0]!.title;
   } else if (link.objectType === "knowledge") {
     const row = await client.query<{ title: string }>(
-      `SELECT COALESCE(title, 'Knowledge') AS title FROM team_knowledge WHERE org_id = $1::uuid LIMIT 1`,
-      [orgId],
+      `SELECT title
+       FROM knowledge_pages
+       WHERE id = $1::uuid AND org_id = $2::uuid
+       LIMIT 1`,
+      [link.objectId, orgId],
     );
-    if (!row.rowCount) throw new Error("Linked knowledge doc was not found");
+    if (!row.rowCount) throw new Error("Linked knowledge page was not found");
     if (!label) label = row.rows[0]!.title;
   }
 
@@ -318,6 +335,69 @@ async function listLinkTargets(
     }));
   }
 
+  if (objectType === "goal") {
+    const rows = await client
+      .query<{ id: string; title: string; category: string }>(
+        `SELECT id::text, title, category
+         FROM season_goals
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY updated_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string; category: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.category,
+    }));
+  }
+
+  if (objectType === "risk") {
+    const rows = await client
+      .query<{ id: string; title: string; status: string }>(
+        `SELECT id::text, title, status
+         FROM risk_register
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY updated_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.status,
+    }));
+  }
+
+  if (objectType === "knowledge") {
+    const rows = await client
+      .query<{ id: string; title: string; templateKind: string }>(
+        `SELECT id::text, title, template_kind AS "templateKind"
+         FROM knowledge_pages
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY pinned DESC, updated_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string; templateKind: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.templateKind.replaceAll("_", " "),
+    }));
+  }
+
   return [];
 }
 
@@ -371,10 +451,11 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown, status = 400) {
-  return Response.json(
-    { error: error instanceof Error ? error.message : "Messages request failed" },
-    { status },
-  );
+  const message = error instanceof Error ? error.message : "Messages request failed";
+  // A refused channel mutation is an authorization answer, not a malformed request.
+  const resolved =
+    status === 400 && /^Only an owner or admin can/.test(message) ? 403 : status;
+  return Response.json({ error: message }, { status: resolved });
 }
 
 function dmKeyFor(a: string, b: string) {
@@ -457,8 +538,19 @@ async function ensureTeamChannel(client: PoolClient, orgId: string, userId: stri
   }
 }
 
-async function listInbox(client: PoolClient, orgId: string, userId: string): Promise<ConversationRow[]> {
+async function listInbox(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  options: { includeArchived?: boolean } = {},
+): Promise<ConversationRow[]> {
   await ensureTeamChannel(client, orgId, userId);
+
+  // Archived channels keep their history and stay exportable; they just leave the working inbox.
+  const archiveSupported = await supportsChannelArchive(client);
+  const archivedSelect = archiveSupported ? "c.archived_at" : "NULL::timestamptz";
+  const archivedFilter =
+    archiveSupported && !options.includeArchived ? "AND (c.kind <> 'team' OR c.archived_at IS NULL)" : "";
 
   // A supervised DM has three participants, so the peer label has to aggregate rather than join
   // row-per-participant (that would duplicate the conversation in the inbox). Supervisors are
@@ -489,7 +581,7 @@ async function listInbox(client: PoolClient, orgId: string, userId: string): Pro
 
   const rows = await client.query<ConversationRow>(
     `WITH visible AS (
-       SELECT c.id, c.kind, c.title, c.updated_at
+       SELECT c.id, c.kind, c.title, c.updated_at, ${archivedSelect} AS archived_at
        FROM org_conversations c
        WHERE c.org_id = $1
          AND (
@@ -499,6 +591,7 @@ async function listInbox(client: PoolClient, orgId: string, userId: string): Pro
              WHERE p.conversation_id = c.id AND p.user_id = $2
            )
          )
+         ${archivedFilter}
      ),
      last_msg AS (
        SELECT DISTINCT ON (m.conversation_id)
@@ -534,14 +627,17 @@ async function listInbox(client: PoolClient, orgId: string, userId: string): Pro
            AND m.deleted_at IS NULL
            AND m.author_user_id <> $2
            AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
-       ), 0) AS "unreadCount"
+       ), 0) AS "unreadCount",
+       v.archived_at::text AS "archivedAt",
+       (v.kind = 'team' AND lower(COALESCE(v.title, $3)) = lower($3)) AS "isDefaultChannel"
      FROM visible v
      LEFT JOIN last_msg lm ON lm.conversation_id = v.id
      LEFT JOIN peers pe ON pe.conversation_id = v.id
      ORDER BY
-       CASE WHEN v.kind = 'team' THEN 0 ELSE 1 END,
+       CASE WHEN v.archived_at IS NOT NULL THEN 2 WHEN v.kind = 'team' THEN 0 ELSE 1 END,
+       CASE WHEN v.kind = 'team' AND lower(COALESCE(v.title, $3)) = lower($3) THEN 0 ELSE 1 END,
        COALESCE(lm.created_at, v.updated_at) DESC`,
-    [orgId, userId],
+    [orgId, userId, TEAM_CHANNEL_TITLE],
   );
 
   return rows.rows;
@@ -808,7 +904,8 @@ async function listMessages(
     }
   }
 
-  const inbox = await listInbox(client, orgId, userId);
+  // Archived channels stay readable, so resolve the header row even though the working inbox hides it.
+  const inbox = await listInbox(client, orgId, userId, { includeArchived: true });
   const conversation = inbox.find((item) => item.id === conversationId) ?? null;
 
   // Both parties always see who else is in the room and why. This is not dismissible in the UI.
@@ -947,14 +1044,16 @@ async function sendMessage(
   if (!trimmed) throw new Error("Message body is required");
   if (trimmed.length > MAX_BODY) throw new Error(`Message must be ${MAX_BODY} characters or fewer`);
 
-  const conversation = await client.query<{ kind: "team" | "dm" }>(
-    `SELECT kind FROM org_conversations WHERE id = $1 AND org_id = $2`,
+  const conversation = await client.query<{ kind: "team" | "dm"; title: string | null }>(
+    `SELECT kind, title FROM org_conversations WHERE id = $1 AND org_id = $2`,
     [conversationId, orgId],
   );
   if (!conversation.rowCount) throw new Error("Conversation not found");
 
   const kind = conversation.rows[0]!.kind;
+  const channelTitle = conversation.rows[0]!.title;
   if (kind === "dm") await guardDmSend(client, orgId, userId, conversationId);
+  if (kind === "team") await assertChannelWritable(client, orgId, conversationId);
   const mentionsSupported = await supportsMessageMentions(client);
 
   if (objectLink && kind !== "team") {
@@ -1056,7 +1155,9 @@ async function sendMessage(
           preview,
           fromUserId: userId,
           fromName,
-          title: "You were mentioned in Team chat",
+          title: isDefaultChannelName(channelTitle)
+            ? "You were mentioned in Team chat"
+            : `You were mentioned in #${channelTitle}`,
           body: `${fromName} mentioned you: ${preview}`,
           href,
         },
@@ -1074,7 +1175,8 @@ async function sendMessage(
           preview,
           fromUserId: userId,
           fromName,
-          title: "New team chat message",
+          // Every channel would otherwise arrive as the same undifferentiated line.
+          title: channelNotificationTitle(channelTitle),
           body: `${fromName}: ${preview}`,
           href,
         },
@@ -1199,6 +1301,19 @@ export async function GET(request: Request) {
         return { members: await listMembers(client, orgId, session.user.id) };
       }
 
+      if (mode === "channels") {
+        const includeArchived = url.searchParams.get("includeArchived") === "1";
+        const [channels, role] = await Promise.all([
+          listChannels(client, orgId, session.user.id, { includeArchived }),
+          memberRole(client, orgId, session.user.id),
+        ]);
+        return {
+          channels,
+          canManageChannels: canManageChannels(role),
+          archiveSupported: await supportsChannelArchive(client),
+        };
+      }
+
       if (mode === "link_targets") {
         const objectType = normalizeObjectType(url.searchParams.get("linkType"));
         if (!objectType || !COMPOSER_OBJECT_TYPES.includes(objectType)) {
@@ -1231,10 +1346,13 @@ export async function GET(request: Request) {
           markRead: !before,
         });
         const conversations = await listInbox(client, orgId, session.user.id);
+        const activeArchived = thread.conversation?.archivedAt ? [thread.conversation] : [];
         return {
           currentUserId: session.user.id,
-          conversations,
+          conversations: [...conversations, ...activeArchived],
           unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+          canManageChannels: canManageChannels(await memberRole(client, orgId, session.user.id)),
+          channelArchiveSupported: await supportsChannelArchive(client),
           youthProtection: await youthProtectionState(client, orgId, session.user.id),
           ...thread,
         };
@@ -1245,6 +1363,8 @@ export async function GET(request: Request) {
         currentUserId: session.user.id,
         conversations,
         unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+        canManageChannels: canManageChannels(await memberRole(client, orgId, session.user.id)),
+        channelArchiveSupported: await supportsChannelArchive(client),
         messages: [] as MessageRow[],
         pinned: [] as MessageRow[],
         pinsSupported: await supportsMessagePins(client),
@@ -1270,13 +1390,24 @@ export async function POST(request: Request) {
     }
     const body = (await request.json()) as {
       orgId?: string;
-      action?: "open_dm" | "send" | "soft_delete" | "ensure_team" | "pin" | "unpin";
+      action?:
+        | "open_dm"
+        | "send"
+        | "soft_delete"
+        | "ensure_team"
+        | "pin"
+        | "unpin"
+        | "create_channel"
+        | "rename_channel"
+        | "archive_channel"
+        | "unarchive_channel";
       peerUserId?: string;
       conversationId?: string;
       body?: string;
       messageId?: string;
       mentionedUserIds?: unknown;
       objectLink?: unknown;
+      title?: unknown;
     };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
@@ -1288,6 +1419,42 @@ export async function POST(request: Request) {
       if (action === "ensure_team") {
         const conversationId = await ensureTeamChannel(client, orgId, session.user.id);
         return { conversationId };
+      }
+
+      // Channel management is owner/admin only. The RLS policies on org_conversations still allow
+      // any member to insert/update a team row, so these service guards are the enforcement point
+      // until the coordinated migration tightens the policies to match.
+      if (action === "create_channel") {
+        const created = await createChannel(client, {
+          orgId,
+          actorUserId: session.user.id,
+          title: body.title,
+        });
+        return { ...created, channels: await listChannels(client, orgId, session.user.id) };
+      }
+
+      if (action === "rename_channel") {
+        const conversationId = String(body.conversationId ?? "");
+        if (!conversationId) throw new Error("conversationId is required");
+        const renamed = await renameChannel(client, {
+          orgId,
+          actorUserId: session.user.id,
+          conversationId,
+          title: body.title,
+        });
+        return { ...renamed, channels: await listChannels(client, orgId, session.user.id) };
+      }
+
+      if (action === "archive_channel" || action === "unarchive_channel") {
+        const conversationId = String(body.conversationId ?? "");
+        if (!conversationId) throw new Error("conversationId is required");
+        const result = await setChannelArchived(client, {
+          orgId,
+          actorUserId: session.user.id,
+          conversationId,
+          archived: action === "archive_channel",
+        });
+        return { ...result, channels: await listChannels(client, orgId, session.user.id) };
       }
 
       if (action === "open_dm") {

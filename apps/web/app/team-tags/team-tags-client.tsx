@@ -231,6 +231,26 @@ function LiveTags({
         </datalist>
       </Panel>
 
+      {view.pickReasons?.length ? (
+        <section className="app-card soft-panel" aria-label="Pick reasons">
+          <h2>Pick reasons</h2>
+          <p className="app-muted">
+            What pick clock can read from tags on this event&apos;s robots. Empty until a tag is applied.
+          </p>
+          <ul className="team-tags-actions">
+            {view.pickReasons.map((reason) => (
+              <li key={`${reason.teamNumber}-${reason.tagSlug}`}>
+                <strong>{reason.teamNumber}</strong>
+                <span>
+                  {reason.label}
+                  {reason.tone === "caution" ? " · caution" : reason.tone === "strong" ? " · strong" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="team-tags-board" aria-label="Tag board">
         {view.board.map((column) => (
           <article key={column.tagId} className="app-card">

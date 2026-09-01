@@ -17,7 +17,7 @@ export default function PartnerPlacement({ orgId, surface, title = "Team partner
   return <aside className={`partner-placement-strip${surface === "pit_footer" ? " compact" : ""}`} aria-label={title}>
     <header><span>{title}</span><small>Team-approved partner recognition</small></header>
     <div>{placements.map((placement) => {
-      const body = <><em className="partner-placement-logo">{placement.assetPublicId ? <img src={sponsorAssetUrl(placement.assetPublicId)} alt={`${placement.sponsorName} logo`} /> : <b>{placement.sponsorName.slice(0, 2).toUpperCase()}</b>}</em><span><strong>{placement.sponsorName}</strong>{placement.headline ? <small>{placement.headline}</small> : null}</span><em aria-hidden="true">↗</em></>;
+      const body = <><em className="partner-placement-logo">{placement.assetPublicId ? <img src={sponsorAssetUrl(placement.assetPublicId)} alt={`${placement.sponsorName} logo`} width={42} height={42} loading="lazy" decoding="async" /> : <b>{placement.sponsorName.slice(0, 2).toUpperCase()}</b>}</em><span><strong>{placement.sponsorName}</strong>{placement.headline ? <small>{placement.headline}</small> : null}</span><em aria-hidden="true">↗</em></>;
       return placement.linkUrl
         ? <a key={placement.id} href={placement.linkUrl} target="_blank" rel="sponsored noopener noreferrer">{body}</a>
         : <article key={placement.id}>{body}</article>;

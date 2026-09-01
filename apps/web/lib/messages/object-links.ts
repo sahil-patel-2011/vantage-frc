@@ -16,6 +16,9 @@ export const COMPOSER_OBJECT_TYPES: DiscordObjectType[] = [
   "inventory_item",
   "event",
   "announcement",
+  "goal",
+  "risk",
+  "knowledge",
 ];
 
 export const OBJECT_TYPE_OPTIONS: Array<{ value: DiscordObjectType; label: string }> = [

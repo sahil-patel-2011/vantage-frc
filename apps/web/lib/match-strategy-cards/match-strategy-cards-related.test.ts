@@ -14,7 +14,7 @@ describe("matchStrategyCardsRelatedLinks", () => {
     const links = matchStrategyCardsRelatedLinks("org-1", {
       include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["strategy", "match-checklist", "command"]);
+    expect(links.map((l) => l.id)).toEqual(["strategy", "match-checklist", "command", "briefing"]);
     expect(links.find((l) => l.id === "command")?.href).toBe(
       "/competition?tab=command&orgId=org-1",
     );

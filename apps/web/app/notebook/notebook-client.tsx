@@ -1,15 +1,30 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { BUILD_PHASE_LABEL, BUILD_PHASES, type BuildPhase } from "../../lib/notebook";
+import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Entry = {
   id: string; seasonYear: number; entryDate: string; phase: BuildPhase; subsystem: string;
   title: string; body: string; tags: string[]; byName: string | null; updatedAt: string;
+  attachments: NotebookImageAttachment[]; hasImageEvidence: boolean;
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; entries: Entry[]; summary: { total: number; subsystems: { name: string; count: number }[]; phases: { phase: BuildPhase; count: number }[]; lastEntryOn: string | null } };
+  | {
+      status: "ready";
+      context: { orgId: string; role: string };
+      entries: Entry[];
+      imageLibrary: NotebookImageAttachment[];
+      summary: {
+        total: number;
+        subsystems: { name: string; count: number }[];
+        phases: { phase: BuildPhase; count: number }[];
+        lastEntryOn: string | null;
+        withPhotos: number;
+        missingPhotos: number;
+      };
+    };
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -22,7 +37,8 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
   // Kept so an expired session offers sign-in instead of a dead-end error line.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [subsystemFilter, setSubsystemFilter] = useState("");
-  const [form, setForm] = useState({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "" });
+  const [form, setForm] = useState({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "", attachmentIds: [] as string[] });
+  const [entryPhotos, setEntryPhotos] = useState<Record<string, string[]>>({});
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -33,6 +49,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     if (!response.ok) { setMessage(data.error ?? "Failed to load notebook"); setErrorStatus(response.status); return; }
     setErrorStatus(null);
     setView(data);
+    setEntryPhotos({});
   }, [orgId, subsystemFilter]);
   useEffect(() => { void load(); }, [load]);
 
@@ -47,10 +64,67 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     if (response.ok) await load();
   }
 
+  // Promotion is idempotent, so pressing this twice is safe — but say which happened rather than
+  // reporting "added" when the page was already there.
+  async function promoteEntry(id: string) {
+    if (view?.status !== "ready") return;
+    const response = await fetch("/api/notebook", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId: view.context.orgId, action: "promote_entry", id }),
+    });
+    const data = (await response.json()) as { error?: string; slug?: string; alreadyPromoted?: boolean };
+    if (!response.ok) {
+      setMessage(data.error ?? "Could not add this entry to the wiki.");
+      return;
+    }
+    setMessage(
+      data.alreadyPromoted
+        ? "This entry is already in the team wiki."
+        : "Added to the team wiki.",
+    );
+  }
+
   async function addEntry(event: React.FormEvent) {
     event.preventDefault();
-    await post({ action: "create_entry", seasonYear, ...form }, "Entry added.");
-    if (view?.status === "ready") setForm({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "" });
+    await post(
+      { action: "create_entry", seasonYear, ...form, attachments: form.attachmentIds },
+      form.attachmentIds.length ? "Entry added." : "Entry added without a photo — judged award evidence still needs a real image.",
+    );
+    if (view?.status === "ready") setForm({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "", attachmentIds: [] });
+  }
+
+  function toggleFormPhoto(assetId: string) {
+    setForm((current) => {
+      const has = current.attachmentIds.includes(assetId);
+      return {
+        ...current,
+        attachmentIds: has
+          ? current.attachmentIds.filter((id) => id !== assetId)
+          : [...current.attachmentIds, assetId],
+      };
+    });
+  }
+
+  function photosFor(entry: Entry) {
+    return entryPhotos[entry.id] ?? entry.attachments.map((asset) => asset.assetId);
+  }
+
+  function toggleEntryPhoto(entry: Entry, assetId: string) {
+    setEntryPhotos((current) => {
+      const selected = current[entry.id] ?? entry.attachments.map((asset) => asset.assetId);
+      const next = selected.includes(assetId)
+        ? selected.filter((id) => id !== assetId)
+        : [...selected, assetId];
+      return { ...current, [entry.id]: next };
+    });
+  }
+
+  async function saveEntryPhotos(entry: Entry) {
+    await post(
+      { action: "update_entry", id: entry.id, attachments: photosFor(entry) },
+      photosFor(entry).length ? "Photos attached." : "Photo removed. This entry has no image evidence.",
+    );
   }
 
   if (!view) {
@@ -90,10 +164,17 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
         <nav className="intel-actions"><a href={`/impact${orgId ? `?orgId=${orgId}` : ""}`}>Impact</a><a href={`/team/awards${orgId ? `?orgId=${orgId}` : ""}`}>Awards</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
+      {view.summary.missingPhotos > 0 && (
+        <p className="telemetry-status">
+          {view.summary.missingPhotos === 1
+            ? "1 entry has no photo. Text alone is not enough for judged award evidence."
+            : `${view.summary.missingPhotos} entries have no photo. Text alone is not enough for judged award evidence.`}
+        </p>
+      )}
 
       <section className="metric-grid">
         <article><span>Entries</span><strong>{view.summary.total}</strong></article>
-        <article><span>Subsystems documented</span><strong>{view.summary.subsystems.length}</strong></article>
+        <article><span>With photos</span><strong>{view.summary.withPhotos}</strong></article>
         <article><span>Last entry</span><strong>{view.summary.lastEntryOn ? new Date(view.summary.lastEntryOn).toLocaleDateString() : "—"}</strong></article>
         <article><span>Season</span><strong>{seasonYear}</strong></article>
       </section>
@@ -111,6 +192,31 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
             <label>Tags (comma-separated)<input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="cad, test" /></label>
           </div>
           <label>What did you decide / learn?<textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></label>
+          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="eyebrow">PHOTOS</legend>
+            {view.imageLibrary.length === 0 ? (
+              <p>
+                No photos in the media kit yet — a text write-up is not award evidence.{" "}
+                <a href={`/media?tab=kit${orgId ? `&orgId=${orgId}` : ""}`}>Add a real photo in Media kit</a>
+              </p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+                {view.imageLibrary.map((asset) => (
+                  <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <img src={asset.url} alt={asset.title} style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                    <span>
+                      <input
+                        type="checkbox"
+                        checked={form.attachmentIds.includes(asset.assetId)}
+                        onChange={() => toggleFormPhoto(asset.assetId)}
+                      />{" "}
+                      {asset.title}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
           <button className="primary-action">Add entry</button>
         </form>
         <section className="intel-panel">
@@ -136,8 +242,60 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
               <strong>{entry.title}</strong>
               <small>{new Date(entry.entryDate).toLocaleDateString()} · {BUILD_PHASE_LABEL[entry.phase]}{entry.subsystem ? ` · ${entry.subsystem}` : ""}{entry.byName ? ` · ${entry.byName}` : ""}{entry.tags.length ? ` · ${entry.tags.map((t) => `#${t}`).join(" ")}` : ""}</small>
               {entry.body && <small style={{ whiteSpace: "pre-wrap" }}>{entry.body}</small>}
+              {entry.attachments.length === 0 ? (
+                <small>No photo attached — judged award evidence needs a real image, not just this write-up.</small>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  {entry.attachments.map((asset) => (
+                    <figure key={asset.assetId} style={{ margin: 0 }}>
+                      <img src={asset.url} alt={asset.title} style={{ maxWidth: 220, maxHeight: 160, objectFit: "cover" }} />
+                      <figcaption><small>{asset.title}</small></figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              {view.context.role !== "viewer" && (
+                <details style={{ marginTop: 8 }}>
+                  <summary>Attach photos</summary>
+                  {view.imageLibrary.length === 0 ? (
+                    <p>
+                      Nothing to attach until a real photo is in the{" "}
+                      <a href={`/media?tab=kit${orgId ? `&orgId=${orgId}` : ""}`}>media kit</a>.
+                    </p>
+                  ) : (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginTop: 8 }}>
+                        {view.imageLibrary.map((asset) => (
+                          <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <img src={asset.url} alt={asset.title} style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                            <span>
+                              <input
+                                type="checkbox"
+                                checked={photosFor(entry).includes(asset.assetId)}
+                                onChange={() => toggleEntryPhoto(entry, asset.assetId)}
+                              />{" "}
+                              {asset.title}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      <button type="button" onClick={() => void saveEntryPhotos(entry)}>Save photos</button>
+                    </>
+                  )}
+                </details>
+              )}
             </div>
-            {view.context.role !== "viewer" && <button onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}>Delete</button>}
+            {view.context.role !== "viewer" && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  title="Copy this entry into the team wiki so it outlives the season"
+                  onClick={() => void promoteEntry(entry.id)}
+                >
+                  Send to wiki
+                </button>
+                <button onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}>Delete</button>
+              </div>
+            )}
           </article>
         ))}
       </section>

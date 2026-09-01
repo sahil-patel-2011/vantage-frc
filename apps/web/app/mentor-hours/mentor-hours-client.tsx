@@ -109,7 +109,7 @@ export default function MentorHoursClient() {
         description="Log mentor time by role and activity — the evidence trail for grant reporting. Engagement readiness uses only what you record."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+          {(view?.status === "live" || view?.status === "empty") && view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -182,12 +182,22 @@ export default function MentorHoursClient() {
             ))}
           </ol>
         </EmptyState>
+      ) : view.status === "empty" ? (
+        <div style={{ display: "grid", gap: 16 }}>
+          <EmptyState
+            badge="No entries yet"
+            badgeTone="setup"
+            title={view.message}
+            description="Adult volunteer time is a separate ledger from student shop hours. Totals stay empty until a mentor or parent logs minutes here — student clock-ins never fill this in."
+          />
+          <LogEntryForm busy={busy} mutate={mutate} />
+        </div>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <EngagementPanel view={view} />
           <SummaryTiles view={view} />
           <LogEntryForm busy={busy} mutate={mutate} />
-          {view.summary.totalEntries > 0 ? <Breakdowns view={view} /> : null}
+          <Breakdowns view={view} />
           <RecentEntries view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -391,14 +401,14 @@ function LogEntryForm({
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.mentorName.trim() || !form.occurredOn) return;
+        if (!form.mentorName.trim() || !form.occurredOn || Number(form.durationMinutes) <= 0) return;
         mutate({
           action: "log-entry",
           mentorName: form.mentorName,
           occurredOn: form.occurredOn,
           role: form.role,
           category: form.category,
-          durationMinutes: Number(form.durationMinutes) || 0,
+          durationMinutes: Number(form.durationMinutes),
           notes: form.notes || undefined,
         });
         setForm(empty);
@@ -432,14 +442,18 @@ function LogEntryForm({
           </select>
         </FormRow>
         <FormRow label="Duration (min)">
-          <input type="number" min={0} value={form.durationMinutes} onChange={set("durationMinutes")} />
+          <input type="number" min={1} step={1} value={form.durationMinutes} onChange={set("durationMinutes")} required />
         </FormRow>
       </FormGrid>
       <FormRow label="Notes (optional)">
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.mentorName.trim() || !form.occurredOn}>
+        <button
+          type="submit"
+          className="app-button"
+          disabled={busy || !form.mentorName.trim() || !form.occurredOn || Number(form.durationMinutes) <= 0}
+        >
           Log hours
         </button>
       </div>

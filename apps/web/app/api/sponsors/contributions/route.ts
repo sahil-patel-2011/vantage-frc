@@ -1,4 +1,9 @@
 import { withRls } from "@vantage/db";
+import { syncSponsorContributionMoney } from "../../../../lib/finance/source-mirrors";
+import {
+  defaultRenewalDueOn,
+  defaultThankYouDueOn,
+} from "../../../../lib/sponsor-pipeline";
 import {
   requireSponsorsAdmin,
   requireSponsorsMember,
@@ -69,16 +74,29 @@ export async function POST(request: Request) {
           body.description || null, body.receivedAt || null, current.user.id,
         ],
       );
-      if (type === "cash" && amountUsd && amountUsd > 0) {
-        await client.query(
-          `INSERT INTO finance_transactions(org_id, season_year, type, source, amount_usd, sponsor_contribution_id, description, created_by)
-           VALUES($1::uuid,$2,'income','sponsor_contribution',$3,$4::uuid,$5,$6::uuid)`,
-          [orgId, seasonYear, amountUsd, result.rows[0].id, "Sponsor contribution", current.user.id],
-        );
-      }
+      await syncSponsorContributionMoney(client, {
+        orgId,
+        contributionId: result.rows[0].id,
+        seasonYear,
+        contributionType: type,
+        amountUsd,
+        receivedAt: body.receivedAt as string | undefined,
+        label: body.description ? `Sponsor contribution — ${String(body.description)}` : "Sponsor contribution",
+        userId: current.user.id,
+      });
+      const receivedOn =
+        typeof body.receivedAt === "string" && body.receivedAt
+          ? body.receivedAt.slice(0, 10)
+          : new Date().toISOString().slice(0, 10);
       await client.query(
-        `UPDATE sponsors SET status='active' WHERE id=$1::uuid AND org_id=$2::uuid AND status='prospect'`,
-        [sponsorId, orgId],
+        `UPDATE sponsors SET
+           status = CASE WHEN status = 'declined' THEN status ELSE 'active' END,
+           pipeline_stage = CASE WHEN pipeline_stage = 'renewal' THEN pipeline_stage ELSE 'active' END,
+           thank_you_due_on = COALESCE(thank_you_due_on, $3::date),
+           renewal_due_on = COALESCE(renewal_due_on, $4::date),
+           updated_at = now()
+         WHERE id=$1::uuid AND org_id=$2::uuid`,
+        [sponsorId, orgId, defaultThankYouDueOn(receivedOn), defaultRenewalDueOn(seasonYear)],
       );
       return result.rows[0];
     });

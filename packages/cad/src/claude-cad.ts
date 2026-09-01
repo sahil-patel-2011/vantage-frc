@@ -3,6 +3,7 @@ import type { CadOperation } from "./agent-policy";
 import { CAD_TOOL_CATALOG, cadToolInputSchema, cadToolSpec, cadToolSupportMatrix } from "./cad-tool-catalog";
 import { assertFusionRelayParity, FUSION_RELAY_PROTOCOL_VERSION, signFusionRelayJob } from "./fusion-relay";
 import {
+  bindClaudeCadSession,
   forgetSessionFeature,
   lastSessionFeature,
   loadClaudeCadSession,
@@ -15,13 +16,26 @@ import {
   type ClaudeCadSession,
 } from "./claude-session";
 import {
-  createOnshapeApiKeyHttp,
   onshapeApiKeysStatus,
   onshapeHttpError,
-  readOnshapeApiKeys,
   readOnshapeJson,
   type OnshapeKeyHttp,
 } from "./onshape-api-keys";
+import {
+  addOnshapeAssemblyInstance,
+  createOnshapeAssembly,
+  createOnshapeMate,
+  createOnshapePartStudio,
+  getOnshapeAssembly,
+  getOnshapeBodyDetails,
+  summarizeOnshapeBodyDetails,
+  type OnshapeMateType,
+} from "./onshape-assemblies";
+import {
+  resolveOnshapeAuth,
+  type OnshapeAuthResolution,
+  type ResolveOnshapeAuthOptions,
+} from "./onshape-session";
 import {
   chamferFeature,
   circleSketchFeature,
@@ -52,6 +66,7 @@ import { explainFeatureTreeForStudents, type OnshapeFeatureSummary } from "./ons
 /** Optional hosted runtime so the web CAD agent can use org OAuth + DB session instead of env keys. */
 export type ClaudeCadRuntime = {
   http?: OnshapeKeyHttp;
+  resolveAuth?: (options?: ResolveOnshapeAuthOptions) => Promise<OnshapeAuthResolution>;
   loadSession?: () => Promise<ClaudeCadSession>;
   saveSession?: (session: ClaudeCadSession) => Promise<void>;
   /** Skip loopback Fusion probes (Vercel / hosted). */
@@ -61,17 +76,22 @@ export type ClaudeCadRuntime = {
 export const CLAUDE_CAD_INSTRUCTIONS = `Vantage CAD from Claude Code (terminal)
 
 Onshape (cloud, any OS)
-1. Create an API key pair: https://dev-portal.onshape.com/keys
-2. In this terminal:
+1. Recommended: run \`vantage-cad login\`. A visible Playwright Chromium window opens;
+   sign in yourself. CAD requests then run inside that Onshape browser session and do
+   not use the annual API-key allowance.
+2. Optional fallback: create an API key pair at https://dev-portal.onshape.com/keys:
    PowerShell:  $env:ONSHAPE_ACCESS_KEY="..."; $env:ONSHAPE_SECRET_KEY="..."
    bash:        export ONSHAPE_ACCESS_KEY=... ONSHAPE_SECRET_KEY=...
+   API-key calls count against Onshape's annual allowance.
 3. Open a disposable Onshape document + Part Studio (do not test in a competition robot doc).
 4. Ask Claude: "list my Onshape documents" then "bind that Part Studio, then make a 80x50x6 mm plate
    with 5 mm corner fillets and a 4x row of 5 mm holes on 20 mm pitch".
 
 Onshape tools: list/bind/describe · sketch rectangle, circle, polyline, hole points ·
 extrude (NEW/ADD/REMOVE/INTERSECT) · fillet · chamfer · hole · linear + circular pattern · mirror ·
-delete-feature (undo the agent's own features). Run cad_tools for the full list with Fusion support.
+create Part Studio · native body details · create Assembly · insert instances · face-based mates ·
+delete-feature (undo the agent's own features). Sketch, extrude, Part Studio, instance, and mate tools
+use native Onshape feature/assembly endpoints; FeatureScript is optional. Run cad_tools for the full list.
 
 Fusion 360 (Windows/macOS only — never hosted)
 1. Install Autodesk Fusion and the Vantage add-in:
@@ -165,13 +185,13 @@ function fusionEndpoint() {
 }
 
 async function requireOnshapeHttp() {
-  const creds = readOnshapeApiKeys();
-  if (!creds) throw new Error(onshapeApiKeysStatus().message);
-  return createOnshapeApiKeyHttp(creds);
+  const auth = await resolveOnshapeAuth();
+  return auth.http;
 }
 
 async function getHttp(runtime: ClaudeCadRuntime): Promise<OnshapeKeyHttp> {
   if (runtime.http) return runtime.http;
+  if (runtime.resolveAuth) return (await runtime.resolveAuth()).http;
   return requireOnshapeHttp();
 }
 
@@ -417,6 +437,188 @@ export async function callClaudeCadTool(
         } satisfies CadToolNarration,
       };
     }
+    case "onshape_create_part_studio": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const documentId = str(args.documentId) || session.documentId || "";
+      const workspaceId = str(args.workspaceId) || session.workspaceId || "";
+      const name = str(args.name);
+      const created = await createOnshapePartStudio(http, { documentId, workspaceId, name });
+      const next = bindClaudeCadSession(session, {
+        documentId,
+        workspaceId,
+        elementId: created.elementId,
+        documentName: session.documentName,
+        elementName: created.name,
+      });
+      await putSession(runtime, next);
+      return {
+        ok: true,
+        operation: "create_part_studio",
+        documentId,
+        workspaceId,
+        elementId: created.elementId,
+        name: created.name,
+        bound: true,
+        featureScriptUsed: false,
+        narration: {
+          title: `Created and bound Part Studio “${created.name}”`,
+          detail: `element ${created.elementId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_body_details": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const details = await getOnshapeBodyDetails(http, doc);
+      return {
+        ok: true,
+        operation: "get_body_details",
+        featureScriptUsed: false,
+        bodies: summarizeOnshapeBodyDetails(details),
+        details,
+        narration: {
+          title: "Read native part and face ids",
+          detail: "Use part ids for assembly instances and face ids for mates.",
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_create_assembly": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const documentId = str(args.documentId) || session.documentId || "";
+      const workspaceId = str(args.workspaceId) || session.workspaceId || "";
+      const created = await createOnshapeAssembly(http, {
+        documentId,
+        workspaceId,
+        name: str(args.name),
+      });
+      const next: ClaudeCadSession = {
+        ...session,
+        assemblyElementId: created.elementId,
+        assemblyName: created.name,
+        assemblyInstances: [],
+      };
+      await putSession(runtime, next);
+      return {
+        ok: true,
+        operation: "create_assembly",
+        documentId,
+        workspaceId,
+        assemblyElementId: created.elementId,
+        name: created.name,
+        featureScriptUsed: false,
+        narration: {
+          title: `Created Assembly “${created.name}”`,
+          detail: `element ${created.elementId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_add_assembly_instance": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const documentId = session.documentId ?? "";
+      const workspaceId = session.workspaceId ?? "";
+      const assemblyElementId = str(args.assemblyElementId) || session.assemblyElementId || "";
+      const sourceElementId = str(args.sourceElementId) || session.elementId || "";
+      const partId = str(args.partId);
+      const isAssembly = bool(args.isAssembly);
+      const inserted = await addOnshapeAssemblyInstance(http, {
+        assembly: { documentId, workspaceId, elementId: assemblyElementId },
+        sourceDocumentId: str(args.sourceDocumentId) || documentId,
+        sourceElementId,
+        partId: partId || undefined,
+        isAssembly,
+      });
+      const assemblyInstances = [
+        ...(session.assemblyInstances ?? []),
+        {
+          instanceId: inserted.instanceId,
+          sourceElementId,
+          ...(partId ? { partId } : {}),
+          isAssembly,
+          at: new Date().toISOString(),
+        },
+      ].slice(-100);
+      await putSession(runtime, {
+        ...session,
+        assemblyElementId,
+        assemblyInstances,
+      });
+      return {
+        ok: true,
+        operation: "add_assembly_instance",
+        assemblyElementId,
+        instanceId: inserted.instanceId,
+        sourceElementId,
+        partId: partId || null,
+        isAssembly,
+        featureScriptUsed: false,
+        narration: {
+          title: `Inserted ${isAssembly ? "sub-assembly" : partId ? "part" : "Part Studio"}`,
+          detail: `instance ${inserted.instanceId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_mate": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const assemblyElementId = str(args.assemblyElementId) || session.assemblyElementId || "";
+      const mateType = str(args.mateType).toUpperCase() as OnshapeMateType;
+      const result = await createOnshapeMate(http, {
+        assembly: {
+          documentId: session.documentId ?? "",
+          workspaceId: session.workspaceId ?? "",
+          elementId: assemblyElementId,
+        },
+        name: str(args.name) || undefined,
+        mateType,
+        firstInstanceId: str(args.firstInstanceId),
+        secondInstanceId: str(args.secondInstanceId),
+        firstFaceId: str(args.firstFaceId),
+        secondFaceId: str(args.secondFaceId),
+        firstFlipPrimary: bool(args.firstFlipPrimary),
+        secondFlipPrimary: bool(args.secondFlipPrimary),
+        firstOffsetXMm: optionalNum(args.firstOffsetXMm),
+        firstOffsetYMm: optionalNum(args.firstOffsetYMm),
+        firstOffsetZMm: optionalNum(args.firstOffsetZMm),
+        secondOffsetXMm: optionalNum(args.secondOffsetXMm),
+        secondOffsetYMm: optionalNum(args.secondOffsetYMm),
+        secondOffsetZMm: optionalNum(args.secondOffsetZMm),
+        minLimit: optionalNum(args.minLimit),
+        maxLimit: optionalNum(args.maxLimit),
+      });
+      return {
+        ok: true,
+        operation: "create_mate",
+        assemblyElementId,
+        mateType,
+        ...result,
+        featureScriptUsed: false,
+        narration: {
+          title: `Created ${mateType} mate`,
+          detail: `mate feature ${result.mateFeatureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_get_assembly": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const assemblyElementId = str(args.assemblyElementId) || session.assemblyElementId || "";
+      const assembly = await getOnshapeAssembly(http, {
+        documentId: session.documentId ?? "",
+        workspaceId: session.workspaceId ?? "",
+        elementId: assemblyElementId,
+      });
+      return {
+        ok: true,
+        operation: "get_assembly",
+        assemblyElementId,
+        featureScriptUsed: false,
+        assembly,
+      };
+    }
     case "onshape_describe": {
       const http = await getHttp(runtime);
       const session = await getSession(runtime);
@@ -478,6 +680,7 @@ export async function callClaudeCadTool(
         ok: true,
         featureId,
         operation: "create_sketch",
+        featureScriptUsed: false,
         narration: {
           title: `Sketched a ${widthMm}×${heightMm} mm rectangle on ${plane}`,
           detail: `feature ${featureId}`,
@@ -637,6 +840,7 @@ export async function callClaudeCadTool(
         ok: true,
         featureId,
         operation: "create_extrude",
+        featureScriptUsed: false,
         narration: {
           title: `Extruded ${depthMm} mm (${operationType})`,
           detail: `from sketch ${sketchFeatureId}`,

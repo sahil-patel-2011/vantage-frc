@@ -2,7 +2,9 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { compoundReduction, outputRpm, parseGearboxAction, type Stage } from "../../../lib/gearbox";
+import { upsertGearbox } from "../../../lib/gearbox/service";
+import { parseGearboxWrite } from "../../../lib/gearbox/upsert";
+import { compoundReduction, outputRpm, type Stage } from "../../../lib/gearbox";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -71,7 +73,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const action = parseGearboxAction(await request.json());
+    const action = parseGearboxWrite(await request.json());
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
@@ -83,12 +85,17 @@ export async function POST(request: Request) {
         return { ok: true };
       }
 
-      const inserted = await client.query<{ id: string }>(
-        `INSERT INTO gearboxes (org_id, season_year, name, subsystem, stages, motor_free_rpm, notes, created_by)
-         VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8) RETURNING id`,
-        [action.orgId, action.seasonYear, action.name, action.subsystem, JSON.stringify(action.stages), action.motorFreeRpm, action.notes, userId],
-      );
-      return { id: inserted.rows[0]!.id };
+      return upsertGearbox(client, {
+        orgId: action.orgId,
+        seasonYear: action.seasonYear,
+        name: action.name,
+        subsystem: action.subsystem,
+        stages: action.stages,
+        motorFreeRpm: action.motorFreeRpm,
+        notes: action.notes,
+        createdBy: userId,
+        id: action.id,
+      });
     });
 
     return Response.json(result);

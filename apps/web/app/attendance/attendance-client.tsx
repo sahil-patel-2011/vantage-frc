@@ -183,10 +183,10 @@ function MemberOneTap({
   hours: string;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
-  const markedByName = useMemo(() => {
+  const markedByMember = useMemo(() => {
     const map = new Map<string, string>();
     for (const entry of event.entries) {
-      map.set(entry.personName.trim().toLowerCase(), entry.id);
+      if (entry.userId) map.set(entry.userId, entry.id);
     }
     return map;
   }, [event.entries]);
@@ -209,8 +209,7 @@ function MemberOneTap({
       </header>
       <div className="att-one-tap-grid">
         {members.map((member) => {
-          const key = member.name.trim().toLowerCase();
-          const entryId = markedByName.get(key);
+          const entryId = markedByMember.get(member.userId);
           const present = Boolean(entryId);
           return (
             <button
@@ -229,6 +228,7 @@ function MemberOneTap({
                       action: "add_entry",
                       orgId,
                       eventId: event.id,
+                      userId: member.userId,
                       personName: member.name.trim(),
                       role,
                       hours: hours === "" ? null : Number(hours),
@@ -268,13 +268,14 @@ function SessionDetail({
   const [hours, setHours] = useState("");
   const openMembers = membersNotMarked(members, event);
 
-  const addPerson = (name: string, nextRole: AttendanceRole = role) => {
+  const addPerson = (name: string, nextRole: AttendanceRole = role, userId: string | null = null) => {
     if (!name.trim()) return;
     void run(
       {
         action: "add_entry",
         orgId,
         eventId: event.id,
+        userId,
         personName: name.trim(),
         role: nextRole,
         hours: hours === "" ? null : Number(hours),
@@ -352,7 +353,7 @@ function SessionDetail({
                     type="button"
                     className="att-chip"
                     disabled={busy}
-                    onClick={() => addPerson(member.name)}
+                    onClick={() => addPerson(member.name, role, member.userId)}
                   >
                     {member.name}
                   </button>

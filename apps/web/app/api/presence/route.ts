@@ -25,6 +25,15 @@ import {
   type PresenceView,
 } from "../../../lib/presence/compute-presence";
 import { PRESENCE_RSVPS, PRESENCE_SOURCES, type PresenceRsvp, type PresenceSource } from "../../../lib/presence/types";
+import {
+  assertCanManagePresence,
+  assertCanRecordPresence,
+  assertCanTouchHourLog,
+  assertRosterMember,
+  loadHourLogOwner,
+  PresenceAuthError,
+  requirePresenceRole,
+} from "../../../lib/presence/authorization";
 
 export type { PresenceView };
 
@@ -114,30 +123,17 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query<{ role: string }>(
-        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-        [orgId, userId],
-      );
-      const role = member.rows[0]?.role;
-      if (!role) throw new Error("forbidden");
-      const canManage = role === "owner" || role === "admin";
+      const role = await requirePresenceRole(client, orgId, userId);
 
       switch (action) {
         case "link-attendance-person": {
-          // Writing an identity onto somebody else's roll-call row is a mentor
-          // action (attendance_entries RLS agrees), and it is only ever taken
-          // after a human confirmed the match.
-          if (!canManage) throw new Error("Only owners and admins can link roll-call names to members.");
+          // Writing an identity onto a roll-call row is a mentor action (attendance_entries RLS
+          // agrees), and it is only ever taken after a human confirmed the match.
+          assertCanManagePresence({ role, action: "link-attendance-person" });
           const personName = trimmedOrNull(body.personName, 160);
           if (!personName) throw new Error("personName is required");
           const targetUserId = trimmedOrNull(body.targetUserId, 64);
-          if (targetUserId) {
-            const roster = await client.query(
-              `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-              [orgId, targetUserId],
-            );
-            if (!roster.rowCount) throw new Error("That member is not on this team's roster.");
-          }
+          if (targetUserId) await assertRosterMember(client, orgId, targetUserId);
           const linked = await linkAttendancePerson(client, { orgId, personName, userId: targetUserId });
           if (linked === 0) throw new Error("No roll-call entries matched that name.");
           break;
@@ -156,14 +152,8 @@ export async function POST(request: Request) {
           for (const entry of batch) {
             const targetUserId = trimmedOrNull(entry.targetUserId, 64);
             if (!targetUserId) throw new Error("targetUserId is required");
-            if (targetUserId !== userId && !canManage) {
-              throw new Error("Only owners and admins can record presence for another member.");
-            }
-            const roster = await client.query(
-              `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-              [orgId, targetUserId],
-            );
-            if (!roster.rowCount) throw new Error("That member is not on this team's roster.");
+            assertCanRecordPresence({ role, actorId: userId, targetUserId });
+            await assertRosterMember(client, orgId, targetUserId);
             await upsertPresenceRecord(client, {
               orgId,
               userId: targetUserId,
@@ -187,15 +177,8 @@ export async function POST(request: Request) {
           if (!eventId) throw new Error("eventId is required");
           const hourLogId = trimmedOrNull(body.hourLogId, 64);
           if (!hourLogId) throw new Error("hourLogId is required");
-          const owner = await client.query<{ userId: string }>(
-            `SELECT user_id AS "userId" FROM hour_logs WHERE org_id = $1::uuid AND id = $2::uuid`,
-            [orgId, hourLogId],
-          );
-          const logOwner = owner.rows[0]?.userId;
-          if (!logOwner) throw new Error("That shop session was not found.");
-          if (logOwner !== userId && !canManage) {
-            throw new Error("Only owners and admins can attach another member's shop session.");
-          }
+          const logOwner = await loadHourLogOwner(client, orgId, hourLogId);
+          assertCanTouchHourLog({ role, actorId: userId, ownerId: logOwner, verb: "attach" });
           const linked = await linkHourLog(client, {
             orgId,
             hourLogId,
@@ -209,24 +192,18 @@ export async function POST(request: Request) {
         case "unlink-hour-log": {
           const hourLogId = trimmedOrNull(body.hourLogId, 64);
           if (!hourLogId) throw new Error("hourLogId is required");
-          const owner = await client.query<{ userId: string }>(
-            `SELECT user_id AS "userId" FROM hour_logs WHERE org_id = $1::uuid AND id = $2::uuid`,
-            [orgId, hourLogId],
-          );
-          const logOwner = owner.rows[0]?.userId;
-          if (!logOwner) throw new Error("That shop session was not found.");
-          if (logOwner !== userId && !canManage) {
-            throw new Error("Only owners and admins can detach another member's shop session.");
-          }
+          const logOwner = await loadHourLogOwner(client, orgId, hourLogId);
+          assertCanTouchHourLog({ role, actorId: userId, ownerId: logOwner, verb: "detach" });
           await unlinkHourLog(client, { orgId, hourLogId });
           break;
         }
 
         case "unlink-presence": {
-          if (!canManage) throw new Error("Only owners and admins can remove a presence record.");
+          assertCanManagePresence({ role, action: "unlink-presence" });
           if (!eventId) throw new Error("eventId is required");
           const targetUserId = trimmedOrNull(body.targetUserId, 64);
           if (!targetUserId) throw new Error("targetUserId is required");
+          await assertRosterMember(client, orgId, targetUserId);
           await deletePresenceRecord(client, {
             orgId,
             userId: targetUserId,
@@ -250,11 +227,10 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof PresenceAuthError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     const message = error instanceof Error ? error.message : "Presence request failed";
-    const status = message === "forbidden" ? 403 : 400;
-    return Response.json(
-      { error: message === "forbidden" ? "Organization access denied" : message },
-      { status },
-    );
+    return Response.json({ error: message }, { status: 400 });
   }
 }

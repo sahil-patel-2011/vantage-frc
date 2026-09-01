@@ -37,12 +37,9 @@ export type GrantReport = {
   funder: string | null;
   seasonYear: number;
   amountAwardedUsd: number;
-  /**
-   * Org-wide season expense total, shown as clearly-labeled context only. Finance transactions
-   * carry no per-grant linkage, so this is NOT spend attributable to this grant — the report's
-   * spend section states that explicitly ("Spend linkage is not configured").
-   */
+  /** Only explicitly allocated spend. Zero when allocation schema is unavailable. */
   totalSpendUsd: number;
+  spendAttribution: "explicit" | "setup_required";
   outreachCount: number;
   outreachByKind: GrantReportOutreachLine[];
   spendByCategory: GrantReportSpendLine[];

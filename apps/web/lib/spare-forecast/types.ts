@@ -4,18 +4,25 @@
 
 export type ForecastUrgency = "critical" | "warning" | "watch" | "stable";
 
+/** Whether the FRC 200-day season window is still open for remaining-day projections. */
+export type SeasonHorizon = "in_season" | "offseason";
+
 export type PurchaseRequestStatus = "draft" | "approved" | "ordered" | "dismissed";
 
-/** Deterministic exhaustion projection for one spare bin, grounded only in supplied inputs. */
+/**
+ * Deterministic exhaustion projection for one spare bin, grounded only in supplied inputs.
+ * Remaining-season fields are null in offseason — never "no risk" from a closed 200-day window.
+ */
 export type ExhaustionForecast = {
   consumptionPerDay: number;
   daysElapsed: number;
-  daysRemaining: number;
-  projectedConsumptionRemaining: number;
-  projectedShortfall: number;
-  willExhaust: boolean;
+  daysRemaining: number | null;
+  projectedConsumptionRemaining: number | null;
+  projectedShortfall: number | null;
+  willExhaust: boolean | null;
   recommendedOrderQty: number;
-  urgency: ForecastUrgency;
+  urgency: ForecastUrgency | null;
+  horizon: SeasonHorizon;
 };
 
 /** A spare bin read from the existing inventory_items table (read-only join). */

@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { recordMoney, removeMoney } from "../finance/ledger";
 import { summarizeBom } from ".";
 import type { BomCategory, BomLineItem, BomRollupSummary, BomSource } from "./types";
 
@@ -160,18 +161,21 @@ export async function addLineItem(
     seasonYear: number;
   },
 ): Promise<void> {
-  await client.query(
+  const quantity = Math.max(1, Math.round(input.quantity));
+  const unitCostUsd = Math.max(0, input.unitCostUsd);
+  const inserted = await client.query<{ id: string }>(
     `INSERT INTO bom_cost_rollup_line_items (
        org_id, part_name, subsystem, category, quantity, unit_cost_usd, source, cad_reference,
        season_year, notes, logged_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     RETURNING id`,
     [
       input.orgId,
       input.partName,
       input.subsystem,
       input.category,
-      Math.max(1, Math.round(input.quantity)),
-      Math.max(0, input.unitCostUsd),
+      quantity,
+      unitCostUsd,
       input.source,
       input.cadReference,
       input.seasonYear,
@@ -179,6 +183,17 @@ export async function addLineItem(
       input.userId,
     ],
   );
+  await recordMoney(client, {
+    orgId: input.orgId,
+    source: "bom",
+    sourceId: inserted.rows[0]!.id,
+    direction: "out",
+    amountUsd: Math.round(quantity * unitCostUsd * 100) / 100,
+    seasonYear: input.seasonYear,
+    label: `BOM estimate — ${input.partName}`,
+    createdBy: input.userId,
+    countsInBalance: false,
+  });
 }
 
 export async function deleteLineItem(
@@ -189,6 +204,7 @@ export async function deleteLineItem(
     input.itemId,
     input.orgId,
   ]);
+  await removeMoney(client, { orgId: input.orgId, source: "bom", sourceId: input.itemId });
 }
 
 export async function setBudget(

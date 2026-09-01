@@ -95,6 +95,17 @@ describe("robotRollup", () => {
     expect(rollup.unlinkedStrategy).toBe(1);
     expect(rollup.untested).toBe(1);
   });
+
+  it("treats missingCad as covered by a CAD URL or a vault row (no live Onshape required)", () => {
+    const urlOnly = subsystem({ cadUrl: "https://cad.onshape.com/documents/abc", vaultDocumentCount: 0 });
+    const vaultOnly = subsystem({ cadUrl: null, vaultDocumentCount: 1 });
+    const both = subsystem({ cadUrl: "https://cad.onshape.com/documents/abc", vaultDocumentCount: 2 });
+    const neither = subsystem({ cadUrl: null, vaultDocumentCount: 0 });
+    expect(robotRollup([urlOnly, vaultOnly, both]).missingCad).toBe(0);
+    expect(robotRollup([urlOnly, neither]).missingCad).toBe(1);
+    expect(robotRollup([vaultOnly, neither]).missingCad).toBe(1);
+    expect(robotRollup([neither, subsystem({ cadUrl: null })]).missingCad).toBe(2);
+  });
 });
 
 describe("SEED_SUBSYSTEMS", () => {

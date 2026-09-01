@@ -34,14 +34,31 @@ import {
   loadOnshapeBrowserSession,
   onshapeSessionStatus,
 } from "../../cad/src/onshape-session-store";
-import { probeOnshapeIdentity, resolveOnshapeAuth } from "../../cad/src/onshape-session";
+import {
+  probeOnshapeIdentity,
+  resolveOnshapeAuth,
+  type ResolveOnshapeAuthOptions,
+} from "../../cad/src/onshape-session";
 import { createChromiumLoginLauncher, formatLoginResult, runOnshapeBrowserLogin } from "./login";
+import { createPlaywrightOnshapeSessionManager } from "./onshape-browser-http";
 import { createCadSyncReporter, formatCadStatusLines, readCadSyncStatus } from "./sync";
 
 const VERSION = "0.1.1";
 const command = process.argv[2] ?? "help";
 const base = (process.env.VANTAGE_URL ?? "http://localhost:3001").replace(/\/$/, "");
 const ask = command === "setup" ? createInterface({ input, output }) : null;
+
+function localOnshapeRuntime(manager: ReturnType<typeof createPlaywrightOnshapeSessionManager>) {
+  const resolveAuth = (options: ResolveOnshapeAuthOptions = {}) =>
+    resolveOnshapeAuth({
+      ...options,
+      sessionHttpFactory: manager.sessionHttpFactory,
+    });
+  return {
+    resolveAuth,
+    http: async (path: string, init?: RequestInit) => (await resolveAuth()).http(path, init),
+  };
+}
 
 async function json(path: string, init: RequestInit = {}) {
   const response = await fetch(`${base}${path}`, {
@@ -220,18 +237,21 @@ async function login() {
     return;
   }
 
-  // Onshape does not document session-cookie replay by a third-party process, so the
-  // premise is measured here rather than assumed: one call on the saved cookies,
-  // outside the browser, against the documented /users/current endpoint.
+  // Prove that the stored session works in the same local Playwright transport used
+  // by MCP operations. This request runs in the visible Onshape browser context.
+  const browser = createPlaywrightOnshapeSessionManager();
   try {
-    const auth = await resolveOnshapeAuth({ prefer: "session" });
+    const auth = await resolveOnshapeAuth({
+      prefer: "session",
+      sessionHttpFactory: browser.sessionHttpFactory,
+    });
     const identity = await probeOnshapeIdentity(auth.http);
     if (identity) {
-      console.log(`Verified: the saved session authenticates outside the browser as ${identity.name ?? identity.id}.`);
+      console.log(`Verified: the Playwright Onshape session works as ${identity.name ?? identity.id}.`);
     } else {
       process.exitCode = 1;
       console.log(
-        "Warning: Onshape accepted the sign-in but the saved cookies did not authenticate when replayed from this process. Use OAuth or API keys for now (API-key calls are deducted from your annual allowance).",
+        "Warning: Onshape accepted sign-in but the browser session did not return an identity. Run `vantage-cad login` again or explicitly configure API keys.",
       );
     }
     const summary = auth.budget.summary();
@@ -241,6 +261,8 @@ async function login() {
   } catch (error) {
     process.exitCode = 1;
     console.log(`Warning: could not verify the saved session — ${error instanceof Error ? error.message : "unknown error"}`);
+  } finally {
+    await browser.close();
   }
 }
 
@@ -436,27 +458,43 @@ async function main() {
     // Sync is a bonus, never a blocker: the reporter says once (on stderr — stdout
     // is MCP protocol) if it cannot reach the app and keeps working locally.
     const reporter = createCadSyncReporter();
+    const browser = createPlaywrightOnshapeSessionManager();
+    const onshape = localOnshapeRuntime(browser);
     void reporter.sessionStart();
     let ended = false;
     const end = () => {
       if (ended) return;
       ended = true;
-      void reporter.sessionEnd("completed").finally(() => process.exit(process.exitCode ?? 0));
+      void Promise.all([
+        reporter.sessionEnd("completed"),
+        browser.close(),
+      ]).finally(() => process.exit(process.exitCode ?? 0));
     };
     process.stdin.on("end", end);
     process.on("SIGINT", end);
     process.on("SIGTERM", end);
     await runCadMcpStdio({
       onToolCall: (name, args, ok, error) => reporter.toolCall(name, args, ok, error),
+      partRuntime: { resolveAuth: onshape.resolveAuth },
+      claudeRuntime: { http: onshape.http, resolveAuth: onshape.resolveAuth },
     });
   } else if (command === "agent") {
     const { runAgentSync } = await import("./agent-sync");
     await runAgentSync(process.argv.slice(3));
   } else if (command === "claude" || command === "onshape" || command === "fusion") {
     const reporter = createCadSyncReporter();
-    await runClaudeCadCli(command, process.argv[3] ?? "", (tool, args, ok, error) =>
-      reporter.oneShotToolCall(tool, args, ok, error),
-    );
+    const browser = createPlaywrightOnshapeSessionManager();
+    const onshape = localOnshapeRuntime(browser);
+    try {
+      await runClaudeCadCli(
+        command,
+        process.argv[3] ?? "",
+        (tool, args, ok, error) => reporter.oneShotToolCall(tool, args, ok, error),
+        { http: onshape.http, resolveAuth: onshape.resolveAuth },
+      );
+    } finally {
+      await browser.close();
+    }
   } else {
     console.log("vantage-cad <login|setup|start|status|diagnose|doctor|update|logout|claude|mcp|agent|onshape|fusion>");
     console.log("  login [--timeout <s>] [--status] [--clear]");
@@ -467,7 +505,7 @@ async function main() {
     console.log("  status [--json]        platform, binding, Onshape auth path, call ledger, and web sync state");
     console.log("  claude                 print Claude Code CAD setup + status");
     console.log("  mcp                    stdio MCP server for Claude Code");
-    console.log("  onshape docs|bind|sketch|extrude");
+    console.log("  onshape docs|bind|sketch|extrude|create-part-studio|body-details|create-assembly|add-instance|mate|assembly");
     console.log("  fusion ping|sketch|extrude");
     console.log("  doctor|diagnose [--json]   run local CAD health checks");
     console.log("  update [--force-addin] [--skip-addin]  reinstall from VANTAGE_REPO / monorepo checkout");

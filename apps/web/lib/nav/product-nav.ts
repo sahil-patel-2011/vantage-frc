@@ -146,7 +146,7 @@ export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/inventory", label: "Inventory", icon: "grid" },
 ];
 
-/** Bottom island — glanceable; full IA lives in hubs + Cmd+K. */
+/** Four customizable bottom-island app slots. AppShell adds a fixed All button for the full IA. */
 export type IslandTabDefinition = { href: string; label: string; icon: ProductNavIcon };
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [

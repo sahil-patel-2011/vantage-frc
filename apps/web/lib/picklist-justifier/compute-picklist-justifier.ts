@@ -5,6 +5,10 @@ import { averageConfidence, computeJustification } from ".";
 import { hubHref } from "../nav/hubs";
 import { setJustification } from "../picklist";
 import { withOrgHref } from "../nav/product-nav";
+import {
+  loadStoredJustificationsForPickClock,
+  pickClockReasonsFromJustification,
+} from "./pick-clock-reasons";
 import type {
   JustificationInput,
   JustifiedEntry,
@@ -88,15 +92,6 @@ type TbaRow = {
 };
 
 type ScoutRow = { teamKey: string; confidence: string };
-
-type SavedRow = {
-  pickListEntryId: string;
-  rationale: string;
-  sources: unknown;
-  contradictionFlagged: boolean;
-  contradictionReason: string | null;
-  createdAt: string;
-};
 
 async function loadPickLists(client: PoolClient, orgId: string): Promise<PickListSummary[]> {
   const result = await client.query<{
@@ -238,37 +233,19 @@ export async function computePicklistJustifierView(
 
   const selected = (input.pickListId && pickLists.find((pl) => pl.id === input.pickListId)) || pickLists[0]!;
 
-  const [justificationInputs, savedResult] = await Promise.all([
+  const [justificationInputs, stored] = await Promise.all([
     loadJustificationInputs(client, { orgId: org.orgId, pickListId: selected.id, eventKey: selected.eventKey }),
     // Justifications now live ON the pick-list row (migration 0454) so the rationale explains the
     // team that is actually on the board. The legacy sidecar table is still read as a fallback for
-    // one release, for rows generated before the unification.
-    client.query<SavedRow>(
-      `SELECT e.id AS "pickListEntryId",
-              COALESCE(e.justification, j.rationale) AS rationale,
-              COALESCE(NULLIF(e.justification_sources, '[]'::jsonb), j.sources, '[]'::jsonb) AS sources,
-              COALESCE(
-                CASE WHEN e.justification IS NOT NULL THEN e.justification_contradiction END,
-                j.contradiction_flagged, false
-              ) AS "contradictionFlagged",
-              COALESCE(
-                CASE WHEN e.justification IS NOT NULL THEN e.justification_reason END,
-                j.contradiction_reason
-              ) AS "contradictionReason",
-              COALESCE(e.justification_generated_at, j.created_at)::text AS "createdAt"
-       FROM pick_list_entries e
-       LEFT JOIN picklist_justifier_justifications j ON j.pick_list_entry_id = e.id
-       WHERE e.org_id = $1::uuid AND e.pick_list_id = $2::uuid
-         AND (e.justification IS NOT NULL OR j.rationale IS NOT NULL)`,
-      [org.orgId, selected.id],
-    ),
+    // one release, for rows generated before the unification. Same helper Pick Clock imports.
+    loadStoredJustificationsForPickClock(client, {
+      orgId: org.orgId,
+      pickListId: selected.id,
+    }),
   ]);
 
-  const savedByEntry = new Map<string, SavedRow>();
-  for (const row of savedResult.rows) savedByEntry.set(row.pickListEntryId, row);
-
   const entries: JustifiedEntry[] = justificationInputs.map(({ entryId, notes, boardSlot, input: ji }) => {
-    const saved = savedByEntry.get(entryId);
+    const saved = stored.byEntryId.get(entryId) ?? stored.byTeamKey.get(ji.teamKey) ?? null;
     return {
       id: entryId,
       teamKey: ji.teamKey,
@@ -279,10 +256,11 @@ export async function computePicklistJustifierView(
       scoutEntryCount: ji.scout.entryCount,
       tbaAvailable: ji.tba != null,
       rationale: saved?.rationale ?? null,
-      sources: Array.isArray(saved?.sources) ? (saved!.sources as JustifiedEntry["sources"]) : [],
+      sources: saved?.sources ?? [],
       contradiction: saved ? { flagged: saved.contradictionFlagged, reason: saved.contradictionReason } : null,
-      generatedAt: saved?.createdAt ?? null,
+      generatedAt: saved?.generatedAt ?? null,
       boardSlot,
+      pickClockReasons: saved ? pickClockReasonsFromJustification(saved) : [],
     };
   });
 
