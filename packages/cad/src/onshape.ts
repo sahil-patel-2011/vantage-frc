@@ -15,6 +15,7 @@ import {
   parseAddedFeatureId,
   rectangleSketchFeature,
 } from "./onshape-features";
+import { firstPlannedId } from "./first-planned-id";
 import {
   dispatchOnshapeNativeFeature,
   isOnshapeNativeOperation,
@@ -550,22 +551,9 @@ export function createOnshapeApiTransport(input: {
         };
       }
       if (operation === "feature_script") {
-        const script = String(parameters.source ?? parameters.script ?? "");
-        if (!script || script.length > 20_000) throw new Error("FeatureScript source missing or too large");
-        const response = await http(`${base}/featurescript`, {
-          method: "POST",
-          body: JSON.stringify({
-            script,
-            queries: [],
-            serializationVersion: "1.1.22",
-          }),
-          headers: { "x-vantage-idempotency": idempotencyKey },
-        });
-        if (!response.ok) {
-          const err = await response.text();
-          throw new Error(`Onshape FeatureScript failed: ${err.slice(0, 400)}`);
-        }
-        return { featureId: `fs-${createHash("sha256").update(idempotencyKey).digest("hex").slice(0, 12)}` };
+        throw new Error(
+          "FeatureScript is not allowed on hosted Onshape. Use native sketch, extrude, fillet, hole, or mate.",
+        );
       }
       if (operation === "verify_topology" || operation === "render_views" || operation === "create_checkpoint") {
         try {
@@ -625,10 +613,10 @@ export function createOnshapeApiTransport(input: {
           assembly: lastAssembly,
           name: parameters.name ? String(parameters.name) : undefined,
           mateType: String(parameters.mateType ?? "").toUpperCase() as OnshapeMateType,
-          firstInstanceId: String(parameters.firstInstanceId ?? ""),
-          secondInstanceId: String(parameters.secondInstanceId ?? ""),
-          firstFaceId: String(parameters.firstFaceId ?? ""),
-          secondFaceId: String(parameters.secondFaceId ?? ""),
+          firstInstanceId: firstPlannedId(parameters.firstInstanceId),
+          secondInstanceId: firstPlannedId(parameters.secondInstanceId),
+          firstFaceId: firstPlannedId(parameters.firstFaceId),
+          secondFaceId: firstPlannedId(parameters.secondFaceId),
           firstFlipPrimary: Boolean(parameters.firstFlipPrimary),
           secondFlipPrimary: Boolean(parameters.secondFlipPrimary),
           firstOffsetXMm: Number(parameters.firstOffsetXMm ?? 0),
@@ -656,7 +644,7 @@ export function createOnshapeApiTransport(input: {
         }
 
         const depthMm = positiveMillimetres(parameters, ["depthMm", "depth"], "Extrude depth");
-        let sketchFeatureId = String(parameters.sketchFeatureId ?? "").trim();
+        let sketchFeatureId = firstPlannedId(parameters.sketchFeatureId);
         if (!sketchFeatureId) {
           const expectedName = jobSketchName(idempotencyKey);
           const features = await listOnshapeFeatures(http, document);

@@ -109,6 +109,7 @@ export function parseListedEntities(payload: unknown): ListedOnshapeEntities {
 
 export type PickableEntityExtras = {
   features?: ReadonlyArray<{ featureId?: string; id?: string }>;
+  instances?: ReadonlyArray<{ id?: string }>;
 };
 
 /** Ids a human can pick for an idList field. `views` is not geometry — stays empty. */
@@ -124,6 +125,7 @@ export function pickableEntityIds(
   if (/body/i.test(key)) return idsOf(safe.bodies);
   if (/edge/i.test(key) || key === "entities") return idsOf(safe.edges);
   if (/featureIds|featureId/i.test(key)) return featureIdsFromExtras(extras);
+  if (/instance/i.test(key)) return instanceIdsFromExtras(extras);
   if (/axis/i.test(key)) return idsOf(safe.faces.filter((face) => /cylinder|circle/i.test(face.surfaceType)));
   if (/plane/i.test(key)) return idsOf(safe.faces.filter((face) => /plane/i.test(face.surfaceType)));
   return [];
@@ -228,6 +230,19 @@ function featureIdsFromExtras(extras?: PickableEntityExtras): string[] {
   const seen = new Set<string>();
   for (const row of rows) {
     const id = rejectDemoEntityId(String(row?.featureId ?? row?.id ?? ""));
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+function instanceIdsFromExtras(extras?: PickableEntityExtras): string[] {
+  const rows = extras?.instances ?? [];
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const id = rejectDemoEntityId(String(row?.id ?? ""));
     if (!id || seen.has(id)) continue;
     seen.add(id);
     ids.push(id);

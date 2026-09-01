@@ -16,6 +16,7 @@ import {
   rankLabel,
   recordLabel,
   stripFrc,
+  formatDisplayPrediction,
   widgetValue,
 } from "./display";
 
@@ -120,6 +121,32 @@ describe("display helpers", () => {
     };
     expect(widgetValue("next_match", empty)).toMatch(/No upcoming/i);
     expect(widgetValue("prediction", empty)).toMatch(/No stored prediction/i);
+    expect(
+      formatDisplayPrediction({
+        matchKey: "2026test_qm1",
+        pRed: 0.62,
+        pBlue: 0.38,
+        confidenceLow: 0.5,
+        confidenceHigh: 0.7,
+        modelVersion: "DEMO",
+        keyFactors: [],
+        caveats: [],
+        scoredAt: null,
+      }),
+    ).toBe("No grounded prediction");
+    expect(
+      formatDisplayPrediction({
+        matchKey: "2026test_qm1",
+        pRed: 0.62,
+        pBlue: 0.38,
+        confidenceLow: 0.5,
+        confidenceHigh: 0.7,
+        modelVersion: "strategy-engine-v2",
+        keyFactors: [],
+        caveats: [],
+        scoredAt: null,
+      }),
+    ).toBe("62% red · 38% blue");
     expect(widgetValue("strategy", empty)).toMatch(/No strategy headline/i);
     expect(widgetValue("robot_readiness", empty)).toMatch(/No readiness data/i);
     expect(widgetValue("event_status", empty)).toMatch(/Rank not synced/i);

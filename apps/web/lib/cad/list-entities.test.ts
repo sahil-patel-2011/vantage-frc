@@ -130,6 +130,24 @@ describe("pickableEntityIds", () => {
     );
   });
 
+  it("maps firstInstanceId / secondInstanceId to extras.instances", () => {
+    const INSTANCES = [{ id: "Mi1" }, { id: "Mi2" }];
+    expect(pickableEntityIds("firstInstanceId", LIVE, { instances: INSTANCES })).toEqual(["Mi1", "Mi2"]);
+    expect(pickableEntityIds("secondInstanceId", LIVE, { instances: INSTANCES })).toEqual(["Mi1", "Mi2"]);
+    expect(pickableEntityIds("firstInstanceId", LIVE)).toEqual([]);
+    expect(pickableEntityIds("secondInstanceId", LIVE, { instances: [] })).toEqual([]);
+    expect(pickableEntityIds("firstInstanceId", LIVE, { instances: [{ id: "  " }, { id: "" }] })).toEqual([]);
+  });
+
+  it("refuses DEMO instance extras instead of showing them in the picker", () => {
+    expect(() => pickableEntityIds("firstInstanceId", LIVE, { instances: [{ id: "DEMO-instance" }] })).toThrow(
+      /DEMO entity id/i,
+    );
+    expect(() => pickableEntityIds("secondInstanceId", LIVE, { instances: [{ id: "demo-mate" }] })).toThrow(
+      /DEMO entity id/i,
+    );
+  });
+
   it("maps planeIds to plane faces and axisIds to cylinder/circle faces", () => {
     expect(pickableEntityIds("planeIds", LIVE)).toEqual(["JFC"]);
     expect(pickableEntityIds("planeId", LIVE)).toEqual(["JFC"]);

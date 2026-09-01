@@ -234,6 +234,41 @@ describe("parametersForExecute", () => {
       ).sketchFeatureId,
     ).toBe("Fpicked");
   });
+
+  it("coerces mate instance/face id lists and delete_feature.featureId to one string", () => {
+    expect(
+      parametersForExecute(
+        {
+          id: "step-3",
+          operation: "create_mate",
+          parameters: {
+            firstInstanceId: ["I1"],
+            secondInstanceId: ["I2"],
+            firstFaceId: ["Jface-a"],
+            secondFaceId: ["Jface-b"],
+          },
+          reason: "Mate",
+        },
+        undefined,
+      ),
+    ).toEqual({
+      firstInstanceId: "I1",
+      secondInstanceId: "I2",
+      firstFaceId: "Jface-a",
+      secondFaceId: "Jface-b",
+    });
+    expect(
+      parametersForExecute(
+        {
+          id: "step-4",
+          operation: "delete_feature",
+          parameters: { featureId: ["FFillet"] },
+          reason: "Undo fillet",
+        },
+        undefined,
+      ).featureId,
+    ).toBe("FFillet");
+  });
 });
 
 describe("rememberLastSketchFeatureId", () => {

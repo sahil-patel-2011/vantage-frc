@@ -282,8 +282,18 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "assemblyElementId", label: "Assembly element ID", kind: "text" },
     { key: "mateType", label: "Mate type", kind: "select", options: MATE_TYPES },
     { key: "name", label: "Name", kind: "text" },
-    { key: "firstInstanceId", label: "First instance ID", kind: "text" },
-    { key: "secondInstanceId", label: "Second instance ID", kind: "text" },
+    {
+      key: "firstInstanceId",
+      label: "First instance ID",
+      kind: "idList",
+      help: "Instance ids from list-onshape-assembly.",
+    },
+    {
+      key: "secondInstanceId",
+      label: "Second instance ID",
+      kind: "idList",
+      help: "Instance ids from list-onshape-assembly.",
+    },
     { key: "firstFaceId", label: "First face ID", kind: "idList", help: "Face ids from list-onshape-entities." },
     { key: "secondFaceId", label: "Second face ID", kind: "idList", help: "Face ids from list-onshape-entities." },
     { key: "firstOffsetXMm", label: "First offset X", kind: "signedMm" },
@@ -312,8 +322,8 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     {
       key: "featureId",
       label: "Feature ID",
-      kind: "text",
-      help: "Feature id from the Vantage feature tree. Never invent DEMO.",
+      kind: "idList",
+      help: "Feature id from the Vantage feature tree.",
     },
   ],
   verify_topology: [
@@ -586,8 +596,18 @@ export function requireComposerPicks(
         throw new Error("Mirror needs feature ids from the Vantage feature tree. Do not invent ids.");
       }
       break;
+    case "create_mate":
+      if (
+        !(hasNonEmptyId(parameters.firstInstanceId) || hasNonEmptyIds(parameters.firstInstanceId)) ||
+        !(hasNonEmptyId(parameters.secondInstanceId) || hasNonEmptyIds(parameters.secondInstanceId))
+      ) {
+        throw new Error(
+          "Mate needs first and second instance ids from list-onshape-assembly. Do not invent ids.",
+        );
+      }
+      break;
     case "delete_feature":
-      if (!hasNonEmptyId(parameters.featureId)) {
+      if (!hasNonEmptyId(parameters.featureId) && !hasNonEmptyIds(parameters.featureId)) {
         throw new Error("Delete feature needs a feature id from the Vantage feature tree. Do not invent ids.");
       }
       break;
@@ -626,7 +646,12 @@ export function parametersFromDraft(
     }
     if (field.kind === "idList") {
       const list = asStringArray(text);
-      if (list) parameters[field.key] = list;
+      if (list) {
+        if (operation === "delete_feature" && field.key === "featureId") {
+          for (const id of list) refuseDemoFeatureId(id);
+        }
+        parameters[field.key] = list;
+      }
       continue;
     }
     if (operation === "set_variable" && (field.key === "name" || field.key === "expression")) {

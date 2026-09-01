@@ -216,6 +216,19 @@ describe("dispatchOnshapeNativeFeature", () => {
     expect(calls.some((call) => call.method === "POST")).toBe(false);
   });
 
+  it("deletes using the first planned feature id when the composer stored a list", async () => {
+    const { http, calls } = addFeatureHttp("unused");
+    const result = await dispatchOnshapeNativeFeature({
+      http,
+      document: DOCUMENT,
+      operation: "delete_feature",
+      parameters: { featureId: ["F-fillet"] },
+      idempotencyKey: "job:1:delete-list",
+    });
+    expect(result).toEqual({ featureId: "F-fillet", featureScriptUsed: false });
+    expect(calls[0]?.path).toBe("/partstudios/d/d1/w/w1/e/e1/features/featureid/F-fillet");
+  });
+
   it("refuses to guess edge ids and never invents a feature id", async () => {
     const { http, calls } = addFeatureHttp("should-not-run");
     await expect(

@@ -287,7 +287,8 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <h2 style={{ marginTop: 6 }}>Impact-award evidence readiness</h2>
           <small className="app-muted">
             Active in {readiness.monthsActive} month(s) · {readiness.audiencesReached} audience group(s) reached — from
-            logged activities only
+            logged activities only. Readiness uses a default yardstick of 80 hours / 750 people / 6 months — not a
+            recorded team goal.
           </small>
         </div>
         <strong className="impact-score">{pct(readiness.score)}</strong>

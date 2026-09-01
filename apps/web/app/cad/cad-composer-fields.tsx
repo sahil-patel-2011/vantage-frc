@@ -15,6 +15,7 @@ export function CadComposerFields({
   onChange,
   entities,
   features,
+  instances,
 }: {
   operation: ComposerNativeOp;
   draft: Record<string, string | boolean>;
@@ -24,6 +25,8 @@ export function CadComposerFields({
   entities?: ListedOnshapeEntities | null;
   /** Live feature-tree ids for featureIds / featureId pickers. */
   features?: ReadonlyArray<{ featureId: string }>;
+  /** Live assembly instance ids for firstInstanceId / secondInstanceId pickers. */
+  instances?: ReadonlyArray<{ id: string }>;
 }) {
   const fields = COMPOSER_OP_FIELDS[operation];
   if (!fields.length) {
@@ -71,7 +74,7 @@ export function CadComposerFields({
         if (field.kind === "idList") {
           const text = typeof value === "string" ? value : "";
           const selected = new Set(splitIdList(text));
-          const options = pickableEntityIds(field.key, entities, { features });
+          const options = pickableEntityIds(field.key, entities, { features, instances });
           return (
             <div key={field.key}>
               <label>

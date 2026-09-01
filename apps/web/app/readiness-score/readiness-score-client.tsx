@@ -450,7 +450,8 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <h2 style={{ margin: "6px 0 0" }}>Ship-readiness index</h2>
           <small className="app-muted">
             {index.weightUsedLbs} / {index.weightBudgetLbs} lbs · {index.powerUsedAmps} / {index.powerBudgetAmps} A ·{" "}
-            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA — never DEMO
+            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA. Weight/power
+            use a default 115 lb / 120 A yardstick until you record budgets — not a measured weigh-in. Never DEMO
             scores
           </small>
         </div>

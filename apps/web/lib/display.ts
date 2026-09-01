@@ -1,6 +1,7 @@
 ﻿// Display / pit-TV kiosk helpers. Never invent match/rank/prediction defaults.
 
 import type { NexusQueueSnapshot } from "./command/nexus-queue";
+import { isDemoPrediction, predictionWinDisplay } from "./strategy/prediction-display";
 
 export const DISPLAY_PRESETS = [
   "next_match",
@@ -245,6 +246,34 @@ export function hasEventCommandSignal(
   return snapshot.scouting.openDisagreements > 0;
 }
 
+export function formatDisplayPrediction(prediction: DisplayPrediction | null | undefined): string {
+  if (!prediction) return "No stored prediction";
+  if (
+    isDemoPrediction({
+      modelVersion: prediction.modelVersion,
+      pRed: prediction.pRed,
+      pBlue: prediction.pBlue,
+      caveats: prediction.caveats,
+    })
+  ) {
+    return "No grounded prediction";
+  }
+  const red = predictionWinDisplay({
+    pRed: prediction.pRed,
+    alliance: "red",
+    modelVersion: prediction.modelVersion,
+    caveats: prediction.caveats,
+  });
+  const blue = predictionWinDisplay({
+    pBlue: prediction.pBlue,
+    alliance: "blue",
+    modelVersion: prediction.modelVersion,
+    caveats: prediction.caveats,
+  });
+  if (!red || !blue) return "No grounded prediction";
+  return `${red.label} red · ${blue.label} blue`;
+}
+
 export function widgetValue(
   type: string,
   snapshot: Pick<DisplaySnapshot, "nextMatch" | "prediction" | "scouting" | "eventStatus" | "readiness" | "strategyHeadline">,
@@ -255,9 +284,7 @@ export function widgetValue(
         ? matchLabel(snapshot.nextMatch.compLevel, snapshot.nextMatch.matchNumber)
         : "No upcoming team match";
     case "prediction":
-      return snapshot.prediction
-        ? `${Math.round(snapshot.prediction.pRed * 100)}% red · ${Math.round(snapshot.prediction.pBlue * 100)}% blue`
-        : "No stored prediction";
+      return formatDisplayPrediction(snapshot.prediction);
     case "strategy":
       return snapshot.strategyHeadline?.trim() || "No strategy headline";
     case "robot_readiness":
@@ -311,6 +338,8 @@ SELECT jsonb_build_object(
     FROM predictions p
     JOIN matches_ref m ON m.match_key = p.match_key
     WHERE p.org_id = o.id AND m.event_key = c.active_event_key
+      AND COALESCE(p.model_version, '') !~* 'demo'
+      AND COALESCE(p.caveats::text, '') !~* 'demo'
     ORDER BY
       CASE WHEN p.match_key = (
         SELECT m2.match_key FROM matches_ref m2

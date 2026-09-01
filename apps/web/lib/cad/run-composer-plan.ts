@@ -129,10 +129,21 @@ export function parametersForExecute(
   if (op.operation === "create_mate") {
     const firstFaceId = firstPlannedId(op.parameters.firstFaceId);
     const secondFaceId = firstPlannedId(op.parameters.secondFaceId);
+    const firstInstanceId = firstPlannedId(op.parameters.firstInstanceId);
+    const secondInstanceId = firstPlannedId(op.parameters.secondInstanceId);
     return {
       ...op.parameters,
       ...(firstFaceId ? { firstFaceId } : {}),
       ...(secondFaceId ? { secondFaceId } : {}),
+      ...(firstInstanceId ? { firstInstanceId } : {}),
+      ...(secondInstanceId ? { secondInstanceId } : {}),
+    };
+  }
+  if (op.operation === "delete_feature") {
+    const featureId = firstPlannedId(op.parameters.featureId);
+    return {
+      ...op.parameters,
+      ...(featureId ? { featureId } : {}),
     };
   }
   if (op.operation !== "create_extrude") return { ...op.parameters };

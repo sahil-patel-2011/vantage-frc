@@ -111,6 +111,16 @@ describe("composer native ops", () => {
     expect(COMPOSER_OP_FIELDS.create_mate).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          key: "firstInstanceId",
+          kind: "idList",
+          help: "Instance ids from list-onshape-assembly.",
+        }),
+        expect.objectContaining({
+          key: "secondInstanceId",
+          kind: "idList",
+          help: "Instance ids from list-onshape-assembly.",
+        }),
+        expect.objectContaining({
           key: "firstFaceId",
           kind: "idList",
           help: "Face ids from list-onshape-entities.",
@@ -352,9 +362,9 @@ describe("composer native ops", () => {
     expect(COMPOSER_OP_FIELDS.delete_feature).toEqual([
       expect.objectContaining({
         key: "featureId",
-        kind: "text",
+        kind: "idList",
         label: "Feature ID",
-        help: "Feature id from the Vantage feature tree. Never invent DEMO.",
+        help: "Feature id from the Vantage feature tree.",
       }),
     ]);
     expect(COMPOSER_OP_FIELDS.delete_feature.some((field) => field.key === "source")).toBe(false);
@@ -363,7 +373,7 @@ describe("composer native ops", () => {
       { id: "step-1", operation: "delete_feature", parameters: {}, reason: "" },
     ]);
     expect(() => parametersFromDraft("delete_feature", {})).toThrow(/feature id from the Vantage feature tree/i);
-    expect(parametersFromDraft("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: "FFillet" });
+    expect(parametersFromDraft("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: ["FFillet"] });
     expect(
       parseComposerOps([{ operation: "delete_feature", parameters: { featureId: "FFillet" } }]),
     ).toEqual([
@@ -427,7 +437,25 @@ describe("composer native ops", () => {
     expect(() => parametersFromDraft("create_hole", { diameterMm: "5", faceIds: "F2" })).toThrow(
       /face ids and scope body ids/i,
     );
-    expect(parametersFromDraft("create_mate", { firstFaceId: "JFC", secondFaceId: "JFD" })).toEqual({
+    expect(() => parametersFromDraft("create_mate", { firstFaceId: "JFC", secondFaceId: "JFD" })).toThrow(
+      /instance id/i,
+    );
+    expect(
+      parametersFromDraft("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" }),
+    ).toEqual({
+      firstInstanceId: ["Mi1"],
+      secondInstanceId: ["Mi2"],
+    });
+    expect(
+      parametersFromDraft("create_mate", {
+        firstInstanceId: "Mi1",
+        secondInstanceId: "Mi2",
+        firstFaceId: "JFC",
+        secondFaceId: "JFD",
+      }),
+    ).toEqual({
+      firstInstanceId: ["Mi1"],
+      secondInstanceId: ["Mi2"],
       firstFaceId: ["JFC"],
       secondFaceId: ["JFD"],
     });
@@ -470,6 +498,25 @@ describe("composer native ops", () => {
     expect(() => requireComposerPicks("create_mirror", {})).toThrow(/feature ids/i);
     expect(() => requireComposerPicks("delete_feature", {})).toThrow(/feature id from the Vantage feature tree/i);
     expect(requireComposerPicks("delete_feature", { featureId: "FFillet" })).toEqual({ featureId: "FFillet" });
+    expect(requireComposerPicks("delete_feature", { featureId: ["FFillet"] })).toEqual({ featureId: ["FFillet"] });
+    expect(parseComposerOps([{ operation: "create_mate", parameters: {} }])).toEqual([
+      { id: "step-1", operation: "create_mate", parameters: {}, reason: "" },
+    ]);
+    expect(() => requireComposerPicks("create_mate", {})).toThrow(/instance id/i);
+    expect(() => requireComposerPicks("create_mate", { firstInstanceId: "Mi1" })).toThrow(/instance id/i);
+    expect(() => requireComposerPicks("create_mate", { firstFaceId: ["JFC"], secondFaceId: ["JFD"] })).toThrow(
+      /instance id/i,
+    );
+    expect(requireComposerPicks("create_mate", { firstInstanceId: "Mi1", secondInstanceId: "Mi2" })).toEqual({
+      firstInstanceId: "Mi1",
+      secondInstanceId: "Mi2",
+    });
+    expect(
+      requireComposerPicks("create_mate", { firstInstanceId: ["Mi1"], secondInstanceId: ["Mi2"] }),
+    ).toEqual({
+      firstInstanceId: ["Mi1"],
+      secondInstanceId: ["Mi2"],
+    });
   });
 
   it("maps stored shell entities to faceIds", () => {
