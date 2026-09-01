@@ -119,7 +119,7 @@ function rawPlanEntries(input: unknown): unknown[] {
 }
 
 /**
- * Fill create_extrude.sketchFeatureId only from a real prior sketch result.
+ * Fill create_extrude / create_revolve.sketchFeatureId only from a real prior sketch result.
  * Planned IDs stay as the human wrote them. Missing IDs stay missing.
  */
 export function parametersForExecute(
@@ -146,7 +146,7 @@ export function parametersForExecute(
       ...(featureId ? { featureId } : {}),
     };
   }
-  if (op.operation !== "create_extrude") return { ...op.parameters };
+  if (op.operation !== "create_extrude" && op.operation !== "create_revolve") return { ...op.parameters };
   const plannedSketch = firstPlannedId(op.parameters.sketchFeatureId);
   if (plannedSketch) {
     return { ...op.parameters, sketchFeatureId: plannedSketch };

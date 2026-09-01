@@ -9,6 +9,7 @@
  */
 
 import {
+  booleanFeature,
   booleanParameter,
   chamferFeature,
   circularPatternFeature,
@@ -21,6 +22,9 @@ import {
   parseAddedFeatureId,
   patternAxisPlaneId,
   quantityParameter,
+  revolveFeature,
+  type BooleanOperation,
+  type ExtrudeOperation,
   type HoleEndStyle,
 } from "./onshape-features";
 import { firstPlannedId } from "./first-planned-id";
@@ -41,6 +45,8 @@ export const ONSHAPE_NATIVE_OPERATIONS = [
   "create_hole",
   "create_pattern",
   "create_mirror",
+  "create_revolve",
+  "create_boolean",
   "delete_feature",
   "set_variable",
 ] as const;
@@ -127,6 +133,22 @@ function buildNativeFeature(
         plane: optionalString(parameters, ["plane"]) || "Right",
         planeIds: stringList(firstDefined(parameters, ["planeIds"])),
         name: optionalName(parameters, "VantageMirror"),
+      });
+    case "create_revolve":
+      return revolveFeature({
+        sketchFeatureId: firstPlannedId(parameters.sketchFeatureId),
+        axisIds: requireEntityIds(parameters, ["axisIds", "entities", "edges"], "axisIds"),
+        angleDeg: firstNumber(parameters, ["angleDeg", "angle"]),
+        operationType: optionalExtrudeOperation(parameters),
+        oppositeDirection: bool(parameters.oppositeDirection, false),
+        name: optionalName(parameters, "VantageRevolve"),
+      });
+    case "create_boolean":
+      return booleanFeature({
+        operationType: requireBooleanOperation(parameters),
+        toolBodyIds: requireEntityIds(parameters, ["toolBodyIds", "tools", "bodyIds"], "toolBodyIds"),
+        targetBodyIds: stringList(firstDefined(parameters, ["targetBodyIds", "targets"])),
+        name: optionalName(parameters, "VantageBoolean"),
       });
   }
 }
@@ -302,6 +324,23 @@ function requireEntityIds(parameters: Record<string, unknown>, names: string[], 
   throw new Error(
     `${label} is empty. Resolve real geometry first (onshape_describe, or the tool's own featureId argument) — Vantage never guesses Onshape entity ids.`,
   );
+}
+
+function optionalExtrudeOperation(parameters: Record<string, unknown>): ExtrudeOperation | undefined {
+  const raw = optionalString(parameters, ["operationType"]).toUpperCase();
+  if (!raw) return undefined;
+  if (raw !== "NEW" && raw !== "ADD" && raw !== "REMOVE" && raw !== "INTERSECT") {
+    throw new Error(`operationType must be one of NEW, ADD, REMOVE, INTERSECT. Got "${raw}".`);
+  }
+  return raw;
+}
+
+function requireBooleanOperation(parameters: Record<string, unknown>): BooleanOperation {
+  const raw = optionalString(parameters, ["booleanType", "operationType"]).toUpperCase();
+  if (raw !== "UNION" && raw !== "SUBTRACT" && raw !== "INTERSECT") {
+    throw new Error(`Boolean needs operationType UNION, SUBTRACT, or INTERSECT.`);
+  }
+  return raw;
 }
 
 function holeEndStyle(parameters: Record<string, unknown>): HoleEndStyle {

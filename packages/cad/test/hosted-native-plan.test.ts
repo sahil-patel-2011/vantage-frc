@@ -15,6 +15,8 @@ describe("hosted native CAD plans", () => {
     expect(HOSTED_NATIVE).toContain("create_hole");
     expect(HOSTED_NATIVE).toContain("create_mirror");
     expect(HOSTED_NATIVE).toContain("delete_feature");
+    expect(HOSTED_NATIVE).toContain("create_revolve");
+    expect(HOSTED_NATIVE).toContain("create_boolean");
     expect(HOSTED_NATIVE).not.toContain("feature_script");
   });
 

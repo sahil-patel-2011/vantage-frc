@@ -9,6 +9,8 @@ export const COMPOSER_NATIVE_OPS = [
   "create_hole",
   "create_pattern",
   "create_mirror",
+  "create_revolve",
+  "create_boolean",
   "create_part_studio",
   "create_assembly",
   "add_assembly_instance",
@@ -84,6 +86,8 @@ const POSITIVE_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_hole: ["diameterMm", "depthMm"],
   create_pattern: ["spacingMm"],
   create_mirror: [],
+  create_revolve: [],
+  create_boolean: [],
   create_part_studio: [],
   create_assembly: [],
   add_assembly_instance: [],
@@ -106,6 +110,8 @@ const COUNT_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_hole: [],
   create_pattern: ["instanceCount"],
   create_mirror: [],
+  create_revolve: [],
+  create_boolean: [],
   create_part_studio: [],
   create_assembly: [],
   add_assembly_instance: [],
@@ -128,6 +134,8 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   create_hole: [],
   create_pattern: [],
   create_mirror: [],
+  create_revolve: [],
+  create_boolean: [],
   create_part_studio: [],
   create_assembly: [],
   add_assembly_instance: [],
@@ -148,7 +156,19 @@ const SIGNED_MM_BY_OP: Record<ComposerNativeOp, readonly string[]> = {
   delete_feature: [],
 };
 
-const LIST_KEYS = new Set(["entities", "edgeIds", "faceIds", "bodyIds", "views", "featureIds", "axisIds", "planeIds"]);
+const LIST_KEYS = new Set([
+  "entities",
+  "edgeIds",
+  "faceIds",
+  "bodyIds",
+  "views",
+  "featureIds",
+  "axisIds",
+  "planeIds",
+  "sketchFeatureId",
+  "toolBodyIds",
+  "targetBodyIds",
+]);
 
 const SKETCH_PLANES = [
   { value: "Top", label: "Top" },
@@ -159,6 +179,14 @@ const SKETCH_PLANES = [
 const SKETCH_KINDS = [
   { value: "rectangle", label: "Rectangle" },
   { value: "circle", label: "Circle" },
+  { value: "polyline", label: "Polyline" },
+  { value: "points", label: "Hole points" },
+] as const;
+
+const BOOLEAN_TYPES = [
+  { value: "UNION", label: "Union" },
+  { value: "SUBTRACT", label: "Subtract" },
+  { value: "INTERSECT", label: "Intersect" },
 ] as const;
 
 const EXTRUDE_TYPES = [
@@ -200,6 +228,13 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     { key: "widthMm", label: "Width", kind: "mm", help: "Rectangle width in millimetres. Leave blank for a circle." },
     { key: "heightMm", label: "Height", kind: "mm", help: "Rectangle height in millimetres. Leave blank for a circle." },
     { key: "radiusMm", label: "Radius", kind: "mm", help: "Circle radius in millimetres. Leave blank for a rectangle." },
+    {
+      key: "points",
+      label: "Points",
+      kind: "text",
+      help: "Millimetre pairs you measured: 0,0; 80,0; 80,40; 0,40. Do not invent corners.",
+    },
+    { key: "closed", label: "Closed loop", kind: "checkbox", help: "Close a polyline so it can be extruded." },
     { key: "name", label: "Name", kind: "text" },
   ],
   create_extrude: [
@@ -288,6 +323,45 @@ export const COMPOSER_OP_FIELDS: Record<ComposerNativeOp, readonly ComposerField
     },
     { key: "name", label: "Name", kind: "text" },
   ],
+  create_revolve: [
+    {
+      key: "sketchFeatureId",
+      label: "Sketch feature ID",
+      kind: "idList",
+      help: "Sketch feature id from the Vantage feature tree. Leave blank to use the last sketch this session created.",
+    },
+    {
+      key: "axisIds",
+      label: "Axis",
+      kind: "idList",
+      help: "Edge or axis ids from list-onshape-entities. Do not invent ids.",
+    },
+    {
+      key: "angleDeg",
+      label: "Angle (deg)",
+      kind: "text",
+      help: "Positive degrees, max 360. Leave blank for a full revolution.",
+    },
+    { key: "operationType", label: "Operation", kind: "select", options: EXTRUDE_TYPES },
+    { key: "oppositeDirection", label: "Opposite direction", kind: "checkbox" },
+    { key: "name", label: "Name", kind: "text" },
+  ],
+  create_boolean: [
+    { key: "operationType", label: "Operation", kind: "select", options: BOOLEAN_TYPES },
+    {
+      key: "toolBodyIds",
+      label: "Tool bodies",
+      kind: "idList",
+      help: "Body ids from list-onshape-entities. Do not invent ids.",
+    },
+    {
+      key: "targetBodyIds",
+      label: "Target bodies",
+      kind: "idList",
+      help: "Required for subtract and intersect. Body ids from list-onshape-entities.",
+    },
+    { key: "name", label: "Name", kind: "text" },
+  ],
   create_part_studio: [{ key: "name", label: "Name", kind: "text" }],
   create_assembly: [{ key: "name", label: "Name", kind: "text" }],
   add_assembly_instance: [
@@ -373,7 +447,7 @@ export function emptyComposerParameters(_operation?: ComposerNativeOp): Record<s
 export function describeComposerOp(operation: ComposerNativeOp): string {
   switch (operation) {
     case "create_sketch":
-      return "Sketch rectangle";
+      return "Sketch";
     case "create_extrude":
       return "Extrude";
     case "create_fillet":
@@ -388,6 +462,10 @@ export function describeComposerOp(operation: ComposerNativeOp): string {
       return "Pattern";
     case "create_mirror":
       return "Mirror";
+    case "create_revolve":
+      return "Revolve";
+    case "create_boolean":
+      return "Boolean";
     case "create_part_studio":
       return "Part studio";
     case "create_assembly":
@@ -423,7 +501,15 @@ export function summarizeComposerParams(operation: ComposerNativeOp, parameters:
   const thickness = asFiniteNumber(parameters.thicknessMm);
   const spacing = asFiniteNumber(parameters.spacingMm);
   const instanceCount = asFiniteNumber(parameters.instanceCount);
-  if (operation === "create_sketch" && width != null && height != null) {
+  if (operation === "create_sketch" && stringOrEmpty(parameters.sketchKind) === "polyline") {
+    const pointCount = Array.isArray(parameters.points)
+      ? parameters.points.length
+      : typeof parameters.points === "string" && parameters.points.trim()
+        ? parameters.points.split(/[;|\n]+/).filter((chunk) => chunk.trim()).length
+        : 0;
+    if (pointCount) parts.push(`${pointCount} pts`);
+    if (parameters.closed !== false) parts.push("closed");
+  } else if (operation === "create_sketch" && width != null && height != null) {
     parts.push(`${formatMm(width)} × ${formatMm(height)} mm`);
   } else if (operation === "create_chamfer" && width != null) {
     parts.push(`${formatMm(width)} mm`);
@@ -537,14 +623,41 @@ export function requireComposerDimensions(
 ): Record<string, unknown> {
   switch (operation) {
     case "create_sketch": {
-      const circular =
-        stringOrEmpty(parameters.sketchKind) === "circle" || asFiniteNumber(parameters.radiusMm) != null;
-      if (circular) {
+      const kind = stringOrEmpty(parameters.sketchKind).toLowerCase();
+      if (kind === "circle") {
         if (asFiniteNumber(parameters.radiusMm) == null) {
           throw new Error("Circle sketches need a positive radius in millimetres.");
         }
-      } else if (asFiniteNumber(parameters.widthMm) == null || asFiniteNumber(parameters.heightMm) == null) {
+        break;
+      }
+      if (kind === "polyline") {
+        const points = parseComposerSketchPoints(parameters.points);
+        if (points.length < 2) {
+          throw new Error("Polyline sketches need at least two millimetre points (xMm, yMm).");
+        }
+        parameters.points = points;
+        break;
+      }
+      if (kind === "points") {
+        const points = parseComposerSketchPoints(parameters.points);
+        if (!points.length) {
+          throw new Error("Point sketches need at least one millimetre point (xMm, yMm).");
+        }
+        parameters.points = points;
+        break;
+      }
+      if (asFiniteNumber(parameters.widthMm) == null || asFiniteNumber(parameters.heightMm) == null) {
         throw new Error("Sketch width and height are required millimetres.");
+      }
+      break;
+    }
+    case "create_revolve": {
+      if (parameters.angleDeg != null && parameters.angleDeg !== "") {
+        const angle = Number(parameters.angleDeg);
+        if (!Number.isFinite(angle) || angle <= 0 || angle > 360) {
+          throw new Error("Revolve angle must be a positive number of degrees (max 360).");
+        }
+        parameters.angleDeg = angle;
       }
       break;
     }
@@ -655,6 +768,28 @@ export function requireComposerPicks(
       }
       break;
     }
+    case "create_revolve":
+      if (!hasNonEmptyIds(parameters.axisIds) && !hasNonEmptyIds(parameters.entities)) {
+        throw new Error("Revolve needs at least one axis id from list-onshape-entities. Do not invent ids.");
+      }
+      break;
+    case "create_boolean": {
+      const kind = stringOrEmpty(parameters.operationType).toUpperCase();
+      if (kind !== "UNION" && kind !== "SUBTRACT" && kind !== "INTERSECT") {
+        throw new Error("Boolean needs operationType UNION, SUBTRACT, or INTERSECT.");
+      }
+      parameters.operationType = kind;
+      if (!hasNonEmptyIds(parameters.toolBodyIds) && !hasNonEmptyIds(parameters.bodyIds)) {
+        throw new Error("Boolean needs tool body ids from list-onshape-entities. Do not invent ids.");
+      }
+      if (
+        (kind === "SUBTRACT" || kind === "INTERSECT") &&
+        !hasNonEmptyIds(parameters.targetBodyIds)
+      ) {
+        throw new Error("Subtract and intersect need target body ids from list-onshape-entities. Do not invent ids.");
+      }
+      break;
+    }
     case "delete_feature":
       if (!hasNonEmptyId(parameters.featureId) && !hasNonEmptyIds(parameters.featureId)) {
         throw new Error("Delete feature needs a feature id from the Vantage feature tree. Do not invent ids.");
@@ -675,6 +810,13 @@ export function parametersFromDraft(
     const raw = draft[field.key];
     if (field.kind === "checkbox") {
       if (raw === true || raw === "true") parameters[field.key] = true;
+      else if (
+        operation === "create_sketch" &&
+        field.key === "closed" &&
+        String(parameters.sketchKind ?? draft.sketchKind ?? "").toLowerCase() === "polyline"
+      ) {
+        parameters.closed = false;
+      }
       continue;
     }
     const text = raw == null ? "" : String(raw);
@@ -736,6 +878,10 @@ export function draftFromParameters(operation: ComposerNativeOp, parameters: Rec
       continue;
     }
     if (Array.isArray(value)) {
+      if (field.key === "points") {
+        draft[field.key] = formatComposerSketchPoints(value);
+        continue;
+      }
       draft[field.key] = value.map((item) => String(item).trim()).filter(Boolean).join(", ");
       continue;
     }
@@ -841,6 +987,16 @@ function normalizeParameters(operation: ComposerNativeOp, raw: unknown): Record<
     if (isEmptyMm(value)) continue;
     parameters[key] = value;
   }
+  if (operation === "create_sketch" && parameters.points != null) {
+    parameters.points = parseComposerSketchPoints(parameters.points);
+  }
+  if (operation === "create_revolve" && parameters.angleDeg != null && parameters.angleDeg !== "") {
+    const angle = Number(parameters.angleDeg);
+    if (!Number.isFinite(angle) || angle <= 0 || angle > 360) {
+      throw new Error("Revolve angle must be a positive number of degrees (max 360).");
+    }
+    parameters.angleDeg = angle;
+  }
   return compactParameters(parameters);
 }
 
@@ -857,6 +1013,75 @@ function asParamRecord(value: unknown): Record<string, unknown> {
   }
   if (typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
   throw new Error("Parameters must be an object");
+}
+
+export function parseComposerSketchPoints(value: unknown): Array<{ xMm: number; yMm: number }> {
+  if (value == null || value === "") return [];
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[")) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        throw new Error("Points JSON is invalid. Use millimetre pairs like 0,0; 80,0; 80,40.");
+      }
+      return parseComposerSketchPoints(parsed);
+    }
+    return trimmed
+      .split(/[;|\n]+/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean)
+      .map((chunk, index) => parseComposerSketchPoint(chunk, index));
+  }
+  if (!Array.isArray(value)) {
+    throw new Error("Points must be millimetre pairs like 0,0; 80,0; 80,40.");
+  }
+  return value.map((item, index) => parseComposerSketchPoint(item, index));
+}
+
+function parseComposerSketchPoint(item: unknown, index: number): { xMm: number; yMm: number } {
+  if (Array.isArray(item) && item.length >= 2) {
+    return { xMm: finiteSketchMm(item[0], index, "xMm"), yMm: finiteSketchMm(item[1], index, "yMm") };
+  }
+  if (item && typeof item === "object") {
+    const record = item as Record<string, unknown>;
+    return {
+      xMm: finiteSketchMm(record.xMm ?? record.x, index, "xMm"),
+      yMm: finiteSketchMm(record.yMm ?? record.y, index, "yMm"),
+    };
+  }
+  if (typeof item === "string") {
+    const nums = item.trim().split(/[,\s]+/).filter(Boolean);
+    if (nums.length < 2) throw new Error(`Point ${index + 1} needs xMm and yMm in millimetres.`);
+    return { xMm: finiteSketchMm(nums[0], index, "xMm"), yMm: finiteSketchMm(nums[1], index, "yMm") };
+  }
+  throw new Error(`Point ${index + 1} needs xMm and yMm in millimetres.`);
+}
+
+function finiteSketchMm(value: unknown, index: number, axis: "xMm" | "yMm"): number {
+  const number = Number(value);
+  if (!Number.isFinite(number) || Math.abs(number) > 10_000) {
+    throw new Error(`points[${index}].${axis} must be a number of millimetres between -10000 and 10000.`);
+  }
+  return number;
+}
+
+function formatComposerSketchPoints(value: unknown[]): string {
+  return value
+    .map((item) => {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        const record = item as Record<string, unknown>;
+        const x = record.xMm ?? record.x;
+        const y = record.yMm ?? record.y;
+        if (x != null && y != null) return `${x},${y}`;
+      }
+      if (Array.isArray(item) && item.length >= 2) return `${item[0]},${item[1]}`;
+      return String(item).trim();
+    })
+    .filter(Boolean)
+    .join("; ");
 }
 
 function compactParameters(parameters: Record<string, unknown>): Record<string, unknown> {
