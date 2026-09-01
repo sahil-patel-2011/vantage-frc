@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  INVENTORY_ITEM_ID_INVALID,
   NEEDED_BY_INVALID,
   VENDOR_ID_REQUIRED,
   VENDOR_NOT_IN_DIRECTORY,
@@ -66,6 +67,7 @@ describe("validatePurchaseRequestCreate — vendor id required", () => {
       expect(result.value.vendorId).toBe(VENDOR_ID);
       expect(result.value.totalCostUsd).toBe(20);
       expect(result.value.neededBy).toBeNull();
+      expect(result.value.inventoryItemId).toBeNull();
     }
   });
 
@@ -103,6 +105,27 @@ describe("validatePurchaseRequestCreate — neededBy", () => {
     const spaces = validatePurchaseRequestCreate(validBody({ neededBy: "   " }));
     expect(spaces.ok).toBe(true);
     if (spaces.ok) expect(spaces.value.neededBy).toBeNull();
+  });
+
+  it("accepts an optional inventoryItemId and the inventory_item_id alias", () => {
+    const ITEM_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const byCamel = validatePurchaseRequestCreate(validBody({ inventoryItemId: ITEM_ID }));
+    expect(byCamel.ok).toBe(true);
+    if (byCamel.ok) expect(byCamel.value.inventoryItemId).toBe(ITEM_ID);
+
+    const bySnake = validatePurchaseRequestCreate(validBody({ inventory_item_id: ITEM_ID }));
+    expect(bySnake.ok).toBe(true);
+    if (bySnake.ok) expect(bySnake.value.inventoryItemId).toBe(ITEM_ID);
+
+    const blank = validatePurchaseRequestCreate(validBody({ inventoryItemId: "" }));
+    expect(blank.ok).toBe(true);
+    if (blank.ok) expect(blank.value.inventoryItemId).toBeNull();
+  });
+
+  it("rejects a non-uuid inventoryItemId instead of inventing a catalog link", () => {
+    const result = validatePurchaseRequestCreate(validBody({ inventoryItemId: "NEO-550" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe(INVENTORY_ITEM_ID_INVALID);
   });
 
   it("rejects a non-date neededBy instead of inventing or dropping it", () => {
@@ -160,8 +183,31 @@ describe("insertDirectoryPurchaseRequest", () => {
       20,
       "Drivetrain spare",
       null,
+      null,
     ]);
     expect(insertCall?.[1]).not.toContain("Amazon");
+  });
+
+  it("writes inventory_item_id when the buy sheet names a catalog row", async () => {
+    const ITEM_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ id: VENDOR_ID, name: "McMaster-Carr", preferred: true }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: "req-3", title: "NEO 550", vendor: "McMaster-Carr", vendorId: VENDOR_ID, inventoryItemId: ITEM_ID }],
+      });
+
+    const created = await insertDirectoryPurchaseRequest({ query } as never, {
+      orgId: ORG_ID,
+      userId: USER_ID,
+      seasonYear: 2026,
+      body: validBody({ inventoryItemId: ITEM_ID }),
+    });
+
+    expect(created.inventoryItemId).toBe(ITEM_ID);
+    const insertCall = query.mock.calls[1];
+    expect(insertCall?.[0]).toMatch(/inventory_item_id/);
+    expect(insertCall?.[1]?.[13]).toBe(ITEM_ID);
   });
 
   it("writes needed_by when the buy sheet sends a date", async () => {
@@ -217,6 +263,7 @@ describe("updateDirectoryPurchaseRequest", () => {
       10,
       20,
       "Drivetrain spare",
+      null,
       null,
       null,
       REQUEST_ID,

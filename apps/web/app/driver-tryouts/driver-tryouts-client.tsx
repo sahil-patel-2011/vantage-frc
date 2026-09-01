@@ -293,14 +293,18 @@ function Rankings({
             </div>
             {row.averages ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginTop: 8 }}>
-                {DRIVER_TRYOUTS_CRITERIA.map((criterion) => (
+                {DRIVER_TRYOUTS_CRITERIA.map((criterion) => {
+                  const averages = row.averages;
+                  if (!averages) return null;
+                  return (
                   <div key={criterion}>
                     <small className="app-muted" style={{ display: "block" }}>
                       {driverTryoutsCriterionLabel(criterion)}
                     </small>
-                    <strong>{row.averages[criterion].toFixed(1)}</strong>
+                    <strong>{averages[criterion].toFixed(1)}</strong>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : null}
             <EvaluationForm candidateId={row.candidateId} busy={busy} mutate={mutate} />

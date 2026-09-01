@@ -48,5 +48,8 @@ export async function wirePickClockJustifications(
     teamKeys,
   });
 
-  return applyStoredJustificationsToPickClockResult(clock, stored.byTeamKey);
+  return {
+    ...clock,
+    ...applyStoredJustificationsToPickClockResult(clock, stored.byTeamKey),
+  };
 }

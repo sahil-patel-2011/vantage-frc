@@ -29,6 +29,7 @@ import type {
   TbaAccessInfo,
 } from "./types";
 import { computePrivateEdgeView } from "./compute-private-edge";
+import { projectScoutEntriesForEngine } from "./scout-engine-payload";
 import { resolveActiveSeasonYear } from "@vantage/agent";
 import { VANTAGE_PRODUCT_VERSION } from "../product-version";
 
@@ -324,7 +325,9 @@ async function loadScoutOperations(
     })),
   ];
 
-  const built = buildOperationsFromScoutEntries(entries, { roles: fieldRoles });
+  const built = buildOperationsFromScoutEntries(projectScoutEntriesForEngine(entries, fieldRoles), {
+    roles: fieldRoles,
+  });
   const operations: TeamOperationalSignal[] = built.map((row) => ({
     teamKey: row.teamKey,
     scoutSample: row.scoutSample,

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui";
 import { SPONSOR_CRM_RELATED_INCLUDE } from "../../lib/business/business-related";
@@ -18,6 +18,12 @@ import {
   nextPipelineStage,
   pipelineStageLabel,
 } from "../../lib/sponsor-pipeline";
+import {
+  formatSponsorUsd,
+  sponsorPageTotals,
+  type ContributionMoneyRow,
+  type SponsorLifetimeRow,
+} from "../../lib/sponsors/totals";
 
 type Mutate = (body: Record<string, unknown>) => Promise<void>;
 type Submit = (event: FormEvent<HTMLFormElement>, action: string, moneyFields?: string[]) => Promise<void>;
@@ -59,6 +65,17 @@ function reminderLabel(kind: SponsorReminder["kind"]): string {
   if (kind === "thank_you") return "Thank-you";
   if (kind === "renewal") return "Renewal";
   return "Follow-up";
+}
+
+function sponsorLifetimeRows(sponsors: readonly Sponsor[]): SponsorLifetimeRow[] {
+  return sponsors.map((sponsor) => ({
+    id: sponsor.id,
+    lifetimeContributionUsd: sponsor.lifetimeCents / 100,
+  }));
+}
+
+function contributionMoneyKey(sponsors: readonly Sponsor[]): string {
+  return sponsors.map((sponsor) => `${sponsor.id}:${sponsor.lifetimeCents}`).join("|");
 }
 
 function NextActions({ view }: { view: BusinessView }) {
@@ -112,6 +129,40 @@ export function SponsorPipelinePanel({
   const progress = view.fundraisingProgress;
   const reminders = view.sponsorReminders;
   const activeSponsors = view.sponsors.filter((s) => s.status !== "declined");
+  const [contributionRows, setContributionRows] = useState<ContributionMoneyRow[]>([]);
+  const [contributionsLoaded, setContributionsLoaded] = useState(false);
+  const [ledgerEpoch, setLedgerEpoch] = useState(0);
+  const moneyKey = contributionMoneyKey(view.sponsors);
+
+  useEffect(() => {
+    let cancelled = false;
+    setContributionsLoaded(false);
+    void fetch(`/api/sponsors/contributions?orgId=${encodeURIComponent(view.orgId)}`)
+      .then(async (response) => {
+        const data = (await response.json()) as { contributions?: ContributionMoneyRow[] };
+        if (cancelled) return;
+        if (response.ok) {
+          setContributionRows(Array.isArray(data.contributions) ? data.contributions : []);
+          setContributionsLoaded(true);
+        }
+      })
+      .catch(() => {
+        /* keep lifetime fallback — never invent DEMO amounts */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view.orgId, moneyKey, ledgerEpoch]);
+
+  const submitAndRefresh: Submit = async (event, action, moneyFields) => {
+    await submit(event, action, moneyFields);
+    if (action === "add-contribution") setLedgerEpoch((n) => n + 1);
+  };
+
+  const { teamTotalUsd, amountBySponsorId } = useMemo(
+    () => sponsorPageTotals(sponsorLifetimeRows(view.sponsors), contributionRows, contributionsLoaded),
+    [view.sponsors, contributionRows, contributionsLoaded],
+  );
 
   return (
     <div className="biz-stack">
@@ -135,6 +186,10 @@ export function SponsorPipelinePanel({
           </ToneBadge>
         </header>
         <div className="biz-pipeline-goal-stats">
+          <b>
+            {formatSponsorUsd(teamTotalUsd)}
+            <small>team total</small>
+          </b>
           <b>
             {money(progress.goalCents)}
             <small>season goal</small>
@@ -242,7 +297,7 @@ export function SponsorPipelinePanel({
             <span className="biz-overline">Sponsor pipeline CRM</span>
             <h2>Prospect → ask → visit → pledged → active → renewal</h2>
           </div>
-          <span className="biz-count">{activeSponsors.length}</span>
+          <span className="biz-count">{formatSponsorUsd(teamTotalUsd)} team total · {activeSponsors.length}</span>
         </header>
         <div className="biz-sponsor-board">
           {SPONSOR_PIPELINE_STAGES.map((stage) => (
@@ -252,7 +307,15 @@ export function SponsorPipelinePanel({
                 <span>{byStage[stage].length}</span>
               </header>
               {byStage[stage].map((sponsor) => (
-                <PipelineCard key={sponsor.id} sponsor={sponsor} stage={stage} view={view} busy={busy} mutate={mutate} />
+                <PipelineCard
+                  key={sponsor.id}
+                  sponsor={sponsor}
+                  amountUsd={amountBySponsorId[sponsor.id] ?? 0}
+                  stage={stage}
+                  view={view}
+                  busy={busy}
+                  mutate={mutate}
+                />
               ))}
               {!byStage[stage].length ? <p className="biz-empty-inline">No partners in this stage</p> : null}
             </div>
@@ -269,7 +332,7 @@ export function SponsorPipelinePanel({
             </div>
             {view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Team view</ToneBadge>}
           </header>
-          <form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-sponsor", ["ask", "pledged"])}>
+          <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "add-sponsor", ["ask", "pledged"])}>
             <Field label="Organization">
               <input name="name" required placeholder="Acme Manufacturing" disabled={!view.canManageFinance} />
             </Field>
@@ -365,7 +428,7 @@ export function SponsorPipelinePanel({
           <article className="app-card">
             <span className="biz-overline">Log a touchpoint</span>
             <h2>Capture what happened and what happens next.</h2>
-            <form className="biz-form-grid" onSubmit={(event) => void submit(event, "log-interaction")}>
+            <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "log-interaction")}>
               <Field label="Sponsor">
                 <select name="sponsorId" required>
                   {view.sponsors.map((sponsor) => (
@@ -405,7 +468,7 @@ export function SponsorPipelinePanel({
           <article className="app-card">
             <span className="biz-overline">Contribution ledger</span>
             <h2>Add cash and in-kind support to the season.</h2>
-            <form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-contribution", ["amount"])}>
+            <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "add-contribution", ["amount"])}>
               <Field label="Sponsor">
                 <select name="sponsorId" required disabled={!view.canManageFinance}>
                   {view.sponsors.map((sponsor) => (
@@ -451,12 +514,14 @@ export function SponsorPipelinePanel({
 
 function PipelineCard({
   sponsor,
+  amountUsd,
   stage,
   view,
   busy,
   mutate,
 }: {
   sponsor: Sponsor;
+  amountUsd: number;
   stage: SponsorPipelineStage;
   view: BusinessView;
   busy: boolean;
@@ -475,8 +540,8 @@ function PipelineCard({
       </header>
       <div className="biz-sponsor-money">
         <b>
-          {money(sponsor.seasonCents)}
-          <small>this season</small>
+          {formatSponsorUsd(amountUsd)}
+          <small>recorded</small>
         </b>
         <b>
           {money(sponsor.pledgedCents || sponsor.askCents)}

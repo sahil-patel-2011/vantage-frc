@@ -30,12 +30,14 @@ export function CadOperationComposer({
   plan,
   onPlanChange,
   onAppend,
+  onRunPlan,
 }: {
   platform: string;
   disabled?: boolean;
   plan?: ComposerOp[] | unknown;
   onPlanChange?: (ops: ComposerOp[]) => void;
   onAppend?: (payload: Record<string, unknown>) => Promise<unknown>;
+  onRunPlan?: (plan: unknown) => Promise<{ ok?: boolean; error?: string } | void>;
 }) {
   const operations = useMemo(() => composerPalette(platform), [platform]);
   const [operation, setOperation] = useState<ComposerNativeOp>(operations[0] ?? "create_sketch");
@@ -44,6 +46,7 @@ export function CadOperationComposer({
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [internalPlan, setInternalPlan] = useState<ComposerOp[]>([]);
+  const [runningPlan, setRunningPlan] = useState(false);
 
   const steps = useMemo(() => {
     if (plan === undefined) return internalPlan;
@@ -111,6 +114,24 @@ export function CadOperationComposer({
   function deleteStep(id: string) {
     commitPlan(removeComposerOp(steps, id));
     if (editingId === id) clearEditor();
+  }
+
+  async function runPlannedSteps() {
+    if (!onRunPlan) return;
+    setError("");
+    setRunningPlan(true);
+    try {
+      // Pass the raw plan so feature_script is rejected by runComposerPlan,
+      // not dropped by parse. Empty stays empty — no invented steps.
+      const result = await onRunPlan(plan === undefined ? internalPlan : plan);
+      if (result && result.ok === false) {
+        setError(result.error ?? "Planned steps failed");
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not run planned steps");
+    } finally {
+      setRunningPlan(false);
+    }
   }
 
   return (
@@ -204,6 +225,16 @@ export function CadOperationComposer({
           ) : (
             <p className="app-muted">No planned steps yet. Empty plan stays empty until you add a native operation.</p>
           )}
+          {onRunPlan ? (
+            <button
+              type="button"
+              className="app-button"
+              disabled={disabled || runningPlan}
+              onClick={() => void runPlannedSteps()}
+            >
+              {runningPlan ? "Running planned steps…" : "Run planned steps"}
+            </button>
+          ) : null}
         </section>
       </div>
     </details>

@@ -208,3 +208,16 @@ export async function loadShadedView(
     return empty(SHADED_VIEW_FAILED);
   }
 }
+
+/**
+ * Post-execute / agent-path refresh: re-GET the Part Studio shaded view and
+ * return `shadedPngBase64` for the viewport. Failures stay `null` — never a
+ * DEMO cube or invented geometry.
+ */
+export async function refreshShadedPngBase64(
+  http: OnshapeHttp,
+  document: ShadedViewDocument,
+): Promise<string | null> {
+  const view = await loadShadedView(http, document);
+  return view.status === "ready" ? view.pngBase64 : null;
+}

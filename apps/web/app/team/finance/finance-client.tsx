@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { validateBuySheet } from "../../../lib/finance/buy-sheet";
 
 type Category = {
   categoryId: string; name: string; seasonYear: number; planId: string | null;
@@ -11,6 +12,7 @@ type PurchaseRequest = {
   neededBy?: string | null;
 };
 type MonthSummary = { month: string; income: number; expense: number; net: number; overMonthlyLimit: boolean };
+type DirectoryVendor = { id: string; name: string };
 
 const STATUS_ACTIONS: Record<string, { action: string; label: string }[]> = {
   pending: [{ action: "approve", label: "Approve" }, { action: "reject", label: "Reject" }],
@@ -29,19 +31,23 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [totals, setTotals] = useState({ totalIncome: 0, totalExpense: 0, remaining: null as number | null, sponsorCashUsd: 0 });
   const [message, setMessage] = useState("");
   const [budgetForm, setBudgetForm] = useState({ categoryName: "", monthlyLimitUsd: "", totalLimitUsd: "", notes: "" });
-  const [requestForm, setRequestForm] = useState({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "", neededBy: "" });
+  const [vendors, setVendors] = useState<DirectoryVendor[]>([]);
+  const [requestForm, setRequestForm] = useState({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "" });
 
   async function load() {
-    const [budgetRes, requestsRes, summaryRes] = await Promise.all([
+    const [budgetRes, requestsRes, summaryRes, vendorsRes] = await Promise.all([
       fetch(`/api/finance/budget?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/purchase-requests?orgId=${orgId}&seasonYear=${seasonYear}`),
       fetch(`/api/finance/summary?orgId=${orgId}&seasonYear=${seasonYear}`),
+      fetch(`/api/vendors?orgId=${orgId}`),
     ]);
     const budgetData = await budgetRes.json();
     const requestsData = await requestsRes.json();
     const summaryData = await summaryRes.json();
+    const vendorsData = await vendorsRes.json();
     setCategories(budgetData.categories ?? []);
     setRequests(requestsData.requests ?? []);
+    setVendors(Array.isArray(vendorsData.vendors) ? vendorsData.vendors : []);
     setMonths(summaryData.byMonth ?? []);
     setTotals({
       totalIncome: summaryData.totalIncome ?? 0,
@@ -66,13 +72,34 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
 
   async function submitRequest(event: React.FormEvent) {
     event.preventDefault();
+    const sheet = validateBuySheet({
+      what: requestForm.title,
+      why: requestForm.justification,
+      when: requestForm.neededBy,
+      cost: requestForm.unitCostUsd,
+    });
+    if (!sheet.ok) {
+      setMessage(sheet.error);
+      return;
+    }
     const response = await fetch("/api/finance/purchase-requests", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, seasonYear, ...requestForm, categoryId: requestForm.categoryId || null }),
+      body: JSON.stringify({
+        orgId,
+        seasonYear,
+        title: sheet.value.title,
+        justification: sheet.value.justification,
+        neededBy: sheet.value.neededBy,
+        unitCostUsd: sheet.value.costUsd,
+        itemUrl: requestForm.itemUrl,
+        quantity: requestForm.quantity,
+        categoryId: requestForm.categoryId || null,
+        vendorId: requestForm.vendorId || null,
+      }),
     });
     const data = await response.json();
     setMessage(response.ok ? "Purchase request submitted." : data.error);
-    if (response.ok) { setRequestForm({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", justification: "", neededBy: "" }); await load(); }
+    if (response.ok) { setRequestForm({ title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "" }); await load(); }
   }
 
   async function act(id: string, action: string) {
@@ -125,15 +152,19 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
       <section className="admin-grid">
         <form className="intel-panel" onSubmit={submitRequest}>
           <span className="eyebrow">SUBMIT A PURCHASE (e.g. AMAZON ORDER)</span>
-          <label>Item title<input required value={requestForm.title} onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })} placeholder="NEO 550 motor x2" /></label>
+          <label>What<input required value={requestForm.title} onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })} placeholder="NEO 550 motor x2" /></label>
           <label>Item URL<input type="url" value={requestForm.itemUrl} onChange={(e) => setRequestForm({ ...requestForm, itemUrl: e.target.value })} placeholder="https://www.amazon.com/..." /></label>
           <div className="budget-fields">
             <label>Quantity<input type="number" min="1" value={requestForm.quantity} onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })} /></label>
-            <label>Unit cost ($)<input required type="number" min="0" step="0.01" value={requestForm.unitCostUsd} onChange={(e) => setRequestForm({ ...requestForm, unitCostUsd: e.target.value })} /></label>
+            <label>Cost ($)<input required type="number" min="0.01" step="0.01" value={requestForm.unitCostUsd} onChange={(e) => setRequestForm({ ...requestForm, unitCostUsd: e.target.value })} /></label>
           </div>
           <label>Category<select value={requestForm.categoryId} onChange={(e) => setRequestForm({ ...requestForm, categoryId: e.target.value })}><option value="">Uncategorized</option>{categories.map((c) => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}</select></label>
-          <label>Why do we need this?<input value={requestForm.justification} onChange={(e) => setRequestForm({ ...requestForm, justification: e.target.value })} /></label>
-          <label>Needed by<input required type="date" value={requestForm.neededBy} onChange={(e) => setRequestForm({ ...requestForm, neededBy: e.target.value })} /></label>
+          <label>Vendor<select required value={requestForm.vendorId} onChange={(e) => setRequestForm({ ...requestForm, vendorId: e.target.value })}>
+            <option value="">{vendors.length ? "Choose a vendor" : "Add a vendor first"}</option>
+            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select></label>
+          <label>Why<input required value={requestForm.justification} onChange={(e) => setRequestForm({ ...requestForm, justification: e.target.value })} /></label>
+          <label>When <small>needed by, optional</small><input type="date" value={requestForm.neededBy} onChange={(e) => setRequestForm({ ...requestForm, neededBy: e.target.value })} /></label>
           <button className="primary-action">Submit request</button>
         </form>
         <section className="intel-panel invite-list">

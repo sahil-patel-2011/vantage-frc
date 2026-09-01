@@ -4,6 +4,7 @@
  */
 import {
   CAD_AGENT_SYSTEM_PROMPT,
+  HOSTED_NATIVE,
   canAutoRunWithinAllowlist,
   isAllowlistedCadOperation,
   sanitizeUntrustedCadText,
@@ -84,7 +85,7 @@ export function cadAiPlanUserMessage(
     CAD_AGENT_SYSTEM_PROMPT,
     "",
     "Return ONLY a JSON array of objects with keys operation, parameters, reason.",
-    "Allowed operations: create_sketch, create_extrude, create_fillet, create_chamfer, create_shell, create_pattern, set_variable, create_part_studio, create_assembly, add_assembly_instance, create_mate, feature_script, verify_topology, render_views, create_checkpoint, rollback_checkpoint, export_step, export_stl, export_gltf.",
+    `Allowed operations: ${HOSTED_NATIVE.join(", ")}.`,
     "Do not include shell, network, or file-system tools. Do not claim certified engineering.",
     `Preferred units: ${adaptive.units}. Preferred platform: ${adaptive.platform}.`,
     exportHint,
@@ -121,7 +122,7 @@ export function parseCadActionPlan(text: string, options: CadAiPlanOptions = {})
     if (!row || typeof row !== "object" || Array.isArray(row)) continue;
     const record = row as Record<string, unknown>;
     const operation = String(record.operation ?? "").trim();
-    if (!isAllowlistedCadOperation(operation)) continue;
+    if (!isAllowlistedCadOperation(operation) || !HOSTED_NATIVE.includes(operation)) continue;
     const parameters = boundedParameters(record.parameters);
     const reason =
       String(record.reason ?? parameters.reason ?? "")
