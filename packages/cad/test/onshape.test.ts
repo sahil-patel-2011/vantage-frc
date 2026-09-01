@@ -14,6 +14,7 @@ import {
   verifyOnshapeOAuthState,
   type OnshapeHttp,
 } from "../src/index";
+import { circleSketchFeature, rectangleSketchFeature } from "../src/onshape-features";
 
 describe("Onshape hosted setup", () => {
   it("reports setup-required when OAuth env is missing", () => {
@@ -203,7 +204,7 @@ describe("Onshape export + transport (mocked HTTP)", () => {
 
     const sketch = await transport.mutate({
       operation: "create_sketch",
-      parameters: { widthMm: 80, heightMm: 50, plane: "Top" },
+      parameters: { widthMm: 80, heightMm: 50, plane: "Top", name: "RectSketch" },
       idempotencyKey: "job-1:1:sketch",
     });
     const extrude = await transport.mutate({
@@ -213,11 +214,106 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     });
 
     expect(sketch.featureId).toBe("sketch-real-1");
+    expect(sketch.featureScriptUsed).toBe(false);
     expect(extrude.featureId).toBe("extrude-real-1");
     expect(requests).toHaveLength(2);
     expect(requests[0]?.path).toContain("/features");
+    expect(requests[0]?.path.toLowerCase()).not.toMatch(/featurescript/);
+    expect(requests[0]?.body).toEqual(
+      rectangleSketchFeature({ widthMm: 80, heightMm: 50, plane: "Top", name: "RectSketch" }),
+    );
     expect(JSON.stringify(requests[0]?.body)).toContain("newSketch");
+    expect(JSON.stringify(requests[0]?.body)).toContain("rect.bottom");
     expect(JSON.stringify(requests[1]?.body)).toContain("sketch-real-1");
+  });
+
+  it("creates a circle sketch via circleSketchFeature without FeatureScript", async () => {
+    const requests: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const http: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith("/features") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        requests.push({ path, body });
+        return Response.json({ featureId: "sketch-circle-1" });
+      }
+      return Response.json({ message: "unexpected request" }, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+
+    const byKind = await transport.mutate({
+      operation: "create_sketch",
+      parameters: { sketchKind: "circle", radiusMm: 12, plane: "Front", name: "CircleKind" },
+      idempotencyKey: "job-circle:1:sketch",
+    });
+    const byRadius = await transport.mutate({
+      operation: "create_sketch",
+      parameters: { radius: 8, plane: "Top", name: "CircleRadius" },
+      idempotencyKey: "job-circle:2:sketch",
+    });
+
+    expect(byKind).toEqual({ featureId: "sketch-circle-1", featureScriptUsed: false });
+    expect(byRadius).toEqual({ featureId: "sketch-circle-1", featureScriptUsed: false });
+    expect(requests).toHaveLength(2);
+    expect(requests.every((request) => request.path.endsWith("/features"))).toBe(true);
+    expect(requests.some((request) => request.path.toLowerCase().includes("featurescript"))).toBe(false);
+    expect(JSON.stringify(requests).toLowerCase()).not.toContain("featurescript");
+    expect(requests[0]?.body).toEqual(
+      circleSketchFeature({
+        name: "CircleKind",
+        plane: "Front",
+        circles: [{ diameterMm: 24 }],
+      }),
+    );
+    expect(requests[1]?.body).toEqual(
+      circleSketchFeature({
+        name: "CircleRadius",
+        plane: "Top",
+        circles: [{ diameterMm: 16 }],
+      }),
+    );
+    expect(JSON.stringify(requests[0]?.body)).toContain("BTCurveGeometryCircle-115");
+  });
+
+  it("refuses create_sketch without a positive millimetre dimension", async () => {
+    const http: OnshapeHttp = vi.fn(async () =>
+      Response.json({ message: "should not post" }, { status: 500 }),
+    ) as unknown as OnshapeHttp;
+    const transport = createOnshapeApiTransport({
+      http,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+    await expect(
+      transport.mutate({
+        operation: "create_sketch",
+        parameters: {},
+        idempotencyKey: "job-missing:1:sketch",
+      }),
+    ).rejects.toThrow(/must be a positive number in millimetres; no geometry was created/);
+    await expect(
+      transport.mutate({
+        operation: "create_sketch",
+        parameters: { sketchKind: "circle" },
+        idempotencyKey: "job-missing:2:sketch",
+      }),
+    ).rejects.toThrow(/must be a positive number in millimetres; no geometry was created/);
+    expect(http).not.toHaveBeenCalled();
+  });
+
+  it("refuses rollback as a native-only Onshape action", async () => {
+    const transport = createOnshapeApiTransport({
+      http: vi.fn(async () => new Response("{}", { status: 404 })) as unknown as OnshapeHttp,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
+    });
+    let message = "";
+    try {
+      await transport.rollback("onshape-cp-abc123");
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toMatch(/Rollback of onshape-cp-abc123 is not a native Onshape action in Vantage/);
+    expect(message.toLowerCase()).not.toContain("featurescript");
   });
 
   it("creates and verifies native assemblies and mates without FeatureScript", async () => {
