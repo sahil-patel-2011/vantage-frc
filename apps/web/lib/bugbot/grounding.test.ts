@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asCommitSha, resolveBugbotTarget } from "./grounding";
+import { asCommitSha, assertBugbotPhaseGrounding, lastScanFromReview, resolveBugbotTarget } from "./grounding";
 
 const SHA = "a".repeat(40);
 
@@ -59,5 +59,66 @@ describe("resolveBugbotTarget", () => {
     expect(
       resolveBugbotTarget({ phase: "fix", scanRepoRequested: false, lastScan: unpinned }),
     ).toEqual({ useRepo: true, repo: "team/robot", ref: "main", pinnedSha: null });
+  });
+});
+
+describe("server Bugbot phase grounding", () => {
+  const parent = {
+    path: "team/robot scan",
+    contentSha256: "digest",
+    githubRepo: "team/robot",
+    githubSha: SHA,
+  };
+
+  it("accepts a fix pinned to the scanned repository commit", () => {
+    expect(() =>
+      assertBugbotPhaseGrounding({ phase: "fix", parent, source: { ...parent } }),
+    ).not.toThrow();
+  });
+
+  it("rejects missing, unpinned, or retargeted fix source before metering", () => {
+    expect(() =>
+      assertBugbotPhaseGrounding({ phase: "fix", parent: null, source: { ...parent } }),
+    ).toThrow(/parent/i);
+    expect(() =>
+      assertBugbotPhaseGrounding({
+        phase: "fix",
+        parent,
+        source: { ...parent, githubSha: null },
+      }),
+    ).toThrow(/commit SHA/i);
+    expect(() =>
+      assertBugbotPhaseGrounding({
+        phase: "fix",
+        parent,
+        source: { ...parent, githubRepo: "other/robot" },
+      }),
+    ).toThrow(/does not match/i);
+  });
+
+  it("rebuilds a repo last-scan from a stored review and never invents a buffer pin", () => {
+    expect(lastScanFromReview({ githubRepo: "team/robot", githubRef: "main", githubSha: SHA })).toEqual({
+      scanRepo: true,
+      repo: "team/robot",
+      ref: "main",
+      sha: SHA,
+    });
+    expect(lastScanFromReview({ githubRepo: null, githubRef: null, githubSha: null })).toEqual({
+      scanRepo: false,
+      repo: null,
+      ref: null,
+      sha: null,
+    });
+    expect(lastScanFromReview(null)).toBeNull();
+  });
+
+  it("allows recheck at a new head but still requires the same repository", () => {
+    expect(() =>
+      assertBugbotPhaseGrounding({
+        phase: "recheck",
+        parent,
+        source: { ...parent, githubSha: "b".repeat(40) },
+      }),
+    ).not.toThrow();
   });
 });

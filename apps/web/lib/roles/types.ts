@@ -21,6 +21,10 @@ export type TeamRole = {
   subteam: Subteam;
   /** Who holds the role; null/empty means unfilled. */
   holderName: string | null;
+  /** Confirmed roster identity; legacy free-text holders remain nullable. */
+  holderUserId: string | null;
+  /** Why `holderUserId` is null: nobody named, no match, or a name more than one member could be. */
+  holderLink: "member" | "unlinked" | "ambiguous" | "unfilled";
   isLead: boolean;
   responsibilities: string | null;
   notes: string | null;

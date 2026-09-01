@@ -7,6 +7,7 @@ import {
   createTemplate,
   deleteRun,
   deleteTemplate,
+  instantiatePitChecklist,
   setTemplateActive,
   startRun,
   toggleRunItem,
@@ -126,6 +127,27 @@ export async function POST(request: Request) {
           if (!runId) throw new Error("runId is required");
           await deleteRun(client, { orgId, runId });
           break;
+        }
+        case "instantiate-pit-checklist": {
+          const templateId = trimmedOrNull(body.templateId, 64);
+          if (!templateId) throw new Error("templateId is required");
+          const matchLabel = trimmedOrNull(body.matchLabel, 100);
+          if (!matchLabel) throw new Error("matchLabel is required");
+          const opened = await instantiatePitChecklist(client, {
+            orgId,
+            userId,
+            templateId,
+            matchLabel,
+            eventKey: trimmedOrNull(body.eventKey, 100),
+          });
+          const view = await computeChecklistLibraryView(client, { userId, requestedOrg: orgId });
+          if (view.status === "live") {
+            return {
+              ...view,
+              lastPitInstantiation: { ...opened, matchLabel },
+            };
+          }
+          return view;
         }
         default:
           throw new Error("Unknown action");

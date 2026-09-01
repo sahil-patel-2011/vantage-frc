@@ -162,6 +162,11 @@ export function formatMyDayWhen(iso: string | null | undefined): string | null {
   });
 }
 
+/** Real TBA time only — never invents DEMO / placeholder clocks. */
+export function myDayTimeLabel(iso: string | null | undefined): string {
+  return fmtMatchTime(iso ?? null) || "Time TBD";
+}
+
 /** Stable fingerprint of our schedule (times + alliances) for change detection. */
 export function scheduleFingerprint(matches: ScheduleMatch[], teamKey: string): string {
   return ourMatches(matches, teamKey)
@@ -222,7 +227,7 @@ export function buildMyDayMatch(
     matchLabel,
     matchNumber: match.matchNumber,
     scheduledTime: match.scheduledTime,
-    timeLabel: fmtMatchTime(match.scheduledTime) || "Time TBD",
+    timeLabel: myDayTimeLabel(match.scheduledTime),
     alliance,
     bumperCue: bumperCue(alliance),
     partners: partnerKeys.map(stripFrc),

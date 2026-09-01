@@ -62,8 +62,8 @@ export function summarizeBom(items: BomLineItem[], budgetUsd: number): BomRollup
   const budget = Math.max(0, budgetUsd);
   const totalCostUsd = round(items.reduce((sum, item) => sum + item.lineTotalUsd, 0));
   const remainingUsd = round(budget - totalCostUsd);
-  const percentUsed = budget > 0 ? round(totalCostUsd / budget, 4) : totalCostUsd > 0 ? 1 : 0;
-  const status = statusFor(percentUsed, budget);
+  const percentUsed = budget > 0 ? round(totalCostUsd / budget, 4) : null;
+  const status = statusFor(percentUsed ?? 0, budget);
 
   const subsystemMap = new Map<string, BomSubsystemRollup>();
   const categoryMap = new Map<BomCategory, BomCategoryRollup>();

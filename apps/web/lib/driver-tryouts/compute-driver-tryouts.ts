@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { computeDriverTryoutsReadiness, summarizeDriverTryouts } from ".";
+import { computeDriverTryoutsReadiness, parseLoggedRubricScores, summarizeDriverTryouts } from ".";
 import type {
   DriverTryoutsCandidate,
   DriverTryoutsEvaluation,
@@ -76,17 +76,25 @@ function mapCandidate(row: CandidateRow): DriverTryoutsCandidate {
   };
 }
 
-function mapEvaluation(row: EvaluationRow): DriverTryoutsEvaluation {
+function mapEvaluation(row: EvaluationRow): DriverTryoutsEvaluation | null {
+  const scores = parseLoggedRubricScores({
+    scorePrecision: row.scorePrecision,
+    scoreAwareness: row.scoreAwareness,
+    scoreCommunication: row.scoreCommunication,
+    scoreComposure: row.scoreComposure,
+    scoreMechanical: row.scoreMechanical,
+  });
+  if (!scores) return null;
   return {
     id: row.id,
     candidateId: row.candidateId,
     evaluatorId: row.evaluatorId,
     evaluatedOn: row.evaluatedOn,
-    scorePrecision: Number(row.scorePrecision) || 0,
-    scoreAwareness: Number(row.scoreAwareness) || 0,
-    scoreCommunication: Number(row.scoreCommunication) || 0,
-    scoreComposure: Number(row.scoreComposure) || 0,
-    scoreMechanical: Number(row.scoreMechanical) || 0,
+    scorePrecision: scores.precision,
+    scoreAwareness: scores.awareness,
+    scoreCommunication: scores.communication,
+    scoreComposure: scores.composure,
+    scoreMechanical: scores.mechanical,
     notes: row.notes,
   };
 }
@@ -159,7 +167,9 @@ export async function computeDriverTryoutsView(
       )
     : { rows: [] as EvaluationRow[] };
 
-  const evaluations = evaluationResult.rows.map(mapEvaluation);
+  const evaluations = evaluationResult.rows
+    .map(mapEvaluation)
+    .filter((evaluation): evaluation is DriverTryoutsEvaluation => evaluation != null);
   const summary = summarizeDriverTryouts(candidates, evaluations);
   const readiness = computeDriverTryoutsReadiness(summary);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
@@ -236,6 +246,10 @@ export async function addEvaluation(
     notes: string | null;
   },
 ): Promise<void> {
+  const scores = parseLoggedRubricScores(input);
+  if (!scores) {
+    throw new Error("each rubric score must be an integer from 1 to 5");
+  }
   await client.query(
     `INSERT INTO driver_tryouts_evaluations (
        org_id, candidate_id, evaluator_id, evaluated_on, score_precision, score_awareness,
@@ -246,11 +260,11 @@ export async function addEvaluation(
       input.candidateId,
       input.userId,
       input.evaluatedOn,
-      input.scorePrecision,
-      input.scoreAwareness,
-      input.scoreCommunication,
-      input.scoreComposure,
-      input.scoreMechanical,
+      scores.precision,
+      scores.awareness,
+      scores.communication,
+      scores.composure,
+      scores.mechanical,
       input.notes,
     ],
   );

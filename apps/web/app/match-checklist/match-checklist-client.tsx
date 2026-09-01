@@ -13,7 +13,7 @@ import {
   shouldShowSummaryTiles,
   summaryHasTimingEvidence,
 } from "../../lib/match-checklist/match-checklist-related";
-import type { ChecklistItem, ChecklistItemKey, MatchChecklistRun } from "../../lib/match-checklist/types";
+import type { ChecklistItem, MatchChecklistRun } from "../../lib/match-checklist/types";
 import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
@@ -521,10 +521,10 @@ function ItemToggle({
           .join(" ")}
         disabled={busy}
         aria-pressed={item.done}
-        onClick={() => mutate({ action: "toggle-item", runId, itemKey: item.key as ChecklistItemKey })}
+        onClick={() => mutate({ action: "toggle-item", runId, itemKey: item.key })}
       >
         <span className="mcl-item-main">
-          <strong>{checklistItemLabel(item.key)}</strong>
+          <strong>{item.label || checklistItemLabel(item.key)}</strong>
           <small>{item.done ? (checkedLabel ? `Checked ${checkedLabel}` : "Checked") : "Tap when done"}</small>
         </span>
         <span className="mcl-item-mark" aria-hidden>

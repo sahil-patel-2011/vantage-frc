@@ -3,10 +3,9 @@ import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
-import { BATTERY_READY_RULE, pitStatusToPack } from "../../../lib/battery-reliability";
-import { loadBatteryFleet } from "../../../lib/load-battery-fleet";
-import { loadRepeatFailureAlerts } from "../../../lib/fmea/repeat-failures";
-import { computeReleaseGate, parsePitAction } from "../../../lib/pit-operations";
+import { pitStatusToPack } from "../../../lib/battery-reliability";
+import { loadPitBoard } from "../../../lib/pit/load-board";
+import { parsePitAction } from "../../../lib/pit-operations";
 
 export const dynamic = "force-dynamic";
 class PitHttpError extends Error {
@@ -61,87 +60,17 @@ export async function GET(request: Request) {
     if (!orgId) throw new PitHttpError(400, "orgId is required");
     const payload = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const member = await access(client, session, orgId);
-      const [contextQuery, maintenanceQuery, issueQuery, fleet, repeatAlerts] = await Promise.all([
-        client.query<{ eventKey: string | null; eventName: string | null }>(
-          `SELECT c.active_event_key AS "eventKey",e.name AS "eventName" FROM organizations o LEFT JOIN org_active_context c ON c.org_id=o.id LEFT JOIN events_ref e ON e.event_key=c.active_event_key WHERE o.id=$1`,
-          [orgId],
-        ),
-        client.query<{ id: string; subsystem: string; task: string; dueAt: string | null }>(
-          `SELECT id,subsystem,task,due_at::text AS "dueAt" FROM maintenance_items WHERE org_id=$1 AND completed_at IS NULL ORDER BY due_at ASC NULLS LAST,created_at DESC LIMIT 50`,
-          [orgId],
-        ),
-        client.query<{
-          id: string;
-          subsystem: string;
-          severity: string;
-          symptoms: string;
-          occurredAt: string;
-          matchKey: string | null;
-          recordedBy: string;
-        }>(
-          `SELECT id,subsystem,severity,symptoms,occurred_at::text AS "occurredAt",match_key AS "matchKey",recorded_by AS "recordedBy" FROM robot_failures WHERE org_id=$1 AND resolved_at IS NULL ORDER BY CASE severity WHEN 'safety' THEN 0 WHEN 'disabled' THEN 1 WHEN 'degraded' THEN 2 ELSE 3 END,occurred_at DESC LIMIT 50`,
-          [orgId],
-        ),
-        loadBatteryFleet(client, orgId),
-        loadRepeatFailureAlerts(client, orgId, { limit: 8 }),
-      ]);
-      const context = contextQuery.rows[0] ?? { eventKey: null, eventName: null };
-      const teamKey = member.teamNumber ? `frc${member.teamNumber}` : null;
-      const nextMatch =
-        context.eventKey && teamKey
-          ? (
-              await client.query<{
-                matchKey: string;
-                compLevel: string;
-                matchNumber: number;
-                scheduledTime: string | null;
-              }>(
-                `SELECT match_key AS "matchKey",comp_level AS "compLevel",match_number AS "matchNumber",COALESCE(predicted_time,event_time)::text AS "scheduledTime" FROM matches_ref WHERE event_key=$1 AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2) AND COALESCE(actual_time,predicted_time,event_time)>now() ORDER BY COALESCE(actual_time,predicted_time,event_time) LIMIT 1`,
-                [context.eventKey, teamKey],
-              )
-            ).rows[0] ?? null
-          : null;
-      const batteries = fleet.packs.map((pack) => ({
-        id: pack.id,
-        assetTag: pack.label,
-        status: pack.pitStatus,
-        measuredAt: pack.measuredAt,
-        voltage: pack.voltage,
-        resistanceMilliohms: pack.resistanceMilliohms,
-        gate: pack.gate,
-        health: pack.health.status,
-      }));
-      const now = Date.now();
-      const overdueMaintenance = maintenanceQuery.rows.filter((item) => item.dueAt && new Date(item.dueAt).getTime() < now).length;
-      const safetyIssues = issueQuery.rows.filter((item) => item.severity === "safety").length;
-      const disabledIssues = issueQuery.rows.filter((item) => item.severity === "disabled").length;
+      const board = await loadPitBoard(client, {
+        orgId,
+        userId: session.user.id,
+        member,
+      });
       return {
-        organization: { name: member.name, teamNumber: member.teamNumber, role: member.role },
-        context,
-        nextMatch,
-        gate: computeReleaseGate({
-          safetyIssues,
-          disabledIssues,
-          overdueMaintenance,
-          readyBatteries: fleet.readyCount,
-          activeBatteries: fleet.activeCount,
-        }),
+        ...board,
         summary: {
-          openIssues: issueQuery.rowCount,
-          overdueMaintenance,
-          readyBatteries: fleet.readyCount,
-          activeBatteries: fleet.activeCount,
-          repeatFailureSubsystems: repeatAlerts.length,
+          ...board.summary,
+          repeatFailureSubsystems: board.repeatAlerts.length,
         },
-        issues: issueQuery.rows.map((issue) => ({
-          ...issue,
-          canResolve: issue.recordedBy === session.user.id || ["owner", "admin"].includes(member.role),
-        })),
-        repeatAlerts,
-        maintenance: maintenanceQuery.rows,
-        batteries,
-        rules: { battery: BATTERY_READY_RULE, hold: "Any unresolved disabled or safety issue" },
-        updatedAt: new Date().toISOString(),
       };
     });
     return Response.json(payload, { headers: { "Cache-Control": "private, no-store" } });

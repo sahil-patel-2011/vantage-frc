@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { checklistLibraryCategoryLabel, runProgress, sanitizeItems, summarizeChecklistLibrary } from ".";
-import { computeChecklistLibraryView } from "./compute-checklist-library";
+import { computeChecklistLibraryView, instantiatePitChecklist } from "./compute-checklist-library";
 import type { ChecklistLibraryRun, ChecklistLibraryTemplate } from "./types";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -134,6 +134,150 @@ describe("computeChecklistLibraryView", () => {
       expect(view.runs[0]?.allDone).toBe(false);
       expect(view.summary.totalTemplates).toBe(1);
       expect(view.summary.openRuns).toBe(1);
+      expect(view.pitChecklist.href).toBe(`/competition?tab=match-checklist&orgId=${ORG}`);
+      expect(view.pitChecklist.runs).toEqual([]);
     }
+  });
+
+  it("projects match_checklist_runs as the pit system of record, never as library copies", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("JOIN organizations")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }], rowCount: 1 };
+      }
+      if (sql.includes("FROM match_checklist_runs")) {
+        return {
+          rows: [
+            {
+              id: "pit-1",
+              matchLabel: "Qual 12",
+              eventKey: "2026miket",
+              startedAt: "2026-07-01T00:00:00.000Z",
+              completedAt: null,
+              items: [
+                { key: "bumper", label: "Bumpers secured", done: true },
+                { key: "battery", label: "Battery seated", done: false },
+              ],
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    const view = await computeChecklistLibraryView(client, { userId: USER, requestedOrg: ORG });
+    expect(view.status).toBe("live");
+    if (view.status === "live") {
+      expect(view.runs).toEqual([]);
+      expect(view.pitChecklist.openRuns).toBe(1);
+      expect(view.pitChecklist.completedRuns).toBe(0);
+      expect(view.pitChecklist.runs[0]).toMatchObject({
+        id: "pit-1",
+        matchLabel: "Qual 12",
+        itemCount: 2,
+        checkedCount: 1,
+        href: `/competition?tab=match-checklist&orgId=${ORG}`,
+      });
+    }
+  });
+});
+
+describe("instantiatePitChecklist", () => {
+  it("writes match_checklist_runs from the stored SOP and never a library run", async () => {
+    const inserts: Array<{ sql: string; params: unknown[] }> = [];
+    const client = mockClient((sql, params) => {
+      if (sql.includes("FROM checklist_library_templates")) {
+        return {
+          rows: [
+            {
+              id: "tmpl-1",
+              name: "Pre-queue SOP",
+              category: "pit",
+              description: null,
+              items: [
+                { key: "bumper", label: "Bumpers secured" },
+                { key: "tote", label: "Totes loaded" },
+              ],
+              active: true,
+              createdAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      if (sql.includes("FROM organizations")) {
+        return { rows: [{ teamNumber: 254 }], rowCount: 1 };
+      }
+      if (sql.includes("FROM org_active_context")) {
+        return { rows: [{ activeEventKey: "2026miket" }], rowCount: 1 };
+      }
+      if (sql.includes("INSERT INTO match_checklist_runs")) {
+        inserts.push({ sql, params });
+        return { rows: [{ id: "pit-run-1" }], rowCount: 1 };
+      }
+      if (sql.includes("INSERT INTO checklist_library_runs")) {
+        throw new Error("library runs are not the pit system of record");
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    const result = await instantiatePitChecklist(client, {
+      orgId: ORG,
+      userId: USER,
+      templateId: "tmpl-1",
+      matchLabel: "Qual 12",
+    });
+
+    expect(result).toEqual({
+      runId: "pit-run-1",
+      href: `/competition?tab=match-checklist&orgId=${ORG}`,
+      itemCount: 1,
+      unmappedCount: 1,
+    });
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]?.params[1]).toBe("Qual 12");
+    expect(inserts[0]?.params[2]).toBe("2026miket");
+    expect(inserts[0]?.params[3]).toBe(254);
+    const stored = JSON.parse(String(inserts[0]?.params[4])) as Array<{ key: string; sourceTemplateId: string }>;
+    expect(stored).toEqual([
+      expect.objectContaining({
+        key: "bumper",
+        label: "Bumpers secured",
+        done: false,
+        sourceSopKey: "bumper",
+        sourceTemplateId: "tmpl-1",
+      }),
+    ]);
+  });
+
+  it("refuses an inactive SOP instead of opening a hollow pit run", async () => {
+    const client = mockClient((sql) => {
+      if (sql.includes("FROM checklist_library_templates")) {
+        return {
+          rows: [
+            {
+              id: "tmpl-1",
+              name: "Retired",
+              category: "pit",
+              description: null,
+              items: [{ key: "bumper", label: "Bumpers" }],
+              active: false,
+              createdAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    await expect(
+      instantiatePitChecklist(client, {
+        orgId: ORG,
+        userId: USER,
+        templateId: "tmpl-1",
+        matchLabel: "Qual 12",
+      }),
+    ).rejects.toThrow(/activate/i);
   });
 });

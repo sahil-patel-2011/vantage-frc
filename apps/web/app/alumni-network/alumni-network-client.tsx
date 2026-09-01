@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { alumniShellCopy } from "../../lib/alumni";
 import { alumniStatusLabel, mentorSlotStatusLabel } from "../../lib/alumni-network";
 import {
   ALUMNI_STATUSES,
@@ -263,13 +264,9 @@ function ProfileList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.profiles.length === 0) {
+    const copy = alumniShellCopy("empty");
     return (
-      <EmptyState
-        badge="No alumni yet"
-        badgeTone="setup"
-        title="Add your first alumni profile"
-        description="Track graduated members who remain reachable, and mark who is available to mentor."
-      />
+      <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description} />
     );
   }
   return (

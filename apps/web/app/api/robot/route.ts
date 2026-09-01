@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { bomCoverage, type BomEntry, type InventoryItem } from "../../../lib/inventory";
+import { loadVaultDocumentCounts } from "../../../lib/cad-vault/load-vault-coverage";
 import {
   parseBlueprintAction,
   SEED_SUBSYSTEMS,
@@ -74,7 +75,7 @@ export async function GET(request: Request) {
         } satisfies BlueprintView;
       }
 
-      const [subsystems, priorities, practiceStats, bomItems, bomEntries, failures, maintenance] = await Promise.all([
+      const [subsystems, priorities, practiceStats, bomItems, bomEntries, failures, maintenance, vaultCounts] = await Promise.all([
         client.query<RobotSubsystem>(
           `SELECT s.id, s.robot_label AS "robotLabel", s.name, s.description, s.status,
                   s.cad_url AS "cadUrl", s.code_ref AS "codeRef", s.priority_id AS "priorityId",
@@ -128,6 +129,7 @@ export async function GET(request: Request) {
            GROUP BY lower(subsystem)`,
           [row.orgId],
         ),
+        loadVaultDocumentCounts(client, row.orgId),
       ]);
 
       const practiceByAction = new Map(
@@ -151,6 +153,7 @@ export async function GET(request: Request) {
         const nameKey = subsystem.name.toLowerCase();
         return {
           ...subsystem,
+          vaultDocumentCount: vaultCounts.get(subsystem.id) ?? 0,
           ops: {
             practice: subsystem.practiceAction ? (practiceByAction.get(subsystem.practiceAction) ?? { reps: 0, successRate: null, avgSeconds: null }) : null,
             bom: bomEntry ? { buildable: bomEntry.buildable, shortCount: bomEntry.shortCount } : null,

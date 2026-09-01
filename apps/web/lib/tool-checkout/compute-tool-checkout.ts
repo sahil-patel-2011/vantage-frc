@@ -1,6 +1,17 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { statusFor, summarizeToolCheckout, TOOL_CATEGORIES } from ".";
-import type { ToolCategory, ToolCheckoutLoan, ToolCheckoutSummary, ToolCheckoutTool } from "./types";
+import {
+  assertToolCheckoutAllowed,
+  loadTrainingMatrixForCheckout,
+  skillsRequiredForTool,
+} from "./training-gate";
+import type {
+  ToolCategory,
+  ToolCheckoutLoan,
+  ToolCheckoutMemberOption,
+  ToolCheckoutSummary,
+  ToolCheckoutTool,
+} from "./types";
 
 export { TOOL_CATEGORIES };
 
@@ -23,6 +34,7 @@ export type ToolCheckoutView =
       orgId: string;
       teamNumber: number | null;
       tools: ToolCheckoutTool[];
+      members: ToolCheckoutMemberOption[];
       summary: ToolCheckoutSummary;
       computedAt: string;
     };
@@ -93,7 +105,7 @@ export async function computeToolCheckoutView(
     };
   }
 
-  const [toolResult, loanResult] = await Promise.all([
+  const [toolResult, loanResult, matrix] = await Promise.all([
     client.query<ToolRow>(
       `SELECT id, name, category, asset_tag AS "assetTag", location, notes, active
        FROM tool_checkout_tools
@@ -110,6 +122,7 @@ export async function computeToolCheckoutView(
        ORDER BY checked_out_at DESC`,
       [org.orgId],
     ),
+    loadTrainingMatrixForCheckout(client, { userId: input.userId, orgId: org.orgId }),
   ]);
 
   const loansByTool = new Map<string, LoanRow[]>();
@@ -136,6 +149,7 @@ export async function computeToolCheckoutView(
       status: statusFor(currentLoan, now),
       currentLoan,
       loanHistory,
+      requiredSkills: skillsRequiredForTool(row, matrix.skills),
     };
   });
 
@@ -146,6 +160,7 @@ export async function computeToolCheckoutView(
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     tools,
+    members: matrix.members,
     summary,
     computedAt: now.toISOString(),
   };
@@ -186,20 +201,46 @@ export async function checkoutTool(
     userId: string;
     toolId: string;
     borrowerName: string;
+    borrowerUserId?: string | null;
     dueAt: string | null;
     notes: string | null;
+    now?: Date;
   },
 ): Promise<void> {
+  const tool = await client.query<{ id: string; name: string; category: ToolCategory }>(
+    `SELECT id, name, category FROM tool_checkout_tools
+     WHERE org_id = $1 AND id = $2 AND active = true`,
+    [input.orgId, input.toolId],
+  );
+  const row = tool.rows[0];
+  if (!row) throw new Error("Tool not found");
+
   const existing = await client.query(
     `SELECT 1 FROM tool_checkout_loans WHERE org_id = $1 AND tool_id = $2 AND returned_at IS NULL`,
     [input.orgId, input.toolId],
   );
   if (existing.rowCount) throw new Error("Tool is already checked out");
 
+  const matrix = await loadTrainingMatrixForCheckout(client, {
+    userId: input.userId,
+    orgId: input.orgId,
+    now: input.now,
+  });
+  const allowed = assertToolCheckoutAllowed({
+    toolName: row.name,
+    toolCategory: row.category,
+    skills: matrix.skills,
+    certifications: matrix.certifications,
+    members: matrix.members,
+    borrowerUserId: input.borrowerUserId,
+    borrowerName: input.borrowerName,
+    now: input.now,
+  });
+
   await client.query(
     `INSERT INTO tool_checkout_loans (org_id, tool_id, borrower_name, due_at, notes, checked_out_by)
      VALUES ($1,$2,$3,$4::timestamptz,$5,$6)`,
-    [input.orgId, input.toolId, input.borrowerName, input.dueAt, input.notes, input.userId],
+    [input.orgId, input.toolId, allowed.memberName, input.dueAt, input.notes, input.userId],
   );
 }
 

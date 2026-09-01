@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { syncSponsorContributionMoney } from "../../../../lib/finance/source-mirrors";
 import { orgScopedPackageId } from "../../../../lib/partner-placements";
 
 type Body = Record<string, unknown>;
@@ -122,7 +123,26 @@ export async function POST(request: Request) {
       } else if (action === "mark-paid") {
         const campaignId = text(body.campaignId, 64); if (!campaignId) throw new Error("Campaign required");
         const campaign = await client.query<{ sponsorId: string; seasonYear: number; name: string; amount: string; paymentStatus: string; contributionId: string | null }>(`SELECT sponsor_id AS "sponsorId",season_year AS "seasonYear",name,amount_usd::text AS amount,payment_status AS "paymentStatus",contribution_id AS "contributionId" FROM partner_placement_campaigns WHERE id=$1 AND org_id=$2`, [campaignId, orgId]); const row = campaign.rows[0]; if (!row) throw new Error("Campaign not found");
-        if (row.paymentStatus !== "paid") { const contribution = await client.query<{ id: string }>(`INSERT INTO sponsor_contributions(sponsor_id,org_id,season_year,type,amount_usd,description,created_by) VALUES ($1,$2,$3,'cash',$4,$5,$6) RETURNING id`, [row.sponsorId, orgId, row.seasonYear, money(row.amount), `Partner placement: ${row.name}`, session.user.id]); await client.query(`INSERT INTO finance_transactions(org_id,season_year,type,source,amount_usd,sponsor_contribution_id,description,created_by) VALUES ($1,$2,'income','sponsor_contribution',$3,$4,$5,$6)`, [orgId, row.seasonYear, money(row.amount), contribution.rows[0]!.id, `Partner placement: ${row.name}`, session.user.id]); await client.query("UPDATE partner_placement_campaigns SET payment_status='paid',contribution_id=$3,updated_at=now() WHERE id=$1 AND org_id=$2", [campaignId, orgId, contribution.rows[0]!.id]); }
+        if (row.paymentStatus !== "paid") {
+          const contribution = await client.query<{ id: string }>(
+            `INSERT INTO sponsor_contributions(sponsor_id,org_id,season_year,type,amount_usd,description,created_by)
+             VALUES ($1,$2,$3,'cash',$4,$5,$6) RETURNING id`,
+            [row.sponsorId, orgId, row.seasonYear, money(row.amount), `Partner placement: ${row.name}`, session.user.id],
+          );
+          await syncSponsorContributionMoney(client, {
+            orgId,
+            contributionId: contribution.rows[0]!.id,
+            seasonYear: row.seasonYear,
+            contributionType: "cash",
+            amountUsd: money(row.amount),
+            label: `Partner placement: ${row.name}`,
+            userId: session.user.id,
+          });
+          await client.query(
+            "UPDATE partner_placement_campaigns SET payment_status='paid',contribution_id=$3,updated_at=now() WHERE id=$1 AND org_id=$2",
+            [campaignId, orgId, contribution.rows[0]!.id],
+          );
+        }
         await audit(client, orgId, session.user.id, action, "partner_campaign", campaignId);
       } else throw new Error("Unknown partner placement action");
       return load(client, orgId);

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildShooterCall } from "../../lib/learning/surfaces";
-import { interpolateShot } from "../../lib/shooter-table";
+import { interpolateShot, SHOOTER_EXPORT_LANGUAGES, type ShooterExportLanguage } from "../../lib/shooter-table";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Point = { id: string; tableName: string; distanceFt: number; rpm: number | null; hoodAngle: number | null; notes: string };
@@ -20,6 +20,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
   const [query, setQuery] = useState("");
+  const [exportLang, setExportLang] = useState<ShooterExportLanguage>("java");
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/shooter-table?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
@@ -80,6 +81,9 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
     points: callPoints.map((p) => [p.distanceFt, p.rpm, p.hoodAngle]),
   });
   const callFieldSet = buildShooterCall({ points: callPoints, distanceFt: queryFt });
+  const exportHref = `/api/shooter-table/export?orgId=${encodeURIComponent(view.context.orgId)}&seasonYear=${seasonYear}&lang=${exportLang}`;
+  const rpmLogged = view.points.filter((p) => p.rpm != null).length;
+  const hoodLogged = view.points.filter((p) => p.hoodAngle != null).length;
 
   return (
     <main className="intel-app">
@@ -127,6 +131,36 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
           <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
           <button className="primary-action">Save point</button>
         </form>
+      </section>
+
+      <section className="intel-panel">
+        <span className="eyebrow">ROBOT CODE</span>
+        <p>
+          Download constants built only from logged RPM and hood rows. Missing fields stay missing —
+          this file does not interpolate or invent flywheel RPM.
+        </p>
+        <label>
+          Language
+          <select value={exportLang} onChange={(e) => setExportLang(e.target.value as ShooterExportLanguage)}>
+            {SHOOTER_EXPORT_LANGUAGES.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang === "java" ? "Java (WPILib)" : lang === "cpp" ? "C++" : "Python"}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p>
+          <a className="primary-action" href={exportHref}>
+            Download constants
+          </a>
+        </p>
+        <p>
+          <small>
+            {view.points.length === 0
+              ? "No logged points yet — the download is an empty table, not sample RPM."
+              : `${rpmLogged} RPM row${rpmLogged === 1 ? "" : "s"}, ${hoodLogged} hood row${hoodLogged === 1 ? "" : "s"} will be written. Lookup interpolation on this page is not included.`}
+          </small>
+        </p>
       </section>
 
       <section className="intel-panel invite-list">

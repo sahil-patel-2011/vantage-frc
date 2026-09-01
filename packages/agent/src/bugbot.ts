@@ -811,8 +811,15 @@ export type BugbotPathVerdict =
   | { include: true; role: BugbotFileRole; priority: number; reason: null }
   | { include: false; role: BugbotFileRole; priority: number; reason: BugbotSkipReason };
 
+export type ClassifyBugbotPathOptions = { includeTests?: boolean };
+
 /** Decide whether one blob is scanned, and name the skip reason when it is not. */
-export function classifyBugbotPath(path: string, size?: number, maxBytes = BUGBOT_SCAN_FILE_MAX_BYTES): BugbotPathVerdict {
+export function classifyBugbotPath(
+  path: string,
+  size?: number,
+  maxBytes = BUGBOT_SCAN_FILE_MAX_BYTES,
+  options?: ClassifyBugbotPathOptions,
+): BugbotPathVerdict {
   const clean = path.replace(/^\/+/, "").replace(/\\/g, "/");
   const role = bugbotFileRole(clean);
   const priority = ROLE_PRIORITY[role] + (/(^|\/)src\/main(\/|$)/i.test(clean) ? 4 : 0);
@@ -822,15 +829,15 @@ export function classifyBugbotPath(path: string, size?: number, maxBytes = BUGBO
   if (SKIP_DEPENDENCY_TREE.test(clean)) return reject("dependency_tree");
   if (SKIP_BUILD_OUTPUT.test(clean)) return reject("build_output");
   if (SKIP_GENERATED.test(clean)) return reject("generated_code");
-  if (SKIP_TEST_SOURCE.test(clean)) return reject("test_source");
+  if (SKIP_TEST_SOURCE.test(clean) && !options?.includeTests) return reject("test_source");
   if (!ROBOT_CODE_EXT.test(clean)) return reject("not_robot_code");
   if (size != null && size > maxBytes) return reject("file_too_large");
   return { include: true, role, priority, reason: null };
 }
 
 /** True when a GitHub blob is worth a Bugbot pass (robot code, not lockfiles). */
-export function isBugbotScanPath(path: string): boolean {
-  return classifyBugbotPath(path).include;
+export function isBugbotScanPath(path: string, options?: ClassifyBugbotPathOptions): boolean {
+  return classifyBugbotPath(path, undefined, BUGBOT_SCAN_FILE_MAX_BYTES, options).include;
 }
 
 export type BugbotTreeEntry = { path: string; type: string; size?: number };
@@ -866,6 +873,7 @@ export function planBugbotScan(
     maxBytes?: number;
     treeTruncated?: boolean;
     maxSkippedListed?: number;
+    includeTests?: boolean;
   },
 ): BugbotScanPlan {
   const chunkFiles = Math.max(1, options?.chunkFiles ?? BUGBOT_SCAN_CHUNK_FILES);
@@ -878,7 +886,9 @@ export function planBugbotScan(
   const counts = new Map<BugbotSkipReason, number>();
   for (const entry of entries) {
     if (entry.type !== "blob") continue;
-    const verdict = classifyBugbotPath(entry.path, entry.size, maxBytes);
+    const verdict = classifyBugbotPath(entry.path, entry.size, maxBytes, {
+      includeTests: options?.includeTests,
+    });
     if (verdict.include) {
       included.push({ path: entry.path, role: verdict.role, priority: verdict.priority });
       continue;

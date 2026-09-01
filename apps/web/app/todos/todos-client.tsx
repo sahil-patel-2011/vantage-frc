@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import type { WorkItemsView } from "../../lib/work-items/service";
 import {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,
@@ -24,6 +25,7 @@ import {
 import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;
+type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
@@ -70,11 +72,66 @@ function NextActions({
   );
 }
 
+function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
+  if (!view) return null;
+  const crossTrackerItems = view.items
+    .filter((item) => item.source !== "todo" && item.flags.open)
+    .slice(0, 8);
+
+  return (
+    <Panel className="todos-unified-work" aria-label="All team work">
+      <header>
+        <div>
+          <span className="app-badge">One work view</span>
+          <h2>Todos, build tasks, and milestones</h2>
+          <p className="app-muted">
+            One read across the team&apos;s trackers. Open an item in its owning board to update it.
+          </p>
+        </div>
+        <a className="app-button secondary" href={withOrgHref("/tasks", view.orgId)}>
+          Open build board
+        </a>
+      </header>
+      <div className="todos-unified-metrics">
+        <StatTile label="Open" value={view.summary.open} />
+        <StatTile label="Overdue" value={view.summary.overdue} />
+        <StatTile label="Blocked" value={view.summary.blocked} />
+        <StatTile label="Unowned" value={view.summary.unowned} />
+      </div>
+      {crossTrackerItems.length ? (
+        <ul className="todos-cross-tracker-list">
+          {crossTrackerItems.map((item) => (
+            <li key={`${item.source}:${item.id}`}>
+              <div>
+                <span>{item.source === "build_task" ? "Build task" : "Milestone"}</span>
+                <strong>{item.title}</strong>
+                <small>
+                  {item.status.replace("_", " ")}
+                  {item.dueOn ? ` · due ${item.dueOn}` : ""}
+                  {item.owners.length ? ` · ${item.owners.map((owner) => owner.name).join(", ")}` : " · unowned"}
+                </small>
+              </div>
+              <a className="app-button secondary" href={withOrgHref(item.href, view.orgId)}>
+                Open
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="app-muted todos-unified-empty">
+          No open build tasks or milestones. Team todos remain below.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
 export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
   const [fromCache] = useState(false);
   const [cachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TodosView | null>(null);
+  const [workView, setWorkView] = useState<LiveWorkView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -113,6 +170,21 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId");
+    const query = new URLSearchParams();
+    if (urlOrg) query.set("orgId", urlOrg);
+    void fetch(`/api/work-items${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => (response.ok ? (await response.json()) as WorkItemsView : null))
+      .then((data) => {
+        if (data?.status === "live") setWorkView(data);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (view?.status !== "live" || !view.focusTodoId) return;
@@ -168,11 +240,11 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         <>
           <PageHeader
             breadcrumbs="Team / Todos"
-            title="Team todos"
+            title="Team work"
             description={
               <>
-                Shared action items for this org — assignees, due dates, and optional calendar subteam tags. Empty until
-                your team adds real work; never a DEMO task list.
+                Todos, build tasks, and season milestones in one workbench. Create quick team todos here and open
+                specialized work in its owning board; never a DEMO task list.
               </>
             }
           >
@@ -250,6 +322,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           {embedded ? null : <MetricsTiles view={view} />}
+          <UnifiedWorkSummary view={workView} />
           <CreateTodoForm view={view} busy={busy} mutate={mutate} />
           <FilterBar
             filter={filter}

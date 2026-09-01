@@ -4,8 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Knowledge-gap detective (never DEMO wiki gaps). */
 export const KNOWLEDGE_GAP_RELATED_LINKS = [
   { id: "knowledge", label: "Knowledge", tab: "knowledge" },
-  { id: "decisions", label: "Decisions", hub: "/ai" as const, tab: "decisions" },
-  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "todos", label: "Work", tab: "todos" },
   { id: "meeting-autopilot", label: "Meeting Autopilot", tab: "meeting-autopilot" },
 ] as const;
 
@@ -19,7 +18,7 @@ export type KnowledgeGapRelatedLink = {
 
 export const KNOWLEDGE_GAP_RELATED_INCLUDE: KnowledgeGapRelatedId[] = [
   "knowledge",
-  "fmea",
+  "todos",
   "meeting-autopilot",
 ];
 
@@ -32,14 +31,11 @@ export function knowledgeGapRelatedLinks(
     if (link.id === options?.active) return false;
     if (include && !include.has(link.id)) return false;
     return true;
-  }).map((link) => {
-    const hubPath = "hub" in link ? link.hub : link.id === "fmea" ? "/build" : "/team";
-    return {
-      id: link.id,
-      label: link.label,
-      href: hubHref(hubPath, link.tab, orgId),
-    };
-  });
+  }).map((link) => ({
+    id: link.id,
+    label: link.label,
+    href: hubHref("/team", link.tab, orgId),
+  }));
 }
 
 export type KnowledgeGapShellKind = "loading" | "error" | "setup" | "empty" | "ready";
@@ -81,10 +77,10 @@ export function knowledgeGapSetupSteps(orgId?: string | null): KnowledgeGapSetup
       href: hubHref("/team", "knowledge", orgId),
     },
     {
-      id: "fmea",
-      label: "Open FMEA",
-      detail: "Subsystems logged in FMEA become subjects the detective can scan.",
-      href: hubHref("/build", "fmea", orgId),
+      id: "todos",
+      label: "Open Work",
+      detail: "To-dos, build tasks, and milestones are the only subjects the detective can scan.",
+      href: hubHref("/team", "todos", orgId),
     },
   ];
 }
@@ -145,7 +141,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
         badge: "No scan yet",
         title: "Run your first coverage scan",
         description:
-          "Diffs subsystems, decisions, and scouted events against real wiki pages — never DEMO gap packs.",
+          "Diffs real work items against real wiki pages — never DEMO gap packs.",
       };
     default:
       return {
@@ -224,7 +220,7 @@ export function knowledgeGapNextActions(input: {
       {
         id: "run-scan",
         label: "Run coverage scan",
-        detail: "Gaps stay blank until you scan real subsystems and wiki pages — never DEMO packs.",
+        detail: "Gaps stay blank until you scan real work items and wiki pages — never DEMO packs.",
         href: "#knowledge-gap-scan",
         primary: true,
       },
@@ -235,10 +231,10 @@ export function knowledgeGapNextActions(input: {
         href: hubHref("/team", "knowledge", orgId),
       },
       {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "Subsystems logged here become scan subjects.",
-        href: hubHref("/build", "fmea", orgId),
+        id: "todos",
+        label: "Open Work",
+        detail: "Add to-dos, build tasks, or milestones before gaps can appear.",
+        href: hubHref("/team", "todos", orgId),
       },
     ];
   }
@@ -249,8 +245,8 @@ export function knowledgeGapNextActions(input: {
       label: itemCount > 0 ? "Draft stub pages" : "Re-scan coverage",
       detail:
         itemCount > 0
-          ? `${itemCount} undocumented subject${itemCount === 1 ? "" : "s"} from real wiki diffs — never DEMO gaps.`
-          : "Coverage is complete for this scan — re-run after new subsystems land.",
+          ? `${itemCount} undocumented work item${itemCount === 1 ? "" : "s"} from real wiki diffs — never DEMO gaps.`
+          : "Coverage is complete for this scan — re-run after new work lands.",
       href: itemCount > 0 ? "#knowledge-gap-items" : "#knowledge-gap-scan",
       primary: true,
     },
@@ -263,7 +259,7 @@ export function knowledgeGapNextActions(input: {
     {
       id: "meeting",
       label: "Open Meeting Autopilot",
-      detail: "Turn undocumented subjects into agenda items.",
+      detail: "Turn undocumented work into agenda items.",
       href: hubHref("/team", "meeting-autopilot", orgId),
     },
   ];

@@ -13,6 +13,11 @@ import {
   onboardingBuddySetupSteps,
   type OnboardingBuddySetupStep,
 } from "./onboarding-buddy-related";
+import {
+  assertRosterMembers,
+  pairingInsertParams,
+  parseCreatePairingInput,
+} from "./roster";
 import type {
   OnboardingBuddyMember,
   OnboardingBuddyPairing,
@@ -117,9 +122,11 @@ async function loadPairings(client: PoolClient, orgId: string): Promise<Onboardi
               COALESCE(NULLIF(trim(bu.name),''), bu.email) AS "buddyName",
               p.status, p.notes, p.paired_at::text AS "pairedAt", p.completed_at::text AS "completedAt"
        FROM onboarding_buddy_pairings p
+       JOIN memberships nm ON nm.org_id = p.org_id AND nm.user_id = p.new_member_id
+       JOIN memberships bm ON bm.org_id = p.org_id AND bm.user_id = p.buddy_id
        JOIN users nu ON nu.id = p.new_member_id
        JOIN users bu ON bu.id = p.buddy_id
-       WHERE p.org_id = $1
+       WHERE p.org_id = $1::uuid
        ORDER BY p.paired_at DESC`,
       [orgId],
     ),
@@ -225,10 +232,18 @@ export async function createPairing(
   client: PoolClient,
   input: { orgId: string; userId: string; newMemberId: string; buddyId: string; notes: string | null },
 ): Promise<string> {
+  const pair = parseCreatePairingInput(input);
+  await assertRosterMembers(client, input.orgId, [pair.newMemberId, pair.buddyId]);
   const result = await client.query<{ id: string }>(
     `INSERT INTO onboarding_buddy_pairings (org_id, new_member_id, buddy_id, notes, created_by)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-    [input.orgId, input.newMemberId, input.buddyId, input.notes, input.userId],
+     VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5::uuid) RETURNING id`,
+    pairingInsertParams({
+      orgId: input.orgId,
+      newMemberId: pair.newMemberId,
+      buddyId: pair.buddyId,
+      notes: pair.notes,
+      createdBy: input.userId,
+    }),
   );
   const pairingId = result.rows[0]!.id;
 

@@ -19,10 +19,13 @@ type ModalProps = {
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
+  description?: ReactNode;
   labelledById?: string;
   /** Hide the default close (X) button. */
   hideClose?: boolean;
   className?: string;
+  /** Centered dialog by default; sheet docks to the bottom for mobile-first pickers. */
+  variant?: "dialog" | "sheet";
 };
 
 const CloseGlyph = () => (
@@ -35,7 +38,17 @@ const CloseGlyph = () => (
  * Accessible modal — focus trap (Tab/Shift+Tab cycle), Escape-to-close, focus RETURNED to the
  * invoking element on close, role="dialog" aria-modal aria-labelledby. No library. Portal to body.
  */
-export function Modal({ open, onClose, title, children, labelledById, hideClose, className }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  description,
+  labelledById,
+  hideClose,
+  className,
+  variant = "dialog",
+}: ModalProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   const autoId = useId();
@@ -93,19 +106,25 @@ export function Modal({ open, onClose, title, children, labelledById, hideClose,
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className={[styles.overlay, variant === "sheet" ? styles.sheetOverlay : ""].filter(Boolean).join(" ")}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={[styles.dialog, className].filter(Boolean).join(" ")}
+        className={[styles.dialog, variant === "sheet" ? styles.sheet : "", className].filter(Boolean).join(" ")}
       >
         <div className={styles.dialogHead}>
-          <h2 id={titleId} className={styles.dialogTitle}>
-            {title}
-          </h2>
+          <div>
+            <h2 id={titleId} className={styles.dialogTitle}>
+              {title}
+            </h2>
+            {description ? <p className={styles.dialogBody}>{description}</p> : null}
+          </div>
           {!hideClose ? (
             <button type="button" className={styles.dialogClose} onClick={onClose} aria-label="Close dialog">
               <CloseGlyph />

@@ -14,7 +14,8 @@ export type PickListSource =
   | "picklist_collab"
   | "alliance_desk"
   | "strategy"
-  | "intel_research";
+  | "intel_research"
+  | "chemistry";
 
 /** Where a team ended up on Saturday's draft board. */
 export type DraftPickSlot = "captain" | "first" | "second";

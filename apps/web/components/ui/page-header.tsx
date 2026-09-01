@@ -22,7 +22,7 @@ export function PageHeader({ breadcrumbs, navPath, title, description, children,
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>
-      {children}
+      {children ? <div className="app-page-actions">{children}</div> : null}
     </header>
   );
 }

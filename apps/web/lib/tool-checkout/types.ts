@@ -13,6 +13,13 @@ export type ToolCategory =
 
 export type ToolCheckoutStatus = "available" | "checked_out" | "overdue";
 
+/** A training-matrix skill that gates checkout of this tool. */
+export type ToolRequiredSkill = {
+  id: string;
+  name: string;
+  category: string;
+};
+
 export type ToolCheckoutLoan = {
   id: string;
   borrowerName: string;
@@ -33,6 +40,12 @@ export type ToolCheckoutTool = {
   status: ToolCheckoutStatus;
   currentLoan: ToolCheckoutLoan | null;
   loanHistory: ToolCheckoutLoan[];
+  requiredSkills: ToolRequiredSkill[];
+};
+
+export type ToolCheckoutMemberOption = {
+  userId: string;
+  name: string;
 };
 
 export type ToolCheckoutSummary = {

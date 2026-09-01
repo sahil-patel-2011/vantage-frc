@@ -56,6 +56,8 @@ describe("exit interview wiki page", () => {
 describe("logExitInterview wiki write", () => {
   it("writes a knowledge page only when the interview is submitted", async () => {
     const query = vi.fn(async (sql: string) => {
+      // The insert now resolves member_name against the roster first.
+      if (sql.includes("FROM memberships")) return { rows: [], rowCount: 0 };
       if (sql.includes("INSERT INTO exit_interview_responses")) return { rows: [{ id: "rec-1" }] };
       if (sql.includes("SELECT 1 FROM knowledge_pages")) return { rows: [], rowCount: 0 };
       if (sql.includes("INSERT INTO knowledge_pages")) return { rows: [{ id: "page-1" }] };
@@ -83,6 +85,7 @@ describe("logExitInterview wiki write", () => {
 
     query.mockClear();
     query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM memberships")) return { rows: [], rowCount: 0 };
       if (sql.includes("INSERT INTO exit_interview_responses")) return { rows: [{ id: "rec-2" }] };
       throw new Error(`Unexpected SQL: ${sql}`);
     });

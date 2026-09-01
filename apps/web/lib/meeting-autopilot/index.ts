@@ -5,6 +5,17 @@
 
 import type { AgendaItem, AgendaSourceCounts, AgendaSourceInput, ParsedActionItem } from "./types";
 
+export {
+  agendaForEvent,
+  attachMinutes,
+  decodeAgendaPayload,
+  encodeAgendaPayload,
+  isEmptyUntilMeeting,
+  matchAgendaToMeeting,
+  meetingOnFromStartsAt,
+  requireCalendarEventId,
+} from "./persist";
+
 export const AGENDA_ITEM_KINDS = ["blocker", "overdue_task", "decision", "fmea"] as const;
 
 const PRIORITY_WEIGHT: Record<string, number> = { critical: 30, high: 20, normal: 10, low: 5 };

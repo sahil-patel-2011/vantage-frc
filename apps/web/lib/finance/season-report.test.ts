@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { toCsv } from "../export/to-csv";
+import { isHonestTieOut } from "./honesty";
 import { sumLedgerEntries, type UnifiedLedgerEntry } from "./ledger";
 import {
-  EXTERNAL_INCOME_SQL,
   SEASON_REPORT_COLUMNS,
   buildSeasonReportRows,
   closingBalanceUsd,
@@ -73,10 +73,11 @@ describe("buildSeasonReportRows", () => {
     expect(rows.map((row) => row.runningBalanceUsd)).toEqual([400, 0]);
   });
 
-  it("drops zero and non-finite amounts rather than exporting empty money rows", () => {
+  it("drops zero, non-finite, and unmirrored fallback rows rather than exporting invented money", () => {
     const rows = buildSeasonReportRows([
       entry({ id: "zero", amountUsd: 0 }),
       entry({ id: "nan", amountUsd: Number.NaN }),
+      entry({ id: "fallback", amountUsd: 400, mirrored: false, source: "purchase_request" }),
       entry({ id: "real", amountUsd: 10, direction: "out" }),
     ]);
     expect(rows).toHaveLength(1);
@@ -95,6 +96,7 @@ describe("buildSeasonReportRows", () => {
   it("returns an empty report — and a zero closing balance — for a team with no money rows", () => {
     expect(buildSeasonReportRows([])).toEqual([]);
     expect(closingBalanceUsd([])).toBe(0);
+    expect(isHonestTieOut({ closingUsd: 0, reportedBalanceUsd: 0, rowCount: 0 })).toBe(false);
   });
 });
 
@@ -121,21 +123,41 @@ describe("season report CSV", () => {
   });
 });
 
-describe("EXTERNAL_INCOME_SQL", () => {
-  it("is org-parameterized and covers every income source balance.ts counts", () => {
-    expect(EXTERNAL_INCOME_SQL).toContain("$1::uuid");
-    for (const table of [
-      "sponsor_contributions",
-      "fundraiser_events",
-      "finance_funding_sources",
-      "grant_applications",
-    ]) {
-      expect(EXTERNAL_INCOME_SQL).toContain(table);
-    }
+describe("season report honesty", () => {
+  it("skips unmirrored fallback income instead of re-reading source tables", () => {
+    const rows = buildSeasonReportRows([
+      entry({
+        id: "sponsor-fallback",
+        direction: "in",
+        amountUsd: 1200,
+        source: "sponsor_contribution",
+        mirrored: false,
+      }),
+      entry({
+        id: "grant-fallback",
+        direction: "in",
+        amountUsd: 500,
+        source: "other",
+        mirrored: false,
+      }),
+    ]);
+    expect(rows).toEqual([]);
+    expect(closingBalanceUsd(rows)).toBe(0);
+    expect(isHonestTieOut({ closingUsd: 0, reportedBalanceUsd: 0, rowCount: 0 })).toBe(false);
   });
 
-  it("excludes cancelled fundraisers and unawarded grants, matching the balance math", () => {
-    expect(EXTERNAL_INCOME_SQL).toContain("status <> 'cancelled'");
-    expect(EXTERNAL_INCOME_SQL).toContain("status = 'awarded'");
+  it("ties out only when real ledger rows close on the balance view", () => {
+    const entries = [
+      entry({ id: "a", date: "2026-01-01T00:00:00Z", direction: "in", amountUsd: 1200.33 }),
+      entry({ id: "b", date: "2026-01-05T00:00:00Z", direction: "out", amountUsd: 199.99 }),
+    ];
+    const rows = buildSeasonReportRows(entries);
+    expect(
+      isHonestTieOut({
+        closingUsd: closingBalanceUsd(rows),
+        reportedBalanceUsd: sumLedgerEntries(entries).balanceUsd,
+        rowCount: rows.length,
+      }),
+    ).toBe(true);
   });
 });

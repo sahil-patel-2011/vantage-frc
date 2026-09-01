@@ -4,6 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Tool Checkout (never DEMO loan ledgers). */
 export const TOOL_CHECKOUT_RELATED_LINKS = [
   { id: "equipment-maintenance", label: "Equipment Maintenance", tab: "equipment-maintenance" },
+  { id: "training", label: "Training matrix", tab: "training" },
   { id: "checklist-library", label: "Checklist Library", tab: "checklist-library" },
   { id: "safety-training", label: "Safety Training", tab: "safety-training" },
   { id: "pit-map-planner", label: "Pit Map", tab: "pit-map-planner" },
@@ -19,6 +20,7 @@ export type ToolCheckoutRelatedLink = {
 
 export const TOOL_CHECKOUT_RELATED_INCLUDE: ToolCheckoutRelatedId[] = [
   "equipment-maintenance",
+  "training",
   "checklist-library",
   "safety-training",
 ];
@@ -275,10 +277,10 @@ export function toolCheckoutNextActions(input: {
       href: hubHref("/team", "equipment-maintenance", orgId),
     },
     {
-      id: "safety",
-      label: "Open Safety Training",
-      detail: "Confirm borrowers completed required tool training.",
-      href: hubHref("/team", "safety-training", orgId),
+      id: "training",
+      label: "Open Training matrix",
+      detail: "Checkout refuses a tool when the borrower is missing a required cert.",
+      href: hubHref("/team", "training", orgId),
     },
   ];
 }

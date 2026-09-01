@@ -3,6 +3,7 @@ import { CommitAndThrowError } from "@vantage/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   UsageHardCutoffError,
+  DuplicateMeteredRequestError,
   classifyMeteredAiError,
   meteredAI,
   meteredAiErrorBody,
@@ -76,6 +77,146 @@ function unwrapCutoff(error: unknown): UsageHardCutoffError {
 }
 
 describe("serialized AI metering", () => {
+  it("rejects a completed request id before invoking or charging again", async () => {
+    const { client: base } = paidClient(1, 10);
+    const invoke = vi.fn();
+    const client = {
+      query(sql: string, params?: unknown[]) {
+        if (sql.includes("SELECT id FROM ai_usage_events WHERE request_id")) {
+          return Promise.resolve({ rows: [{ id: "usage-1" }], rowCount: 1 });
+        }
+        return base.query(sql, params);
+      },
+    } as unknown as PoolClient;
+    await expect(
+      meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "chat",
+        requestId: "same-request",
+        estimatedCostUsd: 0.01,
+        invoke,
+      }),
+    ).rejects.toBeInstanceOf(DuplicateMeteredRequestError);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("serializes concurrent retries and only invokes the provider once", async () => {
+    let held = false;
+    let usageCommitted = false;
+    let releaseLock: (() => void) | null = null;
+    const waiters: Array<() => void> = [];
+    const wrap = (base: PoolClient) =>
+      ({
+        async query(sql: string, params?: unknown[]) {
+          if (sql.includes("pg_advisory_xact_lock") && !sql.includes("pg_try")) {
+            if (held) await new Promise<void>((resolve) => waiters.push(resolve));
+            held = true;
+            releaseLock = () => {
+              held = false;
+              waiters.shift()?.();
+            };
+            return { rows: [], rowCount: 1 };
+          }
+          if (sql.includes("SELECT id FROM ai_usage_events WHERE request_id")) {
+            return usageCommitted
+              ? { rows: [{ id: "usage-1" }], rowCount: 1 }
+              : { rows: [], rowCount: 0 };
+          }
+          const result = await base.query(sql, params);
+          if (sql.includes("INSERT INTO ai_usage_events")) {
+            usageCommitted = true;
+            releaseLock?.();
+          }
+          return result;
+        },
+      }) as unknown as PoolClient;
+    const firstBase = paidClient(1, 10).client;
+    const secondBase = paidClient(1, 10).client;
+    let finishProvider!: () => void;
+    const providerGate = new Promise<void>((resolve) => {
+      finishProvider = resolve;
+    });
+    const firstInvoke = vi.fn(async (source: MeterKeySource) => {
+      await providerGate;
+      return {
+        value: "first",
+        promptTokens: 1,
+        completionTokens: 1,
+        costUsd: 0.01,
+        model: "test",
+        provider: "test",
+        keySource: source,
+      };
+    });
+    const secondInvoke = vi.fn();
+    const first = meteredAI({
+      client: wrap(firstBase),
+      orgId: "org",
+      userId: "user",
+      feature: "chat",
+      requestId: "concurrent-request",
+      estimatedCostUsd: 0.01,
+      invoke: firstInvoke,
+    });
+    await Promise.resolve();
+    const second = meteredAI({
+      client: wrap(secondBase),
+      orgId: "org",
+      userId: "user",
+      feature: "chat",
+      requestId: "concurrent-request",
+      estimatedCostUsd: 0.01,
+      invoke: secondInvoke,
+    });
+    await Promise.resolve();
+    expect(secondInvoke).not.toHaveBeenCalled();
+    finishProvider();
+    await expect(first).resolves.toBe("first");
+    await expect(second).rejects.toBeInstanceOf(DuplicateMeteredRequestError);
+    expect(firstInvoke).toHaveBeenCalledTimes(1);
+    expect(secondInvoke).not.toHaveBeenCalled();
+  });
+
+  it("does not record a successful charge when provider output validation fails", async () => {
+    const { client, inserts } = paidClient(1, 10);
+    await expect(
+      meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "bugbot_ultra",
+        requestId: "invalid-bugbot-diff",
+        estimatedCostUsd: 2,
+        keySource: "platform",
+        invoke: async () => {
+          throw new Error("Bugbot did not return a valid unified diff");
+        },
+      }),
+    ).rejects.toThrow(/valid unified diff/i);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it("does not record a flat-fee charge when the provider fails", async () => {
+    const { client, inserts } = paidClient(1, 10);
+    await expect(
+      meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "bugbot_ultra",
+        requestId: "failed-bugbot-provider",
+        estimatedCostUsd: 1,
+        keySource: "platform",
+        invoke: async () => {
+          throw new Error("provider unavailable");
+        },
+      }),
+    ).rejects.toThrow(/provider unavailable/i);
+    expect(inserts).toHaveLength(0);
+  });
+
   it("hard-stops when included allowance is exhausted and PAYG is off", async () => {
     const { client } = paidClient(9.5, 10);
     const invoke = vi.fn();
@@ -220,7 +361,8 @@ describe("serialized AI metering", () => {
       })
     });
     expect(result).toBe("brief");
-    expect(queries[0]).toContain("pg_try_advisory_xact_lock");
+    expect(queries[0]).toContain("pg_advisory_xact_lock");
+    expect(queries.some((query) => query.includes("pg_try_advisory_xact_lock"))).toBe(true);
     // The org_billing read must not hold a row lock across input.invoke().
     const billingRead = queries.find((query) => query.includes("FROM org_billing"));
     expect(billingRead).toBeDefined();

@@ -6,6 +6,7 @@ export const MATCH_STRATEGY_CARDS_RELATED_LINKS = [
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
   { id: "command", label: "Command", tab: "command" },
+  { id: "briefing", label: "Briefing", tab: "briefing" },
   { id: "defense-planner", label: "Defense Planner", tab: "defense-planner" },
   { id: "drive-team-signals", label: "Drive-Team Signals", tab: "drive-team-signals" },
 ] as const;
@@ -24,6 +25,7 @@ export const MATCH_STRATEGY_CARDS_RELATED_INCLUDE: MatchStrategyCardsRelatedId[]
   "strategy",
   "match-checklist",
   "command",
+  "briefing",
 ];
 
 /**
@@ -399,6 +401,13 @@ export function matchStrategyCardsNextActions(input: {
       label: "Open Drive-Team Signals",
       detail: "Carry live signals onto the field with the printed pack.",
       href: hubHref("/competition", "drive-team-signals", orgId),
+    },
+    {
+      id: "briefing",
+      label: "Open Briefing",
+      detail:
+        "This next-match card exports auto / backup / deploy cues from written text — never DEMO plans.",
+      href: hubHref("/competition", "briefing", orgId),
     },
   ];
 }

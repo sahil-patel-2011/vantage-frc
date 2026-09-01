@@ -12,7 +12,10 @@ export type CadOperation =
   | "create_shell"
   | "create_pattern"
   | "set_variable"
+  | "create_part_studio"
   | "create_assembly"
+  | "add_assembly_instance"
+  | "create_mate"
   | "create_hole"
   | "create_mirror"
   | "delete_feature"
@@ -46,7 +49,10 @@ export const DESTRUCTIVE_CAD_OPERATIONS = new Set<CadOperation>([
   "create_shell",
   "create_pattern",
   "set_variable",
+  "create_part_studio",
   "create_assembly",
+  "add_assembly_instance",
+  "create_mate",
   "create_hole",
   "create_mirror",
   "delete_feature",
@@ -72,7 +78,10 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "create_shell",
   "create_pattern",
   "set_variable",
+  "create_part_studio",
   "create_assembly",
+  "add_assembly_instance",
+  "create_mate",
   "create_hole",
   "create_mirror",
   "delete_feature",

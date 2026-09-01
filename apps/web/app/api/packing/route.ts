@@ -49,6 +49,12 @@ function isMissingRelation(error: unknown): boolean {
   return code === "42P01" || /packing_requests|does not exist/i.test(message);
 }
 
+function isMissingAssigneeColumn(error: unknown): boolean {
+  const code = error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return code === "42703" || /assigned_user_id/i.test(message);
+}
+
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: error instanceof Error ? error.message : "Packing request failed" }, { status });
@@ -99,15 +105,31 @@ export async function GET(request: Request) {
            LIMIT 50`,
           [row.orgId],
         ),
-        client.query<PackingItem>(
-          `SELECT i.id, i.list_id AS "listId", i.category, i.label, i.quantity, i.packed,
-                  pb.name AS "packedByName", i.packed_at::text AS "packedAt", i.sort_order AS "sortOrder"
-           FROM packing_items i
-           LEFT JOIN users pb ON pb.id = i.packed_by
-           WHERE i.org_id = $1
-           ORDER BY i.list_id, i.category, i.sort_order`,
-          [row.orgId],
-        ),
+        client
+          .query<PackingItem>(
+            `SELECT i.id, i.list_id AS "listId", i.category, i.label, i.quantity, i.packed,
+                    i.assigned_user_id AS "assignedUserId", au.name AS "assignedUserName",
+                    pb.name AS "packedByName", i.packed_at::text AS "packedAt", i.sort_order AS "sortOrder"
+             FROM packing_items i
+             LEFT JOIN users pb ON pb.id = i.packed_by
+             LEFT JOIN users au ON au.id = i.assigned_user_id
+             WHERE i.org_id = $1
+             ORDER BY i.list_id, i.category, i.sort_order`,
+            [row.orgId],
+          )
+          .catch((error) => {
+            if (!isMissingAssigneeColumn(error)) throw error;
+            return client.query<PackingItem>(
+              `SELECT i.id, i.list_id AS "listId", i.category, i.label, i.quantity, i.packed,
+                      NULL::uuid AS "assignedUserId", NULL::text AS "assignedUserName",
+                      pb.name AS "packedByName", i.packed_at::text AS "packedAt", i.sort_order AS "sortOrder"
+               FROM packing_items i
+               LEFT JOIN users pb ON pb.id = i.packed_by
+               WHERE i.org_id = $1
+               ORDER BY i.list_id, i.category, i.sort_order`,
+              [row.orgId],
+            );
+          }),
         client
           .query<PackingRequest>(
             `SELECT r.id, r.list_id AS "listId", r.category, r.label, r.quantity,
@@ -374,6 +396,48 @@ export async function POST(request: Request) {
             action.orgId,
           ]);
           return { ok: true };
+        }
+
+        case "assign_item": {
+          const found = await client.query<{ createdBy: string }>(
+            `SELECT l.created_by AS "createdBy"
+             FROM packing_items i
+             JOIN packing_lists l ON l.id = i.list_id AND l.org_id = i.org_id
+             WHERE i.id = $1 AND i.org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Item not found");
+          if (!canManagePackingMaster(role, found.rows[0]!.createdBy, userId)) {
+            throw new HttpError(403, "Only the packing lead can assign master-list items");
+          }
+          if (action.assignedUserId) {
+            const member = await client.query(
+              `SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
+              [action.orgId, action.assignedUserId],
+            );
+            if (!member.rowCount) throw new HttpError(400, "Assignee must be a team member");
+          }
+          try {
+            const updated = await client.query<{ listId: string }>(
+              `UPDATE packing_items
+               SET assigned_user_id = $3
+               WHERE id = $1 AND org_id = $2
+               RETURNING list_id AS "listId"`,
+              [action.id, action.orgId, action.assignedUserId],
+            );
+            if (!updated.rowCount) throw new HttpError(404, "Item not found");
+            await client.query(`UPDATE packing_lists SET updated_at = now() WHERE id = $1 AND org_id = $2`, [
+              updated.rows[0]!.listId,
+              action.orgId,
+            ]);
+            return { ok: true, assignedUserId: action.assignedUserId };
+          } catch (error) {
+            if (error instanceof HttpError) throw error;
+            if (isMissingAssigneeColumn(error)) {
+              throw new HttpError(503, "Packing assignees need database migration 0506.");
+            }
+            throw error;
+          }
         }
 
         case "delete_item": {

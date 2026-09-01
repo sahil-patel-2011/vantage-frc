@@ -92,12 +92,20 @@ export async function POST(request: Request) {
           const sponsorName = trimmedOrNull(body.sponsorName, 200);
           if (!sponsorName) throw new Error("sponsorName is required");
           const tier = oneOf<SponsorWallTier>(SPONSOR_WALL_TIERS, body.tier) ?? "partner";
+          const mediaAssetId = trimmedOrNull(body.mediaAssetId, 64);
+          const mediaAsset = mediaAssetId
+            ? await client.query<{ url: string }>(
+                `SELECT url FROM media_kit_assets WHERE id = $1::uuid AND org_id = $2::uuid`,
+                [mediaAssetId, orgId],
+              )
+            : null;
+          if (mediaAssetId && !mediaAsset?.rows[0]) throw new Error("Media asset not found");
           await addEntry(client, {
             orgId,
             userId,
             sponsorName,
             tier,
-            logoUrl: trimmedOrNull(body.logoUrl, 1000),
+            logoUrl: mediaAsset?.rows[0]?.url ?? trimmedOrNull(body.logoUrl, 1000),
             websiteUrl: trimmedOrNull(body.websiteUrl, 1000),
             message: trimmedOrNull(body.message, 2000),
             displayOrder: nonNegativeInt(body.displayOrder),

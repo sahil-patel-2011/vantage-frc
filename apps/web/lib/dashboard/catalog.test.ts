@@ -159,18 +159,31 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("hides empty widgets when the shell is ready, keeping next match as the hero", () => {
-    const viewed = homeViewLayout(DEFAULT_DASHBOARD_LAYOUT, {
-      editing: false,
-      shell: "ready",
-      widgets: {
-        next_match: { status: "empty" },
-        competition_snapshot: { status: "setup_required" },
-        robot_readiness: { status: "empty" },
-        alerts: { status: "live" },
+  it("keeps pinned widgets visible when empty and hides only setup-only cards", () => {
+    const viewed = homeViewLayout(
+      [
+        ...DEFAULT_DASHBOARD_LAYOUT,
+        { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 20, w: 12, h: 4 },
+      ],
+      {
+        editing: false,
+        shell: "ready",
+        widgets: {
+          next_match: { status: "empty" },
+          competition_snapshot: { status: "setup_required" },
+          robot_readiness: { status: "empty" },
+          alerts: { status: "live" },
+        },
       },
-    });
-    expect(viewed.map((item) => item.type)).toEqual(["next_match", "alerts"]);
+    );
+    expect(viewed.map((item) => item.type)).toEqual([
+      "next_match",
+      "competition_snapshot",
+      "robot_readiness",
+      "alerts",
+      "recent_result",
+      "scouting_coverage",
+    ]);
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });

@@ -45,6 +45,7 @@ describe("computeOpponentWatchlistView", () => {
     if (view.status === "live") {
       expect(view.entries).toHaveLength(0);
       expect(view.alerts).toHaveLength(0);
+      expect(view.coveragePriorityTeamKeys).toEqual([]);
       expect(view.summary).toMatchObject({ totalWatched: 0, epaAlerts: 0, scheduleAlerts: 0 });
     }
   });
@@ -135,5 +136,6 @@ describe("computeOpponentWatchlistView", () => {
     expect(scheduleAlert).toBeTruthy();
 
     expect(view.summary).toMatchObject({ totalWatched: 1, epaAlerts: 1, scheduleAlerts: 1 });
+    expect(view.coveragePriorityTeamKeys).toEqual(["frc118"]);
   });
 });

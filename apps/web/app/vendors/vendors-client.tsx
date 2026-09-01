@@ -298,7 +298,7 @@ export default function VendorsClient() {
           </>
         }
         title="Vendor Directory"
-        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics."
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics."
       >
         <div className="vendors-header-actions">
           {relatedLinks.map((link) => (
@@ -342,7 +342,8 @@ export default function VendorsClient() {
         <Panel className="vendors-tip" aria-label="Vendor directory tip">
           <span className="eyebrow">Procurement path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Place reorders through <a href={ordersHref}>Orders</a> and keep shipping windows in{" "}
+            Purchase orders pick a supplier id from this directory — add vendors here, then submit
+            through <a href={ordersHref}>Orders</a>. Keep shipping windows in{" "}
             <a href={leadTimesHref}>Vendor Lead Times</a> — never invent DEMO contacts, ratings, or
             lead-time averages.
           </p>

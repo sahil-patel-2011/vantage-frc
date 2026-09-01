@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import type { SeasonHorizon } from "./types";
 
 /** Soft-UI related surfaces for Spare Forecast (never DEMO spare counts). */
 export const SPARE_FORECAST_RELATED_LINKS = [
@@ -75,10 +76,11 @@ export type SpareForecastEmptyCopy = {
   description: string;
 };
 
-/** Real spare / forecast counts only — never invent DEMO inventory totals. */
+/** Real spare / forecast counts only — never invent DEMO inventory totals. Null means unknown (offseason). */
 export function formatSpareForecastMetric(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
-  const n = Number(value ?? 0);
+  if (value == null) return "—";
+  const n = Number(value);
   if (!Number.isFinite(n) || n < 0) return "0";
   return Math.floor(n).toLocaleString();
 }
@@ -163,6 +165,7 @@ export function spareForecastNextActions(input: {
   forecastLineCount?: number;
   criticalCount?: number;
   purchaseRequestCount?: number;
+  seasonHorizon?: SeasonHorizon;
 }): SpareForecastNextAction[] {
   const orgId = input.orgId ?? null;
   const spareBinCount = input.spareBinCount ?? 0;
@@ -331,7 +334,7 @@ export function spareForecastNextActions(input: {
     });
   }
 
-  if (purchaseRequestCount === 0 && criticalCount === 0) {
+  if (purchaseRequestCount === 0 && criticalCount === 0 && input.seasonHorizon !== "offseason") {
     actions.push({
       id: "draft",
       label: "Draft purchase request",

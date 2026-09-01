@@ -86,7 +86,11 @@ describe("parseCadAgentAction", () => {
 
   it("allowlists hosted Onshape tools only", () => {
     expect(isWebCadAgentTool("onshape_extrude")).toBe(true);
+    expect(isWebCadAgentTool("onshape_create_assembly")).toBe(true);
+    expect(isWebCadAgentTool("onshape_mate")).toBe(true);
     expect(isWebCadAgentTool("fusion_extrude")).toBe(false);
     expect(WEB_CAD_AGENT_INSTRUCTIONS).toMatch(/Onshape/);
+    expect(WEB_CAD_AGENT_INSTRUCTIONS).toMatch(/FeatureScript is not required/);
+    expect(WEB_CAD_AGENT_INSTRUCTIONS).toMatch(/onshape_get_assembly/);
   });
 });

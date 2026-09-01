@@ -17,8 +17,8 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-
-const POLL_MS = 45_000;
+import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
+import { MY_DAY_POLL_MS, mergeMyDayView, shouldPollMyDay } from "../../lib/my-day/poll";
 
 function MyDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = myDayRelatedLinks(orgId, {
@@ -273,6 +273,7 @@ function MyDayShell({
 }
 
 export default function MyDayClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const cockpit = useCockpitPrefs();
   const [view, setView] = useState<MyDayView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -285,7 +286,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
     const orgId = params.get("orgId");
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     try {
-      const response = await fetch(`/api/my-day${qs}`);
+      const response = await fetch(`/api/my-day${qs}`, { cache: "no-store" });
       const data = (await response.json()) as MyDayView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");
@@ -296,7 +297,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       setError("");
       setErrorStatus(null);
       setFetchFailed(false);
-      setView(data);
+      setView((current) => mergeMyDayView(current, data));
     } catch {
       setError("Could not load My Day.");
       setErrorStatus(null);
@@ -308,9 +309,18 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
 
   useEffect(() => {
     void load();
-    const id = window.setInterval(() => void load(), POLL_MS);
-    return () => window.clearInterval(id);
-  }, [load]);
+    const id = window.setInterval(() => {
+      if (shouldPollMyDay(document.visibilityState, cockpit.pauseLiveWhenHidden)) void load();
+    }, MY_DAY_POLL_MS);
+    const onVisibility = () => {
+      if (shouldPollMyDay(document.visibilityState, cockpit.pauseLiveWhenHidden)) void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load, cockpit.pauseLiveWhenHidden]);
 
   if (loading && !view) {
     return (

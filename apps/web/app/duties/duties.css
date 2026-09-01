@@ -47,3 +47,27 @@
   color: var(--soft-muted);
   font-size: 12px;
 }
+
+.duties-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.duties-active {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+}
+
+.duties-active span {
+  color: var(--soft-muted);
+  font-size: 13px;
+}
+
+.duties-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}

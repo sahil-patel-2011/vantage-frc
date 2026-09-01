@@ -3,6 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { parseFundraiserAction, summarizeFundraisers, type FundraiserStatus, type FundraiserType } from "../../../lib/fundraisers";
+import { syncFundraiserMoney } from "../../../lib/finance/source-mirrors";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -99,32 +100,83 @@ export async function POST(request: Request) {
           return { id: inserted.rows[0]!.id };
         }
         case "set_status": {
-          const updated = await client.query(
-            `UPDATE fundraiser_events SET status = $1, updated_at = now() WHERE id = $2 AND org_id = $3`,
+          const current = await client.query<{ proceedsUsd: string }>(
+            `SELECT proceeds_usd::text AS "proceedsUsd" FROM fundraiser_events WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!current.rows[0]) throw new HttpError(404, "Fundraiser not found");
+          if (Number(current.rows[0].proceedsUsd) > 0) {
+            await requireAdmin(client, action.orgId, userId);
+          }
+          const updated = await client.query<{
+            seasonYear: number;
+            name: string;
+            proceedsUsd: string;
+            eventDate: string;
+            status: string;
+          }>(
+            `UPDATE fundraiser_events SET status = $1, updated_at = now() WHERE id = $2 AND org_id = $3
+             RETURNING season_year AS "seasonYear", name, proceeds_usd::text AS "proceedsUsd",
+                       event_date::text AS "eventDate", status`,
             [action.status, action.id, action.orgId],
           );
           if (!updated.rowCount) throw new HttpError(404, "Fundraiser not found");
+          const row = updated.rows[0]!;
+          await syncFundraiserMoney(client, {
+            orgId: action.orgId,
+            fundraiserId: action.id,
+            seasonYear: row.seasonYear,
+            name: row.name,
+            proceedsUsd: Number(row.proceedsUsd) || 0,
+            eventDate: row.eventDate,
+            status: row.status,
+            userId,
+          });
           return { ok: true };
         }
         case "record_proceeds": {
           await requireAdmin(client, action.orgId, userId);
-          const event = await client.query<{ seasonYear: number; name: string }>(
+          const event = await client.query<{
+            seasonYear: number;
+            name: string;
+            proceedsUsd: string;
+            eventDate: string;
+            status: string;
+          }>(
             `UPDATE fundraiser_events SET proceeds_usd = proceeds_usd + $1, updated_at = now()
-             WHERE id = $2 AND org_id = $3 RETURNING season_year AS "seasonYear", name`,
+             WHERE id = $2 AND org_id = $3
+             RETURNING season_year AS "seasonYear", name, proceeds_usd::text AS "proceedsUsd",
+                       event_date::text AS "eventDate", status`,
             [action.amountUsd, action.id, action.orgId],
           );
           if (!event.rowCount) throw new HttpError(404, "Fundraiser not found");
-          // Mirror the deposit into the finance ledger as income.
-          await client.query(
-            `INSERT INTO finance_transactions (org_id, season_year, type, source, amount_usd, description, created_by)
-             VALUES ($1, $2, 'income', 'fundraiser', $3, $4, $5)`,
-            [action.orgId, event.rows[0]!.seasonYear, action.amountUsd, action.note || `Fundraiser: ${event.rows[0]!.name}`, userId],
-          );
+          const row = event.rows[0]!;
+          // One idempotent mirror per event carries the cumulative gross. A
+          // second deposit updates that row instead of double-counting it.
+          await syncFundraiserMoney(client, {
+            orgId: action.orgId,
+            fundraiserId: action.id,
+            seasonYear: row.seasonYear,
+            name: row.name,
+            proceedsUsd: Number(row.proceedsUsd) || 0,
+            eventDate: row.eventDate,
+            status: row.status,
+            userId,
+          });
           return { ok: true };
         }
         case "delete_event": {
           const deleted = await client.query(`DELETE FROM fundraiser_events WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this fundraiser");
+          await syncFundraiserMoney(client, {
+            orgId: action.orgId,
+            fundraiserId: action.id,
+            seasonYear: new Date().getUTCFullYear(),
+            name: "Removed fundraiser",
+            proceedsUsd: 0,
+            status: "cancelled",
+            userId,
+          });
           return { ok: true };
         }
         default:

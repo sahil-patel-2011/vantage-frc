@@ -1,4 +1,5 @@
 /** Org-scoped evidence pulled into grant drafts — never other teams. */
+import type { MediaEvidenceReference } from "../media/evidence-references";
 
 export type GrantSeasonGoal = {
   title: string;
@@ -27,11 +28,12 @@ export type GrantOrgEvidence = {
     seasonYear: number;
     sourceUrl: string | null;
   }>;
+  mediaAssets?: MediaEvidenceReference[];
 };
 
 export type GrantProvenanceItem = {
   label: string;
   value: string;
   source: string;
-  kind: "impact" | "award" | "org" | "goal";
+  kind: "impact" | "award" | "org" | "goal" | "media";
 };

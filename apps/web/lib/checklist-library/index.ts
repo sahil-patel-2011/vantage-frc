@@ -80,3 +80,12 @@ export function sanitizeItems(raw: unknown): ChecklistLibraryItem[] {
 }
 
 export * from "./types";
+export {
+  canInstantiatePitChecklist,
+  instantiatePitChecklistFromSop,
+  mapSopItemToPitKey,
+  mapSopItemsToPitChecklist,
+  pitChecklistHref,
+  pitRunItemsJson,
+  previewPitChecklistInstantiation,
+} from "./instantiate-pit-checklist";

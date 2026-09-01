@@ -112,7 +112,7 @@ describe("computeTrainingView", () => {
   it("returns a live view with summarized coverage over mock rows", async () => {
     const now = new Date("2026-07-18T00:00:00Z");
     const client = mockClient([
-      [{ orgId: "org-1", teamNumber: 254 }], // resolveOrg
+      [{ orgId: "org-1", teamNumber: 254, role: "admin" }], // resolveOrg
       [
         {
           id: "skill-1",
@@ -156,6 +156,14 @@ describe("computeTrainingView", () => {
       expect(view.summary.totalCertifications).toBe(1);
       expect(view.summary.certifiedMemberCount).toBe(1);
       expect(view.members).toHaveLength(2);
+      expect(view.canManage).toBe(true);
     }
+  });
+
+  it("marks a scout as read-only so the matrix renders without write controls", async () => {
+    const client = mockClient([[{ orgId: "org-1", teamNumber: 254, role: "scout" }], [], [], []]);
+    const view = await computeTrainingView(client, { userId: "user-9", requestedOrg: "org-1" });
+    expect(view.status).toBe("live");
+    if (view.status === "live") expect(view.canManage).toBe(false);
   });
 });

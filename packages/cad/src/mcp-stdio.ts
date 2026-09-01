@@ -53,7 +53,11 @@ import {
   type CallBudgetSummary,
   type PersistedCallTally,
 } from "./call-budget";
-import { CLAUDE_CAD_TOOLS, callClaudeCadTool } from "./claude-cad";
+import {
+  CLAUDE_CAD_TOOLS,
+  callClaudeCadTool,
+  type ClaudeCadRuntime,
+} from "./claude-cad";
 import {
   bindClaudeCadSession,
   findSessionFeature,
@@ -184,6 +188,9 @@ export type CadMcpHooks = {
    * Must never throw and never write to stdout (stdout is MCP protocol).
    */
   onToolCall?: (name: string, args: Record<string, unknown>, ok: boolean, error?: string) => void | Promise<void>;
+  /** Local transport seams. The CLI uses these to keep Onshape calls in Playwright. */
+  partRuntime?: CadPartRuntime;
+  claudeRuntime?: ClaudeCadRuntime;
 };
 
 // ---------------------------------------------------------------------------
@@ -1877,9 +1884,13 @@ export async function callCadPartTool(
   }
 }
 
-async function callAnyCadTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-  if (isCadPartTool(name)) return callCadPartTool(name, args);
-  return callClaudeCadTool(name, args);
+async function callAnyCadTool(
+  name: string,
+  args: Record<string, unknown>,
+  hooks: CadMcpHooks,
+): Promise<unknown> {
+  if (isCadPartTool(name)) return callCadPartTool(name, args, hooks.partRuntime);
+  return callClaudeCadTool(name, args, hooks.claudeRuntime);
 }
 
 export async function dispatchCadMcp(message: JsonRpc, hooks: CadMcpHooks = {}): Promise<void> {
@@ -1911,7 +1922,7 @@ export async function dispatchCadMcp(message: JsonRpc, hooks: CadMcpHooks = {}):
     const name = String(params.name ?? "");
     const args = (params.arguments ?? {}) as Record<string, unknown>;
     try {
-      const result = await callAnyCadTool(name, args);
+      const result = await callAnyCadTool(name, args, hooks);
       writeFrame({
         jsonrpc: "2.0",
         id,

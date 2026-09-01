@@ -26,9 +26,15 @@ html[data-theme="dark"] .mk-page {
   gap: var(--soft-space-2, 8px);
 }
 
+.mk-tonight,
 .mk-identity {
   display: grid;
   gap: var(--soft-space-2, 8px);
+}
+
+.mk-tonight {
+  box-shadow: var(--soft-shadow-lift, 0 8px 24px rgba(15, 23, 42, 0.1));
+  border-color: var(--soft-accent, #1457d9);
 }
 
 .mk-identity-chips {

@@ -8,6 +8,8 @@ export type CoverageCell = {
 export type CoverageSlotInput = CoverageCell & {
   matchNumber: number;
   compLevel: string;
+  /** Playoff set number; qualification matches normally use 1. */
+  setNumber?: number;
   alliance?: "red" | "blue";
   scoutNames?: string[];
   scoutUserIds?: string[];

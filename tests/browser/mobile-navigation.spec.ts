@@ -6,7 +6,7 @@ test("mobile landing navigation keeps authentication available", async ({ page }
   await page.goto("/");
   await expect(page.getByRole("banner").getByRole("link", { name: "Vantage home" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeHidden();
-  await expect(page.locator("summary[aria-label='Open navigation']")).toHaveCount(0);
+  await expect(page.locator("summary[aria-label='Open navigation']")).toBeVisible();
   await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/signin$/);
 });

@@ -701,7 +701,7 @@ export function buildRobotBlueprintInsight(subsystems: EnrichedSubsystem[], robo
         status: entry.subsystem.status,
         readiness: entry.readiness.percent,
         blockers: entry.readiness.blockers,
-        cad: Boolean(entry.subsystem.cadUrl),
+        cad: Boolean(entry.subsystem.cadUrl) || (entry.subsystem.vaultDocumentCount ?? 0) > 0,
         code: Boolean(entry.subsystem.codeRef.trim()),
         priority: entry.subsystem.priorityCapability,
         practiceReps: entry.subsystem.ops.practice?.reps ?? 0,

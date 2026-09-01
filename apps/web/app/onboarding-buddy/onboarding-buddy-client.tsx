@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
-import { pairingStatusLabel } from "../../lib/onboarding-buddy";
+import { EmptyState, PageHeader, Panel, SelectField } from "../../components/ui";
+import { eligibleBuddyCandidates, pairingStatusLabel } from "../../lib/onboarding-buddy";
 import type { OnboardingBuddyView } from "../../lib/onboarding-buddy/compute-onboarding-buddy";
 import {
   ONBOARDING_BUDDY_RELATED_INCLUDE,
@@ -17,7 +17,7 @@ import {
   type OnboardingBuddyNextAction,
   type OnboardingBuddyShellKind,
 } from "../../lib/onboarding-buddy/onboarding-buddy-related";
-import type { OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
+import type { OnboardingBuddyMember, OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./onboarding-buddy.css";
@@ -398,33 +398,72 @@ function UnpairedMembers({
         <p className="app-muted">Suggestions use real tenure and active load — never DEMO progress.</p>
       </header>
       <ul className="onboarding-buddy-list">
-        {view.unpairedMembers.map((member) => {
-          const suggested = view.suggestedBuddyByMember[member.userId] ?? null;
-          return (
-            <li key={member.userId} className="onboarding-buddy-row">
-              <div>
-                <strong>{member.name}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
-                  Joined {member.tenureDays} day(s) ago
-                  {suggested ? ` · suggested buddy: ${suggested.name}` : " · no buddy candidate yet"}
-                </small>
-              </div>
-              <button
-                type="button"
-                className="app-button"
-                disabled={busy || !suggested}
-                onClick={() =>
-                  suggested &&
-                  mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: suggested.userId })
-                }
-              >
-                Pair with {suggested ? suggested.name : "—"}
-              </button>
-            </li>
-          );
-        })}
+        {view.unpairedMembers.map((member) => (
+          <UnpairedMemberRow
+            key={member.userId}
+            member={member}
+            members={view.members}
+            suggested={view.suggestedBuddyByMember[member.userId] ?? null}
+            busy={busy}
+            mutate={mutate}
+          />
+        ))}
       </ul>
     </Panel>
+  );
+}
+
+function UnpairedMemberRow({
+  member,
+  members,
+  suggested,
+  busy,
+  mutate,
+}: {
+  member: OnboardingBuddyMember;
+  members: OnboardingBuddyMember[];
+  suggested: OnboardingBuddyMember | null;
+  busy: boolean;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  const candidates = eligibleBuddyCandidates(members, member.userId);
+  const [buddyId, setBuddyId] = useState(suggested?.userId ?? candidates[0]?.userId ?? "");
+  const selected = candidates.find((c) => c.userId === buddyId) ?? null;
+
+  return (
+    <li className="onboarding-buddy-row">
+      <div>
+        <strong>{member.name}</strong>
+        <small className="app-muted" style={{ display: "block" }}>
+          Joined {member.tenureDays} day(s) ago
+          {suggested ? ` · suggested buddy: ${suggested.name}` : " · no buddy candidate yet"}
+        </small>
+      </div>
+      <div className="onboarding-buddy-pick">
+        <SelectField
+          label="Buddy"
+          value={buddyId}
+          onChange={(event) => setBuddyId(event.target.value)}
+          disabled={busy || candidates.length === 0}
+          required
+          options={candidates.map((candidate) => ({
+            value: candidate.userId,
+            label: candidate.name,
+          }))}
+        />
+        <button
+          type="button"
+          className="app-button"
+          disabled={busy || !selected}
+          onClick={() =>
+            selected &&
+            mutate({ action: "create-pairing", newMemberId: member.userId, buddyId: selected.userId })
+          }
+        >
+          Pair with {selected ? selected.name : "—"}
+        </button>
+      </div>
+    </li>
   );
 }
 

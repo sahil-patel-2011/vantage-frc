@@ -25,6 +25,8 @@ function item(overrides: Partial<PackingItem>): PackingItem {
     packedByName: null,
     packedAt: null,
     sortOrder: 0,
+    assignedUserId: null,
+    assignedUserName: null,
     ...overrides,
   };
 }
@@ -158,6 +160,21 @@ describe("parsePackingAction", () => {
   it("toggles and rejects unsupported actions", () => {
     expect(parsePackingAction({ action: "toggle_item", orgId: ORG, id: ID, packed: true })).toMatchObject({ packed: true });
     expect(() => parsePackingAction({ action: "vanish", orgId: ORG })).toThrow(/Unsupported/);
+  });
+
+  it("assigns a teammate or clears the assignee", () => {
+    expect(
+      parsePackingAction({ action: "assign_item", orgId: ORG, id: ID, assignedUserId: ID }),
+    ).toMatchObject({ action: "assign_item", assignedUserId: ID });
+    expect(parsePackingAction({ action: "assign_item", orgId: ORG, id: ID, assignedUserId: "" })).toMatchObject({
+      assignedUserId: null,
+    });
+    expect(parsePackingAction({ action: "assign_item", orgId: ORG, id: ID })).toMatchObject({
+      assignedUserId: null,
+    });
+    expect(() =>
+      parsePackingAction({ action: "assign_item", orgId: ORG, id: ID, assignedUserId: "not-a-uuid" }),
+    ).toThrow(/invalid/);
   });
 
   it("parses a packing-form request without putting it on the master list", () => {

@@ -1,0 +1,16 @@
+/* Soft-UI Team Health — engagement from attendance/hours logs; never DEMO morale. */
+.thd-page{display:grid;gap:16px}
+.thd-related{display:flex;flex-wrap:wrap;gap:8px}
+.thd-next-actions{margin:0}
+.thd-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.thd-panel{display:grid;gap:12px}
+.thd-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.thd-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.thd-tip{margin:0}
+.thd-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.thd-meter-list,.thd-member-list,.thd-trend-list,.thd-event-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.thd-meter-row,.thd-member-row,.thd-trend-row,.thd-event-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.thd-block{display:block}
+@media(max-width:900px){
+  .thd-next-actions li,.thd-setup-steps li,.thd-meter-row,.thd-member-row,.thd-trend-row,.thd-event-row,.thd-header{flex-direction:column;align-items:stretch}
+}

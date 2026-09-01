@@ -108,6 +108,11 @@ connector:
 | `team_dream` / `team_dream_week` | `apps/web/lib/dreaming/run-dream.ts` | yes |
 | `learning_coach` | `apps/web/app/api/learning/predictions/route.ts` | yes |
 
+Subscription Bugbot (`feature=coding`) is a normal `resolveOrgChatAdapter`
+call: member key → team BYOK → local connector. It never sets
+`preferPlatform`. Bugbot Ultra (`feature=bugbot_ultra`) is the hosted
+exception below and is the only Bugbot path that sets `preferPlatform: true`.
+
 ### Path 2 — speech-to-text through `resolveOrgSttEndpoint` (works on local: **yes, when the endpoint supports audio**)
 
 | Feature | Call site | Works on local |

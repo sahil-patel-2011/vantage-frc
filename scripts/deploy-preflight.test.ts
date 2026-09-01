@@ -1,9 +1,40 @@
+import { execFileSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-// Pure-logic tests for the zero-dependency preflight script.
-// @ts-expect-error — plain .mjs module without type declarations.
-import { checkEnv, checkMigrations, parseEnvFile, summarize } from "./deploy-preflight.mjs";
 
 type Row = { status: "PASS" | "WARN" | "FAIL" | "INFO"; name: string; note: string };
+type MigrationCheck = {
+  rows: Row[];
+  duplicates: Array<{ number: string; files: string[] }>;
+  gaps: string[];
+};
+
+const PREFLIGHT_URL = pathToFileURL(resolve("scripts/deploy-preflight.mjs")).href;
+const INVOKE_EXPORT = `
+  const module = await import(process.argv[1]);
+  const args = JSON.parse(Buffer.from(process.argv[3], "base64").toString("utf8"));
+  process.stdout.write(JSON.stringify(module[process.argv[2]](...args)));
+`;
+
+function invokeExport<T>(name: string, args: unknown[]): T {
+  const payload = Buffer.from(JSON.stringify(args)).toString("base64");
+  const output = execFileSync(
+    process.execPath,
+    ["--input-type=module", "--eval", INVOKE_EXPORT, PREFLIGHT_URL, name, payload],
+    { encoding: "utf8" },
+  );
+  return JSON.parse(output) as T;
+}
+
+// Keep the production preflight zero-dependency; execute its exports in Node
+// because Vite does not reliably transform this Windows CRLF .mjs file.
+const parseEnvFile = (text: string): Record<string, string> =>
+  invokeExport("parseEnvFile", [text]);
+const checkEnv = (env: Record<string, string>): Row[] => invokeExport("checkEnv", [env]);
+const checkMigrations = (files: string[]): MigrationCheck =>
+  invokeExport("checkMigrations", [files]);
+const summarize = (rows: Row[]): Record<string, number> => invokeExport("summarize", [rows]);
 
 describe("parseEnvFile", () => {
   it("parses key=value, strips quotes, skips comments and blanks", () => {
@@ -55,12 +86,21 @@ describe("checkMigrations", () => {
     expect(rows.every((row: Row) => row.status === "PASS")).toBe(true);
   });
 
-  it("reports duplicate number prefixes as a KNOWN warn list", () => {
+  it("fails a new duplicate number prefix", () => {
     const { rows, duplicates } = checkMigrations(["0000_a.sql", "0001_b.sql", "0001_c.sql"]);
     expect(duplicates).toEqual([{ number: "0001", files: ["0001_b.sql", "0001_c.sql"] }]);
-    const warn = rows.find((row: Row) => row.name === "prefix 0001");
-    expect(warn?.status).toBe("WARN");
-    expect(warn?.note).toContain("0001_b.sql, 0001_c.sql");
+    const failure = rows.find((row: Row) => row.name === "prefix 0001");
+    expect(failure?.status).toBe("FAIL");
+    expect(failure?.note).toContain("NEW duplicate");
+  });
+
+  it("warns only for the exact frozen historical collision", () => {
+    const frozen = ["0050_driver_practice.sql", "0050_safety_log.sql"];
+    const { rows } = checkMigrations(frozen);
+    expect(rows.find((row: Row) => row.name === "prefix 0050")?.status).toBe("WARN");
+
+    const withNewFile = checkMigrations([...frozen, "0050_third.sql"]).rows;
+    expect(withNewFile.find((row: Row) => row.name === "prefix 0050")?.status).toBe("FAIL");
   });
 
   it("reports numbering gaps without failing", () => {

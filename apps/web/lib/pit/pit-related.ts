@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { isPitBoardLive, type PitBoardFlags } from "./board";
 
 /** Soft-UI related surfaces for Pit Command (never DEMO release / IR metrics). */
 export const PIT_RELATED_LINKS = [
@@ -146,7 +147,9 @@ export function isPitBoardEmpty(input: {
   batteryCount: number;
   openIssues: number;
   maintenanceCount: number;
+  flags?: PitBoardFlags;
 }): boolean {
+  if (input.flags) return !isPitBoardLive(input.flags);
   return input.batteryCount === 0 && input.openIssues === 0 && input.maintenanceCount === 0;
 }
 
@@ -158,6 +161,7 @@ export function classifyPitShell(input: {
   batteryCount?: number;
   openIssues?: number;
   maintenanceCount?: number;
+  flags?: PitBoardFlags;
 }): PitShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
@@ -167,6 +171,7 @@ export function classifyPitShell(input: {
       batteryCount: input.batteryCount ?? 0,
       openIssues: input.openIssues ?? 0,
       maintenanceCount: input.maintenanceCount ?? 0,
+      flags: input.flags,
     })
   ) {
     return "empty";

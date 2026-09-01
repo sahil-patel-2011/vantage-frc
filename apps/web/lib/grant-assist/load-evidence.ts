@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { loadMediaEvidenceReferences } from "../media/evidence-references";
 import type { GrantOrgEvidence, GrantProvenanceItem, GrantSeasonGoal } from "./types";
 
 function num(value: string | number | null | undefined): number {
@@ -38,7 +39,7 @@ export async function loadGrantOrgEvidence(
   );
   if (!org.rowCount) return null;
 
-  const [impactResult, goalsResult, awardsResult] = await Promise.all([
+  const [impactResult, goalsResult, awardsResult, mediaAssets] = await Promise.all([
     client.query<{ activities: string; minutes: string; peopleReached: string }>(
       `SELECT COUNT(*)::text AS activities,
               COALESCE(SUM(duration_minutes), 0)::text AS minutes,
@@ -71,6 +72,7 @@ export async function loadGrantOrgEvidence(
        ORDER BY season_year DESC, award_type LIMIT 8`,
       [orgId],
     ),
+    loadMediaEvidenceReferences(client, { orgId }),
   ]);
 
   const impactRow = impactResult.rows[0];
@@ -104,6 +106,7 @@ export async function loadGrantOrgEvidence(
     communityHours,
     seasonGoals,
     awards: awardsResult.rows,
+    mediaAssets,
   };
 }
 
@@ -148,6 +151,14 @@ export function provenanceFromEvidence(evidence: GrantOrgEvidence): GrantProvena
       value: `${award.eventName ?? "Team record"}, ${award.seasonYear}`,
       source: award.sourceUrl ?? "Awards workbench (this org)",
       kind: "award",
+    });
+  }
+  for (const asset of (evidence.mediaAssets ?? []).slice(0, 10)) {
+    items.push({
+      label: asset.title,
+      value: asset.description ?? asset.kind,
+      source: asset.url,
+      kind: "media",
     });
   }
   return items;

@@ -122,6 +122,8 @@
   color:var(--soft-accent);font:700 12px var(--font-source-sans),ui-sans-serif;
   text-decoration:none;
 }
+.lineup-assign{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:12px}
+.lineup-assign select{min-height:44px;flex:1}
 .lineup-match{margin-top:14px}
 .lineup-board{
   display:grid;
@@ -165,7 +167,7 @@
 }
 
 @media print{
-  .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions{display:none!important}
+  .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions,.lineup-page .lineup-assign{display:none!important}
   .lineup-page{max-width:none!important;padding:0!important}
   .lineup-page article{break-inside:avoid;box-shadow:none!important}
 }

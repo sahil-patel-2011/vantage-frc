@@ -26,6 +26,8 @@ export const ATTENDANCE_ROLE_LABELS: Record<AttendanceRole, string> = {
 export type AttendanceEntry = {
   id: string;
   eventId: string;
+  /** Confirmed member identity when the roll call used the roster. */
+  userId: string | null;
   personName: string;
   role: AttendanceRole;
   hours: number | null;
@@ -210,6 +212,7 @@ export type AttendanceAction =
       action: "add_entry";
       orgId: string;
       eventId: string;
+      userId: string | null;
       personName: string;
       role: AttendanceRole;
       hours: number | null;
@@ -246,6 +249,7 @@ export function parseAttendanceAction(input: unknown): AttendanceAction {
         action,
         orgId,
         eventId: uuid(body.eventId, "Event"),
+        userId: body.userId == null || body.userId === "" ? null : uuid(body.userId, "Member"),
         personName: requiredText(body.personName, "Name", 160),
         role: roleValue(body.role),
         hours: optionalHours(body.hours, "Hours"),

@@ -22,6 +22,7 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
   const [stages, setStages] = useState<StageDraft[]>([{ driving: "", driven: "" }]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/gearbox?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
@@ -39,14 +40,19 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
   useEffect(() => { void load(); }, [load]);
 
   async function post(body: Record<string, unknown>, okMessage: string) {
-    if (view?.status !== "ready") return;
+    if (view?.status !== "ready") return false;
     const response = await fetch("/api/gearbox", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId: view.context.orgId, ...body }),
     });
-    const data = await response.json();
-    setMessage(response.ok ? okMessage : data.error);
-    if (response.ok) await load();
+    const data = (await response.json()) as { error?: string; wrote?: "insert" | "update" };
+    if (!response.ok) {
+      setMessage(data.error ?? "Gearbox request failed");
+      return false;
+    }
+    setMessage(data.wrote === "update" ? "Gearbox updated." : okMessage);
+    await load();
+    return true;
   }
 
   const parsedStages: Stage[] = stages
@@ -59,10 +65,31 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
   const callSignature = JSON.stringify({ stages: parsedStages, freeRpm });
   const callFieldSet = buildGearboxCall({ stages: parsedStages, motorFreeRpm: freeRpm });
 
+  function editGearbox(g: Gearbox) {
+    setEditingId(g.id);
+    setForm({
+      name: g.name,
+      subsystem: g.subsystem,
+      motorFreeRpm: g.motorFreeRpm != null ? String(g.motorFreeRpm) : "",
+      notes: g.notes,
+    });
+    setStages(g.stages.map((s) => ({ driving: String(s.driving), driven: String(s.driven) })));
+    setMessage("");
+  }
+
+  function resetDraft() {
+    setEditingId(null);
+    setForm({ ...EMPTY });
+    setStages([{ driving: "", driven: "" }]);
+  }
+
   async function saveGearbox(event: React.FormEvent) {
     event.preventDefault();
-    await post({ action: "save_gearbox", seasonYear, ...form, stages: parsedStages }, "Gearbox saved.");
-    if (view?.status === "ready") { setForm({ ...EMPTY }); setStages([{ driving: "", driven: "" }]); }
+    const ok = await post(
+      { action: "save_gearbox", seasonYear, ...form, stages: parsedStages, ...(editingId ? { id: editingId } : {}) },
+      "Gearbox saved.",
+    );
+    if (ok) resetDraft();
   }
 
   if (!view) {
@@ -141,7 +168,9 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
           {stages.length < 8 && <button type="button" onClick={() => setStages([...stages, { driving: "", driven: "" }])}>+ Add stage</button>}
           <label>Motor free RPM (optional)<input type="number" min="0" value={form.motorFreeRpm} onChange={(e) => setForm({ ...form, motorFreeRpm: e.target.value })} placeholder="6000" /></label>
           <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
-          <button className="primary-action">Save gearbox</button>
+          <p>Saving the same subsystem and name again updates that gearbox in place — it does not create a second copy.</p>
+          <button className="primary-action">{editingId ? "Update gearbox" : "Save gearbox"}</button>
+          {editingId && <button type="button" onClick={resetDraft}>Cancel edit</button>}
         </form>
         <section className="intel-panel">
           <span className="eyebrow">HOW IT WORKS</span>
@@ -176,7 +205,12 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
               <strong>{g.name} · {g.reduction}:1{g.outputRpm != null ? ` · ${g.outputRpm} RPM out` : ""}</strong>
               <small>{describeStages(g.stages)}{g.subsystem ? ` · ${g.subsystem}` : ""}{g.notes ? ` · ${g.notes}` : ""}</small>
             </div>
-            {view.context.role !== "viewer" && <button onClick={() => void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed.")}>Delete</button>}
+            {view.context.role !== "viewer" && (
+              <>
+                <button type="button" onClick={() => editGearbox(g)}>Edit</button>
+                <button type="button" onClick={() => void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed.")}>Delete</button>
+              </>
+            )}
           </article>
         ))}
       </section>

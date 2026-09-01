@@ -219,6 +219,7 @@ export default function OpponentWatchlistClient() {
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const lineupHref = withOrgHref("/scouting/lineup", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -338,12 +339,14 @@ export default function OpponentWatchlistClient() {
           <>
             <AlertsPanel view={view} />
             <WatchedTeams view={view} busy={busy} mutate={mutate} />
+            <CoveragePriorityPanel view={view} lineupHref={lineupHref} />
           </>
         ) : null}
         <Panel className="opponent-watchlist-tip" aria-label="Opponent Watchlist tip">
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
-            Keep{" "}
+            Watched teams sort earlier on{" "}
+            <a href={lineupHref}>Lineup &amp; Coverage</a>. Keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
             <a href={epaAlertsHref}>EPA Trend Alerts</a> for event-to-event swings, and confirm field
             notes in <a href={scoutingHref}>Scouting</a> — never invent DEMO opponent rankings.
@@ -447,6 +450,11 @@ function WatchedTeams({
                   {entry.note}
                 </small>
               ) : null}
+              {view.coveragePriorityTeamKeys.indexOf(entry.teamKey) >= 0 ? (
+                <small className="app-muted" style={{ display: "block" }}>
+                  Coverage priority {view.coveragePriorityTeamKeys.indexOf(entry.teamKey) + 1}
+                </small>
+              ) : null}
             </div>
             <button
               type="button"
@@ -459,6 +467,36 @@ function WatchedTeams({
           </li>
         ))}
       </ul>
+    </Panel>
+  );
+}
+
+function CoveragePriorityPanel({ view, lineupHref }: { view: LiveView; lineupHref: string }) {
+  if (view.coveragePriorityTeamKeys.length === 0) return null;
+  const byKey = new Map(view.entries.map((entry) => [entry.teamKey, entry]));
+  return (
+    <Panel id="opponent-watchlist-coverage" className="opponent-watchlist-panel">
+      <h2 style={{ marginTop: 0 }}>Coverage order</h2>
+      <p className="app-muted" style={{ marginTop: 0 }}>
+        Real watchlist rows move these teams earlier in the scouting coverage queue — never DEMO
+        rankings.
+      </p>
+      <ol className="opponent-watchlist-list">
+        {view.coveragePriorityTeamKeys.map((teamKey, index) => {
+          const entry = byKey.get(teamKey);
+          return (
+            <li key={teamKey} className="opponent-watchlist-card">
+              <strong>
+                {index + 1}. #{entry?.teamNumber ?? teamKey.replace(/^frc/i, "")}{" "}
+                {entry?.nickname ?? teamKey}
+              </strong>
+            </li>
+          );
+        })}
+      </ol>
+      <a className="app-button secondary" href={lineupHref}>
+        Open lineup coverage
+      </a>
     </Panel>
   );
 }

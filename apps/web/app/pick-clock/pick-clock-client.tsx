@@ -45,6 +45,16 @@ type PickClockView =
       alternates: PickClockRecommendation[];
       availableCount: number;
       excludedCount: number;
+      /** Where the next recorded pick lands on the ONE pick list's draft board. */
+      nextSlot: { allianceSeed: number; pickSlot: "captain" | "first" | "second" } | null;
+      lastPick: {
+        allianceSeed: number;
+        pickSlot: "captain" | "first" | "second";
+        teamKey: string | null;
+        teamNumber: number | null;
+        draftedAt: string | null;
+      } | null;
+      draftedCount: number;
     }
   | {
       status: "setup_required";
@@ -256,6 +266,9 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [skipOffset, setSkipOffset] = useState(0);
+  const [writing, setWriting] = useState(false);
+  const [pickMessage, setPickMessage] = useState("");
+  const [conflict, setConflict] = useState<{ message: string } | null>(null);
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -283,26 +296,10 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
     setFetchFailed(false);
     setErrorStatus(null);
     try {
-      // The ONE pick list owns the draft board, so anything the alliance-selection desk has
-      // already picked must leave the clock's available pool. A board that has not been opened
-      // yet returns an empty list — never a fabricated exclusion.
-      let draftedTeamKeys: string[] = [];
-      try {
-        const boardResponse = await fetch(`/api/picklist/board?orgId=${encodeURIComponent(id)}`);
-        if (boardResponse.ok) {
-          const board = (await boardResponse.json()) as { draftedTeamKeys?: string[] };
-          if (Array.isArray(board.draftedTeamKeys)) draftedTeamKeys = board.draftedTeamKeys;
-        }
-      } catch {
-        // Board unavailable — fall through with no extra exclusions rather than blocking a pick.
-      }
-
-      const excludeParams = draftedTeamKeys
-        .map((key) => `&exclude=${encodeURIComponent(key)}`)
-        .join("");
-      const response = await fetch(
-        `/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}${excludeParams}`,
-      );
+      // The ONE pick list owns the draft board, and /api/strategy/pick-clock reads it server-side,
+      // so anything the desk (or this clock) already drafted is already out of the pool. No second
+      // client-side exclusion pass to drift from it.
+      const response = await fetch(`/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}`);
       const data = (await response.json()) as PickClockView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load pick clock.");
@@ -333,8 +330,56 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       return;
     }
     void load(orgId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial / org change only
+     
   }, [orgId]);
+
+  /**
+   * Record / undo write to the ONE pick list's draft board. A 409 means another device already
+   * filled the slot — say who, and let the operator record over it on purpose.
+   */
+  const writePick = useCallback(
+    async (body: Record<string, unknown>) => {
+      if (!orgId) return;
+      const ready = view?.status === "ready" ? view : null;
+      setWriting(true);
+      setPickMessage("");
+      try {
+        const response = await fetch("/api/strategy/pick-clock", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            orgId,
+            eventKey: ready?.eventKey,
+            pickListId: ready?.pickListId,
+            ...body,
+          }),
+        });
+        const data = (await response.json()) as {
+          status?: string;
+          message?: string;
+          error?: string;
+        };
+        if (response.status === 409) {
+          setConflict({ message: data.message ?? "That slot is already filled." });
+          return;
+        }
+        if (!response.ok) {
+          setPickMessage(data.error ?? "Could not record the pick.");
+          return;
+        }
+        setConflict(null);
+        setPickMessage(data.message ?? "");
+        setSkipOffset(0);
+        setStartedAt(null);
+        await load(orgId);
+      } catch {
+        setPickMessage("Could not reach the pick clock API — the pick was not recorded.");
+      } finally {
+        setWriting(false);
+      }
+    },
+    [load, orgId, view],
+  );
 
   useEffect(() => {
     if (startedAt == null) return;
@@ -403,7 +448,11 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
     excludedCount,
   });
 
-  if (shell === "empty" || !view || view.status !== "ready") {
+  const readyView = view?.status === "ready" ? view : null;
+  // A full board still has to undo from this page — leaving for the desk is the bug this clock closes.
+  const stayOnBoard = Boolean(readyView && (readyView.lastPick || readyView.nextSlot));
+
+  if (!readyView || (shell === "empty" && !stayOnBoard)) {
     return (
       <PickClockShell
         orgId={resolvedOrgId}
@@ -417,8 +466,8 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
     );
   }
 
-  const queue = view.recommendation
-    ? [view.recommendation, ...view.alternates]
+  const queue = readyView.recommendation
+    ? [readyView.recommendation, ...readyView.alternates]
     : [];
   const active = queue[Math.min(skipOffset, Math.max(0, queue.length - 1))] ?? null;
 
@@ -428,8 +477,8 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
         description={
-          view.eventName
-            ? `${view.eventName} · ${PICK_CLOCK_SECONDS}s selection clock — never DEMO picks.`
+          readyView.eventName
+            ? `${readyView.eventName} · ${PICK_CLOCK_SECONDS}s selection clock — never DEMO picks.`
             : `${PICK_CLOCK_SECONDS}-second alliance pick assistant — never DEMO picks.`
         }
       >
@@ -459,6 +508,33 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
+      {pickMessage ? (
+        <p className="edc-banner" role="status">
+          {pickMessage}
+        </p>
+      ) : null}
+      {conflict ? (
+        <p className="edc-banner error" role="alert">
+          {conflict.message}{" "}
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={writing || !active}
+            onClick={() => {
+              if (!active) return;
+              void writePick({
+                action: "record-pick",
+                teamKey: active.teamKey,
+                rationale: active.headline,
+                ...(readyView.nextSlot ?? {}),
+                force: true,
+              });
+            }}
+          >
+            Record over it
+          </button>
+        </p>
+      ) : null}
 
       {showTiles ? (
         <div className="pck-kpis" aria-label="Pick clock counts">
@@ -468,8 +544,8 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           </article>
           <article>
             <strong>
-              {formatPickClockMetric(view.scoutedTeams, true)}/
-              {formatPickClockMetric(view.teamCount, true)}
+              {formatPickClockMetric(readyView.scoutedTeams, true)}/
+              {formatPickClockMetric(readyView.teamCount, true)}
             </strong>
             <small>scouted</small>
           </article>
@@ -480,10 +556,10 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         </div>
       ) : null}
 
-      {view.pickMode === "low_data_tba" ? (
+      {readyView.pickMode === "low_data_tba" ? (
         <p className="pck-mode-banner" role="status">
           <span className="app-badge setup">Low-data TBA</span>
-          {view.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves — never DEMO picks."}
+          {readyView.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves — never DEMO picks."}
         </p>
       ) : null}
 
@@ -531,6 +607,16 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           badgeTone="setup"
         >
           <div className="pck-setup-links">
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={writing || !readyView.lastPick}
+              onClick={() => void writePick({ action: "undo-pick" })}
+            >
+              {readyView.lastPick
+                ? `Undo ${readyView.lastPick.teamNumber ?? readyView.lastPick.teamKey?.replace(/^frc/i, "")}`
+                : "Nothing to undo"}
+            </button>
             <a className="app-button" href={pickDeskHref}>
               Open Pick desk
             </a>
@@ -546,10 +632,10 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         <section className="pck-hero soft-panel" aria-label="Next best pick">
           <p className="pck-eyebrow">
             Next pick
-            {view.pickListName ? ` · ${view.pickListName}` : ""}
-            {view.availableCount ? ` · ${view.availableCount} available` : ""}
-            {view.scoutedTeams != null && view.teamCount
-              ? ` · ${view.scoutedTeams}/${view.teamCount} scouted`
+            {readyView.pickListName ? ` · ${readyView.pickListName}` : ""}
+            {readyView.availableCount ? ` · ${readyView.availableCount} available` : ""}
+            {readyView.scoutedTeams != null && readyView.teamCount
+              ? ` · ${readyView.scoutedTeams}/${readyView.teamCount} scouted`
               : ""}
           </p>
           <h2 className="pck-team-number">{teamDisplay(active)}</h2>
@@ -563,6 +649,35 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           <ReasonList reasons={active.reasons} />
 
           <div className="pck-tools">
+            <button
+              type="button"
+              className="app-button"
+              disabled={writing || !readyView.nextSlot}
+              onClick={() =>
+                void writePick({
+                  action: "record-pick",
+                  teamKey: active.teamKey,
+                  rationale: active.headline,
+                  ...(readyView.nextSlot ?? {}),
+                })
+              }
+            >
+              {writing
+                ? "Recording…"
+                : readyView.nextSlot
+                  ? `Record at alliance ${readyView.nextSlot.allianceSeed} ${readyView.nextSlot.pickSlot}`
+                  : "Board is full"}
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={writing || !readyView.lastPick}
+              onClick={() => void writePick({ action: "undo-pick" })}
+            >
+              {readyView.lastPick
+                ? `Undo ${readyView.lastPick.teamNumber ?? readyView.lastPick.teamKey?.replace(/^frc/i, "")}`
+                : "Nothing to undo"}
+            </button>
             <button
               type="button"
               className="app-button secondary"
@@ -620,12 +735,12 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
 
       <PickClockNextActionsPanel actions={readyActions} />
 
-      {view.sources.length ? (
+      {readyView.sources.length ? (
         <p className="pck-sources app-muted">
-          Signals: {view.sources.join(" · ")}
-          {view.pickMode === "low_data_tba" ? " · quick-pick mode" : " · pick-desk scoring"}
-          {view.epaDrifts.length
-            ? ` · ${view.epaDrifts.length} EPA-drift callout${view.epaDrifts.length === 1 ? "" : "s"}`
+          Signals: {readyView.sources.join(" · ")}
+          {readyView.pickMode === "low_data_tba" ? " · quick-pick mode" : " · pick-desk scoring"}
+          {readyView.epaDrifts.length
+            ? ` · ${readyView.epaDrifts.length} EPA-drift callout${readyView.epaDrifts.length === 1 ? "" : "s"}`
             : ""}
           {" · never DEMO picks"}
         </p>

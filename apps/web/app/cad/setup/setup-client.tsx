@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  ONSHAPE_HOSTED_UNCONFIGURED_TITLE,
+  ONSHAPE_PLATFORM_HINT_CONFIGURED,
+  ONSHAPE_PLATFORM_HINT_UNCONFIGURED,
+  onshapeOauthCtaEnabled,
+  withLocalPlaywrightHint,
+} from "../../../lib/cad/onshape-setup-copy";
 
 const install = `# Windows (recommended one-shot):
 # powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
@@ -9,7 +16,9 @@ const install = `# Windows (recommended one-shot):
 npm install
 npm run build --workspace=@vantage/cad-cli
 npm install -g ./packages/vantage-cad-cli
+npx playwright install chromium
 vantage-cad setup
+vantage-cad login
 # Optional CI/demo without Fusion:
 # set VANTAGE_CAD_MOCK=1
 vantage-cad start
@@ -29,7 +38,7 @@ type Step = 1 | 2 | 3 | 4;
 
 export default function CadSetupWizard({ orgId }: { orgId: string }) {
   const [step, setStep] = useState<Step>(1);
-  const [cadTarget, setCadTarget] = useState<"mock" | "fusion360" | "onshape">("mock");
+  const [cadTarget, setCadTarget] = useState<"mock" | "fusion360" | "onshape">("onshape");
   const [brain, setBrain] = useState<"mock" | "managed_api" | "terminal_cli" | "team_byok">("terminal_cli");
   const [devices, setDevices] = useState<Device[]>([]);
   const [message, setMessage] = useState("");
@@ -41,10 +50,13 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
     const data = await response.json();
     if (response.ok) {
       setDevices(data.devices ?? []);
-      setOnshapeConfigured(Boolean(data.onshapeConfigured ?? data.onshape?.configured));
+      const oauthReady = onshapeOauthCtaEnabled(data.onshape);
+      setOnshapeConfigured(oauthReady);
       setOnshapeSetupMessage(
-        data.onshape?.setupRequired
-          ? String(data.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
+        data.onshape?.setupRequired || !oauthReady
+          ? oauthReady
+            ? String(data.onshape?.message ?? "Setup required — connect Onshape OAuth in CAD Connections.")
+            : "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on the server. Server API keys do not connect hosted CAD."
           : "",
       );
     } else setMessage(data.error);
@@ -95,8 +107,8 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
 
       {onshapeSetupMessage && cadTarget === "onshape" ? (
         <aside className="cad-setup-required" role="status">
-          <strong>Setup required · Onshape</strong>
-          <p>{onshapeSetupMessage}</p>
+          <strong>{ONSHAPE_HOSTED_UNCONFIGURED_TITLE}</strong>
+          <p>{withLocalPlaywrightHint(onshapeSetupMessage)}</p>
         </aside>
       ) : null}
 
@@ -120,8 +132,8 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         <section className="cad-setup-panel">
           <h2>1. CAD platform</h2>
           <p className="app-muted" style={{ margin: 0 }}>
-            Start with mock to learn the approval loop. Connect Onshape (hosted) or Fusion (local relay) when you need
-            live geometry.
+            Onshape is the cross-platform live path. Use `vantage-cad login` on a laptop (no API keys), or
+            connect hosted Onshape OAuth in CAD Connections. Server keys are CLI last-resort only.
           </p>
           <label className="cad-choice">
             <input type="radio" name="cad" checked={cadTarget === "mock"} onChange={() => setCadTarget("mock")} />
@@ -148,14 +160,11 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               name="cad"
               checked={cadTarget === "onshape"}
               onChange={() => setCadTarget("onshape")}
-              disabled={!onshapeConfigured}
             />
             <span>
-              <strong>Onshape hosted OAuth</strong>
+              <strong>Onshape live (recommended)</strong>
               <small>
-                {onshapeConfigured
-                  ? "Hosted cloud CAD via OAuth — connect in Connections, then select document refs."
-                  : "Setup required — OAuth client env not configured yet."}
+                {onshapeConfigured ? ONSHAPE_PLATFORM_HINT_CONFIGURED : ONSHAPE_PLATFORM_HINT_UNCONFIGURED}
               </small>
             </span>
           </label>
@@ -266,7 +275,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               {cadTarget === "fusion360"
                 ? "Windows/macOS: install Fusion add-in via scripts/cad/install-fusion-addin.* then keep Fusion + vantage-cad start running. Linux: Fusion unavailable — use mock or Onshape."
                 : cadTarget === "onshape"
-                  ? "Authorize Onshape in Connections, select document/workspace/element in CAD Builder. CLI monitor optional."
+                  ? "Run vantage-cad login, sign in yourself in Chromium, then keep the MCP session open. For hosted execution, connect Onshape OAuth in CAD Connections — server API keys are not a hosted connection."
                   : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
             </li>
           </ol>

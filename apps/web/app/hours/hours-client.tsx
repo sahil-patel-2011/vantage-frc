@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import {
   HOUR_KIND_LABELS,
@@ -12,6 +12,22 @@ import {
   type HourKind,
   type HourLog,
 } from "../../lib/build-hours";
+import type { KioskScanResult } from "../../lib/hours/kiosk";
+import {
+  offlineQueueSupported,
+  pendingClockCount,
+  queueClockEvent,
+  syncClockOutbox,
+} from "../../lib/hours/kiosk-offline";
+import { ENROLL_SCAN_ACTION } from "../../lib/hours/enroll";
+import {
+  SCAN_CODE_KIND_LABELS,
+  newClientEventId,
+  normalizeScanCode,
+  scanCodeProblem,
+  scanCodeProblemMessage,
+  scanFeedbackMessage,
+} from "../../lib/hours/scan-codes";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -51,7 +67,7 @@ function ManualEntryForm({
   canAdmin: boolean;
   selfId: string;
   busy: boolean;
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<boolean | void>;
 }) {
   const [userId, setUserId] = useState("");
   const [kind, setKind] = useState<HourKind>("build");
@@ -130,6 +146,99 @@ function ManualEntryForm({
   );
 }
 
+function EnrollScanForm({
+  orgId,
+  members,
+  busy,
+  run,
+}: {
+  orgId: string;
+  members: ReadyView["members"];
+  busy: boolean;
+  run: (body: ActionBody, key: string) => Promise<boolean | void>;
+}) {
+  const [userId, setUserId] = useState("");
+  const [code, setCode] = useState("");
+  const [codeKind, setCodeKind] = useState<keyof typeof SCAN_CODE_KIND_LABELS>("student_id");
+  const [label, setLabel] = useState("");
+
+  return (
+    <form
+      className="hours-manual"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!userId || !code.trim()) return;
+        void run(
+          { action: ENROLL_SCAN_ACTION, orgId, userId, code, codeKind, label: label.trim() },
+          "enroll",
+        ).then((ok) => {
+          if (ok) {
+            setCode("");
+            setLabel("");
+          }
+        });
+      }}
+    >
+      <h3>Enroll a scan card (owner/admin)</h3>
+      <p className="hours-kiosk-hint app-muted">
+        Attach a barcode, student ID, or RFID fob to a member so they can scan in at the shop kiosk. Use
+        whatever the reader types — never an email address.
+      </p>
+      <div className="hours-form-grid">
+        <label className="hours-field">
+          <span>Member</span>
+          <select value={userId} disabled={busy} onChange={(e) => setUserId(e.target.value)}>
+            <option value="">Choose a member…</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name ?? "Member"}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="hours-field">
+          <span>Scan or type the code</span>
+          <input
+            value={code}
+            disabled={busy}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Scan the card here"
+            onChange={(e) => setCode(e.target.value)}
+          />
+        </label>
+        <label className="hours-field">
+          <span>Kind</span>
+          <select
+            value={codeKind}
+            disabled={busy}
+            onChange={(e) => setCodeKind(e.target.value as keyof typeof SCAN_CODE_KIND_LABELS)}
+          >
+            {Object.entries(SCAN_CODE_KIND_LABELS).map(([value, text]) => (
+              <option key={value} value={value}>
+                {text}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="hours-field">
+          <span>Label (optional)</span>
+          <input
+            value={label}
+            disabled={busy}
+            placeholder="blue lanyard card"
+            maxLength={80}
+            onChange={(e) => setLabel(e.target.value)}
+          />
+        </label>
+      </div>
+      <button type="submit" className="app-button secondary" disabled={busy || !userId || !code.trim()}>
+        Enroll card
+      </button>
+    </form>
+  );
+}
+
 function PolicyForm({
   orgId,
   policy,
@@ -139,7 +248,7 @@ function PolicyForm({
   orgId: string;
   policy: ReadyView["policy"];
   busy: boolean;
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<boolean | void>;
 }) {
   const [goal, setGoal] = useState(policy.seasonGoalHours ? String(policy.seasonGoalHours) : "");
   const [start, setStart] = useState(policy.seasonStart ?? "");
@@ -178,6 +287,165 @@ function PolicyForm({
   );
 }
 
+function ScanClockForm({
+  orgId,
+  kind,
+  setKind,
+  busy,
+  onBusy,
+  onMessage,
+  onSynced,
+}: {
+  orgId: string;
+  kind: HourKind;
+  setKind: (kind: HourKind) => void;
+  busy: boolean;
+  onBusy: (busy: boolean) => void;
+  onMessage: (message: string) => void;
+  onSynced: () => Promise<void>;
+}) {
+  const [code, setCode] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const focusField = useCallback(() => {
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    focusField();
+  }, [focusField]);
+
+  const submit = useCallback(async () => {
+    const normalized = normalizeScanCode(code);
+    const problem = scanCodeProblem(normalized);
+    if (problem) {
+      onMessage(scanCodeProblemMessage(problem));
+      focusField();
+      return;
+    }
+
+    onBusy(true);
+    const occurredAt = new Date().toISOString();
+    const clientEventId = newClientEventId();
+    const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+
+    try {
+      if (offline && offlineQueueSupported()) {
+        await queueClockEvent({ orgId, code: normalized, kind, occurredAt, clientId: clientEventId });
+        setCode("");
+        onMessage(
+          `Scan queued offline at ${new Date(occurredAt).toLocaleTimeString(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+          })} — it will sync when the network is back.`,
+        );
+        return;
+      }
+
+      const response = await fetch("/api/hours/kiosk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "scan",
+          orgId,
+          code: normalized,
+          kind,
+          occurredAt,
+          clientEventId,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { error?: string } & Partial<KioskScanResult>;
+      if (!response.ok) {
+        const unreachable = typeof navigator !== "undefined" && navigator.onLine === false;
+        if (unreachable && offlineQueueSupported()) {
+          await queueClockEvent({ orgId, code: normalized, kind, occurredAt, clientId: clientEventId });
+          setCode("");
+          onMessage("Network dropped — scan queued and will sync automatically.");
+          return;
+        }
+        onMessage(data.error ?? "Scan failed.");
+        return;
+      }
+      if (data.outcome === "in" || data.outcome === "out") {
+        onMessage(
+          scanFeedbackMessage({
+            outcome: data.outcome,
+            memberName: data.memberName ?? null,
+            at: data.at ?? occurredAt,
+            elapsedHours: data.elapsedHours,
+          }),
+        );
+      }
+      setCode("");
+      await onSynced();
+    } catch (error) {
+      const unreachable = error instanceof TypeError || (typeof navigator !== "undefined" && navigator.onLine === false);
+      if (unreachable && offlineQueueSupported()) {
+        try {
+          await queueClockEvent({ orgId, code: normalized, kind, occurredAt, clientId: clientEventId });
+          setCode("");
+          onMessage("Network dropped — scan queued and will sync automatically.");
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
+      onMessage(error instanceof Error ? error.message : "Scan failed.");
+    } finally {
+      onBusy(false);
+      focusField();
+    }
+  }, [code, focusField, kind, onBusy, onMessage, onSynced, orgId]);
+
+  return (
+    <form
+      className="hours-manual"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit();
+      }}
+    >
+      <h3>Scan a card</h3>
+      <p className="hours-kiosk-hint app-muted">
+        Barcode, student ID, or RFID — a USB scanner types into this field and presses Enter. One scan clocks in;
+        the next scan from the same card clocks out. Manual clock buttons below are a fallback for members without a
+        card.
+      </p>
+      <div className="hours-form-grid">
+        <label className="hours-field">
+          <span>Barcode / student ID</span>
+          <input
+            ref={inputRef}
+            value={code}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            enterKeyHint="go"
+            placeholder="Scan here"
+            aria-label="Scan barcode or student ID"
+            disabled={busy}
+            onChange={(event) => setCode(event.target.value)}
+          />
+        </label>
+        <label className="hours-field">
+          <span>Kind</span>
+          <select value={kind} disabled={busy} onChange={(event) => setKind(event.target.value as HourKind)}>
+            {HOUR_KINDS.map((value) => (
+              <option key={value} value={value}>
+                {HOUR_KIND_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <button type="submit" className="hours-big-btn" disabled={busy || !code.trim()}>
+        Scan
+      </button>
+    </form>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Root
 // ---------------------------------------------------------------------------
@@ -192,6 +460,8 @@ export default function HoursClient() {
   const [kind, setKind] = useState<HourKind>("build");
   const [now, setNow] = useState(() => Date.now());
   const [showMyLog, setShowMyLog] = useState(false);
+  const [pending, setPending] = useState(0);
+  const [online, setOnline] = useState(true);
 
   // Live tick so open-session timers and the leaderboard stay current.
   useEffect(() => {
@@ -238,17 +508,65 @@ export default function HoursClient() {
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
           setError(data.error ?? "Action failed.");
-          return;
+          return false;
         }
         await load();
+        return true;
       } catch {
         setError("Network error — changes were not saved.");
+        return false;
       } finally {
         setBusyKey(null);
       }
     },
     [load],
   );
+
+  const orgIdForQueue = view?.status === "ready" ? view.context.orgId ?? "" : "";
+
+  const refreshPending = useCallback(async () => {
+    if (!offlineQueueSupported()) return;
+    try {
+      setPending(await pendingClockCount(orgIdForQueue || undefined));
+    } catch {
+      /* locked-down browser without IndexedDB just shows 0 */
+    }
+  }, [orgIdForQueue]);
+
+  const drain = useCallback(async () => {
+    if (!orgIdForQueue || !offlineQueueSupported()) return;
+    try {
+      const result = await syncClockOutbox(orgIdForQueue);
+      setPending(result.remaining);
+      if (result.synced > 0) {
+        setError(`Synced ${result.synced} queued scan${result.synced === 1 ? "" : "s"}.`);
+        await load();
+      } else if (result.rejected.length) {
+        setError(result.rejected[0]!.reason);
+      }
+    } catch {
+      /* still offline — the queue stays put */
+    }
+  }, [load, orgIdForQueue]);
+
+  useEffect(() => {
+    const update = () => {
+      const isOnline = typeof navigator === "undefined" ? true : navigator.onLine !== false;
+      setOnline(isOnline);
+      if (isOnline) void drain();
+    };
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, [drain]);
+
+  useEffect(() => {
+    void refreshPending();
+  }, [refreshPending]);
 
   if (fetchFailed || !view) {
     return (
@@ -380,13 +698,32 @@ export default function HoursClient() {
           <a className="app-button secondary" href={orgId ? `/hours/kiosk?orgId=${encodeURIComponent(orgId)}` : "/hours/kiosk"}>
             Shop kiosk
           </a>
+          {pending > 0 ? (
+            <button type="button" className="app-button secondary" disabled={busy || !online} onClick={() => void drain()}>
+              Sync {pending} queued scan{pending === 1 ? "" : "s"}
+            </button>
+          ) : null}
+          {orgId ? (
+            <a
+              className="app-button secondary"
+              href={`/api/hours/export?orgId=${encodeURIComponent(orgId)}`}
+              // Mentors get the team's log; a member gets their own. The server decides.
+              title={canAdmin ? "Download the team's hours as CSV" : "Download your hours as CSV"}
+            >
+              Export CSV
+            </a>
+          ) : null}
           {canAdmin && summary.hereNow > 0 ? (
             <button
               type="button"
               className="app-button secondary"
               disabled={busy}
               onClick={() => {
-                if (confirm(`Sign out all ${summary.hereNow} clocked-in member(s)?`)) {
+                if (
+                  confirm(
+                    `Sign out all ${summary.hereNow} clocked-in member(s)? Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.`,
+                  )
+                ) {
                   void run({ action: "close_all_open", orgId }, "close-all");
                 }
               }}
@@ -400,6 +737,30 @@ export default function HoursClient() {
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      <section className="app-card hours-clock-card" aria-label="Scan a card or clock in">
+        <ScanClockForm
+          orgId={orgId}
+          kind={kind}
+          setKind={setKind}
+          busy={busy}
+          onBusy={(next) => setBusyKey(next ? "scan" : null)}
+          onMessage={(message) => {
+            setError(message);
+            void refreshPending();
+          }}
+          onSynced={async () => {
+            await load();
+            await refreshPending();
+          }}
+        />
+      </section>
+      {!online ? (
+        <p className="hours-kiosk-hint app-muted" role="status">
+          Offline — scans are queued on this device with the time they happened. Totals below stay at the last
+          loaded records; they are not guessed while the queue drains.
         </p>
       ) : null}
 
@@ -533,6 +894,9 @@ export default function HoursClient() {
         <section className="hours-panel">
           <div className="hours-forms">
             <ManualEntryForm orgId={orgId} members={members} canAdmin={canAdmin} selfId={selfId} busy={busyKey === "manual"} run={run} />
+            {canAdmin ? (
+              <EnrollScanForm orgId={orgId} members={members} busy={busyKey === "enroll"} run={run} />
+            ) : null}
             {canAdmin ? <PolicyForm orgId={orgId} policy={policy} busy={busyKey === "policy"} run={run} /> : null}
           </div>
           <h2>

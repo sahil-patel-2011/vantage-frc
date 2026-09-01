@@ -37,7 +37,7 @@ export type CadToolSpec = {
   name: string;
   /** Short human label for the /cad tools panel. */
   label: string;
-  group: "session" | "sketch" | "solid" | "modify" | "pattern" | "inspect";
+  group: "session" | "sketch" | "solid" | "modify" | "pattern" | "assembly" | "inspect";
   description: string;
   params: CadToolParam[];
   onshape: CadPlatformSupport;
@@ -132,6 +132,110 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     fusion: "unsupported",
     fusionNote: "The Fusion relay always targets the active design.",
     mutating: true,
+  },
+  {
+    name: "onshape_create_part_studio",
+    label: "Create Part Studio",
+    group: "session",
+    description:
+      "Create and bind a real Part Studio with the native Onshape element API. No FeatureScript.",
+    params: [
+      { name: "documentId", type: "string", description: "Document id; defaults to the bound document." },
+      { name: "workspaceId", type: "string", description: "Workspace id; defaults to the bound workspace." },
+      { name: "name", type: "string", required: true, description: "Name for the new Part Studio." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion creates components in the active design rather than cloud Part Studio elements.",
+    mutating: true,
+  },
+  {
+    name: "onshape_body_details",
+    label: "Part faces",
+    group: "inspect",
+    description:
+      "Read native Part Studio body details, including part and face deterministic ids for manual assembly mating. No FeatureScript.",
+    params: [],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion inspection is provided by fusion_describe.",
+    mutating: false,
+  },
+  {
+    name: "onshape_create_assembly",
+    label: "Create assembly",
+    group: "assembly",
+    description: "Create a real Onshape Assembly element in the bound document/workspace.",
+    params: [
+      { name: "documentId", type: "string", description: "Document id; defaults to the bound document." },
+      { name: "workspaceId", type: "string", description: "Workspace id; defaults to the bound workspace." },
+      { name: "name", type: "string", required: true, description: "Assembly name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion assemblies use components/joints in the active local design.",
+    mutating: true,
+  },
+  {
+    name: "onshape_add_assembly_instance",
+    label: "Insert part",
+    group: "assembly",
+    description:
+      "Insert a part, whole Part Studio, or sub-assembly using Onshape's native Assembly API.",
+    params: [
+      { name: "assemblyElementId", type: "string", description: "Assembly id; defaults to the last created assembly." },
+      { name: "sourceDocumentId", type: "string", description: "Source document; defaults to the bound document." },
+      { name: "sourceElementId", type: "string", description: "Part Studio/Assembly id; defaults to the bound Part Studio." },
+      { name: "partId", type: "string", description: "Specific part id from onshape_body_details; omit for the whole Part Studio." },
+      { name: "isAssembly", type: "boolean", description: "Insert sourceElementId as a sub-assembly." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion assemblies use components/joints in the active local design.",
+    mutating: true,
+  },
+  {
+    name: "onshape_mate",
+    label: "Mate instances",
+    group: "assembly",
+    description:
+      "Create native face-centred mate connectors and a FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL mate. No FeatureScript.",
+    params: [
+      { name: "assemblyElementId", type: "string", description: "Assembly id; defaults to the last created assembly." },
+      { name: "name", type: "string", description: "Mate name." },
+      { name: "mateType", type: "string", required: true, description: "FASTENED, REVOLUTE, SLIDER, or CYLINDRICAL." },
+      { name: "firstInstanceId", type: "string", required: true, description: "First instance id." },
+      { name: "secondInstanceId", type: "string", required: true, description: "Second instance id." },
+      { name: "firstFaceId", type: "string", required: true, description: "Face id on the first part from onshape_body_details." },
+      { name: "secondFaceId", type: "string", required: true, description: "Face id on the second part from onshape_body_details." },
+      { name: "firstFlipPrimary", type: "boolean", description: "Flip connector A's normal." },
+      { name: "secondFlipPrimary", type: "boolean", description: "Flip connector B's normal." },
+      { name: "firstOffsetXMm", type: "number", description: "Connector A local X offset in mm." },
+      { name: "firstOffsetYMm", type: "number", description: "Connector A local Y offset in mm." },
+      { name: "firstOffsetZMm", type: "number", description: "Connector A normal offset in mm." },
+      { name: "secondOffsetXMm", type: "number", description: "Connector B local X offset in mm." },
+      { name: "secondOffsetYMm", type: "number", description: "Connector B local Y offset in mm." },
+      { name: "secondOffsetZMm", type: "number", description: "Connector B normal offset in mm." },
+      { name: "minLimit", type: "number", description: "Travel mm, or degrees for REVOLUTE." },
+      { name: "maxLimit", type: "number", description: "Travel mm, or degrees for REVOLUTE." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion uses joints; this Onshape mate payload is not sent to the Fusion relay.",
+    mutating: true,
+  },
+  {
+    name: "onshape_get_assembly",
+    label: "Inspect assembly",
+    group: "assembly",
+    description: "Read native assembly instances, occurrences, and mate features for verification.",
+    params: [
+      { name: "assemblyElementId", type: "string", description: "Assembly id; defaults to the last created assembly." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Use fusion_describe for the active Fusion design.",
+    mutating: false,
   },
   {
     name: "onshape_describe",

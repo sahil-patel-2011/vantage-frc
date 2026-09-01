@@ -10,6 +10,7 @@ import {
   type GitHubContextRequest,
 } from "../../../lib/github";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
+import { buildHistoryContext } from "../../../lib/chat/history-context";
 
 async function current() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -77,11 +78,17 @@ export async function POST(request: Request) {
         return { threadId: await repository.createThread(session.user.id, { orgId, scope: body.scope, title: body.title }) };
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
+      const historyContext = buildHistoryContext({
+        turns: await repository.getMessages(body.threadId),
+        message: body.message,
+      });
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
       const adapter = await resolveOrgChatAdapter(client, {
         orgId,
+        userId: session.user.id,
         promptCachingEnabled,
         feature: "chat",
+        taskText: historyContext.message,
         // Prefer a paired subscription bridge (Claude Code / Codex on the
         // team's own machine) when one is online; falls through to keys.
         bridgeTransport: createBridgeTransport(),
@@ -100,13 +107,14 @@ export async function POST(request: Request) {
         userId: session.user.id,
         orgId: body.orgId!,
         threadId: body.threadId,
-        message: body.message,
+        message: historyContext.message,
         scope: body.scope,
         adapter,
         requestId: crypto.randomUUID(),
         selected: body.selected,
         promptCachingEnabled,
         bridgeContext,
+        conversationHistory: historyContext.history,
       });
     });
     return Response.json(data, { status: 201 });

@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { boundedContext, type ChatAdapter, type ContextItem } from "./index";
+import { boundedContext, type ChatAdapter, type ChatMessage, type ContextItem } from "./index";
 import { AIOrchestrator, type ContextSource } from "./orchestrator";
 import { createVantageToolRegistry } from "./tools";
 import type { AnnotatedToolOutput } from "./auto-tools";
@@ -12,6 +12,28 @@ export type SourceRef = {
   status?: string;
   summary?: string;
 };
+
+export const RECENT_THREAD_TOKEN_BUDGET = 1_800;
+export const RECENT_THREAD_MAX_MESSAGES = 20;
+
+export type RecentThreadMessage = ChatMessage & { id: string };
+
+export function boundRecentThreadMessages(
+  messages: RecentThreadMessage[],
+  tokenBudget = RECENT_THREAD_TOKEN_BUDGET,
+  maxMessages = RECENT_THREAD_MAX_MESSAGES,
+): { messages: RecentThreadMessage[]; estimatedTokens: number } {
+  const selected: RecentThreadMessage[] = [];
+  let estimatedTokens = 0;
+  for (const message of messages.slice().reverse()) {
+    if (selected.length >= Math.max(0, maxMessages)) break;
+    const tokens = Math.ceil(message.content.length / 4) + 4;
+    if (estimatedTokens + tokens > Math.max(0, tokenBudget)) break;
+    selected.push(message);
+    estimatedTokens += tokens;
+  }
+  return { messages: selected.reverse(), estimatedTokens };
+}
 
 export class AgentRepository {
   constructor(private readonly client: PoolClient) {}
@@ -62,6 +84,35 @@ export class AgentRepository {
       sourceRefs?: SourceRef[] | null;
       tokenCount?: number | null;
     }>;
+  }
+
+  async loadRecentThreadHistory(input: {
+    threadId: string;
+    orgId: string;
+    userId: string;
+    scope: "private" | "team";
+    tokenBudget?: number;
+  }) {
+    const result = await this.client.query<{
+      id: string;
+      role: "user" | "assistant";
+      content: string;
+    }>(
+      `SELECT m.id,m.role,m.content
+         FROM agent_messages m
+         JOIN agent_threads t ON t.id=m.thread_id AND t.org_id=m.org_id
+        WHERE m.thread_id=$1::uuid AND m.org_id=$2::uuid
+          AND t.scope=$4
+          AND (t.scope='team' OR t.created_by=$3::uuid)
+          AND m.role IN ('user','assistant')
+        ORDER BY m.created_at DESC, m.id DESC
+        LIMIT 48`,
+      [input.threadId, input.orgId, input.userId, input.scope],
+    );
+    return boundRecentThreadMessages(
+      result.rows.slice().reverse(),
+      input.tokenBudget ?? RECENT_THREAD_TOKEN_BUDGET,
+    );
   }
 
   async listUserMemories(userId: string) {
@@ -249,7 +300,24 @@ export class AgentRepository {
         label?: string;
       }
     >;
+    /** Prior turns already shaped for the model. Empty = first message only. */
+    conversationHistory?: ChatMessage[];
   }) {
+    const history =
+      input.conversationHistory !== undefined
+        ? boundRecentThreadMessages(
+            input.conversationHistory.map((item, index) => ({
+              id: item.id ?? `turn-${index}`,
+              role: item.role,
+              content: item.content,
+            })),
+          )
+        : await this.loadRecentThreadHistory({
+            threadId: input.threadId,
+            orgId: input.orgId,
+            userId: input.userId,
+            scope: input.scope,
+          });
     const message = await this.client.query<{ id: string }>(
       `INSERT INTO agent_messages(thread_id,org_id,author_user_id,role,content,explicitly_shared)
        VALUES($1,$2,$3,'user',$4,$5) RETURNING id`,
@@ -293,6 +361,7 @@ export class AgentRepository {
       autoTools: true,
       contextSources: [...bridgeSources, ...memorySources],
       tokenBudget: context.estimatedTokens + bridgeTokens + 1000,
+      conversationHistory: history.messages,
       promptCachingEnabled: input.promptCachingEnabled,
     });
     const text = orchestrated.text;
@@ -309,6 +378,11 @@ export class AgentRepository {
         summary: item.label ?? item.id,
       })),
       ...context.items.map((item) => ({ type: item.type, id: item.id })),
+      ...history.messages.map((item) => ({
+        type: "chat_turn",
+        id: item.id,
+        summary: item.role,
+      })),
       ...orchestrated.toolOutputs.map((tool: AnnotatedToolOutput, index: number) => ({
         type: "module_fact",
         id: `${tool.name}:${index}`,
@@ -329,6 +403,7 @@ export class AgentRepository {
         JSON.stringify(sourceRefs),
         context.estimatedTokens +
           bridgeTokens +
+          history.estimatedTokens +
           orchestrated.toolOutputs.reduce((sum, tool) => sum + Math.ceil(JSON.stringify(tool.output).length / 4), 0),
       ],
     );

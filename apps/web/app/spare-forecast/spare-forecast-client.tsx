@@ -233,6 +233,7 @@ export default function SpareForecastClient() {
     forecastLineCount,
     criticalCount,
     purchaseRequestCount,
+    seasonHorizon: view?.status === "live" ? view.seasonHorizon : undefined,
   });
   const relatedLinks = spareForecastRelatedLinks(orgId, {
     include: [...SPARE_FORECAST_RELATED_INCLUDE],
@@ -314,7 +315,11 @@ export default function SpareForecastClient() {
           </>
         }
         title="Spare-Parts Failure Forecast"
-        description="Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems — never DEMO spare counts."
+        description={
+          view.seasonHorizon === "offseason"
+            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged FMEA failures — never \"no risk\" from a closed 200-day window."
+            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems — never DEMO spare counts."
+        }
       >
         <div className="spare-forecast-header-actions">
           {view.seasons.length > 0 ? (
@@ -419,12 +424,17 @@ export default function SpareForecastClient() {
 
 function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const critical = view.forecastLines.filter((line) => line.forecast.urgency === "critical").length;
-  const willExhaust = view.forecastLines.filter((line) => line.forecast.willExhaust).length;
+  const scoredExhaust = view.forecastLines.filter((line) => line.forecast.willExhaust != null);
+  const willExhaust =
+    scoredExhaust.length === 0 && view.forecastLines.length > 0
+      ? null
+      : scoredExhaust.filter((line) => line.forecast.willExhaust === true).length;
+  const offseason = view.seasonHorizon === "offseason";
   const tiles = [
     { label: "Spare bins", value: formatSpareForecastMetric(view.spareBinCount, loaded) },
     { label: "Forecasted", value: formatSpareForecastMetric(view.forecastLines.length, loaded) },
     { label: "Will exhaust", value: formatSpareForecastMetric(willExhaust, loaded) },
-    { label: "Critical", value: formatSpareForecastMetric(critical, loaded) },
+    { label: "Critical", value: formatSpareForecastMetric(offseason ? null : critical, loaded) },
   ];
   return (
     <Panel className="spare-forecast-coverage" aria-label="Spare Forecast summary">
@@ -432,13 +442,29 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
         <div>
           <span
             className={`app-badge ${
-              view.spareBinCount === 0 ? "setup" : view.forecastLines.length === 0 ? "good" : "demo"
+              view.spareBinCount === 0
+                ? "setup"
+                : offseason
+                  ? "setup"
+                  : view.forecastLines.length === 0
+                    ? "setup"
+                    : "demo"
             }`}
           >
-            {view.spareBinCount === 0 ? "EMPTY" : view.forecastLines.length === 0 ? "STABLE" : "LIVE"}
+            {view.spareBinCount === 0
+              ? "EMPTY"
+              : offseason
+                ? "OFFSEASON"
+                : view.forecastLines.length === 0
+                  ? "NO FMEA"
+                  : "LIVE"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season forecast</h2>
-          <small className="app-muted">Real inventory only — never DEMO spare counts</small>
+          <small className="app-muted">
+            {offseason
+              ? "Remaining-season risk is unknown — cadence from inventory × FMEA only"
+              : "Real inventory only — never DEMO spare counts"}
+          </small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -473,32 +499,43 @@ function ForecastPanel({
             Real spare-category bins with matched FMEA history only.
           </p>
         </div>
-        <div className="spare-forecast-draft-actions">
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder={`Spare-parts restock — ${view.seasonYear}`}
-            aria-label="Purchase request title"
-          />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => {
-              mutate({ action: "draft-purchase-request", title: title.trim() || undefined });
-              setTitle("");
-            }}
-          >
-            Draft purchase request
-          </button>
-        </div>
+        {view.seasonHorizon === "offseason" ? (
+          <p className="app-muted spare-forecast-offseason-note">
+            Season window closed — remaining-season risk is unknown. Logged FMEA cadence is still
+            shown. Draft restock when a live horizon exists.
+          </p>
+        ) : (
+          <div className="spare-forecast-draft-actions">
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={`Spare-parts restock — ${view.seasonYear}`}
+              aria-label="Purchase request title"
+            />
+            <button
+              type="button"
+              className="app-button"
+              disabled={busy}
+              onClick={() => {
+                mutate({ action: "draft-purchase-request", title: title.trim() || undefined });
+                setTitle("");
+              }}
+            >
+              Draft purchase request
+            </button>
+          </div>
+        )}
       </header>
       <ul className="spare-forecast-list">
         {view.forecastLines.map((line) => (
           <li key={line.itemId} className="app-card soft-panel spare-forecast-card">
             <header className="spare-forecast-card-head">
               <div>
-                <span className={`app-badge ${URGENCY_TONE[line.forecast.urgency]}`}>
+                <span
+                  className={`app-badge ${
+                    line.forecast.urgency ? URGENCY_TONE[line.forecast.urgency] : "setup"
+                  }`}
+                >
                   {forecastUrgencyLabel(line.forecast.urgency)}
                 </span>
                 <strong style={{ display: "block", marginTop: 4 }}>{line.itemName}</strong>
@@ -509,12 +546,13 @@ function ForecastPanel({
               </div>
             </header>
             <small className="app-muted">
-              {line.forecast.consumptionPerDay.toFixed(3)} units/day cadence ·{" "}
-              {line.forecast.projectedConsumptionRemaining} projected over{" "}
-              {line.forecast.daysRemaining} remaining day(s)
-              {line.forecast.willExhaust
-                ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`
-                : " · not projected to run out"}
+              {line.forecast.horizon === "offseason" || line.forecast.daysRemaining == null
+                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged FMEA failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
+                : `${line.forecast.consumptionPerDay.toFixed(3)} units/day cadence · ${line.forecast.projectedConsumptionRemaining} projected over ${line.forecast.daysRemaining} remaining day(s)${
+                    line.forecast.willExhaust
+                      ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`
+                      : " · not projected to run out"
+                  }`}
             </small>
           </li>
         ))}

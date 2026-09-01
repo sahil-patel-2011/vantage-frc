@@ -65,7 +65,19 @@ describe("binding and resume", () => {
   });
 
   it("discards feature ids from another Part Studio, because they address nothing there", () => {
-    const session = noteSessionCalls(plateSession(), createCallBudget().summary());
+    const session = {
+      ...noteSessionCalls(plateSession(), createCallBudget().summary()),
+      assemblyElementId: "assembly-1",
+      assemblyName: "Drivebase",
+      assemblyInstances: [
+        {
+          instanceId: "instance-1",
+          sourceElementId: "el-1",
+          isAssembly: false,
+          at: "2026-08-24T12:00:03.000Z",
+        },
+      ],
+    };
     const elsewhere = bindClaudeCadSession(session, { ...PLATE, elementId: "el-2" });
     expect(elsewhere.features).toEqual([]);
     expect(elsewhere.geometry).toEqual([]);
@@ -73,6 +85,16 @@ describe("binding and resume", () => {
     expect(elsewhere.rebuild).toBe(0);
     // The lifetime call tally belongs to the machine, not the document.
     expect(elsewhere.calls).toBeDefined();
+    // Assembly ids remain valid while switching Part Studios in the same workspace.
+    expect(elsewhere.assemblyElementId).toBe("assembly-1");
+    expect(elsewhere.assemblyInstances).toHaveLength(1);
+
+    const otherWorkspace = bindClaudeCadSession(session, {
+      ...PLATE,
+      workspaceId: "ws-2",
+      elementId: "el-3",
+    });
+    expect(otherWorkspace.assemblyElementId).toBeUndefined();
   });
 
   it("refuses to work unbound with an instruction instead of a crash", () => {

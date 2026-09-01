@@ -1,19 +1,19 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createKms, decryptSecret, encryptSecret, type EncryptedSecret } from "@vantage/billing";
 import {
-  createOnshapeApiKeyHttp,
   createOnshapeHttp,
   getOnshapeOAuthConfig,
-  readOnshapeApiKeys,
   refreshOnshapeToken,
   type OnshapeHttp,
   type OnshapeTokenSet,
 } from "@vantage/cad";
+import { hostedOnshapeAgentAuth } from "./hosted-auth";
+import { hostedOnshapeAgentStatus } from "./onshape-setup-copy";
 
 export type CadAgentOnshapeClient = {
   http: OnshapeHttp;
   connectionId: string | null;
-  via: "oauth" | "api_key";
+  via: "oauth";
 };
 
 export async function loadCadAgentOnshape(
@@ -31,7 +31,13 @@ export async function loadCadAgentOnshape(
     )
   ).rows[0];
 
-  if (row?.encrypted_credentials && config) {
+  const auth = hostedOnshapeAgentAuth({
+    oauthConfigured: Boolean(config),
+    apiKeyConfigured: false,
+    sessionConnected: Boolean(row?.encrypted_credentials),
+  });
+
+  if (row?.encrypted_credentials && config && !auth.setupRequired) {
     let tokens = JSON.parse(
       await decryptSecret(JSON.parse(row.encrypted_credentials) as EncryptedSecret, createKms()),
     ) as OnshapeTokenSet;
@@ -46,15 +52,10 @@ export async function loadCadAgentOnshape(
     return { http: createOnshapeHttp(tokens.accessToken), connectionId: row.id, via: "oauth" };
   }
 
-  const keys = readOnshapeApiKeys();
-  if (keys) {
-    return { http: createOnshapeApiKeyHttp(keys), connectionId: row?.id ?? null, via: "api_key" };
-  }
-
-  if (!config) {
-    throw new Error(
-      "Setup required — connect Onshape in CAD Connections, or set ONSHAPE_ACCESS_KEY and ONSHAPE_SECRET_KEY on this server.",
-    );
-  }
-  throw new Error("Connect Onshape in CAD Connections before the CAD agent can edit a Part Studio.");
+  const setup = hostedOnshapeAgentStatus({
+    oauthConfigured: Boolean(config),
+    apiKeyConfigured: false,
+    sessionConnected: Boolean(row),
+  });
+  throw new Error(setup.message);
 }

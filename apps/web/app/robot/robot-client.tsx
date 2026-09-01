@@ -123,6 +123,12 @@ function SubsystemCard({
                 unlink
               </button>
             </span>
+          ) : (subsystem.vaultDocumentCount ?? 0) > 0 ? (
+            <span className="robot-domain-value">
+              <a className="robot-cad-btn" href={withOrg("/cad-vault")}>
+                In CAD vault
+              </a>
+            </span>
           ) : (
             <LinkEditor value="" placeholder="https://cad.onshape.com/…" buttonLabel="+ Link CAD model" busy={busy} onSave={(next) => void patch({ cadUrl: next || null })} />
           )}

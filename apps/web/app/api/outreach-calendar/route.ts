@@ -9,6 +9,12 @@ import {
   updateOutreachEventStatus,
   type OutreachCalendarView,
 } from "../../../lib/outreach-calendar/compute-outreach-calendar";
+import {
+  CompleteOutreachError,
+  completeOutreachEventToImpact,
+  findLatestOutreachEventId,
+  shouldWriteImpactForStatus,
+} from "../../../lib/outreach/complete-to-impact";
 import type { OutreachAudience, OutreachCategory, OutreachStatus } from "../../../lib/outreach-calendar/types";
 
 export type { OutreachCalendarView };
@@ -135,6 +141,18 @@ export async function POST(request: Request) {
             notes: trimmedOrNull(body.notes, 4000),
             seasonYear,
           });
+          if (shouldWriteImpactForStatus(status)) {
+            const createdId = await findLatestOutreachEventId(client, { orgId, title, scheduledOn });
+            if (createdId) {
+              await completeOutreachEventToImpact(client, { orgId, userId, eventId: createdId });
+            }
+          }
+          break;
+        }
+        case "complete": {
+          const eventId = trimmedOrNull(body.eventId, 64);
+          if (!eventId) throw new Error("eventId is required");
+          await completeOutreachEventToImpact(client, { orgId, userId, eventId });
           break;
         }
         case "update-status": {
@@ -142,7 +160,11 @@ export async function POST(request: Request) {
           const status = oneOf<OutreachStatus>(OUTREACH_STATUSES, body.status);
           if (!eventId) throw new Error("eventId is required");
           if (!status) throw new Error("status is required");
-          await updateOutreachEventStatus(client, { orgId, eventId, status });
+          if (shouldWriteImpactForStatus(status)) {
+            await completeOutreachEventToImpact(client, { orgId, userId, eventId });
+          } else {
+            await updateOutreachEventStatus(client, { orgId, eventId, status });
+          }
           break;
         }
         case "delete-event": {
@@ -160,6 +182,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof CompleteOutreachError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     const message = error instanceof Error ? error.message : "Outreach Calendar request failed";
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

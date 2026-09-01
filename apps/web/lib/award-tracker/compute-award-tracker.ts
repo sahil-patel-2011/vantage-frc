@@ -1,4 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import {
+  loadMediaEvidenceReferences,
+  type MediaEvidenceReference,
+} from "../media/evidence-references";
 import { summarizeAwardTracker, upcomingDeadlines } from ".";
 import type { AwardSubmission, AwardSubmissionStatus, AwardTrackerSummary, AwardType } from "./types";
 
@@ -26,6 +30,7 @@ export type AwardTrackerView =
       submissions: AwardSubmission[];
       upcoming: AwardSubmission[];
       summary: AwardTrackerSummary;
+      evidenceLibrary: MediaEvidenceReference[];
       computedAt: string;
     };
 
@@ -100,7 +105,7 @@ export async function computeAwardTrackerView(
     };
   }
 
-  const [submissionResult, seasonResult] = await Promise.all([
+  const [submissionResult, seasonResult, evidenceLibrary] = await Promise.all([
     client.query<SubmissionRow>(
       `SELECT id, award_type AS "awardType", award_name AS "awardName", event_name AS "eventName",
               event_date::text AS "eventDate", submission_deadline::text AS "submissionDeadline",
@@ -115,6 +120,7 @@ export async function computeAwardTrackerView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM award_tracker_submissions WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    loadMediaEvidenceReferences(client, { orgId: org.orgId }),
   ]);
 
   const submissions = submissionResult.rows.map(mapSubmission);
@@ -132,6 +138,7 @@ export async function computeAwardTrackerView(
     submissions,
     upcoming,
     summary,
+    evidenceLibrary,
     computedAt: new Date().toISOString(),
   };
 }

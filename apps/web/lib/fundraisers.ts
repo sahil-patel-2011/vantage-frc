@@ -29,6 +29,9 @@ export const FUNDRAISER_TYPE_LABEL: Record<FundraiserType, string> = {
 export const FUNDRAISER_STATUSES = ["planned", "active", "completed", "cancelled"] as const;
 export type FundraiserStatus = (typeof FUNDRAISER_STATUSES)[number];
 
+export const FUNDRAISER_EXPENSE_SCHEMA_BLOCKER =
+  "Fundraiser net needs explicit expense rows (org_id, fundraiser_event_id, amount_usd, occurred_on, description, created_by) mirrored as finance expenses. fundraiser_events currently stores gross proceeds only.";
+
 export function attainmentPct(proceedsUsd: number, goalUsd: number | null): number | null {
   if (goalUsd == null || goalUsd <= 0) return null;
   return Math.round((proceedsUsd / goalUsd) * 100);
@@ -49,6 +52,9 @@ export function summarizeFundraisers(events: { status: FundraiserStatus; goalUsd
   return {
     totalRaised,
     totalGoal,
+    totalExpenses: null,
+    netRaised: null,
+    accountingStatus: "gross_only" as const,
     attainment: attainmentPct(totalRaised, totalGoal || null),
     planned: events.filter((e) => e.status === "planned").length,
     active: events.filter((e) => e.status === "active").length,

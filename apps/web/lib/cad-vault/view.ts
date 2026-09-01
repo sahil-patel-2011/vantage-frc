@@ -261,9 +261,9 @@ export async function computeCadVaultView(
 
   const subsystemsResult = await client.query<SubsystemOption>(
     `SELECT id, name, category FROM robot_subsystems
-     WHERE org_id = $1::uuid AND season_year = $2::int
-     ORDER BY category, name`,
-    [org.orgId, seasonYear],
+     WHERE org_id = $1::uuid
+     ORDER BY name, category`,
+    [org.orgId],
   );
 
   return {

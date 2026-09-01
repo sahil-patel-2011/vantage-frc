@@ -1,32 +1,58 @@
 import pg from "pg";
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-function loadEnv(path) {
+function parseEnvFile(path) {
   const out = {};
   for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    if (!line || line.startsWith("#")) continue;
+    if (!line || line.trimStart().startsWith("#")) continue;
     const i = line.indexOf("=");
     if (i < 0) continue;
-    let value = line.slice(i + 1);
+    const name = line.slice(0, i).trim();
+    let value = line.slice(i + 1).trim();
     if (
       (value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))
     ) {
       value = value.slice(1, -1);
     }
-    out[line.slice(0, i)] = value;
+    out[name] = value;
   }
   return out;
 }
 
-const env = {
-  ...loadEnv(".env.production.local"),
-  ...loadEnv(".env.migrate.local"),
-};
-const url = env.DATABASE_ADMIN_URL || env.DATABASE_URL_UNPOOLED || env.POSTGRES_URL_NON_POOLING || env.DATABASE_URL || env.POSTGRES_URL;
+const args = process.argv.slice(2);
+const envFileIndex = args.indexOf("--migration-env-file");
+const explicitEnvFile = envFileIndex >= 0 ? args[envFileIndex + 1] : undefined;
+if (envFileIndex >= 0 && !explicitEnvFile) {
+  console.error("--migration-env-file requires a path");
+  process.exit(1);
+}
+
+const envFiles = explicitEnvFile
+  ? [explicitEnvFile]
+  : [".env.production.local", ".env.migrate.local"].filter((path) => existsSync(path));
+const fileEnv = {};
+for (const path of envFiles) {
+  if (!existsSync(path)) {
+    console.error(`ENV_FILE_NOT_FOUND ${path}`);
+    process.exit(1);
+  }
+  Object.assign(fileEnv, parseEnvFile(path));
+}
+
+// Explicit shell/CI variables win over local files.
+const env = { ...fileEnv, ...process.env };
+const url =
+  env.DATABASE_ADMIN_URL ||
+  env.DATABASE_URL_UNPOOLED ||
+  env.POSTGRES_URL_NON_POOLING ||
+  env.DATABASE_URL ||
+  env.POSTGRES_URL;
 if (!url) {
-  console.error("NO_DB_URL");
+  console.error(
+    "NO_DB_URL: set DATABASE_ADMIN_URL (preferred) or a documented direct-connection alias",
+  );
   process.exit(1);
 }
 
@@ -38,7 +64,9 @@ const files = readdirSync(dir)
 const pool = new pg.Pool({
   connectionString: url,
   max: 1,
-  ssl: /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: true },
+  ssl: ["localhost", "127.0.0.1", "::1"].includes(new URL(url).hostname)
+    ? false
+    : { rejectUnauthorized: true },
 });
 await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
   id text PRIMARY KEY,

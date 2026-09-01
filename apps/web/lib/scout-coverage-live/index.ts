@@ -20,13 +20,26 @@ export function matchLabel(compLevel: string, setNumber: number, matchNumber: nu
   return `${compLevel || "Match"} ${setNumber}-${matchNumber}`;
 }
 
-/** Extracts alliance team keys from TBA-shaped jsonb (`{team_keys:[...]}` or a bare string array). */
-export function teamKeysFromAlliance(value: { team_keys?: unknown } | unknown[] | null | undefined): string[] {
+/**
+ * Extracts alliance team keys from the stored matches_ref jsonb.
+ *
+ * The reference writer persists the camelCase `teamKeys` shape (packages/reference AllianceRecord);
+ * raw TBA payloads and older rows use `team_keys`, and some callers hand in a bare string array.
+ * All three resolve here so a coverage board never reads an empty schedule off a shape mismatch.
+ */
+export function teamKeysFromAlliance(
+  value: { team_keys?: unknown; teamKeys?: unknown } | unknown[] | null | undefined,
+): string[] {
   if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  if (value && typeof value === "object" && Array.isArray((value as { team_keys?: unknown }).team_keys)) {
-    return (value as { team_keys: unknown[] }).team_keys.filter((v): v is string => typeof v === "string");
-  }
-  return [];
+  if (!value || typeof value !== "object") return [];
+  const record = value as { team_keys?: unknown; teamKeys?: unknown };
+  const keys = Array.isArray(record.teamKeys)
+    ? record.teamKeys
+    : Array.isArray(record.team_keys)
+      ? record.team_keys
+      : null;
+  if (!keys) return [];
+  return keys.filter((v): v is string => typeof v === "string");
 }
 
 export type CoverageMatchInput = {

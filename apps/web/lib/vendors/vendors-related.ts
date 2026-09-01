@@ -126,7 +126,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "No vendors yet",
         title: "Add a supplier before building the directory",
         description:
-          "Contacts, lead times, and ratings stay blank until you add a real vendor. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics.",
+          "Contacts, lead times, and ratings stay blank until you add a real vendor. Orders require a supplier from this directory. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics.",
       };
     default:
       return {
@@ -167,7 +167,7 @@ export function vendorsNextActions(input: {
         {
           id: "orders",
           label: "Open Orders",
-          detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+          detail: "Purchase orders stay empty until you pick a directory vendor — never DEMO PO totals.",
           href: hubHref("/business", "orders", null),
         },
         {
@@ -237,7 +237,7 @@ export function vendorsNextActions(input: {
       {
         id: "orders",
         label: "Open Orders",
-        detail: "Purchase orders stay blank until you draft them — never DEMO PO totals.",
+        detail: "Purchase orders stay blank until you pick a directory vendor — never DEMO PO totals.",
         href: hubHref("/business", "orders", orgId),
       },
       {

@@ -5,6 +5,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../componen
 import { RETRO_ITEM_KINDS, retroItemKindLabel } from "../../lib/retro";
 import type { RetroView } from "../../lib/retro/compute-retro";
 import {
+  RETRO_HANDOFF_INCLUDE,
   RETRO_RELATED_INCLUDE,
   classifyRetroShell,
   formatRetroMetric,
@@ -16,7 +17,7 @@ import {
   type RetroNextAction,
   type RetroShellKind,
 } from "../../lib/retro/retro-related";
-import type { RetroActionStatus, RetroItemKind } from "../../lib/retro/types";
+import type { RetroActionStatus, RetroHandoffTarget, RetroItemKind } from "../../lib/retro/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./retro.css";
@@ -233,11 +234,13 @@ export default function RetroClient() {
     sessionCount,
   });
   const shellCopy = retroShellCopy(shell);
+  const learnedItemCount = view?.status === "live" ? view.learnedItems.length : 0;
   const nextActions = retroNextActions({
     orgId,
     shell,
     sessionCount,
     openActionCount,
+    learnedItemCount,
   });
   const relatedLinks = retroRelatedLinks(orgId, {
     include: [...RETRO_RELATED_INCLUDE],
@@ -420,6 +423,7 @@ export default function RetroClient() {
             description="Create a session above to begin collecting start/stop/continue feedback — never DEMO items."
           />
         ) : null}
+        <LearnedItems view={view} busy={busy} mutate={mutate} />
         <Postmortems view={view} busy={busy} mutate={mutate} />
       </div>
     </main>
@@ -643,6 +647,103 @@ function ActionItems({
           ))}
         </ul>
       )}
+    </Panel>
+  );
+}
+
+function LearnedItems({
+  view,
+  busy,
+  mutate,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  const items = view.learnedItems;
+  const handoffLinks = retroRelatedLinks(view.orgId, { include: [...RETRO_HANDOFF_INCLUDE] });
+  const send = (target: RetroHandoffTarget) => mutate({ action: "handoff-lessons", target });
+
+  return (
+    <Panel className="retro-panel" id="retro-learned">
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Learned items</h2>
+          <p className="app-muted">
+            Only start/stop/continue rows the team wrote — never invented lessons.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {handoffLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </header>
+      {view.lastHandoff ? (
+        <p className="telemetry-status" role="status">
+          {view.lastHandoff.message}
+        </p>
+      ) : null}
+      {items.length === 0 ? (
+        <p className="app-muted">
+          No learned items yet. Write start/stop/continue notes first — this never invents lessons
+          for Season report or Playbook.
+        </p>
+      ) : (
+        <ul className="retro-list">
+          {items.map((item) => (
+            <li key={item.id} className="retro-row">
+              <div>
+                <span className={`app-badge ${KIND_TONE[item.kind]}`}>{retroItemKindLabel(item.kind)}</span>{" "}
+                <span>{item.content}</span>
+                <small className="app-muted" style={{ display: "block" }}>
+                  {item.sessionTitle || "Untitled session"}
+                  {item.authorName ? ` · ${item.authorName}` : ""}
+                  {item.voteCount > 0 ? ` · ${item.voteCount} vote${item.voteCount === 1 ? "" : "s"}` : ""}
+                </small>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className="app-button"
+          disabled={busy || items.length === 0}
+          onClick={() => send("season-report")}
+        >
+          Send to Season report
+        </button>
+        <button
+          type="button"
+          className="app-button secondary"
+          disabled={busy || items.length === 0}
+          onClick={() => send("playbook")}
+        >
+          Send to Playbook
+        </button>
+        <button
+          type="button"
+          className="app-button secondary"
+          disabled={busy || items.length === 0}
+          onClick={() => send("both")}
+        >
+          Send to both
+        </button>
+        {view.handoff.playbookHref ? (
+          <a className="app-button secondary" href={view.handoff.playbookHref}>
+            Open playbook page
+          </a>
+        ) : null}
+        {view.handoff.seasonReportCount > 0 ? (
+          <a className="app-button secondary" href={withOrgHref("/season-report", view.orgId)}>
+            {formatRetroMetric(view.handoff.seasonReportCount, true)} in Season report
+          </a>
+        ) : null}
+      </div>
     </Panel>
   );
 }

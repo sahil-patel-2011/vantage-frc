@@ -29,8 +29,37 @@ describe("computeMentorHoursView", () => {
     }
   });
 
-  it("returns a live view with summary and engagement over logged entries", async () => {
+  it("returns empty — not live scores — when the mentor ledger has no rows", async () => {
+    const sqls: string[] = [];
     const client = makeClient((sql) => {
+      sqls.push(sql);
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      }
+      return { rows: [] };
+    });
+
+    const view = await computeMentorHoursView(client, {
+      userId: USER,
+      requestedOrg: ORG,
+      seasonYear: 2026,
+    });
+
+    expect(view.status).toBe("empty");
+    if (view.status !== "empty") throw new Error("expected empty view");
+    expect(view.orgId).toBe(ORG);
+    expect(view.teamNumber).toBe(254);
+    expect(view.message).toMatch(/no mentor or volunteer hours/i);
+    expect(view).not.toHaveProperty("summary");
+    expect(view).not.toHaveProperty("engagement");
+    expect(sqls.every((sql) => !/hour_logs/i.test(sql))).toBe(true);
+    expect(sqls.some((sql) => sql.includes("FROM mentor_hours_entries"))).toBe(true);
+  });
+
+  it("returns a live view with summary and engagement over logged mentor_hours_entries", async () => {
+    const sqls: string[] = [];
+    const client = makeClient((sql) => {
+      sqls.push(sql);
       if (sql.includes("FROM memberships")) {
         return { rows: [{ orgId: ORG, teamNumber: 254 }] };
       }
@@ -80,6 +109,7 @@ describe("computeMentorHoursView", () => {
     expect(view.summary.uniqueMentors).toBe(2);
     expect(view.engagement.score).toBeGreaterThan(0);
     expect(view.engagement.tier).toBeDefined();
+    expect(sqls.every((sql) => !/hour_logs/i.test(sql))).toBe(true);
   });
 });
 

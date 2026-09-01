@@ -107,7 +107,9 @@ export async function computeSponsorTierCalculatorView(
     ),
     client.query<{ sponsorId: string; total: string }>(
       `SELECT sponsor_id AS "sponsorId",
-              COALESCE(SUM(COALESCE(amount_usd, 0) + COALESCE(estimated_value_usd, 0)), 0) AS total
+              COALESCE(SUM(CASE WHEN type = 'cash'
+                                THEN COALESCE(amount_usd, 0)
+                                ELSE COALESCE(estimated_value_usd, amount_usd, 0) END), 0) AS total
        FROM sponsor_contributions
        WHERE org_id = $1 AND season_year = $2
        GROUP BY sponsor_id`,

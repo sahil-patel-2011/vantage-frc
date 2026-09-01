@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   PHOTO_DB_CAP_BYTES,
   VIDEO_DB_CAP_BYTES,
+  VIDEO_SCHEMA_CAP_BYTES,
   dbCapForKind,
   formatMediaBytes,
+  hostedCapForKind,
   isAllowedContentType,
   isSha256Hex,
   mediaKindForContentType,
@@ -70,18 +72,40 @@ describe("validateUploadMetadata", () => {
   });
 
   it("rejects a photo over the 8MB db cap with the real numbers", () => {
-    const result = validateUploadMetadata(base({ byteSize: PHOTO_DB_CAP_BYTES + 1 }));
+    const result = validateUploadMetadata(base({ byteSize: PHOTO_DB_CAP_BYTES + 1 }), {});
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain("8.0 MB");
   });
 
-  it("accepts a video up to the 100MB db cap and rejects above it", () => {
-    const ok = validateUploadMetadata(
+  it("refuses 6–100 MB video on hosted Vercel instead of claiming the 100 MB schema cap", () => {
+    const hosted = { VERCEL: "1" };
+    const sixMb = validateUploadMetadata(
+      base({ contentType: "video/mp4", byteSize: 6 * 1024 * 1024 }),
+      hosted,
+    );
+    expect(sixMb.ok).toBe(false);
+    if (!sixMb.ok) {
+      expect(sixMb.error).toContain("4.0 MB");
+      expect(sixMb.error).toContain("storage node");
+      expect(sixMb.error).not.toContain("100.0 MB");
+    }
+    const atHostedCap = validateUploadMetadata(
       base({ contentType: "video/mp4", byteSize: VIDEO_DB_CAP_BYTES }),
+      hosted,
+    );
+    expect(atHostedCap.ok).toBe(true);
+  });
+
+  it("accepts a video up to the 100MB schema cap off Vercel and rejects above it", () => {
+    const selfHosted = {};
+    const ok = validateUploadMetadata(
+      base({ contentType: "video/mp4", byteSize: VIDEO_SCHEMA_CAP_BYTES }),
+      selfHosted,
     );
     expect(ok.ok).toBe(true);
     const over = validateUploadMetadata(
-      base({ contentType: "video/mp4", byteSize: VIDEO_DB_CAP_BYTES + 1 }),
+      base({ contentType: "video/mp4", byteSize: VIDEO_SCHEMA_CAP_BYTES + 1 }),
+      selfHosted,
     );
     expect(over.ok).toBe(false);
     if (!over.ok) {
@@ -130,6 +154,10 @@ describe("caps and formatting", () => {
   it("returns the right cap per kind", () => {
     expect(dbCapForKind("photo")).toBe(8 * 1024 * 1024);
     expect(dbCapForKind("video")).toBe(100 * 1024 * 1024);
+    expect(VIDEO_DB_CAP_BYTES).toBe(4 * 1024 * 1024);
+    expect(VIDEO_SCHEMA_CAP_BYTES).toBe(100 * 1024 * 1024);
+    expect(hostedCapForKind("video", { VERCEL: "1" })).toBe(4 * 1024 * 1024);
+    expect(hostedCapForKind("video", {})).toBe(100 * 1024 * 1024);
   });
 
   it("formats sizes across units", () => {
@@ -141,9 +169,18 @@ describe("caps and formatting", () => {
   });
 
   it("oversize messages always name the actual size", () => {
-    expect(oversizeUploadMessage("photo", 9 * 1024 * 1024)).toContain("9.0 MB");
-    const video = oversizeUploadMessage("video", 250 * 1024 * 1024);
+    expect(oversizeUploadMessage("photo", 9 * 1024 * 1024, {})).toContain("9.0 MB");
+    const video = oversizeUploadMessage("video", 250 * 1024 * 1024, {});
     expect(video).toContain("250.0 MB");
     expect(video).toContain("YouTube");
+  });
+
+  it("names 4.0 MB — not 100 MB — when a hosted video is over the cloud cap", () => {
+    const hosted = oversizeUploadMessage("video", 20 * 1024 * 1024, { VERCEL: "1" });
+    expect(hosted).toContain("20.0 MB");
+    expect(hosted).toContain("4.0 MB");
+    expect(hosted).not.toContain("100.0 MB");
+    const fromClient = oversizeUploadMessage("video", 20 * 1024 * 1024, {});
+    expect(fromClient).toContain("4.0 MB");
   });
 });

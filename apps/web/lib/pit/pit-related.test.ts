@@ -129,6 +129,26 @@ describe("classifyPitShell", () => {
         maintenanceCount: 0,
       }),
     ).toBe("ready");
+    expect(
+      classifyPitShell({
+        loading: false,
+        orgId: "o1",
+        batteryCount: 0,
+        openIssues: 0,
+        maintenanceCount: 0,
+        flags: { repairs: false, batteries: false, queue: false },
+      }),
+    ).toBe("empty");
+    expect(
+      classifyPitShell({
+        loading: false,
+        orgId: "o1",
+        batteryCount: 0,
+        openIssues: 0,
+        maintenanceCount: 0,
+        flags: { repairs: true, batteries: false, queue: false },
+      }),
+    ).toBe("ready");
   });
 });
 
@@ -150,6 +170,14 @@ describe("pitShellCopy + metrics", () => {
     expect(formatPitBatteryReady(1, 0, true)).toBe("—");
     expect(formatPitBatteryReady(1, 3, true)).toBe("1/3");
     expect(isPitBoardEmpty({ batteryCount: 0, openIssues: 0, maintenanceCount: 0 })).toBe(true);
+    expect(
+      isPitBoardEmpty({
+        batteryCount: 0,
+        openIssues: 0,
+        maintenanceCount: 0,
+        flags: { repairs: false, batteries: false, queue: true },
+      }),
+    ).toBe(false);
     expect(shouldShowPitSummaryTiles({ batteryCount: 0, openIssues: 0, maintenanceCount: 0 })).toBe(
       false,
     );

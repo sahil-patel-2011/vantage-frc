@@ -9,35 +9,23 @@
 
 import { withSyncBackoff } from "../scouting/sync-backoff";
 import type { KioskScanResult } from "./kiosk";
-import { newClientEventId } from "./scan-codes";
+import {
+  clockScanRequestBody,
+  createQueuedClockEvent,
+  isPermanentClockStatus,
+  orderClockOutbox,
+  type QueuedClockEvent,
+} from "./outbox";
+
+export type { QueuedClockEvent } from "./outbox";
 
 const DB_NAME = "vantage-hours-kiosk";
 const DB_VERSION = 1;
 const OUTBOX = "clock-outbox";
 
-export type QueuedClockEvent = {
-  /**
-   * Idempotency key AND IndexedDB primary key. Stable across every retry of this
-   * scan — and carried over from a failed online attempt — so the server can
-   * tell a replay from a genuinely new sign-in.
-   */
-  clientId: string;
-  orgId: string;
-  /** Normalized scan code — the server resolves it to a member. */
-  code: string;
-  kind: string;
-  /** When the student actually scanned. Sent as `occurredAt`. */
-  occurredAt: string;
-  /** Optimistic label so the pending list reads as names, not codes. */
-  displayName: string | null;
-  queuedAt: string;
-  /** Populated when the server permanently rejected the event. */
-  lastError?: string;
-};
-
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = globalThis.indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(OUTBOX)) db.createObjectStore(OUTBOX, { keyPath: "clientId" });
@@ -61,7 +49,7 @@ async function store(mode: IDBTransactionMode) {
 
 /** True when this browser can queue at all — a kiosk without it must say so. */
 export function offlineQueueSupported(): boolean {
-  return typeof indexedDB !== "undefined";
+  return typeof globalThis.indexedDB !== "undefined";
 }
 
 export async function queueClockEvent(input: {
@@ -77,16 +65,7 @@ export async function queueClockEvent(input: {
    */
   clientId?: string;
 }): Promise<QueuedClockEvent> {
-  if (!input.orgId) throw new Error("orgId is required to queue a clock event");
-  const event: QueuedClockEvent = {
-    clientId: input.clientId ?? newClientEventId(),
-    orgId: input.orgId,
-    code: input.code,
-    kind: input.kind,
-    occurredAt: input.occurredAt ?? new Date().toISOString(),
-    displayName: input.displayName ?? null,
-    queuedAt: new Date().toISOString(),
-  };
+  const event = createQueuedClockEvent(input);
   const objectStore = await store("readwrite");
   await requestValue(objectStore.put(event));
   return event;
@@ -97,7 +76,7 @@ export async function listQueuedClockEvents(orgId?: string): Promise<QueuedClock
   const objectStore = await store("readonly");
   const all = await requestValue<QueuedClockEvent[]>(objectStore.getAll());
   const scoped = orgId ? all.filter((event) => event.orgId === orgId) : all;
-  return scoped.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.clientId.localeCompare(b.clientId));
+  return orderClockOutbox(scoped);
 }
 
 export async function pendingClockCount(orgId?: string): Promise<number> {
@@ -116,11 +95,6 @@ async function markQueuedError(event: QueuedClockEvent, message: string): Promis
   await requestValue(objectStore.put({ ...event, lastError: message }));
 }
 
-/** A 4xx will never succeed on retry — surface it instead of looping forever. */
-function isPermanentStatus(status: number): boolean {
-  return status >= 400 && status < 500 && status !== 408 && status !== 429;
-}
-
 export type SyncClockOutboxResult = {
   synced: number;
   /** Permanently rejected and left in the queue with a visible reason. */
@@ -133,19 +107,12 @@ async function pushOne(event: QueuedClockEvent): Promise<KioskScanResult> {
   const response = await fetch("/api/hours/kiosk", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      action: "scan",
-      orgId: event.orgId,
-      code: event.code,
-      kind: event.kind,
-      occurredAt: event.occurredAt,
-      clientEventId: event.clientId,
-    }),
+    body: JSON.stringify(clockScanRequestBody(event)),
   });
   const body = (await response.json().catch(() => ({}))) as { error?: string } & Partial<KioskScanResult>;
   if (!response.ok) {
     const message = body.error ?? `Sync failed (${response.status})`;
-    if (isPermanentStatus(response.status)) {
+    if (isPermanentClockStatus(response.status)) {
       const permanent = new Error(message);
       permanent.name = "PermanentClockRejection";
       throw permanent;

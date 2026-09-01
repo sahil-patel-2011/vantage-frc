@@ -2,7 +2,8 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { DEFAULT_WEIGHT_LIMIT_LBS, parseWeightAction, summarizeWeight } from "../../../lib/weight-budget";
+import { DEFAULT_WEIGHT_LIMIT_LBS, summarizeWeight } from "../../../lib/weight-budget";
+import { parseWeightWrite, plannedLineSaveFromWrite, upsertPlannedLine } from "../../../lib/weight-budget/upsert";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const action = parseWeightAction(await request.json());
+    const action = parseWeightWrite(await request.json());
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
@@ -100,24 +101,10 @@ export async function POST(request: Request) {
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this component");
           return { ok: true };
         }
-        case "create_component": {
-          const inserted = await client.query<{ id: string }>(
-            `INSERT INTO weight_components (org_id, season_year, name, subsystem, weight_lbs, quantity, notes, created_by)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-            [action.orgId, action.seasonYear, action.name, action.subsystem, action.weightLbs, action.quantity, action.notes, userId],
-          );
-          return { id: inserted.rows[0]!.id };
-        }
-        case "update_component": {
-          const d = action.patch;
-          const updated = await client.query(
-            `UPDATE weight_components SET name = $1, subsystem = $2, weight_lbs = $3, quantity = $4, notes = $5, updated_at = now()
-             WHERE id = $6 AND org_id = $7`,
-            [d.name, d.subsystem, d.weightLbs, d.quantity, d.notes, action.id, action.orgId],
-          );
-          if (!updated.rowCount) throw new HttpError(404, "Component not found");
-          return { ok: true };
-        }
+        case "create_component":
+        case "upsert_component":
+        case "update_component":
+          return upsertPlannedLine(client, plannedLineSaveFromWrite(action, userId));
         default:
           throw new HttpError(400, "Unsupported weight action");
       }

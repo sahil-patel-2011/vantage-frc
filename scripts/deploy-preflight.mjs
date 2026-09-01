@@ -95,6 +95,37 @@ export const BOOTSTRAP_VARS = ["PLATFORM_OWNER_EMAIL", "PLATFORM_OWNER_PASSWORD"
 
 const MIGRATION_NAME = /^(\d{4})_[a-z0-9_]+\.sql$/;
 
+/**
+ * Frozen committed collisions. Exact filenames are intentional here: adding a
+ * third file to one of these prefixes must fail just like any new collision.
+ */
+export const KNOWN_DUPLICATE_MIGRATIONS = new Map([
+  ["0050", ["0050_driver_practice.sql", "0050_safety_log.sql"]],
+  ["0067", ["0067_consent_forms.sql", "0067_kickoff_analysis.sql"]],
+  ["0070", ["0070_fundraiser_events.sql", "0070_season_budget.sql"]],
+  ["0096", ["0096_auto_routines.sql", "0096_chat_provider_routing.sql"]],
+  ["0105", ["0105_control_map.sql", "0105_milestone_meeting_links.sql", "0105_team_knowledge.sql"]],
+  ["0106", ["0106_invite_peek.sql", "0106_tuning_constants.sql"]],
+  ["0109", ["0109_bringup_checklist.sql", "0109_writer_assistant.sql"]],
+  ["0111", ["0111_gearboxes.sql", "0111_subteam_calendars.sql"]],
+  ["0127", ["0127_robot_blueprint.sql", "0127_team_knowledge_revisions.sql"]],
+  ["0150", ["0150_battery_canonical_reconcile.sql", "0150_sponsor_pipeline_crm.sql"]],
+  ["0153", ["0153_battery_canonical.sql", "0153_expanded_product_pricing.sql", "0153_fmea_failure_log.sql"]],
+  ["0155", ["0155_my_day_schedule_alerts.sql", "0155_sponsor_reminders.sql"]],
+  ["0162", ["0162_org_team_location_description.sql", "0162_scout_qr_handoff.sql", "0162_team_todos.sql"]],
+  ["0163", ["0163_legal_acceptance.sql", "0163_role_onboarding.sql", "0163_video_rescout_integrate.sql"]],
+  ["0166", ["0166_scout_disagreement_resolution_hooks.sql", "0166_scouting_coverage_gap_notify.sql", "0166_scouting_trust_layer.sql"]],
+  ["0171", ["0171_order_requests.sql", "0171_org_billing_platform_read.sql"]],
+  ["0172", ["0172_org_team_location_description.sql", "0172_scout_engagement_notifications.sql"]],
+  ["0177", ["0177_scout_disagreement_audit_scout_reopen.sql", "0177_visit_invites.sql"]],
+  ["0184", ["0184_cross_feature_context_graph.sql", "0184_purchase_buyer_progress.sql"]],
+  ["0219", ["0219_scout_accuracy.sql", "0219_support_tickets.sql"]],
+  ["0258", ["0258_epa_trend_alerts.sql", "0258_scout_form_builder.sql"]],
+  ["0259", ["0259_match_notes_timeline.sql", "0259_scout_voice_audio.sql"]],
+  ["0264", ["0264_bom_cost_rollup.sql", "0264_scout_media_bytes.sql"]],
+  ["0265", ["0265_scout_voice_notes.sql", "0265_vendor_lead_times.sql"]],
+]);
+
 /** Parse a dotenv-style file (same relaxed rules as scripts/run-migrations.mjs). */
 export function parseEnvFile(text) {
   const out = {};
@@ -172,8 +203,8 @@ export function checkEnv(env) {
  * Migration-file sanity. Files apply in lexicographic filename order
  * (scripts/run-migrations.mjs), keyed by full filename in schema_migrations,
  * so duplicate NNNN prefixes DO apply — but ordering between same-number
- * files is alphabetical-by-slug, which is fragile. Duplicates and numbering
- * gaps are reported as the KNOWN-issue list, malformed names as FAIL.
+ * files is alphabetical-by-slug, which is fragile. Frozen historical
+ * collisions and numbering gaps warn; new collisions and malformed names fail.
  */
 export function checkMigrations(fileNames) {
   const rows = [];
@@ -197,7 +228,16 @@ export function checkMigrations(fileNames) {
 
   const duplicates = [...byNumber.entries()].filter(([, files]) => files.length > 1);
   for (const [num, files] of duplicates) {
-    rows.push({ status: "WARN", name: `prefix ${num}`, note: `KNOWN duplicate number: ${files.join(", ")} (apply order = alphabetical slug).` });
+    const knownFiles = KNOWN_DUPLICATE_MIGRATIONS.get(num);
+    const isFrozen =
+      knownFiles !== undefined &&
+      knownFiles.length === files.length &&
+      knownFiles.every((file, index) => file === files[index]);
+    rows.push(
+      isFrozen
+        ? { status: "WARN", name: `prefix ${num}`, note: `FROZEN historical duplicate: ${files.join(", ")} (apply order = alphabetical slug).` }
+        : { status: "FAIL", name: `prefix ${num}`, note: `NEW duplicate migration prefix: ${files.join(", ")}. Renumber uncommitted migrations after the latest prefix.` },
+    );
   }
 
   const numbers = [...byNumber.keys()].map((n) => Number(n)).sort((a, b) => a - b);

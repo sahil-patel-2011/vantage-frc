@@ -12,6 +12,7 @@ const links = [
   { href: "/admin/releases", label: "Releases" },
   { href: "/admin/commercial", label: "Commercial" },
   { href: "/admin/connectors", label: "Connectors" },
+  { href: "/admin/integrations", label: "Integrations" },
   { href: "/admin/models", label: "Models" },
   { href: "/admin/sponsored", label: "Sponsored AI" },
   { href: "/admin/support", label: "Support" },

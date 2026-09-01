@@ -225,12 +225,12 @@ export default function EventDayPlanClient() {
         if (data.status === "live") setEventKey(data.eventKey);
       })
       .catch(() => setFetchFailed(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [planDate, eventKey]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;

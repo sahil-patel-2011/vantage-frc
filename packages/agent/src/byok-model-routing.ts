@@ -161,6 +161,9 @@ export function pickByokModelForFeature(input: {
   fixedModelId?: string | null;
   enabledModelIds?: string[] | null;
   availableProviders: ByokModelProvider[];
+  difficulty?: "light" | "hard";
+  role?: "execute" | "think";
+  consulting?: boolean;
 }): ByokModelOption | null {
   const available = new Set(input.availableProviders);
   const catalog = BYOK_MODEL_OPTIONS.filter((m) => available.has(m.provider));
@@ -178,7 +181,13 @@ export function pickByokModelForFeature(input: {
       : catalog;
   if (!pool.length) return catalog[0] ?? null;
 
-  const preferred = preferredTierForFeature(input.feature);
+  const preferred: ByokModelTier = input.difficulty
+    ? input.difficulty === "light"
+      ? "fast"
+      : input.consulting && input.role !== "think"
+        ? "mid"
+        : "high"
+    : preferredTierForFeature(input.feature);
   const exact = pool.filter((m) => m.tier === preferred);
   if (exact.length) {
     return exact.sort((a, b) => a.inputPerMillionUsd - b.inputPerMillionUsd)[0]!;
