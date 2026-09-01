@@ -9,7 +9,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "sweep": "tsx src/cli-sweep.ts"
+    "sweep": "tsx src/cli-sweep.ts",
+    "verify": "tsx src/cli-verify.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "latest",

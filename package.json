@@ -21,6 +21,7 @@
     "deploy:preflight": "node scripts/deploy-preflight.mjs",
     "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "node scripts/run-migrations.mjs",
+    "free-relay:verify": "npm run verify --workspace=@vantage/free-relay",
     "free-relay:sweep": "npm run sweep --workspace=@vantage/free-relay -- --once",
     "free-relay:daemon": "npm run sweep --workspace=@vantage/free-relay",
     "cad:package": "node scripts/cad/package-relay.mjs",

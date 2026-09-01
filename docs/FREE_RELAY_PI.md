@@ -67,6 +67,29 @@ non-loopback `FREE_RELAY_BASE_URL` with no key (`readFreeRelayConfig` returns nu
 without a key is an open pass-through to your FreeBuff account for anyone who finds the
 hostname.
 
+## Verifying it for real
+
+```sh
+npm run free-relay:verify
+```
+
+Reads `FREE_RELAY_*` from `.env.free-relay` at the repo root (or the shell) and checks the
+chain Vantage actually uses rather than a hand-rolled `curl`:
+
+- resolves the relay config through `readFreeRelayConfig`, so a refused config fails here
+  with the reason instead of at request time;
+- lists `/v1/models` and **warns when `FREE_RELAY_MODEL` is not in the catalog** — the slug
+  differs between proxy projects (`deepseek/deepseek-v4-flash` vs `deepseek-v4-flash-free`)
+  and a mismatch otherwise shows up as every request 404ing;
+- asserts a keyless request is **refused**, and fails loudly if the relay is an open
+  pass-through to your FreeBuff account;
+- runs a real completion through `tryCreateFreeRelayAdapter` + `HttpChatAdapter`, so a pass
+  means production code can parse this relay's responses;
+- captures the SSE wire format verbatim and warns if the proxy buffers the whole answer
+  into one chunk, which would make streaming feel no different from blocking.
+
+It never prints the relay key or the upstream token. Exit code is 0 on pass, 1 on failure.
+
 ## Granting it to a team
 
 `/admin/ai-grants` → open a `platform_relay` window for one team for N days. Teams without
