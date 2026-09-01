@@ -18,6 +18,8 @@ export type CadOperation =
   | "create_mate"
   | "create_hole"
   | "create_mirror"
+  | "create_revolve"
+  | "create_boolean"
   | "delete_feature"
   | "feature_script"
   | "verify_topology"
@@ -55,6 +57,8 @@ export const DESTRUCTIVE_CAD_OPERATIONS = new Set<CadOperation>([
   "create_mate",
   "create_hole",
   "create_mirror",
+  "create_revolve",
+  "create_boolean",
   "delete_feature",
   "feature_script",
   "rollback_checkpoint",
@@ -84,6 +88,8 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "create_mate",
   "create_hole",
   "create_mirror",
+  "create_revolve",
+  "create_boolean",
   "delete_feature",
   "feature_script",
   "verify_topology",
@@ -115,6 +121,8 @@ export const HOSTED_NATIVE: readonly CadOperation[] = [
   "create_mate",
   "create_hole",
   "create_mirror",
+  "create_revolve",
+  "create_boolean",
   "delete_feature",
   "verify_topology",
   "render_views",

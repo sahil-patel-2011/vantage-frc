@@ -14,6 +14,9 @@ import {
   extrudeFeature,
   onshapeFeaturePath,
   parseAddedFeatureId,
+  parseSketchPointsMm,
+  pointsSketchFeature,
+  polylineSketchFeature,
   rectangleSketchFeature,
 } from "./onshape-features";
 import { firstPlannedId } from "./first-planned-id";
@@ -647,6 +650,33 @@ export function createOnshapeApiTransport(input: {
             if (parameters.centerYMm !== undefined && Number.isFinite(centerY)) circle.centerYMm = centerY;
             const featureId = await addFeature(
               circleSketchFeature({ circles: [circle], plane, name }),
+              idempotencyKey,
+            );
+            return { featureId, featureScriptUsed: false };
+          }
+          if (sketchKind === "polyline") {
+            const points = parseSketchPointsMm(parameters.points);
+            if (points.length < 2) {
+              throw new Error("Polyline sketches need at least two millimetre points (xMm, yMm).");
+            }
+            const featureId = await addFeature(
+              polylineSketchFeature({
+                points,
+                closed: parameters.closed !== false,
+                plane,
+                name,
+              }),
+              idempotencyKey,
+            );
+            return { featureId, featureScriptUsed: false };
+          }
+          if (sketchKind === "points") {
+            const points = parseSketchPointsMm(parameters.points);
+            if (!points.length) {
+              throw new Error("Point sketches need at least one millimetre point (xMm, yMm).");
+            }
+            const featureId = await addFeature(
+              pointsSketchFeature({ points, plane, name }),
               idempotencyKey,
             );
             return { featureId, featureScriptUsed: false };

@@ -98,6 +98,11 @@ describe("composer native ops", () => {
     expect(composerPalette("fusion360")).not.toContain("export_stl");
     expect(composerPalette("fusion360")).not.toContain("export_gltf");
     expect(composerPalette("fusion360")).not.toContain("render_views");
+    expect(COMPOSER_NATIVE_OPS).toContain("create_revolve");
+    expect(COMPOSER_NATIVE_OPS).toContain("create_boolean");
+    expect(composerPalette("onshape")).toEqual(expect.arrayContaining(["create_revolve", "create_boolean"]));
+    expect(composerPalette("fusion360")).not.toContain("create_revolve");
+    expect(composerPalette("fusion360")).not.toContain("create_boolean");
   });
 
   it("does not invent DEMO plate sizes for empty params", () => {
@@ -691,5 +696,53 @@ describe("composer native ops", () => {
     expect(requireComposerPicks("export_gltf", {})).toEqual({});
     expect(requireComposerDimensions("render_views", {})).toEqual({});
     expect(requireComposerPicks("render_views", {})).toEqual({});
+  });
+
+  it("accepts measured polyline points and refuses invented or incomplete ones", () => {
+    expect(
+      parametersFromDraft("create_sketch", {
+        sketchKind: "polyline",
+        points: "0,0; 80,0; 80,40; 0,40",
+        closed: true,
+      }),
+    ).toEqual({
+      sketchKind: "polyline",
+      points: [
+        { xMm: 0, yMm: 0 },
+        { xMm: 80, yMm: 0 },
+        { xMm: 80, yMm: 40 },
+        { xMm: 0, yMm: 40 },
+      ],
+      closed: true,
+    });
+    expect(() => parametersFromDraft("create_sketch", { sketchKind: "polyline" })).toThrow(
+      /at least two millimetre points/,
+    );
+    expect(() => parametersFromDraft("create_sketch", { sketchKind: "polyline", points: "0,0" })).toThrow(
+      /at least two millimetre points/,
+    );
+    expect(parseComposerOps([{ operation: "create_sketch", parameters: { sketchKind: "polyline" } }])).toEqual([
+      { id: "step-1", operation: "create_sketch", parameters: { sketchKind: "polyline" }, reason: "" },
+    ]);
+  });
+
+  it("requires real axis and body ids for revolve and boolean drafts", () => {
+    expect(describeComposerOp("create_revolve")).toBe("Revolve");
+    expect(describeComposerOp("create_boolean")).toBe("Boolean");
+    expect(() => parametersFromDraft("create_revolve", {})).toThrow(/axis id/i);
+    expect(
+      parametersFromDraft("create_revolve", { axisIds: "JHD", angleDeg: "180" }),
+    ).toEqual({ axisIds: ["JHD"], angleDeg: 180 });
+    expect(() => parametersFromDraft("create_boolean", { operationType: "UNION" })).toThrow(/tool body/i);
+    expect(() =>
+      parametersFromDraft("create_boolean", { operationType: "SUBTRACT", toolBodyIds: "B1" }),
+    ).toThrow(/target body/i);
+    expect(
+      parametersFromDraft("create_boolean", {
+        operationType: "subtract",
+        toolBodyIds: "B2",
+        targetBodyIds: "B1",
+      }),
+    ).toEqual({ operationType: "SUBTRACT", toolBodyIds: ["B2"], targetBodyIds: ["B1"] });
   });
 });

@@ -11,9 +11,12 @@ import {
   onshapeFeaturePath,
   onshapePlaneNormal,
   patternAxisPlaneId,
+  parseSketchPointsMm,
   pointsSketchFeature,
   polylineSketchFeature,
   rectangleSketchFeature,
+  revolveFeature,
+  booleanFeature,
 } from "../src/onshape-features";
 
 // `queries` and `featureIds` are named explicitly so assertions can index them;
@@ -198,6 +201,50 @@ describe("pattern payloads", () => {
       btType: "BTMIndividualQuery-138",
       deterministicIds: ["JEC"],
     });
+  });
+});
+
+describe("revolve and boolean payloads", () => {
+  it("parses measured millimetre pairs and refuses invented JSON", () => {
+    expect(parseSketchPointsMm("0,0; 80,0; 80,40")).toEqual([
+      { xMm: 0, yMm: 0 },
+      { xMm: 80, yMm: 0 },
+      { xMm: 80, yMm: 40 },
+    ]);
+    expect(parseSketchPointsMm([])).toEqual([]);
+    expect(() => parseSketchPointsMm(12)).toThrow(/millimetre pairs/i);
+  });
+
+  it("revolves a sketch around a real axis without FeatureScript", () => {
+    const revolve = revolveFeature({
+      sketchFeatureId: "Fsketch",
+      axisIds: ["JHD"],
+      angleDeg: 360,
+      name: "Roller",
+    });
+    expect(revolve.feature.featureType).toBe("revolve");
+    expect(param(revolve, "axis").queries?.[0]).toEqual({
+      btType: "BTMIndividualQuery-138",
+      deterministicIds: ["JHD"],
+    });
+    expect(param(revolve, "angle").expression).toBe("360 deg");
+    expect(JSON.stringify(revolve).toLowerCase()).not.toContain("featurescript");
+  });
+
+  it("subtracts tool bodies from target bodies without FeatureScript", () => {
+    const cut = booleanFeature({
+      operationType: "SUBTRACT",
+      toolBodyIds: ["B2"],
+      targetBodyIds: ["B1"],
+    });
+    expect(cut.feature.featureType).toBe("boolean");
+    expect(param(cut, "operationType")).toMatchObject({
+      enumName: "BooleanOperationType",
+      value: "SUBTRACT",
+    });
+    expect(param(cut, "tools").queries?.[0]?.deterministicIds).toEqual(["B2"]);
+    expect(param(cut, "targets").queries?.[0]?.deterministicIds).toEqual(["B1"]);
+    expect(() => booleanFeature({ operationType: "SUBTRACT", toolBodyIds: ["B2"] })).toThrow(/targetBodyIds/);
   });
 });
 

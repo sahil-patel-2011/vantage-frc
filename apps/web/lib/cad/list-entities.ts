@@ -126,7 +126,10 @@ export function pickableEntityIds(
   if (/edge/i.test(key) || key === "entities") return idsOf(safe.edges);
   if (/featureIds|featureId/i.test(key)) return featureIdsFromExtras(extras);
   if (/instance/i.test(key)) return instanceIdsFromExtras(extras);
-  if (/axis/i.test(key)) return idsOf(safe.faces.filter((face) => /cylinder|circle/i.test(face.surfaceType)));
+  if (/axis/i.test(key)) {
+    const cylinders = idsOf(safe.faces.filter((face) => /cylinder|circle/i.test(face.surfaceType)));
+    return uniqueIds([...idsOf(safe.edges), ...cylinders]);
+  }
   if (/plane/i.test(key)) return idsOf(safe.faces.filter((face) => /plane/i.test(face.surfaceType)));
   return [];
 }
@@ -222,6 +225,17 @@ function readEdges(value: unknown): ListedEntityEdge[] {
 
 function idsOf(rows: ReadonlyArray<{ id: string }>): string[] {
   return rows.map((row) => row.id).filter(Boolean);
+}
+
+function uniqueIds(ids: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const id of ids) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next;
 }
 
 function featureIdsFromExtras(extras?: PickableEntityExtras): string[] {

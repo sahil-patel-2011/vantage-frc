@@ -160,7 +160,7 @@ export type {
 } from "./dfm";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};
-export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_part_studio","create_assembly","add_assembly_instance","create_mate","create_hole","create_mirror","delete_feature","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;
+export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_part_studio","create_assembly","add_assembly_instance","create_mate","create_hole","create_mirror","create_revolve","create_boolean","delete_feature","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;
 export type CadOperation=typeof CAD_OPERATIONS[number];
 export type CadAction={operation:CadOperation;parameters:Record<string,unknown>;requiresApproval:boolean;reason:string};
 export type { CadExecutionResult };

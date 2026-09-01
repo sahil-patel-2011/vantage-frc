@@ -148,11 +148,11 @@ describe("pickableEntityIds", () => {
     );
   });
 
-  it("maps planeIds to plane faces and axisIds to cylinder/circle faces", () => {
+  it("maps planeIds to plane faces and axisIds to edges plus cylinder/circle faces", () => {
     expect(pickableEntityIds("planeIds", LIVE)).toEqual(["JFC"]);
     expect(pickableEntityIds("planeId", LIVE)).toEqual(["JFC"]);
-    expect(pickableEntityIds("axisIds", LIVE)).toEqual([]);
-    expect(pickableEntityIds("axis", LIVE)).toEqual([]);
+    expect(pickableEntityIds("axisIds", LIVE)).toEqual(["JHD", "JHE"]);
+    expect(pickableEntityIds("axis", LIVE)).toEqual(["JHD", "JHE"]);
     expect(
       pickableEntityIds("axisIds", {
         ...LIVE,
@@ -162,7 +162,7 @@ describe("pickableEntityIds", () => {
           { id: "JFE", bodyId: "JBD", surfaceType: "circle" },
         ],
       }),
-    ).toEqual(["JFD", "JFE"]);
+    ).toEqual(["JHD", "JHE", "JFD", "JFE"]);
   });
 
   it("keeps views and empty entities as an empty picker", () => {
