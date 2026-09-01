@@ -803,6 +803,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<StrategyTab>("matchup");
   const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
+  const [recomputing, setRecomputing] = useState(false);
   const previewOrgId = (view && "orgId" in view ? view.orgId : null) ?? urlOrgId;
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(previewOrgId);
 
@@ -861,6 +862,32 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     loadStrategy();
   }, [loadStrategy]);
 
+  const recomputePrediction = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("orgId");
+    setRecomputing(true);
+    setError("");
+    void fetch("/api/strategy", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "recompute", orgId }),
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as StrategyView | { error?: string };
+        if (!response.ok || !("status" in data)) {
+          setError(("error" in data && data.error) || "Could not recompute this prediction.");
+          return;
+        }
+        setView(data);
+      })
+      .catch(() => {
+        setError("Could not recompute this prediction.");
+      })
+      .finally(() => {
+        setRecomputing(false);
+      });
+  }, []);
+
   const orgId = view && "orgId" in view ? view.orgId : null;
   const shell = classifyStrategyShell({
     loading,
@@ -911,6 +938,14 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           <CopyShareLink orgId={orgId} />
           <button type="button" className="app-button secondary" onClick={() => window.print()}>
             Print
+          </button>
+          <button
+            type="button"
+            className="app-button"
+            disabled={recomputing || loading}
+            onClick={() => void recomputePrediction()}
+          >
+            {recomputing ? "Recomputing…" : "Recompute prediction"}
           </button>
           {orgId ? (
             <>

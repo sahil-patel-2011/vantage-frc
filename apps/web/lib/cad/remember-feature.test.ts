@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rememberComposerFeature } from "./remember-feature";
+import { hasEntityListPicks, rememberComposerFeature } from "./remember-feature";
 
 const FEATURE = "FWx/real-extrude-1";
 
@@ -9,6 +9,24 @@ function sketchOp(parameters: Record<string, unknown> = {}) {
     operation: "create_sketch" as const,
     parameters,
     reason: "Stock",
+  };
+}
+
+function extrudeOp(parameters: Record<string, unknown> = {}) {
+  return {
+    id: "step-2",
+    operation: "create_extrude" as const,
+    parameters,
+    reason: "Thicken",
+  };
+}
+
+function filletOp(parameters: Record<string, unknown> = {}) {
+  return {
+    id: "step-3",
+    operation: "create_fillet" as const,
+    parameters,
+    reason: "Round edges",
   };
 }
 
@@ -86,5 +104,65 @@ describe("rememberComposerFeature", () => {
     const op = sketchOp({});
     rememberComposerFeature(op, { featureId: `  ${FEATURE}  ` });
     expect(op.parameters.featureId).toBe(FEATURE);
+  });
+
+  it("remembers featureId for create_extrude", () => {
+    const op = extrudeOp({ depthMm: 6 });
+    rememberComposerFeature(op, { featureId: FEATURE });
+    expect(op.parameters.featureId).toBe(FEATURE);
+  });
+
+  it("does not remember featureId for fillet, hole, or shell", () => {
+    const fillet = filletOp({ radiusMm: 2, entities: ["JHD"] });
+    rememberComposerFeature(fillet, { featureId: FEATURE });
+    expect(fillet.parameters).not.toHaveProperty("featureId");
+
+    const hole = {
+      operation: "create_hole",
+      parameters: { diameterMm: 5, faceIds: ["JFC"] },
+    };
+    rememberComposerFeature(hole, { featureId: FEATURE });
+    expect(hole.parameters).not.toHaveProperty("featureId");
+
+    const shell = {
+      operation: "create_shell",
+      parameters: { thicknessMm: 1.5, faceIds: ["JFC"] },
+    };
+    rememberComposerFeature(shell, { featureId: FEATURE });
+    expect(shell.parameters).not.toHaveProperty("featureId");
+  });
+
+  it("does not remember featureId for other non-dimension ops even without picks", () => {
+    const chamfer = { operation: "create_chamfer", parameters: { widthMm: 1 } };
+    rememberComposerFeature(chamfer, { featureId: FEATURE });
+    expect(chamfer.parameters).not.toHaveProperty("featureId");
+  });
+
+  it("remembers when operation is missing and there are no entity lists (backward compat)", () => {
+    const op = { parameters: { depthMm: 6 } };
+    rememberComposerFeature(op, { featureId: FEATURE });
+    expect(op.parameters.featureId).toBe(FEATURE);
+  });
+
+  it("does not remember when operation is missing and parameters have entity lists", () => {
+    const keys = ["entities", "edgeIds", "faceIds", "locationIds", "bodyIds", "scopeIds", "featureIds"] as const;
+    for (const key of keys) {
+      const op = { parameters: { radiusMm: 2, [key]: ["JHD"] } };
+      rememberComposerFeature(op, { featureId: FEATURE });
+      expect(op.parameters).not.toHaveProperty("featureId");
+    }
+  });
+
+  it("treats empty entity lists as absent when operation is missing", () => {
+    const op = { parameters: { depthMm: 6, edgeIds: [] } };
+    rememberComposerFeature(op, { featureId: FEATURE });
+    expect(op.parameters.featureId).toBe(FEATURE);
+  });
+
+  it("hasEntityListPicks is true only for non-empty arrays on pick keys", () => {
+    expect(hasEntityListPicks({ edgeIds: ["JHD"] })).toBe(true);
+    expect(hasEntityListPicks({ faceIds: [] })).toBe(false);
+    expect(hasEntityListPicks({ depthMm: 6 })).toBe(false);
+    expect(hasEntityListPicks(null)).toBe(false);
   });
 });
