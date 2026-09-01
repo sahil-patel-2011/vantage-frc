@@ -17,6 +17,7 @@ import {
   type PurchaseRequest,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import {
   clientCanAccessHub,
@@ -614,6 +615,24 @@ type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const categorySpend = useMemo(() => new Map(view.categories.map((category) => [category.id, view.purchases.filter((purchase) => purchase.categoryId === category.id && ["approved", "ordered", "received"].includes(purchase.status)).reduce((total, purchase) => total + purchase.totalCents, 0)])), [view.categories, view.purchases]);
   const financeAiHref = `/ai?tab=finance&orgId=${encodeURIComponent(view.orgId)}`;
+  const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(
+      `/api/finance/budget-vs-actual?orgId=${encodeURIComponent(view.orgId)}&seasonYear=${view.seasonYear}`,
+    )
+      .then(async (response) => {
+        const data = (await response.json()) as BudgetVsActualView;
+        if (cancelled) return;
+        setBudgetLines(data.status === "ready" ? data.lines : []);
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetLines([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view.orgId, view.seasonYear]);
   return <div className="biz-stack">
     <div className="biz-detail-link">
       <span>Need help reading the season budget against open purchase requests?</span>
@@ -648,6 +667,29 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
         </form>
       </article>
     </section>
+
+    {budgetLines.length > 0 ? (
+      <section className="app-card">
+        <header className="biz-card-head">
+          <div>
+            <span className="biz-overline">Budget vs recorded spend</span>
+            <h2>Season plan against the unified ledger — never a DEMO %.</h2>
+          </div>
+        </header>
+        <div className="biz-category-grid">
+          {budgetLines.map((line) => (
+            <article key={line.categoryId ?? line.name}>
+              <header>
+                <strong>{line.name}</strong>
+              </header>
+              <footer>
+                <span>{describeBudgetLine(line)}</span>
+              </footer>
+            </article>
+          ))}
+        </div>
+      </section>
+    ) : null}
 
     <section className="app-card">
       <header className="biz-card-head"><div><span className="biz-overline">Category control</span><h2>Allocation vs. committed spend</h2></div><strong>{money(view.categories.reduce((total, category) => total + category.allocatedCents, 0))} allocated</strong></header>

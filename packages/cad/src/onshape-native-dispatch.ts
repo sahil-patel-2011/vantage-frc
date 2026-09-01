@@ -23,6 +23,7 @@ import {
   quantityParameter,
   type HoleEndStyle,
 } from "./onshape-features";
+import { firstPlannedId } from "./first-planned-id";
 import { setOnshapeNativeVariable } from "./onshape-native-variables";
 
 export type OnshapeNativeHttp = (path: string, init?: RequestInit) => Promise<Response>;
@@ -217,7 +218,10 @@ async function deleteNativeFeature(
   parameters: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<OnshapeNativeDispatchResult> {
-  const featureId = optionalString(parameters, ["featureId", "featureid", "id"]);
+  const featureId =
+    firstPlannedId(parameters.featureId) ||
+    firstPlannedId(parameters.featureid) ||
+    firstPlannedId(parameters.id);
   if (!featureId) {
     throw new Error("delete_feature requires featureId; no feature was deleted");
   }

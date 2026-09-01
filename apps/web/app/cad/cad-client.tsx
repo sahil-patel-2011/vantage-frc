@@ -7,6 +7,11 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { executeComposerOp } from "../../lib/cad/execute-composer";
 import { parseExplainFeatures, type ExplainedFeature } from "../../lib/cad/feature-tree";
 import {
+  EMPTY_LISTED_ASSEMBLY,
+  listOnshapeAssemblyInstances,
+  type ListedOnshapeAssembly,
+} from "../../lib/cad/list-assembly";
+import {
   EMPTY_LISTED_ENTITIES,
   completeDocumentRef,
   listOnshapeEntities,
@@ -510,6 +515,16 @@ function realReturnedId(value: unknown): string | undefined {
   return id;
 }
 
+/** First non-empty planned id from a string or string[]. Blank stays blank. */
+function firstRememberedId(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    const first = value.find((item) => typeof item === "string" && item.trim());
+    return typeof first === "string" ? first.trim() : "";
+  }
+  return "";
+}
+
 function withVariableStudio(
   payload: { operation?: string; parameters?: unknown; reason?: string },
   studioId: string,
@@ -538,6 +553,37 @@ function rememberLastAssemblyElementId(
 ): string | undefined {
   if (operation !== "create_assembly") return current;
   return realReturnedId(executed.featureId) ?? realReturnedId(executed.result?.elementId) ?? current;
+}
+
+/** Fill create_mate from remembered add_assembly_instance ids. Never invent. */
+function withLastInstanceIds(
+  operation: string,
+  parameters: Record<string, unknown>,
+  lastInstanceIds: readonly string[],
+): Record<string, unknown> {
+  if (operation !== "create_mate") return parameters;
+          const firstBlank = !firstRememberedId(parameters.firstInstanceId);
+  const secondBlank = !firstRememberedId(parameters.secondInstanceId);
+  if (!firstBlank && !secondBlank) return parameters;
+  const firstId = lastInstanceIds[0];
+  const secondId = lastInstanceIds[1];
+  if ((!firstBlank || !firstId) && (!secondBlank || !secondId)) return parameters;
+  return {
+    ...parameters,
+    ...(firstBlank && firstId ? { firstInstanceId: firstId } : {}),
+    ...(secondBlank && secondId ? { secondInstanceId: secondId } : {}),
+  };
+}
+
+function rememberLastInstanceIds(
+  operation: string,
+  executed: { featureId?: unknown },
+  current: string[],
+): string[] {
+  if (operation !== "add_assembly_instance") return current;
+  const id = realReturnedId(executed.featureId);
+  if (!id || current.includes(id)) return current;
+  return [...current, id];
 }
 
 export default function CadWorkspace({
@@ -570,11 +616,13 @@ export default function CadWorkspace({
   const [listedEntities, setListedEntities] = useState<ListedOnshapeEntities>(EMPTY_LISTED_ENTITIES);
   const [explainedFeatures, setExplainedFeatures] = useState<ExplainedFeature[]>([]);
   const [listedVariables, setListedVariables] = useState<ListedOnshapeVariables>(EMPTY_LISTED_VARIABLES);
+  const [listedAssembly, setListedAssembly] = useState<ListedOnshapeAssembly>(EMPTY_LISTED_ASSEMBLY);
   const [geometryError, setGeometryError] = useState("");
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
   const lastSketchFeatureId = useRef<string | undefined>(undefined);
   const lastAssemblyElementId = useRef<string | undefined>(undefined);
+  const lastInstanceIds = useRef<string[]>([]);
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/cad/agent?orgId=${encodeURIComponent(orgId)}`);
@@ -647,6 +695,7 @@ export default function CadWorkspace({
       setListedEntities(EMPTY_LISTED_ENTITIES);
       setExplainedFeatures([]);
       setListedVariables(EMPTY_LISTED_VARIABLES);
+      setListedAssembly(EMPTY_LISTED_ASSEMBLY);
       setGeometryError("");
       return;
     }
@@ -661,6 +710,17 @@ export default function CadWorkspace({
       setListedVariables(await listOnshapeVariables({ orgId, documentRef }));
     } catch {
       setListedVariables(EMPTY_LISTED_VARIABLES);
+    }
+    try {
+      setListedAssembly(
+        await listOnshapeAssemblyInstances({
+          orgId,
+          documentRef,
+          assemblyElementId: lastAssemblyElementId.current || undefined,
+        }),
+      );
+    } catch {
+      setListedAssembly(EMPTY_LISTED_ASSEMBLY);
     }
     try {
       const response = await fetch("/api/cad", {
@@ -1197,15 +1257,20 @@ export default function CadWorkspace({
         disabled={!onshapeOk || !boundOk || busy !== null}
         entities={listedEntities}
         features={explainedFeatures}
+        instances={listedAssembly.instances}
         onAppend={async (payload) => {
           const operation = String(payload.operation ?? "");
-          const parameters = withLastAssemblyElementId(
+          const parameters = withLastInstanceIds(
             operation,
-            parametersForExecute(
-              { ...payload, operation, parameters: asParamRecord(payload.parameters) } as ComposerOp,
-              lastSketchFeatureId.current,
+            withLastAssemblyElementId(
+              operation,
+              parametersForExecute(
+                { ...payload, operation, parameters: asParamRecord(payload.parameters) } as ComposerOp,
+                lastSketchFeatureId.current,
+              ),
+              lastAssemblyElementId.current,
             ),
-            lastAssemblyElementId.current,
+            lastInstanceIds.current,
           );
           const executed = await executeComposerOp({
             orgId,
@@ -1223,16 +1288,25 @@ export default function CadWorkspace({
             executed,
             lastAssemblyElementId.current,
           );
+          lastInstanceIds.current = rememberLastInstanceIds(
+            operation,
+            executed,
+            lastInstanceIds.current,
+          );
           rememberComposerFeature({ parameters }, executed);
           void refreshBoundGeometry();
           return executed;
         }}
         onRunPlan={async (ops) => {
           const ran = await runComposerPlan(ops, async (step) => {
-            const parameters = withLastAssemblyElementId(
+            const parameters = withLastInstanceIds(
               step.operation,
-              step.parameters,
-              lastAssemblyElementId.current,
+              withLastAssemblyElementId(
+                step.operation,
+                parametersForExecute(step, lastSketchFeatureId.current),
+                lastAssemblyElementId.current,
+              ),
+              lastInstanceIds.current,
             );
             const executed = await executeComposerOp({
               orgId,
@@ -1257,6 +1331,11 @@ export default function CadWorkspace({
               step.operation,
               executed,
               lastAssemblyElementId.current,
+            );
+            lastInstanceIds.current = rememberLastInstanceIds(
+              step.operation,
+              executed,
+              lastInstanceIds.current,
             );
             return executed;
           });

@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { parseYouTubeEmbed } from "../../lib/youtube";
 import { Icon, type IconName } from "../../components/icon";
 import { Badge, EmptyState } from "../../components/ui";
@@ -458,18 +459,22 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     case "prediction_summary": {
-      const pRed = Number(data.pRed ?? 0);
+      const win = predictionWinDisplay({
+        pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
+        alliance: "red",
+        modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
+      });
       const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
       return (
         <Shell type={type} title="Prediction" payload={payload} href={withOrg("/strategy")} emptyHint={hint} orgId={orgId}>
-          {payload?.status === "live" ? (
+          {payload?.status === "live" && win ? (
             <>
               <div className="dash-stat-row">
-                <strong>{Math.round(pRed * 100)}%</strong>
+                <strong>{win.label}</strong>
                 <span>red alliance · {String(data.modelVersion ?? "")}</span>
               </div>
               <div className="mini-probability">
-                <i style={{ width: `${pRed * 100}%` }} />
+                <i style={{ width: `${win.percent}%` }} />
               </div>
               <ul className="dash-checklist">
                 {factors.map((factor, index) => (
@@ -479,7 +484,17 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
                   </li>
                 ))}
               </ul>
-              <p className="app-muted">On-demand recompute lives on Strategy — this tile is the last stored row.</p>
+              <p className="app-muted">This tile is the last stored row — never a DEMO %.</p>
+              <a className="app-button secondary" href={withOrg("/strategy")}>
+                Recompute on Strategy
+              </a>
+            </>
+          ) : payload?.status === "live" ? (
+            <>
+              <p className="app-muted">Last stored row is not a grounded prediction.</p>
+              <a className="app-button secondary" href={withOrg("/strategy")}>
+                Recompute on Strategy
+              </a>
             </>
           ) : null}
         </Shell>

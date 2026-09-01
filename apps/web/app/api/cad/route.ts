@@ -424,6 +424,11 @@ export async function POST(request: Request) {
         if (!CAD_OPERATIONS.includes(operation as (typeof CAD_OPERATIONS)[number])) {
           throw new Error("Choose an allowlisted CAD operation");
         }
+        if (operation === "feature_script") {
+          throw new Error(
+            "FeatureScript is not allowed from hosted CAD. Use a native Onshape operation a human can re-edit.",
+          );
+        }
         const job = (
           await client.query<{ platform: string }>(
             `SELECT platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,

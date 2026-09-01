@@ -16,6 +16,7 @@ import {
   type ComposerNativeOp,
   type ComposerOp,
 } from "../../lib/cad/composer-ops";
+import { type ListedOnshapeAssembly } from "../../lib/cad/list-assembly";
 import { type ListedOnshapeEntities } from "../../lib/cad/list-entities";
 import { rememberComposerFeature } from "../../lib/cad/remember-feature";
 import { CadComposerFields } from "./cad-composer-fields";
@@ -35,6 +36,7 @@ export function CadOperationComposer({
   onRunPlan,
   entities,
   features,
+  instances,
 }: {
   platform: string;
   disabled?: boolean;
@@ -44,6 +46,7 @@ export function CadOperationComposer({
   onRunPlan?: (plan: unknown) => Promise<{ ok?: boolean; error?: string } | void>;
   entities?: ListedOnshapeEntities;
   features?: ReadonlyArray<{ featureId: string }>;
+  instances?: ListedOnshapeAssembly["instances"];
 }) {
   const operations = useMemo(() => composerPalette(platform), [platform]);
   const [operation, setOperation] = useState<ComposerNativeOp>(operations[0] ?? "create_sketch");
@@ -185,6 +188,7 @@ export function CadOperationComposer({
           disabled={disabled}
           entities={entities}
           features={features}
+          instances={instances}
           onChange={(key, value) => {
             setDraft((current) => ({ ...current, [key]: value }));
             setError("");
