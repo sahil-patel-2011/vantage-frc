@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "sweep": "tsx src/cli-sweep.ts",
-    "verify": "tsx src/cli-verify.ts"
+    "verify": "tsx src/cli-verify.ts",
+    "serve": "tsx src/cli-pi-layer.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "latest",
