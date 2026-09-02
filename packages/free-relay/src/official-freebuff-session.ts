@@ -17,16 +17,67 @@ export const FREEBUFF_MODEL_HEADER = "x-freebuff-model";
 export const FREEBUFF_ACTING_USER_HEADER = "x-freebuff-acting-user-id";
 export const OFFICIAL_FREEBUFF_AGENT_ID = "base3-free-glm-5-3-flash";
 
+/**
+ * Official base3 roots open with this sentence. The free-mode gate is a
+ * byte-exact prefix on the first system message — anything else is billed.
+ */
+export const OFFICIAL_FREEBUFF_SYSTEM_OPENING = "You are Buffy, the coding agent behind Codebuff.";
+
+/** Vantage picker slugs → official Freebuff wire ids. */
+const OFFICIAL_WIRE_MODEL: Record<string, string> = {
+  "glm/glm-5.3-flash": "z-ai/glm-5.3-flash",
+  "glm-5.3-flash": "z-ai/glm-5.3-flash",
+  "z-ai/glm-5.3-flash": "z-ai/glm-5.3-flash",
+  "mimo/mimo-2.5": "mimo/mimo-v2.5",
+  "mimo-2.5": "mimo/mimo-v2.5",
+  "mimo/mimo-v2.5": "mimo/mimo-v2.5",
+  "deepseek/deepseek-v4-flash": "deepseek/deepseek-v4-flash",
+  "deepseek-v4-flash": "deepseek/deepseek-v4-flash",
+};
+
 const OFFICIAL_AGENT_BY_MODEL: Record<string, string> = {
   "glm/glm-5.3-flash": "base3-free-glm-5-3-flash",
+  "z-ai/glm-5.3-flash": "base3-free-glm-5-3-flash",
   "mimo/mimo-2.5": "base3-free-mimo",
   "mimo/mimo-v2.5": "base3-free-mimo",
   "deepseek/deepseek-v4-flash": "base3-free-deepseek-flash",
 };
 
-export function officialAgentIdForModel(model: string): string {
+export function toOfficialFreebuffWireModel(model: string): string {
   const key = model.trim().toLowerCase();
+  return OFFICIAL_WIRE_MODEL[key] ?? model.trim();
+}
+
+export function officialAgentIdForModel(model: string): string {
+  const key = toOfficialFreebuffWireModel(model).toLowerCase();
   return OFFICIAL_AGENT_BY_MODEL[key] ?? OFFICIAL_FREEBUFF_AGENT_ID;
+}
+
+export function hasOfficialFreebuffSystemOpening(text: string): boolean {
+  const trimmed = text.trimStart();
+  return (
+    trimmed.startsWith(OFFICIAL_FREEBUFF_SYSTEM_OPENING) ||
+    trimmed.startsWith("You are Buffy, the strategic coding assistant.")
+  );
+}
+
+function ensureOfficialFreebuffSystemMessages(
+  messages: Array<{ role?: string; content?: unknown }>,
+): Array<{ role?: string; content?: unknown }> {
+  const firstSystem = messages.findIndex((message) => message?.role === "system");
+  if (firstSystem >= 0) {
+    const current = messages[firstSystem];
+    const content = typeof current?.content === "string" ? current.content : "";
+    if (hasOfficialFreebuffSystemOpening(content)) return messages;
+    const next = [...messages];
+    next[firstSystem] = {
+      ...current,
+      role: "system",
+      content: `${OFFICIAL_FREEBUFF_SYSTEM_OPENING}\n\n${content}`.trim(),
+    };
+    return next;
+  }
+  return [{ role: "system", content: OFFICIAL_FREEBUFF_SYSTEM_OPENING }, ...messages];
 }
 
 export type OfficialFreebuffCredentials = {
@@ -55,18 +106,25 @@ export function officialAgentRunsUrl(origin: string = OFFICIAL_FREEBUFF_ORIGIN):
 
 export function attachOfficialRunToChatBody(
   body: string,
-  run: { runId: string; instanceId?: string },
+  run: { runId: string; instanceId?: string; clientId?: string; model?: string },
 ): string {
   try {
     const parsed = JSON.parse(body) as Record<string, unknown>;
     parsed.runId = run.runId;
     parsed.costMode = "free";
+    if (run.model) parsed.model = run.model;
+    const messages = Array.isArray(parsed.messages)
+      ? (parsed.messages as Array<{ role?: string; content?: unknown }>)
+      : [];
+    parsed.messages = ensureOfficialFreebuffSystemMessages(messages);
     const meta =
       parsed.codebuff_metadata && typeof parsed.codebuff_metadata === "object"
         ? { ...(parsed.codebuff_metadata as Record<string, unknown>) }
         : {};
     meta.run_id = run.runId;
+    meta.cost_mode = "free";
     if (run.instanceId) meta.freebuff_instance_id = run.instanceId;
+    if (run.clientId) meta.client_id = run.clientId;
     parsed.codebuff_metadata = meta;
     return JSON.stringify(parsed);
   } catch {
@@ -135,7 +193,7 @@ export async function admitOfficialFreebuffSession(input: {
   fetchImpl?: typeof fetch;
 }): Promise<{ ok: boolean; status: string; instanceId?: string; model?: string; detail?: string }> {
   const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
-  const model = resolveSelectableFreebuffModel(input.model);
+  const model = toOfficialFreebuffWireModel(resolveSelectableFreebuffModel(input.model));
   const fetchImpl = input.fetchImpl ?? fetch;
   const response = await fetchImpl(officialSessionUrl(origin), {
     method: "POST",
@@ -198,11 +256,14 @@ export async function officialFreebuffChat(input: {
   body: string;
   instanceId?: string;
   userId?: string;
+  clientId?: string;
   origin?: string;
   fetchImpl?: typeof fetch;
 }): Promise<{ ok: boolean; status: number; contentType: string; text: string }> {
   const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
-  const model = input.model.includes("/") ? input.model : resolveSelectableFreebuffModel(input.model);
+  const model = toOfficialFreebuffWireModel(
+    input.model.includes("/") ? input.model : resolveSelectableFreebuffModel(input.model),
+  );
   const fetchImpl = input.fetchImpl ?? fetch;
   const runId = await startOfficialAgentRun({
     token: input.token,
@@ -211,7 +272,14 @@ export async function officialFreebuffChat(input: {
     origin,
     fetchImpl,
   });
-  const body = runId ? attachOfficialRunToChatBody(input.body, { runId, instanceId: input.instanceId }) : input.body;
+  const body = runId
+    ? attachOfficialRunToChatBody(input.body, {
+        runId,
+        instanceId: input.instanceId,
+        clientId: input.clientId,
+        model,
+      })
+    : input.body;
   const response = await fetchImpl(officialChatUrl(origin), {
     method: "POST",
     headers: {

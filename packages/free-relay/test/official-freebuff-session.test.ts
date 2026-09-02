@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attachOfficialRunToChatBody,
   lastUserPrompt,
+  OFFICIAL_FREEBUFF_SYSTEM_OPENING,
   officialAgentIdForModel,
   officialAgentRunsUrl,
   officialChatUrl,
@@ -9,6 +10,7 @@ import {
   officialSessionUrl,
   openaiCompletionFromText,
   parseOfficialCredentials,
+  toOfficialFreebuffWireModel,
 } from "../src/official-freebuff-session";
 
 describe("official Freebuff login files", () => {
@@ -31,15 +33,43 @@ describe("official Freebuff login files", () => {
     expect(officialChatUrl()).toBe("https://www.codebuff.com/api/v1/chat/completions");
     expect(officialAgentRunsUrl()).toBe("https://www.codebuff.com/api/v1/agent-runs");
     const withRun = JSON.parse(
-      attachOfficialRunToChatBody(JSON.stringify({ messages: [] }), {
-        runId: "run-1",
-        instanceId: "inst-1",
-      }),
-    ) as { runId: string; codebuff_metadata: { run_id: string; freebuff_instance_id: string } };
+      attachOfficialRunToChatBody(
+        JSON.stringify({
+          model: "glm/glm-5.3-flash",
+          messages: [{ role: "system", content: "Coding folder for organization aaa only." }],
+        }),
+        {
+          runId: "run-1",
+          instanceId: "inst-1",
+          clientId: "fp-1",
+          model: "z-ai/glm-5.3-flash",
+        },
+      ),
+    ) as {
+      runId: string;
+      model: string;
+      costMode: string;
+      messages: Array<{ role: string; content: string }>;
+      codebuff_metadata: {
+        run_id: string;
+        freebuff_instance_id: string;
+        cost_mode: string;
+        client_id: string;
+      };
+    };
     expect(withRun.runId).toBe("run-1");
+    expect(withRun.model).toBe("z-ai/glm-5.3-flash");
+    expect(withRun.costMode).toBe("free");
     expect(withRun.codebuff_metadata.freebuff_instance_id).toBe("inst-1");
+    expect(withRun.codebuff_metadata.cost_mode).toBe("free");
+    expect(withRun.codebuff_metadata.client_id).toBe("fp-1");
+    expect(withRun.messages[0]?.content.startsWith(OFFICIAL_FREEBUFF_SYSTEM_OPENING)).toBe(true);
+    expect(withRun.messages[0]?.content).toContain("Coding folder for organization aaa only.");
+    expect(toOfficialFreebuffWireModel("glm/glm-5.3-flash")).toBe("z-ai/glm-5.3-flash");
+    expect(toOfficialFreebuffWireModel("mimo/mimo-2.5")).toBe("mimo/mimo-v2.5");
     expect(officialAgentIdForModel("mimo/mimo-v2.5")).toBe("base3-free-mimo");
     expect(officialAgentIdForModel("glm/glm-5.3-flash")).toBe("base3-free-glm-5-3-flash");
+    expect(officialAgentIdForModel("z-ai/glm-5.3-flash")).toBe("base3-free-glm-5-3-flash");
   });
 });
 

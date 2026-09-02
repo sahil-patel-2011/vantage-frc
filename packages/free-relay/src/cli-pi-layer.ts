@@ -272,6 +272,7 @@ async function chatViaOfficialLogin(
     body,
     instanceId: session.instanceId,
     userId: creds.id,
+    clientId: creds.fingerprintId ?? creds.id,
   });
   return { status: result.status, contentType: result.contentType, text: result.text };
 }
