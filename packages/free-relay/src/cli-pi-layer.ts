@@ -30,6 +30,11 @@ import {
 } from "./device-telemetry";
 import { ensureOrgWorkspace } from "./org-workspace-fs";
 import { PLATFORM_FREEBUFF_RELAY_NAME } from "./org-workspace";
+import {
+  admitOfficialFreebuffSession,
+  officialFreebuffChat,
+  readOfficialFreebuffCredentials,
+} from "./official-freebuff-session";
 
 const config = readPiLayerConfig();
 const telemetry = new PiDeviceTelemetry(config.maxConcurrent);
@@ -142,21 +147,53 @@ async function forward(
       ? attachWorkspaceToChatBody(clampChatCompletionBody(rawBody, cfg.model), workspace)
       : rawBody;
   const target = joinUpstream(cfg.upstreamBaseUrl, pathname);
-  const upstream = await fetch(target, {
-    method: req.method,
-    headers: {
-      accept: header(req, "accept") || "application/json",
-      "content-type": header(req, "content-type") || "application/json",
-      authorization: header(req, "authorization") || `Bearer ${cfg.apiKey}`,
-      "x-vantage-feature": feature,
-      ...(orgId ? { "x-vantage-org-id": orgId } : {}),
-    },
-    body,
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(target, {
+      method: req.method,
+      headers: {
+        accept: header(req, "accept") || "application/json",
+        "content-type": header(req, "content-type") || "application/json",
+        authorization: header(req, "authorization") || `Bearer ${cfg.apiKey}`,
+        "x-vantage-feature": feature,
+        ...(orgId ? { "x-vantage-org-id": orgId } : {}),
+      },
+      body,
+    });
+  } catch (error) {
+    if (route === "models") {
+      json(res, 200, catalogFallback(cfg));
+      return;
+    }
+    if (route === "chat" && body) {
+      const official = await chatViaOfficialLogin(cfg, body);
+      if (official) {
+        res.statusCode = official.status;
+        res.setHeader("content-type", official.contentType);
+        res.setHeader("cache-control", "no-store");
+        tallyChat(body, official.text, official.contentType);
+        res.end(official.text);
+        return;
+      }
+    }
+    throw error;
+  }
 
   if (route === "models" && !upstream.ok) {
     json(res, 200, catalogFallback(cfg));
     return;
+  }
+
+  if (route === "chat" && !upstream.ok && body) {
+    const official = await chatViaOfficialLogin(cfg, body);
+    if (official) {
+      res.statusCode = official.status;
+      res.setHeader("content-type", official.contentType);
+      res.setHeader("cache-control", "no-store");
+      tallyChat(body, official.text, official.contentType);
+      res.end(official.text);
+      return;
+    }
   }
 
   const contentType = upstream.headers.get("content-type") ?? "application/json";
@@ -206,10 +243,36 @@ async function probeUpstream(cfg: PiLayerConfig): Promise<boolean> {
       headers: { authorization: `Bearer ${cfg.apiKey}` },
       signal: AbortSignal.timeout(4_000),
     });
-    return response.ok;
+    if (response.ok) return true;
   } catch {
-    return false;
+    // Coder UI /v1 is optional when official `freebuff login` is on this box.
   }
+  const home = process.env.HOME?.trim() || process.env.USERPROFILE?.trim() || "";
+  return Boolean(home && (await readOfficialFreebuffCredentials(home)));
+}
+
+async function chatViaOfficialLogin(
+  cfg: PiLayerConfig,
+  body: string,
+): Promise<{ status: number; contentType: string; text: string } | null> {
+  const home = process.env.HOME?.trim() || process.env.USERPROFILE?.trim() || "";
+  const creds = home ? await readOfficialFreebuffCredentials(home) : null;
+  if (!creds) return null;
+  const session = await admitOfficialFreebuffSession({ token: creds.authToken, model: cfg.model });
+  if (!session.ok && session.status !== "model_locked") {
+    return {
+      status: 503,
+      contentType: "application/json",
+      text: JSON.stringify(piLayerErrorBody(503, session.detail ?? "Official Freebuff session was refused.")),
+    };
+  }
+  const result = await officialFreebuffChat({
+    token: creds.authToken,
+    model: session.model ?? cfg.model,
+    body,
+    instanceId: session.instanceId,
+  });
+  return { status: result.status, contentType: result.contentType, text: result.text };
 }
 
 function header(req: IncomingMessage, name: string): string {
