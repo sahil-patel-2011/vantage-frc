@@ -60,6 +60,7 @@ export function attachOfficialRunToChatBody(
   try {
     const parsed = JSON.parse(body) as Record<string, unknown>;
     parsed.runId = run.runId;
+    parsed.costMode = "free";
     const meta =
       parsed.codebuff_metadata && typeof parsed.codebuff_metadata === "object"
         ? { ...(parsed.codebuff_metadata as Record<string, unknown>) }
@@ -182,7 +183,7 @@ export async function startOfficialAgentRun(input: {
       "content-type": "application/json",
       ...(input.userId ? { [FREEBUFF_ACTING_USER_HEADER]: input.userId } : {}),
     },
-    body: JSON.stringify({ action: "START", agentId }),
+    body: JSON.stringify({ action: "START", agentId, costMode: "free" }),
     redirect: "follow",
     signal: AbortSignal.timeout(20_000),
   });
