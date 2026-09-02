@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attachOfficialRunToChatBody,
   lastUserPrompt,
+  officialAgentIdForModel,
   officialAgentRunsUrl,
   officialChatUrl,
   officialCredentialsPath,
@@ -37,6 +38,8 @@ describe("official Freebuff login files", () => {
     ) as { runId: string; codebuff_metadata: { run_id: string; freebuff_instance_id: string } };
     expect(withRun.runId).toBe("run-1");
     expect(withRun.codebuff_metadata.freebuff_instance_id).toBe("inst-1");
+    expect(officialAgentIdForModel("mimo/mimo-v2.5")).toBe("base3-free-mimo");
+    expect(officialAgentIdForModel("glm/glm-5.3-flash")).toBe("base3-free-glm-5-3-flash");
   });
 });
 

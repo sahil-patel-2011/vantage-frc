@@ -15,7 +15,19 @@ export const OFFICIAL_FREEBUFF_ORIGIN = "https://www.codebuff.com";
 export const FREEBUFF_INSTANCE_HEADER = "x-freebuff-instance-id";
 export const FREEBUFF_MODEL_HEADER = "x-freebuff-model";
 export const FREEBUFF_ACTING_USER_HEADER = "x-freebuff-acting-user-id";
-export const OFFICIAL_FREEBUFF_AGENT_ID = "base";
+export const OFFICIAL_FREEBUFF_AGENT_ID = "base3-free-glm-5-3-flash";
+
+const OFFICIAL_AGENT_BY_MODEL: Record<string, string> = {
+  "glm/glm-5.3-flash": "base3-free-glm-5-3-flash",
+  "mimo/mimo-2.5": "base3-free-mimo",
+  "mimo/mimo-v2.5": "base3-free-mimo",
+  "deepseek/deepseek-v4-flash": "base3-free-deepseek-flash",
+};
+
+export function officialAgentIdForModel(model: string): string {
+  const key = model.trim().toLowerCase();
+  return OFFICIAL_AGENT_BY_MODEL[key] ?? OFFICIAL_FREEBUFF_AGENT_ID;
+}
 
 export type OfficialFreebuffCredentials = {
   id?: string;
@@ -156,11 +168,13 @@ export async function admitOfficialFreebuffSession(input: {
 export async function startOfficialAgentRun(input: {
   token: string;
   userId?: string;
+  model?: string;
   origin?: string;
   fetchImpl?: typeof fetch;
 }): Promise<string | null> {
   const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
   const fetchImpl = input.fetchImpl ?? fetch;
+  const agentId = officialAgentIdForModel(input.model ?? "");
   const response = await fetchImpl(officialAgentRunsUrl(origin), {
     method: "POST",
     headers: {
@@ -168,7 +182,7 @@ export async function startOfficialAgentRun(input: {
       "content-type": "application/json",
       ...(input.userId ? { [FREEBUFF_ACTING_USER_HEADER]: input.userId } : {}),
     },
-    body: JSON.stringify({ action: "START", agentId: OFFICIAL_FREEBUFF_AGENT_ID }),
+    body: JSON.stringify({ action: "START", agentId }),
     redirect: "follow",
     signal: AbortSignal.timeout(20_000),
   });
@@ -192,6 +206,7 @@ export async function officialFreebuffChat(input: {
   const runId = await startOfficialAgentRun({
     token: input.token,
     userId: input.userId,
+    model,
     origin,
     fetchImpl,
   });
