@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  attachOfficialRunToChatBody,
   lastUserPrompt,
+  officialAgentRunsUrl,
   officialChatUrl,
   officialCredentialsPath,
   officialSessionUrl,
@@ -26,6 +28,15 @@ describe("official Freebuff login files", () => {
   it("talks to official Freebuff session and chat URLs", () => {
     expect(officialSessionUrl()).toBe("https://www.codebuff.com/api/v1/freebuff/session");
     expect(officialChatUrl()).toBe("https://www.codebuff.com/api/v1/chat/completions");
+    expect(officialAgentRunsUrl()).toBe("https://www.codebuff.com/api/v1/agent-runs");
+    const withRun = JSON.parse(
+      attachOfficialRunToChatBody(JSON.stringify({ messages: [] }), {
+        runId: "run-1",
+        instanceId: "inst-1",
+      }),
+    ) as { runId: string; codebuff_metadata: { run_id: string; freebuff_instance_id: string } };
+    expect(withRun.runId).toBe("run-1");
+    expect(withRun.codebuff_metadata.freebuff_instance_id).toBe("inst-1");
   });
 });
 

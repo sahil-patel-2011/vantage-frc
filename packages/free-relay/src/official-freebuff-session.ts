@@ -14,6 +14,8 @@ import { resolveSelectableFreebuffModel } from "../../agent/src/freebuff-models.
 export const OFFICIAL_FREEBUFF_ORIGIN = "https://www.codebuff.com";
 export const FREEBUFF_INSTANCE_HEADER = "x-freebuff-instance-id";
 export const FREEBUFF_MODEL_HEADER = "x-freebuff-model";
+export const FREEBUFF_ACTING_USER_HEADER = "x-freebuff-acting-user-id";
+export const OFFICIAL_FREEBUFF_AGENT_ID = "base";
 
 export type OfficialFreebuffCredentials = {
   id?: string;
@@ -33,6 +35,30 @@ export function officialSessionUrl(origin: string = OFFICIAL_FREEBUFF_ORIGIN): s
 
 export function officialChatUrl(origin: string = OFFICIAL_FREEBUFF_ORIGIN): string {
   return `${origin.replace(/\/+$/, "")}/api/v1/chat/completions`;
+}
+
+export function officialAgentRunsUrl(origin: string = OFFICIAL_FREEBUFF_ORIGIN): string {
+  return `${origin.replace(/\/+$/, "")}/api/v1/agent-runs`;
+}
+
+export function attachOfficialRunToChatBody(
+  body: string,
+  run: { runId: string; instanceId?: string },
+): string {
+  try {
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    parsed.runId = run.runId;
+    const meta =
+      parsed.codebuff_metadata && typeof parsed.codebuff_metadata === "object"
+        ? { ...(parsed.codebuff_metadata as Record<string, unknown>) }
+        : {};
+    meta.run_id = run.runId;
+    if (run.instanceId) meta.freebuff_instance_id = run.instanceId;
+    parsed.codebuff_metadata = meta;
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
 }
 
 export function parseOfficialCredentials(raw: string): OfficialFreebuffCredentials | null {
@@ -127,17 +153,49 @@ export async function admitOfficialFreebuffSession(input: {
   };
 }
 
+export async function startOfficialAgentRun(input: {
+  token: string;
+  userId?: string;
+  origin?: string;
+  fetchImpl?: typeof fetch;
+}): Promise<string | null> {
+  const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const response = await fetchImpl(officialAgentRunsUrl(origin), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${input.token}`,
+      "content-type": "application/json",
+      ...(input.userId ? { [FREEBUFF_ACTING_USER_HEADER]: input.userId } : {}),
+    },
+    body: JSON.stringify({ action: "START", agentId: OFFICIAL_FREEBUFF_AGENT_ID }),
+    redirect: "follow",
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!response.ok) return null;
+  const parsed = (await response.json().catch(() => null)) as { runId?: unknown } | null;
+  return typeof parsed?.runId === "string" && parsed.runId ? parsed.runId : null;
+}
+
 export async function officialFreebuffChat(input: {
   token: string;
   model: string;
   body: string;
   instanceId?: string;
+  userId?: string;
   origin?: string;
   fetchImpl?: typeof fetch;
 }): Promise<{ ok: boolean; status: number; contentType: string; text: string }> {
   const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
-  const model = resolveSelectableFreebuffModel(input.model);
+  const model = input.model.includes("/") ? input.model : resolveSelectableFreebuffModel(input.model);
   const fetchImpl = input.fetchImpl ?? fetch;
+  const runId = await startOfficialAgentRun({
+    token: input.token,
+    userId: input.userId,
+    origin,
+    fetchImpl,
+  });
+  const body = runId ? attachOfficialRunToChatBody(input.body, { runId, instanceId: input.instanceId }) : input.body;
   const response = await fetchImpl(officialChatUrl(origin), {
     method: "POST",
     headers: {
@@ -146,8 +204,9 @@ export async function officialFreebuffChat(input: {
       authorization: `Bearer ${input.token}`,
       [FREEBUFF_MODEL_HEADER]: model,
       ...(input.instanceId ? { [FREEBUFF_INSTANCE_HEADER]: input.instanceId } : {}),
+      ...(input.userId ? { [FREEBUFF_ACTING_USER_HEADER]: input.userId } : {}),
     },
-    body: input.body,
+    body,
     redirect: "follow",
     signal: AbortSignal.timeout(120_000),
   });

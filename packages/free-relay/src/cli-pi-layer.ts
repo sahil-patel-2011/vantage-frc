@@ -271,6 +271,7 @@ async function chatViaOfficialLogin(
     model: session.model ?? cfg.model,
     body,
     instanceId: session.instanceId,
+    userId: creds.id,
   });
   return { status: result.status, contentType: result.contentType, text: result.text };
 }
