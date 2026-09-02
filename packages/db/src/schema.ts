@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   date,
   doublePrecision,
@@ -1503,7 +1504,8 @@ export const artifactLinks = pgTable("artifact_links", {
 export const cadConnections = pgTable("cad_connections", {
   id: uuid("id").primaryKey().defaultRandom(),
   orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** NULL = the org's shared team connection (0493_cad_team_connections.sql); readable by every member. */
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   platform: text("platform").$type<"onshape"|"fusion360">().notNull(),
   executionMode: text("execution_mode").$type<"hosted"|"local">().notNull(),
   label: text("label").notNull(),
@@ -2448,12 +2450,39 @@ export const scoutMedia = pgTable(
     capturedBy: uuid("captured_by")
       .notNull()
       .references(() => users.id),
+    // 0495_scout_media_pipeline: server-normalized photo shape + linkage + soft delete.
+    // (bytes / thumb_bytes are bytea and, like every bytea here, stay raw-SQL only.)
+    thumbContentType: text("thumb_content_type"),
+    thumbWidth: integer("thumb_width"),
+    thumbHeight: integer("thumb_height"),
+    width: integer("width"),
+    height: integer("height"),
+    /** sha256 of the normalized full — dedupes retakes per (org, event, team). */
+    checksumSha256: text("checksum_sha256"),
+    /** Offline clientId of the owning scout entry; resolved to entry_id on entry sync. */
+    entryClientId: text("entry_client_id"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: uuid("deleted_by").references(() => users.id),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("scout_media_org_client_uq").on(table.orgId, table.clientId),
+    index("scout_media_org_entry_live_idx").on(table.orgId, table.entryId),
+    index("scout_media_org_entry_client_live_idx").on(table.orgId, table.entryClientId),
+    index("scout_media_org_subject_live_idx").on(table.orgId, table.eventKey, table.teamKey),
   ],
 );
+
+/** Per-org pit media cap (0495). Absent row = 2000 items / 2 GiB defaults. */
+export const scoutMediaQuota = pgTable("scout_media_quota", {
+  orgId: uuid("org_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  maxItems: integer("max_items").notNull().default(2000),
+  maxBytes: bigint("max_bytes", { mode: "number" }).notNull().default(2147483648),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
+});
 
 /** Org opt-in for optional scouting voice notes (privacy consent versioned). */
 export const scoutVoiceOrgSettings = pgTable("scout_voice_org_settings", {
@@ -3616,6 +3645,8 @@ export const autonomousAgentRuns = pgTable(
     usageEventIds: jsonb("usage_event_ids").$type<string[]>().notNull().default([]),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
+    // 0498: cooperative cancel flag set by the run owner; the loop checks it between steps.
+    cancelRequestedAt: timestamp("cancel_requested_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,
   },
   (table) => [
@@ -3652,5 +3683,36 @@ export const autonomousAgentSteps = pgTable(
   (table) => [
     index("autonomous_agent_steps_run_seq_idx").on(table.runId, table.sequence),
     index("autonomous_agent_steps_org_created_idx").on(table.orgId, table.createdAt),
+  ],
+);
+
+/**
+ * 0498: one row per AI-led feature render — whether a real model produced the output
+ * (mode = model) or the deterministic template stood in (mode = template, with the reason).
+ * Written by renderWithModel (packages/agent/src/render.ts); read by /team/ai-policy.
+ */
+export const aiRenderAttempts = pgTable(
+  "ai_render_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    feature: text("feature").notNull(),
+    mode: text("mode").$type<"model" | "template">().notNull(),
+    modelId: text("model_id"),
+    provider: text("provider"),
+    fallbackReason: text("fallback_reason"),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("ai_render_attempts_org_created_idx").on(table.orgId, table.createdAt),
+    index("ai_render_attempts_org_feature_idx").on(table.orgId, table.feature),
   ],
 );

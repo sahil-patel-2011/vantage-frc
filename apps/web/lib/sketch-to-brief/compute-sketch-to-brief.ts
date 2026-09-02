@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { composeCadBriefDraft, detectMechanismCategory } from ".";
@@ -196,12 +195,12 @@ export async function deleteSketch(
 }
 
 /** Metered generation: composes the CAD brief draft + rule-compliance flags
- * through meteredAI (usage is ledgered like every other AI-metered feature)
+ * through renderWithModel — a real model call with the deterministic draft as fallback (usage is ledgered like every other AI-metered feature)
  * and persists the result for replay. */
 export async function generateBriefFromSketch(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; sketchId: string },
-): Promise<SketchToBriefView> {
+): Promise<SketchToBriefView & { render?: RenderOutcome }> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
     return setupRequired(
@@ -247,49 +246,48 @@ export async function generateBriefFromSketch(
     ),
   ]);
 
-  const requestId = `sketch-to-brief-${randomUUID()}`;
-  const brief = await meteredAI<CadBriefDraft>({
+  // Real model call on the org's adapter with the deterministic draft as fallback: the
+  // mechanism intent, section bullets and rule-flag summaries may be rewritten; categories,
+  // rule references, severities and source ids stay exactly as composed from the sketch,
+  // the kickoff rule notes and the design priorities.
+  const { value: brief, render } = await renderFeatureValue<CadBriefDraft>({
     client,
     orgId: org.orgId,
     userId: input.userId,
     feature: SKETCH_TO_BRIEF_FEATURE,
-    requestId,
-    estimatedCostUsd: 0,
-    provider: "local",
-    model: "vantage-sketch-to-brief-v1",
-    keySource: "local_cli",
+    value: composeCadBriefDraft({
+      sketchId: sketch.id,
+      notes: sketch.notes,
+      category: sketch.category,
+      answeredRuleNotes: answeredRuleResult.rows,
+      openRuleQuestions: openRuleResult.rows,
+      designPriorities: priorityResult.rows,
+      scoringActions: actionResult.rows,
+    }),
+    editableKeys: ["mechanismIntent", "bullets", "summary"],
+    instructions: `CAD design brief drafted from the sketch "${sketch.title}" (${sketch.category}). Sketch notes: ${sketch.notes?.slice(0, 1200) || "(none)"}. Rewrite the mechanism intent, each section's bullets and each rule flag's summary as clear engineering prose for the CAD lead, keeping the same number of bullets per section, every rule reference and every number exactly as given, and inventing no requirements the sketch and rule notes do not state.`,
+    maxTokens: 900,
     metadata: { sketchId: sketch.id, category: sketch.category },
-    invoke: async () => {
-      const value = composeCadBriefDraft({
-        sketchId: sketch.id,
-        notes: sketch.notes,
-        category: sketch.category,
-        answeredRuleNotes: answeredRuleResult.rows,
-        openRuleQuestions: openRuleResult.rows,
-        designPriorities: priorityResult.rows,
-        scoringActions: actionResult.rows,
-      });
-      const text = JSON.stringify(value);
-      return {
-        value,
-        promptTokens: Math.ceil(text.length / 4),
-        completionTokens: Math.ceil(text.length / 4),
-        costUsd: 0,
-        model: "vantage-sketch-to-brief-v1",
-        provider: "local",
-      };
-    },
   });
 
   await client.query(
     `INSERT INTO sketch_to_brief_briefs (org_id, sketch_id, title, brief, rule_flag_count, generated_by, created_by)
-     VALUES ($1, $2, $3, $4::jsonb, $5, 'local', $6)`,
-    [org.orgId, sketch.id, sketch.title, JSON.stringify(brief), brief.ruleFlags.length, input.userId],
+     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)`,
+    [
+      org.orgId,
+      sketch.id,
+      sketch.title,
+      JSON.stringify(brief),
+      brief.ruleFlags.length,
+      render.mode === "model" ? "ai" : "local",
+      input.userId,
+    ],
   );
   await client.query(`UPDATE sketch_to_brief_sketches SET status = 'brief_ready' WHERE id = $1 AND org_id = $2`, [
     sketch.id,
     org.orgId,
   ]);
 
-  return computeSketchToBriefView(client, { userId: input.userId, requestedOrg: org.orgId, seasonYear: sketch.seasonYear });
+  const view = await computeSketchToBriefView(client, { userId: input.userId, requestedOrg: org.orgId, seasonYear: sketch.seasonYear });
+  return { ...view, render };
 }

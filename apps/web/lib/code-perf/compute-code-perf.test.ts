@@ -156,7 +156,7 @@ describe("analyzeChange", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         updates.push({ sql, params });
         return { rows: [] };
       }
@@ -174,7 +174,7 @@ describe("analyzeChange", () => {
     // Auto avg 3.5 -> 6.5 (+3), teleop avg 10.5 -> 16.5 (+6): total +9 -> improved.
     expect(changeUpdate?.params).toContain("improved");
 
-    const usageInsert = updates.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = updates.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

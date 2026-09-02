@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { CHANGE_TYPES, SUBSYSTEMS, correlateChange, summarizeCodePerf } from ".";
 import type {
   ChangeType,
@@ -323,7 +322,7 @@ export async function deleteMatchResult(
 export async function analyzeChange(
   client: PoolClient,
   input: { orgId: string; userId: string; changeId: string },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const changeRow = await client.query<{ occurredOn: string; seasonYear: number }>(
     `SELECT occurred_on::text AS "occurredOn", season_year AS "seasonYear"
      FROM code_perf_changes WHERE id = $1 AND org_id = $2`,
@@ -342,27 +341,17 @@ export async function analyzeChange(
   );
   const matches = matchRows.rows.map(mapMatch);
 
-  const correlation = await meteredAI({
+  // Real model call on the org's adapter with the deterministic correlation as fallback:
+  // only the rationale prose may be rewritten; verdict, deltas and match windows stay computed.
+  const { value: correlation, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "code_perf",
-    requestId: `code-perf-analyze-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      changeId: input.changeId,
-      seasonYear: change.seasonYear,
-      note: "Deterministic before/after match-window correlation — no external model call",
-    },
-    invoke: async () => ({
-      value: correlateChange({ occurredOn: change.occurredOn }, matches),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-code-perf-v1",
-      provider: "vantage-local",
-    }),
+    value: correlateChange({ occurredOn: change.occurredOn }, matches),
+    editableKeys: ["rationale"],
+    instructions: `A robot-code change landed on ${change.occurredOn} (${change.seasonYear} season). Explain in 1-3 plain sentences for the software lead what the before/after match windows show about its effect, citing only the numbers in the document.`,
+    metadata: { changeId: input.changeId, seasonYear: change.seasonYear },
   });
 
   await client.query(
@@ -382,4 +371,5 @@ export async function analyzeChange(
       input.orgId,
     ],
   );
+  return render;
 }

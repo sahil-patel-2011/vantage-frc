@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureText, renderOutcomeOf } from "../ai-render/render";
 import { emitNotification } from "@vantage/core";
 import { buildMediaPostDraft } from "./media-content-helpers";
 import type {
@@ -307,29 +306,27 @@ export async function suggestMediaPostDraft(
     };
   }
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter for the caption; the deterministic draft stands in
+  // on any failure and the suggested due date is never delegated to the model.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "media_post_draft",
-    requestId: `media-post-draft-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      hasTitle: Boolean(title),
-      platform,
-      itemId: input.itemId ?? null,
-      note: "Deterministic caption/due draft — no external model call",
-    },
-    invoke: async () => ({
-      value: draft,
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-media-post-draft-v1",
-      provider: "vantage-local",
-    }),
+    prompt: [
+      `Draft a social post caption for the team's ${platform} account.`,
+      title ? `Title: ${title}` : "",
+      notes ? `Notes from the team: ${notes.slice(0, 2000)}` : "",
+      `Template caption (keep its structure and length; rewrite it to read naturally for ${platform}): ${draft.caption}`,
+      "Use only the title and notes above — no invented results, sponsors, hashtags for events that are not mentioned, or reach numbers. Return the caption text only.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    template: () => draft.caption,
+    maxTokens: 300,
+    metadata: { hasTitle: Boolean(title), platform, itemId: input.itemId ?? null },
   });
+  const result = { caption: rendered.text, dueAt: draft.dueAt };
 
   if (input.itemId) {
     await updateMediaContentItem(client, {
@@ -348,6 +345,7 @@ export async function suggestMediaPostDraft(
     dueAt: result.dueAt,
     generatedAt: new Date().toISOString(),
     feature: "media_post_draft",
+    render: renderOutcomeOf(rendered),
   };
 }
 

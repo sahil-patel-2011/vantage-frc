@@ -36,6 +36,46 @@ export async function GET(request: Request) {
       );
       if (!admin.rowCount) throw new Error("Organization administrator access required");
 
+      // Model-vs-template per feature (30 days) from ai_render_attempts (0498). Probed
+      // first so a database that has not run 0498 yet answers an empty table, not a 400.
+      const renderTablePresent = await client.query<{ present: boolean }>(
+        `SELECT to_regclass('public.ai_render_attempts') IS NOT NULL AS present`,
+      );
+      const renderAttempts = renderTablePresent.rows[0]?.present
+        ? (
+            await client.query<{
+              feature: string;
+              modelCount: string;
+              templateCount: string;
+              costUsd: string;
+              lastAt: string | null;
+              topFallbackReason: string | null;
+            }>(
+              `SELECT a.feature,
+                      count(*) FILTER (WHERE a.mode = 'model')::text AS "modelCount",
+                      count(*) FILTER (WHERE a.mode = 'template')::text AS "templateCount",
+                      COALESCE(sum(a.cost_usd), 0)::text AS "costUsd",
+                      max(a.created_at)::text AS "lastAt",
+                      (SELECT r.fallback_reason FROM ai_render_attempts r
+                         WHERE r.org_id = a.org_id AND r.feature = a.feature AND r.mode = 'template'
+                           AND r.created_at >= now() - interval '30 days'
+                         GROUP BY r.fallback_reason ORDER BY count(*) DESC LIMIT 1) AS "topFallbackReason"
+                 FROM ai_render_attempts a
+                WHERE a.org_id = $1::uuid AND a.created_at >= now() - interval '30 days'
+                GROUP BY a.org_id, a.feature
+                ORDER BY a.feature`,
+              [orgId],
+            )
+          ).rows.map((row) => ({
+            feature: row.feature,
+            modelCount: Number(row.modelCount) || 0,
+            templateCount: Number(row.templateCount) || 0,
+            costUsd: Number(row.costUsd) || 0,
+            lastAt: row.lastAt,
+            topFallbackReason: row.topFallbackReason,
+          }))
+        : [];
+
       const [policy, models, usage, pending, audit, budget] = await Promise.all([
         client.query(`SELECT * FROM org_ai_policies WHERE org_id=$1`, [orgId]),
         client.query(
@@ -88,6 +128,7 @@ export async function GET(request: Request) {
         },
         pendingApprovals: Number(pending.rows[0]?.count ?? 0),
         audit: audit.rows,
+        renderAttempts: { windowDays: 30, tablePresent: Boolean(renderTablePresent.rows[0]?.present), rows: renderAttempts },
         catalog: {
           features: knownAiFeatures(),
           tools: knownAiTools(),

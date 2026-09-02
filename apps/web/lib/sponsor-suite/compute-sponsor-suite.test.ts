@@ -90,7 +90,7 @@ describe("generateRoiReport", () => {
       if (sql.includes("SUM(amount_usd)") && sql.includes("sponsor_contributions WHERE org_id")) {
         return { rows: [{ actualUsd: "1800.00" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -112,7 +112,7 @@ describe("generateRoiReport", () => {
     const reportInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO sponsor_suite_roi_reports"));
     expect(reportInsert).toBeDefined();
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

@@ -523,8 +523,36 @@ function AllEvents({
                 {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()}{" "}
                 projected reach
               </small>
+              {item.impactActivityId ? (
+                <small style={{ display: "block", marginTop: 4 }}>
+                  <span className="app-badge good">Logged to Impact</span>{" "}
+                  <a href={hubHref("/business", "impact", view.orgId)}>open Community Impact</a>
+                </small>
+              ) : null}
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {!item.impactActivityId && item.status !== "canceled" ? (
+                <button
+                  type="button"
+                  className="app-button secondary sm"
+                  disabled={busy}
+                  title="Marks the event completed and logs it as a Community Impact activity"
+                  onClick={() => {
+                    const reached = window.prompt(
+                      `People actually reached at "${item.title}"? Leave blank to log the projected ${item.projectedPeopleReached}.`,
+                      "",
+                    );
+                    if (reached === null) return;
+                    mutate({
+                      action: "complete",
+                      eventId: item.id,
+                      actualPeopleReached: reached.trim() === "" ? undefined : Number(reached),
+                    });
+                  }}
+                >
+                  {item.status === "completed" ? "Log to Impact" : "Complete & log to Impact"}
+                </button>
+              ) : null}
               <select
                 value={item.status}
                 disabled={busy}

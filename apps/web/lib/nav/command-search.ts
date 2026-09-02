@@ -46,6 +46,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:drive-team-signals": ["drive team", "driver", "operator", "coach", "signals", "board"],
   // --- Competition · Scouting ---
   "competition:scouting": ["scout", "scouting", "data", "collect", "match data", "tablet"],
+  "competition:pit-photos": ["pit photos", "robot photos", "photo wall", "pictures", "gallery", "what does their robot look like"],
   "competition:forms": ["form builder", "schema", "pit scouting", "match form", "questions", "fields"],
   "competition:scout-coverage-live": ["coverage", "gaps", "who is scouting", "assignments", "unscouted"],
   "competition:shift-balancer": ["shifts", "rotation", "schedule scouts", "fatigue", "breaks", "lunch"],
@@ -113,7 +114,6 @@ const KEYWORDS: Record<string, string[]> = {
   "team:todos": ["todo", "tasks", "work", "to do", "assignments", "backlog"],
   "team:practice": ["practice", "drive practice", "cycles", "reps", "driving"],
   "team:season-planning-workspace": ["season plan", "milestones", "goals", "timeline", "roadmap"],
-  "team:task-board": ["task board", "kanban", "board", "tickets"],
   "team:goals-tracker": ["goals", "objectives", "targets", "okr"],
   "team:standup-digest": ["standup", "daily", "digest", "summary"],
   "team:meeting-autopilot": ["meeting", "agenda", "minutes", "notes"],
@@ -288,6 +288,9 @@ const KEYWORDS: Record<string, string[]> = {
     "manufacturing", "kanban", "parts board", "needs cam", "cam", "machining", "mill",
     "lathe", "waterjet", "router", "made parts", "to make", "make parts", "fabrication",
   ],
+  "build:parts": ["parts", "parts ledger", "stock", "inventory", "what do we have", "on hand", "reorder", "spares"],
+  "build:inventory": ["inventory", "stock", "parts list", "quantity", "part number"],
+  "build:orders-link": ["orders", "purchase request", "buy", "order parts"],
   "build:print-farm": [
     "3d print", "3d printing", "printer", "printers", "filament", "spool", "spools",
     "print queue", "pla", "petg", "abs", "print farm", "printing",

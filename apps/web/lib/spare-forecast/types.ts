@@ -1,18 +1,38 @@
 // Spare-parts failure-forecast domain types. Pure data shapes — no I/O, no framework imports.
-// A forecast bin is one inventory "spare" item cross-referenced against FMEA failure repeat
-// rate for its subsystem to project when it will run out before the season ends.
+// A forecast bin is one inventory "spare" item projected forward at a measured consumption
+// rate — preferring what the inventory ledger actually recorded leaving the shelf, falling
+// back to FMEA repeat-failure cadence — over a horizon that ends at the org's next registered
+// event (or a rolling offseason window when there is none). Every number names its source.
 
 export type ForecastUrgency = "critical" | "warning" | "watch" | "stable";
 
 export type PurchaseRequestStatus = "draft" | "approved" | "ordered" | "dismissed";
 
+/** Where the consumption rate came from. */
+export type ForecastRateSource = "ledger" | "fmea";
+
+/** Where the horizon came from. */
+export type ForecastHorizonSource = "event" | "offseason";
+
+export type ForecastHorizon = {
+  horizonDays: number;
+  horizonSource: ForecastHorizonSource;
+  /** ISO date the horizon ends on. */
+  horizonEndsOn: string;
+  /** Name of the registered event the horizon runs to, when horizonSource = 'event'. */
+  eventName: string | null;
+};
+
 /** Deterministic exhaustion projection for one spare bin, grounded only in supplied inputs. */
 export type ExhaustionForecast = {
   consumptionPerDay: number;
-  daysElapsed: number;
-  daysRemaining: number;
+  rateSource: ForecastRateSource;
+  horizonDays: number;
+  horizonSource: ForecastHorizonSource;
   projectedConsumptionRemaining: number;
   projectedShortfall: number;
+  /** Days until the bin hits zero at this rate, or null when the rate is zero. */
+  daysUntilExhaustion: number | null;
   willExhaust: boolean;
   recommendedOrderQty: number;
   urgency: ForecastUrgency;
@@ -42,6 +62,10 @@ export type SpareForecastLine = {
   subsystem: string | null;
   quantityOnHand: number;
   failureCount: number;
+  /** inventory_transactions reason='used' movements inside the observation window. */
+  ledgerEventCount: number;
+  observedPerDay: number | null;
+  fmeaPerDay: number;
   unitCost: number | null;
   forecast: ExhaustionForecast;
 };

@@ -6,6 +6,8 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { agendaItemKindLabel } from "../../lib/meeting-autopilot";
 import type { MeetingAutopilotView } from "../../lib/meeting-autopilot/compute-meeting-autopilot";
 import type { AgendaItem, MeetingAgenda } from "../../lib/meeting-autopilot/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 type LiveView = Extract<MeetingAutopilotView, { status: "live" }>;
 
@@ -16,6 +18,7 @@ export default function MeetingAutopilotClient() {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -66,6 +69,8 @@ export default function MeetingAutopilotClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -113,6 +118,8 @@ export default function MeetingAutopilotClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="meeting_autopilot" />
 
       {fetchFailed ? (
         (() => {

@@ -45,6 +45,8 @@ type PickClockView =
       alternates: PickClockRecommendation[];
       availableCount: number;
       excludedCount: number;
+      /** Present on the response to a recorded pick. */
+      recorded?: { teamKey: string; allianceSeed: number; pickSlot: DraftPickSlot; pickListId: string };
     }
   | {
       status: "setup_required";
@@ -54,6 +56,9 @@ type PickClockView =
     };
 
 type Me = { orgId?: string | null };
+
+type DraftPickSlot = "captain" | "first" | "second";
+const ALLIANCE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 function teamDisplay(rec: PickClockRecommendation): string {
   if (rec.teamNumber != null) return String(rec.teamNumber);
@@ -256,6 +261,12 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [skipOffset, setSkipOffset] = useState(0);
+  // Teams skipped by hand on the clock; sent back as `exclude` on every refresh.
+  const [manualExcludes, setManualExcludes] = useState<string[]>([]);
+  const [pickSeed, setPickSeed] = useState<number>(1);
+  const [pickSlot, setPickSlot] = useState<DraftPickSlot>("first");
+  const [recording, setRecording] = useState(false);
+  const [recordMessage, setRecordMessage] = useState("");
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -273,7 +284,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       });
   }, []);
 
-  const load = useCallback(async (id: string) => {
+  const load = useCallback(async (id: string, extraExcludes: string[] = []) => {
     if (!id) {
       setLoading(false);
       setFetchFailed(false);
@@ -297,7 +308,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         // Board unavailable — fall through with no extra exclusions rather than blocking a pick.
       }
 
-      const excludeParams = draftedTeamKeys
+      const excludeParams = [...new Set([...draftedTeamKeys, ...extraExcludes])]
         .map((key) => `&exclude=${encodeURIComponent(key)}`)
         .join("");
       const response = await fetch(
@@ -333,7 +344,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       return;
     }
     void load(orgId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial / org change only
+     
   }, [orgId]);
 
   useEffect(() => {
@@ -422,6 +433,53 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
     : [];
   const active = queue[Math.min(skipOffset, Math.max(0, queue.length - 1))] ?? null;
 
+  /** Stamp the pick onto THE pick list (drafted_alliance_seed / drafted_pick_slot) and refresh. */
+  const recordPick = async () => {
+    if (!active || !resolvedOrgId || recording) return;
+    setRecording(true);
+    setRecordMessage("");
+    try {
+      const response = await fetch("/api/strategy/pick-clock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: resolvedOrgId,
+          action: "record_pick",
+          teamKey: active.teamKey,
+          allianceSeed: pickSeed,
+          pickSlot,
+          rationale: active.headline,
+          exclude: manualExcludes,
+        }),
+      });
+      const data = (await response.json()) as PickClockView | { error?: string };
+      if (!response.ok || !("status" in data)) {
+        setRecordMessage("error" in data && data.error ? data.error : "Could not record the pick.");
+        return;
+      }
+      setView(data);
+      setSkipOffset(0);
+      setRecordMessage(
+        `Recorded ${teamDisplay(active)} as alliance ${pickSeed} ${pickSlot === "captain" ? "captain" : `${pickSlot} pick`} on the pick list.`,
+      );
+      if (pickSlot === "captain") setPickSlot("first");
+      else if (pickSlot === "first") setPickSlot("second");
+    } catch {
+      setRecordMessage("Could not reach the pick clock API.");
+    } finally {
+      setRecording(false);
+    }
+  };
+
+  /** Hand-skip the team on the clock; it stays excluded across refreshes. */
+  const skipActive = () => {
+    if (!active || !resolvedOrgId) return;
+    const next = [...new Set([...manualExcludes, active.teamKey])];
+    setManualExcludes(next);
+    setRecordMessage("");
+    void load(resolvedOrgId, next);
+  };
+
   return (
     <main className="module-page app-shell-page pck-page pck-workbench">
       <PageHeader
@@ -440,7 +498,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
               type="button"
               className="app-button secondary"
               onClick={() => {
-                if (resolvedOrgId) void load(resolvedOrgId);
+                if (resolvedOrgId) void load(resolvedOrgId, manualExcludes);
               }}
             >
               Refresh
@@ -571,6 +629,9 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
             >
               Show alternate
             </button>
+            <button type="button" className="app-button secondary" disabled={loading || recording} onClick={skipActive}>
+              Skip (exclude)
+            </button>
             <a
               className="app-button secondary"
               href={withOrgHref(
@@ -594,6 +655,40 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
               Chemistry
             </a>
           </div>
+
+          <form
+            className="pck-record"
+            aria-label="Record this pick"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void recordPick();
+            }}
+          >
+            <label>
+              Alliance
+              <select value={pickSeed} onChange={(event) => setPickSeed(Number(event.target.value))}>
+                {ALLIANCE_SEEDS.map((seed) => (
+                  <option key={seed} value={seed}>
+                    {seed}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Slot
+              <select value={pickSlot} onChange={(event) => setPickSlot(event.target.value as DraftPickSlot)}>
+                <option value="captain">Captain</option>
+                <option value="first">First pick</option>
+                <option value="second">Second pick</option>
+              </select>
+            </label>
+            <button type="submit" className="app-button" disabled={recording}>
+              {recording ? "Recording…" : "Record pick"}
+            </button>
+            <span className="app-muted">
+              {recordMessage || "Writes drafted seed + slot onto the ONE pick list, then excludes the team here."}
+            </span>
+          </form>
         </section>
       )}
 

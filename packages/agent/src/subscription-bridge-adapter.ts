@@ -13,6 +13,7 @@
  * failures throw with the provider's rate-limit text verbatim when present.
  */
 import type { ChatAdapter, ContextItem } from "./index";
+import { historyToPreamble, type ChatTurn } from "./thread-history";
 
 export type BridgeDegradedReason = "bridge-offline" | "bridge-timeout" | "bridge-rate-limited";
 
@@ -233,11 +234,24 @@ export class SubscriptionBridgeChatAdapter implements ChatAdapter {
     return this.lastModel;
   }
 
-  async complete(input: { message: string; context: ContextItem[]; promptCachingEnabled?: boolean }) {
+  /** The subscriber's plan pays for bridged turns — Vantage estimates and books $0. */
+  readonly prices = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
+
+  async complete(input: {
+    message: string;
+    context: ContextItem[];
+    history?: ChatTurn[];
+    promptCachingEnabled?: boolean;
+  }) {
     this.lastDegraded = null;
     this.fallbackProvider = null;
     try {
-      return await this.completeViaBridge(input);
+      // The bridge carries one prompt document, so the thread history is prepended
+      // to the message (the fallback adapters below receive it structured).
+      return await this.completeViaBridge({
+        ...input,
+        message: `${historyToPreamble(input.history)}${input.message}`,
+      });
     } catch (error) {
       const failure = asBridgeFailure(error);
       this.lastDegraded = failure.degraded;

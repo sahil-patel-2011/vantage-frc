@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "add-skill": {
           const targetUserId = trimmedOrNull(body.targetUserId, 64);
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
         case "request-mentor": {
           const skillCategory = oneOf<SkillCategory>(SKILL_CATEGORIES, body.skillCategory);
           if (!skillCategory) throw new Error("A valid skillCategory is required");
-          await requestMentor(client, {
+          render = await requestMentor(client, {
             orgId,
             userId,
             skillCategory,
@@ -128,7 +130,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeSkillsGraphView(client, { userId, requestedOrg: orgId });
+      const view = await computeSkillsGraphView(client, { userId, requestedOrg: orgId });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

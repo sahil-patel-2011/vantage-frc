@@ -32,11 +32,60 @@ describe("in-app notification prefs", () => {
     expect(prefKeyForNotificationType("calendar_updated")).toBe("calendarEvents");
     expect(prefKeyForNotificationType("scout_reminder")).toBe("scoutReminders");
     expect(prefKeyForNotificationType("scouting_coverage_gap")).toBe("scoutReminders");
+    expect(prefKeyForNotificationType("scout_shift_assigned")).toBe("scoutReminders");
     expect(prefKeyForNotificationType("sponsor_thank_you_due")).toBe("sponsorReminders");
     expect(prefKeyForNotificationType("sponsor_renewal_due")).toBe("sponsorReminders");
     expect(prefKeyForNotificationType("sponsor_followup_overdue")).toBe("sponsorReminders");
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.teamChat).toBe(true);
     expect(prefKeyForNotificationType("team_chat")).toBe("teamChat");
     expect(prefKeyForNotificationType("message_mention")).toBe("teamChat");
+  });
+});
+
+describe("emitNotificationToOrgMembers query", () => {
+  it("is a single INSERT ... SELECT gated by the recipient's preference key", async () => {
+    const { buildOrgFanoutQuery } = await import("./in-app-notifications");
+    const query = buildOrgFanoutQuery(
+      {
+        orgId: "org-1",
+        type: "team_chat",
+        payload: { conversationId: "c1", preview: "hi" },
+        excludeUserIds: ["author", "author"],
+        onlyUserIds: null,
+        conversationId: "c1",
+      },
+      { viaFunction: true },
+    );
+    expect(query.text).toMatch(/^INSERT INTO notifications \(user_id, org_id, type, payload\)\s+SELECT/);
+    expect(query.text).toContain("org_notification_targets($1::uuid, $6::text, $7::uuid)");
+    expect(query.text.match(/INSERT/g)).toHaveLength(1);
+    expect(query.values).toEqual([
+      "org-1",
+      "team_chat",
+      JSON.stringify({ conversationId: "c1", preview: "hi" }),
+      ["author"],
+      null,
+      "teamChat",
+      "c1",
+    ]);
+  });
+
+  it("falls back to the memberships/profiles join before migration 0494", async () => {
+    const { buildOrgFanoutQuery } = await import("./in-app-notifications");
+    const query = buildOrgFanoutQuery(
+      { orgId: "org-1", type: "message_mention", onlyUserIds: ["u1", "u2", "u1"] },
+      { viaFunction: false },
+    );
+    expect(query.text).not.toContain("org_notification_targets");
+    expect(query.text).toContain("FROM memberships m");
+    expect(query.text).toContain("notification_prefs->>$6::text");
+    expect(query.values[4]).toEqual(["u1", "u2"]);
+    expect(query.values[5]).toBe("teamChat");
+  });
+
+  it("passes a null preference key for ungated types", async () => {
+    const { buildOrgFanoutQuery } = await import("./in-app-notifications");
+    const query = buildOrgFanoutQuery({ orgId: "org-1", type: "team_access_request" }, { viaFunction: true });
+    expect(query.values[5]).toBeNull();
   });
 });

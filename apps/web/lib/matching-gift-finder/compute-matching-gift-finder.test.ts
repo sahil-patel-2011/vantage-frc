@@ -134,7 +134,7 @@ describe("generateDraftLetter", () => {
       if (sql.includes("FROM organizations WHERE id")) {
         return { rows: [{ teamNumber: 254 }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -158,7 +158,7 @@ describe("generateDraftLetter", () => {
     expect(draft.body).toContain("Team 254");
     expect(draft.body).toContain("https://example.com/match");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
     const draftInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO matching_gift_finder_drafts"));
     expect(draftInsert).toBeDefined();

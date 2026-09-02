@@ -112,7 +112,7 @@ describe("runSession", () => {
       if (sql.includes("COUNT(*)")) {
         return { rows: [{ count: "0" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO mock_judging_sessions")) {
+      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts") || sql.includes("INSERT INTO mock_judging_sessions")) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -133,7 +133,7 @@ describe("runSession", () => {
     expect(sessionInsert).toBeDefined();
     expect(sessionInsert?.params?.[0]).toBe(ORG);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 
@@ -142,7 +142,7 @@ describe("runSession", () => {
     const client = makeClient((sql, params) => {
       if (sql.includes("FROM mock_judging_prep_notes")) return { rows: [] };
       if (sql.includes("COUNT(*)")) return { rows: [{ count: "0" }] };
-      if (sql.includes("INSERT INTO mock_judging_sessions") || sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO mock_judging_sessions") || (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }

@@ -21,6 +21,12 @@ type Row = {
 
 function makeClient(opts: { membership: { orgId: string; teamNumber: number | null } | null; rows: Row[]; seasons: number[] }) {
   const query = vi.fn(async (sql: string) => {
+    if (sql.includes("FROM exit_interview_invites")) {
+      return { rows: [] };
+    }
+    if (sql.includes("FROM memberships m JOIN users u")) {
+      return { rows: [] };
+    }
     if (sql.includes("FROM memberships")) {
       return { rows: opts.membership ? [opts.membership] : [] };
     }

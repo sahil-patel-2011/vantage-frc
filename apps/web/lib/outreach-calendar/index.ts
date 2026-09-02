@@ -3,10 +3,67 @@
 
 export * from "./types";
 
+import type { ImpactCategory } from "../impact/types";
 import type { OutreachAudience, OutreachCalendarSummary, OutreachCategory, OutreachEvent } from "./types";
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+/**
+ * Calendar category -> impact_activities category (0038 CHECK list). Fundraising has no
+ * impact equivalent and lands in 'other' rather than being dressed up as community outreach.
+ */
+export const OUTREACH_TO_IMPACT_CATEGORY: Record<OutreachCategory, ImpactCategory> = {
+  stem_demo: "stem_demo",
+  mentoring: "mentoring",
+  community_event: "community_event",
+  fundraising: "other",
+  media: "media",
+  other: "other",
+};
+
+export type ImpactActivityDraft = {
+  title: string;
+  category: ImpactCategory;
+  occurredOn: string;
+  durationMinutes: number;
+  participantCount: number;
+  peopleReached: number;
+  audience: OutreachAudience;
+  location: string | null;
+  description: string | null;
+  seasonYear: number;
+};
+
+/**
+ * Convert a completed calendar event into the impact_activities row that substantiates the
+ * Impact award. Projections become the logged numbers unless the team supplies actuals —
+ * and an actual of 0 is honored, never "corrected" back to the projection.
+ */
+export function outreachEventToImpactActivity(
+  event: OutreachEvent,
+  actuals: { actualHours?: number | null; actualPeopleReached?: number | null; participantCount?: number | null } = {},
+): ImpactActivityDraft {
+  const hours = actuals.actualHours != null && Number.isFinite(actuals.actualHours) ? actuals.actualHours : event.projectedHours;
+  const people =
+    actuals.actualPeopleReached != null && Number.isFinite(actuals.actualPeopleReached)
+      ? actuals.actualPeopleReached
+      : event.projectedPeopleReached;
+  const participants =
+    actuals.participantCount != null && Number.isFinite(actuals.participantCount) ? actuals.participantCount : 0;
+  return {
+    title: event.title,
+    category: OUTREACH_TO_IMPACT_CATEGORY[event.category] ?? "other",
+    occurredOn: event.scheduledOn,
+    durationMinutes: Math.max(0, Math.round(hours * 60)),
+    participantCount: Math.max(0, Math.round(participants)),
+    peopleReached: Math.max(0, Math.round(people)),
+    audience: event.audience,
+    location: event.location,
+    description: event.notes,
+    seasonYear: event.seasonYear,
+  };
+}
 
 export type OutreachTargets = {
   /** Projected hours across the season that reads as a full-strength plan (default 80). */

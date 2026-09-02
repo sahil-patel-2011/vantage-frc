@@ -13,6 +13,7 @@ import {
 import { EmptyState } from "../../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+import { renderMarkdown } from "../../../lib/markdown/render";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
@@ -51,6 +52,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   const [searchDraft, setSearchDraft] = useState("");
   const [creating, setCreating] = useState(false);
   const [listQuery, setListQuery] = useState("");
+  // Pages open rendered (read); Edit swaps in the markdown form, Preview
+  // renders the draft in place of the textarea without saving.
+  const [editorMode, setEditorMode] = useState<"read" | "edit" | "preview">("read");
 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
@@ -104,6 +108,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     setDraftTags(data.selected.tags.join(", "));
     setDraftPinned(data.selected.pinned);
     setCreating(false);
+    setEditorMode("read");
   }, []);
 
   const load = useCallback(
@@ -211,6 +216,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
   function beginCreate() {
     setCreating(true);
+    setEditorMode("edit");
     setDraftTitle("");
     setDraftBody(`# ${teamLabel}\n\n`);
     setDraftTemplate("blank");
@@ -253,6 +259,14 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   }
 
   const bodyRemaining = MAX_BODY - draftBody.length;
+  const renderedDraft = useMemo(
+    () => (editorMode === "preview" ? renderMarkdown(draftBody) : ""),
+    [draftBody, editorMode],
+  );
+  const renderedSelected = useMemo(
+    () => (ready?.selected && !creating && editorMode === "read" ? renderMarkdown(ready.selected.body) : ""),
+    [creating, editorMode, ready?.selected],
+  );
 
   if (!view && !error) {
     return (
@@ -542,7 +556,56 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           </aside>
 
           <div className="kb-main kb-editor">
-            {creating || ready.selected ? (
+            {!creating && ready.selected && editorMode === "read" ? (
+              <>
+                <div className="kb-editor-head">
+                  <div>
+                    <h2>
+                      {ready.selected.pinned ? "★ " : ""}
+                      {ready.selected.title}
+                    </h2>
+                    <p className="kb-meta">
+                      {TEMPLATE_KIND_LABEL[ready.selected.templateKind]}
+                      {ready.selected.seasonYear != null ? ` · ${ready.selected.seasonYear}` : ""}
+                      {` · Updated ${fmtUpdated(ready.selected.updatedAt)}`}
+                      {ready.selected.updatedByName ? ` · ${ready.selected.updatedByName}` : ""}
+                    </p>
+                  </div>
+                  {ready.canEdit ? (
+                    <button type="button" className="button primary" disabled={busy} onClick={() => setEditorMode("edit")}>
+                      Edit
+                    </button>
+                  ) : null}
+                </div>
+                {ready.selected.body.trim() ? (
+                  <article className="kb-rendered" dangerouslySetInnerHTML={{ __html: renderedSelected }} />
+                ) : (
+                  <p className="kb-meta">This page is empty.</p>
+                )}
+                {ready.selected.tags.length ? (
+                  <p className="kb-meta">Tags: {ready.selected.tags.join(", ")}</p>
+                ) : null}
+                {ready.selected.links.length ? (
+                  <section className="kb-links-panel">
+                    <h2>Linked decisions / reviews</h2>
+                    <ul className="kb-list">
+                      {ready.selected.links.map((link) => (
+                        <li key={link.id} className="kb-list-item kb-list-item--static">
+                          <b>
+                            {link.targetType === "decision" ? "Decision" : "Review"}:{" "}
+                            {link.targetTitle ?? link.targetId}
+                          </b>
+                          <small>
+                            {link.targetSeasonYear != null ? `${link.targetSeasonYear}` : ""}
+                            {link.note ? ` · ${link.note}` : ""}
+                          </small>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+              </>
+            ) : creating || ready.selected ? (
               <>
                 <div className="kb-editor-head">
                   <div>
@@ -584,6 +647,14 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     {draftBody.length.toLocaleString()} / {MAX_BODY.toLocaleString()}
                     {bodyRemaining < 2000 ? ` · ${bodyRemaining.toLocaleString()} left` : ""}
                   </span>
+                  <button
+                    type="button"
+                    className="kb-link"
+                    aria-pressed={editorMode === "preview"}
+                    onClick={() => setEditorMode((mode) => (mode === "preview" ? "edit" : "preview"))}
+                  >
+                    {editorMode === "preview" ? "Write" : "Preview"}
+                  </button>
                 </div>
 
                 <label className="kb-field">
@@ -629,15 +700,26 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                     placeholder="drivetrain, cad"
                   />
                 </label>
-                <label className="kb-field">
-                  <span>Body</span>
-                  <textarea
-                    className="kb-body"
-                    value={draftBody}
-                    maxLength={MAX_BODY}
-                    onChange={(e) => setDraftBody(e.target.value)}
-                  />
-                </label>
+                {editorMode === "preview" ? (
+                  <div className="kb-field">
+                    <span>Preview</span>
+                    {draftBody.trim() ? (
+                      <article className="kb-rendered kb-preview" dangerouslySetInnerHTML={{ __html: renderedDraft }} />
+                    ) : (
+                      <p className="kb-meta">Nothing to preview yet.</p>
+                    )}
+                  </div>
+                ) : (
+                  <label className="kb-field">
+                    <span>Body</span>
+                    <textarea
+                      className="kb-body"
+                      value={draftBody}
+                      maxLength={MAX_BODY}
+                      onChange={(e) => setDraftBody(e.target.value)}
+                    />
+                  </label>
+                )}
                 <div className="kb-actions">
                   {/* Save is the one loud control. Cancel sits beside it while drafting;
                       Delete is always behind the overflow with a confirm step (no window.confirm). */}
@@ -664,7 +746,19 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                       },
                       ...(creating
                         ? [{ id: "cancel", label: "Cancel", disabled: busy, onClick: cancelCreate } satisfies ActionSpec]
-                        : []),
+                        : [
+                            {
+                              id: "cancel-edit",
+                              label: "Done editing",
+                              disabled: busy,
+                              hint: dirty ? "Discards unsaved changes" : "Back to the rendered page",
+                              onClick: () => {
+                                if (dirty && !window.confirm("Discard unsaved changes?")) return;
+                                if (ready.selected) hydrateFromSelected(ready);
+                                setEditorMode("read");
+                              },
+                            } satisfies ActionSpec,
+                          ]),
                       ...(!creating && ready.selected
                         ? [
                             {

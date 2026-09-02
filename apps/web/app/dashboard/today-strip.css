@@ -1,0 +1,40 @@
+/* Today strip — glanceable cards above the Home grid. */
+.dash-today{margin:0 0 18px}
+.dash-today ul{
+  list-style:none;margin:0;padding:0;display:grid;gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+}
+.dash-today li a{
+  display:flex;align-items:center;gap:12px;min-height:74px;padding:12px 14px;border-radius:var(--soft-radius);
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);text-decoration:none;
+  box-shadow:var(--soft-shadow);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+}
+.dash-today li a:hover{transform:translateY(-1px);box-shadow:var(--soft-shadow-lift);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+.dash-today li i{
+  display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:12px;
+  background:var(--soft-accent-soft);color:var(--soft-accent);
+}
+.dash-today li[data-tone="accent"] a{
+  background:var(--soft-accent);border-color:var(--soft-accent);color:var(--soft-accent-ink);
+  box-shadow:0 10px 24px color-mix(in srgb,var(--soft-accent) 28%,transparent);
+}
+.dash-today li[data-tone="accent"] i{background:color-mix(in srgb,#fff 18%,transparent);color:inherit}
+.dash-today li[data-tone="accent"] small,.dash-today li[data-tone="accent"] em{color:inherit;opacity:.85}
+.dash-today li[data-tone="warn"] i{background:color-mix(in srgb,var(--soft-warning) 14%,var(--soft-card));color:var(--soft-warning)}
+.dash-today-copy{display:grid;gap:2px;min-width:0}
+.dash-today-copy small{
+  color:var(--soft-muted);font:700 10.5px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
+}
+.dash-today-copy strong{
+  font:700 16px/1.15 var(--font-source-sans),ui-sans-serif;letter-spacing:-.02em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.dash-today-copy em{
+  color:var(--soft-muted);font:600 12px/1.2 var(--font-source-sans),ui-sans-serif;font-style:normal;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media (max-width:720px){
+  .dash-today ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .dash-today li:first-child{grid-column:1/-1}
+  .dash-today li a{min-height:64px;padding:10px 12px;gap:10px}
+}

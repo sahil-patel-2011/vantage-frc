@@ -23,11 +23,17 @@ function makeClient(state: {
   receipts: Map<string, { serverEntryId: string; payloadHash: string }>;
   inserts: unknown[][];
   updates: unknown[][];
+  /** Params of every `UPDATE scout_media … entry_client_id` linkage pass. */
+  mediaLinks?: unknown[][];
 }) {
   return {
     async query(sql: string, params: unknown[] = []) {
       if (sql.includes("FROM scout_schemas")) {
         return { rows: [schema], rowCount: 1 };
+      }
+      if (sql.includes("UPDATE scout_media")) {
+        state.mediaLinks?.push(params);
+        return { rows: [], rowCount: 0 };
       }
       if (sql.includes("FROM scout_sync_receipts")) {
         const clientId = String(params[1]);
@@ -108,6 +114,7 @@ describe("scouting sync upsert", () => {
       receipts: new Map<string, { serverEntryId: string; payloadHash: string }>(),
       inserts: [] as unknown[][],
       updates: [] as unknown[][],
+      mediaLinks: [] as unknown[][],
     };
     const repository = new ScoutingRepository(makeClient(state));
     const result = await repository.syncEntry("org-1", "user-1", entry);
@@ -118,6 +125,9 @@ describe("scouting sync upsert", () => {
     expect(state.receipts.get(entry.clientId)?.payloadHash).toBe(
       createHash("sha256").update(JSON.stringify(entry)).digest("hex"),
     );
+    // Pit photos queued against this entry's offline clientId get attached to
+    // the freshly minted entry id, scoped to the org.
+    expect(state.mediaLinks).toEqual([[result.entryId, "org-1", entry.clientId]]);
   });
 
   it("returns duplicate:true for an identical replay", async () => {

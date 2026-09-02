@@ -17,6 +17,7 @@ import {
   type ScoutSchema,
   type SyncEntry,
 } from "../src";
+import { assertMediaUrlForOrg, scoutMediaVariantUrl } from "../src/org-isolation";
 
 const ORG_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ORG_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -122,6 +123,28 @@ describe("SECURITY — images cannot leak across orgs", () => {
       { orgId: ORG_B, clientId: "b", kind: "photo", storageKey: `${ORG_B}/local/b` },
     ];
     expect(filterMediaForOrg(media, ORG_A).map((m) => m.clientId)).toEqual(["a"]);
+  });
+
+  it("rejects a foreign-org thumbnail variant URL — thumbs are as private as fulls", () => {
+    const thumb = scoutMediaVariantUrl(ORG_A, "img-1", "thumb");
+    const full = scoutMediaVariantUrl(ORG_A, "img-1");
+    expect(thumb).toBe(`/api/scouting/media/img-1?orgId=${ORG_A}&variant=thumb`);
+    expect(full).toBe(`/api/scouting/media/img-1?orgId=${ORG_A}`);
+    expect(orgIdFromUploadUrl(thumb)).toBe(ORG_A);
+
+    // A session scoped to Org B must never resolve Org A's thumb (or full).
+    expect(() => assertMediaUrlForOrg(thumb, ORG_B)).toThrow(OrgIsolationError);
+    expect(() => assertMediaUrlForOrg(thumb, ORG_B)).toThrow(/does not belong/i);
+    expect(() => assertMediaUrlForOrg(full, ORG_B)).toThrow(OrgIsolationError);
+    expect(() => assertMediaUrlForOrg(thumb, ORG_A)).not.toThrow();
+
+    // An unstamped probe (no orgId at all) is denied for every org.
+    expect(() => assertMediaUrlForOrg("/api/scouting/media/img-1?variant=thumb", ORG_A)).toThrow(
+      OrgIsolationError,
+    );
+    // The thumb variant is a URL detail, not an org: cross-tenant outbox checks still bite.
+    expect(wouldCrossOrgLeak(orgIdFromUploadUrl(thumb), ORG_B)).toBe(true);
+    expect(() => scoutMediaVariantUrl("", "img-1", "thumb")).toThrow(OrgIsolationError);
   });
 });
 

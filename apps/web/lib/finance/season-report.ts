@@ -130,6 +130,9 @@ export const EXTERNAL_INCOME_SQL = `
     SELECT id::text, COALESCE(received_on::timestamptz, updated_at), 'Funding — ' || name, received_usd, 'other'
     FROM finance_funding_sources
     WHERE org_id = $1::uuid AND received_usd > 0
+      -- One source of truth per kind (0504): grant / sponsor / fundraiser dollars
+      -- come from their own tables above; a desk line of that kind is a plan.
+      AND kind NOT IN ('grant', 'sponsor', 'fundraiser')
     UNION ALL
     SELECT id::text, COALESCE(decision_at, updated_at), 'Grant awarded', amount_awarded_usd, 'other'
     FROM grant_applications

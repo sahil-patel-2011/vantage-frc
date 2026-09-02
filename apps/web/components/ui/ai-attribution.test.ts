@@ -2,7 +2,11 @@
 // call produced the content; deterministic output is labeled "Computed from
 // your data". <AIAttribution kind=…> renders exactly this view.
 import { describe, expect, it } from "vitest";
-import { AI_ATTRIBUTION_LABELS, aiAttributionView } from "./ai-attribution-policy";
+import {
+  AI_ATTRIBUTION_LABELS,
+  aiAttributionView,
+  attributionKindForRenderMode,
+} from "./ai-attribution-policy";
 
 describe("aiAttributionView", () => {
   it("labels metered model output as AI (kind='ai')", () => {
@@ -24,7 +28,18 @@ describe("aiAttributionView", () => {
     expect(aiAttributionView().label).toBe(AI_ATTRIBUTION_LABELS.ai);
   });
 
-  it("keeps the two policy labels distinct", () => {
+  it("keeps the policy labels distinct", () => {
     expect(AI_ATTRIBUTION_LABELS.ai).not.toBe(AI_ATTRIBUTION_LABELS.computed);
+    expect(AI_ATTRIBUTION_LABELS.template).not.toBe(AI_ATTRIBUTION_LABELS.ai);
+  });
+
+  it("labels a template fallback as Template, never AI (kind='template')", () => {
+    const view = aiAttributionView("template");
+    expect(view.label).toContain("Template");
+    expect(view.label).not.toContain("AI");
+    expect(view.glyph).toBe("trend");
+    expect(attributionKindForRenderMode("model")).toBe("ai");
+    expect(attributionKindForRenderMode("template")).toBe("template");
+    expect(attributionKindForRenderMode(undefined)).toBe("template");
   });
 });

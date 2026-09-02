@@ -7,6 +7,7 @@ import { EmptyState, PageHeader, TabBar, ToolStrip } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
 import {
   clientCanAccessHub,
+  filterSponsorTabs,
   filterTabsByHubAccess,
   type ClientHubId,
 } from "../lib/nav/hub-access-filter";
@@ -128,8 +129,14 @@ export function ProductHubShell({
   const access = useClientAccessProfile();
   const accessHubId = hubId as ClientHubId;
   const primaryTabs = useMemo(
-    () => filterTabsByHubAccess(hubPrimaryTabs(hub), access.hubAccess, accessHubId),
-    [access.hubAccess, accessHubId, hub],
+    () =>
+      filterTabsByHubAccess(
+        // Sponsor CRM tabs disappear when the org funding profile turns sponsors off.
+        filterSponsorTabs(hubPrimaryTabs(hub), access.sponsorsAllowed),
+        access.hubAccess,
+        accessHubId,
+      ),
+    [access.hubAccess, access.sponsorsAllowed, accessHubId, hub],
   );
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
   const [tab, setTab] = useState(hub.defaultTab);
@@ -137,11 +144,11 @@ export function ProductHubShell({
   const [orgReady, setOrgReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
   const nestedTabs = useMemo(() => {
-    const all = hubNestedTabs(hub, workbenchId);
+    const all = filterSponsorTabs(hubNestedTabs(hub, workbenchId), access.sponsorsAllowed);
     if (all.length <= 1) return [];
     if (primaryTabs.some((entry) => entry.id === workbenchId)) return all;
     return filterTabsByHubAccess(all, access.hubAccess, accessHubId);
-  }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
+  }, [access.hubAccess, access.sponsorsAllowed, accessHubId, hub, primaryTabs, workbenchId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -246,7 +253,9 @@ export function ProductHubShell({
           }))}
         />
       ) : null}
-      <div className="product-hub-panel" data-hub-tab={tab}>
+      {/* data-embedded lets product-hub.css hide a leaf's own related-tools strip
+          with one selector instead of a per-page list. */}
+      <div className="product-hub-panel" data-hub-tab={tab} data-embedded="true">
         {(() => {
           if (!orgReady) {
             return (

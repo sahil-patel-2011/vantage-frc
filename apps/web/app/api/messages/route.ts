@@ -1,4 +1,4 @@
-import { auth, emitNotification, emitPreferredNotification } from "@vantage/core";
+import { auth, emitNotification, emitNotificationToOrgMembers } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
@@ -14,6 +14,32 @@ import {
 } from "../../../lib/messages/object-links";
 import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/history";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
+import {
+  canPostToChannel,
+  channelLabel,
+  GENERAL_SLUG,
+  shouldMirrorOutbound,
+} from "../../../lib/messages/channels";
+import {
+  archiveChannel,
+  canAnnounceFor,
+  channelMembership,
+  channelPermissions,
+  conversationMeta,
+  createChannel,
+  editMessage,
+  ensureGeneralChannel,
+  joinChannel,
+  leaveChannel,
+  listInbox as listInboxRows,
+  listSubteams,
+  markConversationRead,
+  orgHasAnnounceChannel,
+  recordDeleteRevision,
+  supportsChannels,
+  type ConversationMeta,
+  type ConversationRow,
+} from "../../../lib/messages/channels-db";
 import {
   attachSupervisor,
   dmPartyIds,
@@ -33,27 +59,15 @@ export const maxDuration = 10;
 const postLimiter = createRateLimiter({ limit: 60, windowMs: 60_000, namespace: "messages-post" });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const TEAM_CHANNEL_TITLE = "Team";
 const MAX_BODY = 8000;
 const POLL_LIMIT = 100;
-
-type ConversationRow = {
-  id: string;
-  kind: "team" | "dm";
-  title: string | null;
-  updatedAt: string;
-  lastMessageAt: string | null;
-  lastBody: string | null;
-  peerUserId: string | null;
-  peerName: string | null;
-  unreadCount: number;
-};
 
 type MessageRow = {
   id: string;
   body: string;
   createdAt: string;
   updatedAt: string;
+  editedAt: string | null;
   authorUserId: string;
   authorName: string;
   deletedAt: string | null;
@@ -137,7 +151,10 @@ async function enrichObjectLink(
 
   if (link.objectType === "task") {
     const row = await client.query<{ title: string }>(
-      `SELECT title FROM team_todos WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      // Tasks live on build_tasks (0502); legacy_id keeps old todo links resolving.
+      `SELECT title FROM build_tasks
+       WHERE org_id = $2::uuid AND (id = $1::uuid OR legacy_id = $1::uuid)
+       ORDER BY (id = $1::uuid) DESC LIMIT 1`,
       [link.objectId, orgId],
     );
     if (!row.rowCount) throw new Error("Linked task was not found");
@@ -217,8 +234,9 @@ async function listLinkTargets(
     const rows = await client
       .query<{ id: string; title: string; status: string }>(
         `SELECT id::text, title, status
-         FROM team_todos
+         FROM build_tasks
          WHERE org_id = $1::uuid
+           AND status <> 'archived'
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
          LIMIT ${limit}`,
@@ -425,126 +443,13 @@ async function attachMentions(client: PoolClient, orgId: string, messages: Messa
   }
 }
 
-async function ensureTeamChannel(client: PoolClient, orgId: string, userId: string) {
-  const existing = await client.query<{ id: string }>(
-    `SELECT id FROM org_conversations
-     WHERE org_id = $1 AND kind = 'team' AND lower(title) = lower($2)
-     LIMIT 1`,
-    [orgId, TEAM_CHANNEL_TITLE],
-  );
-  if (existing.rowCount) return existing.rows[0]!.id;
-
-  await client.query("SAVEPOINT ensure_team_channel");
-  try {
-    const inserted = await client.query<{ id: string }>(
-      `INSERT INTO org_conversations (org_id, kind, title, created_by)
-       VALUES ($1, 'team', $2, $3)
-       RETURNING id`,
-      [orgId, TEAM_CHANNEL_TITLE, userId],
-    );
-    await client.query("RELEASE SAVEPOINT ensure_team_channel");
-    return inserted.rows[0]!.id;
-  } catch {
-    await client.query("ROLLBACK TO SAVEPOINT ensure_team_channel");
-    const again = await client.query<{ id: string }>(
-      `SELECT id FROM org_conversations
-       WHERE org_id = $1 AND kind = 'team' AND lower(title) = lower($2)
-       LIMIT 1`,
-      [orgId, TEAM_CHANNEL_TITLE],
-    );
-    if (!again.rowCount) throw new Error("Could not open team channel");
-    return again.rows[0]!.id;
-  }
-}
-
+/** Inbox with the caller's announce permission resolved once (it gates `canPost` per channel). */
 async function listInbox(client: PoolClient, orgId: string, userId: string): Promise<ConversationRow[]> {
-  await ensureTeamChannel(client, orgId, userId);
-
-  // A supervised DM has three participants, so the peer label has to aggregate rather than join
-  // row-per-participant (that would duplicate the conversation in the inbox). Supervisors are
-  // excluded from the label: the thread is still "you and Sam", with a supervision banner inside.
-  const supervisionSupported = await supportsYouthProtection(client);
-  const peersCte = supervisionSupported
-    ? `peers AS (
-       SELECT p.conversation_id,
-              MIN(u.id::text)::uuid AS peer_user_id,
-              string_agg(u.name, ', ' ORDER BY lower(u.name)) AS peer_name
-       FROM org_conversation_participants p
-       INNER JOIN users u ON u.id = p.user_id
-       INNER JOIN visible v ON v.id = p.conversation_id AND v.kind = 'dm'
-       WHERE p.user_id <> $2
-         AND NOT EXISTS (
-           SELECT 1 FROM org_conversation_supervisors s
-           WHERE s.conversation_id = p.conversation_id AND s.supervisor_user_id = p.user_id
-         )
-       GROUP BY p.conversation_id
-     )`
-    : `peers AS (
-       SELECT p.conversation_id, u.id AS peer_user_id, u.name AS peer_name
-       FROM org_conversation_participants p
-       INNER JOIN users u ON u.id = p.user_id
-       INNER JOIN visible v ON v.id = p.conversation_id AND v.kind = 'dm'
-       WHERE p.user_id <> $2
-     )`;
-
-  const rows = await client.query<ConversationRow>(
-    `WITH visible AS (
-       SELECT c.id, c.kind, c.title, c.updated_at
-       FROM org_conversations c
-       WHERE c.org_id = $1
-         AND (
-           c.kind = 'team'
-           OR EXISTS (
-             SELECT 1 FROM org_conversation_participants p
-             WHERE p.conversation_id = c.id AND p.user_id = $2
-           )
-         )
-     ),
-     last_msg AS (
-       SELECT DISTINCT ON (m.conversation_id)
-         m.conversation_id,
-         m.body,
-         m.created_at,
-         m.deleted_at
-       FROM org_messages m
-       INNER JOIN visible v ON v.id = m.conversation_id
-       WHERE m.deleted_at IS NULL
-       ORDER BY m.conversation_id, m.created_at DESC
-     ),
-     ${peersCte},
-     reads AS (
-       SELECT conversation_id, last_read_at
-       FROM org_conversation_participants
-       WHERE user_id = $2
-     )
-     SELECT
-       v.id,
-       v.kind,
-       v.title,
-       v.updated_at::text AS "updatedAt",
-       lm.created_at::text AS "lastMessageAt",
-       CASE WHEN lm.deleted_at IS NULL THEN lm.body ELSE NULL END AS "lastBody",
-       pe.peer_user_id AS "peerUserId",
-       pe.peer_name AS "peerName",
-       COALESCE((
-         SELECT COUNT(*)::int
-         FROM org_messages m
-         LEFT JOIN reads r ON r.conversation_id = v.id
-         WHERE m.conversation_id = v.id
-           AND m.deleted_at IS NULL
-           AND m.author_user_id <> $2
-           AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
-       ), 0) AS "unreadCount"
-     FROM visible v
-     LEFT JOIN last_msg lm ON lm.conversation_id = v.id
-     LEFT JOIN peers pe ON pe.conversation_id = v.id
-     ORDER BY
-       CASE WHEN v.kind = 'team' THEN 0 ELSE 1 END,
-       COALESCE(lm.created_at, v.updated_at) DESC`,
-    [orgId, userId],
-  );
-
-  return rows.rows;
+  const [supervisionSupported, canAnnounce] = await Promise.all([
+    supportsYouthProtection(client),
+    canAnnounceFor(client, orgId, userId),
+  ]);
+  return listInboxRows(client, orgId, userId, { supervisionSupported, canAnnounce });
 }
 
 async function unreadTotal(client: PoolClient, orgId: string, userId: string): Promise<number> {
@@ -593,6 +498,30 @@ async function hasThreadUpdates(
   return Boolean(rows.rowCount);
 }
 
+/**
+ * Anything new in ANOTHER conversation the caller can see (RLS trims DMs)? Lets the rail badges
+ * move while the active thread is quiet. `inboxSince` is the client's newest lastMessageAt, so a
+ * deleted message can never keep this true forever.
+ */
+async function hasInboxUpdates(
+  client: PoolClient,
+  orgId: string,
+  conversationId: string,
+  inboxSince: string | null,
+): Promise<boolean> {
+  if (!inboxSince) return false;
+  const rows = await client.query(
+    `SELECT 1 FROM org_messages
+     WHERE org_id = $1::uuid
+       AND conversation_id <> $2::uuid
+       AND deleted_at IS NULL
+       AND created_at > $3::timestamptz
+     LIMIT 1`,
+    [orgId, conversationId, inboxSince],
+  );
+  return Boolean(rows.rowCount);
+}
+
 async function listMessages(
   client: PoolClient,
   orgId: string,
@@ -601,7 +530,7 @@ async function listMessages(
   since?: string | null,
   options?: { markRead?: boolean; before?: { createdAt: string; id: string | null } | null },
 ): Promise<{
-  conversation: ConversationRow | null;
+  meta: ConversationMeta;
   messages: MessageRow[];
   pinned: MessageRow[];
   hasEarlier: boolean;
@@ -610,121 +539,70 @@ async function listMessages(
   supervisors: SupervisorRef[];
   supervisionNotice: string;
 }> {
-  const access = await client.query<{ kind: "team" | "dm"; title: string | null }>(
-    `SELECT kind, title FROM org_conversations WHERE id = $1 AND org_id = $2`,
-    [conversationId, orgId],
-  );
-  if (!access.rowCount) throw new Error("Conversation not found");
+  const meta = await conversationMeta(client, orgId, conversationId);
+  if (!meta) throw new Error("Conversation not found");
 
   const pinsSupported = await supportsMessagePins(client);
   const mentionsSupported = await supportsMessageMentions(client);
+  const channelsSupported = await supportsChannels(client);
   const before = since ? null : (options?.before ?? null);
+
+  // Column fragments differ by which migrations have run; the row shape never does.
+  const updatedCol = pinsSupported ? `COALESCE(m.updated_at, m.created_at)` : `COALESCE(m.deleted_at, m.created_at)`;
+  const editedCol = channelsSupported ? `m.edited_at::text` : `NULL::text`;
+  const pinnedAtCol = pinsSupported ? `m.pinned_at::text` : `NULL::text`;
+  const pinnedByCol = pinsSupported ? `m.pinned_by` : `NULL::uuid`;
+  const selectCols = `
+             m.id,
+             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
+             m.created_at::text AS "createdAt",
+             ${updatedCol}::text AS "updatedAt",
+             ${editedCol} AS "editedAt",
+             m.author_user_id AS "authorUserId",
+             COALESCE(u.name, 'Member') AS "authorName",
+             m.deleted_at::text AS "deletedAt",
+             ${pinnedAtCol} AS "pinnedAt",
+             ${pinnedByCol} AS "pinnedBy",
+             (m.author_user_id = $3) AS mine`;
 
   let messageList: MessageRow[];
   let hasEarlier = false;
 
   if (since) {
     // Incremental poll: everything changed after the client's watermark.
-    const messages = pinsSupported
-      ? await client.query<MessageRow>(
-          `SELECT
-             m.id,
-             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-             m.created_at::text AS "createdAt",
-             COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
-             m.author_user_id AS "authorUserId",
-             COALESCE(u.name, 'Member') AS "authorName",
-             m.deleted_at::text AS "deletedAt",
-             m.pinned_at::text AS "pinnedAt",
-             m.pinned_by AS "pinnedBy",
-             (m.author_user_id = $3) AS mine
-           FROM org_messages m
-           LEFT JOIN users u ON u.id = m.author_user_id
-           WHERE m.conversation_id = $1
-             AND m.org_id = $2
-             AND COALESCE(m.updated_at, m.created_at) > $4::timestamptz
-           ORDER BY m.created_at ASC
-           LIMIT ${POLL_LIMIT}`,
-          [conversationId, orgId, userId, since],
-        )
-      : await client.query<MessageRow>(
-          `SELECT
-             m.id,
-             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-             m.created_at::text AS "createdAt",
-             COALESCE(m.deleted_at, m.created_at)::text AS "updatedAt",
-             m.author_user_id AS "authorUserId",
-             COALESCE(u.name, 'Member') AS "authorName",
-             m.deleted_at::text AS "deletedAt",
-             NULL::text AS "pinnedAt",
-             NULL::uuid AS "pinnedBy",
-             (m.author_user_id = $3) AS mine
-           FROM org_messages m
-           LEFT JOIN users u ON u.id = m.author_user_id
-           WHERE m.conversation_id = $1
-             AND m.org_id = $2
-             AND (
-               m.created_at > $4::timestamptz
-               OR (m.deleted_at IS NOT NULL AND m.deleted_at > $4::timestamptz)
-             )
-           ORDER BY m.created_at ASC
-           LIMIT ${POLL_LIMIT}`,
-          [conversationId, orgId, userId, since],
-        );
+    const changedPredicate = pinsSupported
+      ? `COALESCE(m.updated_at, m.created_at) > $4::timestamptz`
+      : `(m.created_at > $4::timestamptz OR (m.deleted_at IS NOT NULL AND m.deleted_at > $4::timestamptz))`;
+    const messages = await client.query<MessageRow>(
+      `SELECT ${selectCols}
+       FROM org_messages m
+       LEFT JOIN users u ON u.id = m.author_user_id
+       WHERE m.conversation_id = $1
+         AND m.org_id = $2
+         AND ${changedPredicate}
+       ORDER BY m.created_at ASC
+       LIMIT ${POLL_LIMIT}`,
+      [conversationId, orgId, userId, since],
+    );
     messageList = messages.rows;
   } else {
     // Initial load or a "Show earlier messages" page: fetch the NEWEST rows
     // before the cursor (page size + 1 sentinel), then reverse for display.
     // Without this an active conversation opened at its oldest 100 messages.
-    const rows = pinsSupported
-      ? await client.query<MessageRow>(
-          `SELECT
-             m.id,
-             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-             m.created_at::text AS "createdAt",
-             COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
-             m.author_user_id AS "authorUserId",
-             COALESCE(u.name, 'Member') AS "authorName",
-             m.deleted_at::text AS "deletedAt",
-             m.pinned_at::text AS "pinnedAt",
-             m.pinned_by AS "pinnedBy",
-             (m.author_user_id = $3) AS mine
-           FROM org_messages m
-           LEFT JOIN users u ON u.id = m.author_user_id
-           WHERE m.conversation_id = $1
-             AND m.org_id = $2
-             AND (
-               $4::timestamptz IS NULL
-               OR (m.created_at, m.id) < ($4::timestamptz, COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
-             )
-           ORDER BY m.created_at DESC, m.id DESC
-           LIMIT ${HISTORY_PAGE_SIZE + 1}`,
-          [conversationId, orgId, userId, before?.createdAt ?? null, before?.id ?? null],
-        )
-      : await client.query<MessageRow>(
-          `SELECT
-             m.id,
-             CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-             m.created_at::text AS "createdAt",
-             COALESCE(m.deleted_at, m.created_at)::text AS "updatedAt",
-             m.author_user_id AS "authorUserId",
-             COALESCE(u.name, 'Member') AS "authorName",
-             m.deleted_at::text AS "deletedAt",
-             NULL::text AS "pinnedAt",
-             NULL::uuid AS "pinnedBy",
-             (m.author_user_id = $3) AS mine
-           FROM org_messages m
-           LEFT JOIN users u ON u.id = m.author_user_id
-           WHERE m.conversation_id = $1
-             AND m.org_id = $2
-             AND (
-               $4::timestamptz IS NULL
-               OR (m.created_at, m.id) < ($4::timestamptz, COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
-             )
-           ORDER BY m.created_at DESC, m.id DESC
-           LIMIT ${HISTORY_PAGE_SIZE + 1}`,
-          [conversationId, orgId, userId, before?.createdAt ?? null, before?.id ?? null],
-        );
+    const rows = await client.query<MessageRow>(
+      `SELECT ${selectCols}
+       FROM org_messages m
+       LEFT JOIN users u ON u.id = m.author_user_id
+       WHERE m.conversation_id = $1
+         AND m.org_id = $2
+         AND (
+           $4::timestamptz IS NULL
+           OR (m.created_at, m.id) < ($4::timestamptz, COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid))
+         )
+       ORDER BY m.created_at DESC, m.id DESC
+       LIMIT ${HISTORY_PAGE_SIZE + 1}`,
+      [conversationId, orgId, userId, before?.createdAt ?? null, before?.id ?? null],
+    );
     const page = trimHistoryPage(rows.rows, HISTORY_PAGE_SIZE);
     messageList = page.messages;
     hasEarlier = page.hasEarlier;
@@ -739,6 +617,7 @@ async function listMessages(
                m.body,
                m.created_at::text AS "createdAt",
                COALESCE(m.updated_at, m.created_at)::text AS "updatedAt",
+               ${editedCol} AS "editedAt",
                m.author_user_id AS "authorUserId",
                COALESCE(u.name, 'Member') AS "authorName",
                m.deleted_at::text AS "deletedAt",
@@ -768,20 +647,9 @@ async function listMessages(
   await attachObjectLinks(client, orgId, [...messageList, ...pinned]);
 
   if (options?.markRead !== false) {
-    await client.query(
-      `INSERT INTO org_conversation_participants (conversation_id, user_id, last_read_at)
-       SELECT $1, $2, now()
-       WHERE EXISTS (SELECT 1 FROM org_conversations c WHERE c.id = $1 AND c.kind = 'team')
-          OR EXISTS (
-            SELECT 1 FROM org_conversation_participants p
-            WHERE p.conversation_id = $1 AND p.user_id = $2
-          )
-       ON CONFLICT (conversation_id, user_id)
-       DO UPDATE SET last_read_at = now()`,
-      [conversationId, userId],
-    );
+    await markConversationRead(client, orgId, userId, meta);
 
-    if (access.rows[0]!.kind === "dm") {
+    if (meta.kind === "dm") {
       await client.query(
         `UPDATE notifications
          SET read_at = now()
@@ -792,15 +660,13 @@ async function listMessages(
            AND payload->>'conversationId' = $3`,
         [userId, orgId, conversationId],
       );
-    }
-
-    if (access.rows[0]!.kind === "team") {
+    } else {
       await client.query(
         `UPDATE notifications
          SET read_at = now()
          WHERE user_id = $1
            AND org_id = $2
-           AND type = 'message_mention'
+           AND type IN ('message_mention', 'team_chat')
            AND read_at IS NULL
            AND payload->>'conversationId' = $3`,
         [userId, orgId, conversationId],
@@ -808,15 +674,11 @@ async function listMessages(
     }
   }
 
-  const inbox = await listInbox(client, orgId, userId);
-  const conversation = inbox.find((item) => item.id === conversationId) ?? null;
-
   // Both parties always see who else is in the room and why. This is not dismissible in the UI.
-  const supervisors =
-    access.rows[0]!.kind === "dm" ? await listSupervisors(client, conversationId) : [];
+  const supervisors = meta.kind === "dm" ? await listSupervisors(client, conversationId) : [];
 
   return {
-    conversation,
+    meta,
     messages: messageList,
     pinned,
     hasEarlier,
@@ -947,18 +809,40 @@ async function sendMessage(
   if (!trimmed) throw new Error("Message body is required");
   if (trimmed.length > MAX_BODY) throw new Error(`Message must be ${MAX_BODY} characters or fewer`);
 
-  const conversation = await client.query<{ kind: "team" | "dm" }>(
-    `SELECT kind FROM org_conversations WHERE id = $1 AND org_id = $2`,
-    [conversationId, orgId],
-  );
-  if (!conversation.rowCount) throw new Error("Conversation not found");
+  const meta = await conversationMeta(client, orgId, conversationId);
+  if (!meta) throw new Error("Conversation not found");
 
-  const kind = conversation.rows[0]!.kind;
-  if (kind === "dm") await guardDmSend(client, orgId, userId, conversationId);
+  const kind = meta.kind;
+  const channelsSupported = await supportsChannels(client);
+  if (kind === "dm") {
+    await guardDmSend(client, orgId, userId, conversationId);
+  } else {
+    // Channel gate, enforced here AND by the org_messages_channel_guard trigger (0494).
+    const [membership, canAnnounce] = await Promise.all([
+      channelMembership(client, conversationId, userId),
+      canAnnounceFor(client, orgId, userId),
+    ]);
+    const gate = canPostToChannel({
+      kind,
+      archived: Boolean(meta.archivedAt),
+      isMember: membership.member,
+      canAnnounce,
+    });
+    if (!gate.ok) throw new Error(gate.reason);
+    if (channelsSupported && !membership.member) {
+      // #general / open channels / announce (for an announcer) auto-join on first post.
+      await client.query(
+        `INSERT INTO org_conversation_members (org_id, conversation_id, user_id, role)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'member')
+         ON CONFLICT (conversation_id, user_id) DO NOTHING`,
+        [orgId, conversationId, userId],
+      );
+    }
+  }
   const mentionsSupported = await supportsMessageMentions(client);
 
-  if (objectLink && kind !== "team") {
-    throw new Error("Object links are only supported on the team channel");
+  if (objectLink && kind === "dm") {
+    throw new Error("Object links are only supported in team channels");
   }
   if (objectLink) {
     const linksTable = await client.query(
@@ -979,13 +863,7 @@ async function sendMessage(
   );
 
   await client.query(`UPDATE org_conversations SET updated_at = now() WHERE id = $1`, [conversationId]);
-  await client.query(
-    `INSERT INTO org_conversation_participants (conversation_id, user_id, last_read_at)
-     VALUES ($1, $2, now())
-     ON CONFLICT (conversation_id, user_id)
-     DO UPDATE SET last_read_at = now()`,
-    [conversationId, userId],
-  );
+  await markConversationRead(client, orgId, userId, meta);
 
   const messageId = inserted.rows[0]!.id;
 
@@ -1017,8 +895,7 @@ async function sendMessage(
         },
       });
     }
-  }
-  if (kind === "team") {
+  } else {
     const members = await client.query<{ id: string; name: string; email: string }>(
       `SELECT u.id, u.name, u.email
        FROM memberships m
@@ -1030,78 +907,86 @@ async function sendMessage(
       ? resolveMentionedUserIds(trimmed, members.rows, claimedMentionIds, userId)
       : [];
     if (mentionedIds.length) {
-      for (const mentionedUserId of mentionedIds) {
-        await client.query(
-          `INSERT INTO org_message_mentions (message_id, org_id, mentioned_user_id)
-           VALUES ($1, $2, $3)
-           ON CONFLICT DO NOTHING`,
-          [messageId, orgId, mentionedUserId],
-        );
-      }
+      await client.query(
+        `INSERT INTO org_message_mentions (message_id, org_id, mentioned_user_id)
+         SELECT $1::uuid, $2::uuid, unnest($3::uuid[])
+         ON CONFLICT DO NOTHING`,
+        [messageId, orgId, mentionedIds],
+      );
     }
 
     const author = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [userId]);
     const fromName = author.rows[0]?.name ?? "Teammate";
     const preview = trimmed.slice(0, 120);
     const href = `/team?tab=messages&orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
-    const mentioned = new Set(mentionedIds);
-    for (const mentionedUserId of mentionedIds) {
-      await emitPreferredNotification(client, {
-        userId: mentionedUserId,
-        orgId,
-        type: "message_mention",
-        payload: {
-          conversationId,
-          messageId,
-          preview,
-          fromUserId: userId,
-          fromName,
-          title: "You were mentioned in Team chat",
-          body: `${fromName} mentioned you: ${preview}`,
-          href,
-        },
-      });
-    }
-    for (const member of members.rows) {
-      if (member.id === userId || mentioned.has(member.id)) continue;
-      await emitPreferredNotification(client, {
-        userId: member.id,
-        orgId,
-        type: "team_chat",
-        payload: {
-          conversationId,
-          messageId,
-          preview,
-          fromUserId: userId,
-          fromName,
-          title: "New team chat message",
-          body: `${fromName}: ${preview}`,
-          href,
-        },
-      });
-    }
+    const isGeneral = kind === "team" && (meta.slug === GENERAL_SLUG || !meta.slug);
+    const label = channelLabel({ kind, slug: meta.slug, title: meta.title });
+    // Subteam channels notify their members; #general and announcements reach the whole org.
+    const audienceConversationId = channelsSupported && kind === "subteam" ? conversationId : null;
 
-    await maybeBridgeTeamSlackMessage(client, {
+    // Two statements for the whole team instead of two queries per member (0494 adds the
+    // SECURITY DEFINER audience function so a teammate's opt-out is finally honoured).
+    await emitNotificationToOrgMembers(client, {
       orgId,
-      userId,
-      messageId,
-      conversationId,
-      body: trimmed,
+      type: "message_mention",
+      onlyUserIds: mentionedIds,
+      excludeUserIds: [userId],
+      payload: {
+        conversationId,
+        messageId,
+        preview,
+        fromUserId: userId,
+        fromName,
+        title: isGeneral ? "You were mentioned in Team chat" : `You were mentioned in ${label}`,
+        body: `${fromName} mentioned you: ${preview}`,
+        href,
+      },
     });
+    await emitNotificationToOrgMembers(client, {
+      orgId,
+      type: "team_chat",
+      excludeUserIds: [userId, ...mentionedIds],
+      conversationId: audienceConversationId,
+      payload: {
+        conversationId,
+        messageId,
+        preview,
+        fromUserId: userId,
+        fromName,
+        title: isGeneral ? "New team chat message" : `New message in ${label}`,
+        body: `${fromName}: ${preview}`,
+        href,
+      },
+    });
+
+    // Outbound bridges carry announcement channels; #general only until the team has one.
+    const mirror = shouldMirrorOutbound({
+      kind,
+      slug: meta.slug ?? (isGeneral ? GENERAL_SLUG : null),
+      orgHasAnnounceChannel: await orgHasAnnounceChannel(client, orgId),
+    });
+    if (mirror) {
+      await maybeBridgeTeamSlackMessage(client, {
+        orgId,
+        userId,
+        messageId,
+        conversationId,
+        body: trimmed,
+      });
+      if (objectLink) {
+        await maybeBridgeObjectLinkedMessage(client, {
+          orgId,
+          userId,
+          messageId,
+          conversationId,
+          body: trimmed,
+          objectLink,
+        });
+      }
+    }
   }
 
-  if (kind === "team" && objectLink) {
-    await maybeBridgeObjectLinkedMessage(client, {
-      orgId,
-      userId,
-      messageId,
-      conversationId,
-      body: trimmed,
-      objectLink,
-    });
-  }
-
-  return { ...inserted.rows[0]!, objectLink };
+  return { ...inserted.rows[0]!, editedAt: null, objectLink };
 }
 
 async function setPinned(
@@ -1115,7 +1000,7 @@ async function setPinned(
     throw new Error("Pinned notes require migration 0045_org_message_pins");
   }
 
-  const row = await client.query<{ id: string; kind: "team" | "dm" }>(
+  const row = await client.query<{ id: string; kind: ConversationMeta["kind"] }>(
     `SELECT m.id, c.kind
      FROM org_messages m
      INNER JOIN org_conversations c ON c.id = m.conversation_id
@@ -1123,7 +1008,7 @@ async function setPinned(
     [messageId, orgId],
   );
   if (!row.rowCount) throw new Error("Message not found");
-  if (row.rows[0]!.kind !== "team") throw new Error("Only team-channel messages can be pinned");
+  if (row.rows[0]!.kind === "dm") throw new Error("Only channel messages can be pinned");
 
   if (pinned) {
     const updated = await client.query(
@@ -1172,6 +1057,33 @@ async function youthProtectionState(
   return { supported, dmMode, viewerClass, canManage };
 }
 
+/** Announce/create permission plus the edit-window class the client needs to draw controls. */
+async function viewerChannelState(client: PoolClient, orgId: string, userId: string) {
+  const [permissions, youthProtection] = await Promise.all([
+    channelPermissions(client, orgId, userId),
+    youthProtectionState(client, orgId, userId),
+  ]);
+  return {
+    youthProtection,
+    channelPermissions: {
+      ...permissions,
+      // Mentors and admins may edit at any time; students get the 15-minute window.
+      unlimitedEdit: permissions.canAnnounce || youthProtection.canManage || youthProtection.viewerClass === "adult",
+    },
+  };
+}
+
+async function inboxSnapshot(client: PoolClient, orgId: string, userId: string) {
+  const conversations = await listInbox(client, orgId, userId);
+  const viewer = await viewerChannelState(client, orgId, userId);
+  return {
+    currentUserId: userId,
+    conversations,
+    unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+    ...viewer,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
@@ -1180,6 +1092,7 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "inbox";
     const conversationId = url.searchParams.get("conversationId");
     const since = url.searchParams.get("since");
+    const inboxSince = url.searchParams.get("inboxSince");
     const beforeRaw = url.searchParams.get("before");
     const beforeIdRaw = url.searchParams.get("beforeId");
     const before =
@@ -1191,12 +1104,88 @@ export async function GET(request: Request) {
         : null;
     const waitMs = clampWaitMs(url.searchParams.get("wait"));
     if (!orgId) throw new Error("orgId is required");
+    const userId = session.user.id;
 
-    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireMembership(client, orgId, session.user.id);
+    if (conversationId) {
+      if (!UUID_RE.test(conversationId)) throw new Error("Conversation not found");
+
+      const readThread = (client: PoolClient) =>
+        listMessages(client, orgId, userId, conversationId, since, {
+          before,
+          // Paging back through history should not rewrite read state; the
+          // initial load and incremental polls still mark the thread read.
+          markRead: !before,
+        });
+
+      const fullRead = async (client: PoolClient) => {
+        const thread = await readThread(client);
+        const snapshot = await inboxSnapshot(client, orgId, userId);
+        const { meta, ...rest } = thread;
+        return {
+          ...snapshot,
+          ...rest,
+          conversation: snapshot.conversations.find((item) => item.id === meta.id) ?? null,
+        };
+      };
+
+      // Long poll. The connection is NOT held while we wait: one short withRls asks "anything
+      // new?", the sleep happens outside it, and the full read runs only once there is something
+      // to read (or when the deadline passes, in which case the client gets the inbox it needs
+      // plus an empty delta). An old client that sends `since` without `wait` skips all of this.
+      if (waitMs > 0 && since) {
+        const deadline = Date.now() + waitMs;
+        const probe = async (client: PoolClient) => {
+          const pins = await supportsMessagePins(client);
+          if (await hasThreadUpdates(client, orgId, conversationId, since, pins)) return true;
+          return hasInboxUpdates(client, orgId, conversationId, inboxSince);
+        };
+
+        const initial = await withRls({ userId, orgId }, async (client) => {
+          await requireMembership(client, orgId, userId);
+          if (await probe(client)) return { changed: true as const, data: await fullRead(client) };
+          return { changed: false as const, data: await inboxSnapshot(client, orgId, userId) };
+        });
+        if (initial.changed) return Response.json(initial.data);
+
+        let changed = false;
+        while (Date.now() < deadline) {
+          const remaining = deadline - Date.now();
+          if (remaining <= 0) break;
+          await sleep(Math.min(LONG_POLL_TICK_MS, remaining));
+          changed = await withRls({ userId, orgId }, (client) => probe(client));
+          if (changed) break;
+        }
+
+        if (changed) {
+          const data = await withRls({ userId, orgId }, async (client) => {
+            await requireMembership(client, orgId, userId);
+            return fullRead(client);
+          });
+          return Response.json(data);
+        }
+
+        // Empty delta. `supervisors`, `pinsSupported` and friends are deliberately absent: the
+        // client only applies those keys when present, so nothing already on screen is reset.
+        return Response.json({
+          ...initial.data,
+          conversation: initial.data.conversations.find((item) => item.id === conversationId) ?? null,
+          messages: [] as MessageRow[],
+          timedOut: true,
+        });
+      }
+
+      const data = await withRls({ userId, orgId }, async (client) => {
+        await requireMembership(client, orgId, userId);
+        return fullRead(client);
+      });
+      return Response.json(data);
+    }
+
+    const data = await withRls({ userId, orgId }, async (client) => {
+      await requireMembership(client, orgId, userId);
 
       if (mode === "members") {
-        return { members: await listMembers(client, orgId, session.user.id) };
+        return { members: await listMembers(client, orgId, userId) };
       }
 
       if (mode === "link_targets") {
@@ -1209,47 +1198,26 @@ export async function GET(request: Request) {
       }
 
       if (mode === "unread") {
-        return { unreadCount: await unreadTotal(client, orgId, session.user.id) };
+        return { unreadCount: await unreadTotal(client, orgId, userId) };
       }
 
-      if (conversationId) {
-        const pinsSupported = await supportsMessagePins(client);
-        if (waitMs > 0 && since) {
-          const deadline = Date.now() + waitMs;
-          while (Date.now() < deadline) {
-            if (await hasThreadUpdates(client, orgId, conversationId, since, pinsSupported)) break;
-            const remaining = deadline - Date.now();
-            if (remaining <= 0) break;
-            await sleep(Math.min(LONG_POLL_TICK_MS, remaining));
-          }
-        }
-
-        const thread = await listMessages(client, orgId, session.user.id, conversationId, since, {
-          before,
-          // Paging back through history should not rewrite read state; the
-          // initial load and incremental polls still mark the thread read.
-          markRead: !before,
-        });
-        const conversations = await listInbox(client, orgId, session.user.id);
+      if (mode === "channels") {
+        const snapshot = await inboxSnapshot(client, orgId, userId);
         return {
-          currentUserId: session.user.id,
-          conversations,
-          unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
-          youthProtection: await youthProtectionState(client, orgId, session.user.id),
-          ...thread,
+          ...snapshot,
+          channels: snapshot.conversations.filter((item) => item.kind !== "dm"),
+          subteams: await listSubteams(client, orgId),
         };
       }
 
-      const conversations = await listInbox(client, orgId, session.user.id);
+      const snapshot = await inboxSnapshot(client, orgId, userId);
       return {
-        currentUserId: session.user.id,
-        conversations,
-        unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+        ...snapshot,
         messages: [] as MessageRow[],
         pinned: [] as MessageRow[],
+        hasEarlier: false,
         pinsSupported: await supportsMessagePins(client),
         mentionsSupported: await supportsMessageMentions(client),
-        youthProtection: await youthProtectionState(client, orgId, session.user.id),
         conversation: null,
         supervisors: [] as SupervisorRef[],
         supervisionNotice: "",
@@ -1262,6 +1230,21 @@ export async function GET(request: Request) {
   }
 }
 
+type PostAction =
+  | "open_dm"
+  | "send"
+  | "soft_delete"
+  | "ensure_team"
+  | "pin"
+  | "unpin"
+  | "edit"
+  | "list_channels"
+  | "create_channel"
+  | "archive_channel"
+  | "join_channel"
+  | "leave_channel"
+  | "mark_read";
+
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
@@ -1270,37 +1253,95 @@ export async function POST(request: Request) {
     }
     const body = (await request.json()) as {
       orgId?: string;
-      action?: "open_dm" | "send" | "soft_delete" | "ensure_team" | "pin" | "unpin";
+      action?: PostAction;
       peerUserId?: string;
       conversationId?: string;
       body?: string;
       messageId?: string;
       mentionedUserIds?: unknown;
       objectLink?: unknown;
+      title?: unknown;
+      kind?: unknown;
+      subteamId?: unknown;
+      description?: unknown;
     };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const action = body.action ?? "send";
+    const userId = session.user.id;
 
-    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireMembership(client, orgId, session.user.id);
+    const data = await withRls({ userId, orgId }, async (client) => {
+      await requireMembership(client, orgId, userId);
 
       if (action === "ensure_team") {
-        const conversationId = await ensureTeamChannel(client, orgId, session.user.id);
+        const conversationId = await ensureGeneralChannel(client, orgId, userId);
         return { conversationId };
       }
 
       if (action === "open_dm") {
         const peerUserId = String(body.peerUserId ?? "");
         if (!peerUserId) throw new Error("peerUserId is required");
-        const conversationId = await openDm(client, orgId, session.user.id, peerUserId);
+        const conversationId = await openDm(client, orgId, userId, peerUserId);
         return { conversationId };
+      }
+
+      if (action === "list_channels") {
+        const snapshot = await inboxSnapshot(client, orgId, userId);
+        return {
+          ...snapshot,
+          channels: snapshot.conversations.filter((item) => item.kind !== "dm"),
+          subteams: await listSubteams(client, orgId),
+        };
+      }
+
+      if (action === "create_channel") {
+        const created = await createChannel(client, {
+          orgId,
+          userId,
+          title: body.title,
+          kind: body.kind,
+          subteamId: body.subteamId,
+          description: body.description,
+        });
+        const snapshot = await inboxSnapshot(client, orgId, userId);
+        return { ...created, ...snapshot };
+      }
+
+      if (action === "archive_channel" || action === "join_channel" || action === "leave_channel" || action === "mark_read") {
+        const conversationId = String(body.conversationId ?? "");
+        if (!UUID_RE.test(conversationId)) throw new Error("conversationId is required");
+        if (action === "archive_channel") await archiveChannel(client, orgId, userId, conversationId);
+        if (action === "join_channel") await joinChannel(client, orgId, userId, conversationId);
+        if (action === "leave_channel") await leaveChannel(client, orgId, userId, conversationId);
+        if (action === "mark_read") {
+          const meta = await conversationMeta(client, orgId, conversationId);
+          if (!meta) throw new Error("Conversation not found");
+          await markConversationRead(client, orgId, userId, meta);
+        }
+        const snapshot = await inboxSnapshot(client, orgId, userId);
+        return { ok: true, ...snapshot };
+      }
+
+      if (action === "edit") {
+        const messageId = String(body.messageId ?? "");
+        if (!UUID_RE.test(messageId)) throw new Error("messageId is required");
+        const viewer = await viewerChannelState(client, orgId, userId);
+        const message = await editMessage(client, {
+          orgId,
+          userId,
+          messageId,
+          body: body.body,
+          unlimitedEdit: viewer.channelPermissions.unlimitedEdit,
+        });
+        return { message };
       }
 
       if (action === "soft_delete") {
         const messageId = String(body.messageId ?? "");
         if (!messageId) throw new Error("messageId is required");
         const pinsSupported = await supportsMessagePins(client);
+        // The body survives in org_message_revisions (0494) before it is blanked here.
+        await recordDeleteRevision(client, orgId, userId, messageId);
         const updated = pinsSupported
           ? await client.query(
               `UPDATE org_messages
@@ -1310,14 +1351,14 @@ export async function POST(request: Request) {
                    pinned_by = NULL
                WHERE id = $1 AND org_id = $2 AND author_user_id = $3 AND deleted_at IS NULL
                RETURNING id`,
-              [messageId, orgId, session.user.id],
+              [messageId, orgId, userId],
             )
           : await client.query(
               `UPDATE org_messages
                SET deleted_at = now()
                WHERE id = $1 AND org_id = $2 AND author_user_id = $3 AND deleted_at IS NULL
                RETURNING id`,
-              [messageId, orgId, session.user.id],
+              [messageId, orgId, userId],
             );
         if (!updated.rowCount) throw new Error("Message not found or already deleted");
         return { ok: true };
@@ -1326,7 +1367,7 @@ export async function POST(request: Request) {
       if (action === "pin" || action === "unpin") {
         const messageId = String(body.messageId ?? "");
         if (!messageId) throw new Error("messageId is required");
-        return setPinned(client, orgId, session.user.id, messageId, action === "pin");
+        return setPinned(client, orgId, userId, messageId, action === "pin");
       }
 
       const conversationId = String(body.conversationId ?? "");
@@ -1335,7 +1376,7 @@ export async function POST(request: Request) {
       const message = await sendMessage(
         client,
         orgId,
-        session.user.id,
+        userId,
         conversationId,
         String(body.body ?? ""),
         normalizeClaimedMentionIds(body.mentionedUserIds),

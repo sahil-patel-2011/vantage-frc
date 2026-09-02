@@ -29,6 +29,8 @@ import type {
   RuleImpactStatus,
   SubsystemCategory,
 } from "../../lib/rule-impact/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./rule-impact.css";
@@ -181,6 +183,8 @@ export default function RuleImpactClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest render: "AI" only when a model produced it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -263,6 +267,8 @@ export default function RuleImpactClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -347,6 +353,8 @@ export default function RuleImpactClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="rule_impact" />
 
       <RuleImpactNextActionsPanel actions={nextActions} />
 

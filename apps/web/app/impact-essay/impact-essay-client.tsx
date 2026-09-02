@@ -17,7 +17,9 @@ import {
   type ImpactEssayNextAction,
   type ImpactEssayShellKind,
 } from "../../lib/impact-essay/impact-essay-related";
-import type { ImpactEssayAward } from "../../lib/impact-essay/types";
+import type { ImpactEssayAward, ImpactEssayDraft } from "../../lib/impact-essay/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./impact-essay.css";
@@ -156,6 +158,7 @@ export default function ImpactEssayClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [award, setAward] = useState<ImpactEssayAward>("impact");
 
@@ -243,6 +246,8 @@ export default function ImpactEssayClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -342,6 +347,8 @@ export default function ImpactEssayClient() {
         </p>
       ) : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="impact_essay" />
 
       <ImpactEssayNextActionsPanel actions={nextActions} />
 
@@ -474,6 +481,73 @@ function GenerateForm({
   );
 }
 
+/**
+ * attach_to_award: copies the grounded draft into the Awards workbench as an essay item on the
+ * chosen submission. Once attached the draft shows where it went — a second attach is a no-op.
+ */
+function AttachToAward({
+  view,
+  draft,
+  busy,
+  mutate,
+}: {
+  view: LiveView;
+  draft: ImpactEssayDraft;
+  busy: boolean;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  const [submissionId, setSubmissionId] = useState("");
+  const awardsHref = hubHref("/business", "evidence", view.orgId);
+  const attached = draft.awardSubmissionId
+    ? (view.awardSubmissions ?? []).find((submission) => submission.id === draft.awardSubmissionId) ?? null
+    : null;
+
+  if (draft.awardSubmissionId) {
+    return (
+      <p className="app-muted" style={{ margin: 0 }}>
+        <span className="app-badge good">Attached to award</span>{" "}
+        {attached ? `${attached.title ?? attached.awardType} · ${attached.seasonYear}` : "award submission"} —{" "}
+        <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>open in Awards</a>
+      </p>
+    );
+  }
+
+  const options = view.awardSubmissions ?? [];
+  if (options.length === 0) {
+    return (
+      <p className="app-muted" style={{ margin: 0 }}>
+        No award submissions yet — <a href={awardsHref}>start one in Awards</a> to attach this essay.
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <select
+        aria-label="Award submission to attach this essay to"
+        value={submissionId}
+        disabled={busy}
+        onChange={(event) => setSubmissionId(event.target.value)}
+      >
+        <option value="">Choose an award submission…</option>
+        {options.map((submission) => (
+          <option key={submission.id} value={submission.id}>
+            {submission.title ?? submission.awardType} · {submission.seasonYear}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="app-button secondary sm"
+        disabled={busy || !submissionId}
+        onClick={() => mutate({ action: "attach-to-award", draftId: draft.id, awardSubmissionId: submissionId })}
+      >
+        Attach to award
+      </button>
+    </div>
+  );
+}
+
 function DraftsList({
   view,
   busy,
@@ -521,6 +595,7 @@ function DraftsList({
               </button>
             </div>
             <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{draft.essayText}</p>
+            <AttachToAward view={view} draft={draft} busy={busy} mutate={mutate} />
             {draft.citations.length > 0 ? (
               <div>
                 <strong className="app-muted">Citations</strong>

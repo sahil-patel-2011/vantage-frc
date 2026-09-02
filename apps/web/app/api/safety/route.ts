@@ -16,9 +16,25 @@ async function requireSession() {
   return session;
 }
 
-async function requireMembership(client: PoolClient, orgId: string, userId: string) {
-  const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`, [orgId, userId]);
+async function requireMembership(client: PoolClient, orgId: string, userId: string): Promise<string> {
+  const row = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
+    [orgId, userId],
+  );
   if (!row.rowCount) throw new HttpError(403, "Organization membership required");
+  return row.rows[0]!.role;
+}
+
+const isAdmin = (role: string) => role === "owner" || role === "admin";
+
+/** Who filed the incident — only they (or an owner/admin) may change or remove it. */
+async function incidentReporter(client: PoolClient, orgId: string, id: string): Promise<string> {
+  const row = await client.query<{ reportedBy: string }>(
+    `SELECT reported_by AS "reportedBy" FROM safety_incidents WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+    [id, orgId],
+  );
+  if (!row.rowCount) throw new HttpError(404, "Incident not found");
+  return row.rows[0]!.reportedBy;
 }
 
 function fail(error: unknown) {
@@ -97,7 +113,9 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
-      await requireMembership(client, action.orgId, userId);
+      // Any member may log an incident or record a certification; changing an
+      // incident's status is reporter-or-admin, deletes are reporter/recorder-or-admin.
+      const role = await requireMembership(client, action.orgId, userId);
 
       switch (action.action) {
         case "log_incident": {
@@ -109,6 +127,10 @@ export async function POST(request: Request) {
           return { id: inserted.rows[0]!.id };
         }
         case "set_incident_status": {
+          const reporter = await incidentReporter(client, action.orgId, action.id);
+          if (reporter !== userId && !isAdmin(role)) {
+            throw new HttpError(403, "Only the reporter or an owner/admin can change an incident's status");
+          }
           const updated = await client.query(
             `UPDATE safety_incidents SET status = $1,
                corrective_action = COALESCE($2, corrective_action), updated_at = now()
@@ -119,7 +141,11 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "delete_incident": {
-          const deleted = await client.query(`DELETE FROM safety_incidents WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
+          const reporter = await incidentReporter(client, action.orgId, action.id);
+          if (reporter !== userId && !isAdmin(role)) {
+            throw new HttpError(403, "Only the reporter or an owner/admin can delete an incident");
+          }
+          const deleted = await client.query(`DELETE FROM safety_incidents WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this incident");
           return { ok: true };
         }
@@ -132,7 +158,15 @@ export async function POST(request: Request) {
           return { id: inserted.rows[0]!.id };
         }
         case "delete_certification": {
-          const deleted = await client.query(`DELETE FROM safety_certifications WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
+          const cert = await client.query<{ recordedBy: string }>(
+            `SELECT recorded_by AS "recordedBy" FROM safety_certifications WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+            [action.id, action.orgId],
+          );
+          if (!cert.rowCount) throw new HttpError(404, "Certification not found");
+          if (cert.rows[0]!.recordedBy !== userId && !isAdmin(role)) {
+            throw new HttpError(403, "Only the recorder or an owner/admin can delete a certification");
+          }
+          const deleted = await client.query(`DELETE FROM safety_certifications WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this certification");
           return { ok: true };
         }

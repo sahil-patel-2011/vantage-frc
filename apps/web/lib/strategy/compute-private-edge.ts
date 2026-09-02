@@ -13,6 +13,7 @@ import {
   type ScoutMatchObservation,
   type TeamOperationalSignal,
 } from "@vantage/prediction-strategy";
+import { cycleTimeFieldKeys, loadScoutFieldCatalog } from "./scout-field-roles";
 
 function allianceOf(match: { red?: string[]; blue?: string[] } | undefined, teamKey: string) {
   if (!match) return null;
@@ -262,6 +263,10 @@ export async function computePrivateEdgeView(
     // battery tables optional
   }
 
+  // Cycle time comes from whatever the org's PUBLISHED form calls it (form-builder field
+  // catalog), with the legacy convention keys as a fallback — never a hard-coded guess.
+  const fieldCatalog = await loadScoutFieldCatalog(client, input.orgId, input.eventKey);
+  const cycleKeys = cycleTimeFieldKeys(fieldCatalog.fields);
   const ourObs = observations.filter((row) => row.teamKey === input.ourTeamKey);
   const digitalTwin = forecastDigitalTwin({
     remainingMatches,
@@ -269,7 +274,7 @@ export async function computePrivateEdgeView(
     ourCycleObservations: ourObs
       .map((row) => {
         const cycle = row.payload
-          ? (["cycleTime", "cycle_time", "avgCycleTime", "secondsPerCycle"] as const)
+          ? cycleKeys
               .map((key) => row.payload[key])
               .find((value): value is number => typeof value === "number" && Number.isFinite(value))
           : null;

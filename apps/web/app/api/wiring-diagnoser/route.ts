@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-check": {
           const boardName = trimmedOrNull(body.boardName, 200);
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
           if (expectedCircuits.length === 0) {
             throw new Error("At least one expected circuit (from the wiring diagram) is required");
           }
-          await logCheck(client, {
+          render = await logCheck(client, {
             orgId,
             userId,
             seasonYear,
@@ -111,7 +113,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeWiringDiagnoserView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeWiringDiagnoserView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

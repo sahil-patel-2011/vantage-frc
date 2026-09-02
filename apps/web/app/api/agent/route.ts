@@ -1,4 +1,4 @@
-import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, resolveOrgChatAdapterWithProvenance } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -78,7 +78,9 @@ export async function POST(request: Request) {
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-      const adapter = await resolveOrgChatAdapter(client, {
+      // Provenance rides along so the orchestrator can plan-gate hosted models through
+      // routeModel (plan eligibility, PAYG-only, sponsored funding) and price the call.
+      const { adapter, provenance } = await resolveOrgChatAdapterWithProvenance(client, {
         orgId,
         promptCachingEnabled,
         feature: "chat",
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
         selected: body.selected,
         promptCachingEnabled,
         bridgeContext,
+        modelSource: provenance.source,
       });
     });
     return Response.json(data, { status: 201 });

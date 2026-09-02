@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { randomUUID } from "node:crypto";
 import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
 import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
@@ -192,6 +193,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-entry": {
           const title = trimmedOrNull(body.title, 200);
@@ -218,7 +220,7 @@ export async function POST(request: Request) {
           break;
         }
         case "generate-snapshot": {
-          await generateSnapshot(client, { orgId, userId, seasonYear });
+          render = (await generateSnapshot(client, { orgId, userId, seasonYear })).render ?? undefined;
           break;
         }
         case "delete-snapshot": {
@@ -231,7 +233,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeSeasonReportView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeSeasonReportView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { awardPrompt, composeEssay, round1, wordCount } from ".";
 import type {
   ImpactEssayAward,
+  ImpactEssayAwardSubmission,
   ImpactEssayDraft,
   ImpactEssayGroundedFacts,
   ImpactEssayOutreachActivity,
@@ -66,6 +66,8 @@ export type ImpactEssayView =
       seasons: number[];
       facts: ImpactEssayGroundedFacts;
       drafts: ImpactEssayDraft[];
+      /** Award submissions a draft can be attached to (0504 attach_to_award). */
+      awardSubmissions: ImpactEssayAwardSubmission[];
       computedAt: string;
     };
 
@@ -194,6 +196,8 @@ type DraftRow = {
   wordCount: number;
   citations: unknown;
   createdAt: string;
+  awardSubmissionId?: string | null;
+  awardItemId?: string | null;
 };
 
 function mapDraft(row: DraftRow): ImpactEssayDraft {
@@ -207,7 +211,21 @@ function mapDraft(row: DraftRow): ImpactEssayDraft {
     wordCount: Number(row.wordCount) || 0,
     citations: citations as ImpactEssayDraft["citations"],
     createdAt: row.createdAt,
+    awardSubmissionId: row.awardSubmissionId ?? null,
+    awardItemId: row.awardItemId ?? null,
   };
+}
+
+async function loadAwardSubmissions(client: PoolClient, orgId: string): Promise<ImpactEssayAwardSubmission[]> {
+  const result = await client.query<ImpactEssayAwardSubmission>(
+    `SELECT id, award_type AS "awardType", title, season_year AS "seasonYear", status::text AS status
+     FROM award_submissions
+     WHERE org_id = $1
+     ORDER BY season_year DESC, created_at DESC
+     LIMIT 100`,
+    [orgId],
+  );
+  return result.rows.map((row) => ({ ...row, seasonYear: Number(row.seasonYear) }));
 }
 
 export async function computeImpactEssayView(
@@ -227,11 +245,12 @@ export async function computeImpactEssayView(
     };
   }
 
-  const [facts, draftResult, seasonResult] = await Promise.all([
+  const [facts, draftResult, seasonResult, awardSubmissions] = await Promise.all([
     gatherGroundedFacts(client, org.orgId, seasonYear),
     client.query<DraftRow>(
       `SELECT id, season_year AS "seasonYear", award, prompt, essay_text AS "essayText",
-              word_count AS "wordCount", citations, created_at::text AS "createdAt"
+              word_count AS "wordCount", citations, created_at::text AS "createdAt",
+              award_submission_id AS "awardSubmissionId", award_item_id AS "awardItemId"
        FROM impact_essay_drafts
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC
@@ -245,6 +264,7 @@ export async function computeImpactEssayView(
        ORDER BY "seasonYear" DESC`,
       [org.orgId],
     ),
+    loadAwardSubmissions(client, org.orgId),
   ]);
 
   const drafts = draftResult.rows.map(mapDraft);
@@ -259,6 +279,7 @@ export async function computeImpactEssayView(
     seasons,
     facts,
     drafts,
+    awardSubmissions,
     computedAt: new Date().toISOString(),
   };
 }
@@ -275,34 +296,33 @@ export async function computeImpactEssayView(
 export async function generateEssayDraft(
   client: PoolClient,
   input: { orgId: string; userId: string; award: ImpactEssayAward; seasonYear: number },
-): Promise<ImpactEssayDraft> {
+): Promise<ImpactEssayDraft & { render: RenderOutcome }> {
   const facts = await gatherGroundedFacts(client, input.orgId, input.seasonYear);
   const prompt = awardPrompt(input.award);
   const { text, citations } = composeEssay(input.award, facts);
 
-  const metered = await meteredAI({
+  // Real model call on the org's adapter; the deterministic, citation-marked draft is both
+  // the fallback and the only source of facts. Output that drops a citation marker is
+  // rejected so every claim in the essay stays traceable to a logged record.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "impact_essay",
-    requestId: `impact-essay-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      award: input.award,
-      seasonYear: input.seasonYear,
-      citationCount: citations.length,
-      note: "Deterministic impact-essay synthesis grounded in logged records — no external model call",
-    },
-    invoke: async () => ({
-      value: text,
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-impact-essay-v1",
-      provider: "vantage-local",
-    }),
+    prompt: [
+      prompt,
+      "",
+      "Grounded draft with citation markers — the ONLY source of truth:",
+      text,
+      "",
+      `Rewrite this into a cohesive ${input.award} essay draft for the ${input.seasonYear} season (2-4 paragraphs, under 500 words). Keep every citation marker [n] next to the fact it cites, add no numbers, names, events or outcomes beyond those facts, and keep the paragraph order.`,
+    ].join("\n"),
+    template: () => text,
+    accept: (candidate) => citations.every((_, index) => candidate.includes(`[${index + 1}]`)),
+    maxTokens: 900,
+    metadata: { award: input.award, seasonYear: input.seasonYear, citationCount: citations.length },
   });
+  const metered = rendered.text;
 
   const result = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO impact_essay_drafts (
@@ -324,6 +344,7 @@ export async function generateEssayDraft(
 
   return {
     id: row.id,
+    render: renderOutcomeOf(rendered),
     seasonYear: input.seasonYear,
     award: input.award,
     prompt,
@@ -331,7 +352,73 @@ export async function generateEssayDraft(
     wordCount: wordCount(metered),
     citations,
     createdAt: row.createdAt,
+    awardSubmissionId: null,
+    awardItemId: null,
   };
+}
+
+/**
+ * attach_to_award (0504): copy a grounded draft into the award workbench as an award_items
+ * essay on the chosen submission, and remember where it went on the draft. Idempotent — a
+ * draft already attached to that submission (and whose item still exists) is left alone.
+ * award_items is admin-writable only (0036), so members get a clear error, not an RLS one.
+ */
+export async function attachDraftToAward(
+  client: PoolClient,
+  input: { orgId: string; userId: string; draftId: string; awardSubmissionId: string },
+): Promise<{ awardItemId: string; created: boolean }> {
+  const admin = await client.query(
+    `SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 AND role IN ('owner', 'admin')`,
+    [input.orgId, input.userId],
+  );
+  if (!admin.rowCount) throw new Error("Organization administrator access required to attach an essay to an award");
+
+  const draft = await client.query<{
+    prompt: string;
+    essayText: string;
+    award: string;
+    awardSubmissionId: string | null;
+    awardItemId: string | null;
+  }>(
+    `SELECT prompt, essay_text AS "essayText", award,
+            award_submission_id AS "awardSubmissionId", award_item_id AS "awardItemId"
+     FROM impact_essay_drafts WHERE id = $1 AND org_id = $2`,
+    [input.draftId, input.orgId],
+  );
+  const row = draft.rows[0];
+  if (!row) throw new Error("Draft not found");
+
+  if (row.awardSubmissionId === input.awardSubmissionId && row.awardItemId) {
+    const existing = await client.query(`SELECT 1 FROM award_items WHERE id = $1 AND org_id = $2`, [
+      row.awardItemId,
+      input.orgId,
+    ]);
+    if (existing.rowCount) return { awardItemId: row.awardItemId, created: false };
+  }
+
+  const submission = await client.query(`SELECT 1 FROM award_submissions WHERE id = $1 AND org_id = $2`, [
+    input.awardSubmissionId,
+    input.orgId,
+  ]);
+  if (!submission.rowCount) throw new Error("Award submission not found");
+
+  const order = await client.query<{ next: number }>(
+    `SELECT COALESCE(max(sort_order), -1) + 1 AS next FROM award_items WHERE submission_id = $1`,
+    [input.awardSubmissionId],
+  );
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO award_items (submission_id, org_id, kind, prompt, content, sort_order)
+     VALUES ($1, $2, 'essay', $3, $4, $5)
+     RETURNING id`,
+    [input.awardSubmissionId, input.orgId, row.prompt, row.essayText, Number(order.rows[0]?.next ?? 0)],
+  );
+  const awardItemId = inserted.rows[0]!.id;
+  await client.query(
+    `UPDATE impact_essay_drafts SET award_submission_id = $3, award_item_id = $4
+     WHERE id = $1 AND org_id = $2`,
+    [input.draftId, input.orgId, input.awardSubmissionId, awardItemId],
+  );
+  return { awardItemId, created: true };
 }
 
 export async function deleteEssayDraft(

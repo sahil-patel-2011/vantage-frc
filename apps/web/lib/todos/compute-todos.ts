@@ -1,3 +1,7 @@
+// Soft-UI todo list over the merged task store (build_tasks, migration 0502).
+// This file keeps the list's shape and its assign/complete notifications; every
+// read and write goes through lib/tasks/store so /todos and the board agree.
+
 import {
   emitPreferredNotification,
   resolveAuthBaseURL,
@@ -5,37 +9,56 @@ import {
   sendCoachTodoEmail,
 } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
+import { canonicalStatus, coarseStatus } from "../tasks/status-map";
+import {
+  deleteTask as deleteStoredTask,
+  getTask,
+  insertTask,
+  listTasks,
+  updateTask as updateStoredTask,
+  type StoredTask,
+  type TaskPatch,
+} from "../tasks/store";
+import type { TaskPriority, TaskStatus } from "../tasks/types";
 import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
-import type {
-  TeamTodo,
-  TodoMember,
-  TodoStatus,
-  TodoSubteam,
-  TodosView,
-} from "./types";
+import type { TeamTodo, TodoMember, TodoStatus, TodoSubteam, TodosView } from "./types";
 import { TODO_STATUSES } from "./types";
 
 export { TODO_STATUSES };
 export type { TodoStatus, TodosSetupStep, TodosView } from "./types";
 
-type TodoRow = {
-  id: string;
-  title: string;
-  notes: string;
-  status: TodoStatus;
-  assigneeUserId: string | null;
-  assigneeName: string | null;
-  subteamId: string | null;
-  subteamName: string | null;
-  subteamColor: string | null;
-  dueOn: string | null;
-  completedAt: string | null;
-  completedBy: string | null;
-  createdBy: string;
-  createdByName: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+function seasonYearNow(): number {
+  return new Date().getUTCFullYear();
+}
+
+export function toTeamTodo(task: StoredTask): Omit<TeamTodo, "flags"> {
+  return {
+    id: task.id,
+    title: task.title,
+    notes: task.notes ?? "",
+    status: coarseStatus(task.status),
+    taskStatus: task.status,
+    priority: task.priority,
+    subsystem: task.subsystem,
+    assignees: task.assignees,
+    blockedReason: task.blockedReason,
+    estimateHours: task.estimateHours,
+    seasonYear: task.seasonYear,
+    assigneeUserId: task.assigneeUserId,
+    // A member link wins; otherwise the board's first free-text collaborator.
+    assigneeName: task.assigneeUserId ? task.assigneeName : (task.assignees[0] ?? null),
+    subteamId: task.subteamId,
+    subteamName: task.subteamName,
+    subteamColor: task.subteamColor,
+    dueOn: task.dueOn,
+    completedAt: task.doneAt,
+    completedBy: task.completedBy,
+    createdBy: task.createdBy,
+    createdByName: task.createdByName,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  };
+}
 
 async function resolveOrg(
   client: PoolClient,
@@ -57,7 +80,7 @@ async function resolveOrg(
 
 async function loadMembers(client: PoolClient, orgId: string): Promise<TodoMember[]> {
   const rows = await client.query<TodoMember>(
-    `SELECT u.id AS "userId", u.name, m.role::text AS role
+    `SELECT u.id AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS name, m.role::text AS role
      FROM memberships m
      JOIN users u ON u.id = m.user_id
      WHERE m.org_id = $1
@@ -84,33 +107,8 @@ async function loadSubteams(client: PoolClient, orgId: string): Promise<TodoSubt
 }
 
 async function loadTodos(client: PoolClient, orgId: string, asOf: string): Promise<TeamTodo[]> {
-  const rows = await client.query<TodoRow>(
-    `SELECT
-       t.id,
-       t.title,
-       t.notes,
-       t.status,
-       t.assignee_user_id AS "assigneeUserId",
-       a.name AS "assigneeName",
-       t.subteam_id AS "subteamId",
-       s.name AS "subteamName",
-       s.color AS "subteamColor",
-       t.due_on::text AS "dueOn",
-       t.completed_at::text AS "completedAt",
-       t.completed_by AS "completedBy",
-       t.created_by AS "createdBy",
-       c.name AS "createdByName",
-       t.created_at::text AS "createdAt",
-       t.updated_at::text AS "updatedAt"
-     FROM team_todos t
-     LEFT JOIN users a ON a.id = t.assignee_user_id
-     LEFT JOIN users c ON c.id = t.created_by
-     LEFT JOIN team_subteams s ON s.id = t.subteam_id AND s.org_id = t.org_id
-     WHERE t.org_id = $1
-     ORDER BY t.created_at DESC`,
-    [orgId],
-  );
-  return sortTodos(rows.rows.map((row) => withFlags(row, asOf)));
+  const tasks = await listTasks(client, { orgId, seasonYear: null, includeArchived: true });
+  return sortTodos(tasks.map((task) => withFlags(toTeamTodo(task), asOf)));
 }
 
 export async function computeTodosView(
@@ -140,6 +138,7 @@ export async function computeTodosView(
     ]);
     const focusTodoId =
       input.focusTodoId && todos.some((item) => item.id === input.focusTodoId) ? input.focusTodoId : null;
+    const subsystems = [...new Set(todos.map((item) => item.subsystem).filter(Boolean))].sort();
     return {
       status: "live",
       orgId: org.orgId,
@@ -148,6 +147,7 @@ export async function computeTodosView(
       todos,
       members,
       subteams,
+      subsystems,
       metrics: computeMetrics(todos, input.userId),
       focusTodoId,
       computedAt: new Date().toISOString(),
@@ -180,15 +180,6 @@ async function assertAssignee(client: PoolClient, orgId: string, assigneeUserId:
     assigneeUserId,
   ]);
   if (!member.rowCount) throw new Error("Assignee must be an organization member");
-}
-
-async function assertSubteam(client: PoolClient, orgId: string, subteamId: string | null): Promise<void> {
-  if (!subteamId) return;
-  const row = await client.query(`SELECT 1 FROM team_subteams WHERE org_id = $1 AND id = $2`, [
-    orgId,
-    subteamId,
-  ]);
-  if (!row.rowCount) throw new Error("Unknown subteam");
 }
 
 function todoHref(orgId: string, todoId: string): string {
@@ -275,38 +266,38 @@ export async function createTodo(
     userId: string;
     title: string;
     notes?: string | null;
+    /** Coarse list status; ignored when taskStatus is given. */
     status?: TodoStatus;
+    taskStatus?: TaskStatus;
+    priority?: TaskPriority;
+    subsystem?: string | null;
+    assignees?: string[];
+    estimateHours?: number | null;
     assigneeUserId?: string | null;
     subteamId?: string | null;
     dueOn?: string | null;
+    seasonYear?: number;
   },
 ): Promise<string> {
   await assertMember(client, input.orgId, input.userId);
   await assertAssignee(client, input.orgId, input.assigneeUserId ?? null);
-  await assertSubteam(client, input.orgId, input.subteamId ?? null);
-  const status = input.status && TODO_STATUSES.includes(input.status) ? input.status : "todo";
-  const inserted = await client.query<{ id: string }>(
-    `INSERT INTO team_todos
-       (org_id, title, notes, status, assignee_user_id, subteam_id, due_on, created_by,
-        completed_at, completed_by)
-     VALUES (
-       $1::uuid, $2, coalesce($3, ''), $4, $5::uuid, $6::uuid, $7::date, $8::uuid,
-       CASE WHEN $4 = 'done' THEN now() ELSE NULL END,
-       CASE WHEN $4 = 'done' THEN $8::uuid ELSE NULL END
-     )
-     RETURNING id`,
-    [
-      input.orgId,
-      input.title,
-      input.notes ?? "",
-      status,
-      input.assigneeUserId ?? null,
-      input.subteamId ?? null,
-      input.dueOn ?? null,
-      input.userId,
-    ],
-  );
-  const todoId = inserted.rows[0]!.id;
+  const coarse = input.status && TODO_STATUSES.includes(input.status) ? input.status : "todo";
+  const status = input.taskStatus ?? canonicalStatus(coarse, null);
+  const todoId = await insertTask(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    title: input.title,
+    seasonYear: input.seasonYear ?? seasonYearNow(),
+    subsystem: input.subsystem ?? null,
+    status,
+    priority: input.priority,
+    notes: input.notes ?? null,
+    assignees: input.assignees,
+    assigneeUserId: input.assigneeUserId ?? null,
+    subteamId: input.subteamId ?? null,
+    estimateHours: input.estimateHours ?? null,
+    dueOn: input.dueOn ?? null,
+  });
   if (input.assigneeUserId) {
     await notifyAssigned(client, {
       orgId: input.orgId,
@@ -327,73 +318,47 @@ export async function updateTodo(
     todoId: string;
     title?: string;
     notes?: string | null;
+    /** Coarse list status; ignored when taskStatus is given. */
     status?: TodoStatus;
+    taskStatus?: TaskStatus;
+    blockedReason?: string | null;
+    priority?: TaskPriority;
+    subsystem?: string;
+    assignees?: string[];
+    estimateHours?: number | null;
     assigneeUserId?: string | null;
     subteamId?: string | null;
     dueOn?: string | null;
   },
 ): Promise<void> {
   await assertMember(client, input.orgId, input.userId);
-  const existing = await client.query<{
-    title: string;
-    status: TodoStatus;
-    assigneeUserId: string | null;
-    createdBy: string;
-  }>(
-    `SELECT title, status, assignee_user_id AS "assigneeUserId", created_by AS "createdBy"
-     FROM team_todos WHERE id = $1::uuid AND org_id = $2::uuid`,
-    [input.todoId, input.orgId],
-  );
-  const prev = existing.rows[0];
+  const prev = await getTask(client, { orgId: input.orgId, taskId: input.todoId });
   if (!prev) throw new Error("Todo not found");
 
   if (input.assigneeUserId !== undefined) {
     await assertAssignee(client, input.orgId, input.assigneeUserId);
   }
-  if (input.subteamId !== undefined) {
-    await assertSubteam(client, input.orgId, input.subteamId);
-  }
 
-  const nextStatus = input.status ?? prev.status;
-  const nextAssignee = input.assigneeUserId !== undefined ? input.assigneeUserId : prev.assigneeUserId;
-  const nextTitle = input.title ?? prev.title;
+  const nextStatus: TaskStatus | undefined =
+    input.taskStatus ?? (input.status !== undefined ? canonicalStatus(input.status, prev.status) : undefined);
+  const patch: TaskPatch = {
+    title: input.title,
+    notes: input.notes,
+    status: nextStatus,
+    blockedReason: input.blockedReason,
+    priority: input.priority,
+    subsystem: input.subsystem,
+    assignees: input.assignees,
+    estimateHours: input.estimateHours,
+    assigneeUserId: input.assigneeUserId,
+    subteamId: input.subteamId,
+    dueOn: input.dueOn,
+  };
+  await updateStoredTask(client, { orgId: input.orgId, taskId: input.todoId, userId: input.userId, patch });
 
-  await client.query(
-    `UPDATE team_todos SET
-       title = coalesce($3, title),
-       notes = CASE WHEN $4::boolean THEN coalesce($5, '') ELSE notes END,
-       status = coalesce($6, status),
-       assignee_user_id = CASE WHEN $7::boolean THEN $8::uuid ELSE assignee_user_id END,
-       subteam_id = CASE WHEN $9::boolean THEN $10::uuid ELSE subteam_id END,
-       due_on = CASE WHEN $11::boolean THEN $12::date ELSE due_on END,
-       completed_at = CASE
-         WHEN coalesce($6, status) = 'done' AND status <> 'done' THEN now()
-         WHEN coalesce($6, status) <> 'done' THEN NULL
-         ELSE completed_at
-       END,
-       completed_by = CASE
-         WHEN coalesce($6, status) = 'done' AND status <> 'done' THEN $13::uuid
-         WHEN coalesce($6, status) <> 'done' THEN NULL
-         ELSE completed_by
-       END,
-       updated_at = now()
-     WHERE id = $1::uuid AND org_id = $2::uuid`,
-    [
-      input.todoId,
-      input.orgId,
-      input.title ?? null,
-      input.notes !== undefined,
-      input.notes ?? "",
-      input.status ?? null,
-      input.assigneeUserId !== undefined,
-      input.assigneeUserId ?? null,
-      input.subteamId !== undefined,
-      input.subteamId ?? null,
-      input.dueOn !== undefined,
-      input.dueOn ?? null,
-      input.userId,
-    ],
-  );
+  const after = await getTask(client, { orgId: input.orgId, taskId: input.todoId });
+  const nextAssignee = after?.assigneeUserId ?? null;
+  const nextTitle = after?.title ?? prev.title;
 
   if (nextAssignee && nextAssignee !== prev.assigneeUserId) {
     await notifyAssigned(client, {
@@ -426,9 +391,6 @@ export async function deleteTodo(
   input: { orgId: string; userId: string; todoId: string },
 ): Promise<void> {
   await assertMember(client, input.orgId, input.userId);
-  const result = await client.query(`DELETE FROM team_todos WHERE id = $1::uuid AND org_id = $2::uuid`, [
-    input.todoId,
-    input.orgId,
-  ]);
-  if (!result.rowCount) throw new Error("Todo not found");
+  const removed = await deleteStoredTask(client, { orgId: input.orgId, taskId: input.todoId });
+  if (!removed) throw new Error("Todo not found");
 }

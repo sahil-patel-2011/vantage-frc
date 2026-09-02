@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { DEFAULT_WEIGHT_LIMIT_LBS } from "../weight-budget";
 import { DECISION_CRITIC_CATEGORIES, DECISION_CRITIC_OUTCOMES, DECISION_CRITIC_VERDICTS, critiqueDecision } from ".";
 import type {
@@ -264,7 +263,7 @@ export async function logReview(
     weightAddedLbs: number;
     powerAddedAmps: number;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const [weightHeadroom, powerHeadroom, fmeaResult, decisionResult] = await Promise.all([
     loadWeightHeadroom(client, input.orgId, input.seasonYear),
     loadPowerHeadroom(client, input.orgId, input.seasonYear),
@@ -291,34 +290,24 @@ export async function logReview(
   const relatedFmeaFailureIds = fmeaResult.rows.map((r) => r.id);
   const relatedDecisionIds = decisionResult.rows.map((r) => r.id);
 
-  const critique = await meteredAI({
+  // Real model call on the org's adapter with the deterministic critique as fallback: only
+  // the recommendation prose may be rewritten; verdict, confidence and concerns stay computed.
+  const { value: critique, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "decision_critic",
-    requestId: `decision-critic-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.subsystemName,
-      seasonYear: input.seasonYear,
-      note: "Deterministic weight/power-headroom + FMEA-history + prior-decision critique — no external model call",
-    },
-    invoke: async () => ({
-      value: critiqueDecision({
-        weightAddedLbs: input.weightAddedLbs,
-        weightMarginLbs: weightHeadroom.marginLbs,
-        powerAddedAmps: input.powerAddedAmps,
-        powerHeadroomAmps: powerHeadroom.headroomAmps,
-        chronicFailureCount,
-        priorRejectedCount,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-decision-critic-v1",
-      provider: "vantage-local",
+    value: critiqueDecision({
+      weightAddedLbs: input.weightAddedLbs,
+      weightMarginLbs: weightHeadroom.marginLbs,
+      powerAddedAmps: input.powerAddedAmps,
+      powerHeadroomAmps: powerHeadroom.headroomAmps,
+      chronicFailureCount,
+      priorRejectedCount,
     }),
+    editableKeys: ["recommendation"],
+    instructions: `Design-decision critique for the ${input.subsystemName} subsystem (${input.seasonYear}): "${input.title}" (${input.category}). Proposal: ${input.proposal.slice(0, 1200) || "(none written)"}. Write the recommendation as 1-3 plain sentences for the design review, consistent with the verdict and concerns in the document; cite only its numbers.`,
+    metadata: { subsystemName: input.subsystemName, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -350,6 +339,7 @@ export async function logReview(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function updateReviewOutcome(

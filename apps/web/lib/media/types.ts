@@ -98,6 +98,14 @@ export type MediaPostDraftSuggestion = {
   dueAt: string | null;
   generatedAt: string;
   feature: "media_post_draft";
+  /** How the caption was produced — "model" (real metered call) or "template" (fallback). */
+  render?: {
+    mode: "model" | "template";
+    modelId?: string;
+    provider?: string;
+    fallbackReason?: string;
+    requestId: string;
+  };
 };
 
 export type MediaPostDraftEmpty = {

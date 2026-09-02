@@ -17,6 +17,8 @@ import {
   type JudgeSimShellKind,
 } from "../../lib/judge-sim/judge-sim-related";
 import type { JudgeSimCategory, JudgeSimVerdict } from "../../lib/judge-sim/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./judge-sim.css";
@@ -160,6 +162,7 @@ export default function JudgeSimClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -235,6 +238,8 @@ export default function JudgeSimClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -333,6 +338,8 @@ export default function JudgeSimClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="judge_sim" />
 
       <JudgeSimNextActionsPanel actions={nextActions} />
 

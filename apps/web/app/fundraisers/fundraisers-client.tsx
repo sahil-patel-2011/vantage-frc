@@ -24,6 +24,8 @@ type FundraiserEvent = {
   eventDate: string;
   goalUsd: number | null;
   proceedsUsd: number;
+  /** Money spent running the event (0504) — netted against proceeds in the row. */
+  expensesUsd?: number;
   status: FundraiserStatus;
   location: string;
   notes: string;
@@ -164,6 +166,15 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
     await post(
       { action: "record_proceeds", id, amountUsd: Number(amount) },
       "Proceeds recorded and posted to finance.",
+    );
+  }
+
+  async function recordExpense(id: string) {
+    const amount = window.prompt("How much did running this fundraiser cost (supplies, fees, $)?");
+    if (!amount) return;
+    await post(
+      { action: "record_expense", id, amountUsd: Number(amount) },
+      "Fundraiser cost recorded and posted to finance.",
     );
   }
 
@@ -471,6 +482,9 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
                       {e.goalUsd
                         ? ` of ${moneyUsd(e.goalUsd)}${pct != null ? ` (${pct}%)` : ""}`
                         : ""}
+                      {(e.expensesUsd ?? 0) > 0
+                        ? ` · cost ${moneyUsd(e.expensesUsd ?? 0)} · net ${moneyUsd(Math.max(0, e.proceedsUsd - (e.expensesUsd ?? 0)))}`
+                        : ""}
                     </span>
                     {e.goalUsd != null && e.goalUsd > 0 && pct != null ? (
                       <div className="soft-track fr-track-sm" aria-hidden>
@@ -502,6 +516,16 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
                         onClick={() => void recordProceeds(e.id)}
                       >
                         Record $
+                      </button>
+                    ) : null}
+                    {canManageMoney && e.status !== "cancelled" ? (
+                      <button
+                        type="button"
+                        className="app-button secondary sm"
+                        disabled={busy}
+                        onClick={() => void recordExpense(e.id)}
+                      >
+                        Record cost
                       </button>
                     ) : null}
                     {e.status !== "completed" && e.status !== "cancelled" ? (

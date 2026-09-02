@@ -27,6 +27,8 @@ export type AttendanceEntry = {
   id: string;
   eventId: string;
   personName: string;
+  /** Linked member account; null for a guest / free-text mark. */
+  userId: string | null;
   role: AttendanceRole;
   hours: number | null;
   createdAt: string;
@@ -211,6 +213,8 @@ export type AttendanceAction =
       orgId: string;
       eventId: string;
       personName: string;
+      /** Member to link the mark to; null keeps it a free-text guest mark. */
+      userId: string | null;
       role: AttendanceRole;
       hours: number | null;
     }
@@ -247,6 +251,7 @@ export function parseAttendanceAction(input: unknown): AttendanceAction {
         orgId,
         eventId: uuid(body.eventId, "Event"),
         personName: requiredText(body.personName, "Name", 160),
+        userId: body.userId == null || body.userId === "" ? null : uuid(body.userId, "Member"),
         role: roleValue(body.role),
         hours: optionalHours(body.hours, "Hours"),
       };

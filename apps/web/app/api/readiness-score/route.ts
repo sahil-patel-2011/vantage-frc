@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "save-subsystem": {
           const name = trimmedOrNull(body.name, 120);
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
           const codeVersionStatus = isCodeVersionStatus(body.codeVersionStatus)
             ? body.codeVersionStatus
             : "stale";
-          await saveSubsystem(client, {
+          render = await saveSubsystem(client, {
             orgId,
             userId,
             seasonYear,
@@ -145,7 +147,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeReadinessScoreView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeReadinessScoreView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

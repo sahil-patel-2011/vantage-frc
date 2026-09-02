@@ -6,6 +6,8 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { REUSE_ASSESSMENT_STATUSES, reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
 import type { ReuseAdvisorView } from "../../lib/reuse-advisor/compute-reuse-advisor";
 import type { ReuseAssessmentStatus, ReuseCandidate, ReuseRecommendation } from "../../lib/reuse-advisor/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 const RECOMMENDATION_TONE: Record<ReuseRecommendation, string> = {
   reuse: "good",
@@ -33,6 +35,8 @@ export default function ReuseAdvisorClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest render: "AI" only when a model produced it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -85,6 +89,8 @@ export default function ReuseAdvisorClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -132,6 +138,8 @@ export default function ReuseAdvisorClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="reuse_advisor" />
 
       {fetchFailed ? (
         (() => {

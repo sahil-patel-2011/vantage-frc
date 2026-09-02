@@ -112,7 +112,7 @@ describe("draftDecisionForTest", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -135,7 +135,7 @@ describe("draftDecisionForTest", () => {
     // Success outcome with metric above target -> adopt.
     expect(decisionInsert?.params).toContain("adopt");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 

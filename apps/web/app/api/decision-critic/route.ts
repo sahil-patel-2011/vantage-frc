@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-review": {
           const subsystemName = trimmedOrNull(body.subsystemName, 200);
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
           if (!subsystemName) throw new Error("subsystemName is required");
           if (!title) throw new Error("title is required");
           const category = oneOf<DecisionCriticCategory>(DECISION_CRITIC_CATEGORIES, body.category) ?? "design";
-          await logReview(client, {
+          render = await logReview(client, {
             orgId,
             userId,
             seasonYear,
@@ -134,7 +136,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeDecisionCriticView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeDecisionCriticView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

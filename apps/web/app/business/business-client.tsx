@@ -4,9 +4,8 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { EmptyState, ToolPage, useToast, type ShellState } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import SustainabilityPanel from "./sustainability-panel";
 import {
   GRANT_STATUSES,
@@ -17,89 +16,20 @@ import {
   type PurchaseRequest,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
-import { SoftAccessDenied } from "../../components/hub-access-gate";
-import {
-  clientCanAccessHub,
-  filterSponsorTabs,
-  filterTabsByHubAccess,
-  SPONSOR_TAB_IDS,
-} from "../../lib/nav/hub-access-filter";
-import {
-  hubById,
-  hubLegacyHref,
-  hubNestedTabs,
-  hubPrimaryTabs,
-  hubWorkbenchId,
-  isHubTab,
-} from "../../lib/nav/hubs";
-import { useClientAccessProfile } from "../../lib/nav/use-client-access";
+import { SPONSOR_TAB_IDS } from "../../lib/nav/hub-access-filter";
+import type { BusinessTab } from "./business-tabs";
 import { FundraisingGlance } from "./fundraising-glance";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
-import "../product-hub.css";
+
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
 const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false });
 const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
 
-const BUSINESS_HUB = hubById("business");
-const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
+type Tab = BusinessTab;
 
-type Tab =
-  | "overview"
-  | "finance"
-  | "budget"
-  | "orders"
-  | "sponsors"
-  | "sponsorship"
-  | "placements"
-  | "grants"
-  | "evidence";
-
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "finance", label: "Money" },
-  { id: "budget", label: "Budget" },
-  { id: "orders", label: "Orders" },
-  { id: "sponsors", label: "Sponsors" },
-  { id: "sponsorship", label: "Packages" },
-  { id: "placements", label: "Partners" },
-  { id: "grants", label: "Grants" },
-  { id: "evidence", label: "Outreach" },
-];
-
-function isTab(value: string | null): value is Tab {
-  return TABS.some((tab) => tab.id === value);
-}
-
-function readOrgIdFromUrl(): string | null {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("orgId");
-}
-
-function readTabFromUrl(): Tab {
-  if (typeof window === "undefined") return "overview";
-  const tab = new URLSearchParams(window.location.search).get("tab");
-  return isTab(tab) ? tab : "overview";
-}
-
-/** Nested tools that are not in-panel jump to their standalone page. */
-function redirectMoreToolTab(): boolean {
-  if (typeof window === "undefined") return false;
-  const tab = new URLSearchParams(window.location.search).get("tab");
-  if (!tab || isTab(tab) || !isHubTab(BUSINESS_HUB, tab)) return false;
-  const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === tab);
-  if (!nested?.legacyHref) return false;
-  window.location.replace(hubLegacyHref(nested, readOrgIdFromUrl()));
-  return true;
-}
-
-function writeTabToUrl(tab: Tab) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  if (tab === "overview") url.searchParams.delete("tab");
-  else url.searchParams.set("tab", tab);
-  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
-}
+const DESCRIPTION =
+  "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth.";
 
 function money(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
@@ -133,20 +63,25 @@ function Field({ label, hint, children, wide = false }: { label: string; hint?: 
   );
 }
 
-export default function BusinessClient() {
-  const access = useClientAccessProfile();
+/**
+ * Business portal body. The hub shell (business-hub.tsx → ProductHubShell) owns
+ * the title, workbench TabBar, tool strip, hub-access + sponsors_allowed
+ * filtering, and the ?tab= URL; this owns the season view and the per-tab
+ * panels. It always renders inside the hub panel, so ToolPage runs embedded.
+ */
+export default function BusinessClient({
+  tab,
+  selectTab,
+}: {
+  tab: BusinessTab;
+  selectTab: (tab: string) => void;
+}) {
+  const toast = useToast();
   const [view, setView] = useState<BusinessPortalView | null>(null);
-  const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
-  const [notice, setNotice] = useState("");
-
-  const selectTab = useCallback((next: Tab) => {
-    setTab(next);
-    writeTabToUrl(next);
-  }, []);
 
   const load = useCallback(async (seasonOverride?: number) => {
     setError("");
@@ -176,49 +111,22 @@ export default function BusinessClient() {
   }, []);
 
   useEffect(() => {
-    if (redirectMoreToolTab()) return;
-    setTab(readTabFromUrl());
     void load();
   }, [load]);
 
   const live = view?.status === "live" ? view : null;
-  const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
-  const visibleWorkbenches = useMemo(
-    () =>
-      filterTabsByHubAccess(
-        filterSponsorTabs(WORKBENCHES, sponsorsAllowed),
-        access.hubAccess,
-        "business",
-      ),
-    [access.hubAccess, sponsorsAllowed],
-  );
-  const workbenchId = hubWorkbenchId(BUSINESS_HUB, tab);
-  const visibleNested = useMemo(() => {
-    const nested = hubNestedTabs(BUSINESS_HUB, workbenchId);
-    if (nested.length <= 1) return [];
-    return filterTabsByHubAccess(
-      filterSponsorTabs(nested, sponsorsAllowed),
-      access.hubAccess,
-      "business",
-    );
-  }, [sponsorsAllowed, access.hubAccess, workbenchId]);
-  const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "business");
 
+  // The hub drops sponsor tabs from its TabBar using the access profile; the
+  // portal view is the authority, so a deep link into a sponsor tab still lands
+  // on Overview when this org's funding profile turns sponsors off.
   useEffect(() => {
-    if (SPONSOR_TAB_IDS.has(tab) && sponsorsAllowed === false) {
-      selectTab("overview");
-      return;
-    }
-    if (!access.ready || !visibleWorkbenches.length) return;
-    if (visibleWorkbenches.some((entry) => entry.id === tab || entry.id === workbenchId)) return;
-    selectTab((visibleWorkbenches[0]?.id as Tab) ?? "overview");
-  }, [access.ready, selectTab, sponsorsAllowed, tab, visibleWorkbenches, workbenchId]);
+    if (live?.sponsorsAllowed === false && SPONSOR_TAB_IDS.has(tab)) selectTab("overview");
+  }, [live?.sponsorsAllowed, selectTab, tab]);
 
   const mutate = useCallback(async (payload: Record<string, unknown>): Promise<boolean> => {
     if (!live || busy) return false;
     setBusy(true);
     setError("");
-    setNotice("");
     try {
       const response = await fetch("/api/business", {
         method: "POST",
@@ -228,7 +136,7 @@ export default function BusinessClient() {
       const data = (await response.json()) as BusinessPortalView | { error?: string };
       if (!response.ok || !("status" in data)) throw new Error("error" in data && data.error ? data.error : "Request failed");
       setView(data);
-      setNotice("Saved. The whole team now sees the latest record.");
+      toast.success("Saved. The whole team now sees the latest record.");
       return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed");
@@ -236,7 +144,7 @@ export default function BusinessClient() {
     } finally {
       setBusy(false);
     }
-  }, [busy, live]);
+  }, [busy, live, toast]);
 
   const submit = useCallback(async (
     event: FormEvent<HTMLFormElement>,
@@ -259,7 +167,6 @@ export default function BusinessClient() {
     if (!live || busy) return;
     setBusy(true);
     setError("");
-    setNotice("");
     try {
       const response = await fetch("/api/business/research", {
         method: "POST",
@@ -268,40 +175,58 @@ export default function BusinessClient() {
       });
       const data = (await response.json()) as { message?: string; error?: string };
       if (!response.ok) throw new Error(data.error ?? "Sponsor research failed");
-      setNotice(data.message ?? "Sponsor research complete.");
+      toast.success(data.message ?? "Sponsor research complete.");
       await load(live.seasonYear);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Sponsor research failed");
     } finally {
       setBusy(false);
     }
-  }, [busy, live, load]);
+  }, [busy, live, load, toast]);
 
-  const orgId = live?.orgId;
-
-  if (hubDenied) {
-    return (
-      <SoftAccessDenied
-        breadcrumbs="Business / Business Hub"
-        title="Business"
-        heading="Business is not available"
-        description="Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security."
-      />
-    );
-  }
+  const state: ShellState = !view
+    ? loadFailure
+      ? "error"
+      : "loading"
+    : view.status === "setup_required"
+      ? "setup"
+      : "ready";
 
   return (
-    <main className="module-page business-page">
-      <PageHeader
-        breadcrumbs="Business / Business Hub"
-        title="Business"
-        description={
-          live
-            ? `Season finance, budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth."
-        }
-      >
-        {live ? (
+    <ToolPage
+      hub="business"
+      hubTab={tab}
+      title="Business"
+      description={
+        live
+          ? `Season finance, budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
+          : DESCRIPTION
+      }
+      embedded
+      className="business-page"
+      orgId={live?.orgId ?? null}
+      state={state}
+      error={loadFailure}
+      onRetry={() => void load()}
+      loading={
+        <EmptyState
+          soft
+          title="Opening business…"
+          description="Loading this season’s budget, orders, partners, grants, and evidence."
+          aria-busy
+        />
+      }
+      setup={{
+        title: view?.status === "setup_required" ? view.message : "Choose a workspace",
+        description: "Choose the organization for this team, then return here to start the season business plan.",
+        children: (
+          <a className="app-button" href="/workspace">
+            Choose workspace
+          </a>
+        ),
+      }}
+      actions={
+        live ? (
           <div className="biz-header-actions">
             <label className="biz-season">
               Season
@@ -317,9 +242,9 @@ export default function BusinessClient() {
               {live.canManageFinance ? "Finance lead" : "Team member"}
             </ToneBadge>
           </div>
-        ) : null}
-      </PageHeader>
-
+        ) : undefined
+      }
+    >
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>
@@ -328,90 +253,6 @@ export default function BusinessClient() {
             Dismiss
           </button>
         </div>
-      ) : null}
-      {notice ? (
-        <div className="biz-alert success" role="status">
-          <strong>Done.</strong>
-          <span>{notice}</span>
-          <button type="button" onClick={() => setNotice("")}>
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-
-      {!view ? (
-        loadFailure ? (
-          (() => {
-            const copy = loadFailureCopy(
-              classifyLoadFailure({
-                status: loadFailure.status,
-                message: loadFailure.message,
-                online: typeof navigator === "undefined" ? true : navigator.onLine,
-              }),
-              {
-                nextPath:
-                  typeof window === "undefined"
-                    ? null
-                    : `${window.location.pathname}${window.location.search}`,
-                message: loadFailure.message,
-              },
-            );
-            return (
-              <EmptyState soft title={copy.title} description={copy.description}>
-                {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
-                    {copy.primary.label}
-                  </a>
-                ) : null}
-                {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => void load()}>
-                    Retry
-                  </button>
-                ) : null}
-              </EmptyState>
-            );
-          })()
-        ) : (
-          <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
-        )
-      ) : null}
-
-      <TabBar
-        aria-label="Business sections"
-        value={workbenchId}
-        onChange={(id) => {
-          if (isTab(id)) selectTab(id);
-          else selectTab((hubWorkbenchId(BUSINESS_HUB, id) as Tab) || "overview");
-        }}
-        tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
-        className="product-hub-tabs"
-      />
-      {visibleNested.length > 1 ? (
-        <TabBar
-          aria-label="Business tools"
-          value={tab}
-          onChange={(id) => {
-            if (isTab(id)) {
-              selectTab(id);
-              return;
-            }
-            const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === id);
-            if (nested?.legacyHref) {
-              window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
-            }
-          }}
-          tabs={visibleNested.map((entry) => ({ id: entry.id, label: entry.label }))}
-          className="product-hub-subtabs"
-          variant="toolbar"
-        />
-      ) : null}
-
-      {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
-        </EmptyState>
       ) : null}
 
       {live ? (
@@ -449,7 +290,7 @@ export default function BusinessClient() {
           {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
         </>
       ) : null}
-    </main>
+    </ToolPage>
   );
 }
 

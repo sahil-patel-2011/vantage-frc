@@ -33,6 +33,9 @@ function purchaseToOrder(purchase: PurchaseRequest, seasonYear: number): OrderRe
     receivedAt: null,
     createdAt: purchase.requestedAt,
     updatedAt: purchase.requestedAt,
+    // The Business portal purchase shape carries no grant tag; the pulse never needs it.
+    grantApplicationId: null,
+    grantName: null,
   };
 }
 

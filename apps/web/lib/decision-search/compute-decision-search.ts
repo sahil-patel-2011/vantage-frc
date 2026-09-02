@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { DECISION_SEARCH_SOURCE_KINDS, searchDocuments, summarizeMatches } from ".";
 import type {
   DecisionSearchDocument,
@@ -262,7 +261,7 @@ export async function importDecisionRecords(
 export async function runSearch(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number; queryText: string },
-): Promise<{ matches: DecisionSearchMatch[]; summary: string }> {
+): Promise<{ matches: DecisionSearchMatch[]; summary: string; render: RenderOutcome }> {
   const documentResult = await client.query<DocumentRow>(
     `SELECT id, source_kind AS "sourceKind", source_id AS "sourceId", title, body,
             season_year AS "seasonYear", tags, created_at AS "createdAt"
@@ -273,32 +272,24 @@ export async function runSearch(
   );
   const documents = documentResult.rows.map(mapDocument);
 
-  const result = await meteredAI({
+  const matches = searchDocuments(input.queryText, documents);
+  // The match set is deterministic term-overlap search; a real model call on the org's
+  // adapter writes the summary of what matched, with the template standing in on failure.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "decision_search",
-    requestId: `decision-search-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      documentCount: documents.length,
-      note: "Deterministic term-overlap semantic search over indexed decisions/design reviews/notebook entries — no external model call",
-    },
-    invoke: async () => {
-      const matches = searchDocuments(input.queryText, documents);
-      const summary = summarizeMatches(input.queryText, matches);
-      return {
-        value: { matches, summary },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-decision-search-v1",
-        provider: "vantage-local",
-      };
-    },
+    prompt: [
+      `A team member searched their logged decisions, design reviews and notebook entries for "${input.queryText}" (${input.seasonYear} season).`,
+      `Matches (${matches.length}), best first:`,
+      ...matches.slice(0, 8).map((match) => `- ${match.document.title} [${match.document.sourceKind}]`),
+      "Write a 1-2 sentence summary in the template's structure: how many matched and which top titles are most relevant. Name only titles listed above; invent nothing.",
+    ].join("\n"),
+    template: () => summarizeMatches(input.queryText, matches),
+    metadata: { seasonYear: input.seasonYear, documentCount: documents.length, matchCount: matches.length },
   });
+  const result = { matches, summary: rendered.text, render: renderOutcomeOf(rendered) };
 
   await client.query(
     `INSERT INTO decision_search_queries (

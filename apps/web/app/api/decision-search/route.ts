@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "index-document": {
           const title = trimmedOrNull(body.title, 200);
@@ -124,14 +126,15 @@ export async function POST(request: Request) {
         case "search": {
           const queryText = trimmedOrNull(body.queryText, 400);
           if (!queryText) throw new Error("queryText is required");
-          await runSearch(client, { orgId, userId, seasonYear, queryText });
+          render = (await runSearch(client, { orgId, userId, seasonYear, queryText })).render ?? undefined;
           break;
         }
         default:
           throw new Error("Unknown action");
       }
 
-      return computeDecisionSearchView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeDecisionSearchView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

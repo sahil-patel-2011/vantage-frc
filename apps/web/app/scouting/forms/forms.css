@@ -617,3 +617,67 @@
   }
 }
 
+
+/* Studio: autosave pill, Start-from drawer, templates, conditional visibility. */
+.sfb-autosave {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+  color: var(--soft-muted);
+  font: 600 12px var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.sfb-autosave:empty { display: none; }
+.sfb-autosave-saving { color: var(--soft-accent); }
+.sfb-autosave-error { color: var(--app-critical); border-color: color-mix(in srgb, var(--app-critical) 50%, var(--soft-line)); }
+.sfb-autosave-dirty { color: var(--app-warning); }
+.sfb-drawer { display: grid; gap: 12px; }
+.sfb-drawer-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.sfb-drawer-head h2 { margin: 0 0 4px; }
+.sfb-drawer-head p { margin: 0; }
+.sfb-template-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sfb-template-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: 12px;
+  background: var(--soft-bg);
+}
+.sfb-template-list li > div { display: grid; gap: 2px; min-width: 0; }
+.sfb-template-list li span { font-size: 12px; }
+.sfb-template-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.sfb-template-save { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.sfb-template-save input { flex: 1 1 160px; min-height: 40px; padding: 0 10px; border: 1px solid var(--soft-line); border-radius: 10px; background: var(--soft-card); }
+.sfb-inline-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--soft-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.sfb-inline-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.sfb-resumed { display: block; }
+.sfb-condition { display: flex; flex-wrap: wrap; gap: 8px; }
+.sfb-condition select, .sfb-condition input { min-width: 140px; flex: 1 1 140px; }
+.sfb-conditional-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--soft-accent) 14%, var(--soft-card));
+  color: var(--soft-accent);
+  font: 700 10px var(--font-ibm-mono), ui-monospace, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+@media (max-width: 560px) {
+  .sfb-template-list li, .sfb-drawer-head { flex-direction: column; align-items: stretch; }
+}

@@ -20,11 +20,14 @@ import { headers } from "next/headers";
 import {
   dmExportFilename,
   dmExportSummary,
+  mergeExportRevisions,
   normalizeExportFormat,
   normalizeExportReason,
   toDmExportCsv,
+  type DmExportRevision,
   type DmExportRow,
 } from "../../../../lib/messages/dm-export";
+import { supportsChannels } from "../../../../lib/messages/channels-db";
 import { isOrgChatAdmin, supportsYouthProtection } from "../../../../lib/messages/supervision";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 
@@ -128,7 +131,25 @@ export async function POST(request: Request) {
         [orgId, memberUserId],
       );
 
-      const summary = dmExportSummary(rows.rows);
+      // Edit/delete history (migration 0494). Same authorisation as the message read; a message
+      // that was reworded before the export must not look like it was always worded that way.
+      const revisions = (await supportsChannels(client))
+        ? await client.query<DmExportRevision>(
+            `SELECT conversation_id::text AS "conversationId",
+                    message_id::text AS "messageId",
+                    action,
+                    prior_body AS "priorBody",
+                    actor_user_id::text AS "actorUserId",
+                    actor_name AS "actorName",
+                    revised_at::text AS "revisedAt"
+             FROM org_member_dm_revisions($1::uuid, $2::uuid)
+             LIMIT ${MAX_EXPORT_ROWS}`,
+            [orgId, memberUserId],
+          )
+        : { rows: [] as DmExportRevision[] };
+      const merged = mergeExportRevisions(rows.rows, revisions.rows);
+
+      const summary = dmExportSummary(merged);
       await writeExportAudit(client, {
         orgId,
         actorUserId: session.user.id,
@@ -143,7 +164,7 @@ export async function POST(request: Request) {
         },
       });
 
-      return { rows: rows.rows, member: member.rows[0]!, summary };
+      return { rows: merged, member: member.rows[0]!, summary };
     });
 
     const filename = dmExportFilename(result.member.name, format);
@@ -167,8 +188,9 @@ export async function POST(request: Request) {
         // communication — it is this workspace's private messages, nothing else.
         scope: "vantage_org_direct_messages",
         note:
-          "Includes messages the sender deleted (deletedAt is set, body retained). Does not " +
-          "include the team channel, or anything said on another platform.",
+          "Includes messages the sender deleted (deletedAt is set, body retained) and, as extra " +
+          "rows with revisionAction set, the prior wording of every edit or delete. Does not " +
+          "include team channels, or anything said on another platform.",
         summary: result.summary,
         messages: result.rows,
       },

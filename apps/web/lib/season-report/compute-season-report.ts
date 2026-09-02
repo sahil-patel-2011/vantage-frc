@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import {
   buildSeasonReportNarrative,
   extractHighlights,
@@ -40,6 +39,8 @@ export type SeasonReportView =
       summary: SeasonReportSummary;
       snapshots: SeasonReportSnapshot[];
       computedAt: string;
+      /** Set on the POST that generated the newest snapshot: model vs template (renderWithModel). */
+      render?: RenderOutcome;
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
@@ -223,46 +224,39 @@ export async function deleteEntry(client: PoolClient, input: { orgId: string; en
 
 /**
  * Generate a season retrospective snapshot from logged entries and persist it. The narrative
- * synthesis is fully deterministic (buildSeasonReportNarrative) so meteredAI wraps it purely to
+ * synthesis starts deterministic (buildSeasonReportNarrative); renderWithModel then asks the org's real model to write the paragraphs (template fallback), and the call goes through meteredAI to
  * route the run through the standard usage-ledger path, matching every other metered feature.
  */
 export async function generateSnapshot(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<SeasonReportSnapshot> {
+): Promise<SeasonReportSnapshot & { render: RenderOutcome }> {
   const entries = await loadEntries(client, input.orgId, input.seasonYear);
   const summary = summarizeSeasonReportEntries(entries);
 
-  const result = await meteredAI({
+  const highlights = extractHighlights(entries);
+  const watchouts = extractWatchouts(entries);
+  // Real model call on the org's adapter with the deterministic narrative as fallback: the
+  // five section paragraphs may be rewritten; highlights, watchouts and completeness are
+  // computed from the logged entries and are the only facts the model may use.
+  const {
+    value: { narrative },
+    render,
+  } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "season_report",
-    requestId: `season-report-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      entryCount: entries.length,
-      completeness: summary.completeness,
-      note: "Deterministic narrative synthesis from logged entries — no external model call",
-    },
-    invoke: async () => {
-      const narrative = buildSeasonReportNarrative(entries);
-      const highlights = extractHighlights(entries);
-      const watchouts = extractWatchouts(entries);
-      return {
-        value: { narrative, highlights, watchouts },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-season-report-v1",
-        provider: "vantage-local",
-      };
-    },
+    value: { narrative: buildSeasonReportNarrative(entries) },
+    editableKeys: ["buildReliability", "results", "budget", "outreach", "lessons"],
+    instructions: `Season retrospective for the ${input.seasonYear} FRC season, computed from ${entries.length} logged entr${entries.length === 1 ? "y" : "ies"}. Rewrite each section as one cohesive paragraph for mentors, students and sponsors; when a section says nothing was logged, keep saying so plainly.`,
+    facts: [
+      highlights.length ? `Highlights (logged as positive):\n${highlights.map((item) => `- ${item}`).join("\n")}` : "Highlights: none logged.",
+      watchouts.length ? `Watchouts (logged as needing attention):\n${watchouts.map((item) => `- ${item}`).join("\n")}` : "Watchouts: none logged.",
+    ].join("\n"),
+    maxTokens: 900,
+    metadata: { seasonYear: input.seasonYear, entryCount: entries.length, completeness: summary.completeness },
   });
-
-  const { narrative, highlights, watchouts } = result;
 
   const inserted = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO season_report_snapshots (
@@ -283,6 +277,7 @@ export async function generateSnapshot(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     seasonYear: input.seasonYear,
     completeness: summary.completeness,
     narrative,

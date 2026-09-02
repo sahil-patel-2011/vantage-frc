@@ -50,6 +50,17 @@ export function parseTags(input: unknown): string[] {
 
 export type EntryInput = { title: string; entryDate: string; phase: BuildPhase; subsystem: string; body: string; tags: string[] };
 
+/** A media-library item attached to an entry (migration 0503 link table). */
+export type NotebookMedia = {
+  itemId: string;
+  title: string;
+  kind: "photo" | "video";
+  position: number;
+  /** Full bytes via the media-library route (session-gated). */
+  src: string;
+  thumbnailSrc: string | null;
+};
+
 export function validateEntry(
   raw: Record<string, unknown>,
 ): { ok: true; value: EntryInput } | { ok: false; error: string } {
@@ -88,7 +99,9 @@ export function summarizeNotebook(entries: { subsystem: string; phase: BuildPhas
 export type NotebookAction =
   | { action: "create_entry"; orgId: string; seasonYear: number; title: string; entryDate: string; phase: BuildPhase; subsystem: string; body: string; tags: string[] }
   | { action: "update_entry"; orgId: string; id: string; patch: { title?: string; phase?: BuildPhase; subsystem?: string; body?: string; tags?: string[] } }
-  | { action: "delete_entry"; orgId: string; id: string };
+  | { action: "delete_entry"; orgId: string; id: string }
+  | { action: "attach_media"; orgId: string; id: string; mediaItemId: string }
+  | { action: "detach_media"; orgId: string; id: string; mediaItemId: string };
 
 function reqStr(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} is required`);
@@ -125,6 +138,9 @@ export function parseNotebookAction(raw: unknown): NotebookAction {
     }
     case "delete_entry":
       return { action, orgId, id: reqStr(body.id, "id") };
+    case "attach_media":
+    case "detach_media":
+      return { action, orgId, id: reqStr(body.id, "id"), mediaItemId: reqStr(body.mediaItemId, "mediaItemId") };
     default:
       throw new Error("Unsupported notebook action");
   }

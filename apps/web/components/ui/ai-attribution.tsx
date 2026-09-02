@@ -2,7 +2,11 @@ import { relativeTime } from "./relative-time";
 import styles from "./ui.module.css";
 import { aiAttributionView, type AIAttributionKind } from "./ai-attribution-policy";
 
-export { AI_ATTRIBUTION_LABELS, aiAttributionView } from "./ai-attribution-policy";
+export {
+  AI_ATTRIBUTION_LABELS,
+  aiAttributionView,
+  attributionKindForRenderMode,
+} from "./ai-attribution-policy";
 export type { AIAttributionKind } from "./ai-attribution-policy";
 
 type AIAttributionProps = {

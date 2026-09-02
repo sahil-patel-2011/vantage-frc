@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureText, renderFeatureValue, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { buildDeckSections, buildRoiNarrative, computeGoalProgress, summarizeRoiLines } from ".";
 import type {
   SponsorSuiteDeck,
@@ -241,13 +240,13 @@ export async function computeSponsorSuiteView(
 
 /**
  * Generate a deterministic pitch/renewal deck outline grounded only in the sponsor's own recorded
- * contribution history and the season's fundraising goal. Wrapped in meteredAI so the run is billed
+ * contribution history and the season's fundraising goal. Rendered through renderWithModel (real model call, template fallback) so the run is billed
  * and audited through the standard usage-ledger path, matching every other metered feature.
  */
 export async function generateDeck(
   client: PoolClient,
   input: { orgId: string; userId: string; sponsorId: string | null; kind: SponsorSuiteDeckKind; seasonYear: number },
-): Promise<SponsorSuiteDeck> {
+): Promise<SponsorSuiteDeck & { render: RenderOutcome }> {
   let sponsorName: string | null = null;
   let priorContributionsUsd = 0;
   let priorContributionCount = 0;
@@ -273,34 +272,26 @@ export async function generateDeck(
   const teamNumber = orgRow.rows[0]?.teamNumber ?? null;
   const goal = await loadGoalProgress(client, input.orgId, input.seasonYear);
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter with the deterministic deck as fallback: each
+  // section body may be rewritten as pitch prose; headings, prior-contribution figures and
+  // the season goal come from the sponsor's records.
+  const { value: result, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "sponsor_suite_deck",
-    requestId: `sponsor-suite-deck-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    value: buildDeckSections({
+      kind: input.kind,
+      sponsorName,
+      teamNumber,
+      seasonYear: input.seasonYear,
+      priorContributionsUsd,
+      priorContributionCount,
+      goal,
+    }),
+    editableKeys: ["body"],
+    instructions: `${input.kind === "renewal" ? "Renewal" : "Pitch"} deck for ${sponsorName ?? "a prospective sponsor"} from ${teamNumber != null ? `FRC Team ${teamNumber}` : "our FRC team"}, ${input.seasonYear} season. Rewrite each section body as one persuasive but factual paragraph, keeping every dollar amount, count and goal figure exactly as given and inventing no past support, awards or reach numbers.`,
     metadata: { sponsorId: input.sponsorId, kind: input.kind, seasonYear: input.seasonYear },
-    invoke: async () => {
-      const sections = buildDeckSections({
-        kind: input.kind,
-        sponsorName,
-        teamNumber,
-        seasonYear: input.seasonYear,
-        priorContributionsUsd,
-        priorContributionCount,
-        goal,
-      });
-      return {
-        value: sections,
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-sponsor-suite-v1",
-        provider: "vantage-local",
-      };
-    },
   });
 
   const title = `${sponsorName ?? "Prospect"} ${input.kind === "renewal" ? "renewal" : "pitch"} deck — ${input.seasonYear}`;
@@ -313,6 +304,7 @@ export async function generateDeck(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     sponsorId: input.sponsorId,
     sponsorName,
     kind: input.kind,
@@ -325,12 +317,12 @@ export async function generateDeck(
 
 /**
  * Generate a deterministic end-of-season ROI report grounded only in recorded sponsor_contributions
- * and the season goal. Wrapped in meteredAI to go through the standard usage-ledger path.
+ * and the season goal. Rendered through renderWithModel (real model call, template fallback) to go through the standard usage-ledger path.
  */
 export async function generateRoiReport(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<SponsorSuiteRoiReport> {
+): Promise<SponsorSuiteRoiReport & { render: RenderOutcome }> {
   const contributionResult = await client.query<{ sponsorId: string; sponsorName: string; tier: string; amountUsd: string }>(
     `SELECT c.sponsor_id AS "sponsorId", s.name AS "sponsorName", s.tier::text AS tier,
             COALESCE(c.amount_usd, 0)::text AS "amountUsd"
@@ -347,37 +339,36 @@ export async function generateRoiReport(
   }));
   const goal = await loadGoalProgress(client, input.orgId, input.seasonYear);
 
-  const result = await meteredAI({
+  const lines = summarizeRoiLines(rows);
+  const totalRaisedUsd = lines.reduce((sum, l) => sum + l.totalContributedUsd, 0);
+  const templateNarrative = () =>
+    buildRoiNarrative({
+      seasonYear: input.seasonYear,
+      lines,
+      totalRaisedUsd,
+      goalUsd: goal.goalUsd,
+      attainmentPct: goal.attainmentPct,
+    });
+  // The per-sponsor lines and totals are computed from recorded contributions; a real model
+  // call on the org's adapter writes the narrative, with the template standing in on failure.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "sponsor_suite_roi_report",
-    requestId: `sponsor-suite-roi-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    prompt: [
+      `End-of-season sponsor ROI narrative for the ${input.seasonYear} season, for the team's booster meeting. Write 1-2 short paragraphs in the template's structure: total raised, top sponsors, and progress against the season goal.`,
+      `Total raised: $${totalRaisedUsd.toLocaleString()} across ${lines.length} sponsor(s).`,
+      goal.goalUsd != null ? `Season goal: $${goal.goalUsd.toLocaleString()}${goal.attainmentPct != null ? ` (${Math.round(goal.attainmentPct * 100)}% attained)` : ""}.` : "Season goal: not set.",
+      ...lines.slice(0, 6).map((line) => `- ${line.sponsorName}: $${line.totalContributedUsd.toLocaleString()}`),
+      `Template: ${templateNarrative()}`,
+      "Use only these figures; invent no sponsors, amounts or outcomes.",
+    ].join("\n"),
+    template: templateNarrative,
     metadata: { seasonYear: input.seasonYear, contributionCount: rows.length },
-    invoke: async () => {
-      const lines = summarizeRoiLines(rows);
-      const totalRaisedUsd = lines.reduce((sum, l) => sum + l.totalContributedUsd, 0);
-      const narrative = buildRoiNarrative({
-        seasonYear: input.seasonYear,
-        lines,
-        totalRaisedUsd,
-        goalUsd: goal.goalUsd,
-        attainmentPct: goal.attainmentPct,
-      });
-      return {
-        value: { lines, totalRaisedUsd, narrative },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-sponsor-suite-v1",
-        provider: "vantage-local",
-      };
-    },
   });
-
-  const { lines, totalRaisedUsd, narrative } = result;
+  const narrative = rendered.text;
+  const render = renderOutcomeOf(rendered);
   const inserted = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO sponsor_suite_roi_reports (
        org_id, season_year, total_raised_usd, total_sponsors, goal_usd, goal_attainment_pct, lines, narrative, created_by
@@ -398,6 +389,7 @@ export async function generateRoiReport(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     seasonYear: input.seasonYear,
     totalRaisedUsd,
     totalSponsors: lines.length,

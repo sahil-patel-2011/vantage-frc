@@ -1,5 +1,19 @@
 # Feature completeness audit — 2026-08-23
 
+> **Status 2026-09-02.** The ordered build list below has been worked through; migrations 0443–0505 carry
+> the schema. Done: offline outbox chunking/quarantine (1), pit photos as a first-class object (2), form
+> studio with drafts/templates/conditional fields (3), scouting→strategy semantic mapping and the pick-list
+> spine with promote actions and a Pick Clock POST (4), team chat channels/edits/set-based fan-out/no-connection
+> long-poll on top of YPP supervision (5), scout shifts + notifications and one briefing feeding Event day (6),
+> Bugbot per-finding targeting, no-charge-without-diff, context and 18 Code Coach rules (8), CAD vault (9),
+> print farm (11), one parts ledger + /parts hub + honest spare forecast (12), one money ledger with grant
+> scoping and evidence loops (13), roles/training/safety gating, tasks merge, hours export, self-serve exit
+> interviews, markdown wiki, notebook images (14), plus a rebuilt app shell (persistent sidebar / drawer, Today
+> strip on Home), a Parts workbench in Build, the shared model-or-template renderer + ai_render_attempts with a
+> visible Template badge (7), the CAD viewport / plan → approve → execute / six more ops / exports to the vault /
+> team-level Onshape connection (10), and deflated QR handoff batches. In flight at time of writing: the hub-shell
+> unification for Business/Media. See `docs/FEATURE_MAP.md` for the current surface list.
+
 100 features rated by a 15-agent audit (solid = would ship · thin = works but shallow · fragment = a piece of a job · broken = does not work), plus market research on what FRC teams actually use. Every claim cites file:line — grep the JSON at the transcript for detail beyond this summary.
 
 **Counts: 10 solid · 61 thin · 14 fragment · 15 broken**

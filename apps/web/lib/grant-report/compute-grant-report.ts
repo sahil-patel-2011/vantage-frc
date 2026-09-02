@@ -1,7 +1,12 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
-import { buildGrantReportSections, buildGrantReportNarrative, summarizeOutreach, summarizeSpend } from ".";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
+import {
+  buildGrantReportSections,
+  buildGrantReportNarrative,
+  spendStateFor,
+  summarizeOutreach,
+  summarizeSpend,
+} from ".";
 import type { GrantReport, GrantReportEligibleGrant } from "./types";
 
 export type GrantReportSetupStep = {
@@ -60,6 +65,7 @@ type EligibleGrantRow = {
   amountAwardedUsd: string | null;
   decisionAt: string | null;
   hasReport: boolean;
+  taggedExpenseCount: string | number | null;
 };
 
 function mapEligibleGrant(row: EligibleGrantRow): GrantReportEligibleGrant {
@@ -71,6 +77,7 @@ function mapEligibleGrant(row: EligibleGrantRow): GrantReportEligibleGrant {
     amountAwardedUsd: row.amountAwardedUsd != null ? Number(row.amountAwardedUsd) || 0 : 0,
     decisionAt: row.decisionAt,
     hasReport: row.hasReport,
+    taggedExpenseCount: Number(row.taggedExpenseCount ?? 0) || 0,
   };
 }
 
@@ -91,6 +98,7 @@ type ReportRow = {
 };
 
 function mapReport(row: ReportRow): GrantReport {
+  const spendByCategory = Array.isArray(row.spendByCategory) ? row.spendByCategory : [];
   return {
     id: row.id,
     grantApplicationId: row.grantApplicationId,
@@ -99,9 +107,11 @@ function mapReport(row: ReportRow): GrantReport {
     seasonYear: row.seasonYear,
     amountAwardedUsd: Number(row.amountAwardedUsd) || 0,
     totalSpendUsd: Number(row.totalSpendUsd) || 0,
+    taggedExpenseCount: spendByCategory.reduce((sum, line) => sum + (Number(line.count) || 0), 0),
+    spendState: spendStateFor(spendByCategory),
     outreachCount: Number(row.outreachCount) || 0,
     outreachByKind: Array.isArray(row.outreachByKind) ? row.outreachByKind : [],
-    spendByCategory: Array.isArray(row.spendByCategory) ? row.spendByCategory : [],
+    spendByCategory,
     sections: Array.isArray(row.sections) ? row.sections : [],
     narrative: row.narrative,
     createdAt: row.createdAt,
@@ -132,7 +142,10 @@ export async function computeGrantReportView(
       `SELECT ga.id, go.name, go.funder, ga.season_year AS "seasonYear",
               ga.amount_awarded_usd::text AS "amountAwardedUsd",
               ga.decision_at::text AS "decisionAt",
-              EXISTS(SELECT 1 FROM grant_report_reports r WHERE r.grant_application_id = ga.id) AS "hasReport"
+              EXISTS(SELECT 1 FROM grant_report_reports r WHERE r.grant_application_id = ga.id) AS "hasReport",
+              (SELECT count(*) FROM finance_transactions ft
+                WHERE ft.org_id = ga.org_id AND ft.grant_application_id = ga.id
+                  AND ft.type = 'expense' AND ft.counts_in_balance)::int AS "taggedExpenseCount"
        FROM grant_applications ga
        LEFT JOIN grant_opportunities go ON go.id = ga.grant_opportunity_id
        WHERE ga.org_id = $1 AND ga.status = 'awarded'
@@ -180,16 +193,16 @@ export async function computeGrantReportView(
 
 /**
  * Generate a deterministic post-grant impact report grounded only in the grant's recorded award
- * amount, outreach_messages linked to it, and finance_transactions expenses recorded for the
- * grant's season. Finance rows carry no per-grant linkage, so season expenses are reported
- * strictly as org-wide context with an explicit "spend linkage is not configured" disclosure —
- * never presented as spend attributable to this grant. Wrapped in meteredAI so the run is billed
- * and audited through the standard usage-ledger path, matching every other metered feature.
+ * amount, outreach_messages linked to it, and the finance_transactions expenses a team TAGGED
+ * to this grant (grant_application_id, 0504). Untagged season spend is never attributed; when
+ * nothing is tagged the report states "no expenses tagged to this grant yet" explicitly.
+ * Rendered through renderWithModel (real model call, deterministic template fallback) so the run is billed and audited through the standard usage-ledger
+ * path, matching every other metered feature.
  */
 export async function generateGrantReport(
   client: PoolClient,
   input: { orgId: string; userId: string; grantApplicationId: string },
-): Promise<GrantReport> {
+): Promise<GrantReport & { render: RenderOutcome }> {
   const grantRow = await client.query<{
     name: string;
     funder: string | null;
@@ -217,12 +230,14 @@ export async function generateGrantReport(
        WHERE org_id = $1 AND grant_application_id = $2`,
       [input.orgId, input.grantApplicationId],
     ),
+    // Only rows tagged to THIS grant — the 0504 linkage. counts_in_balance excludes BOM estimates.
     client.query<{ category: string; amountUsd: string }>(
       `SELECT COALESCE(fc.name, 'Uncategorized') AS category, ft.amount_usd::text AS "amountUsd"
        FROM finance_transactions ft
        LEFT JOIN finance_categories fc ON fc.id = ft.category_id
-       WHERE ft.org_id = $1 AND ft.season_year = $2 AND ft.type = 'expense'`,
-      [input.orgId, seasonYear],
+       WHERE ft.org_id = $1::uuid AND ft.grant_application_id = $2::uuid
+         AND ft.type = 'expense' AND ft.counts_in_balance`,
+      [input.orgId, input.grantApplicationId],
     ),
   ]);
 
@@ -232,38 +247,29 @@ export async function generateGrantReport(
   );
   const outreachCount = outreachByKind.reduce((sum, line) => sum + line.count, 0);
   const totalSpendUsd = spendByCategory.reduce((sum, line) => sum + line.totalUsd, 0);
+  const taggedExpenseCount = spendByCategory.reduce((sum, line) => sum + line.count, 0);
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter with the deterministic sections as fallback: the
+  // model may rewrite each section body as funder-facing prose; ids, titles and every
+  // figure come from the logged outreach and tagged spend.
+  const { value: sections, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "grant_report_generate",
-    requestId: `grant-report-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    value: buildGrantReportSections({
+      grantName: grant.name,
+      funder: grant.funder,
+      seasonYear,
+      amountAwardedUsd,
+      outreachByKind,
+      spendByCategory,
+    }),
+    editableKeys: ["body"],
+    instructions: `Grant report to ${grant.funder ?? "the funder"} for "${grant.name}" (${seasonYear} season, $${amountAwardedUsd.toLocaleString()} awarded). Rewrite each section body as one short, specific paragraph a grant officer would read, keeping every figure exactly as given and adding no activities, amounts or outcomes that are not in the document.`,
     metadata: { grantApplicationId: input.grantApplicationId, seasonYear },
-    invoke: async () => {
-      const sections = buildGrantReportSections({
-        grantName: grant.name,
-        funder: grant.funder,
-        seasonYear,
-        amountAwardedUsd,
-        outreachByKind,
-        spendByCategory,
-      });
-      const narrative = buildGrantReportNarrative(sections);
-      return {
-        value: { sections, narrative },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-grant-report-v1",
-        provider: "vantage-local",
-      };
-    },
   });
-
-  const { sections, narrative } = result;
+  const narrative = buildGrantReportNarrative(sections);
   const inserted = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO grant_report_reports (
        org_id, grant_application_id, season_year, amount_awarded_usd, total_spend_usd,
@@ -287,12 +293,15 @@ export async function generateGrantReport(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     grantApplicationId: input.grantApplicationId,
     grantName: grant.name,
     funder: grant.funder,
     seasonYear,
     amountAwardedUsd,
     totalSpendUsd,
+    taggedExpenseCount,
+    spendState: spendStateFor(spendByCategory),
     outreachCount,
     outreachByKind,
     spendByCategory,

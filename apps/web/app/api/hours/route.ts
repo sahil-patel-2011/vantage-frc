@@ -8,6 +8,12 @@ import {
   type HourLog,
   type HourPolicy,
 } from "../../../lib/build-hours";
+import {
+  buildHoursCsv,
+  hoursExportFileName,
+  parseHoursExportRange,
+  type HoursExportLog,
+} from "../../../lib/hours/export-csv";
 
 class HttpError extends Error {
   constructor(
@@ -40,11 +46,75 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Hours request failed" }, { status });
 }
 
+/**
+ * `GET /api/hours?export=csv&orgId=…&userId=…&from=YYYY-MM-DD&to=YYYY-MM-DD`
+ * Per-member CSV of real hour_logs rows. Any member exports their own hours;
+ * an owner/admin may export any member's. Nothing is aggregated or invented —
+ * open sessions export with no clock_out, auto-closed ones are flagged.
+ */
+async function exportCsv(request: Request, sessionUserId: string) {
+  const url = new URL(request.url);
+  const requestedOrg = url.searchParams.get("orgId");
+  const targetParam = url.searchParams.get("userId");
+  const range = parseHoursExportRange(url.searchParams.get("from"), url.searchParams.get("to"));
+  if (!range) throw new HttpError(400, "from/to must be YYYY-MM-DD and from must not be after to");
+
+  const result = await withRls({ userId: sessionUserId, orgId: requestedOrg ?? undefined }, async (client) => {
+    const membership = await client.query<{ orgId: string; role: string }>(
+      `SELECT m.org_id AS "orgId", m.role::text AS role
+       FROM memberships m
+       JOIN organizations o ON o.id = m.org_id
+       WHERE m.user_id = $1::uuid AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
+       ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
+       LIMIT 1`,
+      [sessionUserId, requestedOrg],
+    );
+    const row = membership.rows[0];
+    if (!row) throw new HttpError(403, "Organization membership required");
+
+    const targetUser = targetParam && targetParam !== "me" ? targetParam : sessionUserId;
+    if (targetUser !== sessionUserId && !isAdmin(row.role)) {
+      throw new HttpError(403, "Owner/admin access required to export another member's hours");
+    }
+    const target = await client.query<{ name: string | null }>(
+      `SELECT u.name FROM memberships m JOIN users u ON u.id = m.user_id
+       WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid`,
+      [row.orgId, targetUser],
+    );
+    if (!target.rowCount) throw new HttpError(404, "That member is not in this organization");
+
+    const logs = await client.query<HoursExportLog>(
+      `SELECT r.id, r.kind, r.clock_in::text AS "clockIn", r.clock_out::text AS "clockOut", r.note,
+              r.auto_closed AS "autoClosed", r.auto_closed_reason AS "autoClosedReason",
+              e.title AS "linkedEventTitle", r.occurrence_date::text AS "occurrenceDate"
+       FROM hour_logs r
+       LEFT JOIN subteam_calendar_events e ON e.id = r.calendar_event_id AND e.org_id = r.org_id
+       WHERE r.org_id = $1::uuid AND r.user_id = $2::uuid
+         AND ($3::date IS NULL OR r.clock_in >= $3::date)
+         AND ($4::date IS NULL OR r.clock_in < ($4::date + interval '1 day'))
+       ORDER BY r.clock_in ASC
+       LIMIT 5000`,
+      [row.orgId, targetUser, range.from, range.to],
+    );
+    return { csv: buildHoursCsv(logs.rows), memberName: target.rows[0]!.name };
+  });
+
+  return new Response(result.csv, {
+    status: 200,
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${hoursExportFileName({ memberName: result.memberName, range })}"`,
+      "cache-control": "private, no-store",
+    },
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
+    if (url.searchParams.get("export") === "csv") return await exportCsv(request, session.user.id);
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await client.query<{

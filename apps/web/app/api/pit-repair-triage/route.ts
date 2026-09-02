@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -114,13 +115,14 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-failure": {
           const subsystemName = trimmedOrNull(body.subsystemName, 200);
           const title = trimmedOrNull(body.title, 200);
           if (!subsystemName) throw new Error("subsystemName is required");
           if (!title) throw new Error("title is required");
-          await logFailure(client, {
+          render = await logFailure(client, {
             orgId,
             userId,
             seasonYear,
@@ -158,7 +160,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computePitRepairTriageView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computePitRepairTriageView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

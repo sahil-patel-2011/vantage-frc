@@ -16,6 +16,8 @@ import {
   type TuningAutopilotShellKind,
 } from "../../lib/tuning-autopilot/tuning-autopilot-related";
 import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./tuning-autopilot.css";
@@ -162,6 +164,7 @@ export default function TuningAutopilotClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((overrides?: { seasonYear?: number; sessionId?: string | null }) => {
@@ -247,6 +250,8 @@ export default function TuningAutopilotClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -331,6 +336,8 @@ export default function TuningAutopilotClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="tuning_autopilot" />
 
       <TuningNextActionsPanel actions={nextActions} />
 

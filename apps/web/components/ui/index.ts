@@ -28,23 +28,28 @@ export { SetupChecklist, type SetupStep } from "./setup-checklist";
 export { Shell, type ShellState } from "./shell";
 export { ProgressMeter } from "./progress-meter";
 
+// Leaf-page skeleton (PageHeader + hub breadcrumb + Shell state mapping)
+export {
+  ToolPage,
+  ToolPageBreadcrumbs,
+  type ToolPageError,
+  type ToolPageSetup,
+} from "./tool-page";
+export {
+  toolPageBreadcrumb,
+  toolPageBreadcrumbText,
+  type ToolPageCrumb,
+} from "./tool-page-breadcrumb";
+
 // Data
-export { DataTable, type Column } from "./data-table";
 export { ExportButton, type CsvColumn } from "./export-button";
 
 // Trust / provenance
-export { SourceTag } from "./source-tag";
-export { DataSourceFooter } from "./data-source-footer";
 export { AIAttribution } from "./ai-attribution";
 export { ModelProvenance, type ModelProvenanceMeta } from "./model-provenance";
-export { Freshness } from "./freshness";
 export { relativeTime } from "./relative-time";
 
-// Setup / status
-export { IntegrationSetupCard } from "./integration-setup-card";
-export { SystemHealthStrip, type HealthSignal } from "./system-health-strip";
-
-// Overlays / feedback (each Provider mounts once)
+// Overlays / feedback (ToastProvider + ConfirmProvider mount once in app/theme-provider.tsx)
 export { ActionMenu, type ActionSpec } from "./action-menu";
 export { Modal, useDialog } from "./modal";
 export { ConfirmDialog, ConfirmProvider, useConfirm, type ConfirmOpts } from "./confirm-dialog";

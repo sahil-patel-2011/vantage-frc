@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, rankMentorCandidates } from ".";
 import { roleTier } from "../learning/learning-mode";
 import { buildCalibrationSignals, type CalibrationRow, type CalibrationSignal } from "./calibration";
@@ -324,7 +323,7 @@ export async function deleteSkillEntry(
 export async function requestMentor(
   client: PoolClient,
   input: { orgId: string; userId: string; skillCategory: SkillCategory; note: string | null },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const entryResult = await client.query<EntryRow>(
     `SELECT e.id, e.user_id AS "userId", u.name AS "userName", e.skill_category AS "skillCategory",
             e.custom_label AS "customLabel", e.proficiency, e.evidence_note AS "evidenceNote",
@@ -355,28 +354,18 @@ export async function requestMentor(
     evidenceNote: row.evidenceNote,
   }));
 
-  const requestId = `skills-graph-${randomUUID()}`;
-  const match = await meteredAI({
+  // Real model call on the org's adapter with the deterministic ranking as fallback: only
+  // each candidate's rationale prose may be rewritten; scores, ordering and evidence counts
+  // stay computed from declared proficiency and completed-task evidence.
+  const { value: match, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "skills_graph",
-    requestId,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      skillCategory: input.skillCategory,
-      candidateCount: candidateEntries.length,
-      note: "Deterministic proficiency + completed-task-evidence mentor ranking — no external model call",
-    },
-    invoke: async () => ({
-      value: rankMentorCandidates(candidateEntries, input.userId),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-skills-graph-v1",
-      provider: "vantage-local",
-    }),
+    value: rankMentorCandidates(candidateEntries, input.userId),
+    editableKeys: ["rationale"],
+    instructions: `Mentor matching for the ${input.skillCategory} skill category${input.note ? ` (request note: ${input.note.slice(0, 400)})` : ""}. Rewrite each candidate's rationale as one plain sentence saying why they fit, using only their declared proficiency and logged task evidence in the document; keep names and counts exactly as given.`,
+    metadata: { skillCategory: input.skillCategory, candidateCount: candidateEntries.length },
   });
 
   const top = match[0] ?? null;
@@ -396,6 +385,7 @@ export async function requestMentor(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function closeMentorRequest(

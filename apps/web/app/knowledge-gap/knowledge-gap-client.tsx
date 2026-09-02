@@ -15,6 +15,8 @@ import {
 import { knowledgeGapSubjectLabel } from "../../lib/knowledge-gap";
 import type { KnowledgeGapView } from "../../lib/knowledge-gap/compute-knowledge-gap";
 import type { KnowledgeGapItem, KnowledgeGapStatus, KnowledgeGapSubjectKind } from "../../lib/knowledge-gap/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   KNOWLEDGE_GAP_RELATED_INCLUDE,
   classifyKnowledgeGapShell,
@@ -189,6 +191,7 @@ export default function KnowledgeGapClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -260,6 +263,8 @@ export default function KnowledgeGapClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -337,6 +342,8 @@ export default function KnowledgeGapClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="knowledge_gap" />
 
       {showTiles ? (
         <Panel className="kg-panel">

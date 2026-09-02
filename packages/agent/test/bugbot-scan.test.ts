@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   applyBugbotDismissals,
+  BUGBOT_PROMPT_MAX_CHARS,
+  BUGBOT_RULE_MAX_HITS,
+  BUGBOT_SCAN_MAX_CHARS,
   bugbotBundleSections,
   bugbotFindingFingerprint,
+  bugbotFixUserMessage,
+  bugbotPromptSlice,
   bugbotScanCostUsd,
   bugbotScopeKey,
   bugbotUserMessage,
   classifyBugbotPath,
   diffBugbotFindings,
+  formatBugbotScanBundle,
   frcBugbotFindings,
   locateBugbotLine,
   mergeBugbotReview,
@@ -206,6 +212,135 @@ describe("FRC failure-class rules", () => {
       const quoted = finding.evidence.replace(/^Drive\.java:\d+: /, "");
       expect(content.replace(/\s+/g, " ")).toContain(quoted);
     }
+  });
+});
+
+describe("FRC rule hit caps", () => {
+  it("reports every duplicate CAN id — twelve collisions are twelve findings", () => {
+    const lines = Array.from({ length: 14 }, (_, index) => `  private final TalonFX m${index} = new TalonFX(7);`);
+    const content = `public class Drive {\n${lines.join("\n")}\n}\n`;
+    const dupes = frcBugbotFindings({ path: "Drive.java", content }).filter(
+      (item) => item.pattern === "can-id-collision",
+    );
+    // 13 duplicates of the first constructor, capped at the per-rule ceiling.
+    expect(dupes).toHaveLength(BUGBOT_RULE_MAX_HITS);
+    expect(new Set(dupes.map((item) => item.line)).size).toBe(BUGBOT_RULE_MAX_HITS);
+    expect(dupes[0]?.line).toBe(3);
+    expect(dupes[BUGBOT_RULE_MAX_HITS - 1]?.line).toBe(2 + BUGBOT_RULE_MAX_HITS);
+  });
+
+  it("reports every alliance Optional.get, not just the first", () => {
+    const content = [
+      "if (DriverStation.getAlliance().get() == Alliance.Red) { a(); }",
+      "if (DriverStation.getAlliance().get() == Alliance.Blue) { b(); }",
+      "var c = DriverStation.getAlliance().get();",
+    ].join("\n");
+    const hits = frcBugbotFindings({ path: "Auto.java", content }).filter(
+      (item) => item.pattern === "alliance-optional-get",
+    );
+    expect(hits.map((item) => item.line)).toEqual([1, 2, 3]);
+  });
+
+  it("reports blocking calls in every periodic body, not only the first method", () => {
+    const content = [
+      "public void teleopPeriodic() {",
+      "  Thread.sleep(20);",
+      "}",
+      "public void autonomousPeriodic() {",
+      "  Timer.delay(0.02);",
+      "  while (true) { io.update(); }",
+      "}",
+      "public void robotInit() {",
+      "  Thread.sleep(500);",
+      "}",
+    ].join("\n");
+    const hits = frcBugbotFindings({ path: "Robot.java", content }).filter(
+      (item) => item.pattern === "blocking-call-in-loop",
+    );
+    // Two bodies, three hits; robotInit is not a 20 ms body.
+    expect(hits.map((item) => item.line)).toEqual([2, 5, 6]);
+  });
+
+  it("reports every over-limit current setting", () => {
+    const content = "a.setSmartCurrentLimit(80);\nb.setSmartCurrentLimit(40);\nc.withSupplyCurrentLimit(90);";
+    const hits = frcBugbotFindings({ path: "Drive.java", content }).filter(
+      (item) => item.pattern === "current-limit-too-high",
+    );
+    expect(hits.map((item) => item.line)).toEqual([1, 3]);
+  });
+});
+
+describe("truncation honesty", () => {
+  it("shows the model the whole bundle budget, not a smaller silent slice", () => {
+    expect(BUGBOT_PROMPT_MAX_CHARS).toBe(BUGBOT_SCAN_MAX_CHARS);
+    const body = `${"x".repeat(30_000)}\nSENTINEL_LATE_IN_FILE\n`;
+    const message = bugbotUserMessage({ path: "Drive.java", content: body, localRisks: [] });
+    // 30k chars is past the old 24k slice and inside the bundle budget.
+    expect(message).toContain("SENTINEL_LATE_IN_FILE");
+    expect(message).not.toContain("cut at a read cap");
+    expect(bugbotPromptSlice(body).truncated).toBe(false);
+  });
+
+  it("names a pasted buffer as cut when it exceeds the prompt budget", () => {
+    const body = `${"y".repeat(BUGBOT_PROMPT_MAX_CHARS + 500)}\nSENTINEL_PAST_CAP\n`;
+    const sliced = bugbotPromptSlice(body);
+    expect(sliced.truncated).toBe(true);
+    expect(sliced.text).toHaveLength(BUGBOT_PROMPT_MAX_CHARS);
+    const message = bugbotUserMessage({ path: "Huge.java", content: body, localRisks: [] });
+    expect(message).not.toContain("SENTINEL_PAST_CAP");
+    expect(message).toContain("Files cut at a read cap");
+    expect(message).toContain("- Huge.java");
+    const fix = bugbotFixUserMessage({ path: "Huge.java", content: body, findings: [], targetFile: "Huge.java" });
+    expect(fix).toContain("cut at the read cap");
+    expect(fix).toContain("Change ONLY Huge.java");
+  });
+
+  it("reports which files were cut and which never made it into the bundle", () => {
+    const bundle = formatBugbotScanBundle(
+      [
+        { path: "A.java", content: "a".repeat(300) },
+        { path: "B.java", content: "b".repeat(900) },
+        { path: "C.java", content: "c".repeat(300) },
+      ],
+      1000,
+    );
+    // A fits whole, B is sliced to what is left, C does not fit at all.
+    expect(bundle.included).toEqual(["A.java", "B.java"]);
+    expect(bundle.truncatedFiles).toEqual(["B.java"]);
+    expect(bundle.omitted).toEqual(["C.java"]);
+    expect(bundle.truncated).toBe(true);
+    expect(bundle.filesScanned).toBe(2);
+    expect(bundle.content.length).toBeLessThanOrEqual(1000);
+    expect(bundle.content).not.toContain("C.java");
+  });
+
+  it("carries a per-file cut from the fetcher even when the bundle has room", () => {
+    const bundle = formatBugbotScanBundle([
+      { path: "Robot.java", content: "class Robot {}" },
+      { path: "Big.java", content: "class Big {}", truncated: true },
+    ]);
+    expect(bundle.truncated).toBe(true);
+    expect(bundle.truncatedFiles).toEqual(["Big.java"]);
+    expect(bundle.included).toEqual(["Robot.java", "Big.java"]);
+    expect(bundle.omitted).toEqual([]);
+  });
+
+  it("stays honest when nothing was cut", () => {
+    const bundle = formatBugbotScanBundle([{ path: "Robot.java", content: "class Robot {}" }]);
+    expect(bundle).toMatchObject({ truncated: false, truncatedFiles: [], omitted: [], included: ["Robot.java"] });
+  });
+
+  it("tells the model which files were cut so it never reasons about their tails", () => {
+    const message = bugbotUserMessage({
+      path: "github-scan",
+      content: "class Robot {}",
+      localRisks: [],
+      reviewedFiles: ["src/Robot.java", "src/Drive.java"],
+      truncatedFiles: ["src/Drive.java"],
+    });
+    expect(message).toContain("Files cut at a read cap");
+    expect(message).toContain("- src/Drive.java");
+    expect(message).toContain("PRIORITISE findings that explain or contradict a known FMEA failure");
   });
 });
 

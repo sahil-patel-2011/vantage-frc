@@ -103,7 +103,7 @@ describe("recordAssessment", () => {
       if (sql.includes("FROM rule_impact_rule_changes") && sql.includes("SELECT severity")) {
         return { rows: [] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -130,7 +130,7 @@ describe("recordAssessment", () => {
     // No matched rule changes -> still legal.
     expect(assessmentInsert?.params).toContain("still_legal");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

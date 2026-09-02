@@ -271,7 +271,40 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       return;
     }
     void load(orgId);
-  }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
+  }, [orgId]);  
+
+  const [promoteMessage, setPromoteMessage] = useState("");
+  const [promoting, setPromoting] = useState("");
+
+  /** Lift one seat onto THE pick list with the chemistry read as its note. */
+  async function promote(teamKey: string) {
+    if (!orgId || promoting) return;
+    setPromoting(teamKey);
+    setPromoteMessage("");
+    try {
+      const response = await fetch("/api/chemistry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "promote_to_pick_list",
+          orgId,
+          teamKey,
+          seatTeamKeys: view?.teamKeys ?? [],
+          score: view?.chemistry?.score ?? null,
+        }),
+      });
+      const body = (await response.json()) as { promoted?: { note: string }; error?: string };
+      if (!response.ok || !body.promoted) {
+        setPromoteMessage(body.error ?? "Could not promote to the pick list.");
+        return;
+      }
+      setPromoteMessage(`${teamKey.replace(/^frc/i, "")} is on the pick list — ${body.promoted.note}`);
+    } catch {
+      setPromoteMessage("Could not promote to the pick list.");
+    } finally {
+      setPromoting("");
+    }
+  }
 
   function scoreTone(score: number | null) {
     if (score == null) return "";
@@ -554,6 +587,12 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         </EmptyState>
       )}
 
+      {promoteMessage ? (
+        <p className="form-message" role="status">
+          {promoteMessage}
+        </p>
+      ) : null}
+
       {view?.teams.length ? (
         <section className="chem-teams">
           <h2>Seat details</h2>
@@ -580,6 +619,14 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
                     ))}
                   </div>
                 ) : null}
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={Boolean(promoting)}
+                  onClick={() => void promote(team.teamKey)}
+                >
+                  {promoting === team.teamKey ? "Promoting…" : "Promote to pick list"}
+                </button>
               </article>
             ))}
           </div>

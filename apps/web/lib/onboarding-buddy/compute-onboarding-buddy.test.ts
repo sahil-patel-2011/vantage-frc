@@ -76,7 +76,7 @@ describe("createPairing", () => {
         inserts.push({ sql, params });
         return { rows: [{ id: "pairing-1" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserts.push({ sql, params });
         return { rows: [] };
       }
@@ -87,7 +87,7 @@ describe("createPairing", () => {
       return { rows: [] };
     });
 
-    const pairingId = await createPairing(client, {
+    const { pairingId } = await createPairing(client, {
       orgId: ORG,
       userId: USER,
       newMemberId: NEW_MEMBER,
@@ -96,7 +96,7 @@ describe("createPairing", () => {
     });
 
     expect(pairingId).toBe("pairing-1");
-    const usageInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserts.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
     const planInserts = inserts.filter((entry) => entry.sql.includes("INSERT INTO onboarding_buddy_plan_items"));
     expect(planInserts.length).toBeGreaterThan(0);

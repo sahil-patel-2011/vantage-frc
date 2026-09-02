@@ -46,6 +46,23 @@ export type DmExportRow = {
   body: string;
   counterparties: string;
   supervisors: string;
+  /**
+   * Set on the extra rows that carry a message's edit/delete history (migration 0494): `body` is
+   * then the text BEFORE that change. Null on the message row itself, whose body is current.
+   */
+  revisionAction?: "edit" | "delete" | null;
+  revisionAt?: string | null;
+  revisionActor?: string | null;
+};
+
+export type DmExportRevision = {
+  conversationId: string;
+  messageId: string;
+  action: "edit" | "delete";
+  priorBody: string;
+  actorUserId: string;
+  actorName: string;
+  revisedAt: string;
 };
 
 export const DM_EXPORT_COLUMNS = [
@@ -57,7 +74,42 @@ export const DM_EXPORT_COLUMNS = [
   "supervisors",
   "deletedAt",
   "body",
+  "revisionAction",
+  "revisionAt",
+  "revisionActor",
 ] as const satisfies readonly (keyof DmExportRow)[];
+
+/**
+ * Interleave revision rows after the message they belong to, oldest change first, so the export
+ * reads top-to-bottom as "what was said, then how it changed". A revision whose message is not in
+ * the export (should not happen; both come from the same authorised function) is dropped rather
+ * than shown out of context.
+ */
+export function mergeExportRevisions(rows: DmExportRow[], revisions: DmExportRevision[]): DmExportRow[] {
+  if (!revisions.length) return rows;
+  const byMessage = new Map<string, DmExportRevision[]>();
+  for (const revision of revisions) {
+    const list = byMessage.get(revision.messageId) ?? [];
+    list.push(revision);
+    byMessage.set(revision.messageId, list);
+  }
+  const merged: DmExportRow[] = [];
+  for (const row of rows) {
+    merged.push(row);
+    const history = byMessage.get(row.messageId);
+    if (!history) continue;
+    for (const revision of [...history].sort((a, b) => a.revisedAt.localeCompare(b.revisedAt))) {
+      merged.push({
+        ...row,
+        body: revision.priorBody,
+        revisionAction: revision.action,
+        revisionAt: revision.revisedAt,
+        revisionActor: revision.actorName,
+      });
+    }
+  }
+  return merged;
+}
 
 /** RFC 4180 quoting. A leading =,+,-,@ is prefixed with ' so spreadsheets do not run it. */
 export function csvCell(value: string | null | undefined): string {
@@ -90,23 +142,32 @@ export function dmExportSummary(rows: DmExportRow[]): {
   messageCount: number;
   conversationCount: number;
   deletedCount: number;
+  revisionCount: number;
   firstSentAt: string | null;
   lastSentAt: string | null;
 } {
   const conversations = new Set<string>();
+  let messageCount = 0;
   let deletedCount = 0;
+  let revisionCount = 0;
   let firstSentAt: string | null = null;
   let lastSentAt: string | null = null;
   for (const row of rows) {
+    if (row.revisionAction) {
+      revisionCount += 1;
+      continue;
+    }
+    messageCount += 1;
     conversations.add(row.conversationId);
     if (row.deletedAt) deletedCount += 1;
     if (!firstSentAt || row.sentAt < firstSentAt) firstSentAt = row.sentAt;
     if (!lastSentAt || row.sentAt > lastSentAt) lastSentAt = row.sentAt;
   }
   return {
-    messageCount: rows.length,
+    messageCount,
     conversationCount: conversations.size,
     deletedCount,
+    revisionCount,
     firstSentAt,
     lastSentAt,
   };

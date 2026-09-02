@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "create-session": {
           const title = trimmedOrNull(body.title, 200);
@@ -162,14 +164,15 @@ export async function POST(request: Request) {
           break;
         }
         case "generate-postmortem": {
-          await generatePostmortem(client, { orgId, userId, seasonYear });
+          render = (await generatePostmortem(client, { orgId, userId, seasonYear })).render ?? undefined;
           break;
         }
         default:
           throw new Error("Unknown action");
       }
 
-      return computeRetroView(client, { userId, requestedOrg: orgId, seasonYear, sessionId });
+      const view = await computeRetroView(client, { userId, requestedOrg: orgId, seasonYear, sessionId });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

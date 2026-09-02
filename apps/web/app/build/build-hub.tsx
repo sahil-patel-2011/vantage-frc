@@ -7,6 +7,7 @@ import "../code/code.css";
 
 const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false });
 const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false });
+const CadVaultClient = dynamic(() => import("../cad-vault/cad-vault-client"), { ssr: false });
 const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
 const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/prototype-tracker-client"), {
@@ -15,7 +16,7 @@ const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/protot
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;
+const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad", "cad-vault"] as const;
 
 export default function BuildHub() {
   return (
@@ -36,6 +37,14 @@ export default function BuildHub() {
           return (
             <HubOrgGate orgId={orgId} label="CAD">
               {(id) => <CadWorkspace orgId={id} embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "cad-vault") {
+          // The vault client reads orgId from the URL the hub already carries.
+          return (
+            <HubOrgGate orgId={orgId} label="CAD vault">
+              {() => <CadVaultClient embedded />}
             </HubOrgGate>
           );
         }

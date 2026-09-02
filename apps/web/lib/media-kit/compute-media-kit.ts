@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { buildOnePagerSections, computeMediaKitReadiness } from ".";
 import type {
   MediaKitAsset,
@@ -275,13 +274,13 @@ export async function deleteDocument(
 
 /**
  * Generate a deterministic team one-pager grounded only in the recorded profile row,
- * asset library counts, and org identity. Wrapped in meteredAI so the run is billed and
+ * asset library counts, and org identity. Rendered through renderWithModel (real model call, template fallback) so the run is billed and
  * audited through the standard usage-ledger path.
  */
 export async function generateOnePager(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<MediaKitDocument> {
+): Promise<MediaKitDocument & { render: RenderOutcome }> {
   const orgRow = await client.query<{ teamNumber: number | null; orgName: string }>(
     `SELECT team_number AS "teamNumber", name AS "orgName" FROM organizations WHERE id = $1`,
     [input.orgId],
@@ -306,33 +305,25 @@ export async function generateOnePager(
   const assetCount = Number(assetCountResult.rows[0]?.total ?? 0) || 0;
   const logoCount = Number(assetCountResult.rows[0]?.logos ?? 0) || 0;
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter with the deterministic sections as fallback: the
+  // model may rewrite each section body as press-ready prose; headings and every fact come
+  // from the team's own media-kit profile and assets.
+  const { value: result, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "media_kit_one_pager",
-    requestId: `media-kit-one-pager-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    value: buildOnePagerSections({
+      teamNumber,
+      orgName,
+      seasonYear: input.seasonYear,
+      profile,
+      assetCount,
+      logoCount,
+    }),
+    editableKeys: ["body"],
+    instructions: `Media-kit one-pager for ${teamNumber != null ? `FRC Team ${teamNumber} (${orgName})` : orgName}, ${input.seasonYear} season. Rewrite each section body as one short paragraph a journalist or sponsor could quote, keeping every name, year, number and contact detail exactly as given and adding no achievements, history or partners that are not in the document.`,
     metadata: { seasonYear: input.seasonYear, hasProfile: Boolean(profile) },
-    invoke: async () => {
-      const sections = buildOnePagerSections({
-        teamNumber,
-        orgName,
-        seasonYear: input.seasonYear,
-        profile,
-        assetCount,
-        logoCount,
-      });
-      return {
-        value: sections,
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-media-kit-v1",
-        provider: "vantage-local",
-      };
-    },
   });
 
   const title = teamNumber != null ? `Team ${teamNumber} media kit — ${input.seasonYear}` : `${orgName} media kit — ${input.seasonYear}`;
@@ -345,6 +336,7 @@ export async function generateOnePager(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     seasonYear: input.seasonYear,
     title,
     sections: result,

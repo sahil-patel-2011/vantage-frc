@@ -64,6 +64,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
       ...nest("scouting", [
         { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
+        // The per-event robot photo wall — the most-used pit output, kept next to Forms.
+        { id: "pit-photos", label: "Pit photos", legacyHref: "/scouting/pit-photos", featured: true },
         { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
         { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
         { id: "scout-p2p-relay", label: "Pit mesh", legacyHref: "/scout-p2p-relay" },
@@ -158,7 +160,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
           legacyHref: "/season-planning-workspace",
           featured: true,
         },
-        { id: "task-board", label: "Task board", legacyHref: "/tasks" },
         { id: "goals-tracker", label: "Goals", legacyHref: "/goals-tracker" },
         { id: "goals", label: "Objectives", legacyHref: "/goals" },
         { id: "standup-digest", label: "Standup", legacyHref: "/standup-digest" },
@@ -301,19 +302,24 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "incident-heatmap", label: "Incidents", legacyHref: "/incident-heatmap" },
         { id: "auton-path-library", label: "Auton paths", legacyHref: "/auton-path-library" },
         { id: "reuse-advisor", label: "Reuse", legacyHref: "/reuse-advisor" },
-        { id: "spare-forecast", label: "Spares forecast", legacyHref: "/spare-forecast" },
-        // Where a BOM part actually gets made: "needs CAM" → machining → done.
-        { id: "manufacturing", label: "Manufacturing", legacyHref: "/manufacturing" },
-        // The printers themselves — queue, spools, and which subsystem a job is for.
-        // Filed next to Consumables because filament is stock that runs out.
-        { id: "print-farm", label: "Print farm", legacyHref: "/print-farm" },
-        { id: "consumables", label: "Consumables", legacyHref: "/spares" },
-        { id: "spare-robot-kit", label: "Spare kit", legacyHref: "/spare-robot-kit" },
-        { id: "bin-shelf-locator", label: "Bin locator", legacyHref: "/bin-shelf-locator" },
         { id: "budget-reconciler", label: "Budget check", legacyHref: "/budget-reconciler" },
         { id: "battery-health-forecast", label: "Pack health", legacyHref: "/battery-health-forecast" },
         { id: "cross-domain-alerts", label: "Cross-domain", legacyHref: "/cross-domain-alerts" },
         { id: "decision-critic", label: "Decision critic", legacyHref: "/decision-critic" },
+      ]),
+      // One parts ledger: stock, where it lives, what runs out, and what goes in the kit.
+      { id: "parts", label: "Parts", legacyHref: "/parts" },
+      ...nest("parts", [
+        { id: "inventory", label: "Inventory", legacyHref: "/inventory", featured: true },
+        { id: "consumables", label: "Consumables", legacyHref: "/spares" },
+        { id: "spare-forecast", label: "Spares forecast", legacyHref: "/spare-forecast" },
+        { id: "spare-robot-kit", label: "Spare kit", legacyHref: "/spare-robot-kit" },
+        { id: "bin-shelf-locator", label: "Bin locator", legacyHref: "/bin-shelf-locator" },
+        { id: "orders-link", label: "Orders", legacyHref: "/orders" },
+        // Where a BOM part actually gets made: "needs CAM" → machining → done.
+        { id: "manufacturing", label: "Manufacturing", legacyHref: "/manufacturing" },
+        // The printers themselves — queue, spools, and which subsystem a job is for.
+        { id: "print-farm", label: "Print farm", legacyHref: "/print-farm" },
       ]),
     ],
   },

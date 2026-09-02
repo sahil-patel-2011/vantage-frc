@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { grantIdOrNull, loadGrantOptions, type GrantOption } from "../finance/grant-options";
 import { seasonFinanceNextActions, type SeasonFinanceNextAction } from "./season-finance-next-actions";
 
 export const FUNDING_KINDS = [
@@ -21,6 +22,30 @@ export const FUNDING_KIND_LABELS: Record<FundingKind, string> = {
   in_kind: "In-kind gift",
   other: "Other income",
 };
+
+/**
+ * ONE SOURCE OF TRUTH PER FUNDING KIND (0504 double-count fix).
+ *
+ * The funding desk lets a treasurer type a "Sponsor cash" / "Grant award" /
+ * "Fundraiser deposit" line, but those same dollars are ALSO recorded on their
+ * own surfaces: sponsor_contributions (Sponsors), grant_applications.status =
+ * 'awarded' (Grants) and fundraiser_events.proceeds_usd (Fundraisers). Until
+ * this fix `receivedIncomeCents` summed every funding line AND the three
+ * satellite totals, so a $5,000 sponsor check entered on both surfaces showed
+ * up as $10,000 raised.
+ *
+ * Rule: for these three kinds the SATELLITE table is the source of truth for
+ * money received. A funding-desk line of that kind is a plan (its planned
+ * amount still counts toward the income plan) and its received amount is
+ * reported separately as `fundingReceivedSatelliteCents` — never added to
+ * received income. Every other kind (school, student fees, in-kind, other)
+ * has no satellite and is counted from the desk line as before.
+ */
+export const SATELLITE_FUNDING_KINDS: readonly FundingKind[] = ["grant", "sponsor", "fundraiser"];
+
+export function countsTowardReceivedIncome(kind: FundingKind | undefined): boolean {
+  return kind == null || !SATELLITE_FUNDING_KINDS.includes(kind);
+}
 
 export const PAYMENT_METHODS = [
   "card",
@@ -69,6 +94,9 @@ export type PurchaseLogRow = {
   reimbursedOn: string | null;
   notes: string | null;
   loggedByName: string;
+  /** Grant this receipt is attributed to (0504), for the grant report. */
+  grantApplicationId: string | null;
+  grantName: string | null;
 };
 
 export type SeasonFinanceCategory = {
@@ -88,7 +116,14 @@ export type SeasonFinanceRollup = {
   cashPositionCents: number;
   reimbursementOpenCents: number;
   fundingPlannedCents: number;
+  /** Every funding-desk line's received amount, as typed (display only). */
   fundingReceivedCents: number;
+  /** Desk lines whose kind has no satellite table — the part that counts as income. */
+  fundingReceivedCountedCents: number;
+  /** Desk lines of kind grant / sponsor / fundraiser — counted from their satellites instead. */
+  fundingReceivedSatelliteCents: number;
+  /** fundraiser_events.expenses_usd across the season (0504) — money out. */
+  fundraiserExpensesCents: number;
   sponsorCashCents: number;
   sponsorInKindCents: number;
   grantAwardedCents: number;
@@ -123,6 +158,8 @@ export type SeasonFinanceView =
       categories: SeasonFinanceCategory[];
       funding: FundingSourceRow[];
       purchases: PurchaseLogRow[];
+      /** Grants an expense can be tagged to (0504). */
+      grants: GrantOption[];
       rollup: SeasonFinanceRollup;
       nextActions: SeasonFinanceNextAction[];
       computedAt: string;
@@ -180,7 +217,8 @@ export function webUrlOrNull(value: unknown): string | null {
 }
 
 export function rollupSeasonFinance(input: {
-  funding: Array<{ plannedCents: number; receivedCents: number }>;
+  /** `kind` is optional so pure callers can omit it; a missing kind counts (no satellite). */
+  funding: Array<{ kind?: FundingKind; plannedCents: number; receivedCents: number }>;
   purchases: Array<{ amountCents: number; paymentMethod: PaymentMethod; reimbursedOn: string | null }>;
   operatingBudgetCents: number;
   fundraisingGoalCents: number;
@@ -190,6 +228,8 @@ export function rollupSeasonFinance(input: {
   grantAwardedCents: number;
   fundraiserProceedsCents: number;
   fundraiserGoalCents: number;
+  /** Money spent running fundraisers (0504). Optional for pure callers; defaults to 0. */
+  fundraiserExpensesCents?: number;
   poRequestedCents: number;
   poCommittedCents: number;
   poSpentCents: number;
@@ -197,6 +237,13 @@ export function rollupSeasonFinance(input: {
 }): SeasonFinanceRollup {
   const fundingPlannedCents = input.funding.reduce((sum, row) => sum + row.plannedCents, 0);
   const fundingReceivedCents = input.funding.reduce((sum, row) => sum + row.receivedCents, 0);
+  // See SATELLITE_FUNDING_KINDS: grant / sponsor / fundraiser desk lines are plans whose
+  // received dollars are counted from their satellite tables, never here.
+  const fundingReceivedCountedCents = input.funding
+    .filter((row) => countsTowardReceivedIncome(row.kind))
+    .reduce((sum, row) => sum + row.receivedCents, 0);
+  const fundingReceivedSatelliteCents = fundingReceivedCents - fundingReceivedCountedCents;
+  const fundraiserExpensesCents = Math.max(0, input.fundraiserExpensesCents ?? 0);
   const purchaseLogCents = input.purchases.reduce((sum, row) => sum + row.amountCents, 0);
   const reimbursementOpenCents = input.purchases
     .filter((row) => row.paymentMethod === "reimbursement" && !row.reimbursedOn)
@@ -207,11 +254,13 @@ export function rollupSeasonFinance(input: {
       ? fundingPlannedCents
       : input.fundraisingGoalCents + input.fundraiserGoalCents;
   const receivedIncomeCents =
-    fundingReceivedCents + input.sponsorCashCents + input.grantAwardedCents + input.fundraiserProceedsCents;
+    fundingReceivedCountedCents + input.sponsorCashCents + input.grantAwardedCents + input.fundraiserProceedsCents;
   const plannedSpendCents =
     input.categoryAllocatedCents > 0 ? input.categoryAllocatedCents : input.operatingBudgetCents;
-  const actualSpendCents = purchaseLogCents + input.poSpentCents + input.seasonCostsPaidCents;
-  const committedSpendCents = purchaseLogCents + input.poCommittedCents + input.seasonCostsPaidCents;
+  const actualSpendCents =
+    purchaseLogCents + input.poSpentCents + input.seasonCostsPaidCents + fundraiserExpensesCents;
+  const committedSpendCents =
+    purchaseLogCents + input.poCommittedCents + input.seasonCostsPaidCents + fundraiserExpensesCents;
 
   return {
     plannedIncomeCents,
@@ -225,6 +274,9 @@ export function rollupSeasonFinance(input: {
     reimbursementOpenCents,
     fundingPlannedCents,
     fundingReceivedCents,
+    fundingReceivedCountedCents,
+    fundingReceivedSatelliteCents,
+    fundraiserExpensesCents,
     sponsorCashCents: input.sponsorCashCents,
     sponsorInKindCents: input.sponsorInKindCents,
     grantAwardedCents: input.grantAwardedCents,
@@ -298,6 +350,7 @@ export async function computeSeasonFinanceView(
       poResult,
       costsResult,
       seasonsResult,
+      grants,
     ] = await Promise.all([
       client.query<{ totalBudgetUsd: string; fundraisingGoalUsd: string }>(
         `SELECT COALESCE(operating_budget_usd, 0)::text AS "totalBudgetUsd",
@@ -342,15 +395,21 @@ export async function computeSeasonFinanceView(
         reimbursedOn: string | null;
         notes: string | null;
         loggedByName: string;
+        grantApplicationId: string | null;
+        grantName: string | null;
       }>(
         `SELECT l.id, l.purchased_on::text AS "purchasedOn", l.vendor, l.item,
                 l.category_id AS "categoryId", c.name AS "categoryName",
                 l.amount_usd::text AS "amountUsd", l.payment_method AS "paymentMethod",
                 l.receipt_url AS "receiptUrl", l.purchase_request_id AS "purchaseRequestId",
                 l.reimbursed_on::text AS "reimbursedOn", l.notes,
-                CASE WHEN l.created_by = current_app_user_id() THEN 'You' ELSE 'Team member' END AS "loggedByName"
+                CASE WHEN l.created_by = current_app_user_id() THEN 'You' ELSE 'Team member' END AS "loggedByName",
+                l.grant_application_id AS "grantApplicationId",
+                CASE WHEN l.grant_application_id IS NULL THEN NULL ELSE COALESCE(go.name, 'Grant') END AS "grantName"
          FROM finance_purchase_log l
          LEFT JOIN finance_categories c ON c.id = l.category_id AND c.org_id = l.org_id
+         LEFT JOIN grant_applications ga ON ga.id = l.grant_application_id
+         LEFT JOIN grant_opportunities go ON go.id = ga.grant_opportunity_id
          WHERE l.org_id = $1 AND l.season_year = $2
          ORDER BY l.purchased_on DESC, l.created_at DESC
          LIMIT 400`,
@@ -369,9 +428,10 @@ export async function computeSeasonFinanceView(
          WHERE org_id = $1 AND season_year = $2 AND status = 'awarded'`,
         [orgId, seasonYear],
       ),
-      client.query<{ proceedsUsd: string; goalUsd: string }>(
+      client.query<{ proceedsUsd: string; goalUsd: string; expensesUsd: string }>(
         `SELECT COALESCE(SUM(proceeds_usd), 0)::text AS "proceedsUsd",
-                COALESCE(SUM(goal_usd), 0)::text AS "goalUsd"
+                COALESCE(SUM(goal_usd), 0)::text AS "goalUsd",
+                COALESCE(SUM(expenses_usd), 0)::text AS "expensesUsd"
          FROM fundraiser_events
          WHERE org_id = $1 AND season_year = $2 AND status <> 'cancelled'`,
         [orgId, seasonYear],
@@ -400,6 +460,7 @@ export async function computeSeasonFinanceView(
          ) seasons ORDER BY season_year DESC`,
         [orgId, seasonYear],
       ),
+      loadGrantOptions(client, orgId),
     ]);
 
     const categories: SeasonFinanceCategory[] = categoriesResult.rows.map((row) => ({
@@ -430,6 +491,8 @@ export async function computeSeasonFinanceView(
       reimbursedOn: row.reimbursedOn,
       notes: row.notes,
       loggedByName: row.loggedByName,
+      grantApplicationId: row.grantApplicationId,
+      grantName: row.grantName,
     }));
 
     const operatingBudgetCents = usdToCents(seasonResult.rows[0]?.totalBudgetUsd);
@@ -445,6 +508,7 @@ export async function computeSeasonFinanceView(
       grantAwardedCents: usdToCents(grantResult.rows[0]?.awardedUsd),
       fundraiserProceedsCents: usdToCents(fundraiserResult.rows[0]?.proceedsUsd),
       fundraiserGoalCents: usdToCents(fundraiserResult.rows[0]?.goalUsd),
+      fundraiserExpensesCents: usdToCents(fundraiserResult.rows[0]?.expensesUsd),
       poRequestedCents: usdToCents(poResult.rows[0]?.requestedUsd),
       poCommittedCents: usdToCents(poResult.rows[0]?.committedUsd),
       poSpentCents: usdToCents(poResult.rows[0]?.spentUsd),
@@ -465,6 +529,7 @@ export async function computeSeasonFinanceView(
       categories,
       funding,
       purchases,
+      grants,
       rollup,
       nextActions: seasonFinanceNextActions({
         orgId,
@@ -521,6 +586,8 @@ export type PurchaseLogInput = {
   receiptUrl: string | null;
   notes: string | null;
   reimbursedOn: string | null;
+  /** Optional grant to attribute this receipt to (0504). */
+  grantApplicationId: string | null;
 };
 
 export function parsePurchaseLogInput(body: Record<string, unknown>): PurchaseLogInput {
@@ -544,5 +611,6 @@ export function parsePurchaseLogInput(body: Record<string, unknown>): PurchaseLo
     receiptUrl: webUrlOrNull(body.receiptUrl),
     notes: trimmedOrNull(body.notes, 4_000),
     reimbursedOn: isoDateOrNull(body.reimbursedOn),
+    grantApplicationId: grantIdOrNull(body.grantApplicationId),
   };
 }

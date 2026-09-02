@@ -36,6 +36,8 @@ export type OutreachEvent = {
   location: string | null;
   notes: string | null;
   seasonYear: number;
+  /** impact_activities row this event was logged to on completion (0504); null = not logged yet. */
+  impactActivityId: string | null;
 };
 
 export type OutreachCalendarSummary = {

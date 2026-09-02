@@ -96,7 +96,7 @@ describe("logCheck", () => {
   it("computes and persists a deterministic prediction grounded in declared limits vs measurements", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -167,7 +167,7 @@ describe("logCheck", () => {
     expect(flagsJson).toContain("bumper_undersized_thickness");
     expect(flagsJson).toContain("battery_not_secured");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

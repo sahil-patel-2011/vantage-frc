@@ -49,3 +49,65 @@ export function resolveBugbotTarget(input: {
     pinnedSha: input.phase === "fix" ? asCommitSha(last.sha) : null,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * Per-finding targeting.
+ *
+ * A repo scan is several chunks. A paid fix or recheck for one finding must
+ * re-read the FILE that owns the finding — never "chunk 0" by default — and
+ * must only carry the findings that live in that file. Both halves are pure
+ * so the billing-correctness rule is a test, not a comment.
+ * ------------------------------------------------------------------ */
+
+/** Repo-relative path, forward slashes, no leading slash. Empty for unsafe input. */
+export function normaliseBugbotPath(path: string | null | undefined): string {
+  const clean = String(path ?? "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+  if (!clean || clean.includes("..")) return "";
+  return clean.slice(0, 400);
+}
+
+/** The file a finding lives in: its filePath, else the path half of `path:line`. */
+export function bugbotFindingFile(finding: { filePath?: string | null; location: string }): string {
+  if (finding.filePath) return normaliseBugbotPath(finding.filePath);
+  return normaliseBugbotPath(finding.location.replace(/:\d+$/, ""));
+}
+
+export type BugbotFileTarget = {
+  filePath: string;
+  /** The planned chunk that owns the file, or null when the plan does not list it. */
+  chunkIndex: number | null;
+};
+
+/**
+ * Which planned chunk owns `filePath`. The client's chunk hint is only trusted
+ * when the server-side plan agrees; an unlisted file (deferred past the budget,
+ * or the plan changed) still targets the file itself with no chunk claim.
+ */
+export function resolveBugbotFileTarget(input: {
+  chunks: string[][];
+  filePath?: string | null;
+  chunkHint?: number | null;
+}): BugbotFileTarget | null {
+  const filePath = normaliseBugbotPath(input.filePath);
+  if (!filePath) return null;
+  const wanted = filePath.toLowerCase();
+  const owns = (chunk: string[] | undefined) =>
+    Boolean(chunk?.some((path) => normaliseBugbotPath(path).toLowerCase() === wanted));
+  const hint = Number.isInteger(input.chunkHint) ? Number(input.chunkHint) : null;
+  if (hint != null && hint >= 0 && owns(input.chunks[hint])) return { filePath, chunkIndex: hint };
+  const found = input.chunks.findIndex((chunk) => owns(chunk));
+  return { filePath, chunkIndex: found >= 0 ? found : null };
+}
+
+/** Only the findings that live in `filePath` — a fix must never be asked to address another file's findings. */
+export function filterBugbotFindingsToFile<T extends { filePath?: string | null; location: string }>(
+  findings: T[],
+  filePath: string,
+): T[] {
+  const wanted = normaliseBugbotPath(filePath).toLowerCase();
+  if (!wanted) return [];
+  return findings.filter((finding) => bugbotFindingFile(finding).toLowerCase() === wanted);
+}

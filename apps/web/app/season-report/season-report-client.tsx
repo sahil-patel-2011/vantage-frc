@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { attributionKindForRenderMode } from "../../components/ui/ai-attribution-policy";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -539,8 +540,9 @@ function SnapshotsPanel({
         </button>
       </header>
       <p className="app-muted">
-        Snapshots are computed deterministically from your logged entries — never DEMO season stats.
-        &ldquo;Expand with AI&rdquo; is the optional metered model pass on top.
+        Snapshots are grounded in your logged entries only — never DEMO season stats. When the team has
+        a model configured it writes the narrative; otherwise the deterministic template stands in and
+        is labelled as such. &ldquo;Expand with AI&rdquo; is a further metered pass on top.
       </p>
       {view.summary.totalEntries === 0 ? (
         <p className="app-muted">Log at least one entry to generate a retrospective snapshot.</p>
@@ -548,7 +550,7 @@ function SnapshotsPanel({
         <p className="app-muted">No snapshot generated yet for this season.</p>
       ) : (
         <div className="season-report-snapshots">
-          {view.snapshots.map((snapshot) => (
+          {view.snapshots.map((snapshot, index) => (
             <article key={snapshot.id} className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
               <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <small className="app-muted">
@@ -590,7 +592,15 @@ function SnapshotsPanel({
                   </ul>
                 </div>
               ) : null}
-              <AIAttribution kind="computed" feature="season_report" generatedAt={snapshot.createdAt} />
+              {/* The route reports how the newest snapshot was produced (model vs template);
+                  older snapshots predate that record and are labelled as computed. */}
+              <AIAttribution
+                kind={
+                  index === 0 && view.render ? attributionKindForRenderMode(view.render.mode) : "computed"
+                }
+                feature="season_report"
+                generatedAt={snapshot.createdAt}
+              />
             </article>
           ))}
           {expand.status === "ready" && aiDisplay.aiText ? (

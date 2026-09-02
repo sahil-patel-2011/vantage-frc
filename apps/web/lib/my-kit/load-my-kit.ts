@@ -272,7 +272,10 @@ async function loadTasks(
     }
   }
 
-  if (present.has("team_todos")) {
+  // Member-assigned tasks (todos were folded into build_tasks in 0502). The
+  // name-matched block above covers collaborative assignees; this one covers
+  // the real member link so nothing assigned to *you* goes missing.
+  if (present.has("build_tasks")) {
     const rows = await safely(async () => {
       const result = await client.query<{
         id: string;
@@ -280,15 +283,16 @@ async function loadTasks(
         status: string;
         context: string | null;
         dueOn: string | null;
+        priority: string | null;
       }>(
         `SELECT t.id::text AS id, t.title, t.status,
-                ${present.has("team_subteams") ? "s.name" : "NULL::text"} AS context,
-                t.due_on::text AS "dueOn"
-         FROM team_todos t
+                COALESCE(${present.has("team_subteams") ? "s.name" : "NULL::text"}, t.subsystem) AS context,
+                t.due_on::text AS "dueOn", t.priority
+         FROM build_tasks t
          ${present.has("team_subteams") ? "LEFT JOIN team_subteams s ON s.id = t.subteam_id" : ""}
          WHERE t.org_id = $1::uuid
            AND t.assignee_user_id = $2::uuid
-           AND t.status <> 'done'
+           AND t.status IN ('todo', 'in_progress', 'blocked')
          ORDER BY t.due_on NULLS LAST, t.created_at
          LIMIT 12`,
         [orgId, userId],
@@ -296,14 +300,15 @@ async function loadTasks(
       return result.rows;
     });
     for (const row of rows) {
+      if (out.some((task) => task.id === row.id)) continue;
       out.push({
         id: row.id,
-        source: "todo",
+        source: "build_task",
         title: row.title,
         status: row.status,
         context: row.context ?? "",
         dueOn: row.dueOn,
-        priority: null,
+        priority: row.priority,
       });
     }
   }

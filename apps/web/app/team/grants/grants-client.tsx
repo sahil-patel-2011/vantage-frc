@@ -6,6 +6,7 @@ import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-ban
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
 import { EmptyState } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
+import { copyToClipboard, downloadTextFile } from "../../../lib/copy-download";
 import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
 import {
@@ -51,6 +52,76 @@ function businessGrantsHref(orgId: string | null | undefined): string {
   return `/business?${params.toString()}`;
 }
 
+function fileSlug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "grant";
+}
+
+/** One guided answer as plain text: the funder's heading, then what the team wrote. */
+function grantAnswerText(heading: string, value: string): string {
+  return `${heading}\n\n${value.trim() || "(no answer drafted yet)"}`;
+}
+
+/** Every answer plus the composed narrative — what a team pastes into the funder portal. */
+function grantDraftText(input: {
+  title: string;
+  funderName: string;
+  askAmountUsd: string;
+  headings: Record<keyof GuidedFields, string>;
+  fields: GuidedFields;
+  body: string;
+}): string {
+  const header = [
+    input.title,
+    [input.funderName ? `Funder: ${input.funderName}` : null, input.askAmountUsd ? `Ask: $${input.askAmountUsd}` : null]
+      .filter(Boolean)
+      .join(" · "),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const answers = FIELD_KEYS.map((key) => grantAnswerText(input.headings[key], input.fields[key]));
+  const narrative = input.body.trim() ? `Composed narrative\n\n${input.body.trim()}` : null;
+  return [header, ...answers, narrative].filter(Boolean).join("\n\n---\n\n") + "\n";
+}
+
+/** Copy / Download pair used on every answer and on the whole draft. */
+function CopyDownload({
+  text,
+  filename,
+  onResult,
+  label = "answer",
+}: {
+  text: string;
+  filename: string;
+  onResult: (ok: boolean, message: string) => void;
+  label?: string;
+}) {
+  return (
+    <span className="gwe-copy-download" style={{ display: "inline-flex", gap: 6 }}>
+      <button
+        type="button"
+        className="app-button secondary sm"
+        onClick={() =>
+          void copyToClipboard(text).then((ok) =>
+            onResult(ok, ok ? `Copied ${label}.` : "Clipboard is unavailable in this browser."),
+          )
+        }
+      >
+        Copy
+      </button>
+      <button
+        type="button"
+        className="app-button secondary sm"
+        onClick={() => {
+          const ok = downloadTextFile(filename, `${text}\n`);
+          if (!ok) onResult(false, "Downloads are unavailable in this browser.");
+        }}
+      >
+        Download
+      </button>
+    </span>
+  );
+}
+
 export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [view, setView] = useState<GrantWritingView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -67,6 +138,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [askAmountUsd, setAskAmountUsd] = useState("");
   const [fields, setFields] = useState<GuidedFields>(EMPTY_FIELDS);
   const [body, setBody] = useState("");
+  const [copyNotice, setCopyNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   const resolvedOrgId =
     view && view.status === "live"
@@ -330,8 +402,9 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
       view={view}
       season={season}
       busy={busy}
-      error={error}
-      notice={notice}
+      error={copyNotice && !copyNotice.ok ? copyNotice.text : error}
+      notice={copyNotice?.ok ? copyNotice.text : notice}
+      onCopyResult={(ok, text) => setCopyNotice({ ok, text })}
       cutoffCode={cutoffCode}
       templateKey={templateKey}
       activeTemplate={activeTemplate}
@@ -387,12 +460,14 @@ function GrantWritingWorkspace({
   onAskAmountChange,
   onFieldsChange,
   onMutate,
+  onCopyResult,
 }: {
   view: LiveView;
   season: number | null;
   busy: boolean;
   error: string;
   notice: string;
+  onCopyResult: (ok: boolean, message: string) => void;
   cutoffCode: string | null;
   templateKey: GrantTemplateKey;
   activeTemplate: GrantTemplate | null;
@@ -415,6 +490,15 @@ function GrantWritingWorkspace({
 }) {
   const teamLabel =
     view.teamNumber != null ? `FRC ${view.teamNumber}` : view.orgName ?? "This workspace";
+  const headings: Record<keyof GuidedFields, string> = activeTemplate?.headings ?? {
+    need: "Need",
+    impact: "Impact",
+    budget: "Budget",
+    timeline: "Timeline",
+  };
+  const draftTitle = selectedDraft?.title ?? activeTemplate?.label ?? "Grant narrative";
+  const draftStem = `${fileSlug(draftTitle)}-${season ?? view.seasonYear}`;
+  const wholeDraftText = grantDraftText({ title: draftTitle, funderName, askAmountUsd, headings, fields, body });
 
   const nextActions = grantsWritingNextActions({
     orgId: view.orgId,
@@ -586,7 +670,15 @@ function GrantWritingWorkspace({
 
           {FIELD_KEYS.map((key) => (
             <label key={key} className="gwe-field">
-              <span>{activeTemplate?.headings[key] ?? key}</span>
+              <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                {activeTemplate?.headings[key] ?? key}
+                <CopyDownload
+                  text={grantAnswerText(headings[key], fields[key])}
+                  filename={`${draftStem}-${key}.txt`}
+                  onResult={onCopyResult}
+                  label={`${headings[key]} answer`}
+                />
+              </span>
               <textarea
                 rows={4}
                 value={fields[key]}
@@ -595,6 +687,15 @@ function GrantWritingWorkspace({
               />
             </label>
           ))}
+
+          <div className="gwe-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <CopyDownload
+              text={wholeDraftText}
+              filename={`${draftStem}.txt`}
+              onResult={onCopyResult}
+              label="every answer"
+            />
+          </div>
 
           <div className="gwe-actions">
             <button
@@ -679,7 +780,17 @@ function GrantWritingWorkspace({
           </div>
 
           <div className="gwe-preview">
-            <span className="eyebrow">Composed narrative</span>
+            <span className="eyebrow" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              Composed narrative
+              {body ? (
+                <CopyDownload
+                  text={grantAnswerText("Composed narrative", body)}
+                  filename={`${draftStem}-narrative.txt`}
+                  onResult={onCopyResult}
+                  label="the composed narrative"
+                />
+              ) : null}
+            </span>
             {body ? (
               <textarea rows={14} value={body} readOnly aria-label="Composed grant narrative" />
             ) : (

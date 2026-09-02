@@ -152,14 +152,14 @@ describe("logIteration", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
       return { rows: [] };
     });
 
-    const suggestion = await logIteration(client, {
+    const { suggestion } = await logIteration(client, {
       orgId: ORG,
       userId: USER,
       sessionId: SESSION,
@@ -176,7 +176,7 @@ describe("logIteration", () => {
     expect(suggestion?.converged).toBe(true);
     expect(suggestion?.gains.kP).toBe(0.03);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

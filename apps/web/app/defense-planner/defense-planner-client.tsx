@@ -34,6 +34,8 @@ import {
   type DefensePlannerShellKind,
 } from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./defense-planner.css";
@@ -195,6 +197,8 @@ export default function DefensePlannerClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest matchup render: "AI" only when a model wrote the rationale.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
@@ -273,6 +277,8 @@ export default function DefensePlannerClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -359,6 +365,8 @@ export default function DefensePlannerClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="defense_planner" />
 
       <DefenseNextActionsPanel actions={nextActions} />
 

@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "record-snapshot": {
           const connectionId = trimmedOrNull(body.connectionId, 64);
@@ -111,7 +113,7 @@ export async function POST(request: Request) {
         case "generate-summary": {
           const diffId = trimmedOrNull(body.diffId, 64);
           if (!diffId) throw new Error("diffId is required");
-          await generateAiDiffSummary(client, { orgId, userId, diffId });
+          render = (await generateAiDiffSummary(client, { orgId, userId, diffId })).render ?? undefined;
           break;
         }
         case "subscribe": {
@@ -136,7 +138,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeCadChangeRadarView(client, { userId, requestedOrg: orgId });
+      const view = await computeCadChangeRadarView(client, { userId, requestedOrg: orgId });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

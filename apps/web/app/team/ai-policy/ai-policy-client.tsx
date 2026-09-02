@@ -48,6 +48,36 @@ type Approval = {
 
 type ModelLimit = { provider: string; model: string; allowed: boolean };
 
+/** One AI-led feature's model-vs-template split over the window (ai_render_attempts, 0498). */
+type RenderAttemptRow = {
+  feature: string;
+  modelCount: number;
+  templateCount: number;
+  costUsd: number;
+  lastAt: string | null;
+  topFallbackReason: string | null;
+};
+
+const FALLBACK_REASON_LABELS: Record<string, string> = {
+  no_provider: "no provider key",
+  billing_not_configured: "billing not configured",
+  approval_required: "approval required",
+  policy_denied: "policy denied",
+  timeout: "timed out",
+  provider_error: "provider error",
+  empty_output: "empty output",
+  rejected_output: "output did not keep structure",
+  resolve_error: "provider resolution failed",
+  deterministic_only: "no prose to generate",
+};
+
+function fallbackReasonLabel(reason: string | null): string {
+  if (!reason) return "—";
+  const [head, detail] = reason.split(":", 2);
+  const base = FALLBACK_REASON_LABELS[head ?? ""] ?? (head === "cap_hit" ? "usage cap hit" : head ?? reason);
+  return detail ? `${base} (${detail.replace(/_/g, " ")})` : base;
+}
+
 const toggleList = (list: string[], value: string) =>
   list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
 
@@ -136,6 +166,11 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     killSwitch?: boolean;
   } | null>(null);
   const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [renderAttempts, setRenderAttempts] = useState<{
+    windowDays: number;
+    tablePresent: boolean;
+    rows: RenderAttemptRow[];
+  } | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -181,6 +216,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
         killSwitch?: boolean;
       } | null;
       pendingApprovals?: number;
+      renderAttempts?: { windowDays: number; tablePresent: boolean; rows: RenderAttemptRow[] };
     };
     const approvalData = (await approvalRes.json()) as {
       error?: string;
@@ -228,6 +264,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     setUsage(policyData.usage ?? {});
     setBudget(policyData.budget ?? null);
     setPendingCount(Number(policyData.pendingApprovals ?? 0));
+    setRenderAttempts(policyData.renderAttempts ?? null);
     setApprovals(approvalData.approvals ?? []);
     setMessage(approvalRes.ok ? "" : (approvalData.error ?? ""));
     setLoading(false);
@@ -672,6 +709,59 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </a>
             </div>
           </form>
+
+          <section className="intel-panel" style={{ marginTop: "1.5rem" }} aria-label="Model vs template">
+            <span className="eyebrow">
+              MODEL VS TEMPLATE ({renderAttempts?.windowDays ?? 30} DAYS)
+            </span>
+            <p className="app-muted">
+              Every AI-led feature calls the team&apos;s real model and falls back to its deterministic
+              template only when that call cannot produce the output. Counts come from
+              ai_render_attempts — a feature is only &quot;AI&quot; here when a model actually wrote it.
+            </p>
+            {renderAttempts && !renderAttempts.tablePresent ? (
+              <p className="app-muted">
+                Migration 0498 (ai_render_attempts) has not run on this database yet — nothing to count.
+              </p>
+            ) : !renderAttempts || renderAttempts.rows.length === 0 ? (
+              <p className="app-muted">
+                No AI-led renders in the window yet — the table fills in as features are used, never with DEMO rows.
+              </p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="ai-governance-render-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left" }}>Feature</th>
+                      <th style={{ textAlign: "right" }}>Model</th>
+                      <th style={{ textAlign: "right" }}>Template</th>
+                      <th style={{ textAlign: "right" }}>Model share</th>
+                      <th style={{ textAlign: "right" }}>Spend</th>
+                      <th style={{ textAlign: "left" }}>Top fallback reason</th>
+                      <th style={{ textAlign: "left" }}>Last</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {renderAttempts.rows.map((row) => {
+                      const total = row.modelCount + row.templateCount;
+                      const share = total ? Math.round((row.modelCount / total) * 100) : 0;
+                      return (
+                        <tr key={row.feature}>
+                          <td>{row.feature}</td>
+                          <td style={{ textAlign: "right" }}>{formatAiGovernanceCount(row.modelCount, true)}</td>
+                          <td style={{ textAlign: "right" }}>{formatAiGovernanceCount(row.templateCount, true)}</td>
+                          <td style={{ textAlign: "right" }}>{share}%</td>
+                          <td style={{ textAlign: "right" }}>{formatAiGovernanceMoney(row.costUsd, true)}</td>
+                          <td>{row.templateCount ? fallbackReasonLabel(row.topFallbackReason) : "—"}</td>
+                          <td>{row.lastAt ? new Date(row.lastAt).toLocaleString() : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
 
           <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
             <span className="eyebrow">MODEL ALLOWLIST (FROM API BUDGETS)</span>

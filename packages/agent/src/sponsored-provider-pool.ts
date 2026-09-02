@@ -1,4 +1,5 @@
 import type { ChatAdapter, ContextItem } from "./index";
+import type { ChatTurn } from "./thread-history";
 import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
 
 /**
@@ -253,12 +254,16 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
     return this.catalog.map((a) => a.id);
   }
 
+  /** Promo-pool turns are booked at $0 by meteredAI (key_source 'sponsored'). */
+  readonly prices = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
+
   async complete(input: {
     message: string;
     context: ContextItem[];
+    history?: ChatTurn[];
     promptCachingEnabled?: boolean;
   }) {
-    // Same message + context for every failover attempt — never strip system/context.
+    // Same message + context + history for every failover attempt — never strip system/context.
     const attemptOrder = orderSponsoredProvidersWeightedRoundRobin(this.catalog);
     const errors: string[] = [];
     const tried = new Set<SponsoredProviderId>();

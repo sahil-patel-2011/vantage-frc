@@ -481,7 +481,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Promote recurring themes into the season plan or the risk register.",
     ],
     related: [
-      { label: "Task board", href: "/tasks" },
+      { label: "Goals", href: "/goals-tracker" },
       { label: "Standup", href: "/standup-digest" },
       { label: "Season plan", href: "/season-planning-workspace" },
     ],
@@ -1101,6 +1101,30 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     related: [
       { label: "Code", href: "/code" },
       { label: "AI Bugbot", href: "/bugbot" },
+    ],
+  },
+  {
+    id: "build.parts",
+    hub: "build",
+    tab: "parts",
+    title: "Parts",
+    what: "One parts ledger: what is on the shelf, what is already promised to a kit or a repair, and what is genuinely free — across Inventory, Locations, Spare Forecast and the Spare Robot Kit.",
+    why: "A part that was used in the pit but never decremented is the part you discover you are out of at the next event.",
+    when: "Whenever stock moves: an order arrives, a swap happens, a print finishes, a kit is packed.",
+    moments: ["build", "pre-comp", "comp-day"],
+    how: [
+      "Receive orders and prints into stock so on-hand is real.",
+      "Log repair swaps and FMEA failures against the part they consumed.",
+      "Reserve what the spare kit needs so the forecast sees it as spoken for.",
+      "Read the forecast before you order — it names its rate source.",
+    ],
+    tips: ["The forecast says ledger or FMEA next to every rate; ledger wins once two real uses exist."],
+    related: [
+      { label: "Inventory", href: "/inventory" },
+      { label: "Spare forecast", href: "/spare-forecast" },
+      { label: "Spare kit", href: "/spare-robot-kit" },
+      { label: "Print farm", href: "/print-farm" },
+      { label: "Orders", href: "/orders" },
     ],
   },
   {

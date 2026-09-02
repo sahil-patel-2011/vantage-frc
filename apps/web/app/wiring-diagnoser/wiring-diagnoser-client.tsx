@@ -10,6 +10,8 @@ import type {
   WireGauge,
   WiringMapDevice,
 } from "../../lib/wiring-diagnoser/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 const SEVERITY_TONE: Record<DiagnosticSeverity, string> = {
   critical: "demo",
@@ -63,6 +65,7 @@ export default function WiringDiagnoserClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -115,6 +118,8 @@ export default function WiringDiagnoserClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -179,6 +184,8 @@ export default function WiringDiagnoserClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="wiring_diagnoser" />
 
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>

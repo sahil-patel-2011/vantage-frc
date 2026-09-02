@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { recordTemplateOnlyRender, type RenderOutcome } from "../ai-render/render";
 import { CODE_VERSION_STATUSES, WIRING_STATUSES, computeReadinessIndex, subsystemHealthScore } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
@@ -251,31 +250,20 @@ export async function saveSubsystem(
     codeVersionStatus: CodeVersionStatus;
     notes: string | null;
   },
-): Promise<void> {
-  const scored = await meteredAI({
+): Promise<RenderOutcome> {
+  const scored = subsystemHealthScore({
+    wiringStatus: input.wiringStatus,
+    codeVersionStatus: input.codeVersionStatus,
+  });
+  // The health score is a pure number derived from the wiring and code-version statuses —
+  // there is nothing a model could write here without inventing it. This records an
+  // honest template-only render (no model call, no fake usage row) so governance counts
+  // the feature as deterministic rather than "AI".
+  const render = await recordTemplateOnlyRender({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "readiness_score",
-    requestId: `readiness-score-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.name,
-      seasonYear: input.seasonYear,
-      note: "Deterministic wiring/code-version health scoring — no external model call",
-    },
-    invoke: async () => ({
-      value: subsystemHealthScore({
-        wiringStatus: input.wiringStatus,
-        codeVersionStatus: input.codeVersionStatus,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-readiness-score-v1",
-      provider: "vantage-local",
-    }),
   });
 
   await client.query(
@@ -305,6 +293,7 @@ export async function saveSubsystem(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteSubsystem(

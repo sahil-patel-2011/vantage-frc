@@ -10,6 +10,7 @@ import {
   parseCadAgentAction,
   parseCadPlanResponse,
   parseCadTasksResponse,
+  resolvePlanStepReferences,
   shouldProposeModeSwitch,
   summarizeCadAgentSteps,
   WEB_CAD_AGENT_INSTRUCTIONS,
@@ -22,20 +23,86 @@ import {
 import { getOrgPromptCachingEnabled, resolveOrgChatAdapter, type ContextItem } from "@vantage/agent";
 import { createBridgeTransport } from "../ai-bridge/transport";
 import { meteredAI } from "@vantage/billing";
+import { saveExportToCadVault } from "../cad-vault/store-version";
 import {
   loadCadAgentModeState,
+  loadCadPlanFeatureIds,
+  loadCadPlanStepForExecution,
+  loadPlanRun,
+  markCadPlanStep,
+  newCadPlanId,
   proposeCadAgentMode,
+  replaceCadPlanSteps,
   saveCadAgentPlan,
   saveCadAgentTasks,
   type CadAgentModeState,
+  type CadPlanRunStep,
   type CadStoredPlan,
 } from "./agent-mode-session";
-import { loadCadAgentSession, saveCadAgentSession, type CadAgentChatMessage } from "./cad-agent-session";
-import { loadCadAgentOnshape } from "./onshape-tokens";
+import {
+  cadAgentOpenUrl,
+  loadCadAgentSession,
+  saveCadAgentSession,
+  type CadAgentChatMessage,
+  type CadAgentSessionRow,
+} from "./cad-agent-session";
+import { loadCadAgentOnshape, type CadAgentOnshapeClient } from "./onshape-tokens";
 
 function clip(value: unknown, max = 1800): string {
   const text = typeof value === "string" ? value : JSON.stringify(value);
   return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/**
+ * The hosted tool runtime: org OAuth (or team / env) HTTP, the DB-backed
+ * session, and the CAD vault as the export sink. Shared by the chat loop and
+ * plan-step execution so both persist features and exports the same way.
+ */
+function createHostedCadRuntime(input: {
+  client: PoolClient;
+  orgId: string;
+  userId: string;
+  onshape: CadAgentOnshapeClient;
+  stored: CadAgentSessionRow | null;
+}): { runtime: ClaudeCadRuntime; current: () => { session: ClaudeCadSession; stored: CadAgentSessionRow | null } } {
+  let stored = input.stored;
+  let session: ClaudeCadSession = stored?.session ?? {};
+  const runtime: ClaudeCadRuntime = {
+    http: input.onshape.http,
+    hosted: true,
+    loadSession: async () => session,
+    saveSession: async (next) => {
+      session = next;
+      stored = await saveCadAgentSession(input.client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        connectionId: input.onshape.connectionId,
+        session: next,
+        url: stored?.url,
+        messages: stored?.messages,
+      });
+    },
+    saveExport: async ({ file, title, changeNote, document }) => {
+      const saved = await saveExportToCadVault(input.client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        title,
+        filename: file.filename,
+        bytes: file.bytes,
+        changeNote: changeNote ?? `Exported ${file.format.toUpperCase()} from Onshape by the CAD agent`,
+        externalUrl: cadAgentOpenUrl(document) ?? null,
+      });
+      return {
+        kind: "vault",
+        documentId: saved.documentId,
+        version: saved.version,
+        href: saved.href,
+        duplicate: saved.duplicate,
+        title: saved.title,
+      };
+    },
+  };
+  return { runtime, current: () => ({ session, stored }) };
 }
 
 export type CadPlanResponseInput = {
@@ -102,23 +169,15 @@ export async function runCadAgentTurn(input: {
   planResponse?: CadPlanResponseInput | null;
 }): Promise<CadAgentTurnResult> {
   const onshape = await loadCadAgentOnshape(input.client, input.orgId, input.userId);
-  let stored = await loadCadAgentSession(input.client, input.orgId, input.userId);
-  let session: ClaudeCadSession = stored?.session ?? {};
-  const runtime: ClaudeCadRuntime = {
-    http: onshape.http,
-    hosted: true,
-    loadSession: async () => session,
-    saveSession: async (next) => {
-      session = next;
-      stored = await saveCadAgentSession(input.client, {
-        orgId: input.orgId,
-        userId: input.userId,
-        connectionId: onshape.connectionId,
-        session: next,
-        url: stored?.url,
-        messages: stored?.messages,
-      });
-    },
+  const initial = await loadCadAgentSession(input.client, input.orgId, input.userId);
+  const hosted = createHostedCadRuntime({ client: input.client, orgId: input.orgId, userId: input.userId, onshape, stored: initial });
+  const runtime = hosted.runtime;
+  // `session` / `stored` track the runtime's persisted state as tools run.
+  let session: ClaudeCadSession = hosted.current().session;
+  let stored: CadAgentSessionRow | null = hosted.current().stored;
+  const sync = () => {
+    session = hosted.current().session;
+    stored = hosted.current().stored;
   };
 
   let modeState = await loadCadAgentModeState(input.client, input.orgId, input.userId);
@@ -127,6 +186,11 @@ export async function runCadAgentTurn(input: {
   const executingPlan = Boolean(
     input.planResponse?.approve && modeState.mode === "plan" && modeState.plan && !modeState.plan.approved,
   );
+  if (executingPlan && modeState.plan?.steps.some((step) => step.tool)) {
+    // Tool-call plans are approved and executed step by step through
+    // approve-plan / execute-plan-step, never by handing the plan back to the model.
+    throw new Error("This plan is made of reviewable tool calls — approve the steps you want and they run one at a time.");
+  }
 
   // Consent-gated mode-switch proposal: heuristics only, no AI call. The turn is
   // held; the client re-submits via propose-response and the server enforces the
@@ -250,6 +314,7 @@ export async function runCadAgentTurn(input: {
         ok = false;
         result = { ok: false, error: error instanceof Error ? error.message : "CAD tool failed" };
       }
+      sync();
       toolTrace.push({ name: action.tool, ok });
       narratedSteps.push(
         cadAgentStep({ index: narratedSteps.length + 1, tool: action.tool, result, ok }),
@@ -360,17 +425,21 @@ export async function runCadAgentTurn(input: {
       // Honest fallback: surface the model's own words (often a question) rather than inventing a plan.
       return finishTurn(input.message, text.trim() || "The model did not return a plan. Try restating the brief in millimetres.");
     }
-    const plan: CadStoredPlan = {
+    const draft: CadStoredPlan = {
+      planId: newCadPlanId(),
       brief: priorPlan ? `${priorPlan.brief}\n${input.message}` : input.message,
       steps: parsed.steps,
       questions: parsed.questions,
       answers: [],
       approved: false,
     };
-    await saveCadAgentPlan(input.client, { orgId: input.orgId, userId: input.userId, plan });
+    // Tool steps become cad_job_steps rows (pending approval); narrative-only
+    // steps stay in the plan JSON. Nothing has touched Onshape.
+    const plan = await replaceCadPlanSteps(input.client, { orgId: input.orgId, userId: input.userId, plan: draft });
+    const toolSteps = plan.steps.filter((step) => step.tool).length;
     const summary = [
-      `Here is the build plan (${plan.steps.length} steps${plan.questions.length ? `, ${plan.questions.length} open questions` : ""}). Review it, answer the questions, then Approve & build. No Onshape tools ran yet.`,
-      ...plan.steps.map((step) => `${step.index}. ${step.title}${step.detail ? ` — ${step.detail}` : ""}`),
+      `Here is the build plan (${plan.steps.length} steps${toolSteps ? `, ${toolSteps} tool call${toolSteps === 1 ? "" : "s"}` : ""}${plan.questions.length ? `, ${plan.questions.length} open question${plan.questions.length === 1 ? "" : "s"}` : ""}). Review each step's dry run, untick anything you do not want, then Approve. No Onshape tools ran yet.`,
+      ...plan.steps.map((step) => `${step.index}. ${step.dryRun ?? step.title}${step.detail ? ` — ${step.detail}` : ""}`),
     ].join("\n");
     return finishTurn(input.message, summary);
   }
@@ -426,4 +495,148 @@ export async function runCadAgentTurn(input: {
   // ---- Simple mode: the original single-request loop ----------------------
   const reply = await runToolLoop(input.message, [], WEB_CAD_AGENT_MAX_STEPS, "cad.agent");
   return finishTurn(input.message, reply);
+}
+
+// ---------------------------------------------------------------------------
+// Plan execution: one approved tool step per call, no model in the loop
+// ---------------------------------------------------------------------------
+
+export type CadPlanStepExecution = {
+  step: CadPlanRunStep;
+  /** True when no approved step of this plan is still waiting to run. */
+  done: boolean;
+  steps: CadAgentStep[];
+  messages: CadAgentChatMessage[];
+  modeState: CadAgentModeState;
+};
+
+const MAX_STEP_OUTPUT_CHARS = 20_000;
+
+function stepOutputForStorage(result: unknown): unknown {
+  const text = JSON.stringify(result ?? null);
+  if (text.length <= MAX_STEP_OUTPUT_CHARS) return result;
+  const record = (result ?? {}) as Record<string, unknown>;
+  return {
+    truncated: true,
+    featureId: record.featureId ?? null,
+    narration: record.narration ?? null,
+    destination: record.destination ?? null,
+  };
+}
+
+/**
+ * Execute exactly one approved step of the current plan through the ordinary
+ * tool executor. `{{step:N.featureId}}` references are resolved from the plan's
+ * completed steps; a failed resolution is recorded as a failed step, never run
+ * against a guessed id. The narrated build log and the transcript are updated
+ * so a reload shows the same story as the live run.
+ */
+export async function executeCadPlanStep(input: {
+  client: PoolClient;
+  orgId: string;
+  userId: string;
+  sequence: number;
+}): Promise<CadPlanStepExecution> {
+  const record = await loadCadPlanStepForExecution(input.client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    sequence: input.sequence,
+  });
+  if (record.approvalStatus !== "approved") {
+    throw new Error(`Step ${record.planIndex || record.sequence} (${record.tool}) was not approved, so it will not run.`);
+  }
+  if (record.status === "running") throw new Error(`Step ${record.planIndex} is already running.`);
+
+  const onshape = await loadCadAgentOnshape(input.client, input.orgId, input.userId);
+  const initial = await loadCadAgentSession(input.client, input.orgId, input.userId);
+  const hosted = createHostedCadRuntime({ client: input.client, orgId: input.orgId, userId: input.userId, onshape, stored: initial });
+
+  const priorRun = await loadPlanRun(input.client, { orgId: input.orgId, jobId: record.jobId, planId: record.planId });
+  const alreadyRan = priorRun.some((step) => step.status === "completed" || step.status === "failed");
+  // A new plan run replaces the previous build log, like a chat turn that built something.
+  const baseSteps: CadAgentStep[] = alreadyRan ? (initial?.steps ?? []) : [];
+
+  let result: unknown;
+  let ok = true;
+  if (record.status === "completed") {
+    // Idempotent re-request (double click, retry after a dropped response): report, do not re-run.
+    const existing = priorRun.find((step) => step.sequence === record.sequence)!;
+    return {
+      step: existing,
+      done: !priorRun.some((step) => step.approvalStatus === "approved" && step.status === "planned"),
+      steps: initial?.steps ?? [],
+      messages: initial?.messages ?? [],
+      modeState: await loadCadAgentModeState(input.client, input.orgId, input.userId),
+    };
+  }
+  if (!isWebCadAgentTool(record.tool)) {
+    ok = false;
+    result = { ok: false, error: `"${record.tool}" is not a tool the hosted agent can run.` };
+  } else {
+    let args: Record<string, unknown> | null = null;
+    try {
+      const featureIds = await loadCadPlanFeatureIds(input.client, { orgId: input.orgId, jobId: record.jobId, planId: record.planId });
+      args = resolvePlanStepReferences(record.args, featureIds);
+    } catch (error) {
+      ok = false;
+      result = { ok: false, error: error instanceof Error ? error.message : "Could not resolve step references" };
+    }
+    if (args) {
+      await markCadPlanStep(input.client, { orgId: input.orgId, jobId: record.jobId, sequence: record.sequence, status: "running" });
+      try {
+        result = await callClaudeCadTool(record.tool, args, hosted.runtime);
+      } catch (error) {
+        ok = false;
+        result = { ok: false, error: error instanceof Error ? error.message : "CAD tool failed" };
+      }
+    }
+  }
+  const bodyOk = ok && !(result && typeof result === "object" && (result as { ok?: unknown }).ok === false);
+  const errorText = bodyOk ? null : String((result as { error?: unknown } | null)?.error ?? "The tool failed and nothing was changed.");
+  await markCadPlanStep(input.client, {
+    orgId: input.orgId,
+    jobId: record.jobId,
+    sequence: record.sequence,
+    status: bodyOk ? "completed" : "failed",
+    output: stepOutputForStorage(result),
+    error: errorText,
+  });
+
+  const narrated = cadAgentStep({ index: baseSteps.length + 1, tool: record.tool, result, ok });
+  const steps = [...baseSteps, narrated].slice(-40).map((step, index) => ({ ...step, index: index + 1 }));
+
+  const run = await loadPlanRun(input.client, { orgId: input.orgId, jobId: record.jobId, planId: record.planId });
+  const remaining = run.filter((step) => step.approvalStatus === "approved" && step.status === "planned");
+  const done = remaining.length === 0;
+  const current = hosted.current();
+  let messages = current.stored?.messages ?? initial?.messages ?? [];
+  if (done) {
+    const completed = run.filter((step) => step.status === "completed").length;
+    const failed = run.filter((step) => step.status === "failed").length;
+    const skipped = run.filter((step) => step.status === "skipped").length;
+    const text = [
+      `Plan run finished — ${completed} step${completed === 1 ? "" : "s"} built${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} skipped` : ""}.`,
+      summarizeCadAgentSteps(steps),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    messages = [...messages, { role: "assistant" as const, text }].slice(-24);
+  }
+  await saveCadAgentSession(input.client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    connectionId: onshape.connectionId,
+    session: current.session,
+    url: current.stored?.url ?? initial?.url,
+    messages,
+    steps,
+  });
+  const step = run.find((item) => item.sequence === record.sequence)!;
+  return {
+    step,
+    done,
+    steps,
+    messages,
+    modeState: await loadCadAgentModeState(input.client, input.orgId, input.userId),
+  };
 }

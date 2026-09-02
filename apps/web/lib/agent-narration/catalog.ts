@@ -11,6 +11,8 @@
  * that reason has to be carried by the step.
  */
 
+import { CODE_COACH_LESSONS } from "@vantage/agent/coding-assistant";
+
 export type CodeRuleLesson = {
   /** What the rule caught, in plain language. */
   flag: string;
@@ -23,8 +25,12 @@ export type CodeRuleLesson = {
 /**
  * Teach-not-do lessons keyed by coding-assistant / Bugbot pattern ids.
  * Only rendered for a rule that actually matched evidence in the student's source.
+ *
+ * Every Code Coach rule ships its own lesson (packages/agent/src/coding-assistant.ts);
+ * the entries written out below are the authored originals and win on a key clash.
  */
 export const CODE_RULE_LESSONS: Record<string, CodeRuleLesson> = {
+  ...CODE_COACH_LESSONS,
   "blocking-robot-loop": {
     flag: "Blocking call inside the robot loop",
     explain:

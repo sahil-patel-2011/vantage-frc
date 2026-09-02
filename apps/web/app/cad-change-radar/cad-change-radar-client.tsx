@@ -17,6 +17,8 @@ import {
 } from "../../components/ui";
 import type { CadChangeRadarView } from "../../lib/cad-change-radar/compute-cad-change-radar";
 import type { CadChangeRadarSeverity } from "../../lib/cad-change-radar/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   CAD_CHANGE_RADAR_RELATED_INCLUDE,
   cadChangeRadarNextActions,
@@ -178,6 +180,8 @@ export default function CadChangeRadarClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest diff-summary render: "AI" only when a model wrote it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -247,6 +251,8 @@ export default function CadChangeRadarClient() {
           return;
         }
         setView(data);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -326,6 +332,8 @@ export default function CadChangeRadarClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="cad_change_radar" />
 
       <NextActionsPanel actions={nextActions} />
 

@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { mirrorFundraiserEvent, removeFundraiserMirrors } from "../../../lib/finance/mirrors";
 import { parseFundraiserAction, summarizeFundraisers, type FundraiserStatus, type FundraiserType } from "../../../lib/fundraisers";
 
 class HttpError extends Error {
@@ -33,8 +34,30 @@ function fail(error: unknown) {
 
 type EventRow = {
   id: string; seasonYear: number; name: string; type: FundraiserType; eventDate: string;
-  goalUsd: number | null; proceedsUsd: number; status: FundraiserStatus; location: string; notes: string; byName: string | null;
+  goalUsd: number | null; proceedsUsd: number; expensesUsd: number; status: FundraiserStatus; location: string; notes: string; byName: string | null;
 };
+
+/** The columns every money-changing write returns so the ledger mirror is rebuilt from the row the DB holds. */
+const MIRROR_RETURNING = `id, season_year AS "seasonYear", name, event_date::text AS "eventDate", status,
+  proceeds_usd::float8 AS "proceedsUsd", expenses_usd::float8 AS "expensesUsd"`;
+
+type MirrorRow = {
+  id: string; seasonYear: number; name: string; eventDate: string; status: string; proceedsUsd: number; expensesUsd: number;
+};
+
+async function mirrorRow(client: PoolClient, orgId: string, userId: string, row: MirrorRow) {
+  await mirrorFundraiserEvent(client, {
+    orgId,
+    eventId: row.id,
+    name: row.name,
+    seasonYear: Number(row.seasonYear),
+    eventDate: row.eventDate,
+    status: row.status,
+    proceedsUsd: Number(row.proceedsUsd) || 0,
+    expensesUsd: Number(row.expensesUsd) || 0,
+    createdBy: userId,
+  });
+}
 
 export async function GET(request: Request) {
   try {
@@ -57,7 +80,8 @@ export async function GET(request: Request) {
 
       const events = await client.query<EventRow>(
         `SELECT e.id, e.season_year AS "seasonYear", e.name, e.type, e.event_date::text AS "eventDate",
-                e.goal_usd::float8 AS "goalUsd", e.proceeds_usd::float8 AS "proceedsUsd", e.status,
+                e.goal_usd::float8 AS "goalUsd", e.proceeds_usd::float8 AS "proceedsUsd",
+                e.expenses_usd::float8 AS "expensesUsd", e.status,
                 e.location, e.notes, u.name AS "byName"
          FROM fundraiser_events e LEFT JOIN users u ON u.id = e.created_by
          WHERE e.org_id = $1 AND e.season_year = $2 ORDER BY e.event_date DESC`,
@@ -99,32 +123,52 @@ export async function POST(request: Request) {
           return { id: inserted.rows[0]!.id };
         }
         case "set_status": {
-          const updated = await client.query(
-            `UPDATE fundraiser_events SET status = $1, updated_at = now() WHERE id = $2 AND org_id = $3`,
+          const updated = await client.query<MirrorRow>(
+            `UPDATE fundraiser_events SET status = $1, updated_at = now()
+             WHERE id = $2 AND org_id = $3 RETURNING ${MIRROR_RETURNING}`,
             [action.status, action.id, action.orgId],
           );
           if (!updated.rowCount) throw new HttpError(404, "Fundraiser not found");
+          // Cancelling drops the event's ledger rows; un-cancelling restores them. Only
+          // admins hold the ledger write permission, so members' status flips skip the
+          // mirror when nothing money-shaped is on the row yet.
+          const row = updated.rows[0]!;
+          if ((Number(row.proceedsUsd) || 0) > 0 || (Number(row.expensesUsd) || 0) > 0) {
+            await requireAdmin(client, action.orgId, userId);
+            await mirrorRow(client, action.orgId, userId, row);
+          }
           return { ok: true };
         }
         case "record_proceeds": {
           await requireAdmin(client, action.orgId, userId);
-          const event = await client.query<{ seasonYear: number; name: string }>(
+          const event = await client.query<MirrorRow>(
             `UPDATE fundraiser_events SET proceeds_usd = proceeds_usd + $1, updated_at = now()
-             WHERE id = $2 AND org_id = $3 RETURNING season_year AS "seasonYear", name`,
+             WHERE id = $2 AND org_id = $3 RETURNING ${MIRROR_RETURNING}`,
             [action.amountUsd, action.id, action.orgId],
           );
           if (!event.rowCount) throw new HttpError(404, "Fundraiser not found");
-          // Mirror the deposit into the finance ledger as income.
-          await client.query(
-            `INSERT INTO finance_transactions (org_id, season_year, type, source, amount_usd, description, created_by)
-             VALUES ($1, $2, 'income', 'fundraiser', $3, $4, $5)`,
-            [action.orgId, event.rows[0]!.seasonYear, action.amountUsd, action.note || `Fundraiser: ${event.rows[0]!.name}`, userId],
+          // ONE MONEY LEDGER: the mirror row is keyed to the event and carries its
+          // running total, so a second deposit updates the same row.
+          await mirrorRow(client, action.orgId, userId, event.rows[0]!);
+          return { ok: true };
+        }
+        case "record_expense": {
+          await requireAdmin(client, action.orgId, userId);
+          const event = await client.query<MirrorRow>(
+            `UPDATE fundraiser_events SET expenses_usd = expenses_usd + $1, updated_at = now()
+             WHERE id = $2 AND org_id = $3 RETURNING ${MIRROR_RETURNING}`,
+            [action.amountUsd, action.id, action.orgId],
           );
+          if (!event.rowCount) throw new HttpError(404, "Fundraiser not found");
+          await mirrorRow(client, action.orgId, userId, event.rows[0]!);
           return { ok: true };
         }
         case "delete_event": {
           const deleted = await client.query(`DELETE FROM fundraiser_events WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this fundraiser");
+          // Deleting the event deletes its money — the mirror rows go with it (admin RLS;
+          // a member deleting their own money-less draft has nothing to remove).
+          await removeFundraiserMirrors(client, { orgId: action.orgId, eventId: action.id });
           return { ok: true };
         }
         default:

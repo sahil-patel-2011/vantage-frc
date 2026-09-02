@@ -15,7 +15,7 @@ type ShellProps = {
   /** Real data exists server-side but the active filter matched nothing. */
   filteredEmpty?: ReactNode;
   /** Rendered via ErrorState with the REAL message + always-on Retry. */
-  error?: { title?: ReactNode; message?: ReactNode; onRetry?: () => void };
+  error?: { title?: ReactNode; message?: ReactNode; status?: number | null; onRetry?: () => void };
   /** The live view — rendered only when state === "ready". */
   children: ReactNode;
 };
@@ -42,7 +42,14 @@ export function Shell({ state, loading, empty, setup, filteredEmpty, error, chil
         </>
       );
     case "error":
-      return <ErrorState title={error?.title} message={error?.message} onRetry={error?.onRetry} />;
+      return (
+        <ErrorState
+          title={error?.title}
+          message={error?.message}
+          status={error?.status}
+          onRetry={error?.onRetry}
+        />
+      );
     case "ready":
     default:
       return <>{children}</>;

@@ -130,12 +130,12 @@ export default function EventReadinessClient() {
         if (data.status === "live") setEventKey(data.plan.eventKey);
       })
       .catch(() => setFetchFailed(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [eventKey]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const orgId = view && "orgId" in view ? view.orgId : null;

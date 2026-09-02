@@ -39,6 +39,7 @@ export default function TeamTagsClient() {
     void load();
   }, [load]);
 
+  const [promoted, setPromoted] = useState("");
   const live = view?.status === "live" ? view : null;
   const orgId = live?.orgId ?? (view && "orgId" in view ? view.orgId : null);
 
@@ -85,6 +86,31 @@ export default function TeamTagsClient() {
       });
       const payload = (await response.json()) as TeamTagsView;
       if (payload && "status" in payload) setView(payload);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function promote(teamNumber: number) {
+    if (!live || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/team-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "promote_to_pick_list", orgId: live.orgId, teamNumber }),
+      });
+      const payload = (await response.json()) as
+        | (TeamTagsView & { promoted?: { note: string } | null })
+        | { error?: string };
+      if (!response.ok || !("status" in payload)) {
+        throw new Error("error" in payload && payload.error ? payload.error : "Could not promote to the pick list");
+      }
+      setView(payload);
+      setPromoted(`${teamNumber} is on the pick list${payload.promoted?.note ? ` — ${payload.promoted.note}` : ""}.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not promote to the pick list");
     } finally {
       setBusy(false);
     }
@@ -148,6 +174,12 @@ export default function TeamTagsClient() {
         : null}
       {!view && !error ? <p className="app-muted">Loading tags…</p> : null}
 
+      {promoted ? (
+        <p className="form-message" role="status">
+          {promoted}
+        </p>
+      ) : null}
+
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps.map((step) => (
@@ -158,7 +190,7 @@ export default function TeamTagsClient() {
         </EmptyState>
       ) : null}
 
-      {live ? <LiveTags view={live} busy={busy} onSubmit={submit} onRemove={remove} /> : null}
+      {live ? <LiveTags view={live} busy={busy} onSubmit={submit} onRemove={remove} onPromote={promote} /> : null}
     </main>
   );
 }
@@ -168,11 +200,13 @@ function LiveTags({
   busy,
   onSubmit,
   onRemove,
+  onPromote,
 }: {
   view: LiveView;
   busy: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onRemove: (id: string) => void;
+  onPromote: (teamNumber: number) => void;
 }) {
   return (
     <div className="team-tags-stack">
@@ -243,6 +277,9 @@ function LiveTags({
                 <li key={team.assignmentId}>
                   <strong>{team.teamNumber}</strong>
                   <span>{team.notes ?? (team.matchKey ? team.matchKey : "")}</span>
+                  <button type="button" disabled={busy} onClick={() => onPromote(team.teamNumber)}>
+                    Promote
+                  </button>
                   <button type="button" className="danger" disabled={busy} onClick={() => onRemove(team.assignmentId)}>
                     Remove
                   </button>

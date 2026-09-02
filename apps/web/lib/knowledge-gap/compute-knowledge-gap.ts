@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { computeCoverageScore, findKnowledgeGaps, slugifyGapTitle, stubTitleFor, summarizeScan, buildStubPageBody } from ".";
 import type {
   KnowledgeGapDecision,
@@ -239,11 +238,11 @@ async function loadPages(client: PoolClient, orgId: string): Promise<KnowledgeGa
   }));
 }
 
-/** Deterministic scan, wrapped in meteredAI so it flows through the standard usage ledger. */
+/** Deterministic scan; the summary is rendered through renderWithModel (real model call, template fallback) so it flows through the standard usage ledger. */
 export async function runKnowledgeGapScan(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<KnowledgeGapView> {
+): Promise<KnowledgeGapView & { render?: RenderOutcome }> {
   const [subsystems, decisions, events, pages] = await Promise.all([
     loadSubsystems(client, input.orgId, input.seasonYear),
     loadDecisions(client, input.orgId, input.seasonYear),
@@ -253,38 +252,40 @@ export async function runKnowledgeGapScan(
 
   const totalSubjects = subsystems.length + decisions.length + events.length;
 
-  const receipt = await meteredAI({
+  const gaps = findKnowledgeGaps({ subsystems, decisions, events, pages });
+  const coverageScore = computeCoverageScore(totalSubjects, gaps.length);
+  // The gap list and coverage score are a deterministic corpus diff; a real model call on
+  // the org's adapter writes the scan summary, with the template standing in on failure.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "knowledge_gap",
-    requestId: `knowledge-gap-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    prompt: [
+      `Team wiki coverage scan for the ${input.seasonYear} season. Write a 1-2 sentence summary in the template's structure: how many tracked subjects lack wiki coverage and the documented percentage, then the single most useful next page to write.`,
+      "Use only these facts; invent no counts:",
+      factsBlock({
+        totalSubjects,
+        gapCount: gaps.length,
+        coverageScore,
+        subsystemCount: subsystems.length,
+        decisionCount: decisions.length,
+        eventCount: events.length,
+        pageCount: pages.length,
+        firstGaps: gaps.slice(0, 5).map((gap) => `${gap.subjectKind}: ${gap.subjectRef}`),
+      }),
+    ].join("\n"),
+    template: () => summarizeScan({ totalSubjects, gapCount: gaps.length, coverageScore }),
     metadata: {
       seasonYear: input.seasonYear,
       subsystemCount: subsystems.length,
       decisionCount: decisions.length,
       eventCount: events.length,
       pageCount: pages.length,
-      note: "Deterministic wiki/decision-corpus vs subsystem/event diff — no external model call",
-    },
-    invoke: async () => {
-      const gaps = findKnowledgeGaps({ subsystems, decisions, events, pages });
-      const coverageScore = computeCoverageScore(totalSubjects, gaps.length);
-      const summary = summarizeScan({ totalSubjects, gapCount: gaps.length, coverageScore });
-      return {
-        value: { gaps, coverageScore, summary },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-knowledge-gap-v1",
-        provider: "vantage-local",
-      };
     },
   });
-
-  const { gaps, coverageScore, summary } = receipt;
+  const summary = rendered.text;
+  const render = renderOutcomeOf(rendered);
 
   const scanResult = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO knowledge_gap_scans (
@@ -324,7 +325,8 @@ export async function runKnowledgeGapScan(
     );
   }
 
-  return computeKnowledgeGapView(client, { userId: input.userId, requestedOrg: input.orgId, seasonYear: input.seasonYear });
+  const view = await computeKnowledgeGapView(client, { userId: input.userId, requestedOrg: input.orgId, seasonYear: input.seasonYear });
+  return { ...view, render };
 }
 
 export async function draftStubPage(

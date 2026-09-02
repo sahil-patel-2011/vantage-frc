@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { DEFAULT_WEIGHT_LIMIT_LBS } from "../weight-budget";
 import { computeCurrentReading, computeMassReading, proposeTrimSubsystem, trimConfidence } from ".";
 import type { BudgetReconcilerReport, BudgetStatus, CurrentReading, MassReading, SubsystemContribution, TrimProposal } from "./types";
@@ -221,13 +220,13 @@ export async function computeBudgetReconcilerView(
 
 /**
  * Snapshot the current mass/current drift against target and persist a trim proposal.
- * The trim math is fully deterministic (proposeTrimSubsystem); meteredAI wraps it so the run is
+ * The trim math is fully deterministic (proposeTrimSubsystem); renderWithModel asks the org's real model for the rationale prose and the run is
  * billed and audited through the standard usage-ledger path, matching every other metered feature.
  */
 export async function runReconciliation(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<BudgetReconcilerReport> {
+): Promise<BudgetReconcilerReport & { render: RenderOutcome }> {
   const subsystems = await loadSubsystemContributions(client, input.orgId, input.seasonYear);
   const [limitResult, breakerResult] = await Promise.all([
     client.query<{ limitLbs: string }>(
@@ -249,41 +248,44 @@ export async function runReconciliation(
   const mass = computeMassReading(massTotal, massLimit);
   const current = computeCurrentReading(currentTotal, breakerTotal);
 
-  const result = await meteredAI({
-    client,
-    orgId: input.orgId,
-    userId: input.userId,
-    feature: "budget_reconciler",
-    requestId: `budget-reconciler-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      subsystemCount: subsystems.length,
-      note: "Deterministic mass/current drift + trim proposal — no external model call",
-    },
-    invoke: async () => {
-      const trimProposal = proposeTrimSubsystem(subsystems, mass);
-      const confidence = trimConfidence(trimProposal, mass);
-      return {
-        value: { trimProposal, confidence },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-budget-reconciler-v1",
-        provider: "vantage-local",
-      };
-    },
-  });
-
-  const { trimProposal, confidence } = result;
-  const rationale =
+  const trimProposal = proposeTrimSubsystem(subsystems, mass);
+  const confidence = trimConfidence(trimProposal, mass);
+  const templateRationale =
     trimProposal?.rationale ??
     (mass.status === "over"
       ? "Mass is over budget but no subsystem has recorded weight_components to trim — log component weights by subsystem to get a trim proposal."
       : current.status === "over"
         ? "Current draw exceeds the summed breaker budget. Review breaker sizing or reduce peak-draw subsystems."
         : "Mass and current are both within target — no trim needed.");
+
+  // Real model call on the org's adapter for the rationale prose; the trim math itself
+  // (subsystem, pounds, confidence) is deterministic and the template stands in on any failure.
+  const rendered = await renderFeatureText({
+    client,
+    orgId: input.orgId,
+    userId: input.userId,
+    feature: "budget_reconciler",
+    prompt: [
+      `Weight/power budget reconciliation for the ${input.seasonYear} robot. Write the rationale as 1-3 plain sentences for the build team, keeping the structure of the template: state the status, name the subsystem and pounds to trim when there is a proposal, and say what to log next when there is none.`,
+      "Use only these facts; invent no numbers:",
+      factsBlock({
+        massTotalLbs: mass.totalLbs,
+        massLimitLbs: mass.limitLbs,
+        massDriftLbs: mass.driftLbs,
+        massStatus: mass.status,
+        currentTotalAmps: current.totalAmps,
+        currentBreakerAmps: current.breakerAmps,
+        currentStatus: current.status,
+        trimProposal,
+        confidence,
+      }),
+      `Template: ${templateRationale}`,
+    ].join("\n"),
+    template: () => templateRationale,
+    metadata: { seasonYear: input.seasonYear, subsystemCount: subsystems.length },
+  });
+  const rationale = rendered.text;
+  const render = renderOutcomeOf(rendered);
 
   const inserted = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO budget_reconciler_reports (
@@ -327,6 +329,7 @@ export async function runReconciliation(
     rationale,
     confidence,
     createdAt: inserted.rows[0]!.createdAt,
+    render,
   };
 }
 

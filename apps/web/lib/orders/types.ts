@@ -1,5 +1,7 @@
 /** Soft-UI purchase / ordering requests. No card or bank fields — ever. */
 
+import type { GrantOption } from "../finance/grant-options";
+
 export const ORDER_STATUSES = [
   "pending",
   "approved",
@@ -40,6 +42,9 @@ export type OrderRequest = {
   receivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Grant this purchase is paid from (0504); mirrored onto the ledger row on approval. */
+  grantApplicationId: string | null;
+  grantName: string | null;
 };
 
 export type OrderMetrics = {
@@ -81,6 +86,8 @@ export type OrdersView =
       isAdmin: boolean;
       orders: OrderRequest[];
       members: OrderMember[];
+      /** Grants a request can be tagged to (0504). */
+      grants: GrantOption[];
       metrics: OrderMetrics;
       financeAiEnabled: boolean;
       aiSummary: OrderAiSummary | null;

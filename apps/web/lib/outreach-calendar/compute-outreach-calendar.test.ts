@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
-import { computeOutreachCalendarView } from "./compute-outreach-calendar";
+import { outreachEventToImpactActivity } from ".";
+import { completeOutreachEvent, computeOutreachCalendarView } from "./compute-outreach-calendar";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -103,5 +104,113 @@ describe("computeOutreachCalendarView", () => {
     expect(view.upcoming[1]?.id).toBe("evt-1");
     expect(view.summary.projectedImpactScore).toBeGreaterThan(0);
     expect(view.seasons).toContain(2026);
+    // Nothing logged to Impact yet — the client shows the "Complete & log" button, not a badge.
+    expect(view.events.every((event) => event.impactActivityId === null)).toBe(true);
+  });
+});
+
+const EVENT_ROW = {
+  id: "evt-1",
+  title: "Elementary STEM night",
+  category: "stem_demo",
+  scheduledOn: "2026-09-10",
+  status: "confirmed",
+  audience: "k12",
+  projectedHours: "8",
+  projectedPeopleReached: 150,
+  location: "Lincoln Elementary",
+  notes: "Two robots, three stations",
+  seasonYear: 2026,
+  impactActivityId: null as string | null,
+};
+
+describe("outreachEventToImpactActivity", () => {
+  it("maps a planned event onto the impact_activities shape using projections by default", () => {
+    const activity = outreachEventToImpactActivity({
+      ...EVENT_ROW,
+      category: "fundraising",
+      status: "confirmed",
+      audience: "public",
+      projectedHours: 2.5,
+      projectedPeopleReached: 40,
+      impactActivityId: null,
+    });
+    expect(activity.category).toBe("other"); // fundraising is not community outreach
+    expect(activity.durationMinutes).toBe(150);
+    expect(activity.peopleReached).toBe(40);
+    expect(activity.occurredOn).toBe("2026-09-10");
+    expect(activity.description).toBe("Two robots, three stations");
+  });
+
+  it("honors supplied actuals, including a real zero", () => {
+    const activity = outreachEventToImpactActivity(
+      { ...EVENT_ROW, status: "confirmed", category: "stem_demo", audience: "k12", projectedHours: 8, projectedPeopleReached: 150, impactActivityId: null },
+      { actualHours: 3, actualPeopleReached: 0, participantCount: 6 },
+    );
+    expect(activity.durationMinutes).toBe(180);
+    expect(activity.peopleReached).toBe(0);
+    expect(activity.participantCount).toBe(6);
+  });
+});
+
+describe("completeOutreachEvent", () => {
+  it("writes the impact_activities row, links it back, and marks the event completed", async () => {
+    const writes: { sql: string; params: unknown[] }[] = [];
+    const client = makeClient((sql, params) => {
+      if (sql.includes("FROM outreach_calendar_events") && sql.includes("FOR UPDATE")) {
+        return { rows: [EVENT_ROW] };
+      }
+      if (sql.includes("INSERT INTO impact_activities")) {
+        writes.push({ sql, params });
+        return { rows: [{ id: "act-1" }] };
+      }
+      if (sql.includes("UPDATE outreach_calendar_events")) {
+        writes.push({ sql, params });
+        return { rows: [], rowCount: 1 };
+      }
+      return { rows: [] };
+    });
+
+    const result = await completeOutreachEvent(client, {
+      orgId: ORG,
+      userId: USER,
+      eventId: "evt-1",
+      actualPeopleReached: 120,
+    });
+
+    expect(result).toEqual({ impactActivityId: "act-1", created: true });
+    const insert = writes.find((w) => w.sql.includes("INSERT INTO impact_activities"));
+    expect(insert?.params).toEqual([
+      ORG,
+      "Elementary STEM night",
+      "stem_demo",
+      "2026-09-10",
+      480,
+      0,
+      120,
+      "k12",
+      "Lincoln Elementary",
+      "Two robots, three stations",
+      2026,
+      USER,
+    ]);
+    const link = writes.find((w) => w.sql.includes("impact_activity_id = $3"));
+    expect(link?.params).toEqual(["evt-1", ORG, "act-1"]);
+  });
+
+  it("is idempotent: an event that already logged an activity logs nothing twice", async () => {
+    const writes: string[] = [];
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM outreach_calendar_events") && sql.includes("FOR UPDATE")) {
+        return { rows: [{ ...EVENT_ROW, status: "completed", impactActivityId: "act-existing" }] };
+      }
+      if (sql.startsWith("INSERT") || sql.includes("INSERT INTO")) writes.push(sql);
+      return { rows: [], rowCount: 0 };
+    });
+
+    const result = await completeOutreachEvent(client, { orgId: ORG, userId: USER, eventId: "evt-1" });
+
+    expect(result).toEqual({ impactActivityId: "act-existing", created: false });
+    expect(writes).toHaveLength(0);
   });
 });

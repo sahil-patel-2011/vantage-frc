@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { WhyPanel } from "../../components/why-panel";
 import { narrateAgentRun, narrationCoverage } from "../../lib/agent-narration/narration";
@@ -126,6 +126,35 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
     void loadRuns();
   }, [loadRuns]);
 
+  const running = selectedRun?.status === "running";
+
+  // The run executes after POST returns: poll the persisted run + steps every 2s while it
+  // is still running so steps render as they land, then refresh the history once it ends.
+  useEffect(() => {
+    if (!running || !selectedId) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      await loadRunDetail(selectedId);
+    };
+    const timer = setInterval(() => void tick(), 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [running, selectedId, loadRunDetail]);
+
+  const lastStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const status = selectedRun?.status ?? null;
+    if (lastStatusRef.current === "running" && status && status !== "running") {
+      setGeneratedAt(new Date().toISOString());
+      if (status === "setup_required") setErrorCode("setup_required");
+      void loadRuns();
+    }
+    lastStatusRef.current = status;
+  }, [selectedRun?.status, loadRuns]);
+
   async function onRun() {
     const trimmed = goal.trim();
     if (!trimmed || busy) return;
@@ -160,15 +189,13 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         setCutoffCode(resolveCutoffErrorCode(response.status, data) ?? null);
         return;
       }
-      setGeneratedAt(new Date().toISOString());
-      await loadRuns();
       if (data.runId) {
         setSelectedId(data.runId);
         setSelectedRun(
           data.run ?? {
             id: data.runId,
             goal: trimmed,
-            status: data.status ?? "completed",
+            status: data.status ?? "running",
             provider: data.provider ?? null,
             model: data.model ?? null,
             stepCount: (data.persistedSteps ?? data.steps ?? []).length,
@@ -176,10 +203,14 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             errorClass: data.setupRequired ? "setup_required" : null,
             errorMessage: null,
             startedAt: new Date().toISOString(),
-            finishedAt: new Date().toISOString(),
+            finishedAt: null,
           },
         );
         setSteps(data.persistedSteps ?? data.steps ?? []);
+      }
+      if (data.status && data.status !== "running") {
+        setGeneratedAt(new Date().toISOString());
+        await loadRuns();
       }
       if (data.setupRequired || data.status === "setup_required") {
         setErrorCode("setup_required");
@@ -188,6 +219,26 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
       setError(err instanceof Error ? err.message : "Agent run failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onCancel() {
+    if (!selectedId || !running) return;
+    try {
+      const response = await fetch("/api/agent/autonomous", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "cancel", runId: selectedId }),
+      });
+      const data = (await response.json()) as { error?: string; run?: RunSummary | null; steps?: StepRow[] };
+      if (!response.ok) {
+        setError(data.error ?? "Could not cancel the run");
+        return;
+      }
+      if (data.run) setSelectedRun(data.run);
+      if (data.steps) setSteps(data.steps);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel the run");
     }
   }
 
@@ -270,9 +321,19 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           maxLength={4000}
         />
         <div className="aa-compose-actions">
-          <button type="button" className="app-button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
-            {busy ? "Running…" : "Run autonomous agent"}
+          <button
+            type="button"
+            className="app-button"
+            onClick={() => void onRun()}
+            disabled={busy || running || !goal.trim()}
+          >
+            {busy ? "Starting…" : running ? "Running…" : "Run autonomous agent"}
           </button>
+          {running ? (
+            <button type="button" className="app-button secondary" onClick={() => void onCancel()}>
+              Cancel run
+            </button>
+          ) : null}
           <button type="button" className="app-button secondary" onClick={() => void loadRuns()} disabled={busy}>
             Refresh history
           </button>
@@ -320,6 +381,11 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             <>
               <div className="aa-status-row">
                 <span className={`aa-status aa-status--${selectedRun.status}`}>{selectedRun.status}</span>
+                {running ? (
+                  <span className="aa-muted" role="status">
+                    Steps land as they are persisted — refreshing every 2s.
+                  </span>
+                ) : null}
               </div>
               {/* Which endpoint actually ran this goal. Sits above the step log so a
                   small-model notice is visible even when the run errored before an
@@ -372,9 +438,15 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   <h3>Final answer</h3>
                   <p>{selectedRun.finalAnswer}</p>
                   {generatedAt ? (
-                    <AIAttribution feature="agent" generatedAt={generatedAt} onRegenerate={() => void onRun()} />
+                    <AIAttribution
+                      kind={selectedRun.provider === "local" ? "template" : "ai"}
+                      feature="agent"
+                      generatedAt={generatedAt}
+                      onRegenerate={() => void onRun()}
+                    />
                   ) : (
                     <AIAttribution
+                      kind={selectedRun.provider === "local" ? "template" : "ai"}
                       feature="agent"
                       generatedAt={selectedRun.finishedAt ?? selectedRun.startedAt}
                     />

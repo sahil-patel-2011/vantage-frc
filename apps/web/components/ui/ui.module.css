@@ -3,6 +3,15 @@
  * Scoped CSS module — references the GLOBAL soft-ui.css tokens
  * (--soft-*, --app-*) so it inherits light/dark automatically.
  * No new global selectors; nothing here leaks into other modules.
+ *
+ * Breakpoint scale (max-width, used by product-hub.css and the page stylesheets
+ * that follow it — custom properties cannot appear inside a media query, so the
+ * widths are written out and this comment is the single source of truth):
+ *   phone   520px  — single column, full-width buttons, stacked forms
+ *   tablet  720px  — two-up grids collapse, tab bars scroll horizontally
+ *   laptop  980px  — wide KPI rows and three-up grids step down
+ * Pointer/motion queries (pointer: coarse, prefers-reduced-motion) are not part
+ * of the scale and stay wherever the affordance lives.
  */
 
 /* --- 1.1 Skeleton shimmer --- */
@@ -280,108 +289,16 @@
 }
 .progressStatus { font-size: 12px; color: var(--soft-muted); }
 
-/* --- DataTable --- */
-/* Export bar sits above the scroll container so the button never scrolls out of reach. */
-.tableExportBar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-.tableScroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: var(--soft-radius-sm);
-  border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
-}
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  background: var(--soft-card);
-}
-.table th, .table td {
-  padding: 9px 12px;
-  text-align: left;
-  border-bottom: 1px solid color-mix(in srgb, var(--soft-line) 55%, transparent);
-  white-space: nowrap;
-}
-.table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--soft-card);
-  color: var(--soft-muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-.table tbody tr:last-child td { border-bottom: 0; }
-.table tbody tr:hover td { background: color-mix(in srgb, var(--soft-accent-soft) 45%, transparent); }
-.cellEnd { text-align: right !important; }
-.cellNumeric { font-variant-numeric: tabular-nums; }
-.stickyFirst { position: sticky; left: 0; z-index: 2; background: var(--soft-card); }
-.table thead .stickyFirst { z-index: 3; }
-.selectCell { width: 34px; text-align: center; }
-
-/* Card-per-row stacked mode */
-.stack { display: grid; gap: 10px; }
-.stackRow {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: var(--soft-radius-sm);
-  background: var(--soft-card);
-  border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
-}
-.stackPair {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.stackKey {
+/* --- Dialog label (ConfirmDialog type-to-confirm) --- */
+.dialogLabel {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--soft-muted);
 }
-.stackVal { font-size: 13px; text-align: right; min-width: 0; }
-.stackRowSelected { border-color: var(--soft-accent); }
 
-/* --- SourceTag / DataSourceFooter / AIAttribution / Freshness --- */
-.provChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
-  background: var(--app-soft);
-  color: var(--soft-muted);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-.provChip svg { width: 12px; height: 12px; flex: none; }
-.provDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  flex: none;
-}
-.provOk { background: #15803d; }
-.provDegraded { background: #f97316; }
-.provCached { background: var(--soft-muted); }
-.sourceFooter {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--soft-muted);
-}
+/* --- AIAttribution --- */
 .aiAttribution {
   display: inline-flex;
   align-items: center;
@@ -425,61 +342,6 @@
   cursor: pointer;
   text-decoration: underline;
 }
-.freshStale { color: #9a3412; }
-
-/* --- IntegrationSetupCard --- */
-.setupCard {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-  border-radius: var(--soft-radius);
-  background: var(--soft-card);
-  border: 1px solid color-mix(in srgb, var(--soft-line) 80%, transparent);
-  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19,32,51,.07));
-}
-.setupHead { display: flex; align-items: center; gap: 12px; }
-.setupIcon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--soft-accent-soft);
-  color: var(--soft-accent);
-  flex: none;
-}
-.setupIcon svg { width: 22px; height: 22px; }
-.setupTitle { margin: 0; font-size: 15px; font-weight: 700; color: var(--soft-ink); }
-.setupDesc { margin: 0; font-size: 13px; line-height: 1.5; color: var(--soft-muted); }
-.setupActions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.setupLink { font-size: 12px; color: var(--soft-muted); }
-
-/* --- SystemHealthStrip --- */
-.healthStrip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-}
-.healthPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
-  background: var(--soft-card);
-  color: var(--soft-ink);
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-}
-.healthPill:hover { border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line)); }
-.healthOk { background: #15803d; }
-.healthDegraded { background: #f97316; }
-.healthOff { background: var(--soft-muted); }
-
 /* --- Modal / ConfirmDialog --- */
 .overlay {
   position: fixed;
@@ -602,8 +464,3 @@
 }
 :global(html[data-theme="dark"]) .deltaUp { color: #4ade80; }
 :global(html[data-theme="dark"]) .deltaDown { color: #ff8f85; }
-:global(html[data-theme="dark"]) .freshStale { color: #fdba74; }
-:global(html[data-theme="dark"]) .provOk,
-:global(html[data-theme="dark"]) .healthOk { background: #22c55e; }
-:global(html[data-theme="dark"]) .provDegraded,
-:global(html[data-theme="dark"]) .healthDegraded { background: #fb923c; }

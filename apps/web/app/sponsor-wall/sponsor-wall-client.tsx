@@ -556,7 +556,7 @@ function WallPreview({
           >
             <div>
               {item.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img
                   src={item.logoUrl}
                   alt={`${item.sponsorName} logo`}

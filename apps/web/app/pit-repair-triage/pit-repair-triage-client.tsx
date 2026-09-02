@@ -23,6 +23,8 @@ import {
 } from "../../lib/pit-repair-triage";
 import type { PitRepairTriageView } from "../../lib/pit-repair-triage/compute-pit-repair-triage";
 import type { TriageDecision, TriageStatus } from "../../lib/pit-repair-triage/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   PIT_REPAIR_TRIAGE_RELATED_INCLUDE,
   classifyPitRepairTriageShell,
@@ -195,6 +197,8 @@ export default function PitRepairTriageClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest triage render: "AI" only when a model wrote the rationale.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -273,6 +277,8 @@ export default function PitRepairTriageClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -347,6 +353,8 @@ export default function PitRepairTriageClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="pit_repair_triage" />
 
       {showTiles ? (
         <Panel className="prt-panel">

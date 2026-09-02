@@ -301,13 +301,19 @@ created in the current binding, so it can never eat hand-built history.
 | `onshape_sketch_circle` | yes | yes | One or more circles. <br>_Fusion draws one per sketch._ |
 | `onshape_sketch_polyline` | yes | — | Open path or closed polygon from explicit mm points. |
 | `onshape_sketch_points` | yes | — | Bare points — the drill locations `onshape_hole` consumes. |
+| `onshape_sketch_slot` | yes | — | Straight slot: `lengthMm` end-to-end, `widthMm`, centre, `angleDeg`. |
+| `onshape_sketch_polygon` | yes | — | Regular polygon (3–24 sides) by `acrossFlatsMm` or `circumscribedDiameterMm`. |
 | `onshape_extrude` | yes | yes | NEW / ADD / REMOVE / INTERSECT, depth in mm. |
 | `onshape_fillet` | yes | yes | `selection='corners'` rounds only the plate corners. <br>_Fusion rounds every edge._ |
 | `onshape_chamfer` | yes | yes | Equal-offset bevel. <br>_Fusion bevels every edge._ |
 | `onshape_hole` | yes | — | A real Hole feature at the points of a point sketch. |
+| `onshape_shell` | yes | — | Hollow a solid to `thicknessMm`, removing `faces` top / bottom / ends / all. |
+| `onshape_set_variable` | yes | — | Add a `#name` Variable feature (LENGTH mm, ANGLE deg, or NUMBER). |
 | `onshape_linear_pattern` | yes | — | Repeat features along X/Y/Z. |
 | `onshape_circular_pattern` | yes | — | Repeat features around a cylindrical face. |
 | `onshape_mirror` | yes | — | Mirror features across a standard plane. |
+| `onshape_export_stl` | yes | — | Binary STL (mm). Hosted: a new CAD vault version. Terminal: `~/.vantage-cad/exports/`. |
+| `onshape_export_step` | yes | — | STEP via the translation service (polls until done), stored the same way. |
 | `onshape_delete_feature` | yes | yes | Undo a feature *this session* created. |
 | `fusion_status` | — | yes | Ping the local VantageCadRelay add-in on loopback. |
 | `fusion_describe` | — | yes | Body / feature counts in the open design. |

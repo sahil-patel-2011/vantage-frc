@@ -60,6 +60,16 @@ export type DriverPracticeContext = {
   eventKey: string | null;
 };
 
+/** Incremental paging for GET /api/practice: caps + a `since` cursor over session updated_at. */
+export type DriverPracticeCursor = {
+  since: string | null;
+  nextSince: string;
+  sessionLimit: number;
+  cycleLimit: number;
+  sessionsTruncated: boolean;
+  cyclesTruncated: boolean;
+};
+
 export type DriverPracticeView =
   | {
       status: "ready";
@@ -68,6 +78,7 @@ export type DriverPracticeView =
       members: DriverPracticeMember[];
       attendanceEvents: LinkableAttendance[];
       buildTasks: LinkableBuildTask[];
+      cursor?: DriverPracticeCursor;
     }
   | { status: "setup_required"; context: DriverPracticeContext; message: string };
 

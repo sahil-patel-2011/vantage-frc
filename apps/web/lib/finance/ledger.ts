@@ -13,7 +13,15 @@
  *   source 'reimbursement'     — a PAID reimbursement_requests claim (0482). An
  *     approved-but-unpaid claim is a promise, not cash, and never mirrors.
  *   source 'sponsor_contribution' / 'fundraiser' — income mirrors whose dollars
- *     are counted from their own tables (sponsor_contributions / fundraiser_events)
+ *     are counted from their own tables (sponsor_contributions / fundraiser_events).
+ *     One row per contribution; one row per fundraiser EVENT carrying its total.
+ *   source 'fundraiser_expense' — fundraiser_events.expenses_usd, one row per event
+ *     carrying the running total (0504). Real money out, counted in the balance.
+ *
+ * Grant tagging (0504): every row may carry grant_application_id so the grant
+ * report can sum exactly the expenses a team attributed to that grant. The tag is
+ * stored on the SOURCE row too (purchase_requests / season_costs /
+ * finance_purchase_log) because every re-mirror rebuilds the ledger row from it.
  *
  * Surfaces that write one of the legacy tables call recordMoney()/removeMoney()
  * in the SAME withRls transaction as their own write, so the ledger can never
@@ -31,6 +39,7 @@ export const MONEY_SOURCES = [
   "manual",
   "sponsor_contribution",
   "fundraiser",
+  "fundraiser_expense",
   "other",
   "purchase_request",
   "purchase_log",
@@ -48,6 +57,7 @@ export const MONEY_SOURCE_LABELS: Record<MoneySource, string> = {
   manual: "Manual",
   sponsor_contribution: "Sponsor",
   fundraiser: "Fundraiser",
+  fundraiser_expense: "Fundraiser cost",
   other: "Other",
   purchase_request: "Order",
   purchase_log: "Receipt",
@@ -75,6 +85,8 @@ export type RecordMoneyInput = {
   createdBy?: string | null;
   /** False only for money-shaped rows that are not cash (BOM estimates). */
   countsInBalance?: boolean;
+  /** Grant this expense is attributed to (0504). Only meaningful for direction 'out'. */
+  grantApplicationId?: string | null;
 };
 
 export type NormalizedRecordMoney = {
@@ -94,6 +106,7 @@ export type NormalizedRecordMoney = {
   /** Legacy FK columns 0035-era readers still join on. */
   purchaseRequestId: string | null;
   sponsorContributionId: string | null;
+  grantApplicationId: string | null;
 };
 
 export function isMoneySource(value: unknown): value is MoneySource {
@@ -144,6 +157,8 @@ export function normalizeRecordMoney(input: RecordMoneyInput): NormalizedRecordM
     countsInBalance: input.countsInBalance ?? true,
     purchaseRequestId: input.source === "purchase_request" ? (input.sourceId ?? null) : null,
     sponsorContributionId: input.source === "sponsor_contribution" ? (input.sourceId ?? null) : null,
+    // Income is never "spent from" a grant — only expenses carry the tag.
+    grantApplicationId: input.direction === "out" ? (input.grantApplicationId ?? null) : null,
   };
 }
 
@@ -156,10 +171,10 @@ export const RECORD_MONEY_UPSERT_SQL = `
   INSERT INTO finance_transactions
     (org_id, season_year, type, source, amount_usd, occurred_at, category_id,
      purchase_request_id, sponsor_contribution_id, description, created_by,
-     source_kind, source_id, counts_in_balance)
+     source_kind, source_id, counts_in_balance, grant_application_id)
   VALUES ($1::uuid, $2::int, $3::finance_txn_type, $4::finance_txn_source, $5::numeric,
           COALESCE($6::timestamptz, now()), $7::uuid, $8::uuid, $9::uuid, $10,
-          COALESCE($11::uuid, current_app_user_id()), $12, $13::uuid, $14::boolean)
+          COALESCE($11::uuid, current_app_user_id()), $12, $13::uuid, $14::boolean, $15::uuid)
   ON CONFLICT (org_id, source_kind, source_id) WHERE source_id IS NOT NULL
   DO UPDATE SET
     season_year = EXCLUDED.season_year,
@@ -168,17 +183,18 @@ export const RECORD_MONEY_UPSERT_SQL = `
     occurred_at = EXCLUDED.occurred_at,
     category_id = EXCLUDED.category_id,
     description = EXCLUDED.description,
-    counts_in_balance = EXCLUDED.counts_in_balance`;
+    counts_in_balance = EXCLUDED.counts_in_balance,
+    grant_application_id = EXCLUDED.grant_application_id`;
 
 /** Plain insert for manual rows — repeated manual entries are legitimately distinct. */
 export const RECORD_MONEY_INSERT_SQL = `
   INSERT INTO finance_transactions
     (org_id, season_year, type, source, amount_usd, occurred_at, category_id,
      purchase_request_id, sponsor_contribution_id, description, created_by,
-     source_kind, source_id, counts_in_balance)
+     source_kind, source_id, counts_in_balance, grant_application_id)
   VALUES ($1::uuid, $2::int, $3::finance_txn_type, $4::finance_txn_source, $5::numeric,
           COALESCE($6::timestamptz, now()), $7::uuid, $8::uuid, $9::uuid, $10,
-          COALESCE($11::uuid, current_app_user_id()), $12, $13::uuid, $14::boolean)`;
+          COALESCE($11::uuid, current_app_user_id()), $12, $13::uuid, $14::boolean, $15::uuid)`;
 
 export function recordMoneyParams(row: NormalizedRecordMoney): unknown[] {
   return [
@@ -196,6 +212,7 @@ export function recordMoneyParams(row: NormalizedRecordMoney): unknown[] {
     row.source,
     row.sourceId,
     row.countsInBalance,
+    row.grantApplicationId,
   ];
 }
 

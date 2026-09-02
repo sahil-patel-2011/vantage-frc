@@ -39,6 +39,7 @@ export function subteamLabel(subteam: Subteam): string {
 }
 
 export function isFilled(role: TeamRole): boolean {
+  if (role.holderUserId) return true;
   return Boolean(role.holderName && role.holderName.trim().length > 0);
 }
 

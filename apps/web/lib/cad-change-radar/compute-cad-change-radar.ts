@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { buildNotificationMessage, classifySeverity, diffParams, summarizeDiffDeterministic } from ".";
 import type {
   CadChangeRadarConnection,
@@ -169,9 +168,11 @@ export async function computeCadChangeRadarView(
   }
 
   const connectionResult = await client.query<ConnectionRow>(
+    // The caller's own connection first, then the org's shared team row (user_id IS NULL, 0493).
     `SELECT id, label, status FROM cad_connections
-     WHERE org_id = $1 AND user_id = $2 AND platform = 'onshape' AND status = 'connected' AND disabled_at IS NULL
-     ORDER BY updated_at DESC LIMIT 1`,
+     WHERE org_id = $1::uuid AND (user_id = $2::uuid OR user_id IS NULL) AND platform = 'onshape'
+       AND status = 'connected' AND disabled_at IS NULL
+     ORDER BY (user_id IS NULL) ASC, updated_at DESC LIMIT 1`,
     [org.orgId, input.userId],
   );
   const connectionRow = connectionResult.rows[0] ?? null;
@@ -354,7 +355,7 @@ export async function recordSnapshot(
 export async function generateAiDiffSummary(
   client: PoolClient,
   input: { orgId: string; userId: string; diffId: string },
-): Promise<string> {
+): Promise<{ summary: string; render: RenderOutcome }> {
   const diffResult = await client.query<DiffRow>(
     `SELECT id, part_key AS "partKey", part_name AS "partName", from_revision AS "fromRevision",
             to_revision AS "toRevision", changed_params AS "changedParams", severity,
@@ -366,31 +367,28 @@ export async function generateAiDiffSummary(
   if (!diff) throw new Error("Diff not found");
   const deltas = Array.isArray(diff.changedParams) ? diff.changedParams : [];
 
-  const summary = await meteredAI({
+  // Real model call on the org's adapter; the deterministic diff summary stands in on any failure.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "cad_change_radar",
-    requestId: `cad-change-radar-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    prompt: [
+      `Summarize this CAD revision for the design team in 1-2 plain sentences, keeping the template's structure: "<part> revision <rev>: <each changed parameter with its exact from → to values>".`,
+      "Use only these facts; invent nothing and drop no parameter:",
+      factsBlock({ partName: diff.partName, partKey: diff.partKey, toRevision: diff.toRevision, deltas: deltas.slice(0, 12) }),
+    ].join("\n"),
+    template: () => summarizeDiffDeterministic({ partName: diff.partName, toRevision: diff.toRevision, deltas }),
     metadata: { partKey: diff.partKey, toRevision: diff.toRevision, deltaCount: deltas.length },
-    invoke: async () => ({
-      value: summarizeDiffDeterministic({ partName: diff.partName, toRevision: diff.toRevision, deltas }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-cad-change-radar-v1",
-      provider: "vantage-local",
-    }),
   });
+  const summary = rendered.text;
 
   await client.query(`UPDATE cad_change_radar_diffs SET ai_summary = $1 WHERE id = $2 AND org_id = $3`, [
     summary,
     input.diffId,
     input.orgId,
   ]);
-  return summary;
+  return { summary, render: renderOutcomeOf(rendered) };
 }
 
 export async function subscribe(

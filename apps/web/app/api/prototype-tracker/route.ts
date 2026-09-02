@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-test": {
           const subsystemName = trimmedOrNull(body.subsystemName, 200);
@@ -133,7 +135,7 @@ export async function POST(request: Request) {
           const decisionTitle = trimmedOrNull(body.decisionTitle, 200);
           if (!testId) throw new Error("testId is required");
           if (!decisionTitle) throw new Error("decisionTitle is required");
-          await draftDecisionForTest(client, { orgId, userId, testId, decisionTitle });
+          render = await draftDecisionForTest(client, { orgId, userId, testId, decisionTitle });
           break;
         }
         case "update-decision-status": {
@@ -160,7 +162,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computePrototypeTrackerView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computePrototypeTrackerView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

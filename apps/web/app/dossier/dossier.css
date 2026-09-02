@@ -85,6 +85,31 @@
   grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
   gap:12px;
 }
+.dossier-pit-photos{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid var(--soft-line);
+}
+.dossier-pit-photo-strip{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  gap:8px;
+}
+.dossier-pit-photo-strip img{
+  width:84px;
+  height:64px;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--soft-line);
+  background:var(--soft-bg);
+  display:block;
+}
 @media (max-width:800px){
   .dossier-heading{flex-direction:column}
   .dossier-related{justify-content:flex-start}

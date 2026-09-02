@@ -17,7 +17,13 @@ const config: NextConfig = {
   ],
   poweredByHeader: false,
   async redirects() {
-    return expandLegacyRedirects();
+    return [
+      // The build-season task board merged into Team todos (migration 0502);
+      // inbound ?orgId etc. is preserved because the destination has no query.
+      { source: "/tasks", destination: "/todos", permanent: false },
+      { source: "/tasks/:path*", destination: "/todos", permanent: false },
+      ...expandLegacyRedirects(),
+    ];
   },
   async headers() {
     return [{

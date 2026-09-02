@@ -306,12 +306,29 @@ export class ScoutingRepository {
        VALUES ($1,$2,$3,$4,$5)`,
       [orgId, input.clientId, input.type, entryId, hash],
     );
+    await this.linkPendingMedia(orgId, entryId, input.clientId);
     let validations: FieldValidation[] = [];
     if (input.type === "match") {
       await this.refreshDisagreements(orgId, userId, locked, schema);
       validations = await this.refreshOfficialValidations(orgId, entryId, locked, schema);
     }
     return { clientId: input.clientId, entryId, duplicate: false, table, validations };
+  }
+
+  /**
+   * Pit photos sync on their own outbox and may land before or after their
+   * entry. They carry the entry's offline clientId (scout_media.entry_client_id);
+   * once the entry is minted, attach every still-unlinked photo to it.
+   */
+  private async linkPendingMedia(orgId: string, entryId: string, entryClientId: string) {
+    await this.client.query(
+      `UPDATE scout_media
+       SET entry_id = $1::uuid, updated_at = now()
+       WHERE org_id = $2::uuid
+         AND entry_client_id = $3
+         AND entry_id IS NULL`,
+      [entryId, orgId, entryClientId],
+    );
   }
 
   private async refreshDisagreements(

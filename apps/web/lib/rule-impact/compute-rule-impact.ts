@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import {
   RULE_CHANGE_CATEGORIES,
   RULE_CHANGE_SEVERITIES,
@@ -367,7 +366,7 @@ export async function recordAssessment(
     sourceSeasonYear: number | null;
     notes: string | null;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const ruleResult = await client.query<{ severity: RuleChangeSeverity; subsystemCategory: SubsystemCategory | null }>(
     `SELECT severity, subsystem_category AS "subsystemCategory"
      FROM rule_impact_rule_changes
@@ -381,27 +380,18 @@ export async function recordAssessment(
   const blockingRuleCount = matched.filter((row) => row.severity === "blocking").length;
   const majorRuleCount = matched.filter((row) => row.severity === "major").length;
 
-  const assessment = await meteredAI({
+  // Real model call on the org's adapter with the deterministic assessment as fallback:
+  // only the rationale prose may be rewritten; status and confidence stay computed from
+  // the logged rule changes that match this subsystem's category.
+  const { value: assessment, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "rule_impact",
-    requestId: `rule-impact-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.subsystemName,
-      seasonYear: input.seasonYear,
-      note: "Deterministic rule-change-match computation — no external model call",
-    },
-    invoke: async () => ({
-      value: assessRuleImpact({ matchedRuleCount, blockingRuleCount, majorRuleCount }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-rule-impact-v1",
-      provider: "vantage-local",
-    }),
+    value: assessRuleImpact({ matchedRuleCount, blockingRuleCount, majorRuleCount }),
+    editableKeys: ["rationale"],
+    instructions: `Rule-change impact on reusing the ${input.subsystemName} subsystem (${input.category}) in the ${input.seasonYear} season: ${matchedRuleCount} logged rule change(s) apply, ${blockingRuleCount} blocking, ${majorRuleCount} major. Write the rationale as 1-3 plain sentences for the design review, consistent with the status in the document; cite only these counts and name no rule numbers that are not in the document.`,
+    metadata: { subsystemName: input.subsystemName, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -427,6 +417,7 @@ export async function recordAssessment(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function updateAssessmentStatus(

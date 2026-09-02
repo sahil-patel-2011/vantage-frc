@@ -93,7 +93,7 @@ describe("logMatchup", () => {
   it("computes and persists a deterministic recommendation grounded in the scouted inputs", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -135,7 +135,7 @@ describe("logMatchup", () => {
     expect(matchupInsert?.params).toContain("play_defense");
     expect(matchupInsert?.params).toContain("us");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

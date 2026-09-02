@@ -50,21 +50,29 @@ export async function GET(request: Request) {
          ORDER BY updated_at DESC LIMIT 1`,
         [claims.orgId, session.user.id],
       );
+      let connectionId: string;
       if (existing.rows[0]) {
+        connectionId = existing.rows[0].id;
         await client.query(
           `UPDATE cad_connections
            SET encrypted_credentials=$3,scopes=$4,status='connected',label='Onshape OAuth',
                external_account_ref=$5,disabled_at=NULL,last_tested_at=now(),updated_at=now()
-           WHERE id=$1 AND org_id=$2`,
+           WHERE id=$1::uuid AND org_id=$2::uuid`,
           [existing.rows[0].id, claims.orgId, payload, config.scopes, `onshape:${session.user.id}`],
         );
       } else {
-        await client.query(
+        const inserted = await client.query<{ id: string }>(
           `INSERT INTO cad_connections(org_id,user_id,platform,execution_mode,label,encrypted_credentials,scopes,status,external_account_ref,last_tested_at)
-           VALUES($1,$2,'onshape','hosted','Onshape OAuth',$3,$4,'connected',$5,now())`,
+           VALUES($1::uuid,$2::uuid,'onshape','hosted','Onshape OAuth',$3,$4::text[],'connected',$5,now())
+           RETURNING id`,
           [claims.orgId, session.user.id, payload, config.scopes, `onshape:${session.user.id}`],
         );
+        connectionId = inserted.rows[0]!.id;
       }
+      // If this user shared their connection with the team (0493), the team row is a
+      // copy of the previous grant; fan the fresh tokens out to it so "Reconnect"
+      // heals the shared copy too. For everyone else this touches only their own row.
+      await client.query(`SELECT rotate_cad_connection_credentials($1::uuid, $2)`, [connectionId, payload]);
     });
 
     return Response.redirect(

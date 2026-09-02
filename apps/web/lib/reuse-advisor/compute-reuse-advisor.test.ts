@@ -96,7 +96,7 @@ describe("recordAssessment", () => {
       if (sql.includes("count(*)::text AS total, count(*) FILTER (WHERE status = 'complete')")) {
         return { rows: [{ total: "2", passed: "2" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -123,7 +123,7 @@ describe("recordAssessment", () => {
     // No FMEA failures + fully passed reviews -> reuse.
     expect(assessmentInsert?.params).toContain("reuse");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

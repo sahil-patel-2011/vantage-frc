@@ -40,9 +40,12 @@ export function buildScoutQueue(input: {
   coverage: ScoutCoverageRow[];
   orgId: string;
   limit?: number;
+  /** Teams on the org's opponent watchlist — bumped to the front of the queue. */
+  watchlistTeamKeys?: readonly string[];
 }): ScoutQueueCandidate[] {
   const limit = input.limit ?? 8;
   const byTeam = new Map(input.coverage.map((row) => [row.teamKey, row]));
+  const watchlist = new Set(input.watchlistTeamKeys ?? []);
   const best = new Map<string, ScoutQueueCandidate>();
 
   for (const row of input.upcoming) {
@@ -72,6 +75,10 @@ export function buildScoutQueue(input: {
     if (!hasPitScout) {
       priority += 16;
       reasons.push("No pit scout entry");
+    }
+    if (watchlist.has(row.teamKey)) {
+      priority += 24;
+      reasons.unshift("On opponent watchlist");
     }
     const matchLabel = `${row.compLevel.toUpperCase()} ${row.matchNumber}`;
     const existing = best.get(row.teamKey);

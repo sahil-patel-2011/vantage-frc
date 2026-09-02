@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { averageConfidence, computeJustification } from ".";
 import { hubHref } from "../nav/hubs";
 import { setJustification } from "../picklist";
@@ -302,7 +301,7 @@ export async function computePicklistJustifierView(
 export async function generatePicklistJustifications(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string },
-): Promise<PicklistJustifierView> {
+): Promise<PicklistJustifierView & { render?: RenderOutcome }> {
   const pickListResult = await client.query<{ id: string; eventKey: string }>(
     `SELECT id, event_key AS "eventKey" FROM pick_lists WHERE id = $1 AND org_id = $2`,
     [input.pickListId, input.orgId],
@@ -317,70 +316,29 @@ export async function generatePicklistJustifications(
   });
   if (!justificationInputs.length) throw new Error("This pick list has no entries yet");
 
-  const requestId = `picklist-justifier-${randomUUID()}`;
-
-  const results = await meteredAI({
+  // Real model call on the org's adapter with the deterministic justifications as fallback:
+  // only each slot's rationale prose may be rewritten; sources, contradiction flags and the
+  // metrics they cite stay exactly as computed.
+  const { value: results, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "picklist-justifier",
-    requestId,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      pickListId: pickList.id,
-      eventKey: pickList.eventKey,
-      slotCount: justificationInputs.length,
-      note: "Deterministic source-cited rationale synthesis — no external model charge",
-    },
-    invoke: async () => {
-      const value = justificationInputs.map(({ entryId, input: ji }) => ({
-        entryId,
-        teamKey: ji.teamKey,
-        ...computeJustification(ji),
-      }));
-      return {
-        value,
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-picklist-justifier-v1",
-        provider: "vantage-local",
-      };
-    },
+    value: justificationInputs.map(({ entryId, input: ji }) => ({
+      entryId,
+      teamKey: ji.teamKey,
+      ...computeJustification(ji),
+    })),
+    editableKeys: ["rationale"],
+    instructions: `Pick-list justifications for event ${pickList.eventKey}. Rewrite each rationale as 1-2 plain sentences the alliance-selection rep can say out loud, citing only the sources and figures already in that entry; when a contradiction is flagged, say so plainly.`,
+    metadata: { pickListId: pickList.id, eventKey: pickList.eventKey, slotCount: justificationInputs.length },
   });
 
   for (const result of results) {
-    await client.query(
-      `INSERT INTO picklist_justifier_justifications
-         (org_id, pick_list_id, pick_list_entry_id, team_key, rationale, sources,
-          contradiction_flagged, contradiction_reason, ai_request_id, generated_by)
-       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10)
-       ON CONFLICT (pick_list_entry_id) DO UPDATE SET
-         rationale = excluded.rationale,
-         sources = excluded.sources,
-         contradiction_flagged = excluded.contradiction_flagged,
-         contradiction_reason = excluded.contradiction_reason,
-         ai_request_id = excluded.ai_request_id,
-         generated_by = excluded.generated_by,
-         updated_at = now()`,
-      [
-        input.orgId,
-        pickList.id,
-        result.entryId,
-        result.teamKey,
-        result.rationale,
-        JSON.stringify(result.sources),
-        result.contradiction.flagged,
-        result.contradiction.reason,
-        requestId,
-        input.userId,
-      ],
-    );
-
-    // The explanation now travels ON the pick-list row itself, so the desk and Pick Clock can
-    // show the same "why" for the same team. The legacy sidecar write above stays for one
-    // release (see packages/db/migrations/0454_picklist_unify.sql).
+    // The explanation travels ON the pick-list row itself (pick_list_entries.justification*,
+    // migration 0454), so the desk and Pick Clock show the same "why" for the same team. The
+    // legacy picklist_justifier_justifications sidecar is no longer written; it is still read
+    // as a fallback for rows generated before the unification.
     await setJustification(client, {
       orgId: input.orgId,
       userId: input.userId,
@@ -393,9 +351,10 @@ export async function generatePicklistJustifications(
     });
   }
 
-  return computePicklistJustifierView(client, {
+  const view = await computePicklistJustifierView(client, {
     userId: input.userId,
     requestedOrg: input.orgId,
     pickListId: pickList.id,
   });
+  return { ...view, render };
 }

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import {
   buildAttendanceSummary,
   buildBlockers,
@@ -253,31 +252,35 @@ export async function computeStandupDigestView(
 export async function generateDigest(
   client: PoolClient,
   input: { orgId: string; userId: string; digestDate?: string | null },
-): Promise<StandupDigestSummary> {
+): Promise<StandupDigestSummary & { render: RenderOutcome }> {
   const digestDate = isDigestDate(input.digestDate) ? input.digestDate : defaultDigestDate();
   const summary = await computeSummary(client, input.orgId, digestDate);
 
-  const metered = await meteredAI({
+  // Real model call on the org's adapter for the headline; the deterministic headline is the
+  // fallback and the counted rows below are the only facts the model may use.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "standup_digest",
-    requestId: `standup-digest-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      digestDate,
-      note: "Deterministic standup-digest headline synthesis — no external model call",
-    },
-    invoke: async () => ({
-      value: summary.headline,
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-standup-digest-v1",
-      provider: "vantage-local",
-    }),
+    prompt: [
+      `Daily standup digest for ${digestDate}. Write the headline as 1-2 plain sentences in the template's structure: hours logged, task movement, blockers and attendance.`,
+      "Use only these facts; invent no counts, names or subteams:",
+      factsBlock({
+        hours: summary.hours,
+        taskMovement: summary.taskMovement.slice(0, 8),
+        blockers: summary.blockers.slice(0, 8),
+        attendance: summary.attendance,
+        subteamBriefs: summary.subteamBriefs.slice(0, 8),
+      }),
+      `Template: ${summary.headline}`,
+    ].join("\n"),
+    template: () => summary.headline,
+    maxTokens: 200,
+    metadata: { digestDate },
   });
+  const metered = rendered.text;
+  const digest: StandupDigestSummary = { ...summary, headline: metered };
 
   await client.query(
     `INSERT INTO standup_digest_runs (org_id, digest_date, season_year, summary, headline, generated_by)
@@ -288,10 +291,10 @@ export async function generateDigest(
        headline = EXCLUDED.headline,
        generated_by = EXCLUDED.generated_by,
        created_at = now()`,
-    [input.orgId, digestDate, currentSeasonYear(), JSON.stringify(summary), metered, input.userId],
+    [input.orgId, digestDate, currentSeasonYear(), JSON.stringify(digest), metered, input.userId],
   );
 
-  return summary;
+  return { ...digest, render: renderOutcomeOf(rendered) };
 }
 
 export async function addNote(

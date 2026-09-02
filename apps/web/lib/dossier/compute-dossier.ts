@@ -13,6 +13,7 @@ import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
 import { dossierSetupSteps } from "./dossier-related";
 import { withOrgHref } from "../nav/product-nav";
+import { scoutMediaUrl } from "../scout-media/client";
 
 export type DossierSetupStep = {
   id: string;
@@ -43,8 +44,54 @@ export type DossierView =
       hasReferenceFacts: boolean;
       referenceAccess: ReferenceAccessInfo;
       dataSourceHealth?: DataSourceHealthView;
+      /** Up to four newest org pit photos of this team (metadata + URLs, never bytes). */
+      pitPhotos: DossierPitPhoto[];
       computedAt: string;
     };
+
+export type DossierPitPhoto = {
+  clientId: string;
+  eventKey: string;
+  capturedAt: string;
+  thumbUrl: string;
+  url: string;
+};
+
+const DOSSIER_PIT_PHOTO_LIMIT = 4;
+
+/** Newest pit photos the org holds for this team — real rows only, empty when none. */
+async function loadDossierPitPhotos(
+  client: PoolClient,
+  orgId: string,
+  teamKey: string,
+): Promise<DossierPitPhoto[]> {
+  const rows = await client.query<{
+    clientId: string;
+    eventKey: string;
+    capturedAt: string;
+    hasThumb: boolean;
+  }>(
+    `SELECT client_id AS "clientId", event_key AS "eventKey",
+            created_at::text AS "capturedAt", (thumb_bytes IS NOT NULL) AS "hasThumb"
+     FROM scout_media
+     WHERE org_id = $1::uuid
+       AND team_key = $2
+       AND kind = 'photo'
+       AND status = 'uploaded'
+       AND deleted_at IS NULL
+       AND bytes IS NOT NULL
+     ORDER BY created_at DESC
+     LIMIT $3::int`,
+    [orgId, teamKey, DOSSIER_PIT_PHOTO_LIMIT],
+  );
+  return rows.rows.map((row) => ({
+    clientId: row.clientId,
+    eventKey: row.eventKey,
+    capturedAt: row.capturedAt,
+    thumbUrl: scoutMediaUrl(orgId, row.clientId, row.hasThumb ? "thumb" : "full"),
+    url: scoutMediaUrl(orgId, row.clientId),
+  }));
+}
 
 async function loadSeasonScoutOps(
   client: PoolClient,
@@ -207,7 +254,7 @@ export async function computeTeamDossier(
   }
 
   const year = new Date().getFullYear();
-  const [yearMetrics, eventMetrics, operations] = await Promise.all([
+  const [yearMetrics, eventMetrics, operations, pitPhotos] = await Promise.all([
     client.query<{
       teamKey: string;
       year: number;
@@ -260,6 +307,7 @@ export async function computeTeamDossier(
       [team.teamKey, year - 1, year],
     ),
     loadSeasonScoutOps(client, row.orgId, team.teamKey),
+    loadDossierPitPhotos(client, row.orgId, team.teamKey).catch(() => [] as DossierPitPhoto[]),
   ]);
 
   const yearRows: YearMetricRow[] = yearMetrics.rows.map((metric) => ({
@@ -344,6 +392,7 @@ export async function computeTeamDossier(
     cards,
     hasReferenceFacts,
     referenceAccess: access,
+    pitPhotos,
     computedAt: new Date().toISOString(),
   };
 }

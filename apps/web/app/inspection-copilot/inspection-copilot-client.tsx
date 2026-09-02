@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, Panel, ToolPage, useConfirm } from "../../components/ui";
 import { inspectionFlagSeverityLabel, stale120PerimeterCue, stale16ExtensionCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
@@ -16,6 +16,8 @@ import {
   type InspectionCopilotShellKind,
 } from "../../lib/inspection-copilot/inspection-copilot-related";
 import type { InspectionFlagSeverity } from "../../lib/inspection-copilot/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./inspection-copilot.css";
@@ -82,65 +84,52 @@ function InspectionShell({
   shell,
   error,
   onRetry,
-  children,
 }: {
   description: string;
   orgId?: string | null;
-  shell: InspectionCopilotShellKind;
+  shell: Exclude<InspectionCopilotShellKind, "ready">;
   error?: string;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
   const actions = inspectionCopilotNextActions({ orgId, shell });
   const copy = inspectionCopilotShellCopy(shell);
-  const buildHref = hubHref("/build", "fmea", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
+  const nextActions = <InspectionNextActionsPanel actions={actions} />;
 
   return (
-    <main className="module-page inspection-copilot-page soft-gate">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
-          </>
-        }
-        title="Inspection-Readiness Copilot"
-        description={description}
-      >
-        <InspectionRelatedStrip orgId={orgId} />
-      </PageHeader>
-      {children}
-      <EmptyState
-        soft
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "No checks yet"
-                : copy.badge
-        }
-        badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
-        aria-busy={shell === "loading"}
-      >
-        {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
-        {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Open Workspace
-          </a>
-        ) : null}
-        {shell === "empty" ? (
-          <>
+    <ToolPage
+      hub="build"
+      hubTab="inspection-copilot"
+      toolLabel="Inspection Copilot"
+      title="Inspection-Readiness Copilot"
+      description={description}
+      className="inspection-copilot-page"
+      orgId={orgId}
+      state={shell}
+      error={{ message: error }}
+      onRetry={onRetry}
+      actions={<InspectionRelatedStrip orgId={orgId} />}
+      loading={
+        <>
+          <EmptyState soft badge={copy.badge} title={copy.title} description={copy.description} aria-busy />
+          {nextActions}
+        </>
+      }
+      setup={
+        <>
+          <EmptyState soft badge="Setup required" badgeTone="setup" title={copy.title} description={description}>
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          </EmptyState>
+          {nextActions}
+        </>
+      }
+      empty={
+        <>
+          <EmptyState soft badge="No checks yet" badgeTone="setup" title={copy.title} description={copy.description}>
             <a className="app-button" href="#inspection-copilot-form">
               Run a check
             </a>
@@ -153,11 +142,11 @@ function InspectionShell({
             <a className="app-button secondary" href={subsystemsHref}>
               Open Subsystems
             </a>
-          </>
-        ) : null}
-      </EmptyState>
-      <InspectionNextActionsPanel actions={actions} />
-    </main>
+          </EmptyState>
+          {nextActions}
+        </>
+      }
+    />
   );
 }
 
@@ -166,6 +155,7 @@ export default function InspectionCopilotClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -223,10 +213,6 @@ export default function InspectionCopilotClient() {
     flaggedCount,
     criticalCount,
   });
-  const relatedLinks = inspectionCopilotRelatedLinks(orgId, {
-    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
-  });
-  const buildHref = hubHref("/build", "fmea", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
@@ -249,6 +235,8 @@ export default function InspectionCopilotClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -293,17 +281,16 @@ export default function InspectionCopilotClient() {
   }
 
   return (
-    <main className="module-page inspection-copilot-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
-          </>
-        }
-        title="Inspection-Readiness Copilot"
-        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores."
-      >
+    <ToolPage
+      hub="build"
+      hubTab="inspection-copilot"
+      toolLabel="Inspection Copilot"
+      title="Inspection-Readiness Copilot"
+      description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores."
+      className="inspection-copilot-page"
+      orgId={orgId}
+      state="ready"
+      actions={
         <div className="inspection-copilot-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted inspection-copilot-season">
@@ -324,19 +311,17 @@ export default function InspectionCopilotClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
+          <InspectionRelatedStrip orgId={orgId} />
         </div>
-      </PageHeader>
-
+      }
+    >
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="inspection_copilot" />
 
       <InspectionNextActionsPanel actions={nextActions} />
 
@@ -388,7 +373,7 @@ export default function InspectionCopilotClient() {
           </>
         ) : null}
       </div>
-    </main>
+    </ToolPage>
   );
 }
 
@@ -451,6 +436,7 @@ function ChecksList({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
+  const confirm = useConfirm();
   return (
     <Panel id="inspection-copilot-checks" className="inspection-copilot-panel">
       <h2 style={{ marginTop: 0 }}>Inspection checks</h2>
@@ -478,9 +464,14 @@ function ChecksList({
                 className="text-button"
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm(`Delete "${check.robotName}" check?`)) {
-                    mutate({ action: "delete-check", checkId: check.id });
-                  }
+                  void confirm({
+                    title: "Delete inspection check",
+                    body: `The "${check.robotName}" check and its ${check.flags.length} flag${check.flags.length === 1 ? "" : "s"} are removed for good. Readiness counts recompute from the remaining checks.`,
+                    confirmLabel: "Delete check",
+                    tone: "destructive",
+                  }).then((ok) => {
+                    if (ok) mutate({ action: "delete-check", checkId: check.id });
+                  });
                 }}
               >
                 Delete

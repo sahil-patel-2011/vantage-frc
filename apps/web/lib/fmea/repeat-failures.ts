@@ -247,6 +247,9 @@ export async function loadRepeatFailureAlerts(
         severity: Number(row.severity) || 1,
         detection: Number(row.detection) || 1,
         recordedByName: null,
+        // Parts linkage (0505) is not needed for repeat detection; the row is not selected here.
+        inventoryItemId: null,
+        partsConsumedQty: 0,
       }));
       return detectRepeatFailures(failures, { threshold, limit, seasonYear });
     }

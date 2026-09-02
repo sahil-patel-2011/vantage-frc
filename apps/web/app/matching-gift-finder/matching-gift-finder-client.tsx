@@ -20,6 +20,8 @@ import {
 } from "../../lib/matching-gift-finder";
 import type { MatchingGiftFinderView } from "../../lib/matching-gift-finder/compute-matching-gift-finder";
 import type { MatchingGiftPledgeStatus, MatchingGiftRelationship } from "../../lib/matching-gift-finder/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   MATCHING_GIFT_FINDER_RELATED_INCLUDE,
   classifyMatchingGiftFinderShell,
@@ -172,6 +174,7 @@ export default function MatchingGiftFinderClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -244,6 +247,8 @@ export default function MatchingGiftFinderClient() {
           return;
         }
         setView(data);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -332,6 +337,8 @@ export default function MatchingGiftFinderClient() {
         </p>
       ) : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="matching_gift_finder" />
 
       <NextActionsPanel actions={nextActions} />
 

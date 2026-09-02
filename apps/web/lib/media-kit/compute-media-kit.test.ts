@@ -110,7 +110,7 @@ describe("generateOnePager", () => {
       if (sql.includes("FROM media_kit_assets WHERE org_id")) {
         return { rows: [{ total: "3", logos: "1" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -131,7 +131,7 @@ describe("generateOnePager", () => {
     const docInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO media_kit_documents"));
     expect(docInsert).toBeDefined();
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

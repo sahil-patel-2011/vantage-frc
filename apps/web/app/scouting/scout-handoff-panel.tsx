@@ -442,7 +442,7 @@ export default function ScoutHandoffPanel({
 
         {qrImage ? (
           <figure className="scout-qr-figure">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={qrImage} alt="Scout handoff QR code" width={280} height={280} />
             <figcaption>
               <FormRow label="Payload / URI">

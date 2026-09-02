@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGrantReportNarrative, buildGrantReportSections } from ".";
+import { NO_TAGGED_EXPENSES_NOTE, buildGrantReportNarrative, buildGrantReportSections, spendStateFor } from ".";
 
 const BASE = {
   grantName: "NASA Grant",
@@ -9,8 +9,8 @@ const BASE = {
   outreachByKind: [{ kind: "grant_followup", count: 2 }],
 };
 
-describe("buildGrantReportSections spend honesty", () => {
-  it("discloses missing spend linkage and labels season spend as org-wide context, not grant spend", () => {
+describe("buildGrantReportSections spend honesty (0504 grant tagging)", () => {
+  it("reports only expenses tagged to this grant, by category, with award coverage", () => {
     const sections = buildGrantReportSections({
       ...BASE,
       spendByCategory: [
@@ -21,33 +21,34 @@ describe("buildGrantReportSections spend honesty", () => {
 
     const spend = sections.find((section) => section.id === "spend");
     expect(spend).toBeDefined();
-    expect(spend?.title).toBe("Season spending context (not grant-attributed)");
-    expect(spend?.body).toContain("Spend linkage is not configured");
-    expect(spend?.body).toContain("cannot be reported");
-    expect(spend?.body).toContain("For context only");
+    expect(spend?.title).toBe("Grant-attributed spending");
+    expect(spend?.body).toContain("tagged 3 expense(s)");
     expect(spend?.body).toContain("$1,000");
-    expect(spend?.body).toContain("across all funding sources");
-    // Never claim the org-wide number is this grant's fund usage.
-    expect(spend?.body).not.toContain("fund usage");
+    expect(spend?.body).toContain("Robot parts: $800 (2 txn)");
+    expect(spend?.body).toContain("50% of the $2,000 award");
+    // The old org-wide disclaimer must be gone — the number IS this grant's spend now.
+    expect(spend?.body).not.toContain("not grant-attributed");
+    expect(spend?.body).not.toContain("Spend linkage is not configured");
   });
 
-  it("stays honest when no season expenses are recorded at all", () => {
+  it("states explicitly that nothing is tagged yet instead of showing org-wide spend", () => {
     const sections = buildGrantReportSections({ ...BASE, spendByCategory: [] });
 
     const spend = sections.find((section) => section.id === "spend");
-    expect(spend?.title).toBe("Season spending context (not grant-attributed)");
-    expect(spend?.body).toContain("Spend linkage is not configured");
-    expect(spend?.body).toContain("No expense transactions have been recorded");
+    expect(spend?.title).toBe("Grant-attributed spending");
+    expect(spend?.body).toBe(NO_TAGGED_EXPENSES_NOTE);
+    expect(spend?.body).toContain("No expenses tagged to this grant yet");
+    expect(spend?.body).toContain("never attributed");
   });
 
-  it("keeps the disclosure in the assembled narrative", () => {
-    const narrative = buildGrantReportNarrative(
-      buildGrantReportSections({
-        ...BASE,
-        spendByCategory: [{ category: "Robot parts", totalUsd: 500, count: 1 }],
-      }),
-    );
-    expect(narrative).toContain("Spend linkage is not configured");
-    expect(narrative).not.toContain("Recorded fund usage");
+  it("keeps the no-tag statement in the assembled narrative", () => {
+    const narrative = buildGrantReportNarrative(buildGrantReportSections({ ...BASE, spendByCategory: [] }));
+    expect(narrative).toContain("No expenses tagged to this grant yet");
+  });
+
+  it("derives the spend state from tagged lines only", () => {
+    expect(spendStateFor([])).toBe("no_tagged_expenses");
+    expect(spendStateFor([{ category: "x", totalUsd: 0, count: 0 }])).toBe("no_tagged_expenses");
+    expect(spendStateFor([{ category: "x", totalUsd: 10, count: 1 }])).toBe("tagged");
   });
 });

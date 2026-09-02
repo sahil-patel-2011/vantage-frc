@@ -163,8 +163,10 @@ describe("loadMyKit", () => {
       fixtureClient({
         throwOn: ["FROM hour_logs"],
         rows: {
-          team_todos: [
-            { id: "td1", title: "Order fabric", status: "todo", context: null, dueOn: null },
+          // Todos live on build_tasks since 0502; the same row reaches both the
+          // name-matched and the member-matched read and must be listed once.
+          build_tasks: [
+            { id: "td1", title: "Order fabric", status: "todo", context: null, dueOn: null, priority: "normal" },
           ],
         },
       }),

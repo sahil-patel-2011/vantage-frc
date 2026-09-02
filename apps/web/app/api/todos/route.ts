@@ -1,6 +1,8 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { TASK_PRIORITIES, TASK_STATUSES } from "../../../lib/tasks/compute-tasks";
+import type { TaskPriority, TaskStatus } from "../../../lib/tasks/types";
 import {
   TODO_STATUSES,
   computeTodosView,
@@ -30,9 +32,29 @@ function trimmedOrNull(value: unknown, max = 4000): string | null {
 function uuidOrNull(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)
     ? trimmed
     : null;
+}
+
+function estimateOrNull(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
+function assigneesFrom(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
+  return [...new Set(values.map((entry) => trimmedOrNull(entry, 120)).filter((entry): entry is string => Boolean(entry)))].slice(0, 12);
+}
+
+/** undefined = untouched; "" / null = clear; otherwise a validated uuid or a 400. */
+function optionalUuid(value: unknown, label: string): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const id = uuidOrNull(value);
+  if (!id) throw new Error(`Invalid ${label}`);
+  return id;
 }
 
 export async function GET(request: Request) {
@@ -91,18 +113,23 @@ export async function POST(request: Request) {
           const title = trimmedOrNull(body.title, 200);
           if (!title) throw new Error("title is required");
           const status = oneOf<TodoStatus>(TODO_STATUSES, body.status) ?? "todo";
+          const taskStatus = body.taskStatus === undefined ? undefined : oneOf<TaskStatus>(TASK_STATUSES, body.taskStatus);
+          if (body.taskStatus !== undefined && !taskStatus) throw new Error("Invalid status");
+          const priority = body.priority === undefined ? undefined : oneOf<TaskPriority>(TASK_PRIORITIES, body.priority);
+          if (body.priority !== undefined && !priority) throw new Error("Invalid priority");
           await createTodo(client, {
             orgId,
             userId,
             title,
             notes: body.notes === undefined ? "" : (trimmedOrNull(body.notes) ?? ""),
             status,
-            assigneeUserId:
-              body.assigneeUserId === undefined || body.assigneeUserId === ""
-                ? null
-                : uuidOrNull(body.assigneeUserId),
-            subteamId:
-              body.subteamId === undefined || body.subteamId === "" ? null : uuidOrNull(body.subteamId),
+            taskStatus: taskStatus ?? undefined,
+            priority: priority ?? undefined,
+            subsystem: trimmedOrNull(body.subsystem, 60),
+            assignees: body.assignees === undefined ? undefined : assigneesFrom(body.assignees),
+            estimateHours: body.estimateHours === undefined ? null : estimateOrNull(body.estimateHours),
+            assigneeUserId: optionalUuid(body.assigneeUserId, "assignee") ?? null,
+            subteamId: optionalUuid(body.subteamId, "subteam") ?? null,
             dueOn: body.dueOn === undefined || body.dueOn === "" ? null : isoDateOrNull(body.dueOn),
           });
           break;
@@ -113,12 +140,10 @@ export async function POST(request: Request) {
           const status =
             body.status === undefined ? undefined : (oneOf<TodoStatus>(TODO_STATUSES, body.status) ?? undefined);
           if (body.status !== undefined && status === undefined) throw new Error("Invalid status");
-          if (body.assigneeUserId !== undefined && body.assigneeUserId !== null && body.assigneeUserId !== "") {
-            if (!uuidOrNull(body.assigneeUserId)) throw new Error("Invalid assignee");
-          }
-          if (body.subteamId !== undefined && body.subteamId !== null && body.subteamId !== "") {
-            if (!uuidOrNull(body.subteamId)) throw new Error("Invalid subteam");
-          }
+          const taskStatus = body.taskStatus === undefined ? undefined : oneOf<TaskStatus>(TASK_STATUSES, body.taskStatus);
+          if (body.taskStatus !== undefined && !taskStatus) throw new Error("Invalid status");
+          const priority = body.priority === undefined ? undefined : oneOf<TaskPriority>(TASK_PRIORITIES, body.priority);
+          if (body.priority !== undefined && !priority) throw new Error("Invalid priority");
           await updateTodo(client, {
             orgId,
             userId,
@@ -126,18 +151,14 @@ export async function POST(request: Request) {
             title: body.title === undefined ? undefined : (trimmedOrNull(body.title, 200) ?? undefined),
             notes: body.notes === undefined ? undefined : (trimmedOrNull(body.notes) ?? ""),
             status,
-            assigneeUserId:
-              body.assigneeUserId === undefined
-                ? undefined
-                : body.assigneeUserId === null || body.assigneeUserId === ""
-                  ? null
-                  : uuidOrNull(body.assigneeUserId),
-            subteamId:
-              body.subteamId === undefined
-                ? undefined
-                : body.subteamId === null || body.subteamId === ""
-                  ? null
-                  : uuidOrNull(body.subteamId),
+            taskStatus: taskStatus ?? undefined,
+            blockedReason: body.blockedReason === undefined ? undefined : trimmedOrNull(body.blockedReason, 500),
+            priority: priority ?? undefined,
+            subsystem: body.subsystem === undefined ? undefined : (trimmedOrNull(body.subsystem, 60) ?? "general"),
+            assignees: body.assignees === undefined ? undefined : assigneesFrom(body.assignees),
+            estimateHours: body.estimateHours === undefined ? undefined : estimateOrNull(body.estimateHours),
+            assigneeUserId: optionalUuid(body.assigneeUserId, "assignee"),
+            subteamId: optionalUuid(body.subteamId, "subteam"),
             dueOn:
               body.dueOn === undefined
                 ? undefined

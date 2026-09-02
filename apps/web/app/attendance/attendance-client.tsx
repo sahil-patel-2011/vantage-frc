@@ -183,12 +183,16 @@ function MemberOneTap({
   hours: string;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
-  const markedByName = useMemo(() => {
-    const map = new Map<string, string>();
+  // A mark links to a member account when it was tapped from the roster; older
+  // free-text marks still match by name so nothing already logged looks unmarked.
+  const { markedByUser, markedByName } = useMemo(() => {
+    const byUser = new Map<string, string>();
+    const byName = new Map<string, string>();
     for (const entry of event.entries) {
-      map.set(entry.personName.trim().toLowerCase(), entry.id);
+      if (entry.userId) byUser.set(entry.userId, entry.id);
+      byName.set(entry.personName.trim().toLowerCase(), entry.id);
     }
-    return map;
+    return { markedByUser: byUser, markedByName: byName };
   }, [event.entries]);
 
   if (members.length === 0) {
@@ -210,7 +214,7 @@ function MemberOneTap({
       <div className="att-one-tap-grid">
         {members.map((member) => {
           const key = member.name.trim().toLowerCase();
-          const entryId = markedByName.get(key);
+          const entryId = markedByUser.get(member.userId) ?? markedByName.get(key);
           const present = Boolean(entryId);
           return (
             <button
@@ -230,6 +234,7 @@ function MemberOneTap({
                       orgId,
                       eventId: event.id,
                       personName: member.name.trim(),
+                      userId: member.userId,
                       role,
                       hours: hours === "" ? null : Number(hours),
                     },
@@ -268,14 +273,19 @@ function SessionDetail({
   const [hours, setHours] = useState("");
   const openMembers = membersNotMarked(members, event);
 
-  const addPerson = (name: string, nextRole: AttendanceRole = role) => {
+  const addPerson = (name: string, nextRole: AttendanceRole = role, userId: string | null = null) => {
     if (!name.trim()) return;
+    // A typed name that exactly matches one roster member links to that account;
+    // anything else stays a free-text guest mark (parent volunteers, visitors).
+    const matches = members.filter((member) => member.name.trim().toLowerCase() === name.trim().toLowerCase());
+    const linkedUserId = userId ?? (matches.length === 1 ? matches[0]!.userId : null);
     void run(
       {
         action: "add_entry",
         orgId,
         eventId: event.id,
         personName: name.trim(),
+        userId: linkedUserId,
         role: nextRole,
         hours: hours === "" ? null : Number(hours),
       },
@@ -344,6 +354,9 @@ function SessionDetail({
             }}
           >
             <h3>Add by name</h3>
+            <p className="app-muted" style={{ margin: "0 0 8px" }}>
+              Guests and visitors can be typed in; a name that matches a roster member links to their account.
+            </p>
             {openMembers.length > 0 ? (
               <div className="att-suggestions" aria-label="Team members not yet marked">
                 {openMembers.slice(0, 16).map((member) => (
@@ -352,7 +365,7 @@ function SessionDetail({
                     type="button"
                     className="att-chip"
                     disabled={busy}
-                    onClick={() => addPerson(member.name)}
+                    onClick={() => addPerson(member.name, role, member.userId)}
                   >
                     {member.name}
                   </button>
@@ -440,7 +453,10 @@ function SessionDetail({
             <li key={entry.id}>
               <span className="who">
                 <strong>{entry.personName}</strong>
-                <small>{ATTENDANCE_ROLE_LABELS[entry.role]}</small>
+                <small>
+                  {ATTENDANCE_ROLE_LABELS[entry.role]}
+                  {entry.userId ? "" : " \u00b7 guest"}
+                </small>
               </span>
               <span className="hrs">{(entry.hours ?? event.creditHours) || "—"}h</span>
               {canManage ? (

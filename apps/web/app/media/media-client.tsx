@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { SoftAccessDenied } from "../../components/hub-access-gate";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { HubTabForbidden } from "../../components/hub-access-gate";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { AIAttribution, EmptyState, Panel, ToolPage, useToast, type ShellState } from "../../components/ui";
+import { attributionKindForRenderMode } from "../../components/ui/ai-attribution-policy";
 import {
   formatMediaMetric,
   isMediaReminderOverdue,
@@ -21,55 +22,38 @@ import {
 } from "../../lib/media";
 import type { MediaView } from "../../lib/media/compute-media";
 import {
-  MEDIA_RELATED_INCLUDE,
   classifyMediaShell,
   mediaNextActions,
-  mediaRelatedLinks,
   mediaSetupSteps,
   mediaShellCopy,
   type MediaNextAction,
   type MediaShellKind,
 } from "../../lib/media/media-related";
-import {
-  clientCanAccessHub,
-  filterTabsByHubAccess,
-} from "../../lib/nav/hub-access-filter";
-import { hubById, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
+import { hubById } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { useClientAccessProfile } from "../../lib/nav/use-client-access";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./media.css";
 
 const MEDIA_HUB = hubById("media");
-const PRIMARY_TABS = hubPrimaryTabs(MEDIA_HUB);
 
 type Tab = MediaHubTab;
-
-const TABS: Array<{ id: Tab; label: string }> = PRIMARY_TABS.map((tab) => ({
-  id: tab.id as Tab,
-  label: tab.label,
-}));
 
 type LiveView = Extract<MediaView, { status: "live" }>;
 
 type LiveWithDraft = LiveView & { draft?: MediaPostDraftResult };
 
-function isTab(value: string | null): value is Tab {
-  return Boolean(value && MEDIA_HUB_TABS.includes(value as Tab) && isHubTab(MEDIA_HUB, value));
-}
+/** Success toast after a saved mutation, keyed by the request action. */
+const SAVED_COPY: Record<string, string> = {
+  "create-item": "Saved to your media calendar.",
+  "mark-posted": "Marked as posted.",
+  "dismiss-reminder": "Reminder dismissed.",
+  "ai-draft": "Caption suggested — review it before posting.",
+};
 
+/** The hub keeps ?tab= in sync; the API call scopes reminders/drafts by it. */
 function readTabFromUrl(): Tab {
   if (typeof window === "undefined") return "calendar";
   const tab = new URLSearchParams(window.location.search).get("tab");
-  return isTab(tab) ? tab : "calendar";
-}
-
-function writeTabToUrl(tab: Tab) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  if (tab === "calendar") url.searchParams.delete("tab");
-  else url.searchParams.set("tab", tab);
-  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  return tab && (MEDIA_HUB_TABS as readonly string[]).includes(tab) ? (tab as Tab) : "calendar";
 }
 
 function formatWhen(value: string | null): string {
@@ -88,22 +72,6 @@ function fromLocalInputValue(value: string): string | null {
   if (!value.trim()) return null;
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
-}
-
-function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = mediaRelatedLinks(orgId, {
-    include: [...MEDIA_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related media-related" aria-label="Related media tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
 }
 
 function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
@@ -135,109 +103,80 @@ function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
 }
 
 function MediaShell({
+  tab,
   description,
   orgId,
   shell,
   error,
   errorStatus,
   onRetry,
-  children,
 }: {
+  tab: Tab;
   description: string;
   orgId?: string | null;
-  shell: MediaShellKind;
+  shell: Exclude<MediaShellKind, "ready">;
   error?: string;
   errorStatus?: number | null;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
   const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
   const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
-  // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
-  const failure =
-    shell === "error"
-      ? loadFailureCopy(
-          classifyLoadFailure({
-            status: errorStatus,
-            message: error,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          }),
-          {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error,
-          },
-        )
-      : null;
+  const state: ShellState = shell;
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const kitHref = orgId ? withOrgHref("/media-kit", orgId) : "/media-kit";
 
+  // A signed-out tablet needs "Sign in again", not a Retry that can never
+  // succeed — ErrorState classifies the status + message and picks the action.
   return (
-    <main className="module-page media-page soft-gate">
-      <PageHeader breadcrumbs="Media / Media hub" title="Media" description={description}>
-        <div className="media-header-actions">
-          <MediaRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
-      {children}
-      <EmptyState
-        soft
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "No media yet"
-                : copy.badge
+    <>
+      <ToolPage
+        hub="media"
+        hubTab={tab}
+        title="Media"
+        description={description}
+        embedded
+        className="media-page"
+        orgId={orgId}
+        state={state}
+        error={{ message: error, status: errorStatus }}
+        onRetry={onRetry}
+        loading={
+          <EmptyState soft badge={copy.badge} title={copy.title} description={copy.description} aria-busy />
         }
-        badgeTone="setup"
-        title={failure ? failure.title : copy.title}
-        description={failure ? failure.description : error ?? copy.description}
-        aria-busy={shell === "loading"}
-      >
-        {failure?.primary ? (
-          <a className="app-button" href={failure.primary.href}>
-            {failure.primary.label}
-          </a>
-        ) : null}
-        {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
-        {shell === "setup" ? (
-          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Open Workspace
-          </a>
-        ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>
+        setup={
+          <EmptyState soft badge="Setup required" badgeTone="setup" title={copy.title} description={copy.description}>
+            <a className="app-button" href={workspaceHref}>
+              Open Workspace
+            </a>
+            {steps.length > 0 ? (
+              <ol className="strategy-setup-steps">
+                {steps.map((step) => (
+                  <li key={step.id}>
+                    <div>
+                      <strong>{step.label}</strong>
+                      <span>{step.detail}</span>
+                    </div>
+                    <a href={step.href}>Open</a>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </EmptyState>
+        }
+        empty={
+          <EmptyState soft badge="No media yet" badgeTone="setup" title={copy.title} description={copy.description}>
+            <a className="app-button" href={kitHref}>
               Build Media Kit
             </a>
             <button type="button" className="app-button secondary" onClick={onRetry}>
               Refresh
             </button>
-          </>
-        ) : null}
-      </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+          </EmptyState>
+        }
+      />
       <MediaNextActionsPanel actions={actions} />
-    </main>
+    </>
   );
 }
 
@@ -407,7 +346,7 @@ function DraftsPanel({
   view: LiveView;
   busy: boolean;
   cutoffCode: string | null;
-  draftMeta: { feature: string; generatedAt: string } | null;
+  draftMeta: { feature: string; generatedAt: string; mode?: "model" | "template" } | null;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
   onAiDraft: (payload: Record<string, unknown>) => Promise<void>;
   onMarkPosted: (itemId: string) => Promise<void>;
@@ -446,7 +385,11 @@ function DraftsPanel({
           <UsageCutoffBanner orgId={view.orgId} errorCode={cutoffCode} compact />
         ) : null}
         {draftMeta ? (
-          <AIAttribution kind="computed" feature={draftMeta.feature} generatedAt={draftMeta.generatedAt} />
+          <AIAttribution
+            kind={attributionKindForRenderMode(draftMeta.mode)}
+            feature={draftMeta.feature}
+            generatedAt={draftMeta.generatedAt}
+          />
         ) : null}
         {items.length ? (
           <ul className="media-panel-list">
@@ -735,8 +678,6 @@ function ImpactPanel({ view }: { view: LiveView }) {
 function LiveMediaWorkspace({
   view,
   tab,
-  onTab,
-  tabs,
   busy,
   error,
   cutoffCode,
@@ -745,12 +686,10 @@ function LiveMediaWorkspace({
 }: {
   view: LiveView;
   tab: Tab;
-  onTab: (tab: Tab) => void;
-  tabs: Array<{ id: Tab; label: string }>;
   busy: boolean;
   error: string;
   cutoffCode: string | null;
-  draftMeta: { feature: string; generatedAt: string } | null;
+  draftMeta: { feature: string; generatedAt: string; mode?: "model" | "template" } | null;
   mutate: (payload: Record<string, unknown>, method?: "POST" | "PATCH" | "DELETE") => Promise<boolean>;
 }) {
   const orgId = view.orgId;
@@ -789,25 +728,16 @@ function LiveMediaWorkspace({
   );
 
   return (
-    <main className="module-page media-page">
-      <PageHeader
-        breadcrumbs="Media / Media hub"
-        title="Media"
-        description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
-      >
-        <div className="media-header-actions">
-          <MediaRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
-
-      <TabBar
-        aria-label="Media sections"
-        value={tab}
-        onChange={(id) => onTab(id as Tab)}
-        tabs={tabs}
-        className="product-hub-tabs"
-      />
-
+    <ToolPage
+      hub="media"
+      hubTab={tab}
+      title="Media"
+      description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
+      embedded
+      className="media-page"
+      orgId={orgId}
+      state="ready"
+    >
       {error ? <p className="app-error">{error}</p> : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -849,12 +779,17 @@ function LiveMediaWorkspace({
       ) : null}
       {tab === "kit" ? <KitPanel view={view} /> : null}
       {tab === "impact" ? <ImpactPanel view={view} /> : null}
-    </main>
+    </ToolPage>
   );
 }
 
-export default function MediaClient() {
-  const access = useClientAccessProfile();
+/**
+ * Media workspace body. The hub shell (media-hub.tsx → ProductHubShell) owns
+ * the title, TabBar, tool strip, hub-access filtering and the ?tab= URL; this
+ * owns the season view and the per-tab panels.
+ */
+export default function MediaClient({ tab }: { tab: MediaHubTab }) {
+  const toast = useToast();
   const [view, setView] = useState<MediaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -862,15 +797,8 @@ export default function MediaClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<Tab>("calendar");
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
-  const [draftMeta, setDraftMeta] = useState<{ feature: string; generatedAt: string } | null>(null);
-
-  const visibleTabs = useMemo(
-    () => filterTabsByHubAccess(TABS, access.hubAccess, "media"),
-    [access.hubAccess],
-  );
-  const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "media");
+  const [draftMeta, setDraftMeta] = useState<{ feature: string; generatedAt: string; mode?: "model" | "template" } | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -908,22 +836,8 @@ export default function MediaClient() {
   }, []);
 
   useEffect(() => {
-    setTab(readTabFromUrl());
     load();
   }, [load]);
-
-  useEffect(() => {
-    if (!access.ready || !visibleTabs.length) return;
-    if (visibleTabs.some((entry) => entry.id === tab)) return;
-    const fallback = (visibleTabs[0]?.id as Tab) ?? "calendar";
-    setTab(fallback);
-    writeTabToUrl(fallback);
-  }, [access.ready, tab, visibleTabs]);
-
-  const selectTab = useCallback((next: Tab) => {
-    setTab(next);
-    writeTabToUrl(next);
-  }, []);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>, method: "POST" | "PATCH" | "DELETE" = "POST") => {
@@ -971,7 +885,11 @@ export default function MediaClient() {
           typeof payload.title === "string" &&
           payload.title.trim()
         ) {
-          setDraftMeta({ feature: live.draft.feature, generatedAt: live.draft.generatedAt });
+          setDraftMeta({
+            feature: live.draft.feature,
+            generatedAt: live.draft.generatedAt,
+            mode: live.draft.render?.mode,
+          });
           const createResponse = await fetch("/api/media", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -994,12 +912,19 @@ export default function MediaClient() {
             return false;
           }
           setView(created);
+          toast.success("Draft saved with the suggested caption.");
           return true;
         }
         if (live.draft?.status === "live") {
-          setDraftMeta({ feature: live.draft.feature, generatedAt: live.draft.generatedAt });
+          setDraftMeta({
+            feature: live.draft.feature,
+            generatedAt: live.draft.generatedAt,
+            mode: live.draft.render?.mode,
+          });
         }
         setView(live);
+        const saved = SAVED_COPY[String(payload.action)];
+        if (saved) toast.success(saved);
         return true;
       } catch {
         setError("Media update failed");
@@ -1008,7 +933,7 @@ export default function MediaClient() {
         setBusy(false);
       }
     },
-    [busy, view],
+    [busy, toast, view],
   );
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -1033,19 +958,11 @@ export default function MediaClient() {
     itemCount: items.length,
   });
 
-  // Live org always gets the TabBar hub so users can create the first draft/schedule.
-  if (hubDenied || accessDenied) {
-    return (
-      <SoftAccessDenied
-        breadcrumbs="Media / Media hub"
-        title="Media"
-        heading={hubDenied ? "Media is not available" : "This Media tab is not available"}
-        description={
-          error ||
-          "Your team admin limited which Media sections you can open. Ask an owner to update section access under Team → Security."
-        }
-      />
-    );
+  // Hub-level access is enforced by ProductHubShell; a 403 for this one tab
+  // renders the same forbidden card the shell uses for a filtered tab.
+  if (accessDenied) {
+    const active = MEDIA_HUB.tabs.find((entry) => entry.id === tab);
+    return <HubTabForbidden hubLabel="Media" tabLabel={active?.label} />;
   }
 
   if (view?.status === "live") {
@@ -1053,8 +970,6 @@ export default function MediaClient() {
       <LiveMediaWorkspace
         view={view}
         tab={tab}
-        onTab={selectTab}
-        tabs={visibleTabs}
         busy={busy}
         error={error}
         cutoffCode={cutoffCode}
@@ -1066,6 +981,7 @@ export default function MediaClient() {
 
   return (
     <MediaShell
+      tab={tab}
       description="Content calendar, drafts, reminders, Media Kit, and impact — never DEMO metrics."
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}

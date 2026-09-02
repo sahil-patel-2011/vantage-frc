@@ -7,6 +7,12 @@
       "runtimeArgs": ["next", "dev", "--port", "3401"],
       "cwd": "apps/web",
       "port": 3401
+    },
+    {
+      "name": "web-fixture-3402",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev-fixture.mjs", "3402"],
+      "port": 3402
     }
   ]
 }

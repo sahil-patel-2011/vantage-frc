@@ -46,6 +46,7 @@ const TYPE_PREF: Record<string, InAppPrefKey | null> = {
   match_alert: "matchAlerts",
   scout_reminder: "scoutReminders",
   scouting_coverage_gap: "scoutReminders",
+  scout_shift_assigned: "scoutReminders",
   sync_failure: "syncFailures",
   product_update: "productUpdates",
   sponsor_thank_you_due: "sponsorReminders",
@@ -112,4 +113,95 @@ export async function emitPreferredNotification(
   if (!allowed) return { emitted: false };
   await emitNotification(client, input);
   return { emitted: true };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Set-based fan-out
+// ---------------------------------------------------------------------------------------------
+
+export type OrgFanoutInput = {
+  orgId: string;
+  type: string;
+  payload?: Record<string, unknown>;
+  /** Never notify these members (typically the actor). */
+  excludeUserIds?: string[];
+  /** When set, notify only these members (e.g. the people @mentioned). */
+  onlyUserIds?: string[] | null;
+  /**
+   * When set, notify only members of this chat channel (org_conversation_members). Ignored when
+   * migration 0494 has not run, in which case the whole org is the audience.
+   */
+  conversationId?: string | null;
+};
+
+/**
+ * One INSERT ... SELECT for the whole audience. With migration 0494 the member list and the
+ * per-member preference gate come from the SECURITY DEFINER `org_notification_targets()`;
+ * `profiles` is self-read-only under RLS, so a request-role join could never see a teammate's
+ * opt-out (which is why the old per-member loop effectively notified everyone). Before that
+ * migration the query falls back to the plain memberships/profiles join, i.e. the same rows the
+ * old loop produced.
+ */
+export function buildOrgFanoutQuery(
+  input: OrgFanoutInput,
+  options: { viaFunction: boolean },
+): { text: string; values: unknown[] } {
+  const prefKey = prefKeyForNotificationType(input.type);
+  const exclude = [...new Set(input.excludeUserIds ?? [])];
+  const only = input.onlyUserIds == null ? null : [...new Set(input.onlyUserIds)];
+  const values: unknown[] = [
+    input.orgId,
+    input.type,
+    JSON.stringify(input.payload ?? {}),
+    exclude,
+    only,
+    prefKey,
+    input.conversationId ?? null,
+  ];
+  const audience = options.viaFunction
+    ? `FROM org_notification_targets($1::uuid, $6::text, $7::uuid) t`
+    : `FROM (
+         SELECT m.user_id
+         FROM memberships m
+         LEFT JOIN profiles p ON p.user_id = m.user_id
+         WHERE m.org_id = $1::uuid
+           AND ($6::text IS NULL OR COALESCE((p.notification_prefs->>$6::text)::boolean, true) IS TRUE)
+       ) t`;
+  const text = `INSERT INTO notifications (user_id, org_id, type, payload)
+     SELECT t.user_id, $1::uuid, $2::text, $3::jsonb
+     ${audience}
+     WHERE NOT (t.user_id = ANY($4::uuid[]))
+       AND ($5::uuid[] IS NULL OR t.user_id = ANY($5::uuid[]))`;
+  return { text, values };
+}
+
+let fanoutFunctionCache: boolean | null = null;
+
+async function supportsFanoutFunction(client: PoolClient): Promise<boolean> {
+  if (fanoutFunctionCache != null) return fanoutFunctionCache;
+  try {
+    const row = await client.query<{ present: boolean }>(
+      `SELECT to_regprocedure('public.org_notification_targets(uuid, text, uuid)') IS NOT NULL AS present`,
+    );
+    fanoutFunctionCache = Boolean(row.rows[0]?.present);
+  } catch {
+    fanoutFunctionCache = false;
+  }
+  return fanoutFunctionCache;
+}
+
+/**
+ * Notify every member of an org (or a subset) in one statement, honouring each recipient's in-app
+ * preference for this type. Returns how many inbox rows were written. Requires a peer-insert RLS
+ * policy on `notifications` for the type, exactly like emitNotification().
+ */
+export async function emitNotificationToOrgMembers(
+  client: PoolClient,
+  input: OrgFanoutInput,
+): Promise<{ emitted: number }> {
+  if (input.onlyUserIds && input.onlyUserIds.length === 0) return { emitted: 0 };
+  const viaFunction = await supportsFanoutFunction(client);
+  const query = buildOrgFanoutQuery(input, { viaFunction });
+  const result = await client.query(query.text, query.values);
+  return { emitted: result.rowCount ?? 0 };
 }

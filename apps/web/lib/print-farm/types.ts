@@ -85,6 +85,8 @@ export type PrintJob = {
   subsystemId: string | null;
   subsystemName: string | null;
   inventoryItemId: string | null;
+  /** CAD vault document the job prints from (0505), if any. */
+  cadDocumentId: string | null;
   buildTaskId: string | null;
   printerId: string | null;
   filamentId: string | null;

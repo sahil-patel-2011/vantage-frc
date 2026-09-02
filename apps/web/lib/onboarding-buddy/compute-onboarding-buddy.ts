@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import {
   buildFirstWeekPlanItems,
   daysBetween,
@@ -224,7 +223,7 @@ export async function computeOnboardingBuddyView(
 export async function createPairing(
   client: PoolClient,
   input: { orgId: string; userId: string; newMemberId: string; buddyId: string; notes: string | null },
-): Promise<string> {
+): Promise<{ pairingId: string; render: RenderOutcome }> {
   const result = await client.query<{ id: string }>(
     `INSERT INTO onboarding_buddy_pairings (org_id, new_member_id, buddy_id, notes, created_by)
      VALUES ($1,$2,$3,$4,$5) RETURNING id`,
@@ -232,29 +231,19 @@ export async function createPairing(
   );
   const pairingId = result.rows[0]!.id;
 
-  const draftItems = buildFirstWeekPlanItems();
-  const metered = await meteredAI({
+  // Real model call on the org's adapter with the deterministic first-week plan as fallback:
+  // the day offsets, ordering and titles are the template's; each item's description may be
+  // rewritten for this pairing (the buddy's notes are the only extra context).
+  const { value: plannedItems, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "onboarding_buddy",
-    requestId: `onboarding-buddy-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      pairingId,
-      note: "Deterministic first-week onboarding plan synthesis — no external model call",
-    },
-    invoke: async () => ({
-      value: JSON.stringify(draftItems),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-onboarding-buddy-v1",
-      provider: "vantage-local",
-    }),
+    value: buildFirstWeekPlanItems(),
+    editableKeys: ["description"],
+    instructions: `First-week onboarding plan for a new FRC team member paired with a buddy.${input.notes ? ` Notes from the person who set up the pairing: ${input.notes.slice(0, 800)}.` : ""} Rewrite each item's description as 1-2 friendly, concrete sentences the new member can act on; keep titles and day offsets as given and invent no team-specific tools or people.`,
+    metadata: { pairingId },
   });
-  const plannedItems = JSON.parse(metered) as typeof draftItems;
 
   for (const item of plannedItems) {
     await client.query(
@@ -264,7 +253,7 @@ export async function createPairing(
     );
   }
 
-  return pairingId;
+  return { pairingId, render };
 }
 
 export async function togglePlanItem(

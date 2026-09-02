@@ -33,6 +33,10 @@ export type FmeaFailure = {
   occurredAt: string;
   seasonYear: number;
   recordedByName: string | null;
+  /** Spare bin this failure consumed from (0505), if any. */
+  inventoryItemId: string | null;
+  /** Quantity consumed from that bin through the parts ledger; 0 when no part was used. */
+  partsConsumedQty: number;
 };
 
 export type FmeaEvaluation = {

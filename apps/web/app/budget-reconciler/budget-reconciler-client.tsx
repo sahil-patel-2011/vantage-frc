@@ -6,6 +6,8 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { budgetStatusLabel } from "../../lib/budget-reconciler";
 import type { BudgetReconcilerView } from "../../lib/budget-reconciler/compute-budget-reconciler";
 import type { BudgetStatus } from "../../lib/budget-reconciler/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 const STATUS_TONE: Record<BudgetStatus, string> = {
   over: "setup",
@@ -27,6 +29,8 @@ export default function BudgetReconcilerClient() {
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest reconciliation render: "AI" only when a model wrote it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -81,6 +85,8 @@ export default function BudgetReconcilerClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -128,6 +134,8 @@ export default function BudgetReconcilerClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="budget_reconciler" />
 
       {fetchFailed ? (
         (() => {

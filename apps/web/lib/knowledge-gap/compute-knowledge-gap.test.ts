@@ -64,7 +64,7 @@ describe("runKnowledgeGapScan", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -164,7 +164,7 @@ describe("runKnowledgeGapScan", () => {
     expect(scanInsert).toBeDefined();
     expect(scanInsert?.params).toContain(3); // gap_count
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
 
     const itemInserts = inserted.filter((entry) => entry.sql.includes("INSERT INTO knowledge_gap_items"));

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { buildEvidenceNote, buildPartnerStrengths, classifyPartnerRole, PARTNER_ROLE_LABEL } from ".";
@@ -301,7 +300,7 @@ export async function computeAlliancePartnerBriefView(
 export async function generateAlliancePartnerBrief(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey?: string | null; allianceSeed: number },
-): Promise<AlliancePartnerBriefView> {
+): Promise<AlliancePartnerBriefView & { render?: RenderOutcome }> {
   const board = await loadLatestBoard(client, input.orgId, input.eventKey ?? null);
   if (!board) throw new Error("No alliance board found for this workspace");
 
@@ -327,34 +326,22 @@ export async function generateAlliancePartnerBrief(
     throw new Error("This alliance has no partner teams to brief yet");
   }
 
-  const requestId = `alliance-partner-brief-${randomUUID()}`;
-
-  const partners = await meteredAI({
+  const analyses = await loadPartnerAnalyses(client, { orgId: input.orgId, eventKey: board.eventKey, slots: memberTeamKeys });
+  // Real model call on the org's adapter, with the deterministic analysis as the fallback:
+  // only each partner's evidence note is prose the model may rewrite — roles, EPA figures
+  // and scouting counts stay exactly as computed from event metrics + our scouting.
+  const { value: partners, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "alliance-partner-brief",
-    requestId,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      eventKey: board.eventKey,
-      allianceSeed: input.allianceSeed,
-      partnerCount: memberTeamKeys.length,
-      note: "Deterministic source-cited role/strength synthesis from event metrics + scouting — no external model charge",
-    },
-    invoke: async () => {
-      const value = await loadPartnerAnalyses(client, { orgId: input.orgId, eventKey: board.eventKey, slots: memberTeamKeys });
-      return {
-        value,
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-alliance-partner-brief-v1",
-        provider: "vantage-local",
-      };
-    },
+    value: analyses,
+    editableKeys: ["evidenceNote"],
+    instructions: `Alliance-partner brief for event ${board.eventKey}, alliance seed ${input.allianceSeed}. Write each partner's evidenceNote as one plain sentence a drive coach can read at the field, saying which sources (event metrics, our own scouting) back that partner's role and strengths.`,
+    facts: factsBlock({ eventKey: board.eventKey, allianceSeed: input.allianceSeed, partnerCount: memberTeamKeys.length }),
+    metadata: { eventKey: board.eventKey, allianceSeed: input.allianceSeed, partnerCount: memberTeamKeys.length },
   });
+  const requestId = render.requestId;
 
   const partnerTeamKeys = memberTeamKeys.map((m) => m.teamKey);
 
@@ -384,10 +371,11 @@ export async function generateAlliancePartnerBrief(
     ],
   );
 
-  return computeAlliancePartnerBriefView(client, {
+  const view = await computeAlliancePartnerBriefView(client, {
     userId: input.userId,
     requestedOrg: input.orgId,
     eventKey: board.eventKey,
     allianceSeed: input.allianceSeed,
   });
+  return { ...view, render };
 }

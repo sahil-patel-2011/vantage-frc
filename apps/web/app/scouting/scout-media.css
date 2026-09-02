@@ -1,0 +1,13 @@
+/* Per-photo sync chips + own-photo delete in the scouting form (robot_image field). */
+.scout-robot-image-list li{position:relative;min-width:104px}
+.scout-media-chip{display:inline-flex;align-items:center;gap:4px;min-height:20px;padding:0 8px;border-radius:999px;border:1px solid var(--soft-line);background:var(--soft-bg);color:var(--soft-muted);font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.scout-media-chip.is-queued{color:#8a4b00;border-color:color-mix(in srgb,#b45309 40%,var(--soft-line));background:#fff8e8}
+.scout-media-chip.is-uploading{color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 45%,var(--soft-line));background:var(--soft-accent-soft)}
+.scout-media-chip.is-synced{color:var(--app-positive);border-color:color-mix(in srgb,var(--app-positive) 40%,var(--soft-line));background:color-mix(in srgb,var(--app-positive) 10%,var(--soft-card))}
+.scout-media-chip.is-duplicate{color:var(--soft-ink);border-color:var(--soft-line);background:var(--soft-card)}
+.scout-media-chip.is-failed{color:#8f1d1d;border-color:color-mix(in srgb,#b91c1c 40%,var(--soft-line));background:#fff0ee}
+.scout-media-chip.is-uploading::before{content:"";width:8px;height:8px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:scout-media-spin .8s linear infinite}
+@keyframes scout-media-spin{to{transform:rotate(360deg)}}
+.scout-media-item-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.scout-media-item-detail{max-width:160px;text-align:center;font:600 10px/1.3 var(--font-source-sans),ui-sans-serif;color:#8f1d1d}
+.scout-media-wall-link{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font:700 12px var(--font-source-sans),ui-sans-serif}

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear, diagnoseWiring } from ".";
 import type {
   DiagnosticFlag,
@@ -225,29 +224,19 @@ export async function logCheck(
     expectedCircuits: ExpectedCircuit[];
     observedCircuits: ObservedCircuit[];
   },
-): Promise<void> {
-  const diagnosis = await meteredAI({
+): Promise<RenderOutcome> {
+  // Real model call on the org's adapter with the deterministic diagnosis as fallback: only
+  // the summary prose may be rewritten; flags and risk score stay computed from the
+  // expected-vs-observed circuit diff.
+  const { value: diagnosis, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "wiring_diagnoser",
-    requestId: `wiring-diagnoser-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      boardName: input.boardName,
-      seasonYear: input.seasonYear,
-      circuitCount: input.expectedCircuits.length,
-      note: "Deterministic wiring-diagram vs board-observation diff — no external model call",
-    },
-    invoke: async () => ({
-      value: diagnoseWiring(input.expectedCircuits, input.observedCircuits),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-wiring-diagnoser-v1",
-      provider: "vantage-local",
-    }),
+    value: diagnoseWiring(input.expectedCircuits, input.observedCircuits),
+    editableKeys: ["summary"],
+    instructions: `Wiring check of board "${input.boardName}" (${input.seasonYear}): ${input.expectedCircuits.length} expected circuit(s) vs ${input.observedCircuits.length} observed. Write the summary as 1-3 plain sentences telling the electrical lead what to fix first, consistent with the flags and risk score in the document; cite only its channels and values.`,
+    metadata: { boardName: input.boardName, seasonYear: input.seasonYear, circuitCount: input.expectedCircuits.length },
   });
 
   await client.query(
@@ -268,6 +257,7 @@ export async function logCheck(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteCheck(

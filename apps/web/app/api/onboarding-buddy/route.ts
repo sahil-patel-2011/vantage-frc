@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "create-pairing": {
           const newMemberId = trimmedOrNull(body.newMemberId, 64);
@@ -83,13 +85,13 @@ export async function POST(request: Request) {
           if (!newMemberId) throw new Error("newMemberId is required");
           if (!buddyId) throw new Error("buddyId is required");
           if (newMemberId === buddyId) throw new Error("A member cannot be their own buddy");
-          await createPairing(client, {
+          render = (await createPairing(client, {
             orgId,
             userId,
             newMemberId,
             buddyId,
             notes: trimmedOrNull(body.notes, 2000),
-          });
+          })).render ?? undefined;
           break;
         }
         case "toggle-item": {
@@ -116,7 +118,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeOnboardingBuddyView(client, { userId, requestedOrg: orgId });
+      const view = await computeOnboardingBuddyView(client, { userId, requestedOrg: orgId });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

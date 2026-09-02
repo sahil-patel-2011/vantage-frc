@@ -1,0 +1,136 @@
+/* Engineering notebook — photo attachments, lightbox, and the print view. */
+.nb-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.nb-media-item {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  max-width: 160px;
+}
+.nb-media-item figcaption {
+  font-size: 11px;
+  opacity: 0.8;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: space-between;
+  overflow-wrap: anywhere;
+}
+.nb-thumb {
+  padding: 0;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  background: none;
+  cursor: zoom-in;
+  overflow: hidden;
+  line-height: 0;
+}
+.nb-thumb img {
+  display: block;
+  width: 160px;
+  height: 120px;
+  object-fit: cover;
+}
+.nb-upload {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.nb-link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.nb-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.82);
+}
+.nb-lightbox figure {
+  margin: 0;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  display: grid;
+  gap: 8px;
+}
+.nb-lightbox img {
+  max-width: 96vw;
+  max-height: 84vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #000;
+}
+.nb-lightbox figcaption {
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+}
+.nb-lightbox figcaption a {
+  color: #fff;
+}
+.nb-print-only {
+  display: none;
+}
+.nb-print .nb-print-only {
+  display: block;
+}
+.nb-print-image {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  border-radius: 6px;
+}
+@media print {
+  .nb-no-print,
+  .nb-lightbox {
+    display: none !important;
+  }
+  .nb-print-only {
+    display: block;
+  }
+  .nb-page {
+    padding: 0;
+  }
+  .nb-print-head {
+    margin: 0 0 16px;
+  }
+  .nb-entries {
+    border: 0;
+    padding: 0;
+  }
+  .nb-entry {
+    break-inside: avoid;
+    padding: 10px 0;
+    border-bottom: 1px solid #bbb;
+  }
+  .nb-media {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .nb-media-item {
+    max-width: none;
+  }
+  .nb-print-image {
+    max-height: none;
+    width: 100%;
+    height: auto;
+  }
+}

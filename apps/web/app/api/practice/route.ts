@@ -50,11 +50,20 @@ function fail(error: unknown) {
   return Response.json({ error: error instanceof Error ? error.message : "Practice request failed" }, { status });
 }
 
+/** Page caps: newest sessions first, then the newest cycles inside them. */
+const SESSION_LIMIT = 200;
+const CYCLE_LIMIT = 2000;
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
+    // Incremental cursor: only sessions touched after this instant (cycle edits
+    // bump the parent session's updated_at, so they ride along).
+    const sinceRaw = url.searchParams.get("since");
+    const since = sinceRaw && Number.isFinite(Date.parse(sinceRaw)) ? new Date(sinceRaw).toISOString() : null;
+    if (sinceRaw && !since) throw new HttpError(400, "since must be an ISO-8601 timestamp");
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await client.query<{
@@ -84,29 +93,38 @@ export async function GET(request: Request) {
         } satisfies DriverPracticeView;
       }
 
-      const [sessionRows, cycles, members, attendanceEvents, buildTasks] = await Promise.all([
-        client.query<
-          Omit<DriverSession, "cycles" | "attendanceEventTitle" | "attendanceOccurredOn" | "buildTaskTitle">
-        >(
-          `SELECT s.id, s.title, s.event_key AS "eventKey", s.session_date::text AS "sessionDate",
-                  s.driver_user_id AS "driverUserId", s.driver_name AS "driverName",
-                  s.location, s.goal, s.notes,
-                  s.attendance_event_id AS "attendanceEventId",
-                  s.build_task_id AS "buildTaskId",
-                  s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt"
-           FROM driver_sessions s
-           WHERE s.org_id = $1
-           ORDER BY s.session_date DESC, s.created_at DESC`,
-          [row.orgId],
-        ),
-        client.query<DriverCycle>(
-          `SELECT c.id, c.session_id AS "sessionId", c.action, c.seconds::float8 AS seconds, c.success,
-                  c.note, c.rep_index AS "repIndex", c.created_at::text AS "createdAt"
-           FROM driver_cycles c
-           WHERE c.org_id = $1
-           ORDER BY c.session_id, c.rep_index, c.created_at`,
-          [row.orgId],
-        ),
+      const sessionRows = await client.query<
+        Omit<DriverSession, "cycles" | "attendanceEventTitle" | "attendanceOccurredOn" | "buildTaskTitle">
+      >(
+        `SELECT s.id, s.title, s.event_key AS "eventKey", s.session_date::text AS "sessionDate",
+                s.driver_user_id AS "driverUserId", s.driver_name AS "driverName",
+                s.location, s.goal, s.notes,
+                s.attendance_event_id AS "attendanceEventId",
+                s.build_task_id AS "buildTaskId",
+                s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt"
+         FROM driver_sessions s
+         WHERE s.org_id = $1::uuid
+           AND ($2::timestamptz IS NULL OR s.updated_at > $2::timestamptz)
+         ORDER BY s.session_date DESC, s.created_at DESC
+         LIMIT ${SESSION_LIMIT + 1}`,
+        [row.orgId, since],
+      );
+      const sessionsTruncated = sessionRows.rows.length > SESSION_LIMIT;
+      const pageSessions = sessionRows.rows.slice(0, SESSION_LIMIT);
+      const sessionIds = pageSessions.map((sessionRow) => sessionRow.id);
+
+      const [cycles, members, attendanceEvents, buildTasks] = await Promise.all([
+        sessionIds.length
+          ? client.query<DriverCycle>(
+              `SELECT c.id, c.session_id AS "sessionId", c.action, c.seconds::float8 AS seconds, c.success,
+                      c.note, c.rep_index AS "repIndex", c.created_at::text AS "createdAt"
+               FROM driver_cycles c
+               WHERE c.org_id = $1::uuid AND c.session_id = ANY($2::uuid[])
+               ORDER BY c.created_at DESC
+               LIMIT ${CYCLE_LIMIT + 1}`,
+              [row.orgId, sessionIds],
+            )
+          : Promise.resolve({ rows: [] as DriverCycle[] }),
         client.query<{ userId: string; name: string | null }>(
           `SELECT u.id AS "userId", u.name FROM memberships m JOIN users u ON u.id = m.user_id
            WHERE m.org_id = $1 ORDER BY u.name ASC NULLS LAST`,
@@ -134,9 +152,15 @@ export async function GET(request: Request) {
         ),
       ]);
 
+      const cyclesTruncated = cycles.rows.length > CYCLE_LIMIT;
+      // Newest-first for the cap; the UI wants reps in order within a session.
+      const pageCycles = cycles.rows
+        .slice(0, CYCLE_LIMIT)
+        .sort((a, b) => a.repIndex - b.repIndex || a.createdAt.localeCompare(b.createdAt));
+
       const linkedAttendanceIds = [
         ...new Set(
-          sessionRows.rows
+          pageSessions
             .map((sessionRow) => sessionRow.attendanceEventId)
             .filter((id): id is string => Boolean(id)),
         ),
@@ -152,7 +176,7 @@ export async function GET(request: Request) {
         : [];
 
       const bySession = new Map<string, DriverCycle[]>();
-      for (const cycle of cycles.rows) {
+      for (const cycle of pageCycles) {
         const list = bySession.get(cycle.sessionId) ?? [];
         list.push(cycle);
         bySession.set(cycle.sessionId, list);
@@ -175,7 +199,7 @@ export async function GET(request: Request) {
           role: row.role,
           eventKey: row.eventKey,
         },
-        sessions: sessionRows.rows.map((sessionRow) => {
+        sessions: pageSessions.map((sessionRow) => {
           const linked = sessionRow.attendanceEventId
             ? attendanceById.get(sessionRow.attendanceEventId)
             : undefined;
@@ -190,6 +214,18 @@ export async function GET(request: Request) {
         members: members.rows,
         attendanceEvents,
         buildTasks,
+        cursor: {
+          since,
+          // Pass this back as ?since= to fetch only what changed afterwards.
+          nextSince: pageSessions.reduce(
+            (latest, sessionRow) => (sessionRow.updatedAt > latest ? sessionRow.updatedAt : latest),
+            since ?? "1970-01-01T00:00:00.000Z",
+          ),
+          sessionLimit: SESSION_LIMIT,
+          cycleLimit: CYCLE_LIMIT,
+          sessionsTruncated,
+          cyclesTruncated,
+        },
       } satisfies DriverPracticeView;
     });
 

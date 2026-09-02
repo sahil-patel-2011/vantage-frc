@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { StandupDigestView } from "../../lib/standup-digest/compute-standup-digest";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 type LiveView = Extract<StandupDigestView, { status: "live" }>;
 
@@ -15,6 +17,7 @@ export default function StandupDigestClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [date, setDate] = useState<string | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -67,6 +70,8 @@ export default function StandupDigestClient() {
         }
         setView(data);
         setDate(data.digestDate);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -111,6 +116,8 @@ export default function StandupDigestClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="standup_digest" />
 
       {fetchFailed ? (
         (() => {

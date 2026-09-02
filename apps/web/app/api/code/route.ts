@@ -22,6 +22,7 @@ import {
   BUGBOT_SCAN_CHUNK_FILES,
   BUGBOT_SCAN_MAX_CHUNKS,
   BUGBOT_SKIP_REASONS,
+  bugbotPromptSlice,
   bugbotScanCostUsd,
   bugbotScopeKey,
   type BugbotScanPlan,
@@ -41,7 +42,17 @@ import {
   requireOrgMember,
   resolveGitHubCommitSha,
 } from "../../../lib/github";
-import { asCommitSha } from "../../../lib/bugbot/grounding";
+import {
+  asCommitSha,
+  filterBugbotFindingsToFile,
+  resolveBugbotFileTarget,
+  type BugbotFileTarget,
+} from "../../../lib/bugbot/grounding";
+import {
+  assembleBugbotContext,
+  bugbotContextChars,
+  loadBugbotTeamContext,
+} from "../../../lib/code/bugbot-context";
 import {
   dismissBugbotFinding,
   labelBugbotFindings,
@@ -76,9 +87,16 @@ type ScanCoverage = {
   deferredCount: number;
   treeTruncated: boolean;
   skippedListTruncated: boolean;
+  /** True when any reviewed file was cut at a read cap — the model never saw its tail. */
+  truncated: boolean;
+  truncatedFiles: string[];
+  /** Set when this pass re-read exactly one file for a per-finding fix / recheck. */
+  targetFile: string | null;
 };
 
-function bufferCoverage(path: string): ScanCoverage {
+type BundleTruncation = { truncated: boolean; truncatedFiles: string[] };
+
+function bufferCoverage(path: string, truncated = false): ScanCoverage {
   return {
     reviewedFiles: [path],
     skipped: [],
@@ -89,6 +107,9 @@ function bufferCoverage(path: string): ScanCoverage {
     deferredCount: 0,
     treeTruncated: false,
     skippedListTruncated: false,
+    truncated,
+    truncatedFiles: truncated ? [path] : [],
+    targetFile: null,
   };
 }
 
@@ -97,6 +118,7 @@ function coverageFromPlan(
   chunkIndex: number,
   reviewedFiles: string[],
   unreadable: Array<{ path: string; reason: BugbotSkipReason }>,
+  truncation?: BundleTruncation,
 ): ScanCoverage {
   const planned = plan.chunks[chunkIndex] ?? [];
   const missed = planned
@@ -117,6 +139,31 @@ function coverageFromPlan(
     deferredCount: plan.deferredCount,
     treeTruncated: plan.treeTruncated,
     skippedListTruncated: plan.skippedListTruncated,
+    truncated: truncation?.truncated ?? false,
+    truncatedFiles: truncation?.truncatedFiles ?? [],
+    targetFile: null,
+  };
+}
+
+/** Coverage of a per-finding fix / recheck: exactly one file, and it says so. */
+function coverageForTarget(
+  plan: BugbotScanPlan,
+  target: BugbotFileTarget,
+  bundle: BundleTruncation & { files: string[]; unreadable: Array<{ path: string; reason: BugbotSkipReason }> },
+): ScanCoverage {
+  return {
+    reviewedFiles: bundle.files,
+    skipped: bundle.unreadable,
+    skipCounts: plan.skipCounts,
+    chunkIndex: target.chunkIndex ?? 0,
+    chunkCount: plan.chunkCount,
+    candidateCount: plan.candidateCount,
+    deferredCount: plan.deferredCount,
+    treeTruncated: plan.treeTruncated,
+    skippedListTruncated: plan.skippedListTruncated,
+    truncated: bundle.truncated,
+    truncatedFiles: bundle.truncatedFiles,
+    targetFile: target.filePath,
   };
 }
 
@@ -148,6 +195,10 @@ async function hydrateSource(
     githubSha?: string;
     scanRepo?: boolean;
     chunkIndex?: number;
+    phase?: string;
+    /** Per-finding fix / recheck: the file that owns the finding, and the chunk the client thinks owns it. */
+    targetFilePath?: string;
+    targetChunkIndex?: number;
   },
 ): Promise<HydratedSource> {
   let path = String(body.path ?? "Robot.java").slice(0, 260);
@@ -189,7 +240,7 @@ async function hydrateSource(
             githubRef,
             githubSha: null,
             branchMoved: false,
-            coverage: bufferCoverage(editorPath),
+            coverage: bufferCoverage(editorPath, bugbotPromptSlice(first.content).truncated),
           };
         }
       }
@@ -236,6 +287,42 @@ async function hydrateSource(
         // Plan first, on the server: the chunk's file list is derived from the tree
         // we just read, never from the client, and the skip list is reported back.
         const plan = await planGitHubBugbotScan(http, fullName, fetchSha ?? ref);
+        // A per-finding fix / recheck re-reads the FILE that owns the finding —
+        // never chunk 0 by default. A fix for a finding in chunk 3 used to be
+        // charged and then dropped as "no grounded diff" because the server
+        // re-fetched chunk 0. The target path is re-checked against the scan
+        // classifier inside fetchGitHubScanBundle, so the client cannot smuggle
+        // in a lockfile.
+        const target =
+          body.phase === "fix" || body.phase === "recheck"
+            ? resolveBugbotFileTarget({
+                chunks: plan.chunks,
+                filePath: body.targetFilePath,
+                chunkHint: body.targetChunkIndex,
+              })
+            : null;
+        if (target) {
+          const bundle = await fetchGitHubScanBundle(http, fullName, fetchSha ?? ref, { files: [target.filePath] });
+          return {
+            path: bundle.path,
+            content: bundle.content,
+            provenance: [
+              {
+                type: "github_file",
+                label: `GitHub ${fullName}@${fetchSha ? fetchSha.slice(0, 7) : ref}:${target.filePath}${
+                  target.chunkIndex != null ? ` · chunk ${target.chunkIndex + 1}/${plan.chunkCount}` : ""
+                }`,
+              },
+            ],
+            empty: bundle.emptyReason ? `${target.filePath}: ${bundle.emptyReason}` : undefined,
+            filesScanned: bundle.filesScanned,
+            githubRepo: fullName,
+            githubRef: ref,
+            githubSha: fetchSha,
+            branchMoved: moved,
+            coverage: coverageForTarget(plan, target, bundle),
+          };
+        }
         const chunkFiles = plan.chunks[chunkIndex] ?? [];
         if (!chunkFiles.length) {
           return {
@@ -269,7 +356,7 @@ async function hydrateSource(
           githubRef: ref,
           githubSha: fetchSha,
           branchMoved: moved,
-          coverage: coverageFromPlan(plan, chunkIndex, bundle.files, bundle.unreadable),
+          coverage: coverageFromPlan(plan, chunkIndex, bundle.files, bundle.unreadable, bundle),
         };
       }
       if (body.githubPath) {
@@ -283,7 +370,7 @@ async function hydrateSource(
           githubRef: ref,
           githubSha: fetchSha,
           branchMoved: moved,
-          coverage: bufferCoverage(snippet.path),
+          coverage: bufferCoverage(snippet.path, snippet.truncated),
         };
       }
       return {
@@ -319,6 +406,16 @@ async function hydrateSource(
 
   if (!content.trim()) throw new Error("content is required");
   if (content.length > 200_000) throw new Error("content exceeds the 200KB analysis limit");
+  // Whatever the source, the prompt shows the model at most the prompt budget.
+  // If this content is longer, every file in it is reported as cut — coverage
+  // must never list a file whose tail the model did not read.
+  if (bugbotPromptSlice(content).truncated) {
+    coverage = {
+      ...coverage,
+      truncated: true,
+      truncatedFiles: [...new Set([...coverage.truncatedFiles, ...coverage.reviewedFiles])],
+    };
+  }
   return {
     path,
     content,
@@ -487,6 +584,10 @@ type BugbotBody = {
   findings?: BugbotFinding[];
   /** Which planned chunk of a repo scan this call covers (0-based). */
   chunkIndex?: number;
+  /** Per-finding fix / recheck: re-read this file (the one that owns the finding), not chunk 0. */
+  targetFilePath?: string;
+  /** The chunk the client believes owns targetFilePath — only trusted when the server plan agrees. */
+  targetChunkIndex?: number;
   /** Running spend the client has already been billed this scan, for honest reporting. */
   spentUsd?: number;
   /** dismiss / restore. */
@@ -559,34 +660,89 @@ export async function POST(request: Request) {
           bridgeTransport: createBridgeTransport(),
         });
         const requestId = randomUUID();
-        const chargeUsd = mode === "ultra" ? bugbotUltraChargeUsd(phase) : 0;
+        const listedChargeUsd = mode === "ultra" ? bugbotUltraChargeUsd(phase) : 0;
         const estimatedCostUsd =
-          mode === "ultra" ? chargeUsd : phase === "fix" ? 0.04 : 0.02;
+          mode === "ultra" ? listedChargeUsd : phase === "fix" ? 0.04 : 0.02;
+
+        // A fix is asked to address only the findings that live in the file it
+        // re-read. Carrying every chunk's findings against one file's source is
+        // how a paid fix used to come back as "no grounded diff".
+        const requestedFindings = coverage.targetFile
+          ? filterBugbotFindingsToFile(body.findings ?? [], coverage.targetFile)
+          : (body.findings ?? []);
+        const fixFindings = requestedFindings.length
+          ? requestedFindings
+          : local.risks.map((risk) => ({
+              severity: risk.severity,
+              finding: risk.message,
+              evidence: risk.evidence,
+            }));
+
+        // What this team already knows, attached as model context: open FMEA
+        // failures (a finding that explains one is the point of the tool), the
+        // findings already on record for these files, the ones they dismissed as
+        // deliberate, the subsystem spec sheet, and logged tuning constants.
+        // Dismissals are per fingerprint and persist across commits: a team that
+        // said "this one is deliberate" should not be told again every scan.
+        const [openFindings, dismissals, teamContext] = await Promise.all([
+          loadOpenBugbotFindings(client, orgId, scopeKey),
+          loadBugbotDismissals(client, orgId, scopeKey),
+          loadBugbotTeamContext(client, orgId),
+        ]);
+        const context = assembleBugbotContext({
+          reviewedFiles: coverage.reviewedFiles,
+          priorFindings: openFindings,
+          dismissed: dismissals,
+          fmeaFailures: teamContext.fmeaFailures,
+          tuningConstants: teamContext.tuningConstants,
+          subsystems: teamContext.subsystems,
+          seasonYear: teamContext.seasonYear,
+        });
+
         const message =
           phase === "fix"
-            ? bugbotFixUserMessage({
-                path,
-                content,
-                findings: (body.findings ?? []).length
-                  ? body.findings!
-                  : local.risks.map((risk) => ({
-                      severity: risk.severity,
-                      finding: risk.message,
-                      evidence: risk.evidence,
-                    })),
-              })
+            ? bugbotFixUserMessage({ path, content, findings: fixFindings, targetFile: coverage.targetFile })
             : phase === "recheck"
-              ? bugbotRecheckUserMessage({ path, content, localRisks: local.risks })
+              ? bugbotRecheckUserMessage({
+                  path,
+                  content,
+                  localRisks: local.risks,
+                  reviewedFiles: coverage.reviewedFiles,
+                  truncatedFiles: coverage.truncatedFiles,
+                })
               : bugbotUserMessage({
                   path,
                   content,
                   localRisks: local.risks,
                   reviewedFiles: coverage.reviewedFiles,
+                  truncatedFiles: coverage.truncatedFiles,
                   chunkLabel:
                     coverage.chunkCount > 1
                       ? `${githubRepo ?? path} chunk ${coverage.chunkIndex + 1} of ${coverage.chunkCount}`
                       : null,
                 });
+
+        // The Ultra fix SKU is charged for a GROUNDED diff only. Grounding runs
+        // inside the metered call so that the receipt's costUsd — the number
+        // meteredAI debits from the wallet and writes to the ledger — is zero
+        // when the model returned nothing a human could apply. meteredAI
+        // serialises `metadata` after invoke, so the ledger row also says why.
+        let fix: { unifiedDiff: string | null; dropped: boolean } = { unifiedDiff: null, dropped: false };
+        let chargeUsd = listedChargeUsd;
+        const meterMetadata: Record<string, unknown> = {
+          action: "bugbot",
+          mode,
+          phase,
+          path,
+          githubRepo,
+          githubSha,
+          targetFile: coverage.targetFile,
+          contextItems: context.map((item) => item.id),
+          ledgerTag:
+            mode === "ultra"
+              ? `bugbot_ultra:${phase}:${orgId.slice(0, 8)}`
+              : `coding:bugbot:${orgId.slice(0, 8)}`,
+        };
         const text = await meteredAI({
           client,
           orgId,
@@ -594,29 +750,27 @@ export async function POST(request: Request) {
           feature: mode === "ultra" ? "bugbot_ultra" : "coding",
           requestId,
           estimatedCostUsd,
-          estimatedPromptTokens: Math.ceil(message.length / 4),
+          estimatedPromptTokens: Math.ceil((message.length + bugbotContextChars(context)) / 4),
           estimatedCompletionTokens: phase === "fix" ? 1200 : 800,
           provider: adapter.provider,
           model: adapter.model,
           keySource: mode === "ultra" ? "platform" : undefined,
-          metadata: {
-            action: "bugbot",
-            mode,
-            phase,
-            path,
-            githubRepo,
-            githubSha,
-            ledgerTag:
-              mode === "ultra"
-                ? `bugbot_ultra:${phase}:${orgId.slice(0, 8)}`
-                : `coding:bugbot:${orgId.slice(0, 8)}`,
-          },
+          metadata: meterMetadata,
           invoke: async () => {
             const result = await adapter.complete({
               message,
-              context: [],
+              context,
               promptCachingEnabled,
             });
+            if (phase === "fix") {
+              fix = groundBugbotFix({ path, content, modelText: result.text });
+              meterMetadata.groundedDiff = Boolean(fix.unifiedDiff);
+              if (!fix.unifiedDiff) {
+                // No grounded diff → no Ultra charge. Recorded as a zero-cost attempt.
+                chargeUsd = 0;
+                meterMetadata.chargeWaivedUsd = listedChargeUsd;
+              }
+            }
             return {
               value: result.text,
               promptTokens: result.promptTokens,
@@ -631,12 +785,7 @@ export async function POST(request: Request) {
           },
         });
         const merged = mergeBugbotReview({ path, content, modelText: text });
-        const fix =
-          phase === "fix" ? groundBugbotFix({ path, content, modelText: text }) : { unifiedDiff: null, dropped: false };
 
-        // Dismissals are per fingerprint and persist across commits: a team that
-        // said "this one is deliberate" should not be told again every scan.
-        const dismissals = await loadBugbotDismissals(client, orgId, scopeKey);
         const split = applyBugbotDismissals(
           merged.findings,
           dismissals.map((row) => row.fingerprint),
@@ -648,12 +797,27 @@ export async function POST(request: Request) {
           modelFindingCount: split.active.filter((item) => item.source === "model").length,
         };
 
-        const partial = coverage.chunkCount > 1 && coverage.chunkIndex + 1 < coverage.chunkCount;
-        const partialReason = partial
-          ? `chunk ${coverage.chunkIndex + 1} of ${coverage.chunkCount} — coverage is incomplete until every chunk runs`
-          : coverage.deferredCount > 0
-            ? `${coverage.deferredCount} robot-code file(s) are beyond this scan's chunk budget`
-            : null;
+        // Anything short of "every planned file, read in full" is PARTIAL and
+        // says why — a targeted one-file pass, an unfinished chunk sequence, a
+        // deferred file, or a file cut at the read cap.
+        const partialReasons: string[] = [];
+        if (coverage.targetFile) {
+          partialReasons.push(`targeted ${phase}: only ${coverage.targetFile} was re-read`);
+        } else if (coverage.chunkCount > 1 && coverage.chunkIndex + 1 < coverage.chunkCount) {
+          partialReasons.push(
+            `chunk ${coverage.chunkIndex + 1} of ${coverage.chunkCount} — coverage is incomplete until every chunk runs`,
+          );
+        }
+        if (!coverage.targetFile && coverage.deferredCount > 0) {
+          partialReasons.push(`${coverage.deferredCount} robot-code file(s) are beyond this scan's chunk budget`);
+        }
+        if (coverage.truncatedFiles.length) {
+          partialReasons.push(
+            `${coverage.truncatedFiles.length} file(s) cut at the read cap — the model never saw the rest of them`,
+          );
+        }
+        const partial = partialReasons.length > 0;
+        const partialReason = partial ? partialReasons.join("; ") : null;
 
         const digest = createHash("sha256").update(content).digest("hex");
         const saved = await client.query<{ id: string }>(
@@ -740,7 +904,11 @@ export async function POST(request: Request) {
           mode,
           phase,
           chargeUsd,
+          listedChargeUsd,
+          /** True when the Ultra fix SKU was waived because no grounded diff came back. */
+          chargeWaived: listedChargeUsd > 0 && chargeUsd === 0,
           spentUsd: Number((Math.max(0, Number(body.spentUsd ?? 0)) + chargeUsd).toFixed(2)),
+          contextAttached: context.map((item) => item.id),
           filesScanned,
           githubRepo,
           githubRef,

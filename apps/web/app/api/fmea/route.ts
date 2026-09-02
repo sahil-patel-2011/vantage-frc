@@ -42,6 +42,14 @@ function uuidOrNull(value: unknown): string | null {
   return /^[0-9a-f-]{36}$/i.test(trimmed) ? trimmed : null;
 }
 
+/** Parts consumed by a failure: a non-negative quantity, capped so a typo cannot empty a bin. */
+function consumedQtyOrNull(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 10_000) throw new Error("partsConsumedQty must be between 0 and 10000");
+  return Math.round(n * 100) / 100;
+}
+
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -128,6 +136,9 @@ export async function POST(request: Request) {
             matchKey: trimmedOrNull(body.matchKey, 64),
             robotLabel: trimmedOrNull(body.robotLabel, 64) ?? "competition",
             occurredAt: trimmedOrNull(body.occurredAt, 40),
+            // ONE PARTS LEDGER: a failure that ate a spare decrements that bin (source 'fmea').
+            inventoryItemId: uuidOrNull(body.inventoryItemId),
+            partsConsumedQty: consumedQtyOrNull(body.partsConsumedQty),
           });
           break;
         }
@@ -156,6 +167,9 @@ export async function POST(request: Request) {
             status: status ?? undefined,
             inspectionItemId:
               body.inspectionItemId === undefined ? undefined : uuidOrNull(body.inspectionItemId),
+            userId,
+            inventoryItemId: body.inventoryItemId === undefined ? undefined : uuidOrNull(body.inventoryItemId),
+            partsConsumedQty: body.partsConsumedQty === undefined ? undefined : consumedQtyOrNull(body.partsConsumedQty),
           });
           break;
         }

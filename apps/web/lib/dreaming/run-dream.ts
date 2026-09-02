@@ -72,7 +72,6 @@ const SOURCE_TABLES = [
   "pit_scout_entries",
   "decision_records",
   "build_tasks",
-  "team_todos",
   "subteam_calendar_events",
   "incident_reports",
   "pit_repair_triage_reports",
@@ -238,24 +237,8 @@ async function gatherDreamDigest(
       })),
     );
   }
-  if (tables.has("team_todos")) {
-    const rows = await client.query<{ title: string; total: number }>(
-      `SELECT title, count(*) OVER ()::int AS total
-       FROM team_todos
-       WHERE org_id = $1::uuid AND status = 'done' AND completed_at >= $2::timestamptz
-       ORDER BY completed_at DESC
-       LIMIT ${LIST_LIMIT}`,
-      [orgId, sinceIso],
-    );
-    digest.tasksCompleted.count += rows.rows[0]?.total ?? 0;
-    digest.tasksCompleted.items.push(
-      ...rows.rows.map((row) => ({
-        title: clampExcerpt(row.title),
-        source: "todo" as const,
-        subsystem: null,
-      })),
-    );
-  }
+  // team_todos was folded into build_tasks (0502); the build block above already
+  // counts every completed task, so a second pass would double count.
 
   if (tables.has("subteam_calendar_events")) {
     const rows = await client.query<{ title: string; kind: string; total: number }>(

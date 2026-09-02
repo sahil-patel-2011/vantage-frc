@@ -2769,3 +2769,16 @@ export function createVantageToolRegistry(): AIToolRegistry {
       }),
     );
 }
+
+/**
+ * Every tool name the registry knows, sorted. This is the canonical list: the AI-policy
+ * governance allowlist (packages/billing/src/tool-names.ts) is a generated copy of it —
+ * billing cannot import agent (dependency direction) — and
+ * packages/agent/test/tool-names.test.ts fails whenever the two drift.
+ */
+export function toolNames(): string[] {
+  return createVantageToolRegistry()
+    .list()
+    .map((tool) => tool.name)
+    .sort();
+}

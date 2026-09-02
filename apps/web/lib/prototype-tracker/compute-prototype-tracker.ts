@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { DECISION_RECOMMENDATIONS, DECISION_STATUSES, TEST_OUTCOMES, draftDecision } from ".";
 import type {
   DecisionRecommendation,
@@ -238,7 +237,7 @@ export async function logTest(
 export async function draftDecisionForTest(
   client: PoolClient,
   input: { orgId: string; userId: string; testId: string; decisionTitle: string },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const testResult = await client.query<TestRow>(
     `SELECT id, season_year AS "seasonYear", subsystem_name AS "subsystemName", title, hypothesis,
             test_date::text AS "testDate", outcome, result_summary AS "resultSummary",
@@ -251,37 +250,27 @@ export async function draftDecisionForTest(
   if (!testRow) throw new Error("Prototype test not found");
   const test = mapTest(testRow);
 
-  const draft = await meteredAI({
+  // Real model call on the org's adapter with the deterministic draft as fallback: the
+  // decision record and notebook entry prose may be rewritten; recommendation and
+  // confidence stay computed from the logged outcome and metric attainment.
+  const { value: draft, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "prototype_tracker",
-    requestId: `prototype-tracker-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      testId: input.testId,
+    value: draftDecision({
       subsystemName: test.subsystemName,
-      seasonYear: test.seasonYear,
-      note: "Deterministic outcome/metric-attainment decision draft — no external model call",
-    },
-    invoke: async () => ({
-      value: draftDecision({
-        subsystemName: test.subsystemName,
-        title: test.title,
-        hypothesis: test.hypothesis,
-        outcome: test.outcome,
-        resultSummary: test.resultSummary,
-        metricLabel: test.metricLabel,
-        metricValue: test.metricValue,
-        metricTarget: test.metricTarget,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-prototype-tracker-v1",
-      provider: "vantage-local",
+      title: test.title,
+      hypothesis: test.hypothesis,
+      outcome: test.outcome,
+      resultSummary: test.resultSummary,
+      metricLabel: test.metricLabel,
+      metricValue: test.metricValue,
+      metricTarget: test.metricTarget,
     }),
+    editableKeys: ["decisionRecord", "notebookEntry"],
+    instructions: `Prototype test "${test.title}" on the ${test.subsystemName} subsystem (${test.seasonYear}). Hypothesis: ${test.hypothesis ?? "not stated"}. Outcome: ${test.outcome}. Result: ${test.resultSummary ?? "not summarized"}. Rewrite decisionRecord as a 2-3 sentence design-decision entry and notebookEntry as an engineering-notebook paragraph, both consistent with the recommendation in the document; keep every metric value exactly as given.`,
+    metadata: { testId: input.testId, subsystemName: test.subsystemName, seasonYear: test.seasonYear },
   });
 
   await client.query(
@@ -299,6 +288,7 @@ export async function draftDecisionForTest(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function updateDecisionStatus(

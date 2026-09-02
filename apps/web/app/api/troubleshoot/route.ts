@@ -43,6 +43,16 @@ function parseAnswers(value: unknown): TroubleshootAnswer[] {
   return out;
 }
 
+/**
+ * These handlers call a real upstream model (troubleshoot triage / speech-to-text). A
+ * bridged turn (a paired device with coverage everything) holds the request open for the
+ * bridge poll budget (BRIDGE_HEAVY_POLL_TOTAL_BUDGET_MS, 240s), so this function declares
+ * 300s to keep headroom above it; the adapter timeout still fires first and returns a
+ * classified error instead of the platform killing the function mid-request. Only honored
+ * where the hosting plan allows it — see docs/AI_BRIDGE.md "Function duration".
+ */
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });

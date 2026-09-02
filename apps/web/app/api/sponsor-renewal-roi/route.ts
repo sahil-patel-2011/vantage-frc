@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -78,11 +79,12 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "generate-report": {
           const sponsorId = trimmedOrNull(body.sponsorId, 64);
           if (!sponsorId) throw new Error("sponsorId is required");
-          await generateSponsorRoiReport(client, { orgId, userId, sponsorId, seasonYear });
+          render = (await generateSponsorRoiReport(client, { orgId, userId, sponsorId, seasonYear })).render ?? undefined;
           break;
         }
         case "delete-report": {
@@ -95,7 +97,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeSponsorRenewalRoiView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeSponsorRenewalRoiView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

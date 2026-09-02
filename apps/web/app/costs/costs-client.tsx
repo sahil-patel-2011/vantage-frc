@@ -6,6 +6,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../componen
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
+import { grantOptionLabel, type GrantOption } from "../../lib/finance/grant-options";
 import {
   COST_CATEGORIES,
   COST_STATUSES,
@@ -316,7 +317,7 @@ export default function CostsClient() {
       <BudgetPanel view={view} busy={busy} mutate={mutate} />
       {view.insight ? <AssistantPanel view={view} /> : null}
       <SubscriptionsSection view={view} busy={busy} mutate={mutate} />
-      <AddCostForm busy={busy} mutate={mutate} />
+      <AddCostForm busy={busy} mutate={mutate} grants={view.grants ?? []} />
       {view.summary.byCategory.length > 0 ? <CategoryBreakdown view={view} /> : null}
       {view.costs.length === 0 ? (
         <EmptyState
@@ -647,7 +648,7 @@ function AddSubscriptionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }
   );
 }
 
-function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+function AddCostForm({ busy, mutate, grants }: { busy: boolean; mutate: Mutate; grants: GrantOption[] }) {
   const empty = useMemo(
     () => ({
       label: "",
@@ -656,6 +657,7 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       vendor: "",
       incurredOn: "",
       status: "paid" as CostStatus,
+      grantApplicationId: "",
     }),
     [],
   );
@@ -678,6 +680,7 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           vendor: form.vendor || undefined,
           incurredOn: form.incurredOn,
           status: form.status,
+          grantApplicationId: form.grantApplicationId || undefined,
         });
         setForm(empty);
       }}
@@ -711,6 +714,16 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             {COST_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status === "paid" ? "Paid" : "Planned"}
+              </option>
+            ))}
+          </select>
+        </FormRow>
+        <FormRow label="Paid from grant (optional)">
+          <select value={form.grantApplicationId} onChange={set("grantApplicationId")}>
+            <option value="">Not grant-funded</option>
+            {grants.map((grant) => (
+              <option key={grant.id} value={grant.id}>
+                {grantOptionLabel(grant)}
               </option>
             ))}
           </select>
@@ -772,6 +785,7 @@ function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate
               <td>
                 <strong>{cost.label}</strong>
                 {cost.vendor ? <span className="vendor">{cost.vendor}</span> : null}
+                {cost.grantName ? <span className="vendor">Grant: {cost.grantName}</span> : null}
               </td>
               <td>{costCategoryLabel(cost.category)}</td>
               <td className="amount">{usd(cost.amountUsd)}</td>

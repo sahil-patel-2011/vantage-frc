@@ -149,16 +149,58 @@ describe("recordMoney — idempotent mirror upsert", () => {
       label: "Season cost — pit tape",
     });
     const params = recordMoneyParams(row);
-    expect(params).toHaveLength(14);
+    expect(params).toHaveLength(15);
     expect(params[0]).toBe("org-1");
     expect(params[2]).toBe("expense");
     expect(params[4]).toBe(12.34);
     expect(params[11]).toBe("season_cost");
     expect(params[12]).toBe("cost-1");
     expect(params[13]).toBe(true);
+    expect(params[14]).toBeNull();
     // The upsert and insert share one VALUES list, so one params builder serves both.
     expect(RECORD_MONEY_UPSERT_SQL).toContain("$14::boolean");
     expect(RECORD_MONEY_INSERT_SQL).toContain("$14::boolean");
+    expect(RECORD_MONEY_UPSERT_SQL).toContain("$15::uuid");
+    expect(RECORD_MONEY_INSERT_SQL).toContain("$15::uuid");
+  });
+
+  it("carries a grant tag on expenses only and re-asserts it on every upsert (0504)", () => {
+    const tagged = normalizeRecordMoney({
+      orgId: "org-1",
+      source: "purchase_log",
+      sourceId: "receipt-1",
+      direction: "out",
+      amountUsd: 40,
+      seasonYear: 2026,
+      grantApplicationId: "grant-1",
+    });
+    expect(tagged.grantApplicationId).toBe("grant-1");
+    expect(recordMoneyParams(tagged)[14]).toBe("grant-1");
+    // Income is never "spent from" a grant.
+    const income = normalizeRecordMoney({
+      orgId: "org-1",
+      source: "fundraiser",
+      sourceId: "event-1",
+      direction: "in",
+      amountUsd: 40,
+      seasonYear: 2026,
+      grantApplicationId: "grant-1",
+    });
+    expect(income.grantApplicationId).toBeNull();
+    expect(RECORD_MONEY_UPSERT_SQL).toContain("grant_application_id = EXCLUDED.grant_application_id");
+  });
+
+  it("knows the fundraiser expense mirror kind and keeps it off the legacy 0035 enum", () => {
+    const row = normalizeRecordMoney({
+      orgId: "org-1",
+      source: "fundraiser_expense",
+      sourceId: "event-1",
+      direction: "out",
+      amountUsd: 12,
+      seasonYear: 2026,
+    });
+    expect(row.legacySource).toBe("other");
+    expect(row.type).toBe("expense");
   });
 });
 

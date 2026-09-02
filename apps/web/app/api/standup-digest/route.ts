@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -78,9 +79,10 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "generate": {
-          await generateDigest(client, { orgId, userId, digestDate });
+          render = (await generateDigest(client, { orgId, userId, digestDate })).render ?? undefined;
           break;
         }
         case "add-note": {
@@ -101,7 +103,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeStandupDigestView(client, { userId, requestedOrg: orgId, digestDate });
+      const view = await computeStandupDigestView(client, { userId, requestedOrg: orgId, digestDate });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

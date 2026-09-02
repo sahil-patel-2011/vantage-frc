@@ -27,6 +27,9 @@ export type SeasonCost = {
   incurredOn: string;
   status: CostStatus;
   notes: string | null;
+  /** Grant this cost is paid from (0504); carried onto the ledger mirror when paid. */
+  grantApplicationId: string | null;
+  grantName: string | null;
 };
 
 export type SeasonBudget = {

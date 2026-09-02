@@ -8,6 +8,7 @@ import {
   homeAudienceFromTeamRole,
 } from "../home-workflows";
 import { countLodgingGaps } from "../logistics";
+import { summarizeTasksForDashboard } from "../tasks/store";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -521,58 +522,15 @@ export async function loadDashboardSnapshot(
 
   async function teamTodos() {
     try {
-      const [counts, items] = await Promise.all([
-        client.query<{ todo: string; doing: string; mineOpen: string; overdue: string }>(
-          `SELECT
-             count(*) FILTER (WHERE status = 'todo')::text AS todo,
-             count(*) FILTER (WHERE status = 'doing')::text AS doing,
-             count(*) FILTER (
-               WHERE status <> 'done' AND assignee_user_id = $2
-             )::text AS "mineOpen",
-             count(*) FILTER (
-               WHERE status <> 'done' AND due_on IS NOT NULL AND due_on < CURRENT_DATE
-             )::text AS overdue
-           FROM team_todos
-           WHERE org_id = $1`,
-          [input.orgId, input.userId],
-        ),
-        client.query<{
-          id: string;
-          title: string;
-          status: string;
-          dueOn: string | null;
-          assigneeName: string | null;
-        }>(
-          `SELECT
-             t.id,
-             t.title,
-             t.status,
-             t.due_on::text AS "dueOn",
-             u.name AS "assigneeName"
-           FROM team_todos t
-           LEFT JOIN users u ON u.id = t.assignee_user_id
-           WHERE t.org_id = $1 AND t.status <> 'done'
-           ORDER BY
-             CASE WHEN t.assignee_user_id = $2 THEN 0 ELSE 1 END,
-             CASE t.status WHEN 'doing' THEN 0 ELSE 1 END,
-             t.due_on NULLS LAST,
-             t.created_at DESC
-           LIMIT 5`,
-          [input.orgId, input.userId],
-        ),
-      ]);
-      const todo = Number(counts.rows[0]?.todo ?? 0);
-      const doing = Number(counts.rows[0]?.doing ?? 0);
-      const mineOpen = Number(counts.rows[0]?.mineOpen ?? 0);
-      const overdue = Number(counts.rows[0]?.overdue ?? 0);
-      const open = todo + doing;
-      widgets.team_todos = stamp(open > 0 ? "live" : "empty", "team_todos", {
-        todo,
-        doing,
-        open,
-        mineOpen,
-        overdue,
-        items: items.rows,
+      // Team todos and the build board share one store (build_tasks, 0502).
+      const summary = await summarizeTasksForDashboard(client, { orgId: input.orgId, userId: input.userId });
+      widgets.team_todos = stamp(summary.open > 0 ? "live" : "empty", "team_todos", {
+        todo: summary.todo,
+        doing: summary.doing,
+        open: summary.open,
+        mineOpen: summary.mineOpen,
+        overdue: summary.overdue,
+        items: summary.items,
       });
     } catch {
       widgets.team_todos = stamp(
@@ -953,6 +911,21 @@ export async function loadDashboardSnapshot(
     };
   }
 
+  /** The member's open shop session, so Home can say "clocked in since…" — never invented. */
+  async function openHoursSession() {
+    try {
+      const row = await client.query<{ clockIn: string }>(
+        `SELECT clock_in::text AS "clockIn" FROM hour_logs
+         WHERE org_id = $1 AND user_id = $2 AND clock_out IS NULL
+         ORDER BY clock_in DESC LIMIT 1`,
+        [input.orgId, input.userId],
+      );
+      context.clockedInAt = row.rows[0]?.clockIn ?? null;
+    } catch {
+      context.clockedInAt = null;
+    }
+  }
+
   // Next match first so onboarding can mark "Know your next match" from live bumper data.
   await nextMatch();
   await Promise.all([
@@ -971,6 +944,7 @@ export async function loadDashboardSnapshot(
     teamTodos(),
     subteamUpcoming(),
     quickActions(),
+    openHoursSession(),
   ]);
 
   return { context, widgets };

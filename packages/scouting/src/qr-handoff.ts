@@ -3,9 +3,16 @@
  * Short codes use the same ambiguous alphabet as CAD/editor pairing (no I/O/0/1).
  */
 
+import { deflateSync, inflateSync, strFromU8, strToU8 } from "fflate";
 import { lockScoutPayload } from "./identity";
 
 export const SCOUT_QR_EMBED_PREFIX = "vantage://scout/";
+/**
+ * Deflated JSON (raw DEFLATE, base64url). Scout payloads repeat the same keys
+ * on every row, so a batch that was two entries per scan uncompressed fits
+ * eight to twelve — the difference between "hand the tablet over" and "scan".
+ */
+export const SCOUT_QR_COMPRESSED_PREFIX = "vantage://scoutz/";
 export const SCOUT_QR_HANDOFF_PREFIX = "vantage://handoff/";
 export const SCOUT_QR_MAX_EMBEDDED_BYTES = 1200;
 
@@ -35,6 +42,20 @@ function utf8ToBase64Url(text: string): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  if (typeof Buffer !== "undefined") return Buffer.from(bytes).toString("base64url");
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlToBytes(encoded: string): Uint8Array {
+  if (typeof Buffer !== "undefined") return new Uint8Array(Buffer.from(encoded, "base64url"));
+  const padded = encoded.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((encoded.length + 3) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
 function base64UrlToUtf8(encoded: string): string {
@@ -112,10 +133,17 @@ export function formatHandoffCode(code: string): string {
   return compact.length === 8 ? `${compact.slice(0, 4)}-${compact.slice(4)}` : compact;
 }
 
-export function encodeScoutQrPayload(records: ScoutQrRecord[]): string {
+export function encodeScoutQrPayload(
+  records: ScoutQrRecord[],
+  options: { compress?: boolean } = {},
+): string {
   if (!records.length) throw new Error("Nothing to encode for QR handoff");
   const json = JSON.stringify(records.length === 1 ? records[0] : records);
-  return `${SCOUT_QR_EMBED_PREFIX}${utf8ToBase64Url(json)}`;
+  const plain = `${SCOUT_QR_EMBED_PREFIX}${utf8ToBase64Url(json)}`;
+  if (options.compress === false) return plain;
+  const packed = `${SCOUT_QR_COMPRESSED_PREFIX}${bytesToBase64Url(deflateSync(strToU8(json), { level: 9 }))}`;
+  // Tiny batches can grow under DEFLATE framing — keep whichever scans smaller.
+  return packed.length < plain.length ? packed : plain;
 }
 
 export function encodeScoutHandoffQr(code: string, verificationUri?: string): string {
@@ -143,6 +171,10 @@ export function decodeScoutQrContent(content: string): ScoutQrDecode {
   }
   if (/^[A-Za-z0-9]{4}-?[A-Za-z0-9]{4}$/.test(trimmed) && normalizeHandoffCode(trimmed).length === 8) {
     return { kind: "handoff", code: formatHandoffCode(trimmed) };
+  }
+  if (trimmed.startsWith(SCOUT_QR_COMPRESSED_PREFIX)) {
+    const rawJson = strFromU8(inflateSync(base64UrlToBytes(trimmed.slice(SCOUT_QR_COMPRESSED_PREFIX.length))));
+    return { kind: "embedded", records: parseRecordsJson(rawJson), rawJson };
   }
   if (trimmed.startsWith(SCOUT_QR_EMBED_PREFIX)) {
     const rawJson = base64UrlToUtf8(trimmed.slice(SCOUT_QR_EMBED_PREFIX.length));

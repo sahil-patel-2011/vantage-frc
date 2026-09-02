@@ -15,6 +15,8 @@ import {
   type PicklistJustifierNextAction,
   type PicklistJustifierShellKind,
 } from "../../lib/picklist-justifier/picklist-justifier-related";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./picklist-justifier.css";
@@ -148,6 +150,8 @@ export default function PicklistJustifierClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest render: "AI" only when a model produced it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
 
   const load = useCallback((pickListIdOverride?: string) => {
     setFetchFailed(false);
@@ -219,6 +223,8 @@ export default function PicklistJustifierClient() {
           return;
         }
         setView(data);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -313,6 +319,8 @@ export default function PicklistJustifierClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="picklist-justifier" />
 
       <JustifierNextActionsPanel actions={nextActions} />
 

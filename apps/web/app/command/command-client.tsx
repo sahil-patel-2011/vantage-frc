@@ -18,6 +18,7 @@ import {
 } from "../../lib/command/event-day-related";
 import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
+import { matchLabel } from "../../lib/briefing";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -322,6 +323,42 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const batteriesHref = snap?.links.batteries ?? withOrgHref("/batteries", orgId || null);
   const intelHref = snap?.links.intel ?? withOrgHref("/intel", orgId || null);
   const chemistryHref = snap?.links.chemistry ?? hubHref("/competition", "chemistry", orgId || null);
+
+  // ONE pre-match source. The briefing payload (lib/briefing/compute-briefing) is what
+  // /briefing renders, so the matchup card reads from it first and only falls back to the
+  // live strategy pass when no briefing could be computed — the two can never disagree.
+  const briefing = snap?.briefing?.status === "ready" ? snap.briefing : null;
+  const briefingHref = withOrgHref(
+    briefing ? `/briefing?matchKey=${encodeURIComponent(briefing.match.matchKey)}` : "/briefing",
+    orgId || null,
+  );
+  const matchup =
+    briefing?.prediction && briefing.ourAlliance
+      ? {
+          source: "briefing" as const,
+          pOur: briefing.ourAlliance === "red" ? briefing.prediction.pRed : briefing.prediction.pBlue,
+          pOpp: briefing.ourAlliance === "red" ? briefing.prediction.pBlue : briefing.prediction.pRed,
+          low: briefing.prediction.confidenceLow,
+          high: briefing.prediction.confidenceHigh,
+          keyFactors: briefing.prediction.keyFactors.map((factor) => ({ name: factor.name, evidence: factor.evidence })),
+          caveats: briefing.prediction.caveats,
+          modelVersion: briefing.prediction.modelVersion,
+        }
+      : snap?.prediction.status === "live" && snap.prediction.pOur != null
+        ? {
+            source: "strategy" as const,
+            pOur: snap.prediction.pOur,
+            pOpp: snap.prediction.pOpp,
+            low: snap.prediction.confidenceLow,
+            high: snap.prediction.confidenceHigh,
+            keyFactors: snap.prediction.keyFactors.map((factor) => ({ name: factor.name, evidence: factor.evidence })),
+            caveats: snap.prediction.caveats,
+            modelVersion: snap.prediction.modelVersion,
+          }
+        : null;
+  const briefingExtras = briefing
+    ? briefing.callouts.length + briefing.counterPlans.length + (briefing.simulation ? 1 : 0) + (briefing.card?.gamePlan ? 1 : 0)
+    : 0;
 
   const eventPicker = eventOpen ? (
     <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
@@ -705,36 +742,36 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
               <div>
                 <h2>Matchup snapshot</h2>
                 <p>
-                  {snap?.prediction.modelVersion
-                    ? `MODEL ${snap.prediction.modelVersion}`
+                  {matchup?.modelVersion
+                    ? `MODEL ${matchup.modelVersion}${matchup.source === "briefing" ? " · from briefing" : ""}`
                     : "Labeled win/loss when schedule + metrics exist"}
                 </p>
               </div>
             </div>
           </header>
-          {snap?.prediction.status === "live" && snap.prediction.pOur != null ? (
+          {matchup ? (
             <>
               <div className="edc-prob">
-                <strong>{pct(snap.prediction.pOur)}</strong>
+                <strong>{pct(matchup.pOur)}</strong>
                 <span>Our win probability</span>
               </div>
               <p className="edc-muted">
-                Opp {pct(snap.prediction.pOpp)}
-                {snap.prediction.confidenceLow != null && snap.prediction.confidenceHigh != null
-                  ? ` · band ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
+                Opp {pct(matchup.pOpp)}
+                {matchup.low != null && matchup.high != null
+                  ? ` · band ${pct(matchup.low)}–${pct(matchup.high)}`
                   : ""}
               </p>
               <ul className="edc-factors">
-                {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
+                {matchup.keyFactors.slice(0, 3).map((factor) => (
                   <li key={factor.name}>
                     <strong>{factor.name}</strong>
                     <span>{factor.evidence}</span>
                   </li>
                 ))}
               </ul>
-              {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
-              <a className="edc-link" href={strategyHref}>
-                Open full strategy →
+              {matchup.caveats[0] ? <p className="edc-caveat">{matchup.caveats[0]}</p> : null}
+              <a className="edc-link" href={matchup.source === "briefing" ? briefingHref : strategyHref}>
+                {matchup.source === "briefing" ? "Open pre-match briefing →" : "Open full strategy →"}
               </a>
             </>
           ) : (
@@ -810,6 +847,80 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       </section>
 
       <section className="edc-secondary" aria-label="Briefs and flags">
+        <article className="edc-card">
+          <header>
+            <div className="edc-card-title">
+              <span className="edc-icon" style={{ ["--tone" as string]: "#6d28d9", ["--tone-bg" as string]: "#ede9fe" }}>
+                <Icon name="clipboard" />
+              </span>
+              <div>
+                <h2>Pre-match briefing</h2>
+                <p>
+                  {briefing
+                    ? `${matchLabel(briefing.match.compLevel, briefing.match.matchNumber)} · same payload as /briefing`
+                    : "One source for Command and Briefing"}
+                </p>
+              </div>
+            </div>
+          </header>
+          {briefing ? (
+            <>
+              {briefing.callouts.length ? (
+                <ul className="edc-factors">
+                  {briefing.callouts.slice(0, 4).map((callout) => (
+                    <li key={`${callout.category}-${callout.headline}`}>
+                      <strong>{callout.headline}</strong>
+                      <span>{callout.detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {briefing.card?.gamePlan ? <p className="edc-caps">Game plan: {briefing.card.gamePlan}</p> : null}
+              {briefing.counterPlans.length ? (
+                <ul className="edc-factors">
+                  {briefing.counterPlans.map((plan) => (
+                    <li key={plan.id}>
+                      <strong>Counter {plan.teamNumber ?? teamLabel(plan.teamKey)}</strong>
+                      <span>{plan.summary}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {briefing.simulation ? (
+                <p className="edc-muted">
+                  Simulated:{" "}
+                  {briefing.simulation.favored === "even"
+                    ? "even"
+                    : briefing.simulation.favored === briefing.ourAlliance
+                      ? `we lead by ${Math.round(Math.abs(briefing.simulation.finalMargin))}`
+                      : `opponents lead by ${Math.round(Math.abs(briefing.simulation.finalMargin))}`}
+                  {" "}· red {Math.round(briefing.simulation.redTotal)} – blue {Math.round(briefing.simulation.blueTotal)}
+                </p>
+              ) : null}
+              {!briefingExtras ? (
+                <p className="edc-muted">
+                  Prediction and scouting above are the whole briefing so far — add a match card, counter-book or sim run to see more here.
+                </p>
+              ) : null}
+              <a className="edc-link" href={briefingHref}>
+                Open full briefing →
+              </a>
+            </>
+          ) : (
+            <div className="dash-empty calm">
+              <strong>No briefing yet</strong>
+              <p>
+                {snap?.briefing?.status === "setup_required"
+                  ? snap.briefing.message
+                  : "Needs an active event, your team number and an upcoming match."}
+              </p>
+              <a className="dash-empty-cta" href={briefingHref}>
+                Open Briefing
+              </a>
+            </div>
+          )}
+        </article>
+
         <article className="edc-card">
           <header>
             <div className="edc-card-title">

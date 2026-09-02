@@ -66,6 +66,8 @@ export function notificationHref(
     case "scouting_coverage_gap":
     case "scout_reminder":
       return orgId ? `/command${orgQuery}` : "/command";
+    case "scout_shift_assigned":
+      return orgId ? `/scouting${orgQuery}` : "/scouting";
     case "match_alert":
       return orgId ? `/my-day${orgQuery}` : "/my-day";
     case "sponsor_thank_you_due":

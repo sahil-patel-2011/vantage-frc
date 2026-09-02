@@ -8,6 +8,7 @@ import {
   RATING_MAX_STARS,
   RATING_MIN_STARS,
   type EntryType,
+  type FieldVisibilityOp,
   type FormResetBehavior,
   type SchemaDefinition,
   type ScoutSchema,
@@ -23,8 +24,10 @@ import {
   IMPORTED_FORM_DRAFT_KEY,
   addOption,
   classifyFormBuilderShell,
+  conditionControllerCandidates,
   definitionFromDraft,
   draftFromDefinition,
+  formatDraftSaveIndicator,
   formBuilderNextActions,
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
@@ -53,19 +56,35 @@ import {
   type AnswerKind,
   type DraftFieldSettings,
   type DraftQuestion,
+  type DraftSaveState,
   type FormBuilderNextAction,
   type FormBuilderShellKind,
   type StrategyFieldRole,
 } from "../../../lib/scouting/form-builder";
+import { VISIBILITY_OP_OPTIONS, visibleFieldsForPayload } from "../../../lib/scouting/conditional";
+import type { FormDraftRow, FormTemplateRow, StarterTemplate } from "../../../lib/scouting/form-studio";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
 type SchemasPayload = {
   eventKey: string | null;
   year: number | null;
+  /** "event" when the active event pins the season; "season" = offseason fallback. */
+  yearSource?: "event" | "season";
   schemas: ScoutSchema[];
   canManageSchemas: boolean;
 };
+
+type ServerDrafts = Partial<Record<EntryType, FormDraftRow>>;
+
+type TemplateCatalog = {
+  activeYear: number;
+  templates: FormTemplateRow[];
+  starters: StarterTemplate[];
+};
+
+/** Debounce for the server-side autosave — long enough to batch typing, short enough to survive a tab close. */
+const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 type Mode = "edit" | "preview";
 
@@ -555,27 +574,44 @@ function StudioSettingsEditor({
  * Live preview of one studio field.
  *
  * It renders the real entry control against the real published config, so what
- * a coach taps here is exactly what a scout will tap in the stands. State is
- * local and thrown away — nothing previewed is ever saved.
+ * a coach taps here is exactly what a scout will tap in the stands. Answers live
+ * in the preview's own scratch map (so "show only when" can be exercised) and are
+ * thrown away — nothing previewed is ever saved.
  */
-function StudioPreviewField({ question }: { question: DraftQuestion }) {
+function StudioPreviewField({
+  question,
+  value,
+  onChange,
+}: {
+  question: DraftQuestion;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
   const field = useMemo(() => previewFieldForQuestion(question), [question]);
-  const [value, setValue] = useState<unknown>(undefined);
   const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
-  return <StudioField field={field} value={value} onChange={setValue} label={label} />;
+  return <StudioField field={field} value={value} onChange={onChange} label={label} />;
 }
 
-function PreviewField({ question }: { question: DraftQuestion }) {
+function PreviewField({
+  question,
+  value,
+  onChange,
+}: {
+  question: DraftQuestion;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
   const options = parseOptions(question.optionsText);
   const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
+  const text = typeof value === "string" ? value : "";
 
   if (isStudioAnswerKind(question.kind)) {
-    return <StudioPreviewField question={question} />;
+    return <StudioPreviewField question={question} value={value} onChange={onChange} />;
   }
   if (question.kind === "yesno") {
     return (
       <label className="sfb-check">
-        <input type="checkbox" disabled />
+        <input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} />
         <span>{label}</span>
       </label>
     );
@@ -586,7 +622,12 @@ function PreviewField({ question }: { question: DraftQuestion }) {
         <div className="sfb-radio-row" role="radiogroup">
           {(options.length ? options : ["Option A", "Option B"]).map((option) => (
             <label key={option}>
-              <input type="radio" name={question.id} disabled />
+              <input
+                type="radio"
+                name={question.id}
+                checked={value === option}
+                onChange={() => onChange(option)}
+              />
               {option}
             </label>
           ))}
@@ -603,7 +644,7 @@ function PreviewField({ question }: { question: DraftQuestion }) {
         : options;
     return (
       <FormRow label={label}>
-        <select disabled defaultValue="">
+        <select value={text} onChange={(event) => onChange(event.target.value || undefined)}>
           <option value="">Select…</option>
           {choices.map((option) => (
             <option key={option}>{option}</option>
@@ -632,18 +673,204 @@ function PreviewField({ question }: { question: DraftQuestion }) {
   if (question.kind === "free") {
     return (
       <FormRow label={label}>
-        <textarea disabled placeholder="Free-text notes…" />
+        <textarea
+          value={text}
+          placeholder="Free-text notes…"
+          onChange={(event) => onChange(event.target.value || undefined)}
+        />
+      </FormRow>
+    );
+  }
+  if (question.kind === "number") {
+    return (
+      <FormRow label={label}>
+        <input
+          type="number"
+          value={typeof value === "number" ? value : ""}
+          placeholder="0"
+          onChange={(event) => onChange(event.target.value === "" ? undefined : Number(event.target.value))}
+        />
       </FormRow>
     );
   }
   return (
     <FormRow label={label}>
       <input
-        type={question.kind === "number" ? "number" : "text"}
-        disabled
-        placeholder={question.kind === "number" ? "0" : "Short answer"}
+        type="text"
+        value={text}
+        placeholder="Short answer"
+        onChange={(event) => onChange(event.target.value || undefined)}
       />
     </FormRow>
+  );
+}
+
+/** Value editor for a "show only when" condition, shaped by the controlling question. */
+function ConditionValueInput({
+  controller,
+  value,
+  disabled,
+  onChange,
+}: {
+  controller: DraftQuestion | undefined;
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  if (controller?.kind === "yesno") {
+    return (
+      <select value={value || "true"} disabled={disabled} aria-label="Condition value" onChange={(event) => onChange(event.target.value)}>
+        <option value="true">Yes / checked</option>
+        <option value="false">No / unchecked</option>
+      </select>
+    );
+  }
+  if (controller && needsOptionEditor(controller.kind)) {
+    const options = parseOptions(controller.optionsText);
+    const choices = options.length ? options : controller.kind === "drivetrain" ? [...DEFAULT_DRIVETRAIN_OPTIONS] : [];
+    return (
+      <select value={value} disabled={disabled} aria-label="Condition value" onChange={(event) => onChange(event.target.value)}>
+        <option value="">Choose…</option>
+        {choices.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  const numeric =
+    controller?.kind === "number" ||
+    controller?.kind === "counter" ||
+    controller?.kind === "rating" ||
+    controller?.kind === "slider" ||
+    controller?.kind === "timer";
+  return (
+    <input
+      type={numeric ? "number" : "text"}
+      value={value}
+      disabled={disabled}
+      placeholder={numeric ? "e.g. 20" : "value"}
+      aria-label="Condition value"
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
+/** "Start from…" — last season's published form, a saved template, or a game-pack starter. */
+function StartFromDrawer({
+  entryType,
+  year,
+  catalog,
+  busy,
+  canManage,
+  onClose,
+  onLastSeason,
+  onApply,
+  onDeleteTemplate,
+  onReload,
+}: {
+  entryType: EntryType;
+  year: number | null;
+  catalog: TemplateCatalog | null;
+  busy: boolean;
+  canManage: boolean;
+  onClose: () => void;
+  onLastSeason: () => void;
+  onApply: (source: { templateId?: string; starterId?: string; name: string }) => void;
+  onDeleteTemplate: (templateId: string) => void;
+  onReload: () => void;
+}) {
+  const templates = catalog?.templates.filter((template) => template.formKind === entryType) ?? [];
+  const starters = catalog?.starters.filter((starter) => starter.formKind === entryType) ?? [];
+  return (
+    <Panel as="section" className="sfb-drawer" aria-label="Start from">
+      <header className="sfb-drawer-head">
+        <div>
+          <h2>Start from…</h2>
+          <p className="app-muted">
+            Replaces the current {entryType} draft (autosaved, not published). Nothing goes live until you publish.
+          </p>
+        </div>
+        <button type="button" className="app-button secondary" onClick={onClose}>
+          Close
+        </button>
+      </header>
+      <ul className="sfb-template-list">
+        <li>
+          <div>
+            <strong>Last season&apos;s {entryType} form</strong>
+            <span className="app-muted">
+              Copies your newest published form from before {year ?? "this season"} — keys stay stable for strategy.
+            </span>
+          </div>
+          <button type="button" className="app-button secondary" disabled={busy || !canManage} onClick={onLastSeason}>
+            Use last season
+          </button>
+        </li>
+        {templates.map((template) => (
+          <li key={template.id}>
+            <div>
+              <strong>{template.name}</strong>
+              <span className="app-muted">
+                {template.fieldCount} fields
+                {template.sourceYear ? ` · from ${template.sourceYear}` : ""}
+                {template.createdByName ? ` · ${template.createdByName}` : ""}
+                {template.description ? ` · ${template.description}` : ""}
+              </span>
+            </div>
+            <div className="sfb-template-actions">
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy || !canManage}
+                onClick={() => onApply({ templateId: template.id, name: template.name })}
+              >
+                Use template
+              </button>
+              <button
+                type="button"
+                className="sfb-inline-button"
+                disabled={busy || !canManage}
+                aria-label={`Delete template ${template.name}`}
+                onClick={() => onDeleteTemplate(template.id)}
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+        {starters.map((starter) => (
+          <li key={starter.id}>
+            <div>
+              <strong>{starter.name}</strong>
+              <span className="app-muted">
+                Built-in starter · {starter.fieldCount} fields · {starter.description}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy || !canManage}
+              onClick={() => onApply({ starterId: starter.id, name: starter.name })}
+            >
+              Use starter
+            </button>
+          </li>
+        ))}
+        {!catalog ? (
+          <li>
+            <div>
+              <strong>Loading templates…</strong>
+              <span className="app-muted">Saved templates and game-pack starters appear here.</span>
+            </div>
+            <button type="button" className="app-button secondary" onClick={onReload}>
+              Retry
+            </button>
+          </li>
+        ) : null}
+      </ul>
+    </Panel>
   );
 }
 
@@ -661,6 +888,19 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   const [message, setMessage] = useState("");
   const [acknowledgeBudget, setAcknowledgeBudget] = useState(false);
   const [published, setPublished] = useState<{ id: string; version: number } | null>(null);
+  // Server-side draft (autosave / resume on any device) + "Start from…" catalog.
+  const [serverDrafts, setServerDrafts] = useState<ServerDrafts>({});
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [resumedDraft, setResumedDraft] = useState(false);
+  const [startFromOpen, setStartFromOpen] = useState(false);
+  const [catalog, setCatalog] = useState<TemplateCatalog | null>(null);
+  const [templateName, setTemplateName] = useState("");
+  // Preview scratch answers keyed by builder question id — never persisted.
+  const [previewValues, setPreviewValues] = useState<Record<string, unknown>>({});
+  // A load / type switch / template apply must not autosave what it just loaded.
+  const skipAutosaveRef = useRef(true);
 
   const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
 
@@ -669,35 +909,76 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   // so the imported draft beats — rather than races — the initial schema fetch.
   const importedDraftRef = useRef<SchemaDefinition | null | undefined>(undefined);
 
-  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
-    if (importedDraftRef.current === undefined) {
-      importedDraftRef.current = null;
-      try {
-        const raw = window.sessionStorage.getItem(IMPORTED_FORM_DRAFT_KEY);
-        if (raw) {
-          window.sessionStorage.removeItem(IMPORTED_FORM_DRAFT_KEY);
-          const imported = JSON.parse(raw) as SchemaDefinition;
-          const draft = draftFromDefinition(imported);
-          importedDraftRef.current = imported;
-          setTitle(draft.title);
-          setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType));
-          setMessage("Imported from QRScout — review every question, then Publish. Nothing is live yet.");
-          return;
+  const loadSchemaIntoDraft = useCallback(
+    (schema: ScoutSchema | undefined, nextType: EntryType, draft?: FormDraftRow | null) => {
+      skipAutosaveRef.current = true;
+      setResumedDraft(false);
+      setPreviewValues({});
+      if (importedDraftRef.current === undefined) {
+        importedDraftRef.current = null;
+        try {
+          const raw = window.sessionStorage.getItem(IMPORTED_FORM_DRAFT_KEY);
+          if (raw) {
+            window.sessionStorage.removeItem(IMPORTED_FORM_DRAFT_KEY);
+            const imported = JSON.parse(raw) as SchemaDefinition;
+            const next = draftFromDefinition(imported);
+            importedDraftRef.current = imported;
+            setTitle(next.title);
+            setQuestions(next.questions.length ? next.questions : defaultQuestions(nextType));
+            setDraftSavedAt(null);
+            setDraftSaveState("idle");
+            setMessage("Imported from QRScout — review every question, then Publish. Nothing is live yet.");
+            return;
+          }
+        } catch {
+          // Malformed or blocked handoff payload: fall through to the normal load.
         }
-      } catch {
-        // Malformed or blocked handoff payload: fall through to the normal load.
       }
-    }
-    if (schema?.definition) {
-      const draft = draftFromDefinition(schema.definition);
-      setTitle(draft.title);
-      setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType));
-      setYear(schema.year);
-      return;
-    }
-    setTitle(nextType === "pit" ? "Pit scouting" : "Match scouting");
-    setQuestions(defaultQuestions(nextType));
-  }, []);
+      // Resume: an autosaved draft beats the published version it was edited from.
+      if (draft?.definition?.fields?.length) {
+        const resumed = draftFromDefinition(draft.definition);
+        setTitle(draft.title || resumed.title);
+        setQuestions(resumed.questions.length ? resumed.questions : defaultQuestions(nextType));
+        setYear(draft.seasonYear);
+        setDraftSavedAt(draft.updatedAt);
+        setDraftSaveState("saved");
+        setResumedDraft(true);
+        return;
+      }
+      setDraftSavedAt(null);
+      setDraftSaveState("idle");
+      if (schema?.definition) {
+        const next = draftFromDefinition(schema.definition);
+        setTitle(next.title);
+        setQuestions(next.questions.length ? next.questions : defaultQuestions(nextType));
+        setYear(schema.year);
+        return;
+      }
+      setTitle(nextType === "pit" ? "Pit scouting" : "Match scouting");
+      setQuestions(defaultQuestions(nextType));
+    },
+    [],
+  );
+
+  const loadDrafts = useCallback(
+    async (seasonYear: number, canManage: boolean): Promise<ServerDrafts> => {
+      if (!canManage) return {};
+      try {
+        const response = await fetch(
+          `/api/scouting/form-drafts?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) return {};
+        const body = (await response.json()) as { drafts?: FormDraftRow[] };
+        const next: ServerDrafts = {};
+        for (const draft of body.drafts ?? []) next[draft.formKind] = draft;
+        return next;
+      } catch {
+        return {};
+      }
+    },
+    [orgId],
+  );
 
   const load = useCallback(async () => {
     setLoadError("");
@@ -714,26 +995,111 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       }
       setPayload(body);
       if (body.year != null) setYear(body.year);
+      const drafts = body.year != null ? await loadDrafts(body.year, body.canManageSchemas) : {};
+      setServerDrafts(drafts);
       const active = body.schemas.find((schema) => schema.type === type);
-      loadSchemaIntoDraft(active, type);
+      loadSchemaIntoDraft(active, type, drafts[type] ?? null);
     } catch {
       setLoadError("Could not reach the schemas API.");
     }
-  }, [orgId, type, loadSchemaIntoDraft]);
+  }, [orgId, type, loadSchemaIntoDraft, loadDrafts]);
 
   useEffect(() => {
     void load();
     // Mount / org only — type switches reuse the loaded schema list.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+     
   }, [orgId]);
+
+  // "Saved · 12s ago" keeps ticking without a re-render per keystroke.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 5_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const currentSchema = payload?.schemas.find((schema) => schema.type === type);
+  const publishStatus = useMemo(
+    () =>
+      resolveDraftPublishStatus({
+        published: currentSchema
+          ? { version: currentSchema.version, definition: currentSchema.definition }
+          : null,
+        draftTitle: title,
+        draftQuestions: questions,
+      }),
+    [currentSchema, title, questions],
+  );
+
+  const saveDraft = useCallback(async () => {
+    if (!payload?.canManageSchemas || year == null) return;
+    const headersJson = { "content-type": "application/json" };
+    if (publishStatus.kind === "published") {
+      // The draft equals the live form — nothing to resume later. Clear a stale server draft.
+      setDraftSaveState("idle");
+      setDraftSavedAt(null);
+      if (serverDrafts[type]) {
+        setServerDrafts((prev) => {
+          const next = { ...prev };
+          delete next[type];
+          return next;
+        });
+        await fetch("/api/scouting/form-drafts", {
+          method: "DELETE",
+          headers: headersJson,
+          body: JSON.stringify({ orgId, formKind: type, seasonYear: year }),
+        }).catch(() => undefined);
+      }
+      return;
+    }
+    setDraftSaveState("saving");
+    try {
+      const response = await fetch("/api/scouting/form-drafts", {
+        method: "PUT",
+        headers: headersJson,
+        body: JSON.stringify({
+          orgId,
+          formKind: type,
+          seasonYear: year,
+          title,
+          definition: definitionFromDraft(title, questions),
+          baseSchemaId: currentSchema?.id ?? null,
+        }),
+      });
+      const body = (await response.json()) as { draft?: FormDraftRow; error?: string };
+      if (!response.ok || !body.draft) {
+        setDraftSaveState("error");
+        return;
+      }
+      const saved = body.draft;
+      setServerDrafts((prev) => ({ ...prev, [type]: saved }));
+      setDraftSavedAt(saved.updatedAt);
+      setDraftSaveState("saved");
+    } catch {
+      setDraftSaveState("error");
+    }
+  }, [payload?.canManageSchemas, year, publishStatus.kind, serverDrafts, type, orgId, title, questions, currentSchema?.id]);
+
+  useEffect(() => {
+    if (!payload?.canManageSchemas || year == null) return;
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+    setDraftSaveState("dirty");
+    const handle = window.setTimeout(() => {
+      void saveDraft();
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+    // Content changes schedule the save; saveDraft's identity follows the same content.
+  }, [title, questions, type, year, payload?.canManageSchemas]);
 
   function switchType(next: EntryType) {
     setType(next);
     setPublished(null);
     setMessage("");
     setAcknowledgeBudget(false);
+    setStartFromOpen(false);
     const schema = payload?.schemas.find((entry) => entry.type === next);
-    loadSchemaIntoDraft(schema, next);
+    loadSchemaIntoDraft(schema, next, serverDrafts[next] ?? null);
     if (payload?.year != null) setYear(payload.year);
   }
 
@@ -761,6 +1127,179 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         return next;
       }),
     );
+  }
+
+  function removeQuestion(id: string) {
+    setQuestions((prev) =>
+      prev
+        .filter((entry) => entry.id !== id)
+        // A question that depended on the removed one is shown again, not left dangling.
+        .map((entry) => (entry.visibleWhen?.questionId === id ? { ...entry, visibleWhen: undefined } : entry)),
+    );
+  }
+
+  async function loadCatalog() {
+    try {
+      const response = await fetch(`/api/scouting/form-templates?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      setCatalog((await response.json()) as TemplateCatalog);
+    } catch {
+      // The drawer keeps its retry row.
+    }
+  }
+
+  function openStartFrom() {
+    setStartFromOpen(true);
+    if (!catalog) void loadCatalog();
+  }
+
+  /** Replace the working draft with a server draft row (clone / template / starter). */
+  function applyDraftRow(draft: FormDraftRow, note: string) {
+    skipAutosaveRef.current = true;
+    const next = draftFromDefinition(draft.definition);
+    setTitle(draft.title || next.title);
+    setQuestions(next.questions.length ? next.questions : defaultQuestions(type));
+    setServerDrafts((prev) => ({ ...prev, [type]: draft }));
+    setDraftSavedAt(draft.updatedAt);
+    setDraftSaveState("saved");
+    setResumedDraft(false);
+    setPreviewValues({});
+    setPublished(null);
+    setAcknowledgeBudget(false);
+    setStartFromOpen(false);
+    setMessage(note);
+  }
+
+  async function startFromLastSeason() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/scouting/schemas", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "clone_season", type, year }),
+      });
+      const body = (await response.json()) as {
+        draft?: FormDraftRow;
+        source?: { year: number; version: number };
+        error?: string;
+      };
+      if (!response.ok || !body.draft) {
+        setMessage(body.error ?? "No earlier-season form to clone.");
+        return;
+      }
+      applyDraftRow(
+        body.draft,
+        `Started from the ${body.source?.year ?? "previous"} ${type} form (v${body.source?.version ?? "?"}). Review, then publish.`,
+      );
+    } catch {
+      setMessage("Network error — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyTemplate(source: { templateId?: string; starterId?: string; name: string }) {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/scouting/form-templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "apply",
+          formKind: type,
+          seasonYear: year,
+          templateId: source.templateId,
+          starterId: source.starterId,
+        }),
+      });
+      const body = (await response.json()) as { draft?: FormDraftRow; error?: string };
+      if (!response.ok || !body.draft) {
+        setMessage(body.error ?? "Could not apply the template.");
+        return;
+      }
+      applyDraftRow(body.draft, `Started from “${source.name}”. Review every question, then publish.`);
+    } catch {
+      setMessage("Network error — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveAsTemplate() {
+    const name = templateName.trim();
+    if (!name) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/scouting/form-templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "save",
+          name,
+          formKind: type,
+          sourceYear: year,
+          definition: definitionFromDraft(title, questions),
+        }),
+      });
+      const body = (await response.json()) as { template?: FormTemplateRow; error?: string };
+      if (!response.ok || !body.template) {
+        setMessage(body.error ?? "Could not save the template.");
+        return;
+      }
+      setTemplateName("");
+      setMessage(`Saved “${body.template.name}” as a ${type} template (${body.template.fieldCount} fields).`);
+      await loadCatalog();
+    } catch {
+      setMessage("Network error — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteTemplate(templateId: string) {
+    setBusy(true);
+    try {
+      await fetch("/api/scouting/form-templates", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, templateId }),
+      });
+      await loadCatalog();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function discardDraft() {
+    if (year == null) return;
+    setBusy(true);
+    try {
+      await fetch("/api/scouting/form-drafts", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, formKind: type, seasonYear: year }),
+      }).catch(() => undefined);
+      setServerDrafts((prev) => {
+        const next = { ...prev };
+        delete next[type];
+        return next;
+      });
+      loadSchemaIntoDraft(currentSchema, type, null);
+      setMessage(
+        currentSchema
+          ? `Draft discarded — showing published v${currentSchema.version}.`
+          : "Draft discarded — back to the starter questions.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function publish() {
@@ -809,6 +1348,19 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       setMessage(
         `Published ${type} form v${body.version}. Open Scouting after sync — Coverage stays blank until real entries exist.`,
       );
+      // The published version IS the draft now — drop the server draft so nothing "resumes".
+      if (year != null && serverDrafts[type]) {
+        await fetch("/api/scouting/form-drafts", {
+          method: "DELETE",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, formKind: type, seasonYear: year }),
+        }).catch(() => undefined);
+        setServerDrafts((prev) => {
+          const next = { ...prev };
+          delete next[type];
+          return next;
+        });
+      }
       await load();
     } catch {
       setMessage("Network error — try again.");
@@ -816,6 +1368,29 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       setBusy(false);
     }
   }
+
+  // Preview: answers keyed by builder id → payload keyed by published key, so
+  // "show only when" is exercised with the exact evaluator the tablet uses.
+  const previewDefinition = useMemo(() => definitionFromDraft(title, questions), [title, questions]);
+  const visibleQuestionIds = useMemo(() => {
+    const payloadByKey: Record<string, unknown> = {};
+    questions.forEach((question, index) => {
+      const key = previewDefinition.fields[index]?.key;
+      const value = previewValues[question.id];
+      if (key && value !== undefined) payloadByKey[key] = value;
+    });
+    const visibleKeys = new Set(visibleFieldsForPayload(previewDefinition, payloadByKey).map((field) => field.key));
+    return new Set(
+      questions
+        .filter((question, index) => {
+          const key = previewDefinition.fields[index]?.key;
+          return key ? visibleKeys.has(key) : true;
+        })
+        .map((question) => question.id),
+    );
+  }, [questions, previewDefinition, previewValues]);
+  const hiddenPreviewCount = questions.length - visibleQuestionIds.size;
+  const saveIndicator = formatDraftSaveIndicator(draftSaveState, draftSavedAt, nowMs);
 
   if (loadError && !payload) {
     return (
@@ -834,14 +1409,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
     return <FormBuilderShell orgId={orgId} shell="loading" entryType={type} />;
   }
 
-  const currentSchema = payload.schemas.find((schema) => schema.type === type);
-  const publishStatus = resolveDraftPublishStatus({
-    published: currentSchema
-      ? { version: currentSchema.version, definition: currentSchema.definition }
-      : null,
-    draftTitle: title,
-    draftQuestions: questions,
-  });
   const shell = classifyFormBuilderShell({
     orgId,
     eventKey: payload.eventKey,
@@ -870,6 +1437,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const coverageHref = withOrgHref("/scouting/lineup", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
+  const canManage = payload.canManageSchemas;
 
   if (shell === "setup") {
     return (
@@ -895,6 +1463,14 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />
+          {canManage ? (
+            <span className={`sfb-autosave sfb-autosave-${draftSaveState}`} role="status" aria-live="polite">
+              {saveIndicator}
+            </span>
+          ) : null}
+          <button type="button" className="app-button secondary" disabled={!canManage} onClick={openStartFrom}>
+            Start from…
+          </button>
           <button
             type="button"
             className="app-button"
@@ -916,6 +1492,11 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           title={formBuilderShellCopy("empty", { entryType: type }).title}
           description={formBuilderShellCopy("empty", { entryType: type }).description}
         >
+          {canManage ? (
+            <button type="button" className="app-button" onClick={openStartFrom}>
+              Start from last season or a template
+            </button>
+          ) : null}
           <a className="app-button secondary" href={scoutingHref}>
             Open Scouting
           </a>
@@ -944,6 +1525,21 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         ]}
       />
 
+      {startFromOpen ? (
+        <StartFromDrawer
+          entryType={type}
+          year={year}
+          catalog={catalog}
+          busy={busy}
+          canManage={canManage}
+          onClose={() => setStartFromOpen(false)}
+          onLastSeason={() => void startFromLastSeason()}
+          onApply={(source) => void applyTemplate(source)}
+          onDeleteTemplate={(templateId) => void deleteTemplate(templateId)}
+          onReload={() => void loadCatalog()}
+        />
+      ) : null}
+
       <div
         className={`sfb-status sfb-status-${publishStatus.kind}`}
         role="status"
@@ -953,10 +1549,20 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         <small className="app-muted">{publishStatus.detail}</small>
       </div>
 
+      {resumedDraft ? (
+        <p className="sfb-message sfb-resumed" role="status">
+          Resumed your unsaved {type} draft
+          {draftSavedAt ? ` from ${new Date(draftSavedAt).toLocaleString()}` : ""}.{" "}
+          <button type="button" className="sfb-inline-button" disabled={busy} onClick={() => void discardDraft()}>
+            Discard it and reload the published form
+          </button>
+        </p>
+      ) : null}
+
       {publishBlocked && payload.canManageSchemas ? (
         <p className="sfb-publish-blocked" role="status">
           {publishBlocked}
-          {!payload.eventKey || year == null ? (
+          {year == null ? (
             <>
               {" "}
               <a href={commandHref}>Set active event</a>
@@ -980,7 +1586,16 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
             maxLength={80}
           />
         </FormRow>
-        <FormRow label="Season year">
+        <FormRow
+          label="Season year"
+          hint={
+            payload.yearSource === "season"
+              ? "No active event yet — authoring for the upcoming season"
+              : payload.eventKey
+                ? `From active event ${payload.eventKey}`
+                : undefined
+          }
+        >
           <input value={year ?? "—"} readOnly aria-readonly />
         </FormRow>
         <FormRow label="View">
@@ -1037,7 +1652,12 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           {mode === "preview" ? (
             <>
               <h2>{title || "Untitled form"}</h2>
-              <p className="app-muted">Tablet preview — answers are not saved here.</p>
+              <p className="app-muted">
+                Tablet preview — answers are not saved here.
+                {hiddenPreviewCount
+                  ? ` ${hiddenPreviewCount} question${hiddenPreviewCount === 1 ? "" : "s"} hidden by “show only when” — answer the controlling questions to reveal them.`
+                  : ""}
+              </p>
               <div className="sfb-identity-lock" role="status">
                 <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
                 <strong>Signed-in member</strong>
@@ -1046,10 +1666,29 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 </small>
               </div>
               <div className="sfb-preview-fields">
-                {questions.map((question) => (
-                  <PreviewField key={question.id} question={question} />
-                ))}
+                {questions
+                  .filter((question) => visibleQuestionIds.has(question.id))
+                  .map((question) => (
+                    <PreviewField
+                      key={question.id}
+                      question={question}
+                      value={previewValues[question.id]}
+                      onChange={(value) =>
+                        setPreviewValues((prev) => {
+                          const next = { ...prev };
+                          if (value === undefined) delete next[question.id];
+                          else next[question.id] = value;
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
               </div>
+              {Object.keys(previewValues).length ? (
+                <button type="button" className="app-button secondary" onClick={() => setPreviewValues({})}>
+                  Clear preview answers
+                </button>
+              ) : null}
             </>
           ) : (
             <>
@@ -1073,6 +1712,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                         ) : (
                           <span className="sfb-optional-badge">Optional</span>
                         )}
+                        {question.visibleWhen ? <span className="sfb-conditional-badge">Conditional</span> : null}
                       </strong>
                       <div className="sfb-question-actions">
                         <button
@@ -1094,9 +1734,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                         <button
                           type="button"
                           disabled={!payload.canManageSchemas || questions.length <= 1}
-                          onClick={() =>
-                            setQuestions((prev) => prev.filter((entry) => entry.id !== question.id))
-                          }
+                          onClick={() => removeQuestion(question.id)}
                         >
                           Remove
                         </button>
@@ -1210,6 +1848,79 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                             ))}
                           </select>
                         </FormRow>
+                        <FormRow
+                          label="Show only when"
+                          hint={
+                            question.visibleWhen
+                              ? "Hidden while the condition is false — a hidden required question never blocks a save."
+                              : "Always shown. Pick a controlling question to make this conditional."
+                          }
+                        >
+                          <div className="sfb-condition">
+                            <select
+                              value={question.visibleWhen?.questionId ?? ""}
+                              disabled={!payload.canManageSchemas}
+                              aria-label={`Controlling question for question ${index + 1}`}
+                              onChange={(event) => {
+                                const questionId = event.target.value;
+                                updateQuestion(question.id, {
+                                  visibleWhen: questionId
+                                    ? {
+                                        questionId,
+                                        op: question.visibleWhen?.op ?? "truthy",
+                                        value: question.visibleWhen?.value,
+                                      }
+                                    : undefined,
+                                });
+                              }}
+                            >
+                              <option value="">Always shown</option>
+                              {conditionControllerCandidates(questions, question.id).map((candidate) => (
+                                <option key={candidate.id} value={candidate.id}>
+                                  {candidate.label || "Untitled"}
+                                </option>
+                              ))}
+                            </select>
+                            {question.visibleWhen ? (
+                              <>
+                                <select
+                                  value={question.visibleWhen.op}
+                                  disabled={!payload.canManageSchemas}
+                                  aria-label={`Condition for question ${index + 1}`}
+                                  onChange={(event) =>
+                                    updateQuestion(question.id, {
+                                      visibleWhen: {
+                                        ...question.visibleWhen!,
+                                        op: event.target.value as FieldVisibilityOp,
+                                      },
+                                    })
+                                  }
+                                >
+                                  {VISIBILITY_OP_OPTIONS.map((option) => (
+                                    <option key={option.op} value={option.op}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                {VISIBILITY_OP_OPTIONS.find((option) => option.op === question.visibleWhen!.op)
+                                  ?.needsValue ? (
+                                  <ConditionValueInput
+                                    controller={questions.find(
+                                      (candidate) => candidate.id === question.visibleWhen!.questionId,
+                                    )}
+                                    value={question.visibleWhen.value ?? ""}
+                                    disabled={!payload.canManageSchemas}
+                                    onChange={(value) =>
+                                      updateQuestion(question.id, {
+                                        visibleWhen: { ...question.visibleWhen!, value },
+                                      })
+                                    }
+                                  />
+                                ) : null}
+                              </>
+                            ) : null}
+                          </div>
+                        </FormRow>
                         <label
                           className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}
                         >
@@ -1225,7 +1936,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                             <strong>Required</strong>
                             <small className="app-muted">
                               {question.required
-                                ? "Scouts must answer before save"
+                                ? question.visibleWhen
+                                  ? "Scouts must answer when it is shown"
+                                  : "Scouts must answer before save"
                                 : "Optional — scouts can skip"}
                             </small>
                           </span>
@@ -1298,7 +2011,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               {publishStatus.kind === "unpublished"
                 ? "Scouts will not see this form until you publish. Then open Scouting or Coverage."
                 : publishStatus.kind === "draft_changes"
-                  ? "Live scouting keeps the published version until you publish these edits."
+                  ? "Live scouting keeps the published version until you publish these edits. Your draft autosaves here and resumes on any device."
                   : "This draft matches the live form. Republish only if you need a new version pin."}
             </p>
             {currentSchema ? (
@@ -1315,7 +2028,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                   <button
                     type="button"
                     className="app-button secondary"
-                    onClick={() => loadSchemaIntoDraft(currentSchema, type)}
+                    onClick={() => loadSchemaIntoDraft(currentSchema, type, null)}
                   >
                     Load
                   </button>
@@ -1346,6 +2059,33 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
                 Open Coverage
               </a>
             </div>
+          </Panel>
+          <Panel>
+            <h2>Templates</h2>
+            <p className="app-muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
+              Keep this draft to start next season from it. Built-in starters come from the game pack.
+            </p>
+            <div className="sfb-template-save">
+              <input
+                value={templateName}
+                disabled={!canManage || busy}
+                maxLength={80}
+                placeholder={`e.g. ${year ?? ""} ${type} v1`.trim()}
+                aria-label="Template name"
+                onChange={(event) => setTemplateName(event.target.value)}
+              />
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={!canManage || busy || !templateName.trim() || !questions.length}
+                onClick={() => void saveAsTemplate()}
+              >
+                Save as template
+              </button>
+            </div>
+            <button type="button" className="app-button secondary" disabled={!canManage} onClick={openStartFrom}>
+              Start from…
+            </button>
           </Panel>
           <Panel>
             <h2>Answer types</h2>

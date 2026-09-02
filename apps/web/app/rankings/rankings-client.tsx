@@ -141,10 +141,18 @@ export default function RankingsClient() {
 
   useEffect(() => {
     void load();
+    // Battery-safe polling: paused while the tab is hidden, refreshed the moment it returns.
     const timer = window.setInterval(() => {
-      void load();
+      if (document.visibilityState !== "hidden") void load();
     }, 60_000);
-    return () => window.clearInterval(timer);
+    const onVisibility = () => {
+      if (document.visibilityState !== "hidden") void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
   if (!view) {

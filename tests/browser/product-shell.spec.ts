@@ -5,7 +5,7 @@ test.beforeEach(async ({ context }) => {
     {
       name: "vantage-e2e-session",
       value: "authenticated",
-      url: "http://localhost:3310",
+      url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3310",
       httpOnly: true,
       sameSite: "Lax",
     },
@@ -25,11 +25,11 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.goto("/dashboard");
   // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Edit mode")).toBeVisible();
+  await expect(page.locator(".dash-edit-flag")).toBeVisible();
   await expect(page.locator(".dash-editor-bar")).toBeVisible();
   await expect(page.getByTestId("dash-catalog-inline").locator("button").first()).toBeVisible();
   await expect(page.getByTestId("dash-preview")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reset" }).first()).toBeVisible();
   await expect(page.getByTestId("dash-open-library")).toBeVisible();
   await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByTestId("dash-customize")).toBeVisible();
@@ -55,7 +55,8 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   expect(box).toBeTruthy();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box!.x - 280, box!.y + 90, { steps: 20 });
+  // The card starts in column 0, so drag right (and down) to guarantee a new cell.
+  await page.mouse.move(box!.x + 360, box!.y + 90, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   await page.mouse.up();
   await expect
@@ -89,18 +90,35 @@ test("product shell keeps a four-app island on phone and desktop", async ({ page
   await page.getByRole("button", { name: "Open navigation" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
-  await drawer.getByRole("button", { name: "Competition" }).click();
+  // Two levels only: every hub row is a link, and the active hub shows its
+  // workbench chips inline — no third tier, no "More tools" dump.
+  await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Team", exact: true })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Build", exact: true })).toBeVisible();
+  await expect(drawer.getByRole("navigation", { name: "Quick actions" })).toBeVisible();
+  await expect(drawer.locator(".soft-drawer-foot a").first()).toContainText("Account");
+  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await drawer.getByRole("button", { name: "Close navigation" }).click();
+
+  await page.goto("/competition");
+  await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
-  await expect(drawer.locator(".soft-drawer-foot a").first()).toHaveText("Account");
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await page.getByRole("button", { name: "Close navigation" }).click();
+  await drawer.getByRole("button", { name: "Close navigation" }).click();
 
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
+  // Laptops get the persistent sidebar; the hamburger collapses it to a rail.
+  const sidebar = page.getByRole("navigation", { name: "Product navigation sidebar" });
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: "Competition", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(sidebar).toHaveClass(/is-collapsed/);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(sidebar).not.toHaveClass(/is-collapsed/);
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
@@ -111,11 +129,12 @@ test("onboarding route is reachable when authenticated fixture skips incomplete 
 
 test("account route renders settings tabs and notification badge stays empty at zero", async ({ page }) => {
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Account", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Appearance" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Integrations" })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your settings", exact: true }).first()).toBeVisible();
+  // The fixture has no real session, so the profile API answers 401 and the page
+  // shows its honest signed-out card; the settings navigation must still be reachable.
+  await expect(page.getByRole("link", { name: "Appearance", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Security", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in again" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 
@@ -130,8 +149,11 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
 
 test("code route reviews fixtures via interactive workbench", async ({ page }) => {
   await page.goto("/code");
-  await expect(page.getByRole("heading", { name: "FRC Code Builder / Debugger" })).toBeVisible();
-  await page.getByRole("button", { name: "Run risk review" }).click();
-  await expect(page.getByText("blocking robot loop")).toBeVisible();
-  await expect(page.getByText("Review complete.")).toBeVisible();
+  // /code lands inside the Build hub, which owns the page header; the Code tab is the anchor.
+  await expect(page.getByRole("tab", { name: "Code", exact: true })).toBeVisible();
+  // The pattern review is org-scoped, so the fixture (no team) gets the honest
+  // setup card instead of a workbench that would have to invent a team.
+  await expect(page.getByRole("heading", { name: "Choose a team" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Choose team" })).toBeVisible();
+  await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });

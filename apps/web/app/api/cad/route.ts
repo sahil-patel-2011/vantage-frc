@@ -35,7 +35,7 @@ import {
   type ContextSource,
 } from "@vantage/agent";
 import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
-import { createKms, decryptSecret, encryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
+import { createKms, decryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
 import {
@@ -43,6 +43,8 @@ import {
   parseCadTeamProfile,
   parseCadUserPreferences,
 } from "../../../lib/cad/adaptive-context";
+import { findOnshapeConnection, persistRotatedOnshapeTokens } from "../../../lib/cad/onshape-tokens";
+import { saveExportToCadVault } from "../../../lib/cad-vault/store-version";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 async function current() {
@@ -52,35 +54,43 @@ async function current() {
 }
 const fail = (error: unknown) => failMeteredAi(error, "CAD request failed");
 
+/**
+ * Per-user connection first, then the org's shared team connection
+ * (0493_cad_team_connections.sql). Env API keys are the agent route's third
+ * fallback; this legacy job pipeline is OAuth-only.
+ */
 async function loadOnshapeTokens(
   client: PoolClient,
   orgId: string,
   userId: string,
-): Promise<{ connectionId: string; tokens: OnshapeTokenSet }> {
+): Promise<{ connectionId: string; tokens: OnshapeTokenSet; team: boolean }> {
   const config = getOnshapeOAuthConfig();
   if (!config) throw new Error("Onshape OAuth is not configured (setup required)");
-  const row = (
-    await client.query<{ id: string; encrypted_credentials: string }>(
-      `SELECT id,encrypted_credentials FROM cad_connections
-       WHERE org_id=$1 AND user_id=$2 AND platform='onshape' AND status='connected' AND disabled_at IS NULL
-       ORDER BY updated_at DESC LIMIT 1`,
-      [orgId, userId],
-    )
-  ).rows[0];
-  if (!row?.encrypted_credentials) throw new Error("Connect Onshape OAuth in CAD Connections first");
+  const row = await findOnshapeConnection(client, orgId, userId);
+  if (!row?.encrypted_credentials) {
+    throw new Error("Connect Onshape OAuth in CAD Connections first (or ask an owner/admin to share a team connection)");
+  }
   let tokens = JSON.parse(
     await decryptSecret(JSON.parse(row.encrypted_credentials) as EncryptedSecret, createKms()),
   ) as OnshapeTokenSet;
   if (tokens.expiresAt < Date.now() + 60_000) {
     tokens = await refreshOnshapeToken(config, tokens.refreshToken);
-    const encrypted = await encryptSecret(JSON.stringify(tokens), createKms());
-    await client.query(
-      `UPDATE cad_connections SET encrypted_credentials=$2,last_tested_at=now(),updated_at=now() WHERE id=$1`,
-      [row.id, JSON.stringify(encrypted)],
-    );
+    // rotate_cad_connection_credentials() (0493): persists for members on the team
+    // row too, and keeps the sharer's copy and the team copy on the same refresh token.
+    await persistRotatedOnshapeTokens(client, row.id, tokens);
   }
-  return { connectionId: row.id, tokens };
+  return { connectionId: row.id, tokens, team: row.user_id === null };
 }
+
+async function callerRole(client: PoolClient, orgId: string, userId: string): Promise<string> {
+  const result = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid LIMIT 1`,
+    [orgId, userId],
+  );
+  return result.rows[0]?.role ?? "";
+}
+
+const TEAM_CONNECTION_LABEL = "Onshape (shared with team)";
 
 /**
  * CAD planning can reach a real upstream model (BYOK/hosted adapter). A bridged turn (a paired device with
@@ -158,13 +168,16 @@ export async function GET(request: Request) {
             [orgId],
           )
         ).rows,
+        // Own rows plus the org's team row (user_id IS NULL), which RLS lets every member read.
         onshapeConnections: (
           await client.query(
-            `SELECT id,status,label,last_tested_at AS "lastTestedAt" FROM cad_connections
-             WHERE org_id=$1 AND user_id=$2 AND platform='onshape' AND disabled_at IS NULL ORDER BY updated_at DESC LIMIT 5`,
+            `SELECT id,status,label,last_tested_at AS "lastTestedAt",(user_id IS NULL) AS "shared" FROM cad_connections
+             WHERE org_id=$1::uuid AND (user_id=$2::uuid OR user_id IS NULL) AND platform='onshape' AND disabled_at IS NULL
+             ORDER BY (user_id IS NULL) ASC, updated_at DESC LIMIT 5`,
             [orgId, session.user.id],
           )
         ).rows,
+        canManageTeamConnection: ["owner", "admin"].includes(await callerRole(client, orgId, session.user.id)),
         adaptive: await loadCadAdaptiveContext(client, orgId, session.user.id),
       };
     });
@@ -530,10 +543,31 @@ export async function POST(request: Request) {
           throw new Error("Select an Onshape document/workspace/element before execute");
         }
         const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const documentRef = job.document_ref;
         const adapter = new OnshapeHostedCadAdapter(
           createOnshapeApiTransport({
             http: createOnshapeHttp(tokens.accessToken),
-            document: job.document_ref,
+            document: documentRef,
+            // Exports land in the CAD vault as real versions (same path as the agent tools).
+            onExport: async ({ file, title, changeNote }) => {
+              const saved = await saveExportToCadVault(client, {
+                orgId,
+                userId: session.user.id,
+                title: title || documentRef.label || "Part Studio export",
+                filename: file.filename,
+                bytes: file.bytes,
+                changeNote: changeNote ?? `Exported ${file.format.toUpperCase()} by CAD job ${String(body.jobId).slice(0, 8)}`,
+                externalUrl: `https://cad.onshape.com/documents/${documentRef.documentId}/w/${documentRef.workspaceId}/e/${documentRef.elementId}`,
+              });
+              return {
+                kind: "vault",
+                documentId: saved.documentId,
+                version: saved.version,
+                href: saved.href,
+                duplicate: saved.duplicate,
+                title: saved.title,
+              };
+            },
           }),
         );
         const executed = await repository.executeStep(
@@ -662,6 +696,64 @@ export async function POST(request: Request) {
           ],
         );
         return { success: true, stepId };
+      }
+      if (action === "share-onshape-connection") {
+        // Promote the caller's own Onshape OAuth connection to the org's team
+        // connection: a copy of the encrypted token row with user_id NULL. RLS
+        // (0493) enforces owner/admin for the insert as well as this check.
+        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
+        if (!["owner", "admin"].includes(await callerRole(client, orgId, session.user.id))) {
+          throw new Error("Owner or admin role required to share an Onshape connection with the team");
+        }
+        const own = (
+          await client.query<{ encrypted_credentials: string | null; scopes: string[]; external_account_ref: string | null }>(
+            `SELECT encrypted_credentials,scopes,external_account_ref FROM cad_connections
+             WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape' AND status='connected' AND disabled_at IS NULL
+             ORDER BY updated_at DESC LIMIT 1`,
+            [orgId, session.user.id],
+          )
+        ).rows[0];
+        if (!own?.encrypted_credentials) throw new Error("Connect your own Onshape OAuth first, then share it with the team");
+        const existing = (
+          await client.query<{ id: string }>(
+            `SELECT id FROM cad_connections WHERE org_id=$1::uuid AND user_id IS NULL AND platform='onshape' AND disabled_at IS NULL LIMIT 1`,
+            [orgId],
+          )
+        ).rows[0];
+        if (existing) {
+          await client.query(
+            `UPDATE cad_connections
+             SET encrypted_credentials=$3,scopes=$4::text[],status='connected',label=$5,external_account_ref=$6,last_tested_at=now(),updated_at=now()
+             WHERE id=$1::uuid AND org_id=$2::uuid AND user_id IS NULL`,
+            [existing.id, orgId, own.encrypted_credentials, own.scopes, TEAM_CONNECTION_LABEL, own.external_account_ref],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO cad_connections(org_id,user_id,platform,execution_mode,label,encrypted_credentials,scopes,status,external_account_ref,last_tested_at)
+             VALUES($1::uuid,NULL,'onshape','hosted',$2,$3,$4::text[],'connected',$5,now())`,
+            [orgId, TEAM_CONNECTION_LABEL, own.encrypted_credentials, own.scopes, own.external_account_ref],
+          );
+        }
+        await client.query(
+          `INSERT INTO cad_audit_events(org_id,actor_user_id,action,payload) VALUES($1::uuid,$2::uuid,'cad.connection.shared',$3::jsonb)`,
+          [orgId, session.user.id, JSON.stringify({ platform: "onshape", replaced: Boolean(existing) })],
+        );
+        return { success: true, shared: true };
+      }
+      if (action === "revoke-team-onshape-connection") {
+        if (!["owner", "admin"].includes(await callerRole(client, orgId, session.user.id))) {
+          throw new Error("Owner or admin role required to revoke the team Onshape connection");
+        }
+        const revoked = await client.query(
+          `UPDATE cad_connections SET status='disconnected',disabled_at=now(),updated_at=now()
+           WHERE org_id=$1::uuid AND user_id IS NULL AND platform='onshape' AND disabled_at IS NULL`,
+          [orgId],
+        );
+        await client.query(
+          `INSERT INTO cad_audit_events(org_id,actor_user_id,action,payload) VALUES($1::uuid,$2::uuid,'cad.connection.team_revoked',$3::jsonb)`,
+          [orgId, session.user.id, JSON.stringify({ platform: "onshape", rows: revoked.rowCount ?? 0 })],
+        );
+        return { success: true, revoked: revoked.rowCount ?? 0 };
       }
       if (action === "revoke-device") {
         await client.query(

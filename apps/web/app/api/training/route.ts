@@ -79,11 +79,15 @@ export async function POST(request: Request) {
 
   try {
     const view = await withRls({ userId, orgId }, async (client) => {
-      const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-        orgId,
-        userId,
-      ]);
+      const member = await client.query<{ role: string }>(
+        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+        [orgId, userId],
+      );
       if (!member.rowCount) throw new Error("forbidden");
+      // Skills and sign-offs are mentor-tier records: owner/admin only. Every
+      // member still reads the matrix (GET is unchanged).
+      const role = member.rows[0]!.role;
+      if (role !== "owner" && role !== "admin") throw new Error("mentor_required");
 
       switch (action) {
         case "add-skill": {
@@ -140,6 +144,12 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Training Matrix request failed";
+    if (message === "mentor_required") {
+      return Response.json(
+        { error: "Only an owner or admin can add skills or sign off certifications. Ask a mentor to record this." },
+        { status: 403 },
+      );
+    }
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

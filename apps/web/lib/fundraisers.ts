@@ -89,7 +89,14 @@ export type FundraiserAction =
   | { action: "create_event"; orgId: string; seasonYear: number; name: string; type: FundraiserType; eventDate: string; goalUsd: number | null; location: string; notes: string }
   | { action: "set_status"; orgId: string; id: string; status: FundraiserStatus }
   | { action: "record_proceeds"; orgId: string; id: string; amountUsd: number; note: string }
+  /** Money spent running the fundraiser (supplies, fees) — real money out (0504). */
+  | { action: "record_expense"; orgId: string; id: string; amountUsd: number; note: string }
   | { action: "delete_event"; orgId: string; id: string };
+
+/** Net a fundraiser actually raised after what it cost to run. */
+export function netProceedsUsd(proceedsUsd: number, expensesUsd: number): number {
+  return round2(Math.max(0, proceedsUsd) - Math.max(0, expensesUsd));
+}
 
 function reqStr(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} is required`);
@@ -118,6 +125,11 @@ export function parseFundraiserAction(raw: unknown): FundraiserAction {
     case "record_proceeds": {
       const amountUsd = Number(body.amountUsd);
       if (!Number.isFinite(amountUsd) || amountUsd <= 0) throw new Error("Proceeds amount must be greater than zero");
+      return { action, orgId, id: reqStr(body.id, "id"), amountUsd, note: typeof body.note === "string" ? body.note.trim() : "" };
+    }
+    case "record_expense": {
+      const amountUsd = Number(body.amountUsd);
+      if (!Number.isFinite(amountUsd) || amountUsd <= 0) throw new Error("Expense amount must be greater than zero");
       return { action, orgId, id: reqStr(body.id, "id"), amountUsd, note: typeof body.note === "string" ? body.note.trim() : "" };
     }
     case "delete_event":

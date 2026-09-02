@@ -6,6 +6,8 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, skillCategoryLabel, proficiencyLabel } from "../../lib/skills-graph";
 import type { SkillsGraphView } from "../../lib/skills-graph/compute-skills-graph";
 import type { ProficiencyLevel, SkillCategory } from "../../lib/skills-graph/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 type LiveView = Extract<SkillsGraphView, { status: "live" }>;
 
@@ -21,6 +23,8 @@ export default function SkillsGraphClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest render: "AI" only when a model produced it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
@@ -68,6 +72,8 @@ export default function SkillsGraphClient() {
           return;
         }
         setView(data);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -95,6 +101,8 @@ export default function SkillsGraphClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="skills_graph" />
 
       {fetchFailed ? (
         (() => {

@@ -99,7 +99,7 @@ describe("generateAgenda", () => {
       if (sql.includes("FROM build_tasks")) return { rows: [] };
       if (sql.includes("FROM decision_records")) return { rows: [] };
       if (sql.includes("FROM fmea_failures")) return { rows: [] };
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -123,7 +123,7 @@ describe("generateAgenda", () => {
     expect(agendaInsert?.params[5]).toBe(1); // blocker_count
     expect(agendaInsert?.params[6]).toBe(0); // overdue_task_count
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });
@@ -132,7 +132,7 @@ describe("draftMinutesActionItems", () => {
   it("parses bulleted minutes lines into persisted action items", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -150,7 +150,7 @@ describe("draftMinutesActionItems", () => {
       "General discussion about scouting schedule.",
     ].join("\n");
 
-    const count = await draftMinutesActionItems(client, {
+    const { count } = await draftMinutesActionItems(client, {
       orgId: ORG,
       userId: USER,
       agendaId: AGENDA_ID,

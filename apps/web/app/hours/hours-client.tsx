@@ -130,6 +130,85 @@ function ManualEntryForm({
   );
 }
 
+/**
+ * CSV export links. Downloads go straight to /api/hours?export=csv so the
+ * browser handles the file; the range is optional and inclusive.
+ */
+function ExportHours({
+  orgId,
+  members,
+  canAdmin,
+  selfId,
+}: {
+  orgId: string;
+  members: ReadyView["members"];
+  canAdmin: boolean;
+  selfId: string;
+}) {
+  const [userId, setUserId] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const href = (target: string) => {
+    const query = new URLSearchParams({ export: "csv", orgId });
+    if (target) query.set("userId", target);
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    return `/api/hours?${query.toString()}`;
+  };
+
+  return (
+    <section className="hours-export" aria-label="Export hours">
+      <h3>Export hours (CSV)</h3>
+      <div className="hours-form-grid">
+        <label className="hours-field">
+          <span>From</span>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label className="hours-field">
+          <span>To</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </label>
+        {canAdmin ? (
+          <label className="hours-field">
+            <span>Member</span>
+            <select value={userId} onChange={(e) => setUserId(e.target.value)}>
+              <option value="">Choose a member…</option>
+              {members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.name ?? "Member"}
+                  {member.userId === selfId ? " (me)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+      <div className="hours-header-actions">
+        <a className="app-button secondary" href={href("")} download>
+          Export my hours
+        </a>
+        {canAdmin ? (
+          <a
+            className="app-button secondary"
+            href={userId ? href(userId) : undefined}
+            aria-disabled={!userId}
+            download
+            onClick={(event) => {
+              if (!userId) event.preventDefault();
+            }}
+          >
+            Export member hours
+          </a>
+        ) : null}
+      </div>
+      <p className="app-muted" style={{ margin: 0 }}>
+        One row per session: date, clock in/out, minutes, kind, auto-closed flag, note, and linked calendar session.
+      </p>
+    </section>
+  );
+}
+
 function PolicyForm({
   orgId,
   policy,
@@ -534,6 +613,7 @@ export default function HoursClient() {
           <div className="hours-forms">
             <ManualEntryForm orgId={orgId} members={members} canAdmin={canAdmin} selfId={selfId} busy={busyKey === "manual"} run={run} />
             {canAdmin ? <PolicyForm orgId={orgId} policy={policy} busy={busyKey === "policy"} run={run} /> : null}
+            <ExportHours orgId={orgId} members={members} canAdmin={canAdmin} selfId={selfId} />
           </div>
           <h2>
             {showMyLog ? "My entries" : "Recent entries"}{" "}

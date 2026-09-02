@@ -1,7 +1,9 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import type { PoolClient } from "@neondatabase/serverless";
 import { awardCatalogEntry } from "../../../lib/awards";
+import { buildAwardExport, type AwardExport, type AwardExportItem, type AwardExportSubmission } from "../../../lib/awards-export";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -14,6 +16,51 @@ const fail = (error: unknown) =>
 const RETURNING = `id, season_year AS "seasonYear", event_key AS "eventKey", award_type AS "awardType", title,
   status, priority, deadline, owner_user_id AS "ownerUserId", summary, created_at AS "createdAt"`;
 
+/**
+ * `export` action: every answer of one submission as per-question plain text plus a JSON
+ * bundle (metadata + answers). Read-only, member-visible (award_items member_read policy).
+ */
+async function exportSubmission(client: PoolClient, orgId: string, submissionId: string): Promise<AwardExport> {
+  const submission = await client.query<AwardExportSubmission>(
+    `SELECT id, season_year AS "seasonYear", event_key AS "eventKey", award_type AS "awardType", title,
+            status::text AS status, priority, deadline::text AS deadline, summary, created_at::text AS "createdAt"
+     FROM award_submissions WHERE id=$1::uuid AND org_id=$2::uuid`,
+    [submissionId, orgId],
+  );
+  const row = submission.rows[0];
+  if (!row) throw new Error("Award submission not found");
+  const items = await client.query<AwardExportItem>(
+    `SELECT id, kind::text AS kind, prompt, content, char_limit AS "charLimit", done, sort_order AS "sortOrder"
+     FROM award_items WHERE org_id=$1::uuid AND submission_id=$2::uuid ORDER BY sort_order, id`,
+    [orgId, submissionId],
+  );
+  return buildAwardExport(
+    { ...row, seasonYear: Number(row.seasonYear) },
+    items.rows.map((item) => ({ ...item, charLimit: item.charLimit == null ? null : Number(item.charLimit), sortOrder: Number(item.sortOrder) })),
+    { awardName: awardCatalogEntry(row.awardType)?.name ?? row.title ?? row.awardType },
+  );
+}
+
+function exportResponse(result: AwardExport, format: string | null): Response {
+  if (format === "text") {
+    return new Response(result.text, {
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "content-disposition": `attachment; filename="${result.fileStem}.txt"`,
+      },
+    });
+  }
+  if (format === "json-file") {
+    return new Response(JSON.stringify(result.bundle, null, 2), {
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-disposition": `attachment; filename="${result.fileStem}.json"`,
+      },
+    });
+  }
+  return Response.json({ text: result.text, bundle: result.bundle, answers: result.answers, fileStem: result.fileStem });
+}
+
 export async function GET(request: Request) {
   try {
     const current = await session();
@@ -21,6 +68,14 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const seasonYear = url.searchParams.get("seasonYear");
     if (!orgId) throw new Error("orgId is required");
+    if (url.searchParams.get("action") === "export") {
+      const submissionId = url.searchParams.get("submissionId");
+      if (!submissionId) throw new Error("submissionId is required");
+      const result = await withRls({ userId: current.user.id, orgId }, (client) =>
+        exportSubmission(client, orgId, submissionId),
+      );
+      return exportResponse(result, url.searchParams.get("format"));
+    }
     const submissions = await withRls({ userId: current.user.id, orgId }, async (client) => {
       const result = await client.query(
         `SELECT id, season_year AS "seasonYear", event_key AS "eventKey", award_type AS "awardType", title,
@@ -48,8 +103,16 @@ export async function POST(request: Request) {
     const current = await session();
     const body = (await request.json()) as Record<string, unknown>;
     const orgId = String(body.orgId ?? "");
-    const awardType = String(body.awardType ?? "");
     if (!orgId) throw new Error("orgId is required");
+    if (body.action === "export") {
+      const submissionId = String(body.submissionId ?? "");
+      if (!submissionId) throw new Error("submissionId is required");
+      const result = await withRls({ userId: current.user.id, orgId }, (client) =>
+        exportSubmission(client, orgId, submissionId),
+      );
+      return exportResponse(result, typeof body.format === "string" ? body.format : null);
+    }
+    const awardType = String(body.awardType ?? "");
     if (!awardType) throw new Error("awardType is required");
     const seasonYear = Number(body.seasonYear ?? new Date().getFullYear());
     const catalogEntry = awardCatalogEntry(awardType);

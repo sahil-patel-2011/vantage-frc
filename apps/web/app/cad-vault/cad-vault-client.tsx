@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, ProgressMeter } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, Panel, ProgressMeter, ToolPage, useToast, type ShellState } from "../../components/ui";
 import { titleFromFilename } from "../../lib/cad-vault/filenames";
 import { detectCadFormat, type CadFormat } from "../../lib/cad-vault/format-detect";
 import { parseStl } from "../../lib/cad-vault/stl-geometry";
@@ -23,7 +23,7 @@ import {
   type CadVersionSummary,
   type SubsystemOption,
 } from "../../lib/cad-vault/view";
-import { withOrgHref } from "../../lib/nav/product-nav";
+
 
 const MAX_INLINE_PREVIEW_BYTES = 20 * 1024 * 1024; // above this, use the stored thumbnail
 
@@ -201,12 +201,13 @@ type PendingUpload = {
   format: CadFormat;
 };
 
-export default function CadVaultClient() {
+/** `embedded` (Build hub, `/build?tab=cad-vault`) drops the page chrome the hub already draws; orgId comes from the URL either way. */
+export default function CadVaultClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const toast = useToast();
   const [view, setView] = useState<CadVaultView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [seasonYear, setSeasonYear] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   // Upload panel state — everything stays in this one panel.
@@ -250,7 +251,6 @@ export default function CadVaultClient() {
   const acceptFile = useCallback(
     (file: File | null | undefined) => {
       setError("");
-      setNotice("");
       if (!file) return;
       void file.arrayBuffer().then((buffer) => {
         const bytes = new Uint8Array(buffer);
@@ -288,7 +288,6 @@ export default function CadVaultClient() {
     if (!pending || !orgId || busy) return;
     setBusy(true);
     setError("");
-    setNotice("");
     try {
       let documentId = targetDocumentId;
       if (!documentId) {
@@ -334,9 +333,9 @@ export default function CadVaultClient() {
         return;
       }
       if (result.body?.duplicate === true) {
-        setNotice(`Identical bytes are already stored as v${String(result.body.version)} — nothing was re-uploaded.`);
+        toast.info(`Identical bytes are already stored as v${String(result.body.version)} — nothing was re-uploaded.`);
       } else {
-        setNotice(`Stored ${String(result.body?.filename ?? pending.file.name)} as v${String(result.body?.version ?? "?")}.`);
+        toast.success(`Stored ${String(result.body?.filename ?? pending.file.name)} as v${String(result.body?.version ?? "?")}.`);
       }
       resetUploadPanel();
       setTargetDocumentId("");
@@ -344,7 +343,7 @@ export default function CadVaultClient() {
     } finally {
       setBusy(false);
     }
-  }, [pending, orgId, busy, targetDocumentId, uploadTitle, uploadKind, uploadSubsystem, uploadChangeNote, seasonYear, resetUploadPanel, load]);
+  }, [pending, orgId, busy, targetDocumentId, uploadTitle, uploadKind, uploadSubsystem, uploadChangeNote, seasonYear, resetUploadPanel, load, toast]);
 
   const patchDocument = useCallback(
     (documentId: string, payload: Record<string, unknown>) => {
@@ -375,7 +374,6 @@ export default function CadVaultClient() {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
-      setNotice("");
       void fetch(`/api/cad-vault/${documentId}/versions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -387,98 +385,86 @@ export default function CadVaultClient() {
             setError(data.error ?? "Could not restore that version.");
             return;
           }
-          setNotice(`Restored v${version} as new v${String(data.version ?? "?")}.`);
+          toast.success(`Restored v${version} as new v${String(data.version ?? "?")}.`);
           load(seasonYear);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
     },
-    [orgId, busy, load, seasonYear],
+    [orgId, busy, load, seasonYear, toast],
   );
 
   const description =
     "Versioned storage for STL, STEP, and vendor CAD files — bytes verified by magic numbers, linked to robot subsystems. Not a CAD editor: no Onshape sync and no STEP/IGES tessellation.";
 
-  if (view == null && !fetchFailed) {
-    return (
-      <main className="module-page cad-vault-page">
-        <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Loading" badgeTone="setup" title="Loading the vault…" description="Fetching your team's documents." aria-busy />
-      </main>
-    );
-  }
-
-  if (fetchFailed || view == null) {
-    return (
-      <main className="module-page cad-vault-page">
-        <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Unavailable" badgeTone="setup" title="Could not load the CAD vault" description="Check your connection and try again.">
-          <button type="button" className="app-button secondary" onClick={() => load(seasonYear)}>
-            Retry
-          </button>
-        </EmptyState>
-      </main>
-    );
-  }
-
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page cad-vault-page soft-gate">
-        <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team workspace first" description={view.message}>
-          {view.steps.map((step) => (
-            <a key={step.id} className="app-button" href={step.href}>
-              {step.label}
-            </a>
-          ))}
-        </EmptyState>
-      </main>
-    );
-  }
-
   const documents = ready?.documents ?? [];
   const subsystems = ready?.subsystems ?? [];
   const seasons = ready?.seasons ?? [];
+  const state: ShellState = fetchFailed
+    ? "error"
+    : view == null
+      ? "loading"
+      : view.status === "setup_required"
+        ? "setup"
+        : "ready";
 
   return (
-    <main className="module-page cad-vault-page">
-      <PageHeader
-        breadcrumbs={<><a href={withOrgHref("/build", orgId)}>Build</a>{" / CAD Vault"}</>}
-        title="CAD Vault"
-        description={description}
-      >
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {seasons.length > 1 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={seasonYear ?? ""}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeasonYear(next);
-                  load(next);
-                }}
-              >
-                {seasons.map((season) => (
-                  <option key={season} value={season}>
-                    {season}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <span className="app-badge">{formatBytes(ready?.totalBytes ?? 0)} of 2 GB</span>
-        </div>
-      </PageHeader>
-
+    <ToolPage
+      hub="build"
+      hubTab="cad-vault"
+      title="CAD Vault"
+      description={description}
+      embedded={embedded}
+      className="cad-vault-page"
+      orgId={orgId}
+      state={state}
+      error={{ message: "Could not load the CAD vault. Check your connection and try again." }}
+      onRetry={() => load(seasonYear)}
+      loading={
+        <EmptyState soft badge="Loading" badgeTone="setup" title="Loading the vault…" description="Fetching your team's documents." aria-busy />
+      }
+      setup={{
+        title: "Pick a team workspace first",
+        description: view?.status === "setup_required" ? view.message : undefined,
+        children:
+          view?.status === "setup_required"
+            ? view.steps.map((step) => (
+                <a key={step.id} className="app-button" href={step.href}>
+                  {step.label}
+                </a>
+              ))
+            : null,
+      }}
+      actions={
+        ready ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {seasons.length > 1 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={seasonYear ?? ""}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeasonYear(next);
+                    load(next);
+                  }}
+                >
+                  {seasons.map((season) => (
+                    <option key={season} value={season}>
+                      {season}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <span className="app-badge">{formatBytes(ready.totalBytes)} of 2 GB</span>
+          </div>
+        ) : undefined
+      }
+    >
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p className="telemetry-status" role="status">
-          {notice}
         </p>
       ) : null}
 
@@ -640,7 +626,6 @@ export default function CadVaultClient() {
               onRestore={restoreVersion}
               onUploadVersion={(id) => {
                 setTargetDocumentId(id);
-                setNotice("");
                 setError("");
                 fileInputRef.current?.click();
                 window.scrollTo({ top: 0, behavior: "smooth" });
@@ -666,7 +651,7 @@ export default function CadVaultClient() {
           </Panel>
         ) : null}
       </div>
-    </main>
+    </ToolPage>
   );
 }
 

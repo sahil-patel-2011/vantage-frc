@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { CadAdaptivePanel, type CadAdaptiveView } from "./cad-adaptive-panel";
+import { CadPlanReview, CadPlanRun, type PlanDecision, type PlanRunStep } from "./cad-plan-review";
+import { CadVaultPanel } from "./cad-vault-panel";
 import "./cad-agent.css";
 import "./cad-setup.css";
 import "./cad-activity.css";
@@ -20,9 +23,18 @@ type ChatMessage = { role: "user" | "assistant" | "tool"; text: string };
 
 type AgentMode = "simple" | "plan" | "multitask";
 
-type PlanStep = { index: number; title: string; detail: string };
+type PlanStep = {
+  index: number;
+  title: string;
+  detail: string;
+  tool?: string;
+  args?: Record<string, unknown>;
+  dryRun?: string;
+  sequence?: number;
+};
 
 type AgentPlan = {
+  planId: string;
   brief: string;
   steps: PlanStep[];
   questions: string[];
@@ -52,14 +64,19 @@ type ModeState = {
   mode: AgentMode;
   proposal: { mode: AgentMode; proposedAt: string; expiresAt: string } | null;
   plan: AgentPlan | null;
+  /** Per-step outcome of the approved plan, from cad_job_steps. */
+  planRun?: PlanRunStep[] | null;
   tasks: AgentTask[] | null;
 };
 
 type AgentState = {
   onshapeConfigured: boolean;
   onshapeConnected: boolean;
+  onshapeVia?: "oauth" | "team_oauth" | "api_key" | null;
   bound: BoundDoc | null;
   iframeUrl: string | null;
+  /** Shaded-view PNG endpoint for the bound Part Studio, or null when unbound / unconnected. */
+  viewUrl: string | null;
   openUrl: string | null;
   messages: ChatMessage[];
   /** Narrated build steps for this session, newest turn last. */
@@ -71,6 +88,7 @@ type ChatResponse = {
   error?: string;
   code?: string;
   text?: string;
+  tools?: Array<{ name: string; ok: boolean }>;
   messages?: ChatMessage[];
   steps?: AgentStep[];
   modeState?: ModeState | null;
@@ -362,6 +380,7 @@ const TOOL_GROUP_LABELS: Record<string, string> = {
   modify: "Modify",
   pattern: "Pattern",
   inspect: "Inspect",
+  export: "Export",
 };
 
 /**
@@ -466,6 +485,72 @@ const TASK_STATUS_LABELS: Record<AgentTask["status"], string> = {
   failed: "Failed",
 };
 
+type ViewState =
+  | { kind: "idle" }
+  | { kind: "loading"; src: string | null }
+  | { kind: "ready"; src: string; at: string }
+  | { kind: "unbound" }
+  | { kind: "setup_required"; message: string }
+  | { kind: "error"; message: string; src: string | null };
+
+/**
+ * The viewport: a server-fetched shaded-view PNG of the bound Part Studio
+ * (Onshape refuses to be framed). Fetched — not an <img src> — so a 404 / 503 /
+ * 502 from /api/cad/agent/view can be shown as its own honest state instead of
+ * a broken-image icon. Refreshed after every executed tool call and on demand.
+ */
+function useCadViewport(viewUrl: string | null) {
+  const [view, setView] = useState<ViewState>({ kind: "idle" });
+  const objectUrl = useRef<string | null>(null);
+  const inflight = useRef(0);
+
+  const refresh = useCallback(async () => {
+    if (!viewUrl) {
+      setView({ kind: "unbound" });
+      return;
+    }
+    const token = ++inflight.current;
+    setView((prev) => ({ kind: "loading", src: prev.kind === "ready" || prev.kind === "error" ? prev.src : null }));
+    try {
+      const response = await fetch(`${viewUrl}&t=${Date.now()}`, { cache: "no-store" });
+      if (token !== inflight.current) return;
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+        if (response.status === 404) setView({ kind: "unbound" });
+        else if (response.status === 503) setView({ kind: "setup_required", message: data.error ?? "Connect Onshape to render the viewport." });
+        else setView((prev) => ({ kind: "error", message: data.error ?? `Render failed (HTTP ${response.status})`, src: prev.kind === "loading" ? prev.src : null }));
+        return;
+      }
+      const blob = await response.blob();
+      if (token !== inflight.current) return;
+      const next = URL.createObjectURL(blob);
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+      objectUrl.current = next;
+      setView({ kind: "ready", src: next, at: new Date().toLocaleTimeString() });
+    } catch (error) {
+      if (token !== inflight.current) return;
+      setView((prev) => ({
+        kind: "error",
+        message: error instanceof Error ? error.message : "Could not load the viewport",
+        src: prev.kind === "loading" ? prev.src : null,
+      }));
+    }
+  }, [viewUrl]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(
+    () => () => {
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+    },
+    [],
+  );
+
+  return { view, refresh };
+}
+
 export default function CadWorkspace({
   orgId,
   tools = [],
@@ -478,7 +563,7 @@ export default function CadWorkspace({
   const [url, setUrl] = useState("");
   const [state, setState] = useState<AgentState | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [busy, setBusy] = useState<"load" | "bind" | "chat" | "mode" | null>("load");
+  const [busy, setBusy] = useState<"load" | "bind" | "chat" | "mode" | "plan" | null>("load");
   const [error, setError] = useState("");
   // Kept apart from bind/chat errors so an expired session offers sign-in, not a Retry that cannot work.
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
@@ -491,8 +576,13 @@ export default function CadWorkspace({
     message: string;
   } | null>(null);
   const [countdown, setCountdown] = useState(15);
+  // Legacy (narrative-only) plans are still edited inline and executed by the model.
   const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const [planAnswers, setPlanAnswers] = useState<string[]>([]);
+  const [planRunning, setPlanRunning] = useState(false);
+  const [sidePanel, setSidePanel] = useState<"viewport" | "files">("viewport");
+  const [vaultRefresh, setVaultRefresh] = useState(0);
+  const [adaptive, setAdaptive] = useState<CadAdaptiveView | null>(null);
   const answeringRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -549,9 +639,25 @@ export default function CadWorkspace({
     };
   }, [load]);
 
+  // Team standards + private copilot preferences (the adaptive panel); optional, never blocks the agent.
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`)
+      .then(async (response) => {
+        const data = (await response.json()) as { adaptive?: CadAdaptiveView };
+        if (!cancelled && response.ok && data.adaptive) setAdaptive(data.adaptive);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [state?.messages, busy]);
+
+  const { view, refresh: refreshView } = useCadViewport(state?.viewUrl ?? null);
 
   const modeState = state?.modeState ?? null;
   const mode: AgentMode = modeState?.mode ?? "simple";
@@ -559,6 +665,8 @@ export default function CadWorkspace({
     () => (modeState?.plan && !modeState.plan.approved ? modeState.plan : null),
     [modeState?.plan],
   );
+  const planHasTools = Boolean(plan?.steps.some((step) => step.tool && step.sequence));
+  const planRun = modeState?.plan?.approved && modeState.planRun?.length ? modeState.planRun : null;
 
   // A reload while a proposal is live re-renders the card from the stored
   // proposedAt/expiresAt; the server also treats anything older than 15s as declined.
@@ -569,16 +677,16 @@ export default function CadWorkspace({
     }
   }, [modeState?.proposal, pendingProposal]);
 
-  // Editable copies of the pending plan's steps and answers.
+  // Editable copies of a legacy plan's steps and answers.
   useEffect(() => {
-    if (plan) {
+    if (plan && !planHasTools) {
       setPlanSteps(plan.steps.map((step) => ({ ...step })));
       setPlanAnswers(plan.questions.map((_, index) => plan.answers[index] ?? ""));
     } else {
       setPlanSteps([]);
       setPlanAnswers([]);
     }
-  }, [plan]);
+  }, [plan, planHasTools]);
 
   function applyChatResponse(data: ChatResponse) {
     setState((prev) =>
@@ -593,6 +701,12 @@ export default function CadWorkspace({
     );
   }
 
+  /** After anything that may have changed geometry or saved a file. */
+  const afterBuild = useCallback(async () => {
+    setVaultRefresh((value) => value + 1);
+    await refreshView();
+  }, [refreshView]);
+
   async function bind() {
     setBusy("bind");
     setError("");
@@ -602,14 +716,14 @@ export default function CadWorkspace({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "bind", orgId, url }),
       });
-      const data = (await response.json()) as { error?: string; bound?: BoundDoc; iframeUrl?: string; openUrl?: string };
+      const data = (await response.json()) as { error?: string; bound?: BoundDoc; viewUrl?: string | null; openUrl?: string };
       if (!response.ok) throw new Error(data.error ?? "Bind failed");
       setState((prev) =>
         prev
           ? {
               ...prev,
               bound: data.bound ?? prev.bound,
-              iframeUrl: data.iframeUrl ?? prev.iframeUrl,
+              viewUrl: data.viewUrl ?? null,
               openUrl: data.openUrl ?? prev.openUrl,
             }
           : prev,
@@ -675,6 +789,7 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
+      if (data.tools?.length) await afterBuild();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -703,14 +818,17 @@ export default function CadWorkspace({
           throw new Error(data.error ?? "CAD agent failed");
         }
         applyChatResponse(data);
-        if (held.message) await load().catch(() => undefined);
+        if (held.message) {
+          await load().catch(() => undefined);
+          if (data.tools?.length) await afterBuild();
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "CAD agent failed");
       } finally {
         setBusy(null);
       }
     },
-    [orgId, pendingProposal, load],
+    [orgId, pendingProposal, load, afterBuild],
   );
 
   // 15-second countdown; expiry counts as No and the agent continues in the current mode.
@@ -726,7 +844,8 @@ export default function CadWorkspace({
     return () => clearInterval(id);
   }, [pendingProposal, respondProposal]);
 
-  async function approvePlan() {
+  /** Legacy narrative plans: the model executes them (kept for plans created before tool-call plans). */
+  async function approveLegacyPlan() {
     if (!plan) return;
     setBusy("chat");
     setError("");
@@ -753,6 +872,7 @@ export default function CadWorkspace({
       }
       applyChatResponse(data);
       await load().catch(() => undefined);
+      await afterBuild();
     } catch (err) {
       setError(err instanceof Error ? err.message : "CAD agent failed");
     } finally {
@@ -760,19 +880,144 @@ export default function CadWorkspace({
     }
   }
 
+  /**
+   * Run approved steps one request at a time so each step's status lands on
+   * screen and the viewport refreshes between them. Stops at the first failure;
+   * "Continue" / "Retry step" resume from the run panel.
+   */
+  const runPlanSteps = useCallback(
+    async (sequences: number[]) => {
+      if (!sequences.length) return;
+      setPlanRunning(true);
+      setError("");
+      setCutoffCode(null);
+      try {
+        for (const sequence of sequences) {
+          const response = await fetch("/api/cad/agent", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "execute-plan-step", orgId, sequence }),
+          });
+          const data = (await response.json()) as ChatResponse & { step?: PlanRunStep; done?: boolean };
+          if (!response.ok) {
+            setCutoffCode(resolveCutoffErrorCode(response.status, data));
+            throw new Error(data.error ?? "Plan step failed");
+          }
+          applyChatResponse(data);
+          await afterBuild();
+          if (data.step && data.step.status !== "completed") {
+            setError(`Stopped at step ${data.step.index}: ${data.step.error ?? "the tool did not complete"}. Fix the plan or retry the step.`);
+            break;
+          }
+          if (data.done) break;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Plan step failed");
+      } finally {
+        setPlanRunning(false);
+      }
+    },
+    [orgId, afterBuild],
+  );
+
+  const approvePlan = useCallback(
+    async (decisions: PlanDecision[], answers: string[]) => {
+      if (!plan) return;
+      setBusy("plan");
+      setError("");
+      try {
+        const response = await fetch("/api/cad/agent", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "approve-plan", orgId, planId: plan.planId, decisions, answers }),
+        });
+        const data = (await response.json()) as { error?: string; modeState?: ModeState };
+        if (!response.ok) throw new Error(data.error ?? "Could not approve the plan");
+        setState((prev) => (prev ? { ...prev, modeState: data.modeState ?? prev.modeState } : prev));
+        const run = data.modeState?.planRun ?? [];
+        const sequences = run.filter((step) => step.approvalStatus === "approved" && step.status === "planned").map((step) => step.sequence);
+        setBusy(null);
+        await runPlanSteps(sequences);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not approve the plan");
+        setBusy(null);
+      }
+    },
+    [orgId, plan, runPlanSteps],
+  );
+
+  const discardPlan = useCallback(async () => {
+    setBusy("plan");
+    setError("");
+    try {
+      const response = await fetch("/api/cad/agent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "discard-plan", orgId }),
+      });
+      const data = (await response.json()) as { error?: string; modeState?: ModeState };
+      if (!response.ok) throw new Error(data.error ?? "Could not discard the plan");
+      setState((prev) => (prev ? { ...prev, modeState: data.modeState ?? prev.modeState } : prev));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not discard the plan");
+    } finally {
+      setBusy(null);
+    }
+  }, [orgId]);
+
+  const continuePlan = useCallback(async () => {
+    const sequences = (planRun ?? [])
+      .filter((step) => step.approvalStatus === "approved" && step.status === "planned")
+      .map((step) => step.sequence);
+    await runPlanSteps(sequences);
+  }, [planRun, runPlanSteps]);
+
+  const retryPlanStep = useCallback(
+    async (sequence: number) => {
+      const rest = (planRun ?? [])
+        .filter((step) => step.sequence > sequence && step.approvalStatus === "approved" && step.status === "planned")
+        .map((step) => step.sequence);
+      await runPlanSteps([sequence, ...rest]);
+    },
+    [planRun, runPlanSteps],
+  );
+
+  const saveAdaptive = useCallback(
+    async (action: string, payload: Record<string, unknown>) => {
+      setError("");
+      try {
+        const response = await fetch("/api/cad", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orgId, action, ...payload }),
+        });
+        const data = (await response.json()) as { error?: string };
+        if (!response.ok) throw new Error(data.error ?? "Could not save CAD preferences");
+        const reload = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
+        const next = (await reload.json()) as { adaptive?: CadAdaptiveView };
+        if (reload.ok && next.adaptive) setAdaptive(next.adaptive);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not save CAD preferences");
+      }
+    },
+    [orgId],
+  );
+
   const onshapeOk = Boolean(state?.onshapeConnected || state?.onshapeConfigured);
   const boundOk = Boolean(state?.bound?.documentId);
   const connectionsHref = withOrgHref("/cad/connections", orgId);
-  const iframeUrl = state?.iframeUrl || state?.openUrl || "";
   const tasks = mode === "multitask" ? modeState?.tasks ?? null : null;
+  const anyBusy = busy !== null || planRunning;
 
   const composerHint = !onshapeOk
     ? "Connect Onshape first"
-    : mode === "plan"
-      ? "Plan mode: the agent plans and asks before building"
-      : mode === "multitask"
-        ? "Multitask mode: sub-tasks run one at a time"
-        : "Ctrl+Enter to send";
+    : planRunning
+      ? "Plan steps are running — wait for them to finish"
+      : mode === "plan"
+        ? "Plan mode: the agent proposes tool calls and you approve before anything runs"
+        : mode === "multitask"
+          ? "Multitask mode: sub-tasks run one at a time"
+          : "Ctrl+Enter to send";
 
   return (
     <main className="module-page cad-module cad-agent">
@@ -791,12 +1036,18 @@ export default function CadWorkspace({
             }}
           />
         </label>
-        <button className="app-button" type="button" disabled={!url.trim() || busy !== null} onClick={() => void bind()}>
+        <button className="app-button" type="button" disabled={!url.trim() || anyBusy} onClick={() => void bind()}>
           {busy === "bind" ? "Binding…" : "Bind"}
         </button>
         <div className="cad-agent-leds">
-          <span className={state?.onshapeConnected ? "on" : ""}>
-            {state?.onshapeConnected ? "Onshape connected" : "Onshape off"}
+          <span className={state?.onshapeConnected ? "on" : ""} title={state?.onshapeVia ? `via ${state.onshapeVia.replace("_", " ")}` : undefined}>
+            {state?.onshapeConnected
+              ? state.onshapeVia === "team_oauth"
+                ? "Onshape connected (team)"
+                : state.onshapeVia === "api_key"
+                  ? "Onshape connected (server keys)"
+                  : "Onshape connected"
+              : "Onshape off"}
           </span>
           {/* Name the bound document, not just "bound" — the first thing to check
               before an agent edits geometry is that it is the right Part Studio. */}
@@ -852,7 +1103,9 @@ export default function CadWorkspace({
           );
         })()
       ) : error ? (
-        <p className="cad-agent-error">{error}</p>
+        <p className="cad-agent-error" role="alert">
+          {error}
+        </p>
       ) : null}
 
       <div className="cad-agent-workspace">
@@ -866,7 +1119,7 @@ export default function CadWorkspace({
                   type="button"
                   className={`cad-mode-btn${mode === option ? " active" : ""}`}
                   aria-pressed={mode === option}
-                  disabled={busy !== null}
+                  disabled={anyBusy}
                   onClick={() => void setModeManual(option)}
                 >
                   {MODE_LABELS[option]}
@@ -882,9 +1135,13 @@ export default function CadWorkspace({
               </a>
               {!state?.onshapeConfigured ? (
                 <p className="cad-agent-hint">
-                  Server setup still required for OAuth. Until then this page will not invent geometry.
+                  Server setup still required: set <code>ONSHAPE_OAUTH_CLIENT_ID</code> and{" "}
+                  <code>ONSHAPE_OAUTH_CLIENT_SECRET</code> (or <code>ONSHAPE_ACCESS_KEY</code> /{" "}
+                  <code>ONSHAPE_SECRET_KEY</code>). Until then this page will not invent geometry.
                 </p>
-              ) : null}
+              ) : (
+                <p className="cad-agent-hint">An owner or admin can also share their connection with the whole team from Connections.</p>
+              )}
             </div>
           ) : null}
           <div className="cad-agent-log" ref={logRef}>
@@ -893,7 +1150,7 @@ export default function CadWorkspace({
                 Specify the part in millimetres. Bind the Onshape Part Studio, then send a brief. The agent sketches and
                 extrudes live — this is not a mock job.
                 {mode === "plan"
-                  ? " Plan mode: the agent writes a numbered build plan and asks its questions before touching Onshape."
+                  ? " Plan mode: the agent proposes the exact tool calls with a dry run of each; you approve all or some before anything touches Onshape."
                   : mode === "multitask"
                     ? " Multitask mode: the brief is split into a checklist of sub-tasks worked one at a time."
                     : ""}
@@ -919,13 +1176,13 @@ export default function CadWorkspace({
                   Continuing in {MODE_LABELS[mode]} mode in {countdown}s unless you choose.
                 </p>
                 <div className="cad-proposal-actions">
-                  <button className="app-button" type="button" disabled={busy !== null} onClick={() => void respondProposal(true)}>
+                  <button className="app-button" type="button" disabled={anyBusy} onClick={() => void respondProposal(true)}>
                     Yes, switch
                   </button>
                   <button
                     className="app-button secondary"
                     type="button"
-                    disabled={busy !== null}
+                    disabled={anyBusy}
                     onClick={() => void respondProposal(false)}
                   >
                     No, stay in {MODE_LABELS[mode]}
@@ -934,7 +1191,18 @@ export default function CadWorkspace({
               </div>
             ) : null}
 
-            {mode === "plan" && plan ? (
+            {plan && planHasTools ? (
+              <CadPlanReview
+                steps={plan.steps}
+                questions={plan.questions}
+                answers={plan.answers}
+                busy={anyBusy}
+                onApprove={approvePlan}
+                onDiscard={discardPlan}
+              />
+            ) : null}
+
+            {plan && !planHasTools ? (
               <div className="cad-plan-panel">
                 <b>Build plan — review before anything runs in Onshape</b>
                 <ol className="cad-plan-steps">
@@ -971,12 +1239,23 @@ export default function CadWorkspace({
                   </div>
                 ) : null}
                 <div className="cad-plan-actions">
-                  <button className="app-button" type="button" disabled={busy !== null} onClick={() => void approvePlan()}>
+                  <button className="app-button" type="button" disabled={anyBusy} onClick={() => void approveLegacyPlan()}>
                     Approve &amp; build
                   </button>
                   <span className="cad-agent-hint">Or send a message below to revise the plan.</span>
                 </div>
               </div>
+            ) : null}
+
+            {planRun ? (
+              <CadPlanRun
+                run={planRun}
+                running={planRunning}
+                busy={anyBusy}
+                onContinue={continuePlan}
+                onRetry={retryPlanStep}
+                onClear={discardPlan}
+              />
             ) : null}
 
             {tasks?.length ? (
@@ -1001,6 +1280,7 @@ export default function CadWorkspace({
             <CadStepPane steps={state?.steps ?? []} />
 
             {busy === "chat" ? <p className="cad-agent-hint">Working in Onshape…</p> : null}
+            {planRunning ? <p className="cad-agent-hint">Running approved plan steps in Onshape…</p> : null}
           </div>
           <div className="cad-agent-composer">
             <textarea
@@ -1008,7 +1288,7 @@ export default function CadWorkspace({
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="e.g. 80×50×6 mm plate, sketch on Top, extrude 6 mm."
-              disabled={pendingProposal !== null}
+              disabled={pendingProposal !== null || planRunning}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault();
@@ -1021,7 +1301,7 @@ export default function CadWorkspace({
               <button
                 className="app-button"
                 type="button"
-                disabled={!prompt.trim() || busy !== null || pendingProposal !== null}
+                disabled={!prompt.trim() || anyBusy || pendingProposal !== null}
                 onClick={() => void send()}
               >
                 {busy === "chat" ? "Sending…" : "Send"}
@@ -1032,27 +1312,98 @@ export default function CadWorkspace({
 
         <section className="cad-agent-viewport">
           <div className="cad-agent-col-head">
-            Viewport
-            {state?.openUrl ? (
-              <a href={state.openUrl} target="_blank" rel="noreferrer">
-                Open in Onshape
-              </a>
-            ) : (
-              <span>Onshape</span>
-            )}
+            <div className="cad-side-tabs" role="tablist" aria-label="Right pane">
+              <button
+                type="button"
+                role="tab"
+                className={`cad-side-tab${sidePanel === "viewport" ? " active" : ""}`}
+                aria-selected={sidePanel === "viewport"}
+                onClick={() => setSidePanel("viewport")}
+              >
+                Viewport
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`cad-side-tab${sidePanel === "files" ? " active" : ""}`}
+                aria-selected={sidePanel === "files"}
+                onClick={() => setSidePanel("files")}
+              >
+                Files
+              </button>
+            </div>
+            <span className="cad-side-actions">
+              {sidePanel === "viewport" ? (
+                <button
+                  type="button"
+                  className="cad-view-refresh"
+                  disabled={!state?.viewUrl || view.kind === "loading"}
+                  onClick={() => void refreshView()}
+                  title={view.kind === "ready" ? `Rendered ${view.at}` : undefined}
+                >
+                  {view.kind === "loading" ? "Rendering…" : "Refresh"}
+                </button>
+              ) : null}
+              {state?.openUrl ? (
+                <a href={state.openUrl} target="_blank" rel="noreferrer">
+                  Open in Onshape
+                </a>
+              ) : (
+                <span>Onshape</span>
+              )}
+            </span>
           </div>
-          {iframeUrl ? (
-            <iframe title="Onshape" src={iframeUrl} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+          {sidePanel === "files" ? (
+            <CadVaultPanel orgId={orgId} refreshKey={vaultRefresh} active={sidePanel === "files"} />
+          ) : view.kind === "ready" || (view.kind === "loading" && view.src) || (view.kind === "error" && view.src) ? (
+            <figure className={`cad-agent-view${view.kind === "loading" ? " is-loading" : ""}`}>
+              <img
+                src={view.kind === "ready" ? view.src : (view.src as string)}
+                alt={`Isometric shaded view of ${state?.bound?.documentName ?? "the bound Part Studio"}`}
+              />
+              <figcaption>
+                {view.kind === "ready"
+                  ? `Shaded view rendered by Onshape at ${view.at}. Refreshes after every tool call.`
+                  : view.kind === "error"
+                    ? `Last render kept — refresh failed: ${view.message}`
+                    : "Re-rendering…"}
+              </figcaption>
+            </figure>
+          ) : view.kind === "setup_required" ? (
+            <div className="cad-agent-empty-view">
+              <p>{view.message}</p>
+              <a className="app-button" href={connectionsHref}>
+                Connect Onshape
+              </a>
+            </div>
+          ) : view.kind === "error" ? (
+            <div className="cad-agent-empty-view">
+              <p>Onshape could not render this Part Studio: {view.message}</p>
+              <button type="button" className="app-button secondary" onClick={() => void refreshView()}>
+                Try again
+              </button>
+            </div>
+          ) : view.kind === "loading" ? (
+            <div className="cad-agent-empty-view">Rendering the Part Studio…</div>
+          ) : boundOk && !state?.onshapeConnected ? (
+            <div className="cad-agent-empty-view">
+              <p>Part Studio bound, but no Onshape connection to render it with. Connect Onshape or use Open in Onshape.</p>
+              <a className="app-button" href={connectionsHref}>
+                Connect Onshape
+              </a>
+            </div>
           ) : (
             <div className="cad-agent-empty-view">
-              No Part Studio yet. Paste an Onshape document URL and Bind — Onshape may block embedding; use Open in
-              Onshape if the frame stays blank.
+              No Part Studio bound. Paste an Onshape document URL above and click Bind — the viewport then shows a
+              live shaded view rendered by Onshape (Onshape does not allow embedding its editor).
             </div>
           )}
         </section>
       </div>
 
       <CadToolsPanel tools={tools} />
+
+      {adaptive ? <CadAdaptivePanel value={adaptive} busy={anyBusy} onSave={saveAdaptive} /> : null}
 
       <CadActivityPanel orgId={orgId} />
     </main>

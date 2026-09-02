@@ -256,7 +256,7 @@ export async function runLinkFlow(deps: LinkFlowDeps): Promise<LinkState> {
   }
 
   deps.onState({ phase: "exchanging" });
-  let exchange: { cookie: SessionCookiePayload } | null = null;
+  let exchange: { cookie: SessionCookiePayload } | null;
   try {
     const response = await deps.fetchJson("/api/desktop/link/exchange", { authCode, verifier });
     exchange = response.status === 200 ? parseExchangeResponse(response.json) : null;

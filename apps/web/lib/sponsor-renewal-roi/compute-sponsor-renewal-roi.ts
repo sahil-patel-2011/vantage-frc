@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { buildSponsorRoiSections, computeSponsorRenewalRiskScore, renderSponsorRoiHtml } from ".";
 import type { SponsorRenewalRiskScore, SponsorRenewalRoiReport, SponsorRenewalRoiSponsorSummary } from "./types";
 
@@ -237,13 +236,13 @@ export async function computeSponsorRenewalRoiView(
 /**
  * Generates a deterministic, sponsor-branded one-page ROI report grounded only in the
  * sponsor's recorded interactions, contributions, and community-impact mentions/evidence.
- * Wrapped in meteredAI so the run is billed and audited through the standard usage-ledger
+ * Rendered through renderWithModel (real model call, deterministic template fallback) so the run is billed and audited through the standard usage-ledger
  * path, matching every other metered feature (see grant-report / cad-brief).
  */
 export async function generateSponsorRoiReport(
   client: PoolClient,
   input: { orgId: string; userId: string; sponsorId: string; seasonYear: number },
-): Promise<SponsorRenewalRoiReport> {
+): Promise<SponsorRenewalRoiReport & { render: RenderOutcome }> {
   const sponsorRow = await client.query<{ name: string; tier: string; status: string }>(
     `SELECT name, tier::text AS tier, status::text AS status FROM sponsors WHERE id = $1 AND org_id = $2`,
     [input.sponsorId, input.orgId],
@@ -268,37 +267,32 @@ export async function generateSponsorRoiReport(
     mention,
   );
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter with the deterministic sections as fallback: each
+  // section body may be rewritten as sponsor-facing prose; headings, the risk score and every
+  // contribution / interaction / mention figure come from the sponsor's own records.
+  const { value: sections, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "sponsor_renewal_roi",
-    requestId: `sponsor-renewal-roi-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    value: buildSponsorRoiSections({
+      sponsorName: sponsor.name,
+      seasonYear: input.seasonYear,
+      risk,
+      totalContributionUsd: Number(contribution?.totalUsd ?? 0) || 0,
+      contributionCount: Number(contribution?.contributionCount ?? 0) || 0,
+      interactionCount12mo: Number(interaction?.count12mo ?? 0) || 0,
+      impactMentionCount12mo: Number(mention?.mentionCount ?? 0) || 0,
+      evidenceItemCount: Number(mention?.evidenceCount ?? 0) || 0,
+    }),
+    editableKeys: ["body"],
+    instructions: `Partnership ROI report for sponsor ${sponsor.name}, ${input.seasonYear} season (renewal risk tier: ${risk.tier}). Rewrite each section body as one short paragraph a sponsor contact would read, keeping every dollar amount, count and date exactly as given and adding no activities, mentions or outcomes not in the document.`,
     metadata: { sponsorId: input.sponsorId, seasonYear: input.seasonYear },
-    invoke: async () => {
-      const sections = buildSponsorRoiSections({
-        sponsorName: sponsor.name,
-        seasonYear: input.seasonYear,
-        risk,
-        totalContributionUsd: Number(contribution?.totalUsd ?? 0) || 0,
-        contributionCount: Number(contribution?.contributionCount ?? 0) || 0,
-        interactionCount12mo: Number(interaction?.count12mo ?? 0) || 0,
-        impactMentionCount12mo: Number(mention?.mentionCount ?? 0) || 0,
-        evidenceItemCount: Number(mention?.evidenceCount ?? 0) || 0,
-      });
-      const htmlContent = renderSponsorRoiHtml({ sponsorName: sponsor.name, seasonYear: input.seasonYear, sections });
-      return {
-        value: { sections, htmlContent },
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-sponsor-roi-v1",
-        provider: "vantage-local",
-      };
-    },
   });
+  const result = {
+    sections,
+    htmlContent: renderSponsorRoiHtml({ sponsorName: sponsor.name, seasonYear: input.seasonYear, sections }),
+  };
 
   const scoreInsert = await client.query<{ id: string }>(
     `INSERT INTO sponsor_renewal_roi_scores (org_id, sponsor_id, risk_score, risk_tier, components, season_year, computed_by)
@@ -337,6 +331,7 @@ export async function generateSponsorRoiReport(
 
   return {
     id: reportInsert.rows[0]!.id,
+    render,
     sponsorId: input.sponsorId,
     sponsorName: sponsor.name,
     seasonYear: input.seasonYear,

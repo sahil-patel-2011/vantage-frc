@@ -9,6 +9,7 @@ import {
   type FinanceBalanceView,
   type UnifiedLedgerEntry,
 } from "../../lib/finance/balance";
+import { grantOptionLabel } from "../../lib/finance/grant-options";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SEASON_FINANCE_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
@@ -143,6 +144,7 @@ export default function SeasonFinanceClient({
       paymentMethod: data.get("paymentMethod"),
       receiptUrl: data.get("receiptUrl"),
       notes: data.get("notes"),
+      grantApplicationId: data.get("grantApplicationId") || undefined,
     });
     if (ok) form.reset();
   }
@@ -267,7 +269,16 @@ function LiveDesk({
 
       <section className="biz-kpis" aria-label="Season cash plan">
         <Kpi label="Planned income" value={hasPlan ? money(rollup.plannedIncomeCents) : "—"} detail="Funding lines, or fundraising goals if none yet" />
-        <Kpi label="Received" value={money(rollup.receivedIncomeCents)} detail={`${money(rollup.fundingReceivedCents)} on this desk + CRM / grants / fundraisers`} tone="good" />
+        <Kpi
+          label="Received"
+          value={money(rollup.receivedIncomeCents)}
+          detail={
+            rollup.fundingReceivedSatelliteCents > 0
+              ? `${money(rollup.fundingReceivedCountedCents)} on this desk + CRM / grants / fundraisers · ${money(rollup.fundingReceivedSatelliteCents)} of sponsor/grant/fundraiser desk lines counted once from their own pages`
+              : `${money(rollup.fundingReceivedCountedCents)} on this desk + CRM / grants / fundraisers`
+          }
+          tone="good"
+        />
         <Kpi
           label="Still to raise"
           value={rollup.plannedSpendCents > 0 ? money(rollup.remainingToRaiseCents) : "—"}
@@ -465,6 +476,17 @@ function LiveDesk({
             <input name="amountDollars" type="number" min="0" step="0.01" required />
           </label>
           <label className="biz-field">
+            <span>Paid from grant</span>
+            <select name="grantApplicationId" defaultValue="">
+              <option value="">Not grant-funded</option>
+              {view.grants.map((grant) => (
+                <option key={grant.id} value={grant.id}>
+                  {grantOptionLabel(grant)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="biz-field">
             <span>How it was paid</span>
             <select name="paymentMethod" defaultValue="card">
               {PAYMENT_METHODS.map((method) => (
@@ -511,7 +533,10 @@ function LiveDesk({
                       </a>
                     ) : null}
                   </td>
-                  <td>{row.categoryName ?? "Uncategorized"}</td>
+                  <td>
+                    {row.categoryName ?? "Uncategorized"}
+                    {row.grantName ? <small style={{ display: "block" }}>Grant: {row.grantName}</small> : null}
+                  </td>
                   <td>
                     <strong>{money(row.amountCents)}</strong>
                   </td>

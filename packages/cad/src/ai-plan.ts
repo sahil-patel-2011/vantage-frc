@@ -84,7 +84,7 @@ export function cadAiPlanUserMessage(
     CAD_AGENT_SYSTEM_PROMPT,
     "",
     "Return ONLY a JSON array of objects with keys operation, parameters, reason.",
-    "Allowed operations: create_sketch, create_extrude, create_fillet, create_chamfer, create_shell, create_pattern, set_variable, create_assembly, feature_script, verify_topology, render_views, create_checkpoint, rollback_checkpoint, export_step, export_stl, export_gltf.",
+    "Allowed operations: create_sketch, create_extrude, create_fillet, create_chamfer, create_shell, create_pattern, set_variable, create_hole, create_mirror, delete_feature, feature_script, verify_topology, render_views, create_checkpoint, export_step, export_stl, export_gltf.",
     "Do not include shell, network, or file-system tools. Do not claim certified engineering.",
     `Preferred units: ${adaptive.units}. Preferred platform: ${adaptive.platform}.`,
     exportHint,

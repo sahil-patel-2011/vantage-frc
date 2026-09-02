@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertGrantInOrg, loadGrantOptions, type GrantOption } from "../finance/grant-options";
 import { recordMoney, removeMoney } from "../finance/ledger";
 import { budgetInsights, combineAllCosts, summarizeCosts, summarizeSubscriptions } from ".";
 import type {
@@ -55,6 +56,8 @@ export type CostsView =
       allCosts: AllCostsSummary;
       /** Automated finance-assistant output, or null when the org has not opted in. */
       insight: BudgetInsight | null;
+      /** Grants a cost can be tagged to (0504). */
+      grants: GrantOption[];
       computedAt: string;
     };
 
@@ -72,6 +75,8 @@ type CostRow = {
   incurredOn: string;
   status: CostStatus;
   notes: string | null;
+  grantApplicationId?: string | null;
+  grantName?: string | null;
 };
 type SubscriptionRow = {
   id: string;
@@ -99,6 +104,8 @@ function mapCost(row: CostRow): SeasonCost {
     incurredOn: row.incurredOn,
     status: row.status,
     notes: row.notes,
+    grantApplicationId: row.grantApplicationId ?? null,
+    grantName: row.grantName ?? null,
   };
 }
 
@@ -151,18 +158,22 @@ export async function computeCostsView(
     };
   }
 
-  const [budgetResult, costResult, subscriptionResult, apiUsageResult, seasonResult] = await Promise.all([
+  const [budgetResult, costResult, subscriptionResult, apiUsageResult, seasonResult, grants] = await Promise.all([
     client.query<BudgetRow>(
       `SELECT total_budget_usd AS "totalBudgetUsd", ai_assist_enabled AS "aiAssistEnabled", notes
        FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
       [org.orgId, seasonYear],
     ),
     client.query<CostRow>(
-      `SELECT id, label, category, amount_usd AS "amountUsd", vendor,
-              incurred_on::text AS "incurredOn", status, notes
-       FROM season_costs
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY incurred_on DESC, created_at DESC`,
+      `SELECT sc.id, sc.label, sc.category, sc.amount_usd AS "amountUsd", sc.vendor,
+              sc.incurred_on::text AS "incurredOn", sc.status, sc.notes,
+              sc.grant_application_id AS "grantApplicationId",
+              CASE WHEN sc.grant_application_id IS NULL THEN NULL ELSE COALESCE(go.name, 'Grant') END AS "grantName"
+       FROM season_costs sc
+       LEFT JOIN grant_applications ga ON ga.id = sc.grant_application_id
+       LEFT JOIN grant_opportunities go ON go.id = ga.grant_opportunity_id
+       WHERE sc.org_id = $1 AND sc.season_year = $2
+       ORDER BY sc.incurred_on DESC, sc.created_at DESC`,
       [org.orgId, seasonYear],
     ),
     client.query<SubscriptionRow>(
@@ -189,6 +200,7 @@ export async function computeCostsView(
        ) s ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    loadGrantOptions(client, org.orgId),
   ]);
 
   const budgetRow = budgetResult.rows[0];
@@ -226,6 +238,7 @@ export async function computeCostsView(
     apiUsageUsd,
     allCosts,
     insight,
+    grants,
     computedAt: new Date().toISOString(),
   };
 }
@@ -252,6 +265,7 @@ async function mirrorSeasonCost(
     incurredOn: string;
     status: CostStatus;
     userId?: string;
+    grantApplicationId?: string | null;
   },
 ): Promise<void> {
   if (cost.status === "paid" && cost.amountUsd > 0) {
@@ -265,6 +279,7 @@ async function mirrorSeasonCost(
       label: `Season cost — ${cost.label}${cost.vendor ? ` (${cost.vendor})` : ""}`,
       occurredAt: cost.incurredOn,
       createdBy: cost.userId ?? null,
+      grantApplicationId: cost.grantApplicationId ?? null,
     });
   } else {
     await removeMoney(client, { orgId: cost.orgId, source: "season_cost", sourceId: cost.costId });
@@ -307,11 +322,15 @@ export async function addCost(
     incurredOn: string;
     status: CostStatus;
     notes: string | null;
+    /** Optional grant to attribute this cost to (0504). */
+    grantApplicationId?: string | null;
   },
 ): Promise<void> {
+  const grantApplicationId = input.grantApplicationId ?? null;
+  if (grantApplicationId) await assertGrantInOrg(client, input.orgId, grantApplicationId);
   const inserted = await client.query<{ id: string }>(
-    `INSERT INTO season_costs (org_id, season_year, label, category, amount_usd, vendor, incurred_on, status, notes, created_by)
-     VALUES ($1,$2,$3,$4,$5::numeric,$6,$7::date,$8,$9,$10)
+    `INSERT INTO season_costs (org_id, season_year, label, category, amount_usd, vendor, incurred_on, status, notes, created_by, grant_application_id)
+     VALUES ($1,$2,$3,$4,$5::numeric,$6,$7::date,$8,$9,$10,$11::uuid)
      RETURNING id`,
     [
       input.orgId,
@@ -324,6 +343,7 @@ export async function addCost(
       input.status,
       input.notes,
       input.userId,
+      grantApplicationId,
     ],
   );
   const costId = inserted.rows[0]?.id;
@@ -338,6 +358,7 @@ export async function addCost(
       incurredOn: input.incurredOn,
       status: input.status,
       userId: input.userId,
+      grantApplicationId,
     });
   }
 }
@@ -354,8 +375,11 @@ export async function updateCost(
     incurredOn?: string;
     status?: CostStatus;
     notes?: string | null;
+    /** undefined = leave the tag alone; null = untag; uuid = retag (0504). */
+    grantApplicationId?: string | null;
   },
 ): Promise<void> {
+  if (input.grantApplicationId) await assertGrantInOrg(client, input.orgId, input.grantApplicationId);
   const updated = await client.query<{
     seasonYear: number;
     label: string;
@@ -363,6 +387,7 @@ export async function updateCost(
     vendor: string | null;
     incurredOn: string;
     status: CostStatus;
+    grantApplicationId: string | null;
   }>(
     `UPDATE season_costs SET
        label = COALESCE($3, label),
@@ -372,10 +397,11 @@ export async function updateCost(
        incurred_on = COALESCE($8::date, incurred_on),
        status = COALESCE($9, status),
        notes = CASE WHEN $10::boolean THEN $11 ELSE notes END,
+       grant_application_id = CASE WHEN $12::boolean THEN $13::uuid ELSE grant_application_id END,
        updated_at = now()
      WHERE id = $1 AND org_id = $2
      RETURNING season_year AS "seasonYear", label, amount_usd::text AS "amountUsd", vendor,
-               incurred_on::text AS "incurredOn", status`,
+               incurred_on::text AS "incurredOn", status, grant_application_id AS "grantApplicationId"`,
     [
       input.costId,
       input.orgId,
@@ -388,6 +414,8 @@ export async function updateCost(
       input.status ?? null,
       input.notes !== undefined,
       input.notes ?? null,
+      input.grantApplicationId !== undefined,
+      input.grantApplicationId ?? null,
     ],
   );
   const row = updated.rows[0];
@@ -403,6 +431,7 @@ export async function updateCost(
       vendor: row.vendor,
       incurredOn: row.incurredOn,
       status: row.status,
+      grantApplicationId: row.grantApplicationId ?? null,
     });
   }
 }

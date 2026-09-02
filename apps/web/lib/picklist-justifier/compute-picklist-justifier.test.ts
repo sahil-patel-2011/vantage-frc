@@ -10,6 +10,24 @@ const PICK_LIST = "33333333-3333-4333-8333-333333333333";
 const ENTRY_A = "44444444-4444-4444-8444-444444444444";
 const ENTRY_B = "55555555-5555-4555-8555-555555555555";
 
+// The AI render path is exercised in packages/agent/test/render.test.ts; here the org has no
+// provider, so the deterministic template stands in and the outcome says so honestly.
+vi.mock("../ai-render/render", async () => {
+  const actual = await vi.importActual<typeof import("../ai-render/render")>("../ai-render/render");
+  const render = { mode: "template" as const, fallbackReason: "no_provider", requestId: "render-test" };
+  return {
+    ...actual,
+    renderFeatureValue: vi.fn(async (input: { value: unknown }) => ({ value: input.value, render })),
+    renderFeatureText: vi.fn(async (input: { template: () => string }) => ({
+      ...render,
+      text: input.template(),
+      promptTokens: 0,
+      completionTokens: 0,
+      costUsd: 0,
+    })),
+  };
+});
+
 function mockClient(handler: (sql: string, params: unknown[]) => { rows: unknown[]; rowCount: number }): PoolClient {
   return {
     query: vi.fn((sql: string, params: unknown[] = []) => Promise.resolve(handler(sql, params))),
@@ -135,7 +153,7 @@ describe("computePicklistJustifierView", () => {
 });
 
 describe("generatePicklistJustifications", () => {
-  it("generates and persists source-cited rationale, metering usage via the local_cli path", async () => {
+  it("generates and persists source-cited rationale, reporting the template fallback honestly when no provider is configured", async () => {
     const queries: string[] = [];
     const client = mockClient((sql) => {
       queries.push(sql);
@@ -207,9 +225,11 @@ describe("generatePicklistJustifications", () => {
       const flagged = view.entries.find((e) => e.teamKey === "frc118");
       expect(flagged?.contradiction?.flagged).toBe(true);
     }
-    expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
-    expect(queries.some((q) => q.includes("INSERT INTO picklist_justifier_justifications"))).toBe(true);
-    // ...and the same rationale is written onto the unified pick-list row the board reads.
+    expect(view.render?.mode).toBe("template");
+    expect(view.render?.fallbackReason).toBe("no_provider");
+    // The legacy sidecar is no longer written — the rationale lives ONLY on the unified
+    // pick-list row the board and Pick Clock read (migration 0454).
+    expect(queries.some((q) => q.includes("INSERT INTO picklist_justifier_justifications"))).toBe(false);
     expect(queries.some((q) => q.includes("SET justification = $4::text"))).toBe(true);
   });
 

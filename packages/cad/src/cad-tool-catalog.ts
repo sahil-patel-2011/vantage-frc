@@ -37,7 +37,7 @@ export type CadToolSpec = {
   name: string;
   /** Short human label for the /cad tools panel. */
   label: string;
-  group: "session" | "sketch" | "solid" | "modify" | "pattern" | "inspect";
+  group: "session" | "sketch" | "solid" | "modify" | "pattern" | "inspect" | "export";
   description: string;
   params: CadToolParam[];
   onshape: CadPlatformSupport;
@@ -254,6 +254,47 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     mutating: true,
   },
   {
+    name: "onshape_sketch_slot",
+    label: "Sketch slot",
+    group: "sketch",
+    description:
+      "Add a straight slot (two lines closed by semicircular ends). lengthMm is end-to-end, widthMm is the slot width — the numbers a drawing calls out.",
+    params: [
+      mm("lengthMm", "Overall slot length in millimetres, end to end."),
+      mm("widthMm", "Slot width in millimetres (diameter of each rounded end)."),
+      { name: "centerXMm", type: "number", description: "Slot centre X in mm (default 0)." },
+      { name: "centerYMm", type: "number", description: "Slot centre Y in mm (default 0)." },
+      { name: "angleDeg", type: "number", description: "Long-axis direction in degrees from +X (default 0)." },
+      { name: "plane", type: "string", description: "Front, Top, or Right (default Top)." },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "The Fusion add-in sketches rectangles and circles only.",
+    mutating: true,
+  },
+  {
+    name: "onshape_sketch_polygon",
+    label: "Sketch polygon",
+    group: "sketch",
+    description:
+      "Add a regular polygon (3–24 sides) sized corner-to-corner or across flats — a hex for 1/2 in hex shaft is acrossFlatsMm 12.7.",
+    params: [
+      { name: "sides", type: "number", required: true, description: "Number of sides, 3–24." },
+      { name: "acrossFlatsMm", type: "number", description: "Size across flats in mm (preferred for hex/square)." },
+      { name: "circumscribedDiameterMm", type: "number", description: "Corner-to-corner diameter in mm (used when acrossFlatsMm is absent)." },
+      { name: "centerXMm", type: "number", description: "Centre X in mm (default 0)." },
+      { name: "centerYMm", type: "number", description: "Centre Y in mm (default 0)." },
+      { name: "rotationDeg", type: "number", description: "Rotation of the first vertex from +X in degrees (default 0)." },
+      { name: "plane", type: "string", description: "Front, Top, or Right (default Top)." },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "The Fusion add-in sketches rectangles and circles only.",
+    mutating: true,
+  },
+  {
     name: "onshape_extrude",
     label: "Extrude",
     group: "solid",
@@ -386,6 +427,73 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     fusion: "unsupported",
     fusionNote: "Mirror is Onshape-only in Vantage today.",
     mutating: true,
+  },
+  {
+    name: "onshape_shell",
+    label: "Shell",
+    group: "modify",
+    description:
+      "Hollow a solid to a wall thickness, opening the chosen faces. faces='top' opens the face on the sketch-plane normal (an open-top box), 'bottom', 'ends' (both), or 'all'.",
+    params: [
+      mm("thicknessMm", "Wall thickness in millimetres."),
+      { name: "featureId", type: "string", description: "Solid feature to shell (defaults to the last solid feature)." },
+      { name: "faces", type: "string", description: "'top' (default), 'bottom', 'ends', or 'all' — which faces to remove." },
+      { name: "faceIds", type: "array", description: "Explicit deterministic face ids (overrides faces).", items: { type: "string" } },
+      { name: "plane", type: "string", description: "Sketch plane the solid was built on, used to find the top/bottom faces (default Top)." },
+      { name: "oppositeDirection", type: "boolean", description: "Grow the wall outward instead of inward." },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Shell is Onshape-only in Vantage today.",
+    mutating: true,
+  },
+  {
+    name: "onshape_set_variable",
+    label: "Set variable",
+    group: "modify",
+    description:
+      "Add a Variable feature (#name) to the Part Studio's variable table — a LENGTH in mm, an ANGLE in degrees, or a unitless NUMBER — so later dimensions can reference it.",
+    params: [
+      { name: "variableName", type: "string", required: true, description: "Variable name without the #, e.g. wallThickness." },
+      { name: "value", type: "number", required: true, description: "Value: mm for LENGTH, degrees for ANGLE, unitless for NUMBER." },
+      { name: "variableType", type: "string", description: "LENGTH (default), ANGLE, or NUMBER." },
+      { name: "name", type: "string", description: "Feature name (defaults to #variableName)." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion user parameters are not exposed by the add-in yet.",
+    mutating: true,
+  },
+  {
+    name: "onshape_export_stl",
+    label: "Export STL",
+    group: "export",
+    description:
+      "Export the bound Part Studio as a binary STL in millimetres. Hosted: the real file is saved as a new version in the team CAD vault. Terminal: written under ~/.vantage-cad/exports.",
+    params: [
+      { name: "title", type: "string", description: "Vault document title (defaults to the bound element name)." },
+      { name: "changeNote", type: "string", description: "Version note stored with the file." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion exports are not exposed by the add-in yet.",
+    mutating: false,
+  },
+  {
+    name: "onshape_export_step",
+    label: "Export STEP",
+    group: "export",
+    description:
+      "Export the bound Part Studio as STEP through Onshape's translation service (polls until done). Hosted: saved as a new vault version. Terminal: written under ~/.vantage-cad/exports.",
+    params: [
+      { name: "title", type: "string", description: "Vault document title (defaults to the bound element name)." },
+      { name: "changeNote", type: "string", description: "Version note stored with the file." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion exports are not exposed by the add-in yet.",
+    mutating: false,
   },
   {
     name: "onshape_delete_feature",

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { buildKitItems, CHECKLIST_STATUSES, checklistRationale, summarizeChecklistItems } from ".";
 import type { ChecklistStatus, KitChecklistItem, SpareRobotKitChecklist } from "./types";
 
@@ -201,33 +200,33 @@ export async function computeSpareRobotKitView(
 export async function generateChecklist(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number; title: string },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const candidateItems = await loadCandidateItems(client, input.orgId, input.seasonYear);
 
-  const generated = await meteredAI({
+  const generated = candidateItems;
+  // The kit items are a deterministic FMEA-rate × inventory-bin computation; a real model
+  // call on the org's adapter writes the checklist rationale, with the template as fallback.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "spare_robot_kit",
-    requestId: `spare-robot-kit-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      candidateCount: candidateItems.length,
-      note: "Deterministic FMEA-rate x inventory-bin kit checklist computation — no external model call",
-    },
-    invoke: async () => ({
-      value: candidateItems,
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-spare-robot-kit-v1",
-      provider: "vantage-local",
-    }),
+    prompt: [
+      `Spare-robot kit checklist "${input.title}" for the ${input.seasonYear} season. Write the rationale as 1-2 plain sentences in the template's structure: how many spares matched FMEA repeat-failure history and how many are critical vs recommended.`,
+      "Use only these facts; invent no counts or part names:",
+      factsBlock({
+        itemCount: generated.length,
+        critical: generated.filter((item) => item.priority === "critical").length,
+        recommended: generated.filter((item) => item.priority === "recommended").length,
+        topItems: generated.slice(0, 5).map((item) => `${item.itemName} (${item.priority}, ${item.failureCount} failure(s))`),
+      }),
+      `Template: ${checklistRationale(generated)}`,
+    ].join("\n"),
+    template: () => checklistRationale(generated),
+    metadata: { seasonYear: input.seasonYear, candidateCount: candidateItems.length },
   });
-
-  const rationale = checklistRationale(generated);
+  const rationale = rendered.text;
+  const render = renderOutcomeOf(rendered);
 
   await client.query(
     `INSERT INTO spare_robot_kit_checklists (
@@ -235,6 +234,7 @@ export async function generateChecklist(
      ) VALUES ($1,$2,$3,$4::jsonb,$5,$6)`,
     [input.orgId, input.seasonYear, input.title, JSON.stringify(generated), rationale, input.userId],
   );
+  return render;
 }
 
 export async function togglePacked(

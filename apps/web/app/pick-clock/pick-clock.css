@@ -356,3 +356,9 @@
     gap: 2px;
   }
 }
+
+/* Record-a-pick strip under the hero: writes to THE pick list, then excludes the team. */
+.pck-record{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:14px}
+.pck-record label{display:grid;gap:4px;font:600 11px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted,#6b7280)}
+.pck-record select{min-height:40px;min-width:120px;padding:0 10px;border:1px solid var(--soft-line,#e5e7eb);border-radius:10px;background:var(--soft-card,#fff);color:inherit}
+.pck-record span{flex-basis:100%;font-size:12px}

@@ -107,6 +107,131 @@ export type FieldDefinition = {
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
 
 /* ------------------------------------------------------------------------- *
+ * Conditional visibility ("show only when").
+ *
+ * Persisted as `field.config.visibleWhen`. A hidden field is skipped by the
+ * required check in validatePayload so an offline entry never gets stuck in the
+ * sync outbox behind a question the scout could not see. Cycles fail OPEN (the
+ * field stays visible) so a bad condition can never silently drop a required
+ * answer. The entry renderers call the same evaluator via
+ * apps/web/lib/scouting/conditional.ts.
+ * ------------------------------------------------------------------------- */
+
+export type FieldVisibilityOp = "eq" | "neq" | "gt" | "lt" | "truthy";
+
+export const FIELD_VISIBILITY_OPS: readonly FieldVisibilityOp[] = ["eq", "neq", "gt", "lt", "truthy"];
+
+/** `config.visibleWhen` — show this field only when another field's answer matches. */
+export type FieldVisibilityCondition = {
+  fieldKey: string;
+  op: FieldVisibilityOp;
+  value?: unknown;
+};
+
+export function isFieldVisibilityOp(value: unknown): value is FieldVisibilityOp {
+  return typeof value === "string" && (FIELD_VISIBILITY_OPS as readonly string[]).includes(value);
+}
+
+/** Total reader: the stored condition, or null when absent / malformed. */
+export function visibleWhenOf(field: Pick<FieldDefinition, "config">): FieldVisibilityCondition | null {
+  const raw = field.config?.visibleWhen;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  const fieldKey = typeof record.fieldKey === "string" ? record.fieldKey.trim() : "";
+  if (!fieldKey || !isFieldVisibilityOp(record.op)) return null;
+  return { fieldKey, op: record.op, value: record.value };
+}
+
+function isAnswerTruthy(value: unknown): boolean {
+  if (value == null) return false;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) && value !== 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value as object).length > 0;
+  return Boolean(value);
+}
+
+function answerNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "string" && value.trim() !== "") {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+  return null;
+}
+
+function answerMatches(actual: unknown, expected: unknown): boolean {
+  if (Array.isArray(actual)) return actual.some((item) => answerMatches(item, expected));
+  if (actual === expected) return true;
+  if (actual == null || expected == null) return false;
+  if (typeof actual === "boolean" || typeof expected === "boolean") {
+    return String(actual).toLowerCase() === String(expected).toLowerCase();
+  }
+  const a = answerNumber(actual);
+  const b = answerNumber(expected);
+  if (a != null && b != null) return a === b;
+  return String(actual).trim().toLowerCase() === String(expected).trim().toLowerCase();
+}
+
+/** Pure: does `condition` hold against `payload`? Ignores whether the source field is itself hidden. */
+export function conditionHolds(condition: FieldVisibilityCondition, payload: Record<string, unknown>): boolean {
+  const actual = payload[condition.fieldKey];
+  switch (condition.op) {
+    case "truthy":
+      return isAnswerTruthy(actual);
+    case "eq":
+      return answerMatches(actual, condition.value);
+    case "neq":
+      return !answerMatches(actual, condition.value);
+    case "gt":
+    case "lt": {
+      const a = answerNumber(actual);
+      const b = answerNumber(condition.value);
+      if (a == null || b == null) return false;
+      return condition.op === "gt" ? a > b : a < b;
+    }
+    default:
+      return true;
+  }
+}
+
+/**
+ * Is `field` visible for `payload`? Follows the chain: a field whose controller is
+ * itself hidden is hidden too. A cycle or a dangling controller fails open.
+ */
+export function evaluateFieldVisibility(
+  field: Pick<FieldDefinition, "key" | "config">,
+  payload: Record<string, unknown>,
+  fieldsByKey: ReadonlyMap<string, Pick<FieldDefinition, "key" | "config">>,
+): boolean {
+  // Walk the controller chain first. Any repeat is a loop: the whole chain fails open.
+  const chain: Array<{ condition: FieldVisibilityCondition; live: boolean }> = [];
+  const seen = new Set<string>();
+  let current = field;
+  for (;;) {
+    const condition = visibleWhenOf(current);
+    if (!condition) break;
+    if (seen.has(current.key)) return true;
+    seen.add(current.key);
+    const controller = fieldsByKey.get(condition.fieldKey);
+    // A dangling or self reference is ignored (visible) — but fields that depend on
+    // THIS field still evaluate their own condition against its answer.
+    const live = Boolean(controller) && controller!.key !== current.key;
+    chain.push({ condition, live });
+    if (!live) break;
+    current = controller!;
+  }
+  // Outermost controller first: a hidden controller hides everything under it.
+  for (let index = chain.length - 1; index >= 0; index--) {
+    const link = chain[index]!;
+    if (link.live && !conditionHolds(link.condition, payload)) return false;
+  }
+  return true;
+}
+
+/* ------------------------------------------------------------------------- *
  * Scouting input studio — config readers, math, and shape guards.
  *
  * Every reader is total: it takes whatever survived a jsonb round-trip and
@@ -807,11 +932,14 @@ export function validatePayload(
 ): string[] {
   const errors: string[] = [];
   const allowed = new Set(schema.fields.map((field) => field.key));
+  const byKey = new Map(schema.fields.map((field) => [field.key, field]));
   for (const key of Object.keys(payload)) {
     if (!allowed.has(key)) errors.push(`Unknown field: ${key}`);
   }
   for (const field of schema.fields) {
     const value = payload[field.key];
+    // A field the scout could not see ("show only when") must never block a save.
+    const visible = evaluateFieldVisibility(field, payload, byKey);
     // Section headers group Auto | Teleop | Endgame — they carry no answer, and
     // "required" is meaningless on them, so they never gate a save.
     if (isLayoutOnlyField(field)) {
@@ -826,7 +954,7 @@ export function validatePayload(
       value === "" ||
       (Array.isArray(value) && value.length === 0) ||
       (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
-    if (field.required && empty) {
+    if (field.required && empty && visible) {
       errors.push(`${field.label} is required`);
       continue;
     }

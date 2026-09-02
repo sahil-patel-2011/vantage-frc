@@ -82,7 +82,10 @@ describe("product hubs", () => {
 
   it("keeps Build workbenches to kickoff, CAD, code, and robot", () => {
     const build = hubById("build");
-    expect(hubPrimaryTabs(build).map((tab) => tab.id)).toEqual(["kickoff", "cad", "code", "fmea"]);
+    expect(hubPrimaryTabs(build).map((tab) => tab.id)).toEqual(["kickoff", "cad", "code", "fmea", "parts"]);
+    expect(hubNestedTabs(build, "parts").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["inventory", "consumables", "spare-forecast", "print-farm"]),
+    );
     expect(hubNestedTabs(build, "fmea").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["prototype", "batteries", "robot"]),
     );
@@ -127,6 +130,8 @@ describe("product hubs", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       // The one pre-match briefing is the drive team's front door on event day.
       "briefing",
+      // The robot photo wall sits beside Forms — the most-used pit output.
+      "pit-photos",
       "alliance-selection-desk",
     ]);
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
@@ -199,9 +204,10 @@ describe("product hubs", () => {
         // consumables inventory. Each was nearly redirected away as a "duplicate".
         "wiring-map",
         "tuning-log",
-        "consumables",
       ]),
     );
+    // Stock moved to its own Parts workbench so the ledger has one front door.
+    expect(hubNestedTabs(hubById("build"), "parts").map((tab) => tab.id)).toContain("consumables");
 
     // …and the neighbours they were confused with keep their own distinct labels.
     const buildRobotLabels = hubNestedTabs(hubById("build"), "fmea").map((tab) => tab.label);
@@ -240,8 +246,9 @@ describe("product hubs", () => {
       ["team", "attendance", "learning", "/learning"],
       ["team", "knowledge", "knowledge-drafts", "/knowledge-drafts"],
       ["build", "cad", "cad-vault", "/cad-vault"],
-      ["build", "fmea", "manufacturing", "/manufacturing"],
-      ["build", "fmea", "print-farm", "/print-farm"],
+      ["build", "parts", "manufacturing", "/manufacturing"],
+      ["build", "parts", "print-farm", "/print-farm"],
+      ["build", "parts", "inventory", "/inventory"],
       ["competition", "command", "event-readiness", "/event-readiness"],
     ];
     for (const [hubId, workbench, tabId, href] of expected) {

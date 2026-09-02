@@ -92,7 +92,7 @@ describe("runReconciliation", () => {
       if (sql.includes("SUM(breaker_amps)")) {
         return { rows: [{ breakerAmps: "60.00" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -115,7 +115,7 @@ describe("runReconciliation", () => {
     expect(reportInsert).toBeDefined();
     expect(reportInsert?.params).toContain("Drivetrain");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

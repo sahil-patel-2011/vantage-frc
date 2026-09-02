@@ -145,7 +145,7 @@ describe("logReview", () => {
       if (sql.includes("FROM decision_records")) {
         return { rows: [{ id: DECISION_ID }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -177,7 +177,7 @@ describe("logReview", () => {
     // 1 prior rejected/superseded decision matched -> prior_rejected_count = 1.
     expect(reviewInsert?.params).toContain(1);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

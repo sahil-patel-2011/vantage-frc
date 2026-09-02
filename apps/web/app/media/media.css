@@ -24,7 +24,7 @@
 .media-overdue{color:var(--app-critical);font-size:.85rem;font-weight:600}
 .media-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .media-missing span{font-size:0.85rem;opacity:0.85}
-@media(max-width:900px){
+@media(max-width:980px){
   .media-header-actions{justify-content:flex-start}
   .media-next-actions li{flex-direction:column;align-items:stretch}
   .media-panel-list li,.media-item-row{flex-direction:column;align-items:stretch}

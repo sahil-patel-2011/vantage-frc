@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { REUSE_ASSESSMENT_STATUSES, REUSE_RECOMMENDATIONS, SUBSYSTEM_CATEGORIES, assessReuse } from ".";
 import type {
   ReuseAssessment,
@@ -273,7 +272,7 @@ export async function recordAssessment(
     sourceSeasonYear: number | null;
     notes: string | null;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const [fmeaResult, reviewResult] = await Promise.all([
     client.query<{ total: string; highSeverity: string }>(
       `SELECT count(*)::text AS total, count(*) FILTER (WHERE severity >= 7)::text AS "highSeverity"
@@ -294,32 +293,23 @@ export async function recordAssessment(
   const designReviewCount = Number(reviewResult.rows[0]?.total ?? 0) || 0;
   const designReviewPassCount = Number(reviewResult.rows[0]?.passed ?? 0) || 0;
 
-  const assessment = await meteredAI({
+  // Real model call on the org's adapter with the deterministic assessment as fallback:
+  // only the rationale prose may be rewritten; recommendation and confidence stay computed
+  // from the subsystem's FMEA history and design-review record.
+  const { value: assessment, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "reuse_advisor",
-    requestId: `reuse-advisor-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.subsystemName,
-      seasonYear: input.seasonYear,
-      note: "Deterministic FMEA-history/design-review reuse computation — no external model call",
-    },
-    invoke: async () => ({
-      value: assessReuse({
-        fmeaFailureCount,
-        fmeaHighSeverityCount,
-        designReviewCount,
-        designReviewPassCount,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-reuse-advisor-v1",
-      provider: "vantage-local",
+    value: assessReuse({
+      fmeaFailureCount,
+      fmeaHighSeverityCount,
+      designReviewCount,
+      designReviewPassCount,
     }),
+    editableKeys: ["rationale"],
+    instructions: `Reuse assessment for the ${input.subsystemName} subsystem (${input.category}) from the ${input.sourceSeasonYear ?? "prior"} season into ${input.seasonYear}. History: ${fmeaFailureCount} FMEA failure(s), ${fmeaHighSeverityCount} high severity, ${designReviewPassCount}/${designReviewCount} design reviews passed. Write the rationale as 1-3 plain sentences for the design review, consistent with the recommendation in the document; cite only these numbers.`,
+    metadata: { subsystemName: input.subsystemName, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -346,6 +336,7 @@ export async function recordAssessment(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function updateAssessmentStatus(

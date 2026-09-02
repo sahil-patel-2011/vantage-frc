@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { MATCHING_GIFT_SEED_PROGRAMS, buildDraftLetter, matchContactsToPrograms, summarizeMatchingGiftFinder } from ".";
 import type {
   MatchingGiftContact,
@@ -458,13 +457,13 @@ export async function deleteDraft(
 
 /**
  * Generate a metered HR matching-gift request letter for a contact/program pair, grounded only in
- * the contact's own record and the program's own recorded terms. Routed through meteredAI so the run
+ * the contact's own record and the program's own recorded terms. Rendered through renderWithModel (real model call, template fallback) so the run
  * is billed and audited through the standard usage-ledger path.
  */
 export async function generateDraftLetter(
   client: PoolClient,
   input: { orgId: string; userId: string; contactId: string; programId: string; seasonYear: number },
-): Promise<MatchingGiftDraft> {
+): Promise<MatchingGiftDraft & { render: RenderOutcome }> {
   const contactRow = await client.query<{ fullName: string }>(
     `SELECT full_name AS "fullName" FROM matching_gift_finder_contacts WHERE id = $1 AND org_id = $2`,
     [input.contactId, input.orgId],
@@ -489,35 +488,26 @@ export async function generateDraftLetter(
   );
   const teamNumber = orgRow.rows[0]?.teamNumber ?? null;
 
-  const result = await meteredAI({
+  // Real model call on the org's adapter with the deterministic letter as fallback: subject
+  // and body may be rewritten, but every program term (ratio, caps, URL) comes from the record.
+  const { value: result, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "matching_gift_finder",
-    requestId: `matching-gift-finder-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
+    value: buildDraftLetter({
+      contactName,
+      employerName: program.employerName,
+      matchRatio: program.matchRatio,
+      teamNumber,
+      seasonYear: input.seasonYear,
+      minGiftUsd: program.minGiftUsd,
+      maxGiftUsd: program.maxGiftUsd,
+      submissionUrl: program.submissionUrl,
+    }),
+    editableKeys: ["subject", "body"],
+    instructions: `Matching-gift request letter from ${teamNumber ? `FRC Team ${teamNumber}` : "an FRC team"} to ${contactName} at ${program.employerName} for the ${input.seasonYear} season (match ratio ${program.matchRatio}). Rewrite the subject and body as a warm, concise letter a booster would send; keep every program term, amount and URL exactly as in the document and invent no history with this contact.`,
     metadata: { contactId: input.contactId, programId: input.programId, seasonYear: input.seasonYear },
-    invoke: async () => {
-      const letter = buildDraftLetter({
-        contactName,
-        employerName: program.employerName,
-        matchRatio: program.matchRatio,
-        teamNumber,
-        seasonYear: input.seasonYear,
-        minGiftUsd: program.minGiftUsd,
-        maxGiftUsd: program.maxGiftUsd,
-        submissionUrl: program.submissionUrl,
-      });
-      return {
-        value: letter,
-        promptTokens: 0,
-        completionTokens: 0,
-        costUsd: 0,
-        model: "vantage-matching-gift-finder-v1",
-        provider: "vantage-local",
-      };
-    },
   });
 
   const inserted = await client.query<{ id: string; createdAt: string }>(
@@ -529,6 +519,7 @@ export async function generateDraftLetter(
 
   return {
     id: inserted.rows[0]!.id,
+    render,
     contactId: input.contactId,
     contactName,
     programId: input.programId,

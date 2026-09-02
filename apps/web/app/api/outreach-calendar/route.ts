@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  completeOutreachEvent,
   computeOutreachCalendarView,
   createOutreachEvent,
   currentSeasonYear,
@@ -49,6 +50,13 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
 function nonNegativeNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+/** An actual supplied by the team, or null to fall back to the projection. 0 is a real actual. */
+function actualOrNull(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 function seasonFrom(value: unknown): number {
@@ -142,7 +150,24 @@ export async function POST(request: Request) {
           const status = oneOf<OutreachStatus>(OUTREACH_STATUSES, body.status);
           if (!eventId) throw new Error("eventId is required");
           if (!status) throw new Error("status is required");
-          await updateOutreachEventStatus(client, { orgId, eventId, status });
+          // Completing through the status picker takes the same path as `complete`, so an
+          // event can never be "completed" without its impact_activities row.
+          if (status === "completed") await completeOutreachEvent(client, { orgId, userId, eventId });
+          else await updateOutreachEventStatus(client, { orgId, eventId, status });
+          break;
+        }
+        case "complete":
+        case "complete-event": {
+          const eventId = trimmedOrNull(body.eventId, 64);
+          if (!eventId) throw new Error("eventId is required");
+          await completeOutreachEvent(client, {
+            orgId,
+            userId,
+            eventId,
+            actualHours: actualOrNull(body.actualHours),
+            actualPeopleReached: actualOrNull(body.actualPeopleReached),
+            participantCount: actualOrNull(body.participantCount),
+          });
           break;
         }
         case "delete-event": {

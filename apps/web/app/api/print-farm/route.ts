@@ -213,6 +213,8 @@ export async function POST(request: Request) {
             estimatedGrams: positiveNumberOrNull(body.estimatedGrams),
             neededBy: isoDateOrNull(body.neededBy),
             reprintOfJobId: trimmedOrNull(body.reprintOfJobId, 64),
+            cadDocumentId: trimmedOrNull(body.cadDocumentId, 64),
+            inventoryItemId: trimmedOrNull(body.inventoryItemId, 64),
           });
           break;
         }

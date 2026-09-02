@@ -15,18 +15,21 @@ type ButtonOwnProps<T extends ElementType> = {
 type ButtonProps<T extends ElementType> = ButtonOwnProps<T> &
   Omit<ComponentPropsWithoutRef<T>, keyof ButtonOwnProps<T>>;
 
-const variantClass: Record<ButtonVariant, string | undefined> = {
-  primary: styles.btnPrimary,
-  secondary: styles.btnSecondary,
+/** Variants with no global `.app-button` equivalent keep the module styles. */
+const moduleVariantClass: Record<Exclude<ButtonVariant, "primary" | "secondary">, string | undefined> = {
   danger: styles.btnDanger,
   ghost: styles.btnGhost,
   icon: styles.btnIcon,
 };
 
 /**
- * Shared Button — collapses the app's 15-way class fragmentation into typed variants.
- * Polymorphic like Panel (`as="a"` for links). variant="icon" meets 2.5.8 target size
- * (24px min, 44px on coarse pointers).
+ * Shared Button. `primary` / `secondary` render the global `.app-button` /
+ * `.app-button.secondary` classes, so a <Button> is pixel-identical to the
+ * hand-written `<button className="app-button">` beside it and inherits the
+ * shell's 44px targets — new code can reach for this without a mass replace.
+ * `danger`, `ghost` and `icon` have no global counterpart and keep the module
+ * styles; variant="icon" meets 2.5.8 target size (24px min, 44px on coarse pointers).
+ * Polymorphic like Panel (`as="a"` for links).
  */
 export function Button<T extends ElementType = "button">({
   as,
@@ -37,12 +40,11 @@ export function Button<T extends ElementType = "button">({
   ...rest
 }: ButtonProps<T>) {
   const Tag = (as ?? "button") as ElementType;
-  const cls = [
-    styles.btn,
-    variant === "icon" ? undefined : size === "sm" ? styles.btnSm : styles.btnMd,
-    variantClass[variant],
-    className,
-  ]
+  const cls = (
+    variant === "primary" || variant === "secondary"
+      ? ["app-button", variant === "secondary" ? "secondary" : undefined, size === "sm" ? styles.btnSm : undefined, className]
+      : [styles.btn, variant === "icon" ? undefined : size === "sm" ? styles.btnSm : styles.btnMd, moduleVariantClass[variant], className]
+  )
     .filter(Boolean)
     .join(" ");
   const typeProp = Tag === "button" && (rest as { type?: string }).type == null ? { type: "button" } : {};

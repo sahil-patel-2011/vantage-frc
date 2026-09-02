@@ -1,5 +1,9 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { CadOperation } from "./agent-policy";
+import { callClaudeCadTool, type CadExportSink, type ClaudeCadRuntime } from "./claude-cad";
+import type { ClaudeCadSession } from "./claude-session";
+import { exportOnshapeElementFile, looksLikeAsciiStl, type OnshapeExportedFile } from "./onshape-export";
+import { onshapeTranslationPayload } from "./onshape-features";
 
 export const ONSHAPE_OAUTH_AUTHORIZE = "https://oauth.onshape.com/oauth/authorize";
 export const ONSHAPE_OAUTH_TOKEN = "https://oauth.onshape.com/oauth/token";
@@ -318,7 +322,14 @@ export type OnshapeExportProvenance = {
   resultExternalDataIds?: string[];
   exportedAt: string;
   source: "onshape-api";
-  storage: "metadata_only" | "inline_preview";
+  /**
+   * Where the real bytes went. "vault" / "file" mean the whole file was kept;
+   * "metadata_only" is now only true for glTF, which the vault does not accept.
+   * "inline_preview" is retained for old artifact rows and is never written anew.
+   */
+  storage: "metadata_only" | "inline_preview" | "vault" | "file";
+  vault?: { documentId: string; version: number; href: string; title: string; duplicate: boolean };
+  filePath?: string;
   note: string;
 };
 
@@ -333,54 +344,99 @@ async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type OnshapeExportOptionsLegacy = {
+  pollMs?: number;
+  maxPolls?: number;
+  /** Receives the real STL/STEP bytes (vault in the hosted app). Without it only provenance is kept. */
+  sink?: CadExportSink;
+  elementName?: string;
+  title?: string;
+  changeNote?: string | null;
+};
+
 /**
- * Export Part Studio via Onshape translations (STEP/GLTF) or sync STL.
- * Stores provenance metadata suitable for cad_artifacts — not giant binaries in Postgres.
+ * Export a Part Studio. STL and STEP now return the REAL bytes (see
+ * onshape-export.ts) and hand them to `options.sink` — the hosted app stores a
+ * CAD vault version — so nothing is truncated to a preview any more. glTF still
+ * runs through the translation service for provenance only, because the vault
+ * has no glTF format.
  */
 export async function exportOnshapePartStudio(
   http: OnshapeHttp,
   document: OnshapeDocumentRef,
   format: OnshapeExportFormat,
-  options: { pollMs?: number; maxPolls?: number } = {},
-): Promise<{ provenance: OnshapeExportProvenance; previewText?: string }> {
+  options: OnshapeExportOptionsLegacy = {},
+): Promise<{ provenance: OnshapeExportProvenance; previewText?: string; file?: OnshapeExportedFile }> {
   const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
   const exportedAt = new Date().toISOString();
 
-  if (format === "STL") {
-    const response = await http(`${base}/stl?mode=text&grouping=true&scale=1&units=millimeter`);
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Onshape STL export failed: ${err.slice(0, 400)}`);
+  if (format === "STL" || format === "STEP") {
+    const file = await exportOnshapeElementFile(http, document, format === "STL" ? "stl" : "step", {
+      elementName: options.elementName ?? document.label,
+      pollMs: options.pollMs,
+      maxPolls: options.maxPolls,
+    });
+    let storage: OnshapeExportProvenance["storage"] = "metadata_only";
+    let vault: OnshapeExportProvenance["vault"];
+    let filePath: string | undefined;
+    if (options.sink) {
+      const destination = await options.sink({
+        file,
+        title: options.title ?? options.elementName ?? document.label ?? "Part Studio export",
+        changeNote: options.changeNote ?? null,
+        document,
+      });
+      if (destination.kind === "vault") {
+        storage = "vault";
+        vault = {
+          documentId: destination.documentId,
+          version: destination.version,
+          href: destination.href,
+          title: destination.title,
+          duplicate: destination.duplicate,
+        };
+      } else {
+        storage = "file";
+        filePath = destination.path;
+      }
     }
-    const text = await response.text();
-    const contentSha256 = createHash("sha256").update(text).digest("hex");
-    const previewText = text.length > 4_000 ? `${text.slice(0, 4_000)}\n…[truncated]` : text;
+    const previewText =
+      format === "STL" && looksLikeAsciiStl(file.bytes)
+        ? (() => {
+            const text = file.bytes.toString("utf8");
+            return text.length > 4_000 ? `${text.slice(0, 4_000)}\n…[preview truncated; the full file is stored]` : text;
+          })()
+        : undefined;
     return {
       provenance: {
         format,
         documentId: document.documentId,
         workspaceId: document.workspaceId,
         elementId: document.elementId,
+        ...(file.translationId ? { translationId: file.translationId } : {}),
         requestState: "DONE",
-        contentSha256,
-        byteLength: Buffer.byteLength(text, "utf8"),
-        exportedAt,
+        contentSha256: file.sha256,
+        byteLength: file.byteLength,
+        exportedAt: file.exportedAt,
         source: "onshape-api",
-        storage: "inline_preview",
-        note: "STL text exported synchronously. Full file checksum recorded; preview may be truncated in team artifacts.",
+        storage,
+        ...(vault ? { vault } : {}),
+        ...(filePath ? { filePath } : {}),
+        note:
+          storage === "vault"
+            ? `${format} saved to the team CAD vault as "${vault!.title}" v${vault!.version}.`
+            : storage === "file"
+              ? `${format} written to ${filePath}.`
+              : `${format} exported (${file.byteLength} bytes, sha256 recorded). No storage sink was attached, so only provenance is kept.`,
       },
       previewText,
+      file,
     };
   }
 
   const response = await http(`${base}/translations`, {
     method: "POST",
-    body: JSON.stringify({
-      formatName: format,
-      storeInDocument: false,
-      translate: true,
-      ...(format === "GLTF" ? { linkDocumentId: document.documentId } : {}),
-    }),
+    body: JSON.stringify(onshapeTranslationPayload(format, document.documentId)),
   });
   const started = (await response.json()) as Record<string, unknown>;
   if (!response.ok) {
@@ -420,7 +476,7 @@ export async function exportOnshapePartStudio(
       exportedAt,
       source: "onshape-api",
       storage: "metadata_only",
-      note: `${format} translation completed in Onshape. Download via Onshape external data / UI using translationId; Vantage stores provenance + IDs, not the binary blob.`,
+      note: `${format} translation completed in Onshape. The vault stores STL/STEP only; download glTF from Onshape using translationId.`,
     },
   };
 }
@@ -434,6 +490,8 @@ type OnshapeMutateResult = {
     previewText?: string;
   };
   explain?: ReturnType<typeof explainFeatureTreeForStudents>;
+  /** Raw tool result from the shared executor, for the step output column. */
+  toolResult?: unknown;
 };
 
 type OnshapeTransportLike = {
@@ -452,13 +510,233 @@ type OnshapeTransportLike = {
 };
 
 /**
- * Hosted Onshape transport: allowlisted mutations + describe/verify + STEP/STL/GLTF export provenance.
- * Uses FeatureScript eval for custom scripts; sketch/extrude map to documented Part Studio feature APIs when possible.
- * Real credentials must be tested only in a disposable document.
+ * Legacy job-step parameters carry unit strings ("25 mm", "1 in"). Accept those
+ * and plain numbers; anything else falls through as NaN so the feature builder
+ * reports "must be a positive number of millimetres" instead of a silent default.
+ */
+export function legacyParameterMm(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value === "number") return value;
+  const text = String(value).trim().toLowerCase();
+  const match = /^(-?\d+(?:\.\d+)?)\s*(mm|millimet\w*|cm|m|in|inch(?:es)?|")?$/.exec(text);
+  if (!match) return Number.NaN;
+  const amount = Number(match[1]);
+  const unit = match[2] ?? "mm";
+  if (unit === "cm") return amount * 10;
+  if (unit === "m") return amount * 1000;
+  if (unit === "in" || unit === '"' || unit.startsWith("inch")) return amount * 25.4;
+  return amount;
+}
+
+function legacyExtrudeOperation(parameters: Record<string, unknown>): string {
+  const raw = String(parameters.operationType ?? parameters.direction ?? parameters.operation ?? "NEW").trim().toLowerCase();
+  if (raw === "cut" || raw === "remove") return "REMOVE";
+  if (raw === "join" || raw === "add") return "ADD";
+  if (raw === "intersect") return "INTERSECT";
+  return "NEW";
+}
+
+/**
+ * Map one legacy CadOperation to the ordered tool calls the shared executor
+ * runs. Exported so the mapping is unit-testable without HTTP. Every operation
+ * in CAD_OPERATIONS resolves here or in the transport's own export/describe/
+ * FeatureScript branches — nothing is declared and then thrown at.
+ */
+export function legacyOperationToolCalls(
+  operation: CadOperation,
+  parameters: Record<string, unknown>,
+): Array<{ tool: string; args: Record<string, unknown> }> {
+  const p = parameters;
+  const name = typeof p.name === "string" ? p.name : undefined;
+  const plane = typeof p.plane === "string" ? p.plane : undefined;
+  const featureId = typeof p.featureId === "string" ? p.featureId : undefined;
+  switch (operation) {
+    case "create_sketch": {
+      const shape = String(p.shape ?? "").toLowerCase();
+      if (shape === "circle" || (!shape && (p.diameterMm !== undefined || p.diameter !== undefined))) {
+        return [
+          {
+            tool: "onshape_sketch_circle",
+            args: {
+              diameterMm: legacyParameterMm(p.diameterMm ?? p.diameter),
+              centerXMm: legacyParameterMm(p.centerXMm),
+              centerYMm: legacyParameterMm(p.centerYMm),
+              plane,
+              name,
+            },
+          },
+        ];
+      }
+      if (shape === "slot") {
+        return [
+          {
+            tool: "onshape_sketch_slot",
+            args: {
+              lengthMm: legacyParameterMm(p.lengthMm ?? p.length),
+              widthMm: legacyParameterMm(p.widthMm ?? p.width),
+              centerXMm: legacyParameterMm(p.centerXMm),
+              centerYMm: legacyParameterMm(p.centerYMm),
+              angleDeg: p.angleDeg,
+              plane,
+              name,
+            },
+          },
+        ];
+      }
+      if (shape === "polygon") {
+        return [
+          {
+            tool: "onshape_sketch_polygon",
+            args: {
+              sides: p.sides,
+              acrossFlatsMm: legacyParameterMm(p.acrossFlatsMm),
+              circumscribedDiameterMm: legacyParameterMm(p.circumscribedDiameterMm ?? p.diameterMm),
+              centerXMm: legacyParameterMm(p.centerXMm),
+              centerYMm: legacyParameterMm(p.centerYMm),
+              plane,
+              name,
+            },
+          },
+        ];
+      }
+      if (Array.isArray(p.points)) {
+        return [{ tool: "onshape_sketch_polyline", args: { points: p.points, closed: p.closed ?? true, plane, name } }];
+      }
+      return [
+        {
+          tool: "onshape_sketch_rectangle",
+          args: {
+            widthMm: legacyParameterMm(p.widthMm ?? p.width),
+            heightMm: legacyParameterMm(p.heightMm ?? p.height),
+            originXMm: legacyParameterMm(p.originXMm),
+            originYMm: legacyParameterMm(p.originYMm),
+            plane,
+            name,
+          },
+        },
+      ];
+    }
+    case "create_extrude":
+      return [
+        {
+          tool: "onshape_extrude",
+          args: {
+            depthMm: legacyParameterMm(p.depthMm ?? p.depth),
+            operationType: legacyExtrudeOperation(p),
+            sketchFeatureId: p.sketchFeatureId,
+            oppositeDirection: p.oppositeDirection,
+            name,
+          },
+        },
+      ];
+    case "create_fillet":
+      return [
+        {
+          tool: "onshape_fillet",
+          args: { radiusMm: legacyParameterMm(p.radiusMm ?? p.radius), selection: p.selection, featureId, plane, name },
+        },
+      ];
+    case "create_chamfer":
+      return [
+        {
+          tool: "onshape_chamfer",
+          args: { widthMm: legacyParameterMm(p.widthMm ?? p.distance ?? p.width), selection: p.selection, featureId, plane, name },
+        },
+      ];
+    case "create_shell":
+      return [
+        {
+          tool: "onshape_shell",
+          args: {
+            thicknessMm: legacyParameterMm(p.thicknessMm ?? p.thickness),
+            faces: p.faces ?? "top",
+            faceIds: Array.isArray(p.faceIds) ? p.faceIds : undefined,
+            featureId,
+            plane,
+            oppositeDirection: p.oppositeDirection,
+            name,
+          },
+        },
+      ];
+    case "create_pattern": {
+      const instanceCount = p.instanceCount ?? p.count;
+      if (typeof p.axisFeatureId === "string" && p.axisFeatureId) {
+        return [
+          {
+            tool: "onshape_circular_pattern",
+            args: { instanceCount, axisFeatureId: p.axisFeatureId, featureIds: p.featureIds, angleDeg: p.angleDeg, name },
+          },
+        ];
+      }
+      return [
+        {
+          tool: "onshape_linear_pattern",
+          args: {
+            instanceCount,
+            spacingMm: legacyParameterMm(p.spacingMm ?? p.spacing),
+            direction: typeof p.direction === "string" ? p.direction.toUpperCase() : undefined,
+            featureIds: p.featureIds,
+            oppositeDirection: p.oppositeDirection,
+            name,
+          },
+        },
+      ];
+    }
+    case "set_variable": {
+      const variableType = String(p.variableType ?? "LENGTH").toUpperCase();
+      const value = variableType === "LENGTH" ? legacyParameterMm(p.value) : Number(p.value);
+      return [{ tool: "onshape_set_variable", args: { variableName: p.variableName ?? p.name, value, variableType, name: p.featureName } }];
+    }
+    case "create_hole": {
+      const calls: Array<{ tool: string; args: Record<string, unknown> }> = [];
+      if (Array.isArray(p.points) || p.gridCountX !== undefined) {
+        calls.push({
+          tool: "onshape_sketch_points",
+          args: {
+            points: p.points,
+            gridCountX: p.gridCountX,
+            gridCountY: p.gridCountY,
+            gridPitchXMm: legacyParameterMm(p.gridPitchXMm ?? p.pitch),
+            gridPitchYMm: legacyParameterMm(p.gridPitchYMm),
+            originXMm: legacyParameterMm(p.originXMm),
+            originYMm: legacyParameterMm(p.originYMm),
+            plane,
+          },
+        });
+      }
+      calls.push({
+        tool: "onshape_hole",
+        args: {
+          diameterMm: legacyParameterMm(p.diameterMm ?? p.diameter),
+          endStyle: p.endStyle,
+          depthMm: legacyParameterMm(p.depthMm ?? p.depth),
+          pointSketchFeatureId: p.pointSketchFeatureId,
+          targetFeatureId: p.targetFeatureId,
+          name,
+        },
+      });
+      return calls;
+    }
+    case "create_mirror":
+      return [{ tool: "onshape_mirror", args: { plane: plane ?? "Right", featureIds: p.featureIds, name } }];
+    case "delete_feature":
+      return [{ tool: "onshape_delete_feature", args: { featureId } }];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Hosted Onshape transport for the job pipeline. Geometry mutations delegate to
+ * the SAME executor the /cad agent uses (callClaudeCadTool + onshape-features),
+ * so every allowlisted operation builds a real feature; exports hand their bytes
+ * to `onExport` (the vault in the hosted app). Real credentials must be tested
+ * only in a disposable document.
  */
 export function createOnshapeApiTransport(input: {
   http: OnshapeHttp;
   document: OnshapeDocumentRef;
+  onExport?: CadExportSink;
 }): OnshapeTransportLike {
   let version = 0;
   let lastExport: OnshapeMutateResult["exportArtifact"];
@@ -466,13 +744,39 @@ export function createOnshapeApiTransport(input: {
   const { http, document } = input;
   const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
 
+  // One in-memory session per transport: feature ids created through this job
+  // chain to each other (extrude after sketch, fillet after extrude) exactly as
+  // they do in the agent, and delete_feature stays limited to what this job added.
+  let session: ClaudeCadSession = {
+    documentId: document.documentId,
+    workspaceId: document.workspaceId,
+    elementId: document.elementId,
+    documentName: document.label,
+    features: [],
+    rebuild: 0,
+  };
+  const runtime: ClaudeCadRuntime = {
+    http,
+    hosted: true,
+    loadSession: async () => session,
+    saveSession: async (next) => {
+      session = next;
+    },
+    saveExport: input.onExport,
+  };
+
   return {
     async mutate(args) {
       version += 1;
       const { operation, parameters, idempotencyKey } = args;
       const exportFormat = exportFormatForOperation(operation);
       if (exportFormat) {
-        const { provenance, previewText } = await exportOnshapePartStudio(http, document, exportFormat);
+        const { provenance, previewText } = await exportOnshapePartStudio(http, document, exportFormat, {
+          sink: input.onExport,
+          elementName: document.label,
+          title: typeof parameters.title === "string" ? parameters.title : undefined,
+          changeNote: typeof parameters.changeNote === "string" ? parameters.changeNote : null,
+        });
         lastExport = {
           type: `cad_export_${exportFormat.toLowerCase()}`,
           title: `Onshape ${exportFormat} export`,
@@ -511,29 +815,16 @@ export function createOnshapeApiTransport(input: {
         }
         return { featureId: `verify-${version}`, explain: lastExplain };
       }
-      if (operation === "create_sketch" || operation === "create_extrude") {
-        // Geometry mutations go through a reviewed FeatureScript wrapper so we stay on one allowlisted path.
-        const width = Number(parameters.widthMm ?? parameters.width ?? 40);
-        const height = Number(parameters.heightMm ?? parameters.height ?? 40);
-        const depth = Number(parameters.depthMm ?? parameters.depth ?? 10);
-        const script =
-          operation === "create_sketch"
-            ? `function(context is Context, queries) { opPlane(context, id + "plane", { "plane": plane(vector(0, 0, 0) * meter, vector(0, 0, 1)) }); }`
-            : `function(context is Context, queries) { /* extrude intent logged: ${width}x${height}x${depth} mm — prefer explicit FeatureScript for production geometry */ }`;
-        const response = await http(`${base}/featurescript`, {
-          method: "POST",
-          body: JSON.stringify({ script, queries: [], serializationVersion: "1.1.22" }),
-          headers: { "x-vantage-idempotency": idempotencyKey },
-        });
-        // Soft-fail to describe-only path when FeatureStudio rejects the placeholder (document still selected).
-        if (!response.ok) {
-          return { featureId: `intent-${operation}-${version}` };
-        }
-        return { featureId: `onshape-${operation}-${version}` };
+      const calls = legacyOperationToolCalls(operation, parameters);
+      if (!calls.length) {
+        throw new Error(`Onshape operation '${operation}' has no tool mapping. This is a Vantage bug — CAD_OPERATIONS and legacyOperationToolCalls must agree.`);
       }
-      throw new Error(
-        `Onshape operation '${operation}' is allowlisted but requires an explicit FeatureScript body or connector update. Prefer feature_script in a disposable document.`,
-      );
+      let last: unknown;
+      for (const call of calls) {
+        last = await callClaudeCadTool(call.tool, call.args, runtime);
+      }
+      const record = (last ?? {}) as { featureId?: string; deletedFeatureId?: string };
+      return { featureId: record.featureId ?? record.deletedFeatureId ?? `onshape-${operation}-${version}`, toolResult: last };
     },
     async describe() {
       let features: OnshapeFeatureSummary[] = [];

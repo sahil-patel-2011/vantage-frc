@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { AGENDA_ITEM_KINDS, buildAgendaItems, parseActionItemsFromMinutes, summarizeAgendaSources } from ".";
 import type {
   ActionItem,
@@ -256,30 +255,22 @@ export async function computeMeetingAutopilotView(
 export async function generateAgenda(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number; title: string; meetingOn: string | null },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const sources = await loadAgendaSources(client, input.orgId, input.seasonYear);
   const counts = summarizeAgendaSources(sources);
 
-  const agenda = await meteredAI({
+  // Real model call on the org's adapter with the deterministic agenda as fallback: the
+  // items themselves (kind, source, title, weight) come from open blockers / overdue tasks /
+  // unresolved decisions / open FMEA; only each item's detail line may be rewritten.
+  const { value: agenda, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "meeting_autopilot",
-    requestId: `meeting-autopilot-agenda-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      note: "Deterministic agenda built from open blockers / overdue tasks / unresolved decisions / open FMEA — no external model call",
-    },
-    invoke: async () => ({
-      value: buildAgendaItems(sources),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-meeting-autopilot-v1",
-      provider: "vantage-local",
-    }),
+    value: buildAgendaItems(sources),
+    editableKeys: ["detail"],
+    instructions: `Meeting agenda "${input.title}"${input.meetingOn ? ` for ${input.meetingOn}` : ""} (${input.seasonYear} season). Rewrite each item's detail as one plain sentence that tells the room what needs deciding or unblocking; keep names, subsystems, dates and counts exactly as given.`,
+    metadata: { seasonYear: input.seasonYear, itemCount: counts.blockers + counts.overdueTasks + counts.decisions + counts.fmea },
   });
 
   await client.query(
@@ -300,32 +291,25 @@ export async function generateAgenda(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function draftMinutesActionItems(
   client: PoolClient,
   input: { orgId: string; userId: string; agendaId: string; minutesText: string },
-): Promise<number> {
-  const parsed = await meteredAI({
+): Promise<{ count: number; render: RenderOutcome }> {
+  // Real model call on the org's adapter with the deterministic parse as fallback: the
+  // action items, owners, due dates and source excerpts are extracted from the minutes
+  // text; only each item's title may be rewritten into a clean imperative.
+  const { value: parsed, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "meeting_autopilot",
-    requestId: `meeting-autopilot-minutes-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      agendaId: input.agendaId,
-      note: "Deterministic minutes-to-action-item parsing — no external model call",
-    },
-    invoke: async () => ({
-      value: parseActionItemsFromMinutes(input.minutesText),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-meeting-autopilot-v1",
-      provider: "vantage-local",
-    }),
+    value: parseActionItemsFromMinutes(input.minutesText),
+    editableKeys: ["title"],
+    instructions: "Action items parsed from meeting minutes. Rewrite each title as a short imperative task (verb first) that matches its sourceExcerpt; keep owners, due dates and excerpts exactly as given and add no items.",
+    metadata: { agendaId: input.agendaId },
   });
 
   for (const item of parsed.slice(0, 100)) {
@@ -336,7 +320,7 @@ export async function draftMinutesActionItems(
       [input.orgId, input.agendaId, item.title, item.owner, item.dueOn, item.sourceExcerpt, input.userId],
     );
   }
-  return parsed.length;
+  return { count: parsed.length, render };
 }
 
 export async function updateActionItemStatus(

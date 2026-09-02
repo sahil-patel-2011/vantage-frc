@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { EmptyState, FormGrid, FormRow, Panel, ToolPage, useConfirm, type ShellState } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
@@ -112,7 +111,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const crumbs = embed === "build" ? "Build / FMEA" : "Team / FMEA";
+  const hub = embed === "build" ? "build" : "team";
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -169,178 +168,139 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
-    // Retry cannot fix an expired session, so the failure decides its own action.
-    const failure = fetchFailed
-      ? loadFailureCopy(
-          classifyLoadFailure({
-            status: errorStatus,
-            message: loadError,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          }),
-          {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: loadError || "A network or server issue prevented loading. Try again.",
-          },
-        )
-      : null;
-    return (
-      <main className="module-page fmea-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture in-match and pit failures with real O×S×D scores — never demo RPN."
-        />
-        <EmptyState
-          soft
-          title={failure ? failure.title : "Loading failure log…"}
-          description={failure ? failure.description : "Checking your workspace."}
-          aria-busy={!fetchFailed}
-        >
-          {failure?.primary ? (
-            <a className="app-button" href={failure.primary.href}>
-              {failure.primary.label}
-            </a>
-          ) : null}
-          {failure?.showRetry ? (
-            <button type="button" className="app-button secondary" onClick={() => load()}>
-              Retry
-            </button>
-          ) : null}
-        </EmptyState>
-      </main>
-    );
-  }
+  const live = view?.status === "live" ? view : null;
+  const hasFailures = (live?.evaluations.length ?? 0) > 0;
+  const topTitle = live?.summary.topFailures[0]?.failure.title ?? null;
+  const state: ShellState = fetchFailed
+    ? "error"
+    : view == null
+      ? "loading"
+      : view.status === "setup_required"
+        ? "setup"
+        : "ready";
 
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page fmea-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
-        />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="fmea-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-        <NextActions
-          orgId={view.orgId}
-          failureCount={0}
-          activeCount={0}
-          needsFixCount={0}
-          highestRpn={0}
-        />
-      </main>
-    );
-  }
-
-  const hasFailures = view.evaluations.length > 0;
-  const topTitle = view.summary.topFailures[0]?.failure.title ?? null;
-
+  // Retry cannot fix an expired session, so the failure (status + message)
+  // decides its own recovery action inside ErrorState.
   return (
-    <main className="module-page fmea-page">
-      <PageHeader
-        breadcrumbs={crumbs}
-        title="Failure Log (FMEA)"
-        description={
+    <ToolPage
+      hub={hub}
+      hubTab="fmea"
+      toolLabel="FMEA"
+      title="Failure Log (FMEA)"
+      description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection, record root cause and fix — RPN only from logged scores, never demo numbers."
+      embedded={Boolean(embed)}
+      className="fmea-page"
+      orgId={orgId}
+      state={state}
+      error={{ message: loadError || "A network or server issue prevented loading. Try again.", status: errorStatus }}
+      onRetry={() => load()}
+      loading={<EmptyState soft title="Loading failure log…" description="Checking your workspace." aria-busy />}
+      setup={
+        view?.status === "setup_required" ? (
           <>
-            Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix — RPN only from logged scores, never demo numbers.
-          </>
-        }
-      >
-        <div className="fmea-header-actions">
-          {view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
+            <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+              <ol className="fmea-setup-steps">
+                {view.steps.map((step) => (
+                  <li key={step.id}>
+                    <div>
+                      <strong>{step.label}</strong>
+                      <span>{step.detail}</span>
+                    </div>
+                    <a className="app-button secondary" href={step.href}>
+                      Open
+                    </a>
+                  </li>
                 ))}
-              </select>
-            </label>
-          ) : null}
-          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
-            Knowledge
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
-            Prototypes
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
-            Inspection
-          </a>
-        </div>
-      </PageHeader>
-
-      {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
-
-      {error ? (
-        <p className="fmea-alert" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <NextActions
-        orgId={orgId}
-        failureCount={view.summary.total}
-        activeCount={view.summary.active}
-        needsFixCount={view.summary.needsFix.length}
-        highestRpn={view.summary.highestRpn}
-        topTitle={topTitle}
-      />
-
-      <SummaryTiles view={view} />
-      <BatteryReliabilitySignals view={view} />
-
-      {!hasFailures ? (
-        <EmptyState
-          soft
-          title="No failures logged yet"
-          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then — nothing is invented."
-        >
-          <div className="fmea-risk-links">
-            <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
-            <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
-            <a href={hubHref("/build", "prototype", orgId)}>Prototypes →</a>
+              </ol>
+            </EmptyState>
+            <NextActions orgId={view.orgId} failureCount={0} activeCount={0} needsFixCount={0} highestRpn={0} />
+          </>
+        ) : null
+      }
+      actions={
+        live ? (
+          <div className="fmea-header-actions">
+            {live.seasons.length > 0 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={season ?? live.seasonYear}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeason(next);
+                    load(next);
+                  }}
+                >
+                  {live.seasons.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+              Knowledge
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+              CAD
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
+              Prototypes
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
+              Inspection
+            </a>
           </div>
-        </EmptyState>
-      ) : (
-        <div className="fmea-layout">
-          <SubsystemHotspots view={view} orgId={orgId} />
-          <TopFailures view={view} />
-        </div>
-      )}
+        ) : undefined
+      }
+    >
+      {live ? (
+        <>
+          {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
 
-      <AddFailureForm view={view} busy={busy} mutate={mutate} />
-      {hasFailures ? <FailureList view={view} busy={busy} mutate={mutate} orgId={orgId} /> : null}
-    </main>
+          {error ? (
+            <p className="fmea-alert" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <NextActions
+            orgId={orgId}
+            failureCount={live.summary.total}
+            activeCount={live.summary.active}
+            needsFixCount={live.summary.needsFix.length}
+            highestRpn={live.summary.highestRpn}
+            topTitle={topTitle}
+          />
+
+          <SummaryTiles view={live} />
+          <BatteryReliabilitySignals view={live} />
+
+          {!hasFailures ? (
+            <EmptyState
+              soft
+              title="No failures logged yet"
+              description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then — nothing is invented."
+            >
+              <div className="fmea-risk-links">
+                <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
+                <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
+                <a href={hubHref("/build", "prototype", orgId)}>Prototypes →</a>
+              </div>
+            </EmptyState>
+          ) : (
+            <div className="fmea-layout">
+              <SubsystemHotspots view={live} orgId={orgId} />
+              <TopFailures view={live} />
+            </div>
+          )}
+
+          <AddFailureForm view={live} busy={busy} mutate={mutate} />
+          {hasFailures ? <FailureList view={live} busy={busy} mutate={mutate} orgId={orgId} /> : null}
+        </>
+      ) : null}
+    </ToolPage>
   );
 }
 
@@ -480,6 +440,8 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
       fiveWhys: "",
       fix: "",
       inspectionItemId: "",
+      inventoryItemId: "",
+      partsConsumedQty: "",
     }),
     [],
   );
@@ -510,6 +472,9 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             fiveWhys: form.fiveWhys || null,
             fix: form.fix || null,
             inspectionItemId: form.inspectionItemId || null,
+            // ONE PARTS LEDGER: the spare this failure ate is decremented on save.
+            inventoryItemId: form.inventoryItemId || null,
+            partsConsumedQty: form.inventoryItemId && form.partsConsumedQty ? Number(form.partsConsumedQty) : null,
           });
           setForm(empty);
         }}
@@ -647,6 +612,33 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               </select>
             </FormRow>
           ) : null}
+          {(view.spareItems ?? []).length > 0 ? (
+            <FormRow label="Part consumed (optional)">
+              <select
+                value={form.inventoryItemId}
+                onChange={(e) => setForm({ ...form, inventoryItemId: e.target.value })}
+              >
+                <option value="">No part used</option>
+                {view.spareItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} · {item.quantity} {item.unit} on hand{item.subsystem ? ` · ${item.subsystem}` : ""}
+                  </option>
+                ))}
+              </select>
+            </FormRow>
+          ) : null}
+          {form.inventoryItemId ? (
+            <FormRow label="Quantity consumed (decrements stock)">
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={form.partsConsumedQty}
+                onChange={(e) => setForm({ ...form, partsConsumedQty: e.target.value })}
+                placeholder="1"
+              />
+            </FormRow>
+          ) : null}
         </FormGrid>
         <div className="fmea-form-actions">
           <button type="submit" className="app-button" disabled={busy}>
@@ -707,6 +699,7 @@ function FailureCard({
   mutate: Mutate;
   orgId: string | null;
 }) {
+  const confirm = useConfirm();
   const f = evaluation.failure;
   const rowClass = [
     "fmea-risk-row",
@@ -777,9 +770,14 @@ function FailureCard({
           className="app-button secondary"
           disabled={busy}
           onClick={() => {
-            if (window.confirm("Delete this failure entry?")) {
-              mutate({ action: "delete-failure", failureId: f.id });
-            }
+            void confirm({
+              title: "Delete failure entry",
+              body: `"${f.title}" is removed from the failure log for good, along with its O×S×D scores — the RPN summary drops it immediately.`,
+              confirmLabel: "Delete entry",
+              tone: "destructive",
+            }).then((ok) => {
+              if (ok) mutate({ action: "delete-failure", failureId: f.id });
+            });
           }}
         >
           Delete

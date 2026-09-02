@@ -3,6 +3,7 @@ import {
   csvCell,
   dmExportFilename,
   dmExportSummary,
+  mergeExportRevisions,
   normalizeExportFormat,
   normalizeExportReason,
   toDmExportCsv,
@@ -89,6 +90,7 @@ describe("dmExportSummary", () => {
       messageCount: 3,
       conversationCount: 2,
       deletedCount: 1,
+      revisionCount: 0,
       firstSentAt: "2026-01-01T00:00:00.000Z",
       lastSentAt: "2026-03-04T18:02:00.000Z",
     });
@@ -99,8 +101,52 @@ describe("dmExportSummary", () => {
       messageCount: 0,
       conversationCount: 0,
       deletedCount: 0,
+      revisionCount: 0,
       firstSentAt: null,
       lastSentAt: null,
     });
+  });
+});
+
+describe("mergeExportRevisions", () => {
+  const revision = (over: Partial<Parameters<typeof mergeExportRevisions>[1][number]> = {}) => ({
+    conversationId: "c1",
+    messageId: "m2",
+    action: "edit" as const,
+    priorBody: "prior",
+    actorUserId: "u1",
+    actorName: "Ali Mentor",
+    revisedAt: "2026-03-04T18:05:00.000Z",
+    ...over,
+  });
+
+  it("places each message's history right after it, oldest change first, with the prior body", () => {
+    const merged = mergeExportRevisions(
+      [row(), row({ messageId: "m2", body: "final wording" })],
+      [
+        revision({ priorBody: "second wording", revisedAt: "2026-03-04T18:10:00.000Z" }),
+        revision({ priorBody: "first wording", revisedAt: "2026-03-04T18:05:00.000Z" }),
+        revision({ messageId: "missing", action: "delete", priorBody: "orphan" }),
+      ],
+    );
+    expect(merged.map((item) => [item.messageId, item.body, item.revisionAction ?? null])).toEqual([
+      ["m1", "Ride leaves at 6", null],
+      ["m2", "final wording", null],
+      ["m2", "first wording", "edit"],
+      ["m2", "second wording", "edit"],
+    ]);
+    expect(merged[2]?.revisionActor).toBe("Ali Mentor");
+    expect(merged[2]?.sentAt).toBe("2026-03-04T18:02:00.000Z");
+  });
+
+  it("counts revisions separately from messages and includes them in the CSV", () => {
+    const merged = mergeExportRevisions(
+      [row()],
+      [revision({ messageId: "m1", action: "delete", priorBody: "Ride leaves at 6" })],
+    );
+    expect(dmExportSummary(merged)).toMatchObject({ messageCount: 1, revisionCount: 1 });
+    const lines = toDmExportCsv(merged).trimEnd().split("\r\n");
+    expect(lines[0]).toContain('"revisionAction"');
+    expect(lines[2]).toContain('"delete"');
   });
 });

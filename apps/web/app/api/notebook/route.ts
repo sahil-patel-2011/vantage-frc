@@ -1,8 +1,8 @@
-import type { PoolClient } from "@neondatabase/serverless";
+import type { PoolClient, QueryResultRow } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { parseNotebookAction, summarizeNotebook, type BuildPhase } from "../../../lib/notebook";
+import { parseNotebookAction, summarizeNotebook, type BuildPhase, type NotebookMedia } from "../../../lib/notebook";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -24,6 +24,49 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: error instanceof Error ? error.message : "Notebook request failed" }, { status });
+}
+
+/** Soft-fail when the media link table (0503) or media library (0483) is not migrated yet. */
+async function optionalQuery<T extends QueryResultRow>(client: PoolClient, sql: string, params: unknown[]): Promise<T[]> {
+  try {
+    const result = await client.query<T>(sql, params);
+    return result.rows;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/does not exist|undefined_table/i.test(message)) return [];
+    throw error;
+  }
+}
+
+type MediaLinkRow = { entryId: string; itemId: string; title: string; kind: "photo" | "video"; position: number; hasThumbnail: boolean };
+
+async function loadEntryMedia(client: PoolClient, orgId: string, entryIds: string[]): Promise<Map<string, NotebookMedia[]>> {
+  const byEntry = new Map<string, NotebookMedia[]>();
+  if (!entryIds.length) return byEntry;
+  const rows = await optionalQuery<MediaLinkRow>(
+    client,
+    `SELECT l.entry_id AS "entryId", l.media_item_id AS "itemId", i.title, i.kind, l.position,
+            (i.thumbnail IS NOT NULL) AS "hasThumbnail"
+     FROM notebook_entry_media l
+     JOIN media_items i ON i.id = l.media_item_id AND i.org_id = l.org_id
+     WHERE l.org_id = $1::uuid AND l.entry_id = ANY($2::uuid[]) AND i.status = 'ready'
+     ORDER BY l.position, l.created_at`,
+    [orgId, entryIds],
+  );
+  const orgQuery = `orgId=${encodeURIComponent(orgId)}`;
+  for (const row of rows) {
+    const list = byEntry.get(row.entryId) ?? [];
+    list.push({
+      itemId: row.itemId,
+      title: row.title,
+      kind: row.kind,
+      position: Number(row.position),
+      src: `/api/media-library/items/${row.itemId}?${orgQuery}`,
+      thumbnailSrc: row.hasThumbnail ? `/api/media-library/items/${row.itemId}?${orgQuery}&thumbnail=1` : null,
+    });
+    byEntry.set(row.entryId, list);
+  }
+  return byEntry;
 }
 
 type EntryRow = {
@@ -63,11 +106,12 @@ export async function GET(request: Request) {
       const summary = summarizeNotebook(
         entries.rows.map((e) => ({ subsystem: e.subsystem, phase: e.phase, entryDate: e.entryDate })),
       );
+      const media = await loadEntryMedia(client, row.orgId, entries.rows.map((e) => e.id));
 
       return {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
-        entries: entries.rows,
+        entries: entries.rows.map((entry) => ({ ...entry, media: media.get(entry.id) ?? [] })),
         summary,
       };
     });
@@ -118,6 +162,34 @@ export async function POST(request: Request) {
         case "delete_entry": {
           const deleted = await client.query(`DELETE FROM notebook_entries WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this entry");
+          return { ok: true };
+        }
+        case "attach_media": {
+          const entry = await client.query(`SELECT 1 FROM notebook_entries WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
+          if (!entry.rowCount) throw new HttpError(404, "Entry not found");
+          // The item must be this org's and fully uploaded — never a pending or foreign row.
+          const item = await client.query(
+            `SELECT 1 FROM media_items WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'ready'`,
+            [action.mediaItemId, action.orgId],
+          );
+          if (!item.rowCount) throw new HttpError(404, "Media item not found or still uploading");
+          await client.query(
+            `INSERT INTO notebook_entry_media (org_id, entry_id, media_item_id, position, added_by)
+             VALUES ($1::uuid, $2::uuid, $3::uuid,
+                     COALESCE((SELECT max(position) + 1 FROM notebook_entry_media WHERE entry_id = $2::uuid), 0),
+                     $4::uuid)
+             ON CONFLICT (entry_id, media_item_id) DO NOTHING`,
+            [action.orgId, action.id, action.mediaItemId, userId],
+          );
+          await client.query(`UPDATE notebook_entries SET updated_at = now() WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
+          return { ok: true };
+        }
+        case "detach_media": {
+          const removed = await client.query(
+            `DELETE FROM notebook_entry_media WHERE org_id = $1::uuid AND entry_id = $2::uuid AND media_item_id = $3::uuid`,
+            [action.orgId, action.id, action.mediaItemId],
+          );
+          if (!removed.rowCount) throw new HttpError(404, "Attachment not found");
           return { ok: true };
         }
         default:

@@ -49,9 +49,10 @@ export default function PairwiseClient() {
   useEffect(() => {
     void load();
     // Initial load only — criterion changes call load explicitly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
+  const [promoted, setPromoted] = useState("");
   const live = view?.status === "live" ? view : null;
   const orgId = live?.orgId ?? (view && "orgId" in view ? view.orgId : null);
   const related = pairwiseRelatedLinks(orgId);
@@ -97,6 +98,36 @@ export default function PairwiseClient() {
       });
       const data = (await response.json()) as PairwiseView;
       if (data && "status" in data) setView(data);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function promote(teamNumber: number) {
+    if (!live || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/pairwise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "promote_to_pick_list",
+          orgId: live.orgId,
+          criterionId: live.criterionId,
+          teamNumber,
+        }),
+      });
+      const data = (await response.json()) as
+        | (PairwiseView & { promoted?: { note: string } | null })
+        | { error?: string };
+      if (!response.ok || !("status" in data)) {
+        throw new Error("error" in data && data.error ? data.error : "Could not promote to the pick list");
+      }
+      setView(data);
+      setPromoted(`${teamNumber} is on the pick list${data.promoted?.note ? ` — ${data.promoted.note}` : ""}.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not promote to the pick list");
     } finally {
       setBusy(false);
     }
@@ -158,6 +189,12 @@ export default function PairwiseClient() {
         : null}
       {!view && !error ? <p className="app-muted">Loading qualitative ranks…</p> : null}
 
+      {promoted ? (
+        <p className="form-message" role="status">
+          {promoted}
+        </p>
+      ) : null}
+
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps.map((step) => (
@@ -182,6 +219,7 @@ export default function PairwiseClient() {
           }}
           onCompare={compare}
           onRemove={remove}
+          onPromote={promote}
         />
       ) : null}
     </main>
@@ -198,6 +236,7 @@ function LivePairwise({
   onCriterion,
   onCompare,
   onRemove,
+  onPromote,
 }: {
   view: LiveView;
   left: string;
@@ -208,6 +247,7 @@ function LivePairwise({
   onCriterion: (id: string) => void;
   onCompare: (winner: "left" | "right") => void;
   onRemove: (id: string) => void;
+  onPromote: (teamNumber: number) => void;
 }) {
   const suggestions = view.eventTeams;
   return (
@@ -298,6 +338,7 @@ function LivePairwise({
                 <th>Wins</th>
                 <th>Losses</th>
                 <th>Strength</th>
+                <th>Pick list</th>
               </tr>
             </thead>
             <tbody>
@@ -310,11 +351,21 @@ function LivePairwise({
                   <td>{row.wins}</td>
                   <td>{row.losses}</td>
                   <td>{row.strength.toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="app-button secondary"
+                      disabled={busy}
+                      onClick={() => onPromote(row.teamNumber)}
+                    >
+                      Promote
+                    </button>
+                  </td>
                 </tr>
               ))}
               {!view.ranks.length ? (
                 <tr>
-                  <td colSpan={5}>No qualitative ranks yet. Strength is not EPA and is not filled in for you.</td>
+                  <td colSpan={6}>No qualitative ranks yet. Strength is not EPA and is not filled in for you.</td>
                 </tr>
               ) : null}
             </tbody>

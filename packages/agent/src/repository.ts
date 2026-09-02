@@ -3,6 +3,8 @@ import { boundedContext, type ChatAdapter, type ContextItem } from "./index";
 import { AIOrchestrator, type ContextSource } from "./orchestrator";
 import { createVantageToolRegistry } from "./tools";
 import type { AnnotatedToolOutput } from "./auto-tools";
+import type { ResolvedModelSource } from "./resolve-chat-adapter";
+import { loadThreadHistory } from "./thread-history";
 
 export type SourceRef = {
   type: string;
@@ -249,12 +251,21 @@ export class AgentRepository {
         label?: string;
       }
     >;
+    /** Provenance source of `adapter` (hosted adapters are plan-gated through routeModel). */
+    modelSource?: ResolvedModelSource;
   }) {
     const message = await this.client.query<{ id: string }>(
       `INSERT INTO agent_messages(thread_id,org_id,author_user_id,role,content,explicitly_shared)
        VALUES($1,$2,$3,'user',$4,$5) RETURNING id`,
       [input.threadId, input.orgId, input.userId, input.message, input.scope === "team"],
     );
+    // Chat memory: the last turns of this thread (oldest first, ~24k chars) ride to the
+    // adapter as structured history — the model finally sees the conversation, not one
+    // isolated message. The turn just inserted is excluded; it is the message itself.
+    const history = await loadThreadHistory(this.client, {
+      threadId: input.threadId,
+      excludeMessageId: message.rows[0]!.id,
+    });
     const context = await this.retrieveContext(input.userId, input.scope === "team" ? input.orgId : undefined);
     const bridgeItems = (input.bridgeContext ?? []).filter((item) => item.content?.trim());
     const bridgeSources: ContextSource[] = bridgeItems.map((item) => ({
@@ -294,6 +305,8 @@ export class AgentRepository {
       contextSources: [...bridgeSources, ...memorySources],
       tokenBudget: context.estimatedTokens + bridgeTokens + 1000,
       promptCachingEnabled: input.promptCachingEnabled,
+      history,
+      modelSource: input.modelSource,
     });
     const text = orchestrated.text;
     const assistant = await this.client.query<{ id: string }>(
@@ -341,6 +354,7 @@ export class AgentRepository {
       toolOutputs: orchestrated.toolOutputs,
       activeEventKey: orchestrated.activeEventKey,
       usageFeature: orchestrated.usageFeature,
+      historyTurns: history.length,
       bridgeProvenance: bridgeSources.map((item) => ({
         type: item.type,
         id: item.id,

@@ -10,6 +10,8 @@ import {
 } from "../../lib/mock-judging";
 import type { MockJudgingView } from "../../lib/mock-judging/compute-mock-judging";
 import type { MockJudgingAwardCategory, MockJudgingCriterion } from "../../lib/mock-judging/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 function scoreTone(score: number): string {
   if (score >= 4) return "good";
@@ -30,6 +32,7 @@ export default function MockJudgingClient() {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -80,6 +83,8 @@ export default function MockJudgingClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -129,6 +134,8 @@ export default function MockJudgingClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="mock_judging" />
 
       {fetchFailed ? (
         (() => {

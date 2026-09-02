@@ -17,6 +17,8 @@ import {
   type MediaKitShellKind,
 } from "../../lib/media-kit/media-kit-related";
 import type { MediaKitAssetKind, MediaKitReadinessTier } from "../../lib/media-kit/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media-kit.css";
@@ -179,6 +181,7 @@ export default function MediaKitClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -251,6 +254,8 @@ export default function MediaKitClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -335,6 +340,8 @@ export default function MediaKitClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="media_kit_one_pager" />
 
       <MediaKitNextActionsPanel actions={nextActions} />
 

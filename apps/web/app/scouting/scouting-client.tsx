@@ -34,7 +34,10 @@ import {
 } from "../../lib/scouting/draft-autosave";
 import {
   cacheEvent,
+  deleteSyncedMedia,
+  describeMediaSync,
   discardQuarantined,
+  discardQueuedMedia,
   getCachedEvent,
   getQueuedMediaBlob,
   listQuarantine,
@@ -42,12 +45,15 @@ import {
   queueEntry,
   queueMedia,
   quarantineMedia,
+  resolveMediaRef,
   retryQuarantined,
   stableClientId,
   syncMediaOutbox,
   syncOutbox,
+  type MediaSyncDescription,
   type QuarantinedItem,
 } from "../../lib/scout-offline";
+import { scoutMediaUrl } from "../../lib/scout-media/client";
 import {
   DOWNSCALE_JPEG_QUALITY,
   downscaleDimensions,
@@ -57,6 +63,7 @@ import {
   oversizeMediaReason,
 } from "../../lib/scouting/media-downscale";
 import { nextMatchKey, scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
+import { visibleFieldsForPayload } from "../../lib/scouting/conditional";
 import { StudioField, isStudioField } from "./studio-fields";
 import {
   SCOUTING_RELATED_INCLUDE,
@@ -78,6 +85,7 @@ import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import "./scouting-qr.css";
+import "./scout-media.css";
 
 type Bootstrap = {
   eventKey: string | null;
@@ -177,6 +185,9 @@ function ScoutingRelatedStrip({ orgId }: { orgId?: string | null }) {
           {link.label}
         </a>
       ))}
+      <a className="app-button secondary" href={withOrgHref("/scouting/pit-photos", orgId)}>
+        Pit photos
+      </a>
     </nav>
   );
 }
@@ -549,9 +560,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     [data, type],
   );
 
+  // Conditional fields ("show only when…") drop out of the form as the scout
+  // answers; validatePayload skips the required check for hidden fields, so a
+  // hidden required question can never block sync.
   const formFields = useMemo(
-    () => schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
-    [schema],
+    () =>
+      schema
+        ? visibleFieldsForPayload(schema.definition, payload).filter((field) => !isScoutIdentityField(field))
+        : [],
+    [payload, schema],
   );
 
   const schemaBudget = useMemo(
@@ -627,7 +644,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       matchKey: type === "match" ? matchKey : undefined,
       teamKey,
       schemaId: schema.id,
-      payload,
+      // A retake the server recognised as a byte-identical duplicate points at
+      // the original's clientId so the entry never references a missing photo.
+      payload: await resolveRobotImageRefs(schema.definition, payload),
       confidence,
       source,
       updatedAt: new Date().toISOString(),
@@ -665,11 +684,20 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     const eventKey = data?.eventKey;
     if (!eventKey || !teamKey) return null;
     const clientId = stableClientId();
+    const kind = file.type.startsWith("video/") ? "video" : "photo";
+    // A photo from the generic pit input still belongs on the form's robot
+    // image question (if there is one) so the entry payload carries its ref.
+    const robotImageField =
+      options?.fieldKey || kind !== "photo"
+        ? null
+        : formFields.find(
+            (candidate) => candidate.type === "robot_image" || candidate.widget === "robot_image",
+          ) ?? null;
+    const fieldKey = options?.fieldKey ?? robotImageField?.key;
     const tags = ["pit", ...(options?.tags ?? [])];
-    if (options?.fieldKey) tags.push(`field:${options.fieldKey}`, "robot_image");
+    if (fieldKey) tags.push(`field:${fieldKey}`, "robot_image");
     // Phone photos are routinely >6MB — downscale before anything is queued.
     const blob = await downscaleImageInBrowser(file);
-    const kind = file.type.startsWith("video/") ? "video" : "photo";
     const metadata = {
       eventKey,
       teamKey,
@@ -677,6 +705,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       contentType: blob.type || file.type || "image/jpeg",
       byteSize: blob.size,
       tags,
+      // Links the photo to this (possibly not-yet-saved) entry; the server
+      // resolves it to entry_id whichever of the two syncs first.
+      entryClientId,
     };
     if (exceedsMediaCap(blob.size)) {
       // Still over the server cap (e.g. a long video) — quarantine instead of
@@ -688,14 +719,44 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return null;
     }
     await queueMedia({ clientId, orgId, metadata, blob });
+    if (robotImageField) {
+      const key = robotImageField.key;
+      setPayload((current) => ({
+        ...current,
+        [key]: [...normalizeRobotImageRefs(current[key]), clientId],
+      }));
+    }
     setMessage(
-      options?.fieldKey
+      fieldKey
         ? "Robot image queued for org-isolated upload"
         : "Media queued separately for bandwidth-safe upload",
     );
     await refreshCounts();
     await sync();
     return clientId;
+  }
+
+  /** Retry / Discard / Delete for one photo chip in the robot image field. */
+  async function handleMediaAction(action: "retry" | "discard" | "delete", clientId: string) {
+    try {
+      if (action === "retry") {
+        await retryQuarantined(clientId);
+        await refreshCounts();
+        await sync();
+        return;
+      }
+      if (action === "discard") {
+        await discardQueuedMedia(clientId);
+        await refreshCounts();
+        setMessage("Photo discarded — it will not sync.");
+        return;
+      }
+      await deleteSyncedMedia(orgId, clientId);
+      await refreshCounts();
+      setMessage("Photo deleted for the whole team.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not update that photo");
+    }
   }
 
   async function retryQuarantineItem(clientId: string) {
@@ -1239,6 +1300,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                     ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
                     : undefined
                 }
+                onMediaAction={
+                  field.type === "robot_image" || field.widget === "robot_image"
+                    ? handleMediaAction
+                    : undefined
+                }
               />
             ))}
 
@@ -1286,14 +1352,19 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
             />
 
             {type === "pit" ? (
-              <label className="scout-media">
-                Queue pit photo/video
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={(event) => event.target.files?.[0] && void attachMedia(event.target.files[0])}
-                />
-              </label>
+              <>
+                <label className="scout-media">
+                  Queue pit photo/video
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(event) => event.target.files?.[0] && void attachMedia(event.target.files[0])}
+                  />
+                </label>
+                <a className="scout-media-wall-link" href={withOrgHref("/scouting/pit-photos", orgId)}>
+                  Open the pit photo wall →
+                </a>
+              </>
             ) : null}
 
             <button type="button" className="app-button" onClick={() => void submit()}>
@@ -1470,10 +1541,25 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
  * (max edge / quality live in lib/scouting/media-downscale.ts with the pure
  * geometry math). Falls back to the original file on any decode failure.
  */
+/**
+ * Decode honoring the EXIF orientation tag so a portrait phone shot lands on
+ * the canvas upright (the re-encoded JPEG carries no EXIF, so without this the
+ * photo would come out sideways). Older engines that reject the option fall
+ * back to a plain decode — the server's sharp().rotate() still fixes the
+ * un-downscaled originals.
+ */
+async function decodeOrientedBitmap(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    return createImageBitmap(file);
+  }
+}
+
 async function downscaleImageInBrowser(file: File): Promise<Blob> {
   if (!isDownscalableImageType(file.type)) return file;
   try {
-    const bitmap = await createImageBitmap(file);
+    const bitmap = await decodeOrientedBitmap(file);
     try {
       const { width, height, scaled } = downscaleDimensions(bitmap.width, bitmap.height);
       // Small-but-heavy files (huge PNGs) still get a JPEG re-encode.
@@ -1499,34 +1585,155 @@ async function downscaleImageInBrowser(file: File): Promise<Blob> {
 }
 
 /**
- * Offline-first photo preview: while the blob is still queued in IndexedDB it
- * renders from an object URL (revoked on unmount); once synced it falls back
- * to the org-scoped server route.
+ * Duplicate-aware copy of the payload for sync: every robot_image ref that the
+ * server reported as a byte-identical retake is swapped for the original's
+ * clientId (deduped), so the stored entry never points at a photo that was
+ * never stored.
  */
-function RobotImagePreview({ clientId, orgId }: { clientId: string; orgId: string }) {
+async function resolveRobotImageRefs(
+  definition: SchemaDefinition,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const next = { ...payload };
+  for (const field of definition.fields) {
+    if (field.type !== "robot_image" && field.widget !== "robot_image") continue;
+    const refs = normalizeRobotImageRefs(payload[field.key]);
+    if (!refs.length) continue;
+    const resolved = await Promise.all(refs.map((ref) => resolveMediaRef(ref)));
+    next[field.key] = [...new Set(resolved)];
+  }
+  return next;
+}
+
+const MEDIA_CHIP_LABEL: Record<MediaSyncDescription["phase"], string> = {
+  queued: "Queued",
+  uploading: "Uploading",
+  synced: "Synced",
+  duplicate: "Duplicate",
+  failed: "Failed",
+  unknown: "On server",
+};
+
+/**
+ * Offline-first photo preview with a live sync chip. While the blob is still
+ * queued in IndexedDB it renders from an object URL (revoked on unmount); once
+ * synced it switches to the org-scoped thumb route (cached by the service
+ * worker). Duplicates preview the original the server kept.
+ */
+function RobotImagePreview({
+  clientId,
+  orgId,
+  onAction,
+  onRemove,
+}: {
+  clientId: string;
+  orgId: string;
+  onAction?: (action: "retry" | "discard" | "delete", clientId: string) => Promise<void>;
+  onRemove: () => void;
+}) {
   const [src, setSrc] = useState<string | null>(null);
+  const [sync, setSync] = useState<MediaSyncDescription>({
+    phase: "unknown",
+    detail: null,
+    duplicateOf: null,
+  });
+  const [busy, setBusy] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
-    void (async () => {
-      const blob = await getQueuedMediaBlob(clientId).catch(() => null);
+    let timer: number | null = null;
+
+    const refresh = async () => {
+      const description = await describeMediaSync(clientId).catch<MediaSyncDescription>(() => ({
+        phase: "unknown",
+        detail: null,
+        duplicateOf: null,
+      }));
       if (cancelled) return;
-      if (blob) {
-        objectUrl = URL.createObjectURL(blob);
-        setSrc(objectUrl);
-      } else {
-        setSrc(`/api/scouting/media/${encodeURIComponent(clientId)}?orgId=${encodeURIComponent(orgId)}`);
+      setSync(description);
+      const local = description.phase === "queued" || description.phase === "uploading" || description.phase === "failed";
+      if (local) {
+        if (!objectUrl) {
+          const blob = await getQueuedMediaBlob(clientId).catch(() => null);
+          if (cancelled) return;
+          if (blob) {
+            objectUrl = URL.createObjectURL(blob);
+            setSrc(objectUrl);
+          }
+        }
+        // Keep polling while the upload is still on this device.
+        if (description.phase !== "failed") timer = window.setTimeout(() => void refresh(), 2500);
+        return;
       }
-    })();
+      const serverId = description.phase === "duplicate" && description.duplicateOf ? description.duplicateOf : clientId;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      setSrc(scoutMediaUrl(orgId, serverId, "thumb"));
+    };
+    void refresh();
     return () => {
       cancelled = true;
+      if (timer) window.clearTimeout(timer);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [clientId, orgId]);
-  if (!src) return <span className="app-muted">Loading photo…</span>;
+
+  async function run(action: "retry" | "discard" | "delete") {
+    if (!onAction || busy) return;
+    if (action === "delete" && !window.confirm("Delete this photo for the whole team?")) return;
+    setBusy(true);
+    try {
+      await onAction(action, clientId);
+      if (action === "discard" || action === "delete") onRemove();
+      else setSync(await describeMediaSync(clientId));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const chip = (
+    <span className={`scout-media-chip is-${sync.phase}`} title={sync.detail ?? undefined}>
+      {MEDIA_CHIP_LABEL[sync.phase]}
+    </span>
+  );
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- org-scoped or locally queued media
-    <img src={src} alt="Robot" width={72} height={72} />
+    <>
+      {src ? (
+         
+        <img src={src} alt="Robot" width={72} height={72} />
+      ) : (
+        <span className="app-muted">Loading photo…</span>
+      )}
+      {chip}
+      {sync.phase === "failed" && sync.detail ? (
+        <small className="scout-media-item-detail">{sync.detail}</small>
+      ) : null}
+      <div className="scout-media-item-actions">
+        {sync.phase === "failed" && onAction ? (
+          <button type="button" className="text-button" disabled={busy} onClick={() => void run("retry")}>
+            Retry
+          </button>
+        ) : null}
+        {(sync.phase === "queued" || sync.phase === "failed") && onAction ? (
+          <button type="button" className="text-button" disabled={busy} onClick={() => void run("discard")}>
+            Discard
+          </button>
+        ) : null}
+        {sync.phase === "synced" && onAction ? (
+          <button type="button" className="text-button" disabled={busy} onClick={() => void run("delete")}>
+            Delete
+          </button>
+        ) : null}
+        {sync.phase === "uploading" ? null : (
+          <button type="button" className="text-button" disabled={busy} onClick={onRemove}>
+            Remove
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -1555,8 +1762,9 @@ function ScoutQuarantinePanel({
   return (
     <Panel
       as="section"
+      id="scout-quarantine"
       className="scout-quarantine-panel"
-      style={{ minHeight: "auto", marginBottom: 14 }}
+      style={{ minHeight: "auto", marginBottom: 14, scrollMarginTop: 80 }}
       aria-label="Entries needing attention"
     >
       <header>
@@ -1607,6 +1815,7 @@ function Field({
   orgId,
   onChange,
   onAttachRobotImage,
+  onMediaAction,
 }: {
   field: SchemaDefinition["fields"][number];
   value: unknown;
@@ -1616,6 +1825,7 @@ function Field({
   orgId?: string;
   onChange(value: unknown): void;
   onAttachRobotImage?: (file: File) => Promise<string | null>;
+  onMediaAction?: (action: "retry" | "discard" | "delete", clientId: string) => Promise<void>;
 }) {
   const conflict = flags.find((flag) => flag.status === "conflict");
   const soft = flags.find((flag) => flag.soft);
@@ -1686,24 +1896,31 @@ function Field({
           <div className="scout-robot-images">
             {refs.length ? (
               <ul className="scout-robot-image-list">
-                {refs.map((ref) => (
-                  <li key={ref}>
-                    {orgId ? (
-                      <RobotImagePreview clientId={ref} orgId={orgId} />
-                    ) : (
-                      <span className="app-muted">{ref.slice(0, 8)}…</span>
-                    )}
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() =>
-                        onChange(refs.filter((item) => item !== ref).length ? refs.filter((item) => item !== ref) : undefined)
-                      }
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
+                {refs.map((ref) => {
+                  const remove = () => {
+                    const remaining = refs.filter((item) => item !== ref);
+                    onChange(remaining.length ? remaining : undefined);
+                  };
+                  return (
+                    <li key={ref}>
+                      {orgId ? (
+                        <RobotImagePreview
+                          clientId={ref}
+                          orgId={orgId}
+                          onAction={onMediaAction}
+                          onRemove={remove}
+                        />
+                      ) : (
+                        <>
+                          <span className="app-muted">{ref.slice(0, 8)}…</span>
+                          <button type="button" className="text-button" onClick={remove}>
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
             <div className="scout-robot-image-actions">

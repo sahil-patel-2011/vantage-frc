@@ -6,6 +6,8 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { CHANGE_TYPES, SUBSYSTEMS, changeTypeLabel, subsystemLabel, verdictLabel } from "../../lib/code-perf";
 import type { CodePerfView } from "../../lib/code-perf/compute-code-perf";
 import type { ChangeType, CorrelationVerdict, Subsystem } from "../../lib/code-perf/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 function verdictTone(verdict: CorrelationVerdict): string {
   if (verdict === "improved") return "good";
@@ -24,6 +26,8 @@ export default function CodePerfClient() {
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest analysis render: "AI" only when a model wrote it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -78,6 +82,8 @@ export default function CodePerfClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -125,6 +131,8 @@ export default function CodePerfClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="code_perf" />
 
       {fetchFailed ? (
         (() => {

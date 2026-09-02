@@ -30,7 +30,11 @@ function asSession(ref: DocumentRef | null | undefined): ClaudeCadSession {
     workspaceId: workspaceId || undefined,
     elementId: elementId || undefined,
     documentName: typeof ref.documentName === "string" ? ref.documentName : undefined,
+    elementName: typeof ref.elementName === "string" ? ref.elementName : undefined,
     lastSketchFeatureId: typeof ref.lastSketchFeatureId === "string" ? ref.lastSketchFeatureId : undefined,
+    // Feature history persists so plan steps and undo can chain across requests.
+    features: Array.isArray(ref.features) ? (ref.features as ClaudeCadSession["features"]) : undefined,
+    rebuild: typeof ref.rebuild === "number" ? ref.rebuild : undefined,
   };
 }
 
@@ -107,7 +111,10 @@ export async function saveCadAgentSession(
     workspaceId: input.session.workspaceId ?? null,
     elementId: input.session.elementId ?? null,
     documentName: input.session.documentName ?? null,
+    elementName: input.session.elementName ?? null,
     lastSketchFeatureId: input.session.lastSketchFeatureId ?? null,
+    features: (input.session.features ?? []).slice(-200),
+    rebuild: input.session.rebuild ?? 0,
     url,
   };
   const brief = { kind: "cad_agent", messages, steps };

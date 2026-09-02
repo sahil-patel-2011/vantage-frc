@@ -1,11 +1,26 @@
+import type { TaskPriority, TaskStatus } from "../tasks/types";
+
 export const TODO_STATUSES = ["todo", "doing", "done"] as const;
 export type TodoStatus = (typeof TODO_STATUSES)[number];
 
+/**
+ * One team task as the Soft-UI todo list sees it. Backed by build_tasks (the
+ * merged store, migration 0502): `status` is the coarse list view, `taskStatus`
+ * the canonical board status the same row shows on the board columns.
+ */
 export type TeamTodo = {
   id: string;
   title: string;
   notes: string;
   status: TodoStatus;
+  taskStatus: TaskStatus;
+  priority: TaskPriority;
+  subsystem: string;
+  /** Free-text collaborators (board style); assigneeName is the linked member when set. */
+  assignees: string[];
+  blockedReason: string | null;
+  estimateHours: number | null;
+  seasonYear: number;
   assigneeUserId: string | null;
   assigneeName: string | null;
   subteamId: string | null;
@@ -65,8 +80,9 @@ export type TodosView =
       todos: TeamTodo[];
       members: TodoMember[];
       subteams: TodoSubteam[];
+      /** Subsystem tags already used on this team's tasks (for the datalist). */
+      subsystems: string[];
       metrics: TodoMetrics;
       focusTodoId: string | null;
       computedAt: string;
     };
-

@@ -18,7 +18,7 @@
 .inspection-copilot-checks{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 0}
 .inspection-copilot-checks label{display:flex;gap:6px;align-items:center}
 .inspection-copilot-tip{margin:0}
-@media(max-width:900px){
+@media(max-width:980px){
   .inspection-copilot-header-actions{justify-content:flex-start}
   .inspection-copilot-next-actions li{flex-direction:column;align-items:stretch}
   .inspection-copilot-weight-row{grid-template-columns:1fr;gap:6px}

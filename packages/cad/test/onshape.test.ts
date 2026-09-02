@@ -113,6 +113,12 @@ describe("Onshape export + transport (mocked HTTP)", () => {
           resultExternalDataIds: ["ext-1"],
         });
       }
+      if (path.includes("/externaldata/ext-1")) {
+        return new Response("ISO-10303-21;\nHEADER;\nENDSEC;\nEND-ISO-10303-21;\n", {
+          status: 200,
+          headers: { "content-type": "application/octet-stream" },
+        });
+      }
       if (path.endsWith("/features")) {
         return Response.json({
           features: [{ featureId: "F1", message: { name: "Sketch 1", featureType: "newSketch" } }],
@@ -135,6 +141,11 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     });
     expect(mutation.exportArtifact?.provenance.format).toBe("STEP");
     expect(mutation.exportArtifact?.type).toBe("cad_export_step");
+    // The real bytes were downloaded and hashed, not summarised.
+    expect(mutation.exportArtifact?.provenance.byteLength).toBeGreaterThan(20);
+    expect(mutation.exportArtifact?.provenance.contentSha256).toHaveLength(64);
+    expect(mutation.exportArtifact?.provenance.translationId).toBe("tr-1");
+    expect(mutation.exportArtifact?.provenance.storage).toBe("metadata_only");
     const described = await transport.describe();
     expect(described.summary.validation).toBe("onshape-live");
     expect(described.summary.featureCount).toBe(1);
@@ -166,19 +177,50 @@ describe("Onshape export + transport (mocked HTTP)", () => {
     expect(elements[0]).toMatchObject({ id: "el-1", elementType: "PARTSTUDIO" });
   });
 
-  it("soft-fails placeholder sketch when FeatureScript is rejected", async () => {
-    const http: OnshapeHttp = vi.fn(async () =>
-      Response.json({ message: "bad script" }, { status: 400 }),
+  it("builds a real sketch feature through the shared executor and surfaces Onshape's error honestly", async () => {
+    const posted: unknown[] = [];
+    const rejecting: OnshapeHttp = vi.fn(async () =>
+      Response.json({ message: "bad feature" }, { status: 400 }),
     ) as unknown as OnshapeHttp;
     const transport = createOnshapeApiTransport({
-      http,
+      http: rejecting,
       document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
     });
-    const result = await transport.mutate({
-      operation: "create_sketch",
-      parameters: { widthMm: 40 },
-      idempotencyKey: "idem-sketch",
+    // No placeholder "intent-" ids: a rejected feature is a failed step.
+    await expect(
+      transport.mutate({ operation: "create_sketch", parameters: { width: "40 mm", height: "20 mm" }, idempotencyKey: "idem-sketch" }),
+    ).rejects.toThrow(/Onshape HTTP 400/);
+
+    const accepting: OnshapeHttp = vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.endsWith("/features") && init?.method === "POST") {
+        posted.push(JSON.parse(String(init.body)));
+        return Response.json({ feature: { featureId: `F${posted.length}` } });
+      }
+      return Response.json({}, { status: 404 });
+    }) as unknown as OnshapeHttp;
+    const live = createOnshapeApiTransport({
+      http: accepting,
+      document: { documentId: "d1", workspaceId: "w1", elementId: "e1" },
     });
-    expect(result.featureId).toMatch(/^intent-create_sketch-/);
+    const sketch = await live.mutate({
+      operation: "create_sketch",
+      parameters: { width: "40 mm", height: "1 in", plane: "Top" },
+      idempotencyKey: "idem-sketch-2",
+    });
+    expect(sketch.featureId).toBe("F1");
+    const extrude = await live.mutate({
+      operation: "create_extrude",
+      parameters: { depth: "6 mm", direction: "cut" },
+      idempotencyKey: "idem-extrude",
+    });
+    expect(extrude.featureId).toBe("F2");
+    const sketchBody = posted[0] as { feature: { featureType: string; entities: unknown[] } };
+    expect(sketchBody.feature.featureType).toBe("newSketch");
+    expect(sketchBody.feature.entities).toHaveLength(4);
+    const extrudeBody = posted[1] as { feature: { featureType: string; parameters: Array<{ parameterId: string; value: unknown }> } };
+    expect(extrudeBody.feature.featureType).toBe("extrude");
+    expect(extrudeBody.feature.parameters.find((p) => p.parameterId === "operationType")?.value).toBe("REMOVE");
+    // The extrude chained to the sketch this transport just created.
+    expect(JSON.stringify(extrudeBody)).toContain("F1");
   });
 });

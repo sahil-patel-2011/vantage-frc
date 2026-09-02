@@ -8,6 +8,7 @@ import {
   deletePairwiseComparison,
   type PairwiseView,
 } from "../../../lib/pairwise/compute-pairwise";
+import { promoteToPickList, type PromoteToPickListResult } from "../../../lib/picklist";
 
 const FALLBACK: PairwiseView = {
   status: "setup_required",
@@ -61,7 +62,34 @@ export async function POST(request: Request) {
         session.user.id,
       ]);
       if (!member.rowCount) throw new Error("Organization access denied");
-      if (action === "compare") {
+      let promoted: PromoteToPickListResult | null = null;
+      if (action === "promote_to_pick_list") {
+        // Lift a qualitatively ranked robot onto THE pick list with the rank as its note.
+        const teamNumber = Number(body.teamNumber);
+        if (!Number.isInteger(teamNumber) || teamNumber <= 0) throw new Error("Enter a valid FRC team number.");
+        const current = await computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
+        if (current.status !== "live") throw new Error(current.message);
+        if (!current.eventKey) throw new Error("Set an active event before promoting to the pick list.");
+        const rank = current.ranks.find((row) => row.teamNumber === teamNumber);
+        const criterion = current.criteria.find((row) => row.id === current.criterionId) ?? null;
+        const criterionName = criterion?.name ?? "qualitative";
+        const rationale =
+          typeof body.rationale === "string" && body.rationale.trim()
+            ? body.rationale
+            : rank
+              ? `Pairwise #${rank.rank} on ${criterionName} — ${rank.wins}W/${rank.losses}L, strength ${rank.strength.toFixed(2)}`
+              : `Pairwise on ${criterionName} — not ranked yet`;
+        promoted = await promoteToPickList(client, {
+          orgId,
+          userId: session.user.id,
+          eventKey: current.eventKey,
+          teamKey: teamNumber,
+          sourceKind: "pairwise",
+          sourceId: criterion?.id ?? null,
+          rationale,
+          tags: criterion ? [criterion.slug] : [],
+        });
+      } else if (action === "compare") {
         if (!criterionId) throw new Error("Choose a qualitative criterion first.");
         await addPairwiseComparison(client, {
           orgId,
@@ -78,13 +106,14 @@ export async function POST(request: Request) {
       } else {
         throw new Error("Unknown pairwise action");
       }
-      return computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
+      const next = await computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
+      return { ...next, promoted };
     });
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Pairwise write failed";
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
-    if (/required|criterion|team number|outrank|Unknown pairwise/i.test(message)) {
+    if (/required|criterion|team number|outrank|Unknown pairwise|active event|pick list|reference/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });
     }
     return Response.json(FALLBACK);

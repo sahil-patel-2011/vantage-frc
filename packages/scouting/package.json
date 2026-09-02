@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@vantage/game-year": "*",
-    "@neondatabase/serverless": "latest"
+    "@neondatabase/serverless": "latest",
+    "fflate": "latest"
   }
 }

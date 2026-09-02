@@ -29,6 +29,15 @@ npx vantage-cad claude # Onshape/Fusion connectors for Claude Code (docs/CLAUDE_
 Run a single package's checks from its dir (e.g. `npm run typecheck --workspace=@vantage/web`). Unit tests
 and build are intentionally credential-free; RLS integration tests need a real Postgres with the migration roles.
 
+**OneDrive + Node 24 gotcha.** This checkout sits under OneDrive; Node 24's `readdir` reports its files as
+symlinks, so `next dev` discovers only `/` and Playwright finds no tests. Preload the fix:
+`NODE_OPTIONS="--require $(pwd -W)/scripts/dirent-onedrive-fix.cjs" npx playwright test`. For a browsable
+product shell without a real session use `node scripts/dev-fixture.mjs 3402` (sets `E2E_AUTH_FIXTURE=1` plus
+the preload; also wired as `web-fixture-3402` in `.claude/launch.json`), then set cookie
+`vantage-e2e-session=authenticated` and open `/dashboard`. Next refuses a second dev server from the same app
+dir, so run the browser specs against that fixture server instead of the default 3310 webServer:
+`PLAYWRIGHT_BASE_URL=http://localhost:3402 npx playwright test --config playwright.fixture.config.ts`.
+
 ## Layout
 
 - `apps/web` — the only shipping web deployment: marketing, legal/pricing/waitlist, Better Auth, and every

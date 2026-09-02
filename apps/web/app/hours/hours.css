@@ -48,8 +48,9 @@
 .hours-log .dur{font-variant-numeric:tabular-nums;font-weight:700}
 .hours-kind{padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px;font-size:10px;font-weight:700;color:var(--app-muted);white-space:nowrap}
 .hours-forms{display:grid;gap:12px}
-.hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--app-radius)}
-.hours-manual h3,.hours-policy h3{margin:0;font-size:13px}
+.hours-manual,.hours-policy,.hours-export{display:grid;gap:10px;padding:14px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--app-radius)}
+.hours-manual h3,.hours-policy h3,.hours-export h3{margin:0;font-size:13px}
+.hours-export a[aria-disabled="true"]{opacity:.5;pointer-events:none}
 .hours-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .hours-field{display:grid;gap:4px;min-width:0;color:var(--app-muted)}
 .hours-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}

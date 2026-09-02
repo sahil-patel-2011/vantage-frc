@@ -1,4 +1,5 @@
 import type { OpponentTendency, MatchPrediction, AllianceMatchup } from "@vantage/prediction-strategy";
+import type { FullBriefingView } from "../briefing/types";
 import type { DataSourceHealthView } from "../reference-health";
 import type { NexusQueueSnapshot } from "./nexus-queue";
 import type { StrategyPlaybookView, TbaAccessInfo } from "../strategy/types";
@@ -97,6 +98,12 @@ export type CommandSnapshot = {
   myDay: CommandMyDay | null;
   /** Nexus queue/pits from worker cache — null until a snapshot exists. */
   nexus: CommandNexus | null;
+  /**
+   * THE pre-match briefing for the focus match (lib/briefing/compute-briefing). Command
+   * renders its pre-match section from this payload so /command and /briefing cannot
+   * disagree. Null when the briefing could not be computed (no event / no team number).
+   */
+  briefing: FullBriefingView | null;
   prediction: {
     status: "live" | "empty" | "setup_required";
     matchKey: string | null;

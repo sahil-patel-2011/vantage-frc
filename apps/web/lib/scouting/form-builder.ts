@@ -22,14 +22,17 @@ import {
   ratingConfig,
   sliderConfig,
   timerConfig,
+  visibleWhenOf,
   type EntryType,
   type FieldDefinition,
   type FieldType,
+  type FieldVisibilityOp,
   type FieldWidget,
   type FormResetBehavior,
   type SchemaDefinition,
   type TimerMode,
 } from "@vantage/scouting";
+import { conditionProblems } from "./conditional";
 import {
   inferRoleForFieldKey,
   isStrategyFieldRole,
@@ -173,6 +176,18 @@ export type DraftFieldSettings = {
   gridRows?: number;
 };
 
+/**
+ * "Show only when…" as the builder stores it: the controlling question is referenced by
+ * its builder id (keys for brand-new questions do not exist until publish). Serialized
+ * to `config.visibleWhen` with the resolved key by definitionFromDraft.
+ */
+export type DraftVisibility = {
+  questionId: string;
+  op: FieldVisibilityOp;
+  /** Always a string in the builder; coerced to the controller's answer type at publish. */
+  value?: string;
+};
+
 export type DraftQuestion = {
   id: string;
   /**
@@ -190,6 +205,8 @@ export type DraftQuestion = {
   /** What happens to this answer after a save — preserve / reset / increment. */
   reset: FormResetBehavior;
   settings: DraftFieldSettings;
+  /** Conditional visibility; undefined = always shown. */
+  visibleWhen?: DraftVisibility;
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -234,6 +251,7 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
+    ...(partial?.visibleWhen ? { visibleWhen: partial.visibleWhen } : {}),
   };
 }
 
@@ -453,10 +471,21 @@ export function draftFromDefinition(definition: SchemaDefinition): {
   questions: DraftQuestion[];
 } {
   const { definition: locked } = stripScoutIdentityFields(definition);
+  const keys = new Set(locked.fields.map((field) => field.key));
   return {
     title: locked.title,
-    questions: locked.fields.map((field) =>
-      newDraftQuestion({
+    questions: locked.fields.map((field) => {
+      // Builder ids ARE the published keys here, so a stored condition maps straight across.
+      const condition = visibleWhenOf(field);
+      const visibleWhen: DraftVisibility | undefined =
+        condition && keys.has(condition.fieldKey) && condition.fieldKey !== field.key
+          ? {
+              questionId: condition.fieldKey,
+              op: condition.op,
+              ...(condition.value == null ? {} : { value: String(condition.value) }),
+            }
+          : undefined;
+      return newDraftQuestion({
         id: field.key,
         key: field.key,
         label: field.label,
@@ -469,9 +498,32 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         role: fieldStrategyRole(field),
         reset: fieldResetBehavior(field),
         settings: settingsFromField(field),
-      }),
-    ),
+        visibleWhen,
+      });
+    }),
   };
+}
+
+/** Answer kinds whose value is numeric on the wire — conditions compare them as numbers. */
+const NUMERIC_ANSWER_KINDS: readonly AnswerKind[] = ["number", "counter", "rating", "slider", "timer"];
+
+/** Coerce the builder's string value to what the controller actually stores. */
+export function coerceConditionValue(controller: Pick<DraftQuestion, "kind"> | undefined, raw: string): unknown {
+  const text = raw.trim();
+  if (!controller) return text;
+  if (controller.kind === "yesno") return text.toLowerCase() === "true" || text.toLowerCase() === "yes";
+  if (NUMERIC_ANSWER_KINDS.includes(controller.kind)) {
+    const numeric = Number(text);
+    return text !== "" && Number.isFinite(numeric) ? numeric : text;
+  }
+  return text;
+}
+
+/** Questions a condition may reference: real answers only (no headers / photos), never itself. */
+export function conditionControllerCandidates(questions: DraftQuestion[], forQuestionId: string): DraftQuestion[] {
+  return questions.filter(
+    (question) => question.id !== forQuestionId && question.kind !== "section" && question.kind !== "robot_image",
+  );
 }
 
 /**
@@ -689,6 +741,22 @@ export function definitionFromDraft(
       config.resetBehavior = question.reset;
     }
     Object.assign(config, studioConfigForQuestion(question, type));
+    // "Show only when": resolve the builder id to the controller's stable key. A condition
+    // whose controller was removed is dropped rather than published dangling.
+    const condition = question.visibleWhen;
+    if (condition) {
+      const controller = questions.find((entry) => entry.id === condition.questionId);
+      const controllerKey = controller && controller !== question ? assigned.get(controller) : undefined;
+      if (controllerKey) {
+        config.visibleWhen = {
+          fieldKey: controllerKey,
+          op: condition.op,
+          ...(condition.op === "truthy" || condition.value == null
+            ? {}
+            : { value: coerceConditionValue(controller, condition.value) }),
+        };
+      }
+    }
     if (Object.keys(config).length) field.config = config;
     if (
       type === "select" ||
@@ -956,7 +1024,9 @@ export function classifyFormBuilderShell(input: {
 }): FormBuilderShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
-  if (!input.orgId || !input.eventKey || input.year == null) return "setup";
+  // The season year is what publishing needs; the API falls back to the FRC season year when
+  // no event is active so offseason authoring works without an event.
+  if (!input.orgId || input.year == null) return "setup";
   if (!input.hasPublishedSchema) return "empty";
   return "ready";
 }
@@ -1188,7 +1258,7 @@ export function formBuilderPublishBlockedReason(input: {
   if (!input.canManageSchemas) {
     return "Owner or admin role is required to publish forms.";
   }
-  if (!input.eventKey || input.year == null) {
+  if (input.year == null) {
     return "Set an active event so the season year is known before publishing.";
   }
   if (!input.validation.ok) {
@@ -1198,6 +1268,28 @@ export function formBuilderPublishBlockedReason(input: {
     return "This form is over the field budget — acknowledge to publish anyway.";
   }
   return null;
+}
+
+export type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+
+/** "Saved · 2s ago" for the autosave pill. Pure — unit-tested. */
+export function formatDraftSaveIndicator(
+  state: DraftSaveState,
+  savedAt: string | null,
+  nowMs: number = Date.now(),
+): string {
+  if (state === "saving") return "Saving…";
+  if (state === "error") return "Draft not saved — retrying on the next change";
+  if (state === "dirty") return "Unsaved changes";
+  if (!savedAt) return "";
+  const then = Date.parse(savedAt);
+  if (!Number.isFinite(then)) return "Saved";
+  const seconds = Math.max(0, Math.round((nowMs - then) / 1000));
+  if (seconds < 5) return "Saved · just now";
+  if (seconds < 60) return `Saved · ${seconds}s ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `Saved · ${minutes}m ago`;
+  return `Saved · ${Math.round(minutes / 60)}h ago`;
 }
 
 export type FormBuilderValidation = {
@@ -1319,10 +1411,18 @@ export function validateDraft(
       }
     }
     errors.push(...studioQuestionErrors(question, n));
+    if (question.visibleWhen) {
+      if (question.visibleWhen.questionId === question.id) {
+        errors.push(`Question ${n} cannot be shown based on its own answer.`);
+      } else if (!questions.some((entry) => entry.id === question.visibleWhen!.questionId)) {
+        errors.push(`Question ${n} is shown based on a question that was removed — pick another or clear it.`);
+      }
+    }
   }
   const definition = definitionFromDraft(title, questions);
   const identityError = assertSchemaIdentityLock(definition);
   if (identityError) errors.push(identityError);
+  errors.push(...conditionProblems(definition));
   // Section headers are layout, not questions — they must not eat the accuracy
   // budget that CD keeps telling teams to spend on fewer real fields.
   const budget = lintSchemaBudget({

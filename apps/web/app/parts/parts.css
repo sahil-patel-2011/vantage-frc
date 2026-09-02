@@ -1,0 +1,27 @@
+/* Soft-UI Parts hub — .parts-* + shared Soft-UI tokens. Never DEMO stock counts. */
+.parts-page{display:grid;gap:16px}
+.parts-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.parts-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.parts-stats strong{font-size:1.5rem}
+.parts-section{display:grid;gap:12px}
+.parts-section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.parts-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.parts-toolbar input[type="search"]{min-width:220px;flex:1}
+.parts-table-wrap{overflow-x:auto}
+.parts-table{width:100%;border-collapse:collapse;font-size:13px}
+.parts-table th,.parts-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--soft-border,rgba(0,0,0,.08));vertical-align:top}
+.parts-table th{font-weight:600;white-space:nowrap}
+.parts-table td.num,.parts-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.parts-table tr.low td{background:rgba(255,170,0,.06)}
+.parts-table tr.short td:first-child{box-shadow:inset 3px 0 0 var(--soft-danger,#c62828)}
+.parts-inline-form{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.parts-inline-form input[type="number"]{width:84px}
+.parts-inline-form input[type="text"]{min-width:140px}
+.parts-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.parts-card{display:grid;gap:6px}
+.parts-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.parts-links{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){
+  .parts-header-actions{justify-content:flex-start}
+  .parts-toolbar input[type="search"]{min-width:0}
+}

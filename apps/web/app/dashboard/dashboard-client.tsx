@@ -70,7 +70,9 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
-import { DashboardWidgetView, LiveCountdown } from "./widgets";
+import { DashboardWidgetView } from "./widgets";
+import { TodayStrip } from "./today-strip";
+import { buildTodayCards } from "../../lib/dashboard/today";
 import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
 import { Badge } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
@@ -87,6 +89,7 @@ type Me = {
   role?: string | null;
   teamRole?: string | null;
   tbaConfigured?: boolean;
+  unreadMessageCount?: number;
 };
 
 type BoardMeta = {
@@ -344,6 +347,8 @@ export default function DashboardClient() {
           teamNumber: data.teamNumber,
           role: data.role,
           tbaConfigured: data.tbaConfigured,
+          unreadMessageCount:
+            typeof data.unreadMessageCount === "number" ? data.unreadMessageCount : undefined,
         });
         setRole(data.role ?? null);
         if (typeof data.tbaConfigured === "boolean") {
@@ -828,15 +833,23 @@ export default function DashboardClient() {
     homeStripRaw?.audience === "mentor" || homeStripRaw?.audience === "student"
       ? homeStripRaw.audience
       : null;
-  const nextMatchPayload = widgets.next_match;
-  const nextMatchData =
-    nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
   const dashShell = classifyDashboardShell({
     loaded: meLoaded,
     orgId: orgId || null,
     setupRequired,
     tbaConfigured,
   });
+  const todayCards = useMemo(
+    () =>
+      buildTodayCards({
+        orgId: orgId || null,
+        widgets,
+        homeStrip: homeStripItems,
+        unreadMessages: me.unreadMessageCount,
+        clockedInAt: typeof context.clockedInAt === "string" ? context.clockedInAt : null,
+      }),
+    [context.clockedInAt, homeStripItems, me.unreadMessageCount, orgId, widgets],
+  );
   const nextActions = dashboardNextActions({
     orgId: orgId || null,
     shell: dashShell,
@@ -1297,11 +1310,6 @@ export default function DashboardClient() {
           <h1>
             {greeting()}, {firstName}
           </h1>
-          {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
-            <p className="dash-board-current">
-              <strong>{board.name}</strong>
-            </p>
-          ) : null}
           <p>
             {!meLoaded
               ? "Loading your workspace…"
@@ -1313,28 +1321,19 @@ export default function DashboardClient() {
                     ? "Select an active event to load competition data."
                     : context.eventName
                       ? String(context.eventName)
-                      : "Home — widgets appear when live data exists."}
+                      : homeAudience === "mentor"
+                        ? "Your team at a glance."
+                        : "Here's what's next for you."}
           </p>
         </div>
         <div className="dash-home-actions">
-          {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
-            <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
-              <span>Next</span>
-              <strong>
-                {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
-              </strong>
-              <b>
-                <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
-              </b>
-            </a>
-          ) : null}
           {!orgId ? (
-            <a className="app-button secondary" href="/workspace">
+            <a className="app-button" href="/workspace">
               Select workspace
             </a>
           ) : setupRequired || tbaConfigured === false ? (
             <a
-              className="app-button secondary"
+              className="app-button"
               href={
                 tbaConfigured === false
                   ? withOrgHref("/team/data", orgId)
@@ -1383,42 +1382,7 @@ export default function DashboardClient() {
       </header>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {orgId && !editing && homeStripItems.length > 0 ? (
-        <section
-          className="dash-role-strip"
-          data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Mentor focus" : "Student focus"}
-        >
-          <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Mentor focus" : "Student focus"}</span>
-            <a href={withOrgHref("/logistics", orgId)}>
-              {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
-            </a>
-          </header>
-          <ul>
-            {homeStripItems.map((item) => (
-              <li key={item.key} data-tone={item.tone}>
-                <a href={item.href}>
-                  <span>{item.label}</span>
-                  <strong>
-                    {item.at ? (
-                      <>
-                        {item.detail}
-                        <em className="dash-strip-countdown">
-                          {" · "}
-                          <LiveCountdown iso={item.at} />
-                        </em>
-                      </>
-                    ) : (
-                      item.detail
-                    )}
-                  </strong>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {orgId && !editing ? <TodayStrip cards={todayCards} /> : null}
 
       {message ? (
         <p className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">

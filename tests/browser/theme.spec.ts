@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 test("public site uses a restrained light palette", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByRole("heading", { name: "One app, not twenty tabs." })).toBeVisible();
-  await expect(page.locator("#hero-waitlist").getByLabel("Email")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The workspace your team actually runs." })).toBeVisible();
+  await expect(page.locator("#hero-email")).toBeVisible();
   await expect(page.locator(".marketing-site")).toHaveCSS("background-color", "rgb(250, 249, 246)");
 });
 
@@ -12,7 +12,7 @@ test("dashboard defaults light and persists an explicit dark choice", async ({ c
   await context.addCookies([{
     name: "vantage-e2e-session",
     value: "authenticated",
-    url: "http://localhost:3310",
+    url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3310",
     httpOnly: true,
     sameSite: "Lax",
   }]);
@@ -31,7 +31,7 @@ test("theme control remains usable on a mobile dashboard", async ({ context, pag
   await context.addCookies([{
     name: "vantage-e2e-session",
     value: "authenticated",
-    url: "http://localhost:3310",
+    url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3310",
     httpOnly: true,
     sameSite: "Lax",
   }]);

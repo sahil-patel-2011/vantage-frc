@@ -1,19 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import {
-  onshapeSetupStatus,
-  parseOnshapeDocumentUrl,
-  readOnshapeApiKeys,
-  resolveOnshapeBind,
-} from "@vantage/cad";
+import { onshapeSetupStatus, parseOnshapeDocumentUrl, resolveOnshapeBind } from "@vantage/cad";
 import { isCadAgentMode } from "@vantage/cad";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  approveCadPlanSteps,
+  discardCadPlan,
   loadCadAgentModeState,
   resolveCadAgentModeProposal,
   setCadAgentMode,
+  type CadPlanDecision,
 } from "../../../../lib/cad/agent-mode-session";
 import {
   cadAgentOpenUrl,
@@ -21,11 +19,13 @@ import {
   saveCadAgentSession,
   type CadAgentSessionRow,
 } from "../../../../lib/cad/cad-agent-session";
-import { loadCadAgentOnshape } from "../../../../lib/cad/onshape-tokens";
-import { runCadAgentTurn, type CadPlanResponseInput } from "../../../../lib/cad/run-cad-agent";
+import { loadCadAgentOnshape, onshapeAvailability } from "../../../../lib/cad/onshape-tokens";
+import { executeCadPlanStep, runCadAgentTurn, type CadPlanResponseInput } from "../../../../lib/cad/run-cad-agent";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 export const dynamic = "force-dynamic";
+/** Plan-step execution can wait on an Onshape STEP translation (polls up to ~60 s). */
+export const maxDuration = 120;
 
 type BoundDoc = {
   documentId: string;
@@ -58,27 +58,6 @@ async function assertMember(client: PoolClient, orgId: string, userId: string) {
   if (!member.rowCount) throw new Error("Organization access denied");
 }
 
-/**
- * Mirrors what loadCadAgentOnshape() will actually accept, so the route can answer
- * setup_required instead of burning a metered AI call on a dead tool layer.
- */
-async function onshapeAvailability(client: PoolClient, orgId: string, userId: string) {
-  const setup = onshapeSetupStatus();
-  const apiKeys = Boolean(readOnshapeApiKeys());
-  const connection = await client.query(
-    `SELECT 1 FROM cad_connections
-      WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape'
-        AND status='connected' AND disabled_at IS NULL
-      LIMIT 1`,
-    [orgId, userId],
-  );
-  const oauthReady = Boolean(connection.rowCount) && setup.configured;
-  return {
-    configured: setup.configured || apiKeys,
-    connected: oauthReady || apiKeys,
-  };
-}
-
 function boundFrom(stored: CadAgentSessionRow | null): BoundDoc | null {
   if (!stored?.session.documentId) return null;
   return {
@@ -90,8 +69,13 @@ function boundFrom(stored: CadAgentSessionRow | null): BoundDoc | null {
   };
 }
 
+/** The shaded-view endpoint for this org's bound Part Studio (see ./view/route.ts). */
+function viewUrlFor(orgId: string, bound: BoundDoc | null): string | null {
+  return bound ? `/api/cad/agent/view?orgId=${encodeURIComponent(orgId)}` : null;
+}
+
 const NOT_CONNECTED =
-  "Connect Onshape in CAD Connections (or set ONSHAPE_ACCESS_KEY and ONSHAPE_SECRET_KEY on this server) before the CAD agent can drive a Part Studio.";
+  "Connect Onshape in CAD Connections (or ask an owner/admin to share a team connection, or set ONSHAPE_ACCESS_KEY and ONSHAPE_SECRET_KEY on this server) before the CAD agent can drive a Part Studio.";
 
 export async function GET(request: Request) {
   try {
@@ -109,10 +93,12 @@ export async function GET(request: Request) {
       return {
         onshapeConfigured: availability.configured,
         onshapeConnected: availability.connected,
+        onshapeVia: availability.via,
         bound,
-        // Onshape has no embed URL we can mint server-side; the client falls back to
-        // openUrl in the frame and offers "Open in Onshape" when Onshape blocks framing.
+        // Onshape refuses to be framed, so the viewport is a server-fetched shaded
+        // view PNG (viewUrl) plus a deep link (openUrl). No iframe is ever minted.
         iframeUrl: null as string | null,
+        viewUrl: availability.connected ? viewUrlFor(orgId, bound) : null,
         openUrl: bound?.url ?? null,
         messages: stored?.messages ?? [],
         // Narrated build steps for the session pane (see packages/cad/src/cad-agent-steps.ts).
@@ -126,6 +112,21 @@ export async function GET(request: Request) {
   }
 }
 
+function parseDecisions(raw: unknown): CadPlanDecision[] {
+  if (!Array.isArray(raw)) return [];
+  const decisions: CadPlanDecision[] = [];
+  for (const item of raw.slice(0, 40)) {
+    if (!item || typeof item !== "object") continue;
+    const record = item as Record<string, unknown>;
+    const sequence = Number(record.sequence);
+    if (!Number.isInteger(sequence) || sequence < 1) continue;
+    const args = record.args && typeof record.args === "object" && !Array.isArray(record.args) ? (record.args as Record<string, unknown>) : undefined;
+    if (args && JSON.stringify(args).length > 20_000) throw new Error(`Step ${sequence}: arguments exceed the 20,000-character limit.`);
+    decisions.push({ sequence, approved: record.approved === true, ...(args ? { args } : {}) });
+  }
+  return decisions;
+}
+
 export async function POST(request: Request) {
   try {
     const session = await current();
@@ -137,6 +138,10 @@ export async function POST(request: Request) {
       mode?: string;
       accept?: boolean;
       planResponse?: CadPlanResponseInput | null;
+      planId?: string;
+      decisions?: unknown;
+      answers?: unknown;
+      sequence?: number;
     };
     const orgId = String(body.orgId ?? "");
     const action = String(body.action ?? "");
@@ -163,7 +168,7 @@ export async function POST(request: Request) {
               elementId: parsed.elementId,
             },
           });
-          return { saved } as const;
+          return { saved, connected: false } as const;
         }
         const onshape = await loadCadAgentOnshape(client, orgId, session.user.id);
         const bound = await resolveOnshapeBind(url, onshape.http);
@@ -176,16 +181,22 @@ export async function POST(request: Request) {
             workspaceId: bound.workspaceId,
             elementId: bound.elementId,
             documentName: bound.documentName ?? bound.elementName,
+            elementName: bound.elementName,
           },
           url: bound.url,
         });
-        return { saved } as const;
+        return { saved, connected: true } as const;
       });
       if ("setup" in result && typeof result.setup === "string") {
         return setupRequired(result.setup);
       }
       const bound = boundFrom(result.saved);
-      return Response.json({ bound, iframeUrl: null, openUrl: bound?.url ?? null });
+      return Response.json({
+        bound,
+        iframeUrl: null,
+        viewUrl: result.connected ? viewUrlFor(orgId, bound) : null,
+        openUrl: bound?.url ?? null,
+      });
     }
 
     if (action === "set-mode") {
@@ -273,6 +284,51 @@ export async function POST(request: Request) {
         modeState: result.turn.modeState,
         proposal: result.turn.proposal,
       });
+    }
+
+    if (action === "approve-plan") {
+      // Record which proposed tool calls the reviewer accepted (all or a subset,
+      // with edited arguments). Nothing runs here — execution is step by step.
+      const planId = String(body.planId ?? "").trim();
+      if (!planId) throw new Error("planId is required");
+      const decisions = parseDecisions(body.decisions);
+      if (!decisions.length) throw new Error("Choose at least one step to approve or reject.");
+      const answers = Array.isArray(body.answers) ? body.answers.map((answer) => String(answer ?? "")).slice(0, 10) : undefined;
+      const modeState = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await assertMember(client, orgId, session.user.id);
+        return approveCadPlanSteps(client, { orgId, userId: session.user.id, planId, decisions, answers });
+      });
+      return Response.json({ modeState });
+    }
+
+    if (action === "execute-plan-step") {
+      const sequence = Number(body.sequence);
+      if (!Number.isInteger(sequence) || sequence < 1) throw new Error("sequence is required");
+      const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await assertMember(client, orgId, session.user.id);
+        const availability = await onshapeAvailability(client, orgId, session.user.id);
+        if (!availability.connected) return { setup: NOT_CONNECTED } as const;
+        return { run: await executeCadPlanStep({ client, orgId, userId: session.user.id, sequence }) } as const;
+      });
+      if ("setup" in result && typeof result.setup === "string") {
+        return setupRequired(result.setup);
+      }
+      return Response.json({
+        step: result.run.step,
+        done: result.run.done,
+        steps: result.run.steps,
+        messages: result.run.messages,
+        modeState: result.run.modeState,
+      });
+    }
+
+    if (action === "discard-plan") {
+      // Unrun steps of the plan are marked cancelled in cad_job_steps; executed rows stay as history.
+      const modeState = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await assertMember(client, orgId, session.user.id);
+        return discardCadPlan(client, { orgId, userId: session.user.id });
+      });
+      return Response.json({ modeState });
     }
 
     throw new Error("Unsupported CAD agent action");

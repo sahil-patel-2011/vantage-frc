@@ -15,6 +15,9 @@ import {
   loadOrgSessionFacts,
 } from "./org-session-context";
 import { loadOrgAgentRulesContextItem } from "./org-agent-rules";
+import { routeAdapterForRequest } from "./model-routing";
+import type { ResolvedModelSource } from "./resolve-chat-adapter";
+import { estimateHistoryTokens, trimThreadHistory, type ChatTurn } from "./thread-history";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -39,6 +42,10 @@ export type OrchestratorRequest={
   privacyScope:"private"|"team";message:string;adapter:ChatAdapter;contextSources:ContextSource[];tokenBudget?:number;
   selected?:{teamKey?:string;matchKey?:string};toolCalls?:Array<{name:string;input:unknown}>;
   billingOwner?:{type:"user"|"org";id:string};usesOrgData?:boolean;autoTools?:boolean;promptCachingEnabled?:boolean;
+  /** Prior turns of the thread (oldest first) — sent to the adapter so the model remembers the conversation. */
+  history?:ChatTurn[];
+  /** Where the adapter's key came from (resolveOrgChatAdapterWithProvenance). Hosted adapters are plan-gated through routeModel. */
+  modelSource?:ResolvedModelSource;
 };
 
 export type OrchestratorResult={
@@ -122,7 +129,13 @@ export class AIOrchestrator{
         summary:item.summary,
         toolName:item.name,
       }));
-      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd:.01,estimatedPromptTokens:Math.ceil(request.message.length/4)+context.estimatedTokens+toolContext.reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0),estimatedCompletionTokens:700,provider:request.adapter.provider,model:request.adapter.model,billingOwner,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:context.provenance,tools:annotatedTools.map((item)=>({name:item.name,status:item.status,classification:item.classification})),usageTag:annotatedTools.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":annotatedTools.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":annotatedTools.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true},invoke:async()=>{const result=await request.adapter.complete({message:request.message,context:[...context.items,...toolContext],promptCachingEnabled:request.promptCachingEnabled});return{value:result.text,...result,provider:request.adapter.provider,model:request.adapter.model};}});
+      const history=trimThreadHistory(request.history??[]);
+      const estimatedPromptTokens=Math.ceil(request.message.length/4)+context.estimatedTokens+toolContext.reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0)+estimateHistoryTokens(history);
+      const estimatedCompletionTokens=700;
+      // Real pre-call estimate from the adapter's prices / model_catalog (never a hardcoded
+      // $0.01), plus plan eligibility + PAYG gating through routeModel for hosted models.
+      const routed=await routeAdapterForRequest(this.client,{orgId:request.orgId,adapter:request.adapter,capability:request.capability,modelSource:request.modelSource,estimatedInputTokens:estimatedPromptTokens,estimatedOutputTokens:estimatedCompletionTokens});
+      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd:routed.estimatedCostUsd,estimatedPromptTokens,estimatedCompletionTokens,provider:request.adapter.provider,model:request.adapter.model,billingOwner,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:context.provenance,tools:annotatedTools.map((item)=>({name:item.name,status:item.status,classification:item.classification})),usageTag:annotatedTools.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":annotatedTools.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":annotatedTools.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true,historyTurns:history.length,paygOnly:routed.paygOnly,billingBucket:routed.billingBucket,...(request.modelSource?{modelSource:request.modelSource}:{}),...(routed.catalogModelId?{catalogModelId:routed.catalogModelId}:{})},invoke:async()=>{const result=await request.adapter.complete({message:request.message,context:[...context.items,...toolContext],history,promptCachingEnabled:request.promptCachingEnabled});return{value:result.text,...result,provider:request.adapter.provider,model:request.adapter.model};}});
       const usage=(await this.client.query<{id:string;cost_usd:string;key_source:string}>(`SELECT id,cost_usd,key_source FROM ai_usage_events WHERE request_id=$1`,[request.requestId])).rows[0];const credit=(await this.client.query<{credits:string;bucket:string}>(`SELECT credits,bucket FROM credit_ledger WHERE reference_id=$1 ORDER BY created_at DESC LIMIT 1`,[request.requestId])).rows[0];
       const allProvenance=[...context.provenance,...toolProvenance];
       await this.client.query(`UPDATE ai_runs SET status='completed',provider=$2,model=$3,output=$4::jsonb,context_sources=$5::jsonb,usage_event_id=$6,provider_cost_usd=$7,credit_debit=$8,allowance_bucket=$9,routing_decision=$10::jsonb,completed_at=now() WHERE id=$1`,[runId,request.adapter.provider,request.adapter.model,JSON.stringify({text,tools:annotatedTools.map(({name,status,summary,classification})=>({name,status,summary,classification}))}),JSON.stringify(allProvenance),usage?.id??null,usage?.cost_usd??null,credit?Math.abs(Number(credit.credits)):0,credit?.bucket??usage?.key_source??null,JSON.stringify({provider:request.adapter.provider,model:request.adapter.model,billingOwner,tools:annotatedTools.map((t)=>t.name)})]);

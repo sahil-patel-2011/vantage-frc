@@ -69,8 +69,9 @@ describe("computeGrantReportView", () => {
 });
 
 describe("generateGrantReport", () => {
-  it("summarizes outreach and finance rows into a deterministic report and persists it", async () => {
+  it("summarizes outreach and grant-tagged finance rows into a deterministic report and persists it", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
+    let spendParams: unknown[] = [];
     const client = makeClient((sql, params) => {
       if (sql.includes("FROM grant_applications ga") && sql.includes("WHERE ga.id = $1")) {
         return {
@@ -83,6 +84,7 @@ describe("generateGrantReport", () => {
         return { rows: [{ kind: "grant_followup" }, { kind: "thank_you" }, { kind: "grant_followup" }] };
       }
       if (sql.includes("FROM finance_transactions")) {
+        spendParams = params;
         return {
           rows: [
             { category: "Robot parts", amountUsd: "500.00" },
@@ -91,7 +93,7 @@ describe("generateGrantReport", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts")) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -112,19 +114,48 @@ describe("generateGrantReport", () => {
     expect(report.spendByCategory[0]?.totalUsd).toBe(800);
     expect(report.narrative).toContain("NASA Grant");
     expect(report.narrative).toContain("$2,000");
-    // Season expenses have no per-grant linkage: the report must disclose that instead of
-    // presenting org-wide spend as if it were this grant's spend.
-    expect(report.narrative).toContain("Spend linkage is not configured");
-    expect(report.narrative).not.toContain("Recorded fund usage");
+    // Spend is filtered on finance_transactions.grant_application_id (0504) — the grant id is
+    // bound as a parameter, and the section reports it as this grant's own spend.
+    expect(spendParams).toEqual([ORG, GRANT_ID]);
+    expect(report.taggedExpenseCount).toBe(3);
+    expect(report.spendState).toBe("tagged");
     const spendSection = report.sections.find((section) => section.id === "spend");
-    expect(spendSection?.title).toBe("Season spending context (not grant-attributed)");
-    expect(spendSection?.body).toContain("For context only");
+    expect(spendSection?.title).toBe("Grant-attributed spending");
+    expect(spendSection?.body).toContain("tagged 3 expense(s)");
+    expect(report.narrative).not.toContain("Spend linkage is not configured");
 
     const reportInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO grant_report_reports"));
     expect(reportInsert).toBeDefined();
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
-    expect(usageInsert).toBeDefined();
+    // The run is audited through the AI path either way: a metered usage row when an
+    // adapter answered, or a recorded template-only render attempt when none could.
+    const auditInsert = inserted.find(
+      (entry) => entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts"),
+    );
+    expect(auditInsert).toBeDefined();
+  });
+
+  it("returns the explicit no-tagged-expenses state when nothing is tagged to the grant", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM grant_applications ga") && sql.includes("WHERE ga.id = $1")) {
+        return {
+          rows: [
+            { name: "NASA Grant", funder: "NASA", seasonYear: 2026, amountAwardedUsd: "2000.00", status: "awarded" },
+          ],
+        };
+      }
+      if (sql.includes("INSERT INTO grant_report_reports")) {
+        return { rows: [{ id: "report-2", createdAt: "2026-02-01T00:00:00.000Z" }] };
+      }
+      return { rows: [] };
+    });
+
+    const report = await generateGrantReport(client, { orgId: ORG, userId: USER, grantApplicationId: GRANT_ID });
+
+    expect(report.spendState).toBe("no_tagged_expenses");
+    expect(report.taggedExpenseCount).toBe(0);
+    expect(report.totalSpendUsd).toBe(0);
+    expect(report.narrative).toContain("No expenses tagged to this grant yet");
   });
 
   it("throws when the grant is not awarded", async () => {

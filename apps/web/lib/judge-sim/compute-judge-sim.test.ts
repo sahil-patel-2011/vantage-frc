@@ -117,7 +117,7 @@ describe("runSession", () => {
       if (sql.includes("COUNT(*)")) {
         return { rows: [{ count: "0" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -141,7 +141,7 @@ describe("runSession", () => {
     expect(sessionInsert).toBeDefined();
     expect(sessionInsert?.params).toContain("well_backed");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 
@@ -154,7 +154,7 @@ describe("runSession", () => {
       if (sql.includes("COUNT(*)")) {
         return { rows: [{ count: "0" }] };
       }
-      if (sql.includes("INSERT INTO judge_sim_sessions") || sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO judge_sim_sessions") || (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }

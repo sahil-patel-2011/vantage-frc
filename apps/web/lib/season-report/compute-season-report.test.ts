@@ -104,7 +104,7 @@ describe("generateSnapshot", () => {
           ],
         };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -126,7 +126,7 @@ describe("generateSnapshot", () => {
     const snapshotInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO season_report_snapshots"));
     expect(snapshotInsert).toBeDefined();
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

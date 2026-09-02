@@ -43,6 +43,44 @@ describe("season finance rollup", () => {
     expect(rollup.remainingToRaiseCents).toBe(Math.max(0, 9_000_00 - rollup.receivedIncomeCents));
   });
 
+  it("counts grant / sponsor / fundraiser dollars from their satellites, never from a desk line too (0504)", () => {
+    const rollup = rollupSeasonFinance({
+      funding: [
+        // The same $5,000 sponsor check also lives in sponsor_contributions below.
+        { kind: "sponsor", plannedCents: 5_000_00, receivedCents: 5_000_00 },
+        { kind: "grant", plannedCents: 2_000_00, receivedCents: 2_000_00 },
+        { kind: "fundraiser", plannedCents: 1_000_00, receivedCents: 800_00 },
+        { kind: "school", plannedCents: 3_000_00, receivedCents: 3_000_00 },
+      ],
+      purchases: [],
+      operatingBudgetCents: 0,
+      fundraisingGoalCents: 0,
+      categoryAllocatedCents: 0,
+      sponsorCashCents: 5_000_00,
+      sponsorInKindCents: 0,
+      grantAwardedCents: 2_000_00,
+      fundraiserProceedsCents: 800_00,
+      fundraiserGoalCents: 0,
+      fundraiserExpensesCents: 150_00,
+      poRequestedCents: 0,
+      poCommittedCents: 0,
+      poSpentCents: 0,
+      seasonCostsPaidCents: 0,
+    });
+
+    // Plans still add up as typed …
+    expect(rollup.plannedIncomeCents).toBe(11_000_00);
+    expect(rollup.fundingReceivedCents).toBe(10_800_00);
+    // … but received income counts each satellite dollar exactly once.
+    expect(rollup.fundingReceivedCountedCents).toBe(3_000_00);
+    expect(rollup.fundingReceivedSatelliteCents).toBe(7_800_00);
+    expect(rollup.receivedIncomeCents).toBe(3_000_00 + 5_000_00 + 2_000_00 + 800_00);
+    // Fundraiser costs are real money out.
+    expect(rollup.fundraiserExpensesCents).toBe(150_00);
+    expect(rollup.actualSpendCents).toBe(150_00);
+    expect(rollup.cashPositionCents).toBe(rollup.receivedIncomeCents - 150_00);
+  });
+
   it("falls back to fundraising goals when no funding lines exist", () => {
     const rollup = rollupSeasonFinance({
       funding: [],

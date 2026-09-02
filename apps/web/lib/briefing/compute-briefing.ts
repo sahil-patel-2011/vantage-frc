@@ -21,6 +21,8 @@
 //                                     deterministic composer Match Copilot used
 //   - practice readiness              driver_sessions/driver_cycles
 //   - opponent film                   video_reviews/video_notes
+//   - opponent counter-books          counter_book_reports (latest per opponent)
+//   - simulated outcome               match_sim_runs (latest run for this match-up)
 //
 // Every section renders only when its data exists; missing data yields honest
 // per-section empty states with the exact setup step. RLS scopes every query.
@@ -54,9 +56,11 @@ import {
 } from "./plan-sections";
 import type {
   BriefingCard,
+  BriefingCounterPlan,
   BriefingDefensePlan,
   BriefingPitReport,
   BriefingScoutedTeam,
+  BriefingSimulation,
   BriefingTendency,
   BriefingWatchNote,
   FullBriefingView,
@@ -237,6 +241,144 @@ async function loadPitReports(client: PoolClient, orgId: string, seasonYear: num
     [orgId, seasonYear],
   );
   return result.rows;
+}
+
+/** Failure triggers are stored as jsonb; accept strings or {label|trigger|description} objects. */
+function normalizeTriggers(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const entry of value) {
+    if (typeof entry === "string" && entry.trim()) out.push(entry.trim());
+    else if (entry && typeof entry === "object") {
+      const record = entry as Record<string, unknown>;
+      const label = [record.detail, record.label, record.trigger, record.description, record.title].find(
+        (candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0,
+      );
+      if (label) out.push(label.trim());
+    }
+  }
+  return out.slice(0, 6);
+}
+
+/** Latest counter-book per opponent in this match — event-scoped reports win over season ones. */
+async function loadCounterPlans(
+  client: PoolClient,
+  orgId: string,
+  eventKey: string,
+  opponents: string[],
+): Promise<BriefingCounterPlan[]> {
+  if (!opponents.length) return [];
+  const result = await client.query<{
+    id: string;
+    teamKey: string;
+    teamNumber: number | null;
+    title: string;
+    matchesScouted: number;
+    summary: string;
+    counterPlan: string;
+    failureTriggers: unknown;
+    eventKey: string | null;
+    createdAt: string;
+  }>(
+    `SELECT DISTINCT ON (team_key)
+            id, team_key AS "teamKey", team_number AS "teamNumber", title,
+            matches_scouted AS "matchesScouted", summary, counter_plan AS "counterPlan",
+            failure_triggers AS "failureTriggers", event_key AS "eventKey", created_at::text AS "createdAt"
+     FROM counter_book_reports
+     WHERE org_id = $1 AND team_key = ANY($2::text[])
+       AND (event_key = $3 OR event_key IS NULL)
+     ORDER BY team_key, (event_key = $3) DESC NULLS LAST, created_at DESC`,
+    [orgId, opponents, eventKey],
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    teamKey: row.teamKey,
+    teamNumber: row.teamNumber == null ? teamNumberFromKey(row.teamKey) : Number(row.teamNumber),
+    title: row.title,
+    matchesScouted: Number(row.matchesScouted) || 0,
+    summary: row.summary,
+    counterPlan: row.counterPlan,
+    failureTriggers: normalizeTriggers(row.failureTriggers),
+    eventKey: row.eventKey,
+    createdAt: row.createdAt,
+  }));
+}
+
+/**
+ * The latest simulator run for THIS match-up: a run saved against the match key, else one
+ * whose alliances are exactly these robots (either orientation — a mirrored run is flipped
+ * back so red/blue mean the same thing as the schedule).
+ */
+async function loadSimulation(
+  client: PoolClient,
+  orgId: string,
+  matchKey: string,
+  red: string[],
+  blue: string[],
+): Promise<BriefingSimulation | null> {
+  if (!red.length || !blue.length) return null;
+  const result = await client.query<{
+    id: string;
+    label: string;
+    matchKey: string | null;
+    redTeamKeys: string[];
+    blueTeamKeys: string[];
+    result: unknown;
+    createdAt: string;
+  }>(
+    `SELECT id, label, match_key AS "matchKey", red_team_keys AS "redTeamKeys",
+            blue_team_keys AS "blueTeamKeys", result, created_at::text AS "createdAt"
+     FROM match_sim_runs
+     WHERE org_id = $1
+       AND (
+         match_key = $2
+         OR (red_team_keys @> $3::text[] AND red_team_keys <@ $3::text[]
+             AND blue_team_keys @> $4::text[] AND blue_team_keys <@ $4::text[])
+         OR (red_team_keys @> $4::text[] AND red_team_keys <@ $4::text[]
+             AND blue_team_keys @> $3::text[] AND blue_team_keys <@ $3::text[])
+       )
+     ORDER BY (match_key = $2) DESC NULLS LAST, created_at DESC
+     LIMIT 1`,
+    [orgId, matchKey, red, blue],
+  );
+  const row = result.rows[0];
+  if (!row || !row.result || typeof row.result !== "object") return null;
+  const sim = row.result as {
+    red?: { total?: unknown; dataCompleteness?: unknown };
+    blue?: { total?: unknown; dataCompleteness?: unknown };
+    finalMargin?: unknown;
+    favored?: unknown;
+    lever?: { phase?: unknown; rationale?: unknown } | null;
+  };
+  const mirrored =
+    row.matchKey !== matchKey &&
+    red.every((key) => row.blueTeamKeys.includes(key)) &&
+    blue.every((key) => row.redTeamKeys.includes(key)) &&
+    !red.every((key) => row.redTeamKeys.includes(key));
+  const redTotal = Number(mirrored ? sim.blue?.total : sim.red?.total);
+  const blueTotal = Number(mirrored ? sim.red?.total : sim.blue?.total);
+  if (!Number.isFinite(redTotal) || !Number.isFinite(blueTotal)) return null;
+  const rawFavored = sim.favored === "red" || sim.favored === "blue" ? sim.favored : "even";
+  const favored: BriefingSimulation["favored"] =
+    rawFavored === "even" ? "even" : mirrored ? (rawFavored === "red" ? "blue" : "red") : rawFavored;
+  const margin = Number(sim.finalMargin);
+  const completeness = Math.min(
+    Number(sim.red?.dataCompleteness ?? 0) || 0,
+    Number(sim.blue?.dataCompleteness ?? 0) || 0,
+  );
+  return {
+    id: row.id,
+    label: row.label,
+    matchKey: row.matchKey,
+    favored,
+    finalMargin: Number.isFinite(margin) ? (mirrored ? -margin : margin) : redTotal - blueTotal,
+    redTotal,
+    blueTotal,
+    dataCompleteness: Math.max(0, Math.min(1, completeness)),
+    leverPhase: typeof sim.lever?.phase === "string" ? sim.lever.phase : null,
+    leverRationale: typeof sim.lever?.rationale === "string" ? sim.lever.rationale : null,
+    createdAt: row.createdAt,
+  };
 }
 
 const RECENT_SESSION_LIMIT = 40;
@@ -475,7 +617,7 @@ export async function computeBriefingView(
     if (computed) strategySections = computed;
   }
 
-  const [play, sessions, cycles, opponentIntel, scoutCount, card, watchNotes, defensePlans, pitReports, openRisks, batteries, teamsByKey, persistedBrief] =
+  const [play, sessions, cycles, opponentIntel, scoutCount, card, watchNotes, defensePlans, pitReports, openRisks, batteries, teamsByKey, persistedBrief, counterPlans, simulation] =
     await Promise.all([
       client.query<{ id: string; title: string; description: string; strokeCount: number | null; updatedAt: string }>(
         `SELECT p.id, p.title, p.description,
@@ -524,6 +666,8 @@ export async function computeBriefingView(
       loadBatteryFleet(client, row.orgId),
       loadTeams(client, row.eventKey, [...new Set([teamKey, ...allyKeys, ...opponents])]),
       loadLatestBrief(client, row.orgId, match.matchKey),
+      loadCounterPlans(client, row.orgId, row.eventKey, opponents),
+      loadSimulation(client, row.orgId, match.matchKey, match.red, match.blue),
     ]);
 
   const playRow = play.rows[0];
@@ -610,5 +754,7 @@ export async function computeBriefingView(
     openRisks,
     batteries,
     callouts,
+    counterPlans,
+    simulation,
   };
 }

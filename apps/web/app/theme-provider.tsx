@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppShell from "../components/app-shell";
 import PaidSessionSplash from "../components/paid-session-splash";
+import { ConfirmProvider } from "../components/ui/confirm-dialog";
+import { ToastProvider } from "../components/ui/toast";
 import AppearanceRuntime from "../lib/branding/appearance-runtime";
 
 /** Resolved color scheme applied to the document. */
@@ -180,7 +182,16 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   return (
     <>
-      <div id="main-content">{children}</div>
+      <div id="main-content">
+        {/* useToast / useConfirm work anywhere in the product; marketing pages stay provider-free. */}
+        {productRoute ? (
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
+        ) : (
+          children
+        )}
+      </div>
       {/* Team accent + personal density/motion, applied on <html> next to the theme. */}
       {productRoute && <AppearanceRuntime />}
       {productRoute && <AppShell />}

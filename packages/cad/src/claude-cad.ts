@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { CadOperation } from "./agent-policy";
+import { exportOnshapeElementFile, type OnshapeExportedFile } from "./onshape-export";
+import { vantageCadHome } from "./onshape-session-store";
 import { CAD_TOOL_CATALOG, cadToolInputSchema, cadToolSpec, cadToolSupportMatrix } from "./cad-tool-catalog";
 import { assertFusionRelayParity, FUSION_RELAY_PROTOCOL_VERSION, signFusionRelayJob } from "./fusion-relay";
 import {
@@ -35,19 +39,40 @@ import {
   parseAddedFeatureId,
   patternAxisPlaneId,
   pointsSketchFeature,
+  polygonSketchFeature,
   polylineSketchFeature,
   rectangleSketchFeature,
+  shellFeature,
+  slotSketchFeature,
+  variableFeature,
   type CircleSpec,
+  type OnshapeExportFileFormat,
+  type OnshapeVariableType,
   type SketchPointMm,
 } from "./onshape-features";
 import {
   resolveOnshapeAxisIds,
   resolveOnshapeEdgeIds,
+  resolveOnshapeFaceIds,
   resolveOnshapeSolidBodyIds,
   resolveOnshapeVertexIds,
   type EdgeSelection,
+  type FaceSelection,
 } from "./onshape-resolve";
 import { explainFeatureTreeForStudents, type OnshapeFeatureSummary } from "./onshape";
+
+/** Where an exported file went: the team vault (hosted) or a path on disk (terminal). */
+export type CadExportDestination =
+  | { kind: "vault"; documentId: string; version: number; href: string; duplicate: boolean; title: string }
+  | { kind: "file"; path: string };
+
+export type CadExportSink = (input: {
+  file: OnshapeExportedFile;
+  /** Vault document title, from the tool args or the bound element name. */
+  title: string;
+  changeNote: string | null;
+  document: { documentId: string; workspaceId: string; elementId: string };
+}) => Promise<CadExportDestination>;
 
 /** Optional hosted runtime so the web CAD agent can use org OAuth + DB session instead of env keys. */
 export type ClaudeCadRuntime = {
@@ -56,6 +81,12 @@ export type ClaudeCadRuntime = {
   saveSession?: (session: ClaudeCadSession) => Promise<void>;
   /** Skip loopback Fusion probes (Vercel / hosted). */
   hosted?: boolean;
+  /**
+   * Receives the real bytes of an export. The hosted agent stores them as a CAD
+   * vault version; when absent the terminal writes the file under the vantage-cad
+   * home directory. Either way the tool result names where the file went.
+   */
+  saveExport?: CadExportSink;
 };
 
 export const CLAUDE_CAD_INSTRUCTIONS = `Vantage CAD from Claude Code (terminal)
@@ -69,9 +100,10 @@ Onshape (cloud, any OS)
 4. Ask Claude: "list my Onshape documents" then "bind that Part Studio, then make a 80x50x6 mm plate
    with 5 mm corner fillets and a 4x row of 5 mm holes on 20 mm pitch".
 
-Onshape tools: list/bind/describe · sketch rectangle, circle, polyline, hole points ·
-extrude (NEW/ADD/REMOVE/INTERSECT) · fillet · chamfer · hole · linear + circular pattern · mirror ·
-delete-feature (undo the agent's own features). Run cad_tools for the full list with Fusion support.
+Onshape tools: list/bind/describe · sketch rectangle, circle, polyline, slot, polygon, hole points ·
+extrude (NEW/ADD/REMOVE/INTERSECT) · fillet · chamfer · hole · shell · set variable ·
+linear + circular pattern · mirror · export STL/STEP · delete-feature (undo the agent's own features).
+Run cad_tools for the full list with Fusion support.
 
 Fusion 360 (Windows/macOS only — never hosted)
 1. Install Autodesk Fusion and the Vantage add-in:
@@ -313,6 +345,53 @@ function noGeometryMatched(what: string, featureId: string): Error {
   return new Error(
     `Onshape returned no ${what} for feature ${featureId}. Nothing was changed. Run onshape_describe to see the real feature tree, then pass an explicit featureId.`,
   );
+}
+
+/** Terminal fallback for exports: a file under the vantage-cad home, never the transcript. */
+async function writeExportToDisk(file: OnshapeExportedFile): Promise<CadExportDestination> {
+  const dir = join(vantageCadHome(), "exports");
+  await mkdir(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const path = join(dir, `${stamp}-${file.filename}`);
+  await writeFile(path, file.bytes, { mode: 0o600 });
+  return { kind: "file", path };
+}
+
+async function runExport(
+  name: string,
+  format: OnshapeExportFileFormat,
+  args: Record<string, unknown>,
+  runtime: ClaudeCadRuntime,
+) {
+  const http = await getHttp(runtime);
+  const session = await getSession(runtime);
+  const doc = requireBoundDocument(session);
+  const elementName = session.elementName || session.documentName || undefined;
+  const file = await exportOnshapeElementFile(http, doc, format, { elementName });
+  const title = str(args.title) || elementName || "Part Studio export";
+  const changeNote = str(args.changeNote) || null;
+  const destination: CadExportDestination = runtime.saveExport
+    ? await runtime.saveExport({ file, title, changeNote, document: doc })
+    : await writeExportToDisk(file);
+  const upper = format.toUpperCase();
+  const size = `${(file.byteLength / 1024).toFixed(file.byteLength < 10_240 ? 1 : 0)} KB`;
+  return {
+    ok: true,
+    format,
+    filename: file.filename,
+    byteLength: file.byteLength,
+    sha256: file.sha256,
+    ...(file.translationId ? { translationId: file.translationId } : {}),
+    destination,
+    operation: name,
+    narration: {
+      title:
+        destination.kind === "vault"
+          ? `${destination.duplicate ? "Matched" : "Saved"} ${upper} (${size}) to the vault as "${destination.title}" v${destination.version}`
+          : `Exported ${upper} (${size}) to ${destination.path}`,
+      detail: destination.kind === "vault" ? destination.href : `sha256 ${file.sha256.slice(0, 12)}…`,
+    } satisfies CadToolNarration,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -607,6 +686,82 @@ export async function callClaudeCadTool(
         } satisfies CadToolNarration,
       };
     }
+    case "onshape_sketch_slot": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const plane = str(args.plane) || "Top";
+      const lengthMm = num(args.lengthMm, 0);
+      const widthMm = num(args.widthMm, 0);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        slotSketchFeature({
+          lengthMm,
+          widthMm,
+          centerXMm: optionalNum(args.centerXMm),
+          centerYMm: optionalNum(args.centerYMm),
+          angleDeg: optionalNum(args.angleDeg),
+          plane,
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "sketch",
+        tool: name,
+        name: str(args.name) || "VantageSlot",
+        plane,
+      });
+      return {
+        ok: true,
+        featureId,
+        operation: "create_sketch",
+        narration: {
+          title: `Sketched a ${lengthMm}×${widthMm} mm slot on ${plane}`,
+          detail: `feature ${featureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_sketch_polygon": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const plane = str(args.plane) || "Top";
+      const sides = Math.round(num(args.sides, 0));
+      const acrossFlatsMm = optionalNum(args.acrossFlatsMm);
+      const circumscribedDiameterMm = optionalNum(args.circumscribedDiameterMm);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        polygonSketchFeature({
+          sides,
+          acrossFlatsMm,
+          circumscribedDiameterMm,
+          centerXMm: optionalNum(args.centerXMm),
+          centerYMm: optionalNum(args.centerYMm),
+          rotationDeg: optionalNum(args.rotationDeg),
+          plane,
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "sketch",
+        tool: name,
+        name: str(args.name) || "VantagePolygon",
+        plane,
+      });
+      return {
+        ok: true,
+        featureId,
+        operation: "create_sketch",
+        narration: {
+          title: `Sketched a ${sides}-sided polygon (${acrossFlatsMm !== undefined ? `${acrossFlatsMm} mm across flats` : `⌀${circumscribedDiameterMm} mm`}) on ${plane}`,
+          detail: `feature ${featureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
     case "onshape_extrude": {
       const http = await getHttp(runtime);
       const session = await getSession(runtime);
@@ -859,6 +1014,91 @@ export async function callClaudeCadTool(
         } satisfies CadToolNarration,
       };
     }
+    case "onshape_shell": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const target = requireSessionFeature(
+        session,
+        str(args.featureId),
+        ["solid"],
+        "No solid to shell yet. Extrude something first, or pass an explicit featureId from onshape_describe.",
+      );
+      const plane = str(args.plane) || target.plane || "Top";
+      const explicitFaces = stringList(args.faceIds);
+      const faces = (str(args.faces).toLowerCase() || "top") as FaceSelection;
+      const faceIds = explicitFaces.length
+        ? explicitFaces
+        : await resolveOnshapeFaceIds(http, doc, { featureId: target.featureId, selection: faces, plane });
+      if (!faceIds.length) throw noGeometryMatched(`${faces} planar faces`, target.featureId);
+      const thicknessMm = num(args.thicknessMm, 0);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        shellFeature({
+          faceIds,
+          thicknessMm,
+          oppositeDirection: bool(args.oppositeDirection),
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "modify",
+        tool: name,
+        name: str(args.name) || "VantageShell",
+        plane,
+      });
+      return {
+        ok: true,
+        featureId,
+        faceCount: faceIds.length,
+        operation: "create_shell",
+        narration: {
+          title: `Shelled to ${thicknessMm} mm walls, removing ${faceIds.length} ${explicitFaces.length ? "" : `${faces} `}face${faceIds.length === 1 ? "" : "s"}`,
+          detail: `on feature ${target.featureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_set_variable": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const variableName = str(args.variableName) || str(args.variable);
+      const variableType = (str(args.variableType).toUpperCase() || "LENGTH") as OnshapeVariableType;
+      const value = num(args.value, Number.NaN);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        variableFeature({
+          name: variableName,
+          value,
+          variableType,
+          featureName: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "modify",
+        tool: name,
+        name: str(args.name) || `#${variableName}`,
+      });
+      const unit = variableType === "LENGTH" ? " mm" : variableType === "ANGLE" ? "°" : "";
+      return {
+        ok: true,
+        featureId,
+        operation: "set_variable",
+        variable: { name: variableName, value, variableType },
+        narration: {
+          title: `Set #${variableName} = ${value}${unit}`,
+          detail: `Variable feature ${featureId} — reference it as #${variableName} in Onshape dimensions.`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_export_stl":
+      return runExport(name, "stl", args, runtime);
+    case "onshape_export_step":
+      return runExport(name, "step", args, runtime);
     case "onshape_delete_feature": {
       const http = await getHttp(runtime);
       const session = await getSession(runtime);

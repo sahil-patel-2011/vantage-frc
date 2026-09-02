@@ -265,7 +265,7 @@ export default function DossierClient() {
         load(teamFromUrl ?? undefined, fromUrl);
       });
     // Initial load only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount bootstrap
+     
   }, []);
 
   function onSearch(event: React.FormEvent) {
@@ -517,6 +517,25 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
             </span>
           </div>
         </header>
+        {view.pitPhotos?.length ? (
+          <div className="dossier-pit-photos" aria-label="Pit photos">
+            <ul className="dossier-pit-photo-strip">
+              {view.pitPhotos.map((photo) => (
+                <li key={photo.clientId}>
+                  <a href={photo.url} target="_blank" rel="noreferrer" title={`Taken ${new Date(photo.capturedAt).toLocaleString()} · ${photo.eventKey}`}>
+                    <img src={photo.thumbUrl} alt={`Team ${view.teamNumber} robot`} loading="lazy" decoding="async" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <a
+              className="text-button"
+              href={withOrgHref(`/scouting/pit-photos?teamKey=${encodeURIComponent(view.teamKey)}`, view.orgId)}
+            >
+              All pit photos
+            </a>
+          </div>
+        ) : null}
       </Panel>
       {groups.map(([category, cards]) => (
         <section key={category} className="dossier-group" aria-label={CATEGORY_LABEL[category] ?? category}>

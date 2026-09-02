@@ -624,6 +624,63 @@ export default function BriefingClient() {
           )}
         </Section>
 
+        {view.counterPlans.length > 0 ? (
+          <Section
+            title="Counter plan"
+            badge={`${view.counterPlans.length} ${view.counterPlans.length === 1 ? "opponent" : "opponents"}`}
+          >
+            <ul className="brief-notes brief-counter-plans">
+              {view.counterPlans.map((plan) => (
+                <li key={plan.id}>
+                  <i className="brief-tag">{plan.teamNumber ?? stripFrc(plan.teamKey)}</i>
+                  <span className="brief-note-body">
+                    <b>{plan.summary}</b>
+                    {plan.counterPlan ? ` — ${plan.counterPlan}` : ""}
+                    {plan.failureTriggers.length > 0 ? (
+                      <span className="app-muted"> · Breaks when: {plan.failureTriggers.join("; ")}</span>
+                    ) : null}
+                    <span className="app-muted">
+                      {" "}· from {plan.matchesScouted} scouted {plan.matchesScouted === 1 ? "match" : "matches"}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <a href={withOrg("/counter-book", orgId)}>Open Counter-book</a>
+          </Section>
+        ) : null}
+
+        {view.simulation ? (
+          <Section title="Simulated outcome" badge={view.simulation.label || null}>
+            <p className="brief-sim-line">
+              <b>
+                {view.simulation.favored === "even"
+                  ? "Even"
+                  : view.ourAlliance && view.simulation.favored === view.ourAlliance
+                    ? "We are favored"
+                    : view.ourAlliance
+                      ? "Opponents favored"
+                      : `${view.simulation.favored === "red" ? "Red" : "Blue"} favored`}
+              </b>
+              {view.simulation.favored !== "even"
+                ? ` by ${Math.round(Math.abs(view.simulation.finalMargin))} pts`
+                : ""}
+              {" · "}
+              red {Math.round(view.simulation.redTotal)} – blue {Math.round(view.simulation.blueTotal)}
+              <span className="app-muted">
+                {" "}· {Math.round(view.simulation.dataCompleteness * 100)}% of robots had synced EPA
+              </span>
+            </p>
+            {view.simulation.leverRationale ? (
+              <p className="app-muted brief-no-notes">
+                Highest-leverage lever{view.simulation.leverPhase ? ` (${view.simulation.leverPhase})` : ""}:{" "}
+                {view.simulation.leverRationale}
+              </p>
+            ) : null}
+            <a href={withOrg("/match-sim", orgId)}>Open Match simulator</a>
+          </Section>
+        ) : null}
+
         <Section title="Linked whiteboard play">
           {view.play ? (
             <>

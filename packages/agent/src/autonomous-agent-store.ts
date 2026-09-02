@@ -202,6 +202,50 @@ export async function finishAutonomousRun(
   );
 }
 
+/**
+ * Cooperative cancel: stamps cancel_requested_at on a still-running run the caller
+ * owns (RLS: owner update). The loop checks the flag between steps and finishes the run
+ * as 'cancelled'. Returns false when no running run matched (already finished, not
+ * yours, or the 0498 column is missing — reported honestly, never faked).
+ */
+export async function requestAutonomousRunCancel(
+  client: PoolClient,
+  input: { orgId: string; runId: string },
+): Promise<boolean> {
+  try {
+    const result = await client.query(
+      `UPDATE autonomous_agent_runs
+          SET cancel_requested_at = COALESCE(cancel_requested_at, now())
+        WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'running'`,
+      [input.runId, input.orgId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** True when a cancel was requested for the run. Tolerates a pre-0498 schema (false). */
+export async function isAutonomousRunCancelRequested(
+  client: PoolClient,
+  input: { orgId: string; runId: string },
+): Promise<boolean> {
+  try {
+    const result = await client.query<{ cancelRequestedAt: string | null; status: string }>(
+      // to_jsonb so a database without the 0498 column answers NULL instead of erroring.
+      `SELECT (to_jsonb(autonomous_agent_runs) ->> 'cancel_requested_at') AS "cancelRequestedAt",
+              status
+         FROM autonomous_agent_runs
+        WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [input.runId, input.orgId],
+    );
+    const row = result.rows[0];
+    return Boolean(row && (row.cancelRequestedAt || row.status === "cancelled"));
+  } catch {
+    return false;
+  }
+}
+
 export async function listAutonomousRuns(
   client: PoolClient,
   orgId: string,

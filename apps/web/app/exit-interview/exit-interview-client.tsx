@@ -9,9 +9,10 @@ import {
   EXIT_INTERVIEW_STATUSES,
   type ExitInterviewView,
 } from "../../lib/exit-interview/compute-exit-interview";
-import type { ExitInterviewRole, ExitInterviewStatus } from "../../lib/exit-interview/types";
+import type { ExitInterviewInvite, ExitInterviewRole, ExitInterviewStatus } from "../../lib/exit-interview/types";
 
 type LiveView = Extract<ExitInterviewView, { status: "live" }>;
+type Mutate = (payload: Record<string, unknown>) => Promise<void>;
 
 export default function ExitInterviewClient() {
   const [view, setView] = useState<ExitInterviewView | null>(null);
@@ -22,6 +23,8 @@ export default function ExitInterviewClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  /** The most recently minted self-serve link — shown once, never re-derivable. */
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
@@ -66,13 +69,14 @@ export default function ExitInterviewClient() {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
         });
-        const data = (await response.json()) as ExitInterviewView | { error?: string };
+        const data = (await response.json()) as (ExitInterviewView & { inviteLink?: string }) | { error?: string };
         if (!response.ok || !("status" in data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        if ("inviteLink" in data && data.inviteLink) setInviteLink(data.inviteLink);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -171,6 +175,9 @@ export default function ExitInterviewClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
+          {view.canManage ? (
+            <SelfServeLinks view={view} busy={busy} mutate={mutate} inviteLink={inviteLink} onDismissLink={() => setInviteLink(null)} />
+          ) : null}
           <LogResponseForm busy={busy} mutate={mutate} />
           {view.summary.totalRecords > 0 ? <Breakdowns view={view} /> : null}
           <RecentResponses view={view} busy={busy} mutate={mutate} />
@@ -243,7 +250,7 @@ function RecentResponses({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   if (view.summary.totalRecords === 0) {
     return (
@@ -305,12 +312,172 @@ function RecentResponses({
   );
 }
 
+function inviteStateLabel(invite: ExitInterviewInvite): string {
+  if (invite.state === "used") return "Submitted";
+  if (invite.state === "expired") return "Expired";
+  return `Open until ${new Date(invite.expiresAt).toLocaleDateString()}`;
+}
+
+/**
+ * Owner/admin only: mint a one-time link an outgoing member fills in without
+ * signing in. The link is shown exactly once — only its hash is stored.
+ */
+function SelfServeLinks({
+  view,
+  busy,
+  mutate,
+  inviteLink,
+  onDismissLink,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: Mutate;
+  inviteLink: string | null;
+  onDismissLink: () => void;
+}) {
+  const [memberUserId, setMemberUserId] = useState("");
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const selectedMember = view.members.find((member) => member.userId === memberUserId) ?? null;
+  const canCreate = Boolean(selectedMember || (memberName.trim() && memberEmail.trim()));
+
+  return (
+    <Panel style={{ display: "grid", gap: 10 }}>
+      <div>
+        <h2 style={{ margin: 0 }}>Self-serve links</h2>
+        <p className="app-muted" style={{ margin: "4px 0 0" }}>
+          Send an outgoing member a one-time link. They fill the interview in without signing in; the answers land
+          here and write the season-handoff wiki page like a mentor-logged response.
+        </p>
+      </div>
+      {inviteLink ? (
+        <div className="app-card" style={{ display: "grid", gap: 6, padding: 12, borderLeft: "3px solid #1f7a3d" }}>
+          <strong>Link created — copy it now, it is only shown once.</strong>
+          <code style={{ wordBreak: "break-all", fontSize: "0.85rem" }}>{inviteLink}</code>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="app-button secondary"
+              onClick={() => {
+                void navigator.clipboard?.writeText(inviteLink).then(
+                  () => setCopied(true),
+                  () => setCopied(false),
+                );
+              }}
+            >
+              {copied ? "Copied" : "Copy link"}
+            </button>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setCopied(false);
+                onDismissLink();
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <FormGrid min={180}>
+        <FormRow label="Member">
+          <select
+            value={memberUserId}
+            disabled={busy}
+            onChange={(event) => {
+              setMemberUserId(event.target.value);
+              const picked = view.members.find((member) => member.userId === event.target.value);
+              if (picked) {
+                setMemberName(picked.name);
+                setMemberEmail(picked.email);
+              }
+            }}
+          >
+            <option value="">Someone no longer on the roster…</option>
+            {view.members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </FormRow>
+        <FormRow label="Name">
+          <input value={memberName} disabled={busy} placeholder="Jane Doe" onChange={(event) => setMemberName(event.target.value)} />
+        </FormRow>
+        <FormRow label="Email the link goes to">
+          <input
+            type="email"
+            value={memberEmail}
+            disabled={busy}
+            placeholder="jane@example.com"
+            onChange={(event) => setMemberEmail(event.target.value)}
+          />
+        </FormRow>
+      </FormGrid>
+      <div>
+        <button
+          type="button"
+          className="app-button"
+          disabled={busy || !canCreate}
+          onClick={() => {
+            setCopied(false);
+            void mutate({
+              action: "invite",
+              memberUserId: memberUserId || undefined,
+              memberName: memberName.trim() || undefined,
+              memberEmail: memberEmail.trim() || undefined,
+            }).then(() => {
+              setMemberUserId("");
+              setMemberName("");
+              setMemberEmail("");
+            });
+          }}
+        >
+          Create one-time link
+        </button>
+      </div>
+      {view.invites.length > 0 ? (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
+          {view.invites.map((invite) => (
+            <li key={invite.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+              <span>
+                <strong>{invite.memberName}</strong>
+                <small className="app-muted">
+                  {" "}
+                  · {invite.memberEmail ?? "member account"} · {inviteStateLabel(invite)}
+                </small>
+              </span>
+              {invite.state === "open" ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => void mutate({ action: "revoke-invite", inviteId: invite.id })}
+                >
+                  Revoke
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="app-muted" style={{ margin: 0 }}>
+          No links created this season.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
 function LogResponseForm({
   busy,
   mutate,
 }: {
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const empty = useMemo(
     () => ({

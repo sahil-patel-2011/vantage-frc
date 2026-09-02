@@ -1,3 +1,6 @@
+import type { PromptCachePrices } from "./prompt-caching";
+import type { ChatTurn } from "./thread-history";
+
 export type ModelConfig = {
   id: string;
   displayName: string;
@@ -110,9 +113,19 @@ export function boundedContext(items: ContextItem[], tokenBudget: number) {
 export interface ChatAdapter {
   readonly provider: string;
   readonly model: string;
+  /**
+   * The adapter's configured per-million prices, when it knows them (org key rows,
+   * catalog rows, hosted defaults). Read by estimateCostUsd for the pre-call estimate.
+   */
+  readonly prices?: PromptCachePrices | null;
   complete(input: {
     message: string;
     context: ContextItem[];
+    /**
+     * Prior turns of the thread, oldest first (see thread-history.ts). Providers that
+     * take a message list send it as-is; single-prompt adapters prepend it.
+     */
+    history?: ChatTurn[];
     promptCachingEnabled?: boolean;
   }): Promise<{
     text: string;
@@ -129,9 +142,13 @@ export interface ChatAdapter {
 export class LocalDeterministicChatAdapter implements ChatAdapter {
   readonly provider = "local";
   readonly model = "vantage-local-chat-v1";
+  readonly prices = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
+  // `history` is accepted for interface parity; the deterministic echo has no model to
+  // remember with, so the reply stays a function of the current message + context.
   async complete(input: {
     message: string;
     context: ContextItem[];
+    history?: ChatTurn[];
     promptCachingEnabled?: boolean;
   }) {
     const { formatGroundedReply } = await import("./auto-tools");
@@ -236,3 +253,7 @@ export * from "./autonomous-agent-store";
 export * from "./autonomous-loop";
 export * from "./org-agent-rules";
 export * from "./subscription-bridge-adapter";
+export * from "./thread-history";
+export * from "./cost-estimate";
+export * from "./model-routing";
+export * from "./render";

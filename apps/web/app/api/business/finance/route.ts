@@ -1,6 +1,9 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { assertGrantInOrg } from "../../../../lib/finance/grant-options";
+import { mirrorPurchaseLog } from "../../../../lib/finance/mirrors";
+import { removeMoney } from "../../../../lib/finance/ledger";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 import {
   computeSeasonFinanceView,
@@ -125,11 +128,13 @@ export async function POST(request: Request) {
           );
           if (!category.rowCount) throw new Error("Budget category was not found for this season.");
         }
-        await client.query(
+        if (parsed.grantApplicationId) await assertGrantInOrg(client, orgId, parsed.grantApplicationId);
+        const inserted = await client.query<{ id: string }>(
           `INSERT INTO finance_purchase_log
              (org_id, season_year, purchased_on, vendor, item, category_id, amount_usd, payment_method,
-              receipt_url, notes, created_by)
-           VALUES ($1::uuid, $2, $3::date, $4, $5, $6::uuid, $7, $8, $9, $10, $11::uuid)`,
+              receipt_url, notes, created_by, grant_application_id)
+           VALUES ($1::uuid, $2, $3::date, $4, $5, $6::uuid, $7, $8, $9, $10, $11::uuid, $12::uuid)
+           RETURNING id`,
           [
             orgId,
             seasonYear,
@@ -142,8 +147,24 @@ export async function POST(request: Request) {
             parsed.receiptUrl,
             parsed.notes,
             session.user.id,
+            parsed.grantApplicationId,
           ],
         );
+        // ONE MONEY LEDGER: the receipt mirrors in the same transaction, keyed
+        // (org, 'purchase_log', receipt id), carrying its grant tag.
+        await mirrorPurchaseLog(client, {
+          orgId,
+          purchaseId: inserted.rows[0]!.id,
+          seasonYear,
+          vendor: parsed.vendor,
+          item: parsed.item,
+          categoryId: parsed.categoryId,
+          amountUsd: parsed.amountUsd,
+          purchasedOn: parsed.purchasedOn,
+          purchaseRequestId: null,
+          grantApplicationId: parsed.grantApplicationId,
+          createdBy: session.user.id,
+        });
       } else if (action === "mark-reimbursed") {
         if (!admin) throw new Error("Only owners and admins can mark reimbursements repaid.");
         const purchaseId = uuidOrNull(raw.purchaseId);
@@ -158,10 +179,12 @@ export async function POST(request: Request) {
       } else if (action === "delete-purchase") {
         const purchaseId = uuidOrNull(raw.purchaseId);
         if (!purchaseId) throw new Error("purchaseId is required");
-        await client.query(
+        const deleted = await client.query(
           `DELETE FROM finance_purchase_log WHERE id = $1::uuid AND org_id = $2::uuid`,
           [purchaseId, orgId],
         );
+        // Deleting the receipt deletes its money — drop the mirror row too.
+        if (deleted.rowCount) await removeMoney(client, { orgId, source: "purchase_log", sourceId: purchaseId });
       } else {
         throw new Error("Unknown finance action");
       }
@@ -179,7 +202,7 @@ export async function POST(request: Request) {
       return Response.json({ error: message }, { status: 403 });
     }
     if (
-      /required|Only owners|kind|Vendor|Amount|date|name|category|Unknown finance|What you bought|Funding source/i.test(
+      /required|Only owners|kind|Vendor|Amount|date|name|category|Unknown finance|What you bought|Funding source|Grant application/i.test(
         message,
       )
     ) {

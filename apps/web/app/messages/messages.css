@@ -1,0 +1,668 @@
+/* Team chat v2: channel rail + thread. Scoped under .messages-page.v2 so it beats the legacy
+   .messages-page / .chat-page rules in styles.css and soft-ui.css without editing them.
+   Design tokens only; light and dark; 44px targets; single column with a list<->thread toggle
+   below 768px (no vertical stacking). */
+
+.messages-page.v2 {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.messages-page.v2 .messages-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: min(70vh, 760px);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-surface);
+  overflow: hidden;
+}
+
+/* ---- Rail ------------------------------------------------------------------------------- */
+
+.messages-page.v2 .chat-sidebar,
+body.has-app-shell .messages-page.v2 .chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid var(--app-line);
+  background: var(--app-surface);
+}
+
+.messages-page.v2 .rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px 8px;
+}
+
+.messages-page.v2 .rail-head strong {
+  font: 700 13px/1.2 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .rail-group {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.messages-page.v2 .rail-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 6px 4px;
+  color: var(--app-muted);
+  font: 700 10px/1.2 var(--font-ibm-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.messages-page.v2 .rail-group-title button {
+  min-height: 28px;
+  padding: 2px 8px;
+  color: var(--app-accent);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  border-radius: 999px;
+  cursor: pointer;
+  font: 700 10px var(--font-ibm-mono), monospace;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.messages-page.v2 .chat-sidebar button.rail-item,
+body.has-app-shell .messages-page.v2 .chat-sidebar button.rail-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label badge" "preview badge";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.messages-page.v2 .chat-sidebar button.rail-item:hover,
+body.has-app-shell .messages-page.v2 .chat-sidebar button.rail-item:hover {
+  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
+}
+
+.messages-page.v2 .chat-sidebar button.rail-item.active,
+body.has-app-shell .messages-page.v2 .chat-sidebar button.rail-item.active {
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+}
+
+.messages-page.v2 .chat-sidebar button.rail-item.has-unread .rail-label {
+  font-weight: 800;
+}
+
+.messages-page.v2 .chat-sidebar button.rail-item.not-member .rail-label {
+  color: var(--app-muted);
+}
+
+.messages-page.v2 .rail-label {
+  grid-area: label;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 13px/1.3 var(--font-source-sans), sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messages-page.v2 .rail-label .rail-icon {
+  flex: none;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.messages-page.v2 .rail-preview {
+  grid-area: preview;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--app-muted);
+  font: 11px/1.3 var(--font-source-sans), sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messages-page.v2 .rail-badge {
+  grid-area: badge;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  font: 700 10px/18px var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .rail-empty {
+  padding: 6px 10px;
+  color: var(--app-muted);
+  font: 12px/1.4 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .chat-sidebar .rail-action,
+body.has-app-shell .messages-page.v2 .chat-sidebar .rail-action {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--app-accent);
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  border-radius: 8px;
+  cursor: pointer;
+  font: 700 12px/1.2 var(--font-source-sans), sans-serif;
+  text-align: left;
+}
+
+.messages-page.v2 .rail-foot {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+/* ---- Thread ----------------------------------------------------------------------------- */
+
+.messages-page.v2 .chat-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.messages-page.v2 .chat-main > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-line);
+}
+
+.messages-page.v2 .chat-main > header h1 {
+  margin: 2px 0 0;
+  font-size: clamp(18px, 2.4vw, 24px);
+}
+
+.messages-page.v2 .thread-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.messages-page.v2 .thread-head-left > div {
+  min-width: 0;
+}
+
+.messages-page.v2 .thread-description {
+  margin: 4px 0 0;
+  color: var(--app-muted);
+  font: 12px/1.4 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .thread-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.messages-page.v2 .thread-actions button,
+.messages-page.v2 .thread-actions a {
+  min-height: 36px;
+  padding: 6px 10px;
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  cursor: pointer;
+  font: 600 12px/1.2 var(--font-source-sans), sans-serif;
+  text-decoration: none;
+}
+
+.messages-page.v2 .thread-actions button.primary {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
+.messages-page.v2 .thread-actions button.danger {
+  color: var(--app-warning);
+  border-color: color-mix(in srgb, var(--app-warning) 50%, var(--app-line));
+}
+
+.messages-page.v2 .thread-back {
+  display: none;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  cursor: pointer;
+  font: 700 14px var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .channel-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--app-muted);
+  background: var(--app-soft, color-mix(in srgb, var(--app-ink) 5%, transparent));
+  border: 1px solid var(--app-line);
+  font: 600 11px/1.2 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.messages-page.v2 .messages article {
+  max-width: 760px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--app-line);
+  border-radius: 0 10px 10px 0;
+  background: var(--app-surface);
+}
+
+.messages-page.v2 .messages article.user {
+  margin-left: auto;
+  border-color: var(--app-accent);
+}
+
+.messages-page.v2 .messages article > span,
+.messages-page.v2 .messages article small {
+  color: var(--app-muted);
+  font: 10px var(--font-ibm-mono), monospace;
+}
+
+.messages-page.v2 .messages article p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.messages-page.v2 .message-edited {
+  margin-left: 6px;
+  color: var(--app-muted);
+  font: italic 10px var(--font-ibm-mono), monospace;
+}
+
+.messages-page.v2 .message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.messages-page.v2 .message-actions button {
+  min-height: 30px;
+  margin: 0;
+  padding: 4px 10px;
+  color: var(--app-muted);
+  background: transparent;
+  border: 1px solid var(--app-line);
+  border-radius: 6px;
+  cursor: pointer;
+  font: 10px var(--font-ibm-mono), monospace;
+}
+
+.messages-page.v2 .message-actions button.message-delete {
+  color: var(--app-warning);
+  border-color: color-mix(in srgb, var(--app-warning) 50%, var(--app-line));
+}
+
+.messages-page.v2 .message-actions button.message-pin {
+  color: var(--app-accent);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+}
+
+.messages-page.v2 .message-edit-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.messages-page.v2 .message-edit-form textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  resize: vertical;
+  font: inherit;
+}
+
+.messages-page.v2 .message-edit-form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.messages-page.v2 .message-edit-form button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: 600 12px var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .message-edit-form button[type="submit"] {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border: 1px solid var(--app-accent);
+}
+
+.messages-page.v2 .message-edit-form button[type="button"] {
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid var(--app-line);
+}
+
+.messages-page.v2 .thread-notice {
+  display: grid;
+  gap: 8px;
+  margin: 0 18px 12px;
+  padding: 12px 14px;
+  color: var(--app-ink);
+  background: var(--app-soft, color-mix(in srgb, var(--app-ink) 5%, transparent));
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  font: 13px/1.5 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .thread-notice.readonly {
+  background: color-mix(in srgb, var(--app-warning) 10%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-warning) 45%, var(--app-line));
+}
+
+.messages-page.v2 .thread-notice .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- Composer --------------------------------------------------------------------------- */
+
+.messages-page.v2 .chat-composer,
+body.has-app-shell .messages-page.v2 .chat-composer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--app-line);
+  background: var(--app-surface);
+}
+
+.messages-page.v2 .chat-composer textarea,
+body.has-app-shell .messages-page.v2 .chat-composer textarea {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  resize: vertical;
+  font: inherit;
+}
+
+.messages-page.v2 .chat-composer button[type="submit"],
+body.has-app-shell .messages-page.v2 .chat-composer button[type="submit"] {
+  min-height: 44px;
+  padding: 10px 18px;
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.messages-page.v2 .chat-composer button[type="submit"]:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.messages-page.v2 .chat-composer .messages-composer-hint {
+  flex-basis: 100%;
+}
+
+/* ---- New channel dialog ----------------------------------------------------------------- */
+
+.messages-page.v2 .channel-dialog-backdrop {
+  position: fixed;
+  z-index: 96;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, #000 45%, transparent);
+}
+
+.messages-page.v2 .channel-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(440px, 100%);
+  padding: 18px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  box-shadow: var(--soft-shadow-pop, 0 18px 50px rgba(0, 0, 0, 0.25));
+}
+
+.messages-page.v2 .channel-dialog h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.messages-page.v2 .channel-dialog label {
+  display: grid;
+  gap: 4px;
+  font: 600 12px/1.3 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .channel-dialog input,
+.messages-page.v2 .channel-dialog select,
+.messages-page.v2 .channel-dialog textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: 14px/1.3 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .channel-dialog .kind-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.messages-page.v2 .channel-dialog .kind-row button {
+  min-height: 44px;
+  padding: 6px;
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  cursor: pointer;
+  font: 600 12px/1.2 var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .channel-dialog .kind-row button.active {
+  color: var(--app-accent);
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+
+.messages-page.v2 .channel-dialog .slug-preview {
+  color: var(--app-muted);
+  font: 11px var(--font-ibm-mono), monospace;
+}
+
+.messages-page.v2 .channel-dialog .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.messages-page.v2 .channel-dialog .dialog-actions button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: 700 13px var(--font-source-sans), sans-serif;
+}
+
+.messages-page.v2 .channel-dialog .dialog-actions button.primary {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border: 1px solid var(--app-accent);
+}
+
+.messages-page.v2 .channel-dialog .dialog-actions button.secondary {
+  color: var(--app-ink);
+  background: transparent;
+  border: 1px solid var(--app-line);
+}
+
+.messages-page.v2 .channel-dialog .dialog-error {
+  margin: 0;
+  color: var(--app-warning);
+  font: 12px/1.4 var(--font-source-sans), sans-serif;
+}
+
+/* ---- Light theme overrides for tokens that differ ---------------------------------------- */
+
+html[data-theme="light"] .messages-page.v2 .messages-layout,
+html[data-theme="light"] .messages-page.v2 .chat-sidebar,
+html[data-theme="light"] .messages-page.v2 .channel-dialog {
+  background: var(--app-surface);
+  border-color: var(--app-line);
+}
+
+/* ---- Mobile: one column, list <-> thread ----------------------------------------------- */
+
+@media (max-width: 950px) {
+  .messages-page.v2 .messages-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .messages-page.v2 {
+    min-height: calc(100dvh - 56px - 96px - var(--soft-safe-bottom, 0px));
+  }
+
+  .messages-page.v2 .messages-layout,
+  .messages-page.v2.view-list .messages-layout,
+  .messages-page.v2.view-thread .messages-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    height: calc(100dvh - 56px - 96px - var(--soft-safe-bottom, 0px));
+  }
+
+  .messages-page.v2 .chat-sidebar,
+  body.has-app-shell .messages-page.v2 .chat-sidebar {
+    flex-direction: column;
+    overflow-x: hidden;
+    border-right: 0;
+  }
+
+  .messages-page.v2 .chat-sidebar button.rail-item,
+  body.has-app-shell .messages-page.v2 .chat-sidebar button.rail-item {
+    min-width: 0;
+    min-height: 48px;
+  }
+
+  .messages-page.v2.view-thread .chat-sidebar,
+  body.has-app-shell .messages-page.v2.view-thread .chat-sidebar {
+    display: none;
+  }
+
+  .messages-page.v2.view-list .chat-main {
+    display: none;
+  }
+
+  .messages-page.v2 .thread-back {
+    display: inline-flex;
+  }
+
+  .messages-page.v2 .chat-main > header {
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+
+  .messages-page.v2 .messages {
+    padding: 12px;
+  }
+
+  .messages-page.v2 .chat-composer,
+  body.has-app-shell .messages-page.v2 .chat-composer {
+    padding: 10px 12px calc(10px + var(--soft-safe-bottom, 0px));
+  }
+
+  .messages-page.v2 .chat-composer button[type="submit"],
+  body.has-app-shell .messages-page.v2 .chat-composer button[type="submit"] {
+    min-height: 48px;
+    flex: 1;
+  }
+
+  .messages-page.v2 .thread-notice {
+    margin: 0 12px 10px;
+  }
+
+  .messages-page.v2 .channel-dialog .kind-row {
+    grid-template-columns: 1fr;
+  }
+}

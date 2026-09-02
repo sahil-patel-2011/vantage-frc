@@ -12,7 +12,6 @@ export type CadOperation =
   | "create_shell"
   | "create_pattern"
   | "set_variable"
-  | "create_assembly"
   | "create_hole"
   | "create_mirror"
   | "delete_feature"
@@ -20,7 +19,6 @@ export type CadOperation =
   | "verify_topology"
   | "render_views"
   | "create_checkpoint"
-  | "rollback_checkpoint"
   | "export_step"
   | "export_stl"
   | "export_gltf";
@@ -46,12 +44,10 @@ export const DESTRUCTIVE_CAD_OPERATIONS = new Set<CadOperation>([
   "create_shell",
   "create_pattern",
   "set_variable",
-  "create_assembly",
   "create_hole",
   "create_mirror",
   "delete_feature",
   "feature_script",
-  "rollback_checkpoint",
 ]);
 
 /** Verification-only steps that are safe for auto-run after a mutation when enabled. */
@@ -72,7 +68,6 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "create_shell",
   "create_pattern",
   "set_variable",
-  "create_assembly",
   "create_hole",
   "create_mirror",
   "delete_feature",
@@ -80,7 +75,6 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "verify_topology",
   "render_views",
   "create_checkpoint",
-  "rollback_checkpoint",
   "export_step",
   "export_stl",
   "export_gltf",

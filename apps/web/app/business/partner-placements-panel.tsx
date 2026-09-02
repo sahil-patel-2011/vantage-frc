@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, useConfirm, useToast } from "../../components/ui";
 import { PLACEMENTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 
@@ -142,9 +142,10 @@ export function PartnerPlacementsPanel({
   seasonYear: number;
   canManage: boolean;
 }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [program, setProgram] = useState<Program | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [migrationMissing, setMigrationMissing] = useState(false);
 
@@ -174,7 +175,6 @@ export function PartnerPlacementsPanel({
       if (!canManage || busy) return;
       setBusy(true);
       setError("");
-      setNotice("");
       try {
         const response = await fetch("/api/business/placements", {
           method: "POST",
@@ -186,14 +186,14 @@ export function PartnerPlacementsPanel({
           throw new Error("error" in data ? data.error : "Could not save");
         }
         setProgram(data);
-        setNotice("Partner program saved.");
+        toast.success("Partner program saved.");
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Could not save");
       } finally {
         setBusy(false);
       }
     },
-    [busy, canManage, orgId, seasonYear],
+    [busy, canManage, orgId, seasonYear, toast],
   );
 
   const submit = useCallback(
@@ -222,7 +222,8 @@ export function PartnerPlacementsPanel({
         const response = await fetch("/api/business/assets", { method: "POST", body: form });
         const data = (await response.json()) as { error?: string; duplicate?: boolean };
         if (!response.ok) throw new Error(data.error ?? "Artwork upload failed");
-        setNotice(data.duplicate ? "That exact artwork is already in the library." : "Artwork uploaded for review.");
+        if (data.duplicate) toast.info("That exact artwork is already in the library.");
+        else toast.success("Artwork uploaded for review.");
         event.currentTarget.reset();
         await load();
       } catch (cause) {
@@ -231,7 +232,7 @@ export function PartnerPlacementsPanel({
         setBusy(false);
       }
     },
-    [busy, canManage, load, orgId],
+    [busy, canManage, load, orgId, toast],
   );
 
   const pending = useMemo(() => program?.submissions.filter((item) => item.status === "pending") ?? [], [program]);
@@ -281,12 +282,6 @@ export function PartnerPlacementsPanel({
         <div className="biz-alert danger">
           <strong>Couldn&apos;t complete that.</strong>
           <span>{error}</span>
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="biz-alert success">
-          <strong>Done.</strong>
-          <span>{notice}</span>
         </div>
       ) : null}
 
@@ -484,9 +479,14 @@ export function PartnerPlacementsPanel({
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm("Delete this archived artwork permanently?")) {
-                              void mutate({ action: "delete-asset", assetId: asset.id });
-                            }
+                            void confirm({
+                              title: "Delete archived artwork",
+                              body: "This permanently removes the archived artwork file from the partner library. It cannot be restored.",
+                              confirmLabel: "Delete artwork",
+                              tone: "destructive",
+                            }).then((ok) => {
+                              if (ok) void mutate({ action: "delete-asset", assetId: asset.id });
+                            });
                           }}
                         >
                           Delete

@@ -2,6 +2,30 @@ import { describe, expect, it } from "vitest";
 import { buildScoutQueue, withScoutFormHrefs } from "./scout-queue";
 
 describe("buildScoutQueue", () => {
+  it("bumps opponent-watchlist teams ahead of otherwise equal candidates", () => {
+    const upcoming = ["frc118", "frc1678"].map((teamKey) => ({
+      teamKey,
+      matchKey: "2026test_qm1",
+      compLevel: "qm",
+      matchNumber: 1,
+      scheduledTime: null,
+      slot: "opponent" as const,
+      matchIndex: 0,
+    }));
+    const plain = buildScoutQueue({ ourTeamKey: "frc254", orgId: "org", upcoming, coverage: [] });
+    expect(plain.map((item) => item.teamKey)).toEqual(["frc118", "frc1678"]);
+    const watched = buildScoutQueue({
+      ourTeamKey: "frc254",
+      orgId: "org",
+      upcoming,
+      coverage: [],
+      watchlistTeamKeys: ["frc1678"],
+    });
+    expect(watched.map((item) => item.teamKey)).toEqual(["frc1678", "frc118"]);
+    expect(watched[0]!.reasons[0]).toBe("On opponent watchlist");
+    expect(watched[0]!.priority).toBe(plain[1]!.priority + 24);
+  });
+
   it("prioritizes unscounted next-match opponents over covered partners", () => {
     const queue = buildScoutQueue({
       ourTeamKey: "frc254",

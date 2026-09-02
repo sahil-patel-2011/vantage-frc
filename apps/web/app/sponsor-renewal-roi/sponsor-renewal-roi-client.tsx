@@ -15,6 +15,8 @@ import {
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { SponsorRenewalRoiView } from "../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
 import type { SponsorRenewalRiskTier } from "../../lib/sponsor-renewal-roi/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   SPONSOR_RENEWAL_ROI_RELATED_INCLUDE,
   classifySponsorRenewalRoiShell,
@@ -186,6 +188,7 @@ export default function SponsorRenewalRoiClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -265,6 +268,8 @@ export default function SponsorRenewalRoiClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -365,6 +370,7 @@ export default function SponsorRenewalRoiClient() {
           {error}
         </p>
       ) : null}
+      <RenderAttribution receipt={renderReceipt} feature="sponsor_renewal_roi" />
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <NextActionsPanel actions={nextActions} />

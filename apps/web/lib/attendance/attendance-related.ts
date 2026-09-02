@@ -95,8 +95,11 @@ export function membersNotMarked(
   event: AttendanceEvent | null | undefined,
 ): AttendanceMember[] {
   if (!event) return members;
-  const marked = new Set(event.entries.map((entry) => entry.personName.trim().toLowerCase()));
-  return members.filter((member) => !marked.has(member.name.trim().toLowerCase()));
+  const markedUsers = new Set(event.entries.map((entry) => entry.userId).filter((id): id is string => Boolean(id)));
+  const markedNames = new Set(event.entries.map((entry) => entry.personName.trim().toLowerCase()));
+  return members.filter(
+    (member) => !markedUsers.has(member.userId) && !markedNames.has(member.name.trim().toLowerCase()),
+  );
 }
 
 /**

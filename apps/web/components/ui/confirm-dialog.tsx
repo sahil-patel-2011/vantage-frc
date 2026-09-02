@@ -59,7 +59,7 @@ export function ConfirmDialog({
         <p style={{ margin: 0 }}>{opts.body}</p>
         {critical ? (
           <div style={{ marginTop: 14 }}>
-            <label className={styles.stackKey} htmlFor="confirm-phrase" style={{ display: "block", marginBottom: 6 }}>
+            <label className={styles.dialogLabel} htmlFor="confirm-phrase" style={{ display: "block", marginBottom: 6 }}>
               Type <strong style={{ color: "var(--soft-ink)" }}>{phrase}</strong> to confirm
             </label>
             <input

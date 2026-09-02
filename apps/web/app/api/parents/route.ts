@@ -235,6 +235,13 @@ async function computeParentsView(
   };
 }
 
+/**
+ * The digest translation path calls a real upstream model; 120s keeps headroom above the
+ * adapter timeout so a slow provider returns a classified error instead of the platform
+ * killing the function mid-request.
+ */
+export const maxDuration = 120;
+
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });

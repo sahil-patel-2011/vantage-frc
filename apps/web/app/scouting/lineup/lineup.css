@@ -164,6 +164,80 @@
   .lineup-gap-list a{grid-row:auto}
 }
 
+/* Shift roster — per-scout timeline over the qualification schedule. */
+.lineup-shifts{
+  display:grid;gap:12px;
+  padding:16px 18px;
+  border:1px solid var(--soft-line);
+  border-radius:var(--soft-radius);
+  background:var(--soft-card);
+  box-shadow:var(--soft-shadow);
+}
+.lineup-shifts>header{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between}
+.lineup-shifts>header h2{margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink)}
+.lineup-shifts>header p{margin:0}
+.lineup-shift-forms{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lineup-shift-form{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:end;
+  padding:12px 14px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg);
+}
+.lineup-shift-form>strong{flex-basis:100%;font-size:13px;color:var(--soft-ink)}
+.lineup-shift-form>small{flex-basis:100%}
+.lineup-shift-form label{
+  display:grid;gap:4px;
+  font:600 11px var(--font-source-sans),ui-sans-serif;
+  color:var(--soft-muted);
+}
+.lineup-shift-form input,.lineup-shift-form select,.lineup-shift-actions select{
+  min-height:40px;min-width:88px;padding:0 10px;
+  border:1px solid var(--soft-line);border-radius:10px;background:var(--soft-card);color:var(--soft-ink);
+}
+.lineup-shift-form .lineup-check{min-height:40px}
+.lineup-shift-timeline{display:grid;gap:6px;overflow-x:auto}
+.lineup-shift-row{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;min-width:520px}
+.lineup-shift-name{font:600 13px var(--font-source-sans),ui-sans-serif;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lineup-shift-track{
+  display:grid;gap:2px;min-height:44px;align-items:stretch;
+  padding:3px;border-radius:10px;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100% / 6 - 1px),var(--soft-line) calc(100% / 6 - 1px),var(--soft-line) calc(100% / 6));
+}
+.lineup-shift-axis .lineup-shift-track{min-height:18px;background:none;padding:0 3px}
+.lineup-shift-axis small{
+  color:var(--soft-muted);
+  font:700 9px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
+  letter-spacing:.05em;
+}
+.lineup-shift-block{
+  display:grid;gap:1px;align-content:center;justify-items:start;
+  min-width:0;min-height:38px;padding:4px 8px;
+  border-radius:8px;border:1px solid var(--soft-line);
+  background:var(--soft-card);color:var(--soft-ink);
+  text-align:left;cursor:pointer;overflow:hidden;
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+.lineup-shift-block span{font:700 12px var(--font-source-sans),ui-sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lineup-shift-block small{font:600 10px var(--font-ibm-mono),ui-monospace,monospace;color:var(--soft-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lineup-shift-block.red{border-color:color-mix(in srgb,var(--app-critical) 55%,var(--soft-line));background:color-mix(in srgb,var(--app-critical) 12%,var(--soft-card))}
+.lineup-shift-block.blue{border-color:color-mix(in srgb,var(--soft-accent) 55%,var(--soft-line));background:color-mix(in srgb,var(--soft-accent) 12%,var(--soft-card))}
+.lineup-shift-block.is-sent small{color:var(--app-positive)}
+.lineup-shift-block.is-due small{color:var(--app-warning)}
+.lineup-shift-block.is-selected{box-shadow:0 0 0 2px var(--soft-accent);transform:translateY(-1px)}
+.lineup-shift-block:hover{box-shadow:var(--soft-shadow)}
+.lineup-shift-idle{margin:0;font-size:12px}
+.lineup-shift-actions{
+  display:grid;gap:10px;
+  padding:12px 14px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg);
+}
+.lineup-shift-actions>div:first-child{display:grid;gap:2px}
+.lineup-shift-actions>div:first-child span{font-size:12px}
+.lineup-shift-buttons{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.lineup-shift-buttons label{display:grid;gap:4px;font:600 11px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
+.lineup-shift-buttons .danger{color:var(--app-critical)}
+@media (max-width:860px){
+  .lineup-shift-forms{grid-template-columns:1fr}
+  .lineup-shift-row{grid-template-columns:110px 1fr}
+}
+
 @media print{
   .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions{display:none!important}
   .lineup-page{max-width:none!important;padding:0!important}

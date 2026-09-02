@@ -92,7 +92,7 @@ describe("generateChecklist", () => {
       if (sql.includes("FROM fmea_failures") && sql.includes("GROUP BY")) {
         return { rows: [{ subsystemName: "Drivetrain", failureCount: "8", avgRpn: "90.00" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts")) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -119,7 +119,11 @@ describe("generateChecklist", () => {
     expect(items[0]?.priority).toBe("recommended");
     expect(items[0]?.recommendedQty).toBeGreaterThan(0);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    // The render is metered under the feature when a model answers (ai_usage_events), and every
+    // attempt — model or template fallback — is recorded in ai_render_attempts (0498).
+    const usageInsert = inserted.find(
+      (entry) => entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts"),
+    );
     expect(usageInsert).toBeDefined();
   });
 });

@@ -115,7 +115,7 @@ describe("logFailure", () => {
       if (sql.includes("SELECT quantity::text AS quantity FROM inventory_items")) {
         return { rows: [{ quantity: "2.00" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts")) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -145,7 +145,11 @@ describe("logFailure", () => {
     expect(reportInsert?.params).toContain("swap");
     expect(reportInsert?.params).toContain(true); // prestageRecommended
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    // The render is metered under the feature when a model answers (ai_usage_events), and every
+    // attempt — model or template fallback — is recorded in ai_render_attempts (0498).
+    const usageInsert = inserted.find(
+      (entry) => entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts"),
+    );
     expect(usageInsert).toBeDefined();
   });
 });

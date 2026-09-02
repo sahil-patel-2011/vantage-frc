@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
 import { loadBatteryFleet } from "../load-battery-fleet";
+import { consumeForSource } from "../parts/store";
 import { evaluateFailure, summarizeFailures } from ".";
 import type {
   FmeaContext,
@@ -18,6 +19,8 @@ export type FmeaSetupStep = { id: string; label: string; detail: string; href: s
 
 export type SubsystemOption = { id: string; name: string; robotLabel: string };
 export type InspectionOption = { id: string; requirement: string; category: string; status: string };
+/** A stocked inventory item a failure can consume from (0505). */
+export type SpareItemOption = { id: string; name: string; quantity: number; unit: string; subsystem: string | null };
 
 export type FmeaView =
   | {
@@ -41,6 +44,8 @@ export type FmeaView =
       batterySignals: BatteryFmeaSignal[];
       subsystems: SubsystemOption[];
       inspectionItems: InspectionOption[];
+      /** Stocked items the "parts consumed" picker offers (unified parts ledger). */
+      spareItems: SpareItemOption[];
       computedAt: string;
     };
 
@@ -69,6 +74,8 @@ type FailureRow = {
   occurredAt: string;
   seasonYear: number;
   recordedByName: string | null;
+  inventoryItemId?: string | null;
+  partsConsumedQty?: string | number | null;
 };
 
 function mapFailure(row: FailureRow): FmeaFailure {
@@ -93,7 +100,32 @@ function mapFailure(row: FailureRow): FmeaFailure {
     occurredAt: row.occurredAt,
     seasonYear: row.seasonYear,
     recordedByName: row.recordedByName,
+    inventoryItemId: row.inventoryItemId ?? null,
+    partsConsumedQty: Number(row.partsConsumedQty ?? 0) || 0,
   };
+}
+
+/** Bind a failure to the spare it consumed and move the stock through the ONE parts ledger. */
+async function consumePartsForFailure(
+  client: PoolClient,
+  input: { orgId: string; userId: string; failureId: string; inventoryItemId: string; quantity: number; title: string },
+): Promise<void> {
+  if (!(input.quantity > 0)) return;
+  const item = await client.query(`SELECT 1 FROM inventory_items WHERE id = $1::uuid AND org_id = $2::uuid`, [
+    input.inventoryItemId,
+    input.orgId,
+  ]);
+  if (!item.rowCount) throw new Error("Inventory item not found");
+  // Idempotent per failure: the 0462 partial UNIQUE on (item, 'fmea', failure id) means an
+  // edit that re-sends the same consumption moves nothing twice.
+  await consumeForSource(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    sourceKind: "fmea",
+    sourceId: input.failureId,
+    note: `Consumed by failure: ${input.title}`,
+    items: [{ itemId: input.inventoryItemId, quantity: input.quantity }],
+  });
 }
 
 async function resolveOrg(
@@ -133,7 +165,7 @@ export async function computeFmeaView(
     };
   }
 
-  const [failureResult, seasonResult, subsystemResult, inspectionResult, fleet] = await Promise.all([
+  const [failureResult, seasonResult, subsystemResult, inspectionResult, fleet, spareResult] = await Promise.all([
     client.query<FailureRow>(
       `SELECT f.id, f.title, f.failure_mode AS "failureMode", f.context,
               f.subsystem_id AS "subsystemId", f.subsystem_name AS "subsystemName",
@@ -142,7 +174,8 @@ export async function computeFmeaView(
               f.status, f.inspection_item_id AS "inspectionItemId",
               f.event_key AS "eventKey", f.match_key AS "matchKey",
               f.robot_label AS "robotLabel", f.occurred_at::text AS "occurredAt",
-              f.season_year AS "seasonYear", u.name AS "recordedByName"
+              f.season_year AS "seasonYear", u.name AS "recordedByName",
+              f.inventory_item_id AS "inventoryItemId", f.parts_consumed_qty::float8 AS "partsConsumedQty"
        FROM fmea_failures f
        LEFT JOIN users u ON u.id = f.recorded_by
        WHERE f.org_id = $1 AND f.season_year = $2
@@ -170,6 +203,14 @@ export async function computeFmeaView(
       [org.orgId],
     ),
     loadBatteryFleet(client, org.orgId),
+    client.query<SpareItemOption>(
+      `SELECT id, name, quantity::float8 AS quantity, unit, subsystem
+       FROM inventory_items
+       WHERE org_id = $1 AND archived = false
+       ORDER BY name
+       LIMIT 300`,
+      [org.orgId],
+    ),
   ]);
 
   const failures = failureResult.rows.map(mapFailure);
@@ -192,6 +233,7 @@ export async function computeFmeaView(
     batterySignals,
     subsystems: subsystemResult.rows,
     inspectionItems: inspectionResult.rows,
+    spareItems: spareResult.rows.map((row) => ({ ...row, quantity: Number(row.quantity) || 0 })),
     computedAt: new Date().toISOString(),
   };
 }
@@ -223,8 +265,11 @@ export async function createFailure(
     matchKey: string | null;
     robotLabel: string;
     occurredAt: string | null;
+    /** Spare bin the failure consumed from (0505); consumption goes through the parts ledger. */
+    inventoryItemId?: string | null;
+    partsConsumedQty?: number | null;
   },
-): Promise<void> {
+): Promise<string> {
   let subsystemName = input.subsystemName.trim();
   const subsystemId = input.subsystemId;
   let robotLabel = input.robotLabel.trim() || "competition";
@@ -250,13 +295,18 @@ export async function createFailure(
     if (!item.rowCount) throw new Error("Inspection item not found");
   }
 
-  await client.query(
+  const inventoryItemId = input.inventoryItemId ?? null;
+  const partsConsumedQty = inventoryItemId ? Math.max(0, Math.round((input.partsConsumedQty ?? 0) * 100) / 100) : 0;
+
+  const inserted = await client.query<{ id: string }>(
     `INSERT INTO fmea_failures
        (org_id, season_year, robot_label, subsystem_id, subsystem_name, title, failure_mode,
         context, event_key, match_key, occurrence, severity, detection,
-        root_cause, five_whys, fix, status, inspection_item_id, occurred_at, recorded_by)
+        root_cause, five_whys, fix, status, inspection_item_id, occurred_at, recorded_by,
+        inventory_item_id, parts_consumed_qty)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,
-             COALESCE($19::timestamptz, now()), $20)`,
+             COALESCE($19::timestamptz, now()), $20, $21::uuid, $22::numeric)
+     RETURNING id`,
     [
       input.orgId,
       input.seasonYear,
@@ -278,8 +328,22 @@ export async function createFailure(
       input.inspectionItemId,
       input.occurredAt,
       input.userId,
+      inventoryItemId,
+      partsConsumedQty,
     ],
   );
+  const failureId = inserted.rows[0]!.id;
+  if (inventoryItemId && partsConsumedQty > 0) {
+    await consumePartsForFailure(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      failureId,
+      inventoryItemId,
+      quantity: partsConsumedQty,
+      title: input.title,
+    });
+  }
+  return failureId;
 }
 
 export async function updateFailure(
@@ -300,6 +364,10 @@ export async function updateFailure(
     fix?: string | null;
     status?: FmeaStatus;
     inspectionItemId?: string | null;
+    /** Acting user — needed only when parts are consumed (ledger row author). */
+    userId?: string;
+    inventoryItemId?: string | null;
+    partsConsumedQty?: number | null;
   },
 ): Promise<void> {
   const subsystemId = input.subsystemId;
@@ -323,7 +391,11 @@ export async function updateFailure(
     if (!item.rowCount) throw new Error("Inspection item not found");
   }
 
-  const updated = await client.query(
+  const setParts = input.inventoryItemId !== undefined || input.partsConsumedQty !== undefined;
+  const partsQty =
+    input.partsConsumedQty == null ? null : Math.max(0, Math.round(input.partsConsumedQty * 100) / 100);
+
+  const updated = await client.query<{ title: string; inventoryItemId: string | null; partsConsumedQty: number }>(
     `UPDATE fmea_failures SET
        title = COALESCE($3, title),
        failure_mode = COALESCE($4, failure_mode),
@@ -338,8 +410,11 @@ export async function updateFailure(
        fix = CASE WHEN $16::boolean THEN $17 ELSE fix END,
        status = COALESCE($18, status),
        inspection_item_id = CASE WHEN $19::boolean THEN $20 ELSE inspection_item_id END,
+       inventory_item_id = CASE WHEN $21::boolean THEN $22::uuid ELSE inventory_item_id END,
+       parts_consumed_qty = CASE WHEN $21::boolean THEN COALESCE($23::numeric, parts_consumed_qty) ELSE parts_consumed_qty END,
        updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
+     WHERE id = $1 AND org_id = $2
+     RETURNING title, inventory_item_id AS "inventoryItemId", parts_consumed_qty::float8 AS "partsConsumedQty"`,
     [
       input.failureId,
       input.orgId,
@@ -361,9 +436,23 @@ export async function updateFailure(
       input.status ?? null,
       input.inspectionItemId !== undefined,
       input.inspectionItemId ?? null,
+      setParts,
+      input.inventoryItemId ?? null,
+      partsQty,
     ],
   );
-  if (!updated.rowCount) throw new Error("Failure not found");
+  const row = updated.rows[0];
+  if (!row) throw new Error("Failure not found");
+  if (setParts && input.userId && row.inventoryItemId && Number(row.partsConsumedQty) > 0) {
+    await consumePartsForFailure(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      failureId: input.failureId,
+      inventoryItemId: row.inventoryItemId,
+      quantity: Number(row.partsConsumedQty),
+      title: row.title,
+    });
+  }
 }
 
 export async function deleteFailure(

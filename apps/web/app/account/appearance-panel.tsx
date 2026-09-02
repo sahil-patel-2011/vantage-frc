@@ -238,7 +238,7 @@ export default function AppearancePanel() {
         {logoUrl && org?.showLogoInHeader ? (
           <p className="app-muted" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="soft-brand-mark" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={logoUrl} alt="" />
             </span>
             Your team logo appears wherever this workspace is named.

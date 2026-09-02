@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -99,11 +100,12 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "generate-deck": {
           const kind = oneOf<SponsorSuiteDeckKind>(DECK_KINDS, body.kind) ?? "pitch";
           const sponsorId = trimmedOrNull(body.sponsorId, 64);
-          await generateDeck(client, { orgId, userId, sponsorId, kind, seasonYear });
+          render = (await generateDeck(client, { orgId, userId, sponsorId, kind, seasonYear })).render ?? undefined;
           break;
         }
         case "delete-deck": {
@@ -113,7 +115,7 @@ export async function POST(request: Request) {
           break;
         }
         case "generate-roi-report": {
-          await generateRoiReport(client, { orgId, userId, seasonYear });
+          render = (await generateRoiReport(client, { orgId, userId, seasonYear })).render ?? undefined;
           break;
         }
         case "set-goal": {
@@ -144,7 +146,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeSponsorSuiteView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeSponsorSuiteView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

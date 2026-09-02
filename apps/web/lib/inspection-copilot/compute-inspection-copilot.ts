@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { predictInspectionFailures } from ".";
 import type {
   FrameBumperSpec,
@@ -299,33 +298,22 @@ export async function logCheck(
     frameBumper: FrameBumperSpec;
     wiringPower: WiringPowerSpec;
   },
-): Promise<void> {
-  const prediction = await meteredAI({
+): Promise<RenderOutcome> {
+  // Real model call on the org's adapter with the deterministic prediction as fallback:
+  // only the summary prose may be rewritten; flags, risk score and weights stay computed.
+  const { value: prediction, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "inspection_copilot",
-    requestId: `inspection-copilot-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      robotName: input.robotName,
-      seasonYear: input.seasonYear,
-      itemCount: input.weightBudget.items.length,
-      note: "Deterministic weight-budget vs frame/bumper vs wiring-power diff — no external model call",
-    },
-    invoke: async () => ({
-      value: predictInspectionFailures({
-        weightBudget: input.weightBudget,
-        frameBumper: input.frameBumper,
-        wiringPower: input.wiringPower,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-inspection-copilot-v1",
-      provider: "vantage-local",
+    value: predictInspectionFailures({
+      weightBudget: input.weightBudget,
+      frameBumper: input.frameBumper,
+      wiringPower: input.wiringPower,
     }),
+    editableKeys: ["summary"],
+    instructions: `Pre-inspection check for robot "${input.robotName}" (${input.seasonYear}). Write the summary as 1-3 plain sentences telling the pit crew what will and will not pass, consistent with the flags and risk score in the document; cite only its numbers.`,
+    metadata: { robotName: input.robotName, seasonYear: input.seasonYear, itemCount: input.weightBudget.items.length },
   });
 
   await client.query(
@@ -347,6 +335,7 @@ export async function logCheck(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteCheck(

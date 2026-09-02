@@ -120,3 +120,54 @@
 .product-hub-panel .todos-page .team-ops-nav {
   display: none;
 }
+
+/* Board view (the former /tasks columns) over the same task rows. */
+.todos-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.todos-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.todos-column {
+  display: grid;
+  gap: 10px;
+}
+.todos-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.todos-column-head h2 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+.todos-board-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--soft-bg) 72%, transparent);
+}
+.todos-board-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.todos-board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.todos-board-actions select {
+  font-size: 0.8rem;
+  flex: 1 1 100px;
+}

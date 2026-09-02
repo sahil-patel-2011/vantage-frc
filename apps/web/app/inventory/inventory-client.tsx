@@ -33,6 +33,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import InventoryLabelTools from "./inventory-label-tools";
+import { SubsystemSelect } from "./subsystem-select";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<InventoryView, { status: "ready" }>;
@@ -252,7 +253,7 @@ function ItemEditForm({
       </label>
       <label className="inventory-field">
         <span>Subsystem</span>
-        <input value={subsystem} disabled={busy} placeholder="e.g. Drivetrain" onChange={(e) => setSubsystem(e.target.value)} />
+        <SubsystemSelect orgId={orgId} value={subsystem} disabled={busy} onChange={setSubsystem} />
       </label>
       {/* Archive + Delete moved into this item's overflow menu (see ItemRow) so the edit
           form has exactly one action: save what you just typed. */}
@@ -364,7 +365,7 @@ function AddItemForm({
         </label>
         <label className="inventory-field">
           <span>Subsystem</span>
-          <input value={subsystem} disabled={busy} placeholder="e.g. Drivetrain" onChange={(e) => setSubsystem(e.target.value)} />
+          <SubsystemSelect orgId={orgId} value={subsystem} disabled={busy} onChange={setSubsystem} />
         </label>
       </div>
       <button type="submit" className="app-button" disabled={busy || !name.trim()}>

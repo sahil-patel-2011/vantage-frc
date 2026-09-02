@@ -23,6 +23,8 @@ import {
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import type { RosterMember, ShiftView } from "../../../lib/scouting/shift-store";
+import { ShiftRoster } from "./shift-roster";
 import "./lineup.css";
 
 type CoverageView =
@@ -45,6 +47,11 @@ type CoverageView =
         doubleSlots: CoverageGapSlot[];
       };
       slots: CoverageGapSlot[];
+      shifts: ShiftView[];
+      roster: RosterMember[];
+      canManageShifts: boolean;
+      matchRange: { min: number; max: number } | null;
+      shiftGapMatches: number;
     };
 
 function teamLabel(slot: CoverageGapSlot): string {
@@ -505,6 +512,17 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           )}
         </div>
       </section>
+
+      <ShiftRoster
+        orgId={orgId}
+        eventKey={view.eventKey}
+        shifts={view.shifts ?? []}
+        roster={view.roster ?? []}
+        canManage={Boolean(view.canManageShifts)}
+        matchRange={view.matchRange ?? null}
+        gapMatches={view.shiftGapMatches ?? 0}
+        onChanged={load}
+      />
 
       <section className="lineup-board-wrap">
         <header>

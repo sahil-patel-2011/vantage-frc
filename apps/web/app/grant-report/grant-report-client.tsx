@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { outreachKindLabel } from "../../lib/grant-report";
 import type { GrantReportView } from "../../lib/grant-report/compute-grant-report";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   GRANT_REPORT_RELATED_INCLUDE,
   classifyGrantReportShell,
@@ -164,6 +166,8 @@ export default function GrantReportClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest report render: "AI" only when a model wrote it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -237,6 +241,8 @@ export default function GrantReportClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -321,6 +327,8 @@ export default function GrantReportClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="grant_report_generate" />
 
       <GrantReportNextActionsPanel actions={nextActions} />
 
@@ -412,6 +420,10 @@ function EligibleGrants({
                 {grant.funder ? `${grant.funder} · ` : ""}
                 {grant.seasonYear} · ${grant.amountAwardedUsd.toLocaleString()}
                 {grant.decisionAt ? ` · decided ${new Date(grant.decisionAt).toLocaleDateString()}` : ""}
+                {" · "}
+                {grant.taggedExpenseCount > 0
+                  ? `${grant.taggedExpenseCount} expense${grant.taggedExpenseCount === 1 ? "" : "s"} tagged`
+                  : "no expenses tagged yet — tag orders, costs or receipts to this grant in Finance"}
               </small>
             </div>
             <button
@@ -458,9 +470,11 @@ function Reports({
                 <strong>{report.grantName}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
                   {report.funder ? `${report.funder} · ` : ""}
-                  {report.seasonYear} · Awarded ${report.amountAwardedUsd.toLocaleString()} · Season expenses
-                  (org-wide, not grant-attributed) ${report.totalSpendUsd.toLocaleString()} ·{" "}
-                  {report.outreachCount} outreach message(s)
+                  {report.seasonYear} · Awarded ${report.amountAwardedUsd.toLocaleString()} ·{" "}
+                  {report.spendState === "tagged"
+                    ? `Grant-tagged spend $${report.totalSpendUsd.toLocaleString()} (${report.taggedExpenseCount} expense${report.taggedExpenseCount === 1 ? "" : "s"})`
+                    : "No expenses tagged to this grant yet"}{" "}
+                  · {report.outreachCount} outreach message(s)
                 </small>
               </div>
               <button

@@ -19,14 +19,17 @@ import {
   oversizeMediaReason,
 } from "./scouting/media-downscale";
 import { withSyncBackoff } from "./scouting/sync-backoff";
+import { evictScoutMedia, scoutMediaUrl } from "./scout-media/client";
 
 const DB_NAME = "vantage-scouting";
 // v3 adds the quarantine stores for entries/media the server permanently rejected.
-const DB_VERSION = 3;
+// v4 adds the media-status store (synced / duplicate / failed per photo clientId).
+const DB_VERSION = 4;
 const OUTBOX = "entry-outbox";
 const MEDIA = "media-outbox";
 const ENTRY_QUARANTINE = "entry-quarantine";
 const MEDIA_QUARANTINE = "media-quarantine";
+const MEDIA_STATUS = "media-status";
 const CACHE = "event-cache";
 const META = "meta";
 const LAST_ORG_KEY = "lastOrgId";
@@ -43,6 +46,9 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(MEDIA_QUARANTINE)) {
         db.createObjectStore(MEDIA_QUARANTINE, { keyPath: "clientId" });
+      }
+      if (!db.objectStoreNames.contains(MEDIA_STATUS)) {
+        db.createObjectStore(MEDIA_STATUS, { keyPath: "clientId" });
       }
       if (!db.objectStoreNames.contains(CACHE)) db.createObjectStore(CACHE, { keyPath: "orgId" });
       if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: "key" });
@@ -78,7 +84,8 @@ export async function queueEntry(entry: SyncEntry): Promise<void> {
 export async function queueMedia(input: {
   clientId: string;
   orgId: string;
-  metadata: Record<string, unknown>;
+  /** `entryClientId` links the photo to its offline entry before either has synced. */
+  metadata: Record<string, unknown> & { entryClientId?: string | null };
   blob: Blob;
 }): Promise<void> {
   if (!input.orgId) throw new Error("orgId is required to queue media");
@@ -91,6 +98,8 @@ export async function queueMedia(input: {
       blob: input.blob,
     }),
   );
+  // A re-queued clientId starts fresh: forget any previous synced/failed verdict.
+  await clearMediaStatus(input.clientId);
 }
 
 /** Queue a voice capture (audio blob + STT transcript) for bandwidth-safe sync when online. */
@@ -340,12 +349,13 @@ export async function quarantineEntry(entry: SyncEntry, reason: string): Promise
 }
 
 export async function quarantineMedia(item: MediaOutboxItem, reason: string): Promise<void> {
+  const orgId = item.orgId ?? ((item.metadata.orgId as string | undefined) ?? null);
   const quarantineStore = await store("readwrite", MEDIA_QUARANTINE);
   await requestValue(
     quarantineStore.put({
       kind: "media",
       clientId: item.clientId,
-      orgId: item.orgId ?? ((item.metadata.orgId as string | undefined) ?? null),
+      orgId,
       reason,
       quarantinedAt: new Date().toISOString(),
       metadata: item.metadata,
@@ -354,6 +364,15 @@ export async function quarantineMedia(item: MediaOutboxItem, reason: string): Pr
   );
   const mediaStore = await store("readwrite", MEDIA);
   await requestValue(mediaStore.delete(item.clientId));
+  await recordMediaStatus({
+    clientId: item.clientId,
+    orgId,
+    status: "failed",
+    detail: reason,
+    duplicateOf: null,
+    eventKey: typeof item.metadata.eventKey === "string" ? item.metadata.eventKey : null,
+    teamKey: typeof item.metadata.teamKey === "string" ? item.metadata.teamKey : null,
+  });
 }
 
 /** Everything needing attention, oldest first. Scoped to one org when given. */
@@ -407,6 +426,105 @@ export async function discardQuarantined(clientId: string): Promise<void> {
   await requestValue(entryStore.delete(clientId));
   const mediaStore = await store("readwrite", MEDIA_QUARANTINE);
   await requestValue(mediaStore.delete(clientId));
+  await clearMediaStatus(clientId);
+}
+
+/* ---------------------------------------------------------------------------
+ * Per-photo sync verdicts. The outbox row disappears once a photo is
+ * acknowledged, so the form needs a small durable record to keep showing
+ * "synced" / "duplicate of …" / "failed" chips after a reload.
+ * ------------------------------------------------------------------------- */
+
+export type MediaSyncPhase = "queued" | "uploading" | "synced" | "duplicate" | "failed" | "unknown";
+
+export type MediaStatusRecord = {
+  clientId: string;
+  orgId: string | null;
+  status: "synced" | "duplicate" | "failed";
+  detail: string | null;
+  /** For duplicates: the clientId of the photo the server already had. */
+  duplicateOf: string | null;
+  eventKey: string | null;
+  teamKey: string | null;
+  updatedAt: string;
+};
+
+export type MediaSyncDescription = {
+  phase: MediaSyncPhase;
+  detail: string | null;
+  duplicateOf: string | null;
+};
+
+/** clientIds whose PUT is in flight right now (memory only — resets on reload). */
+const inFlightMedia = new Set<string>();
+
+async function recordMediaStatus(record: Omit<MediaStatusRecord, "updatedAt">): Promise<void> {
+  const statusStore = await store("readwrite", MEDIA_STATUS);
+  await requestValue(
+    statusStore.put({ ...record, updatedAt: new Date().toISOString() } satisfies MediaStatusRecord),
+  );
+}
+
+export async function getMediaStatus(clientId: string): Promise<MediaStatusRecord | null> {
+  const statusStore = await store("readonly", MEDIA_STATUS);
+  const row = await requestValue<MediaStatusRecord | undefined>(statusStore.get(clientId));
+  return row ?? null;
+}
+
+export async function listMediaStatuses(orgId?: string): Promise<MediaStatusRecord[]> {
+  const statusStore = await store("readonly", MEDIA_STATUS);
+  const rows = await requestValue<MediaStatusRecord[]>(statusStore.getAll());
+  return orgId ? rows.filter((row) => row.orgId === orgId) : rows;
+}
+
+export async function clearMediaStatus(clientId: string): Promise<void> {
+  const statusStore = await store("readwrite", MEDIA_STATUS);
+  await requestValue(statusStore.delete(clientId));
+}
+
+/** Where a captured photo is in its life: outbox → in flight → synced / duplicate / failed. */
+export async function describeMediaSync(clientId: string): Promise<MediaSyncDescription> {
+  if (inFlightMedia.has(clientId)) return { phase: "uploading", detail: null, duplicateOf: null };
+  const mediaStore = await store("readonly", MEDIA);
+  const queued = await requestValue<MediaOutboxItem | undefined>(mediaStore.get(clientId));
+  if (queued) return { phase: "queued", detail: null, duplicateOf: null };
+  const quarantineStore = await store("readonly", MEDIA_QUARANTINE);
+  const quarantined = await requestValue<QuarantinedMedia | undefined>(quarantineStore.get(clientId));
+  if (quarantined) return { phase: "failed", detail: quarantined.reason, duplicateOf: null };
+  const status = await getMediaStatus(clientId);
+  if (status) return { phase: status.status, detail: status.detail, duplicateOf: status.duplicateOf };
+  return { phase: "unknown", detail: null, duplicateOf: null };
+}
+
+/** The clientId the server actually holds — a duplicate resolves to the original. */
+export async function resolveMediaRef(clientId: string): Promise<string> {
+  const status = await getMediaStatus(clientId).catch(() => null);
+  return status?.status === "duplicate" && status.duplicateOf ? status.duplicateOf : clientId;
+}
+
+/** Discard a photo that has not synced (queued or quarantined) — explicit scout decision. */
+export async function discardQueuedMedia(clientId: string): Promise<void> {
+  const mediaStore = await store("readwrite", MEDIA);
+  await requestValue(mediaStore.delete(clientId));
+  const quarantineStore = await store("readwrite", MEDIA_QUARANTINE);
+  await requestValue(quarantineStore.delete(clientId));
+  await clearMediaStatus(clientId);
+}
+
+/**
+ * Soft-delete a synced photo on the server (own photo, or owner/admin), then
+ * forget it locally and evict it from the service-worker media cache so it
+ * cannot resurface on a shared tablet.
+ */
+export async function deleteSyncedMedia(orgId: string, clientId: string): Promise<void> {
+  if (!orgId) throw new Error("orgId is required to delete media");
+  const response = await fetch(scoutMediaUrl(orgId, clientId), { method: "DELETE" });
+  if (!response.ok && response.status !== 404 && response.status !== 410) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `Could not delete photo (${response.status})`);
+  }
+  await discardQueuedMedia(clientId);
+  await evictScoutMedia([scoutMediaUrl(orgId, clientId), scoutMediaUrl(orgId, clientId, "thumb")]);
 }
 
 /**
@@ -539,40 +657,89 @@ class PermanentMediaRejection extends Error {
   }
 }
 
-function isPermanentMediaStatus(status: number): boolean {
-  return status === 400 || status === 413 || status === 422;
+/**
+ * 400 malformed · 410 deleted on the server · 413 over cap · 415 not an image ·
+ * 422 rejected · 507 team quota full — none of these change on a retry loop.
+ * (507 clears once someone deletes old photos; the quarantine Retry covers that.)
+ */
+export function isPermanentMediaStatus(status: number): boolean {
+  return (
+    status === 400 ||
+    status === 410 ||
+    status === 413 ||
+    status === 415 ||
+    status === 422 ||
+    status === 507
+  );
 }
+
+type MediaUploadReceipt = {
+  ok?: boolean;
+  duplicate?: boolean;
+  clientId?: string;
+};
 
 async function syncOneMedia(orgId: string, item: MediaOutboxItem): Promise<boolean> {
   if (wouldCrossOrgLeak(item.orgId ?? (item.metadata.orgId as string | undefined), orgId)) {
     throw new Error("Organization access denied");
   }
-  const metadataResponse = await fetch("/api/scouting/media", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...item.metadata, orgId, clientId: item.clientId }),
-  });
-  if (!metadataResponse.ok) {
-    const body = (await metadataResponse.json().catch(() => ({}))) as { error?: string };
-    const message = body.error ?? `Media metadata upload failed (${metadataResponse.status})`;
-    if (isPermanentMediaStatus(metadataResponse.status)) {
-      throw new PermanentMediaRejection(message);
+  const eventKey = typeof item.metadata.eventKey === "string" ? item.metadata.eventKey : null;
+  const teamKey = typeof item.metadata.teamKey === "string" ? item.metadata.teamKey : null;
+  inFlightMedia.add(item.clientId);
+  try {
+    const metadataResponse = await fetch("/api/scouting/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...item.metadata, orgId, clientId: item.clientId }),
+    });
+    if (!metadataResponse.ok) {
+      const body = (await metadataResponse.json().catch(() => ({}))) as { error?: string };
+      const message = body.error ?? `Media metadata upload failed (${metadataResponse.status})`;
+      if (isPermanentMediaStatus(metadataResponse.status)) {
+        throw new PermanentMediaRejection(message);
+      }
+      throw new Error(message);
     }
-    throw new Error(message);
+    const prepared = (await metadataResponse.json()) as {
+      uploadUrl: string;
+      alreadyUploaded?: boolean;
+      deleted?: boolean;
+    };
+    if (prepared.deleted) {
+      throw new PermanentMediaRejection("This photo was deleted from the team's pit media");
+    }
+    let receipt: MediaUploadReceipt = { ok: true, duplicate: false };
+    if (!prepared.alreadyUploaded) {
+      const upload = await fetch(prepared.uploadUrl, { method: "PUT", body: item.blob });
+      if (!upload.ok) {
+        const body = (await upload.json().catch(() => ({}))) as { error?: string };
+        const message =
+          body.error ??
+          `Media blob upload failed (${upload.status}, file is ${formatByteSize(item.blob.size)})`;
+        if (isPermanentMediaStatus(upload.status)) throw new PermanentMediaRejection(message);
+        throw new Error(message);
+      }
+      receipt = (await upload.json().catch(() => ({ ok: true }))) as MediaUploadReceipt;
+    }
+    const deleteStore = await store("readwrite", MEDIA);
+    await requestValue(deleteStore.delete(item.clientId));
+    const duplicateOf =
+      receipt.duplicate && receipt.clientId && receipt.clientId !== item.clientId
+        ? receipt.clientId
+        : null;
+    await recordMediaStatus({
+      clientId: item.clientId,
+      orgId,
+      status: duplicateOf ? "duplicate" : "synced",
+      detail: duplicateOf ? "Identical photo already on the team wall — kept the original." : null,
+      duplicateOf,
+      eventKey,
+      teamKey,
+    });
+    return true;
+  } finally {
+    inFlightMedia.delete(item.clientId);
   }
-  const { uploadUrl } = (await metadataResponse.json()) as { uploadUrl: string };
-  const upload = await fetch(uploadUrl, { method: "PUT", body: item.blob });
-  if (!upload.ok) {
-    const body = (await upload.json().catch(() => ({}))) as { error?: string };
-    const message =
-      body.error ??
-      `Media blob upload failed (${upload.status}, file is ${formatByteSize(item.blob.size)})`;
-    if (isPermanentMediaStatus(upload.status)) throw new PermanentMediaRejection(message);
-    throw new Error(message);
-  }
-  const deleteStore = await store("readwrite", MEDIA);
-  await requestValue(deleteStore.delete(item.clientId));
-  return true;
 }
 
 export type SyncMediaResult = { synced: number; quarantined: number };

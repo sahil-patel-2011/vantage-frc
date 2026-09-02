@@ -30,8 +30,13 @@
  * Double-count guards (each dollar counted once):
  * - Ledger income rows mirroring a sponsor contribution or fundraiser are
  *   skipped — those dollars are counted from sponsor_contributions /
- *   fundraiser_events (funding-desk lines are summed as-is; the desk UI tells
- *   teams not to re-enter deposits already recorded elsewhere).
+ *   fundraiser_events.
+ * - ONE SOURCE OF TRUTH PER FUNDING KIND (0504): a funding-desk line of kind
+ *   grant / sponsor / fundraiser is a PLAN, not a second receipt. Its received
+ *   dollars are counted from grant_applications / sponsor_contributions /
+ *   fundraiser_events respectively and excluded here, so a treasurer who logs
+ *   the same sponsor check on both surfaces never sees it twice. The same rule
+ *   lives in compute-season-finance.ts (SATELLITE_FUNDING_KINDS).
  * - Legacy-table rows already mirrored into the ledger are excluded from the
  *   fallback unions (the 0461 dedup rule).
  * - BOM rows carry counts_in_balance=false — estimates are never cash.
@@ -325,7 +330,8 @@ export async function computeFinanceBalance(
       client.query<{ receivedUsd: string }>(
         `SELECT COALESCE(SUM(received_usd), 0)::text AS "receivedUsd"
          FROM finance_funding_sources
-         WHERE org_id = $1::uuid`,
+         WHERE org_id = $1::uuid
+           AND kind NOT IN ('grant', 'sponsor', 'fundraiser')`,
         [orgId],
       ),
       client.query<{ awardedUsd: string }>(
@@ -350,6 +356,7 @@ export async function computeFinanceBalance(
            SELECT COALESCE(received_on::timestamptz, updated_at), 'Funding — ' || name, received_usd, 'in'
            FROM finance_funding_sources
            WHERE org_id = $1::uuid AND received_usd > 0
+             AND kind NOT IN ('grant', 'sponsor', 'fundraiser')
            UNION ALL
            SELECT COALESCE(decision_at, updated_at), 'Grant awarded', amount_awarded_usd, 'in'
            FROM grant_applications

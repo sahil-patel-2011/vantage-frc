@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { summarizeOutreachCalendar, upcomingOutreachEvents } from ".";
+import { outreachEventToImpactActivity, summarizeOutreachCalendar, upcomingOutreachEvents } from ".";
 import type { OutreachAudience, OutreachCalendarSummary, OutreachCategory, OutreachEvent, OutreachStatus } from "./types";
 
 export type OutreachCalendarSetupStep = {
@@ -49,7 +49,13 @@ type EventRow = {
   location: string | null;
   notes: string | null;
   seasonYear: number;
+  impactActivityId?: string | null;
 };
+
+const EVENT_SELECT = `SELECT id, title, category, scheduled_on::text AS "scheduledOn", status, audience,
+              projected_hours AS "projectedHours", projected_people_reached AS "projectedPeopleReached",
+              location, notes, season_year AS "seasonYear", impact_activity_id AS "impactActivityId"
+       FROM outreach_calendar_events`;
 
 function mapEvent(row: EventRow): OutreachEvent {
   return {
@@ -63,7 +69,8 @@ function mapEvent(row: EventRow): OutreachEvent {
     projectedPeopleReached: Number(row.projectedPeopleReached) || 0,
     location: row.location,
     notes: row.notes,
-    seasonYear: row.seasonYear,
+    seasonYear: Number(row.seasonYear),
+    impactActivityId: row.impactActivityId ?? null,
   };
 }
 
@@ -106,10 +113,7 @@ export async function computeOutreachCalendarView(
 
   const [eventResult, seasonResult] = await Promise.all([
     client.query<EventRow>(
-      `SELECT id, title, category, scheduled_on::text AS "scheduledOn", status, audience,
-              projected_hours AS "projectedHours", projected_people_reached AS "projectedPeopleReached",
-              location, notes, season_year AS "seasonYear"
-       FROM outreach_calendar_events
+      `${EVENT_SELECT}
        WHERE org_id = $1 AND season_year = $2
        ORDER BY scheduled_on ASC, created_at DESC`,
       [org.orgId, seasonYear],
@@ -188,6 +192,76 @@ export async function updateOutreachEventStatus(
     `UPDATE outreach_calendar_events SET status = $1, updated_at = now() WHERE id = $2 AND org_id = $3`,
     [input.status, input.eventId, input.orgId],
   );
+}
+
+/**
+ * `complete` (0504): mark the event completed AND log the impact_activities row that
+ * substantiates the Impact award, linking back through impact_activity_id. Idempotent — an
+ * event that already logged an activity only re-asserts its status and returns that id.
+ */
+export async function completeOutreachEvent(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    eventId: string;
+    actualHours?: number | null;
+    actualPeopleReached?: number | null;
+    participantCount?: number | null;
+  },
+): Promise<{ impactActivityId: string; created: boolean }> {
+  const existing = await client.query<EventRow>(
+    `${EVENT_SELECT}
+     WHERE id = $1 AND org_id = $2
+     FOR UPDATE`,
+    [input.eventId, input.orgId],
+  );
+  const row = existing.rows[0];
+  if (!row) throw new Error("Event not found");
+
+  if (row.impactActivityId) {
+    await client.query(
+      `UPDATE outreach_calendar_events SET status = 'completed', updated_at = now()
+       WHERE id = $1 AND org_id = $2 AND status <> 'completed'`,
+      [input.eventId, input.orgId],
+    );
+    return { impactActivityId: row.impactActivityId, created: false };
+  }
+
+  const activity = outreachEventToImpactActivity(mapEvent(row), {
+    actualHours: input.actualHours,
+    actualPeopleReached: input.actualPeopleReached,
+    participantCount: input.participantCount,
+  });
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO impact_activities (
+       org_id, title, category, occurred_on, duration_minutes, participant_count,
+       people_reached, audience, location, description, season_year, evidence_awards, logged_by
+     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,'{}'::text[],$12)
+     RETURNING id`,
+    [
+      input.orgId,
+      activity.title,
+      activity.category,
+      activity.occurredOn,
+      activity.durationMinutes,
+      activity.participantCount,
+      activity.peopleReached,
+      activity.audience,
+      activity.location,
+      activity.description,
+      activity.seasonYear,
+      input.userId,
+    ],
+  );
+  const impactActivityId = inserted.rows[0]!.id;
+  await client.query(
+    `UPDATE outreach_calendar_events
+     SET status = 'completed', impact_activity_id = $3, updated_at = now()
+     WHERE id = $1 AND org_id = $2`,
+    [input.eventId, input.orgId, impactActivityId],
+  );
+  return { impactActivityId, created: true };
 }
 
 export async function deleteOutreachEvent(

@@ -1,3 +1,4 @@
+import { KNOWN_TOOLS } from "./tool-names";
 import type { PoolClient } from "@neondatabase/serverless";
 import { CommitAndThrowError } from "@vantage/db";
 import { FINANCE_IN_AI_ACK_VERSION } from "./ai-policy-public";
@@ -73,29 +74,8 @@ const KNOWN_FEATURES = [
   "agent",
 ] as const;
 
-const KNOWN_TOOLS = [
-  "reference.team",
-  "scouting.team",
-  "scouting.schema",
-  "strategy.match",
-  "strategy.design",
-  "research.findings",
-  "artifacts.related",
-  "kickoff.intelligence",
-  "kickoff.rules",
-  "rules.compliance",
-  "cad.briefs",
-  "fmea.repeat",
-  "knowledge.search",
-  "knowledge.get_page",
-  "my_day.summary",
-  "calendar.upcoming",
-  "finance.summary",
-  "finance.orders",
-  "finance.create_purchase_request",
-  "web.search",
-  "web.fetch",
-] as const;
+// KNOWN_TOOLS is generated from the agent tool registry — see ./tool-names.ts.
+export { KNOWN_TOOLS };
 
 export function knownAiFeatures() {
   return [...KNOWN_FEATURES];

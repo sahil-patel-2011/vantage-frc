@@ -777,6 +777,95 @@ export async function setBoardSlot(
   await touchList(client, input);
 }
 
+export type PromoteSourceKind = "pairwise" | "chemistry" | "tags" | "justifier" | "desk" | "manual";
+
+const PROMOTE_SOURCE_LABEL: Record<PromoteSourceKind, string> = {
+  pairwise: "Pairwise",
+  chemistry: "Chemistry",
+  tags: "Tags",
+  justifier: "Justifier",
+  desk: "Pick desk",
+  manual: "Manual",
+};
+
+export type PromoteToPickListInput = {
+  orgId: string;
+  userId: string;
+  eventKey: string;
+  teamKey: string | number;
+  sourceKind: PromoteSourceKind;
+  /** Id of the row that motivated the promotion (criterion, comparison, tag…). Kept in the note footer. */
+  sourceId?: string | null;
+  rationale?: string | null;
+  tags?: readonly string[];
+  /** Tier hint ("first" / "second" / "avoid"); omitted keeps an existing bucket or lands in unranked. */
+  tier?: string | null;
+  pickListId?: string | null;
+};
+
+export type PromoteToPickListResult = {
+  pickListId: string;
+  entryId: string;
+  teamKey: string;
+  note: string;
+};
+
+/** Build the human-readable note a promotion leaves on the spine row. Pure, exported for tests. */
+export function promotionNote(input: Pick<PromoteToPickListInput, "sourceKind" | "sourceId" | "rationale" | "tags">): string {
+  const parts: string[] = [`[${PROMOTE_SOURCE_LABEL[input.sourceKind]}]`];
+  const rationale = (input.rationale ?? "").trim().slice(0, 400);
+  if (rationale) parts.push(rationale);
+  const tags = [...new Set((input.tags ?? []).map((tag) => tag.trim()).filter(Boolean))].slice(0, 12);
+  if (tags.length) parts.push(tags.map((tag) => `#${tag.replace(/\s+/g, "_")}`).join(" "));
+  const sourceId = (input.sourceId ?? "").trim();
+  if (sourceId) parts.push(`(ref: ${sourceId.slice(0, 64)})`);
+  return parts.join(" ");
+}
+
+/**
+ * Promote a team from any qualitative surface (pairwise ranks, chemistry, drive-team tags,
+ * the justifier, the desk) onto THE pick list for the event. Finds-or-creates the event's
+ * list, upserts the entry (a tier hint moves the bucket; otherwise an existing row keeps
+ * its bucket) and leaves a source-labelled note so the coach can see why it is there.
+ */
+export async function promoteToPickList(
+  client: PoolClient,
+  input: PromoteToPickListInput,
+): Promise<PromoteToPickListResult> {
+  const teamKey = normalizeTeamKey(input.teamKey);
+  if (!teamKey) throw new Error("A valid team number is required");
+  if (!input.eventKey) throw new Error("Set an active event before promoting to the pick list.");
+
+  const pickListId =
+    input.pickListId ??
+    (await ensurePickList(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      eventKey: input.eventKey,
+      source: "strategy",
+    }));
+
+  const existing = await client.query<{ bucket: PickBucket; notes: string | null }>(
+    `SELECT bucket, notes FROM pick_list_entries
+     WHERE org_id = $1::uuid AND pick_list_id = $2::uuid AND team_key = $3::text`,
+    [input.orgId, pickListId, teamKey],
+  );
+  const current = existing.rows[0];
+  const note = promotionNote(input);
+  const notes = current?.notes && !current.notes.includes(note) ? `${current.notes}\n${note}` : (current?.notes ?? note);
+  const bucket = input.tier != null ? bucketFromTier(input.tier) : (current?.bucket ?? "unranked");
+
+  const entryId = await upsertEntry(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    pickListId,
+    teamKey,
+    bucket,
+    notes,
+  });
+  return { pickListId, entryId, teamKey, note };
+}
+
 /** Convenience for surfaces that only know a tier string (Strategy / Intel-Research imports). */
 export async function upsertEntryFromTier(
   client: PoolClient,

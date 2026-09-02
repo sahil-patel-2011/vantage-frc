@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { DRIVETRAIN_TYPES, recommendDefensePlan } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
@@ -263,40 +262,31 @@ export async function logMatchup(
     notes: string;
     robotProfile: RobotProfile | null;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const ourMassLbs = input.robotProfile?.massLbs ?? 0;
   const ourDrivetrain = input.robotProfile?.drivetrain ?? "west_coast";
 
-  const plan = await meteredAI({
+  // Real model call on the org's adapter with the deterministic plan as fallback: only the
+  // rationale prose may be rewritten; denial value, containment, recommendation and
+  // confidence stay computed from mass, drivetrain and cycle data.
+  const { value: plan, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "defense_planner",
-    requestId: `defense-planner-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
+    value: recommendDefensePlan({
+      ourMassLbs,
+      ourDrivetrain,
+      theirMassLbs: input.opponentMassLbs,
+      theirDrivetrain: input.opponentDrivetrain,
+      theirCycleTimeSec: input.opponentCycleTimeSec,
+      theirAvgPointsPerCycle: input.opponentAvgPointsPerCycle,
       opponentTeamNumber: input.opponentTeamNumber,
-      seasonYear: input.seasonYear,
-      note: "Deterministic mass/drivetrain vs cycle-path computation — no external model call",
-    },
-    invoke: async () => ({
-      value: recommendDefensePlan({
-        ourMassLbs,
-        ourDrivetrain,
-        theirMassLbs: input.opponentMassLbs,
-        theirDrivetrain: input.opponentDrivetrain,
-        theirCycleTimeSec: input.opponentCycleTimeSec,
-        theirAvgPointsPerCycle: input.opponentAvgPointsPerCycle,
-        opponentTeamNumber: input.opponentTeamNumber,
-        opponentCyclePath: input.opponentCyclePath,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-defense-planner-v1",
-      provider: "vantage-local",
+      opponentCyclePath: input.opponentCyclePath,
     }),
+    editableKeys: ["rationale"],
+    instructions: `Defense plan against team ${input.opponentTeamNumber} (${input.opponentDrivetrain}, ${input.opponentMassLbs} lb, ${input.opponentCycleTimeSec}s cycles worth ${input.opponentAvgPointsPerCycle} pts; path: ${input.opponentCyclePath.slice(0, 300) || "not described"}). Our robot: ${ourDrivetrain}, ${ourMassLbs} lb. Write the rationale as 2-3 plain sentences a drive coach can use, consistent with the recommendation and assigned defender in the document; cite only its numbers.`,
+    metadata: { opponentTeamNumber: input.opponentTeamNumber, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -325,6 +315,7 @@ export async function logMatchup(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteMatchup(

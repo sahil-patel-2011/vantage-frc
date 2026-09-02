@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   describeBugbotCoverage,
+  mergeBugbotFileRecheck,
   mergeBugbotScanRun,
   type BugbotChunkOutcome,
   type BugbotRunFinding,
@@ -129,5 +130,74 @@ describe("chunked scan merge", () => {
     expect(result.findings).toHaveLength(0);
     expect(result.riskLevel).toBe("low");
     expect(result.localRiskCount).toBe(0);
+  });
+});
+
+describe("read-cap honesty and one-file rechecks", () => {
+  it("unions cut files across chunks and marks the run partial because of them", () => {
+    const result = mergeBugbotScanRun(
+      [
+        chunk({ chunkIndex: 0, reviewedFiles: ["Robot.java", "Big.java"], truncatedFiles: ["Big.java"] }),
+        chunk({ chunkIndex: 1, reviewedFiles: ["Drive.java", "Big.java"], truncatedFiles: ["Big.java", "Drive.java"] }),
+      ],
+      { plannedChunks: 2 },
+    );
+    expect(result.truncated).toBe(true);
+    expect(result.truncatedFiles).toEqual(["Big.java", "Drive.java"]);
+    expect(result.partial).toBe(true);
+    expect(result.partialReason).toContain("2 files were cut at the read cap");
+    expect(describeBugbotCoverage(result)).toContain("PARTIAL coverage");
+  });
+
+  it("is not partial when every planned chunk ran and nothing was cut", () => {
+    const result = mergeBugbotScanRun([chunk({ reviewedFiles: ["Robot.java"], candidateCount: 1 })], {
+      plannedChunks: 1,
+    });
+    expect(result.truncated).toBe(false);
+    expect(result.truncatedFiles).toEqual([]);
+    expect(result.partial).toBe(false);
+  });
+
+  it("folds a one-file recheck into the table without touching other files", () => {
+    const previous = {
+      path: "github-scan",
+      riskLevel: "high" as const,
+      findings: [
+        finding({ fingerprint: "drive-1", filePath: "src/Drive.java", location: "src/Drive.java:4", severity: "high" }),
+        finding({ fingerprint: "drive-2", filePath: "src/Drive.java", location: "src/Drive.java:9", severity: "low" }),
+        finding({ fingerprint: "arm-1", filePath: "src/Arm.java", location: "src/Arm.java:2", severity: "medium" }),
+      ],
+      localRiskCount: 3,
+      modelFindingCount: 0,
+      droppedUngrounded: 1,
+    };
+    const merged = mergeBugbotFileRecheck(previous, {
+      filePath: "src/Drive.java",
+      findings: [finding({ fingerprint: "drive-2", filePath: "src/Drive.java", location: "src/Drive.java:9", severity: "low", source: "model" })],
+      droppedUngrounded: 2,
+    });
+    // drive-1 is gone, drive-2 survived, arm-1 was never re-read and stays exactly as it was.
+    expect(merged.findings.map((item) => item.fingerprint)).toEqual(["arm-1", "drive-2"]);
+    expect(merged.riskLevel).toBe("medium");
+    expect(merged.localRiskCount).toBe(1);
+    expect(merged.modelFindingCount).toBe(1);
+    expect(merged.droppedUngrounded).toBe(3);
+    expect(merged.path).toBe("github-scan");
+  });
+
+  it("matches the recheck file case-insensitively and by location when filePath is absent", () => {
+    const merged = mergeBugbotFileRecheck(
+      {
+        path: "github-scan",
+        riskLevel: "high",
+        findings: [finding({ fingerprint: "x", filePath: undefined, location: "SRC/Drive.java:4" })],
+        localRiskCount: 1,
+        modelFindingCount: 0,
+        droppedUngrounded: 0,
+      },
+      { filePath: "src/drive.java", findings: [], droppedUngrounded: 0 },
+    );
+    expect(merged.findings).toEqual([]);
+    expect(merged.riskLevel).toBe("low");
   });
 });

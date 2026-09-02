@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { JUDGE_SIM_CATEGORIES, gradeAnswer, pickJudgeQuestion } from ".";
@@ -269,7 +268,7 @@ export async function runSession(
     question: string | null;
     answerText: string;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const [evidenceResult, countResult] = await Promise.all([
     client.query<EvidenceRow>(
       `SELECT id, title, claim, category, source_url AS "sourceUrl", occurred_on::text AS "occurredOn",
@@ -286,27 +285,19 @@ export async function runSession(
   const evidence = evidenceResult.rows.map(mapEvidence);
   const question = input.question?.trim() || pickJudgeQuestion(input.category, Number(countResult.rows[0]?.count ?? 0));
 
-  const grade = await meteredAI({
+  // Real model call on the org's adapter with the deterministic grade as fallback: only the
+  // feedback prose may be rewritten; verdict, confidence and the backed/flagged claim lists
+  // stay computed against the logged evidence.
+  const { value: grade, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "judge_sim",
-    requestId: `judge-sim-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      category: input.category,
-      seasonYear: input.seasonYear,
-      note: "Deterministic claim-vs-logged-evidence token-overlap grading — no external model call",
-    },
-    invoke: async () => ({
-      value: gradeAnswer(input.answerText, evidence),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-judge-sim-v1",
-      provider: "vantage-local",
-    }),
+    value: gradeAnswer(input.answerText, evidence),
+    editableKeys: ["feedback"],
+    instructions: `Judge-interview practice, ${input.category} category. Question: ${question}. The student answered: "${input.answerText.slice(0, 1500)}". Write the feedback as 2-4 plain sentences a mentor would say, consistent with the verdict and the backed/flagged claims in the document — praise what is backed by logged evidence, name what is not, and suggest one concrete improvement.`,
+    facts: `Logged evidence items: ${evidence.length}`,
+    metadata: { category: input.category, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -329,6 +320,7 @@ export async function runSession(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteSession(

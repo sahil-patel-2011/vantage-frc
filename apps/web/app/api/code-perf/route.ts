@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "log-change": {
           const title = trimmedOrNull(body.title, 200);
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
         case "analyze-change": {
           const changeId = trimmedOrNull(body.changeId, 64);
           if (!changeId) throw new Error("changeId is required");
-          await analyzeChange(client, { orgId, userId, changeId });
+          render = await analyzeChange(client, { orgId, userId, changeId });
           break;
         }
         case "log-match-result": {
@@ -161,7 +163,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeCodePerfView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeCodePerfView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

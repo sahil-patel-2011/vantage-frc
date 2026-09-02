@@ -57,13 +57,14 @@ export const MARKETING_HUBS = [
     title: "Build",
     href: "/features#build",
     route: "/build",
-    promise: "Kickoff, CAD, robot code, and inspection — human-gated.",
-    modules: ["Kickoff", "CAD", "Code", "Robot"],
+    promise: "Kickoff, CAD, robot code, inspection, and parts — human-gated.",
+    modules: ["Kickoff", "CAD", "Code", "Robot", "Parts"],
     tools: [
       "Onshape or Fusion CAD after a confirmed brief",
       "Code Coach pattern review and Bugbot scans that quote source",
       "FMEA, batteries, weigh-in, inspection copilot",
       "Power budget and wiring diagnoser from logged circuits",
+      "One parts ledger: stock, reservations, spare forecast, print farm",
     ],
   },
   {

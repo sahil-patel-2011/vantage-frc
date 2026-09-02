@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
-import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
+import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel, horizonLabel, rateSourceLabel } from "../../lib/spare-forecast";
 import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
   SPARE_FORECAST_RELATED_INCLUDE,
@@ -15,6 +15,8 @@ import {
   type SpareForecastShellKind,
 } from "../../lib/spare-forecast/spare-forecast-related";
 import type { ForecastUrgency, PurchaseRequestStatus } from "../../lib/spare-forecast/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./spare-forecast.css";
@@ -180,6 +182,7 @@ export default function SpareForecastClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -261,6 +264,8 @@ export default function SpareForecastClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -349,6 +354,8 @@ export default function SpareForecastClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="spare_forecast" />
 
       <SpareForecastNextActionsPanel actions={nextActions} />
 
@@ -470,7 +477,11 @@ function ForecastPanel({
         <div>
           <h2 style={{ margin: 0 }}>Exhaustion forecast</h2>
           <p className="app-muted" style={{ margin: "4px 0 0" }}>
-            Real spare-category bins with matched FMEA history only.
+            Real spare-category bins with ledger usage or matched FMEA history only. Horizon:{" "}
+            {view.horizon.horizonSource === "event"
+              ? `${view.horizon.horizonDays} day(s) until ${view.horizon.eventName ?? "the active event"} ends (${view.horizon.horizonEndsOn})`
+              : `no upcoming registered event — rolling ${view.horizon.horizonDays}-day offseason window`}
+            .
           </p>
         </div>
         <div className="spare-forecast-draft-actions">
@@ -504,17 +515,18 @@ function ForecastPanel({
                 <strong style={{ display: "block", marginTop: 4 }}>{line.itemName}</strong>
                 <small className="app-muted">
                   {line.subsystem ?? "Unmatched subsystem"} · {line.quantityOnHand} on hand ·{" "}
+                  {line.ledgerEventCount} ledger movement(s) in {view.observationWindowDays} days ·{" "}
                   {line.failureCount} FMEA failure(s) this season
                 </small>
               </div>
             </header>
             <small className="app-muted">
-              {line.forecast.consumptionPerDay.toFixed(3)} units/day cadence ·{" "}
-              {line.forecast.projectedConsumptionRemaining} projected over{" "}
-              {line.forecast.daysRemaining} remaining day(s)
+              {line.forecast.consumptionPerDay.toFixed(3)} units/day from {rateSourceLabel(line.forecast.rateSource)} ·{" "}
+              {line.forecast.projectedConsumptionRemaining} projected over {horizonLabel(line.forecast, view.horizon.eventName)}
+              {line.forecast.daysUntilExhaustion != null ? ` · empty in ~${line.forecast.daysUntilExhaustion} day(s)` : ""}
               {line.forecast.willExhaust
                 ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`
-                : " · not projected to run out"}
+                : " · not projected to run out inside the horizon"}
             </small>
           </li>
         ))}

@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "save-robot-profile": {
           const massLbs = positiveNumber(body.massLbs);
@@ -135,7 +137,7 @@ export async function POST(request: Request) {
           const view = await computeDefensePlannerView(client, { userId, requestedOrg: orgId, seasonYear });
           const robotProfile = view.status === "live" ? view.robotProfile : null;
 
-          await logMatchup(client, {
+          render = await logMatchup(client, {
             orgId,
             userId,
             seasonYear,
@@ -162,7 +164,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeDefensePlannerView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeDefensePlannerView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

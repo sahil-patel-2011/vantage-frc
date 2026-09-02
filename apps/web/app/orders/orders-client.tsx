@@ -5,6 +5,7 @@ import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { grantOptionLabel, type GrantOption } from "../../lib/finance/grant-options";
 import { ORDERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   ordersNextActions,
@@ -313,7 +314,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               buy link is unlocked.
             </p>
           ) : null}
-          <SubmitForm busy={busy} mutate={mutate} />
+          <SubmitForm busy={busy} mutate={mutate} grants={live!.grants ?? []} />
           <OrdersList view={live!} busy={busy} mutate={mutate} />
         </>
       )}
@@ -379,7 +380,7 @@ function AiSummaryPanel({ summary }: { summary: NonNullable<LiveView["aiSummary"
   );
 }
 
-function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+function SubmitForm({ busy, mutate, grants }: { busy: boolean; mutate: Mutate; grants: GrantOption[] }) {
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -422,6 +423,17 @@ function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           <label>
             Buy link <small>optional product URL</small>
             <input name="itemUrl" type="url" placeholder="https://…" />
+          </label>
+          <label>
+            Paid from grant <small>optional — feeds the grant report</small>
+            <select name="grantApplicationId" defaultValue="">
+              <option value="">Not grant-funded</option>
+              {grants.map((grant) => (
+                <option key={grant.id} value={grant.id}>
+                  {grantOptionLabel(grant)}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <button type="submit" className="orders-submit" disabled={busy}>
@@ -546,6 +558,7 @@ function OrderCard({
         <span>{usd(order.totalCostUsd)} estimate</span>
         <span>{order.vendor}</span>
         <span>Requested by {order.requestedByName ?? "team member"}</span>
+        {order.grantName ? <span>Grant: {order.grantName}</span> : null}
         {order.buyerName ? <span>Buyer: {order.buyerName}</span> : null}
         {order.reviewNotes ? <span>Note: {order.reviewNotes}</span> : null}
       </div>

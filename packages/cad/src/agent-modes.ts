@@ -6,6 +6,9 @@
  * instant, so they run on every chat turn without a metered call.
  */
 
+import { hostedCadToolNames } from "./cad-tool-catalog";
+import { describeCadToolDryRun } from "./cad-tool-dry-run";
+
 export const CAD_AGENT_MODES = ["simple", "plan", "multitask"] as const;
 export type CadAgentMode = (typeof CAD_AGENT_MODES)[number];
 
@@ -188,9 +191,41 @@ export function shouldProposeModeSwitch(
 // Plan mode: structured plan + questions
 // ---------------------------------------------------------------------------
 
-export type CadPlanStep = { index: number; title: string; detail: string };
+/**
+ * One reviewable plan step. `tool` + `args` make it executable through the
+ * ordinary tool executor without a model in the loop; `dryRun` is the pure
+ * one-line description a reviewer reads before approving. Steps without a tool
+ * are narrative only (older plans, or a step the model could not map) and are
+ * executed by the model-driven loop instead.
+ */
+export type CadPlanStep = {
+  index: number;
+  title: string;
+  detail: string;
+  tool?: string;
+  args?: Record<string, unknown>;
+  dryRun?: string;
+  /** cad_job_steps.sequence once persisted, so approve/execute can address the row. */
+  sequence?: number;
+};
 
 export type CadParsedPlan = { steps: CadPlanStep[]; questions: string[] };
+
+const HOSTED_TOOLS: readonly string[] = hostedCadToolNames();
+
+export function isCadPlanTool(name: unknown): name is string {
+  return typeof name === "string" && HOSTED_TOOLS.includes(name);
+}
+
+function planArgs(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+}
+
+/** Attach the pure dry-run sentence to a tool step (idempotent). */
+export function withPlanDryRun(step: CadPlanStep): CadPlanStep {
+  if (!step.tool) return step;
+  return { ...step, dryRun: describeCadToolDryRun(step.tool, step.args ?? {}) };
+}
 
 function extractJsonObject(text: string): Record<string, unknown> | null {
   const trimmed = text.trim();
@@ -224,13 +259,17 @@ export function parseCadPlanResponse(text: string): CadParsedPlan | null {
       steps.push({ index: steps.length + 1, title: raw.trim(), detail: "" });
     } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
       const item = raw as Record<string, unknown>;
-      const title = typeof item.title === "string" ? item.title.trim() : "";
+      const tool = typeof item.tool === "string" ? item.tool.trim() : "";
+      const rationale =
+        typeof item.rationale === "string" ? item.rationale.trim() : typeof item.detail === "string" ? item.detail.trim() : "";
+      const title = (typeof item.title === "string" ? item.title.trim() : "") || (tool ? tool.replace(/^onshape_/, "").replaceAll("_", " ") : "");
       if (!title) continue;
-      steps.push({
-        index: steps.length + 1,
-        title,
-        detail: typeof item.detail === "string" ? item.detail.trim() : "",
-      });
+      const step: CadPlanStep = { index: steps.length + 1, title, detail: rationale };
+      if (tool) {
+        step.tool = tool;
+        step.args = planArgs(item.args ?? item.arguments ?? item.input);
+      }
+      steps.push(withPlanDryRun(step));
     }
   }
   if (!steps.length) return null;
@@ -299,28 +338,34 @@ export function parseCadTasksResponse(text: string): CadTask[] | null {
  * decomposition, and the execution prompt all describe the same toolbox.
  */
 export const CAD_PLAN_PRIMITIVES = [
-  "sketch rectangle (widthMm, heightMm, plane)",
-  "sketch circle (diameterMm, centre in mm)",
-  "sketch polyline (explicit mm points, closed for an extrudable outline)",
-  "sketch hole points (explicit points or a grid: count + pitch in mm)",
-  "extrude (depthMm, NEW / ADD / REMOVE / INTERSECT)",
-  "fillet (radiusMm, corners or all edges of one feature)",
-  "chamfer (widthMm, corners or all edges of one feature)",
-  "hole (diameterMm, THROUGH or BLIND + depthMm, drilled at hole points)",
-  "linear pattern (direction X/Y/Z, spacingMm, instanceCount)",
-  "circular pattern (about a cylindrical face, instanceCount, angleDeg)",
-  "mirror (across Front / Top / Right)",
-  "delete feature (undo one feature the agent added)",
+  "onshape_sketch_rectangle (widthMm, heightMm, plane, originXMm/originYMm)",
+  "onshape_sketch_circle (diameterMm, centerXMm/centerYMm, or circles[])",
+  "onshape_sketch_polyline (points [{xMm,yMm}], closed for an extrudable outline)",
+  "onshape_sketch_slot (lengthMm end-to-end, widthMm, centre, angleDeg)",
+  "onshape_sketch_polygon (sides, acrossFlatsMm or circumscribedDiameterMm, centre)",
+  "onshape_sketch_points (explicit points, or gridCountX/gridCountY + gridPitchXMm/gridPitchYMm)",
+  "onshape_extrude (depthMm, operationType NEW / ADD / REMOVE / INTERSECT)",
+  "onshape_fillet (radiusMm, selection corners|all)",
+  "onshape_chamfer (widthMm, selection corners|all)",
+  "onshape_hole (diameterMm, endStyle THROUGH|BLIND + depthMm, drilled at the last hole points)",
+  "onshape_shell (thicknessMm, faces top|bottom|ends|all)",
+  "onshape_set_variable (variableName, value, variableType LENGTH|ANGLE|NUMBER)",
+  "onshape_linear_pattern (direction X/Y/Z, spacingMm, instanceCount)",
+  "onshape_circular_pattern (axisFeatureId, instanceCount, angleDeg)",
+  "onshape_mirror (plane Front/Top/Right)",
+  "onshape_export_stl / onshape_export_step (title, changeNote) — saves the file to the team vault",
+  "onshape_delete_feature (undo one feature the agent added)",
 ] as const;
 
 export const CAD_PLAN_MODE_INSTRUCTIONS = [
-  "PLAN MODE — do NOT call any Onshape tool yet.",
-  'Reply with ONLY one JSON object, no markdown fences: {"plan":{"steps":[{"title":"...","detail":"..."}],"questions":["..."]}}',
-  "Steps are numbered build order: each step names the feature, restates every dimension in mm, and states the sketch plane and origin reference.",
-  "Each step must map to exactly ONE of these primitives (name the primitive in the title):",
+  "PLAN MODE — do NOT call any Onshape tool yet. Propose the exact tool calls; a human approves them before anything runs.",
+  'Reply with ONLY one JSON object, no markdown fences: {"plan":{"steps":[{"tool":"onshape_sketch_rectangle","args":{"widthMm":80,"heightMm":50,"plane":"Top"},"title":"80×50 mm plate outline","rationale":"one line on why"}],"questions":["..."]}}',
+  "Steps run in order. Each step is exactly ONE tool call from this list, with every argument in millimetres:",
   ...CAD_PLAN_PRIMITIVES.map((primitive) => `  - ${primitive}`),
-  "A hole pattern is normally one hole-points step plus one hole step — do not add a pattern step unless the repeated thing is an existing feature.",
-  "For anything ambiguous (mount hole spacing, material/stock thickness, clearance, missing controlling dimensions) add a question — never guess a number.",
+  "Chaining: omit sketchFeatureId / featureId / pointSketchFeatureId to use the previous sketch, solid, or point sketch; to name a specific earlier step write the string \"{{step:N.featureId}}\" where N is that step's 1-based number.",
+  "Each title restates the dimensions and the sketch plane. The rationale is one short line.",
+  "A hole pattern is one onshape_sketch_points step plus one onshape_hole step — do not add a pattern step unless the repeated thing is an existing feature.",
+  "For anything ambiguous (mount hole spacing, material/stock thickness, clearance, missing controlling dimensions) add a question and leave that step out — never guess a number.",
   "Keep the plan to at most 12 steps. Use only real data from the brief and the team context below; never invent measurements.",
 ].join("\n");
 

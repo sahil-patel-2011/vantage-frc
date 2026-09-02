@@ -2,6 +2,8 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
 import { nexusAttributionHref, parseNexusEvent, parseNexusLive } from "@vantage/reference";
 import { batteryPitFlags } from "../battery-reliability";
+import { computeBriefingView } from "../briefing/compute-briefing";
+import type { FullBriefingView } from "../briefing/types";
 import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
 import { bumperCue, formatMyDayWhen } from "../my-day";
@@ -193,7 +195,7 @@ export async function loadEventDayCommand(
     },
   ];
 
-  const base: Omit<CommandSnapshot, "status" | "matches" | "scoutQueue" | "briefs" | "pitFlags" | "prediction" | "record" | "coverage"> & {
+  const base: Omit<CommandSnapshot, "status" | "matches" | "scoutQueue" | "briefs" | "pitFlags" | "briefing" | "prediction" | "record" | "coverage"> & {
     status?: CommandSnapshot["status"];
   } = {
     computedAt,
@@ -224,6 +226,7 @@ export async function loadEventDayCommand(
       scoutQueue: [],
       briefs: [],
       pitFlags: [],
+      briefing: null,
       myDay: {
         bumperCue: null,
         ourAlliance: null,
@@ -352,12 +355,25 @@ export async function loadEventDayCommand(
     pitReports: Number(row.pitReports),
   }));
 
+  // Teams the org flagged on the opponent watchlist jump the scout queue.
+  let watchlistTeamKeys: string[];
+  try {
+    const watchlist = await client.query<{ teamKey: string }>(
+      `SELECT DISTINCT team_key AS "teamKey" FROM opponent_watchlist_entries WHERE org_id = $1`,
+      [input.orgId],
+    );
+    watchlistTeamKeys = watchlist.rows.map((row) => row.teamKey);
+  } catch {
+    watchlistTeamKeys = [];
+  }
+
   const scoutQueue = withScoutFormHrefs(
     buildScoutQueue({
       ourTeamKey: teamKey,
       upcoming: upcomingAllianceTeams,
       coverage,
       orgId: input.orgId,
+      watchlistTeamKeys,
     }),
     input.orgId,
   );
@@ -585,6 +601,19 @@ export async function loadEventDayCommand(
     prediction = emptyPrediction("setup_required");
   }
 
+  // THE pre-match briefing for the focus match. Computed after the strategy pass above so
+  // it reads the prediction/plan rows that pass just persisted — one source, two surfaces.
+  let briefing: FullBriefingView | null;
+  try {
+    briefing = await computeBriefingView(client, {
+      userId: input.userId,
+      requestedOrg: input.orgId,
+      requestedMatch: focusMatch?.matchKey ?? null,
+    });
+  } catch {
+    briefing = null;
+  }
+
   const metric = metrics.rows[0];
   const record: CommandSnapshot["record"] = metric
     ? {
@@ -735,6 +764,7 @@ export async function loadEventDayCommand(
     scoutQueue,
     briefs,
     pitFlags: uniqueFlags,
+    briefing,
     myDay,
     nexus,
     prediction,
@@ -809,6 +839,7 @@ function emptySnapshot(input: {
     scoutQueue: [],
     briefs: [],
     pitFlags: [],
+    briefing: null,
     myDay: null,
     nexus: null,
     prediction: emptyPrediction("setup_required"),

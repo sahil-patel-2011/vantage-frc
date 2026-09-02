@@ -14,6 +14,8 @@ import {
 import { CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
 import type { SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import {
   SPARE_ROBOT_KIT_RELATED_INCLUDE,
   classifySpareRobotKitShell,
@@ -181,6 +183,7 @@ export default function SpareRobotKitClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -250,6 +253,8 @@ export default function SpareRobotKitClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -324,6 +329,8 @@ export default function SpareRobotKitClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="spare_robot_kit" />
 
       {showTiles ? (
         <Panel className="srk-panel">

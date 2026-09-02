@@ -52,7 +52,11 @@ export type OrderSubmitInput = {
   itemUrl: string | null;
   quantity: number;
   neededBy: string | null;
+  /** Grant this purchase is paid from (0504), or null when not grant-funded. */
+  grantApplicationId: string | null;
 };
+
+const GRANT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function validateOrderSubmit(
   input: Record<string, unknown>,
@@ -94,6 +98,10 @@ export function validateOrderSubmit(
     typeof input.neededBy === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input.neededBy.trim())
       ? input.neededBy.trim()
       : null;
+  const grantRaw = typeof input.grantApplicationId === "string" ? input.grantApplicationId.trim() : "";
+  if (grantRaw && !GRANT_ID_RE.test(grantRaw)) {
+    return { ok: false, error: "Grant selection is invalid." };
+  }
 
   return {
     ok: true,
@@ -105,6 +113,7 @@ export function validateOrderSubmit(
       itemUrl,
       quantity: quantityRaw,
       neededBy,
+      grantApplicationId: grantRaw || null,
     },
   };
 }

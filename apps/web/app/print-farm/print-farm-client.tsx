@@ -297,6 +297,8 @@ function QueueJobForm({ view, busy, mutate }: { view: LiveView; busy: boolean; m
       estimatedMinutes: "",
       estimatedGrams: "",
       neededBy: "",
+      cadDocumentId: "",
+      inventoryItemId: "",
     }),
     [],
   );
@@ -324,6 +326,8 @@ function QueueJobForm({ view, busy, mutate }: { view: LiveView; busy: boolean; m
           estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
           estimatedGrams: form.estimatedGrams ? Number(form.estimatedGrams) : undefined,
           neededBy: form.neededBy || undefined,
+          cadDocumentId: form.cadDocumentId || undefined,
+          inventoryItemId: form.inventoryItemId || undefined,
         });
         setForm(empty);
       }}
@@ -383,6 +387,30 @@ function QueueJobForm({ view, busy, mutate }: { view: LiveView; busy: boolean; m
             ))}
           </select>
         </FormRow>
+        {(view.cadDocuments ?? []).length > 0 ? (
+          <FormRow label="CAD document (optional)">
+            <select value={form.cadDocumentId} onChange={set("cadDocumentId")}>
+              <option value="">Not linked</option>
+              {view.cadDocuments.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  {doc.title} ({doc.kind})
+                </option>
+              ))}
+            </select>
+          </FormRow>
+        ) : null}
+        {(view.inventoryItems ?? []).length > 0 ? (
+          <FormRow label="Stock into inventory item (optional)">
+            <select value={form.inventoryItemId} onChange={set("inventoryItemId")}>
+              <option value="">Do not stock</option>
+              {view.inventoryItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.quantity} {item.unit} on hand
+                </option>
+              ))}
+            </select>
+          </FormRow>
+        ) : null}
         <FormRow label="Est. minutes (from slicer, optional)">
           <input type="number" min={1} value={form.estimatedMinutes} onChange={set("estimatedMinutes")} />
         </FormRow>

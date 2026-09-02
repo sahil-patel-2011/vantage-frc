@@ -23,6 +23,10 @@ const PUBLIC_PAGES = new Set([
   "/offline",
   // Token-gated email unsubscribe (no session).
   "/unsubscribe",
+  // One-time-token self-serve exit interview (?token=, no session) — the
+  // token is validated by /api/exit-interview/respond; see isPublicParentView
+  // for the sibling token-scoped surface.
+  "/exit-interview/respond",
 ]);
 // Session cookie auth for product routes; Better Auth enforces CSRF/Origin on /api/auth.
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
@@ -38,6 +42,9 @@ const PUBLIC_PREFIXES = [
   "/api/partner-assets",
   // Opt-in email one-click unsubscribe (token in body; no session).
   "/api/notifications/unsubscribe",
+  // Self-serve exit interview: one-time token in query/body, resolved by a
+  // SECURITY DEFINER lookup (0501) exactly like /api/parent-view/[token].
+  "/api/exit-interview/respond",
   // Vercel cron jobs authenticate via CRON_SECRET (Bearer / x-cron-secret).
   "/api/cron",
   // Calendar ICS subscribe URLs are allow-listed in isPublicCalendarFeed (token path only).

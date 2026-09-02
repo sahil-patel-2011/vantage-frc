@@ -1,5 +1,6 @@
 import { emitPreferredNotification } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertGrantInOrg, loadGrantOptions } from "../finance/grant-options";
 import { recordMoney, removeMoney } from "../finance/ledger";
 import {
   canTransitionOrder,
@@ -45,6 +46,8 @@ type OrderRow = {
   receivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  grantApplicationId: string | null;
+  grantName: string | null;
 };
 
 function num(value: string | number | null | undefined): number {
@@ -77,6 +80,8 @@ function mapOrder(row: OrderRow): OrderRequest {
     receivedAt: row.receivedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    grantApplicationId: row.grantApplicationId ?? null,
+    grantName: row.grantName ?? null,
   };
 }
 
@@ -147,10 +152,14 @@ async function loadOrders(client: PoolClient, orgId: string, seasonYear: number)
        p.ordered_at::text AS "orderedAt",
        p.received_at::text AS "receivedAt",
        p.created_at::text AS "createdAt",
-       p.updated_at::text AS "updatedAt"
+       p.updated_at::text AS "updatedAt",
+       p.grant_application_id AS "grantApplicationId",
+       CASE WHEN p.grant_application_id IS NULL THEN NULL ELSE COALESCE(go.name, 'Grant') END AS "grantName"
      FROM purchase_requests p
      LEFT JOIN users r ON r.id = p.requested_by
      LEFT JOIN users b ON b.id = p.buyer_user_id
+     LEFT JOIN grant_applications ga ON ga.id = p.grant_application_id
+     LEFT JOIN grant_opportunities go ON go.id = ga.grant_opportunity_id
      WHERE p.org_id = $1::uuid AND p.season_year = $2
      ORDER BY p.created_at DESC`,
     [orgId, seasonYear],
@@ -294,10 +303,11 @@ export async function computeOrdersView(
   const seasonYear = input.seasonYear ?? currentSeasonYear();
 
   try {
-    const [orders, members, financeAiEnabled] = await Promise.all([
+    const [orders, members, financeAiEnabled, grants] = await Promise.all([
       loadOrders(client, org.orgId, seasonYear),
       loadMembers(client, org.orgId),
       loadFinanceAiEnabled(client, org.orgId, seasonYear),
+      loadGrantOptions(client, org.orgId),
     ]);
     const metrics = computeOrderMetrics(orders, input.userId);
     const aiSummary = financeAiEnabled ? summarizeOpenOrders(orders) : null;
@@ -313,6 +323,7 @@ export async function computeOrdersView(
       isAdmin: org.role === "owner" || org.role === "admin",
       orders,
       members,
+      grants,
       metrics,
       financeAiEnabled,
       aiSummary,
@@ -342,14 +353,19 @@ export async function submitOrder(
   const seasonYear = input.seasonYear ?? currentSeasonYear();
   const unitCostUsd = unitCostFromEstimate(validated.value.estimateUsd, validated.value.quantity);
   const totalCostUsd = totalFromParts(validated.value.quantity, unitCostUsd);
+  if (validated.value.grantApplicationId) {
+    await assertGrantInOrg(client, input.orgId, validated.value.grantApplicationId);
+  }
 
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO purchase_requests (
        org_id, season_year, requested_by, title, vendor, item_url,
-       quantity, unit_cost_usd, shipping_cost_usd, total_cost_usd, justification, needed_by
+       quantity, unit_cost_usd, shipping_cost_usd, total_cost_usd, justification, needed_by,
+       grant_application_id
      ) VALUES (
        $1::uuid, $2, $3::uuid, $4, $5, $6,
-       $7, $8, 0, $9, $10, $11::date
+       $7, $8, 0, $9, $10, $11::date,
+       $12::uuid
      )
      RETURNING id`,
     [
@@ -364,6 +380,7 @@ export async function submitOrder(
       totalCostUsd,
       validated.value.justification,
       validated.value.neededBy,
+      validated.value.grantApplicationId,
     ],
   );
 
@@ -399,9 +416,11 @@ export async function reviewOrder(
     totalCostUsd: string;
     categoryId: string | null;
     seasonYear: number;
+    grantApplicationId: string | null;
   }>(
     `SELECT status, requested_by AS "requestedBy", title,
-            total_cost_usd::text AS "totalCostUsd", category_id AS "categoryId", season_year AS "seasonYear"
+            total_cost_usd::text AS "totalCostUsd", category_id AS "categoryId", season_year AS "seasonYear",
+            grant_application_id AS "grantApplicationId"
      FROM purchase_requests WHERE id = $1::uuid AND org_id = $2::uuid`,
     [input.orderId, input.orgId],
   );
@@ -446,6 +465,7 @@ export async function reviewOrder(
       categoryId: row.categoryId,
       label: `Order — ${row.title}`,
       createdBy: input.userId,
+      grantApplicationId: row.grantApplicationId ?? null,
     });
   } else if (row.status === "approved") {
     // Rejecting an approved order un-commits the money — remove its mirror row

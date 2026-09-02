@@ -140,7 +140,7 @@ describe("generateDigest", () => {
       if (sql.includes("FROM build_tasks") && sql.includes("status = 'blocked'")) return { rows: [] };
       if (sql.includes("FROM attendance_events")) return { rows: [] };
       if (sql.includes("FROM knowledge_pages")) return { rows: [] };
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserts.push({ sql, params });
         return { rows: [] };
       }
@@ -154,7 +154,7 @@ describe("generateDigest", () => {
     const summary = await generateDigest(client, { orgId: ORG, userId: USER, digestDate: DATE });
 
     expect(summary.hours.totalHours).toBe(2);
-    const usageInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserts.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
     const runUpsert = inserts.find((entry) => entry.sql.includes("INSERT INTO standup_digest_runs"));
     expect(runUpsert).toBeDefined();

@@ -10,6 +10,24 @@ const USER = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
 const BOARD = "33333333-3333-4333-8333-333333333333";
 
+// The AI render path is exercised in packages/agent/test/render.test.ts; here the org has no
+// provider, so the deterministic template stands in and the outcome says so honestly.
+vi.mock("../ai-render/render", async () => {
+  const actual = await vi.importActual<typeof import("../ai-render/render")>("../ai-render/render");
+  const render = { mode: "template" as const, fallbackReason: "no_provider", requestId: "render-test" };
+  return {
+    ...actual,
+    renderFeatureValue: vi.fn(async (input: { value: unknown }) => ({ value: input.value, render })),
+    renderFeatureText: vi.fn(async (input: { template: () => string }) => ({
+      ...render,
+      text: input.template(),
+      promptTokens: 0,
+      completionTokens: 0,
+      costUsd: 0,
+    })),
+  };
+});
+
 function mockClient(handler: (sql: string, params: unknown[]) => { rows: unknown[]; rowCount: number }): PoolClient {
   return {
     query: vi.fn((sql: string, params: unknown[] = []) => Promise.resolve(handler(sql, params))),
@@ -133,7 +151,7 @@ describe("computeAlliancePartnerBriefView", () => {
 });
 
 describe("generateAlliancePartnerBrief", () => {
-  it("generates and persists a partner brief grounded in event metrics + scouting, metering via local_cli", async () => {
+  it("generates and persists a partner brief grounded in event metrics + scouting, reporting the template fallback honestly when no provider is configured", async () => {
     const queries: string[] = [];
     const client = mockClient((sql) => {
       queries.push(sql);
@@ -195,7 +213,8 @@ describe("generateAlliancePartnerBrief", () => {
       expect(view.brief?.partners).toHaveLength(2);
       expect(view.brief?.partners.find((p) => p.teamKey === "frc118")?.roleLabel).toBe("Teleop scorer");
     }
-    expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
+    expect(view.render?.mode).toBe("template");
+    expect(view.render?.fallbackReason).toBe("no_provider");
     expect(queries.some((q) => q.includes("INSERT INTO alliance_partner_brief_briefs"))).toBe(true);
   });
 

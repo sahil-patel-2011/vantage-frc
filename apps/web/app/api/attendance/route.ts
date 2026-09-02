@@ -73,7 +73,7 @@ async function loadEvents(client: PoolClient, orgId: string, seasonYear: number)
 
   const ids = events.rows.map((row) => row.id);
   const entries = await client.query<AttendanceEntry>(
-    `SELECT a.id, a.event_id AS "eventId", a.person_name AS "personName", a.role,
+    `SELECT a.id, a.event_id AS "eventId", a.person_name AS "personName", a.user_id AS "userId", a.role,
             a.hours::float8 AS hours, a.created_at::text AS "createdAt"
      FROM attendance_entries a
      WHERE a.org_id = $1 AND a.event_id = ANY($2::uuid[])
@@ -249,11 +249,23 @@ export async function POST(request: Request) {
             action.orgId,
           ]);
           if (!event.rowCount) throw new HttpError(404, "Attendance event not found");
+          if (action.userId) {
+            const member = await client.query(
+              `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+              [action.orgId, action.userId],
+            );
+            if (!member.rowCount) throw new HttpError(400, "That member is not in this organization");
+            const already = await client.query(
+              `SELECT 1 FROM attendance_entries WHERE org_id = $1::uuid AND event_id = $2::uuid AND user_id = $3::uuid`,
+              [action.orgId, action.eventId, action.userId],
+            );
+            if (already.rowCount) throw new HttpError(400, "That member is already marked present");
+          }
           const inserted = await client.query<{ id: string }>(
-            `INSERT INTO attendance_entries (org_id, event_id, person_name, role, hours)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO attendance_entries (org_id, event_id, person_name, user_id, role, hours)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6)
              RETURNING id`,
-            [action.orgId, action.eventId, action.personName, action.role, action.hours],
+            [action.orgId, action.eventId, action.personName, action.userId, action.role, action.hours],
           );
           return { id: inserted.rows[0]!.id };
         }

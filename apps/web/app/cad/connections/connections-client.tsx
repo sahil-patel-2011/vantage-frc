@@ -42,8 +42,9 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [onshapeConfigured, setOnshapeConfigured] = useState(false);
   const [onshapeConnections, setOnshapeConnections] = useState<
-    Array<{ id: string; status: string; label: string }>
+    Array<{ id: string; status: string; label: string; shared?: boolean }>
   >([]);
+  const [canManageTeamConnection, setCanManageTeamConnection] = useState(false);
   const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
   const [osSupport, setOsSupport] = useState<OsRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -59,6 +60,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       setDevices(d.devices ?? []);
       setOnshapeConfigured(Boolean(d.onshapeConfigured ?? d.onshape?.configured));
       setOnshapeConnections(d.onshapeConnections ?? []);
+      setCanManageTeamConnection(Boolean(d.canManageTeamConnection));
       setOnshapeSetupMessage(
         d.onshape?.setupRequired
           ? String(d.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
@@ -105,8 +107,33 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     }
   }
 
+  async function setTeamSharing(share: boolean) {
+    if (!share && !confirm("Stop sharing the team Onshape connection? Members without their own connection lose the CAD agent until it is shared again.")) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/cad", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: share ? "share-onshape-connection" : "revoke-team-onshape-connection" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not update team sharing");
+        return;
+      }
+      setMessage(share ? "Onshape connection shared with the team." : "Team Onshape connection revoked.");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Connected only when a real cad_connections row reports status=connected — never DEMO.
-  const onshapeConnected = onshapeConnections.some((c) => c.status === "connected");
+  const ownConnection = onshapeConnections.find((c) => c.status === "connected" && !c.shared) ?? null;
+  const teamConnection = onshapeConnections.find((c) => c.status === "connected" && c.shared) ?? null;
+  const onshapeConnected = Boolean(ownConnection || teamConnection);
 
   return (
     <main className="module-page cad-connections-page">
@@ -174,13 +201,46 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           {onshapeConfigured ? (
             <>
               <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
-                {onshapeConnected ? "Reconnect Onshape OAuth" : "Connect Onshape OAuth"}
+                {ownConnection ? "Reconnect Onshape OAuth" : "Connect Onshape OAuth"}
               </button>
               <small className="app-muted">
-                {onshapeConnected
-                  ? `Connected (${onshapeConnections[0]?.label ?? "Onshape"}). Pick document refs in CAD Builder.`
-                  : "OAuth client configured — click to authorize."}
+                {ownConnection
+                  ? `Connected (${ownConnection.label}). Bind a Part Studio in CAD Builder.`
+                  : teamConnection
+                    ? "You are using the team's shared connection. Connect your own to use your Onshape account instead."
+                    : "OAuth client configured — click to authorize."}
               </small>
+              <div className="cad-team-share" aria-label="Team sharing">
+                <span className={`app-badge ${teamConnection ? "good" : "setup"}`}>
+                  {teamConnection ? "Shared with team" : "Not shared"}
+                </span>
+                <small className="app-muted">
+                  {teamConnection
+                    ? "Every member of this team can run the CAD agent through the shared connection (owner/admin manage it)."
+                    : "An owner or admin can share their connection so students use the CAD agent without their own Onshape login."}
+                </small>
+                {canManageTeamConnection ? (
+                  <label className="cad-team-share-toggle">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-checked={Boolean(teamConnection)}
+                      checked={Boolean(teamConnection)}
+                      disabled={busy || (!teamConnection && !ownConnection)}
+                      onChange={(event) => void setTeamSharing(event.target.checked)}
+                    />
+                    <span>{teamConnection ? "Sharing my connection with the team" : "Share my connection with the team"}</span>
+                  </label>
+                ) : null}
+                {canManageTeamConnection && !ownConnection && !teamConnection ? (
+                  <small className="app-muted">Connect your own Onshape first, then share it.</small>
+                ) : null}
+                {canManageTeamConnection && teamConnection ? (
+                  <button type="button" className="app-button secondary" disabled={busy} onClick={() => void setTeamSharing(false)}>
+                    Revoke team connection
+                  </button>
+                ) : null}
+              </div>
             </>
           ) : (
             <>

@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "assess": {
           const subsystemName = trimmedOrNull(body.subsystemName, 200);
@@ -96,7 +98,7 @@ export async function POST(request: Request) {
           const sourceSeasonYear = Number.isFinite(Number(body.sourceSeasonYear))
             ? Math.round(Number(body.sourceSeasonYear))
             : null;
-          await recordAssessment(client, {
+          render = await recordAssessment(client, {
             orgId,
             userId,
             seasonYear,
@@ -126,7 +128,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeReuseAdvisorView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeReuseAdvisorView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

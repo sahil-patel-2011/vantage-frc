@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { TRIAGE_DECISIONS, TRIAGE_STATUSES, triageRepair } from ".";
 import { consumeForSource } from "../parts/store";
 import type { FmeaHistoryEntry, SpareCandidate, TriageDecision, TriageReport, TriageStatus } from "./types";
@@ -244,7 +243,7 @@ export async function logFailure(
     relatedFmeaFailureId: string | null;
     matchedInventoryItemId: string | null;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const [priorFailureResult, fmeaSeverityResult, inventoryResult] = await Promise.all([
     client.query<{ count: string }>(
       `SELECT count(*)::text AS count FROM fmea_failures
@@ -269,32 +268,23 @@ export async function logFailure(
   const severity = Number(fmeaSeverityResult.rows[0]?.severity ?? 5) || 5;
   const sparesAvailable = Number(inventoryResult.rows[0]?.quantity ?? 0) || 0;
 
-  const triage = await meteredAI({
+  // Real model call on the org's adapter with the deterministic triage as fallback: only the
+  // rationale prose may be rewritten; the fix/swap decision, confidence and pre-stage flag
+  // stay computed from minutes-to-match, spares on hand and failure history.
+  const { value: triage, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "pit_repair_triage",
-    requestId: `pit-repair-triage-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.subsystemName,
-      seasonYear: input.seasonYear,
-      note: "Deterministic minutes/spares/history triage computation — no external model call",
-    },
-    invoke: async () => ({
-      value: triageRepair({
-        minutesUntilNextMatch: input.minutesUntilNextMatch,
-        sparesAvailable,
-        priorFailureCount,
-        severity,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-pit-repair-triage-v1",
-      provider: "vantage-local",
+    value: triageRepair({
+      minutesUntilNextMatch: input.minutesUntilNextMatch,
+      sparesAvailable,
+      priorFailureCount,
+      severity,
     }),
+    editableKeys: ["rationale"],
+    instructions: `Pit repair triage for the ${input.subsystemName} subsystem: "${input.title}". Symptom: ${input.symptomNote.slice(0, 600) || "not described"}. ${input.minutesUntilNextMatch} minutes until the next match, ${sparesAvailable} spare(s) on hand, ${priorFailureCount} prior failure(s), severity ${severity}/10. Write the rationale as 1-3 plain sentences the pit lead can act on immediately, consistent with the decision in the document; cite only its numbers.`,
+    metadata: { subsystemName: input.subsystemName, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -324,6 +314,7 @@ export async function logFailure(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function updateReportStatus(
@@ -337,13 +328,21 @@ export async function updateReportStatus(
     usedParts?: UsedPart[];
   },
 ): Promise<void> {
-  const updated = await client.query<{ title: string }>(
+  const updated = await client.query<{
+    title: string;
+    subsystemName: string;
+    seasonYear: number;
+    symptomNote: string;
+    relatedFmeaFailureId: string | null;
+  }>(
     `UPDATE pit_repair_triage_reports SET status = $1, updated_at = now()
      WHERE id = $2 AND org_id = $3
-     RETURNING title`,
+     RETURNING title, subsystem_name AS "subsystemName", season_year AS "seasonYear",
+               symptom_note AS "symptomNote", related_fmea_failure_id AS "relatedFmeaFailureId"`,
     [input.status, input.reportId, input.orgId],
   );
-  if (!updated.rowCount) throw new Error("Report not found");
+  const report = updated.rows[0];
+  if (!report) throw new Error("Report not found");
 
   // Close the loop: a resolved repair that consumed parts decrements the unified stock through
   // the append-only ledger, keyed to this repair (idempotent — a replay cannot double-decrement).
@@ -353,9 +352,52 @@ export async function updateReportStatus(
       userId: input.userId,
       sourceKind: "pit_repair_triage",
       sourceId: input.reportId,
-      note: `Used by pit repair: ${updated.rows[0]!.title}`,
+      note: `Used by pit repair: ${report.title}`,
       items: input.usedParts.map((part) => ({ itemId: part.itemId, quantity: part.quantity })),
     });
+
+    // …and close the OTHER end (0505): the failure log records which bin the swap came from.
+    // A linked FMEA row is updated in place; otherwise the swap becomes its own verified
+    // failure entry so FMEA cadence and the spare forecast see the consumption.
+    const primary = input.usedParts[0]!;
+    const totalQty = Math.round(input.usedParts.reduce((sum, part) => sum + part.quantity, 0) * 100) / 100;
+    const fix = `Swapped part via pit repair triage (${report.title})`;
+    if (report.relatedFmeaFailureId) {
+      await client.query(
+        `UPDATE fmea_failures SET
+           inventory_item_id = COALESCE(inventory_item_id, $3::uuid),
+           parts_consumed_qty = GREATEST(parts_consumed_qty, $4::numeric),
+           fix = COALESCE(fix, $5),
+           status = CASE WHEN status IN ('open', 'fixing') THEN 'verified' ELSE status END,
+           updated_at = now()
+         WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [report.relatedFmeaFailureId, input.orgId, primary.itemId, totalQty, fix],
+      );
+    } else {
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO fmea_failures
+           (org_id, season_year, subsystem_name, title, failure_mode, context, status, fix,
+            inventory_item_id, parts_consumed_qty, recorded_by)
+         VALUES ($1::uuid, $2, $3, $4, $5, 'pit', 'verified', $6, $7::uuid, $8::numeric, $9::uuid)
+         RETURNING id`,
+        [
+          input.orgId,
+          report.seasonYear,
+          report.subsystemName,
+          report.title,
+          report.symptomNote ?? "",
+          fix,
+          primary.itemId,
+          totalQty,
+          input.userId,
+        ],
+      );
+      await client.query(
+        `UPDATE pit_repair_triage_reports SET related_fmea_failure_id = $3::uuid, updated_at = now()
+         WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [input.reportId, input.orgId, inserted.rows[0]!.id],
+      );
+    }
   }
 }
 

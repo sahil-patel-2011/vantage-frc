@@ -10,11 +10,13 @@ type ShellOutboxStatusProps = {
 
 /**
  * Compact Soft-UI outbox pill for the global shell — real IndexedDB counts only.
- * Shows pending count, last error, and Retry all when online with a workspace.
+ * Shows pending count, quarantined ("stuck") count, last error, and Retry all
+ * when online with a workspace.
  */
 export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
   const [entries, setEntries] = useState(0);
   const [media, setMedia] = useState(0);
+  const [quarantined, setQuarantined] = useState(0);
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
       .then((counts) => {
         setEntries(counts.entries);
         setMedia(counts.media);
+        setQuarantined(counts.quarantined);
       })
       .catch(() => undefined);
   }, []);
@@ -45,10 +48,13 @@ export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
   }, [refresh]);
 
   const pending = entries + media;
-  if (pending <= 0 && !lastError) return null;
+  if (pending <= 0 && quarantined <= 0 && !lastError) return null;
 
   const offlineHref = withOrgHref("/offline", orgId ?? null);
   const scoutHref = withOrgHref("/scouting", orgId ?? null);
+  // Quarantined items are NOT pending — they need a human Retry/Discard on the
+  // scouting page's attention panel, so the pill links straight to it.
+  const quarantineHref = withOrgHref("/scouting#scout-quarantine", orgId ?? null);
 
   async function retryAll() {
     if (!orgId || !navigator.onLine || syncing) return;
@@ -72,13 +78,24 @@ export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
 
   return (
     <div className="soft-outbox-status" role="status" aria-live="polite">
-      <a
-        className={`soft-outbox-pill${pending > 0 ? " has-pending" : ""}${lastError ? " has-error" : ""}`}
-        href={pending > 0 ? scoutHref : offlineHref}
-        title={lastError ?? "Scout outbox on this device"}
-      >
-        {pending > 0 ? `Sync pending (${pending})` : "Outbox clear"}
-      </a>
+      {pending > 0 || lastError || quarantined <= 0 ? (
+        <a
+          className={`soft-outbox-pill${pending > 0 ? " has-pending" : ""}${lastError ? " has-error" : ""}`}
+          href={pending > 0 ? scoutHref : offlineHref}
+          title={lastError ?? "Scout outbox on this device"}
+        >
+          {pending > 0 ? `Sync pending (${pending})` : "Outbox clear"}
+        </a>
+      ) : null}
+      {quarantined > 0 ? (
+        <a
+          className="soft-outbox-pill has-error"
+          href={quarantineHref}
+          title={`${quarantined} ${quarantined === 1 ? "item" : "items"} the server rejected — retry or discard on the scouting page`}
+        >
+          {quarantined} stuck
+        </a>
+      ) : null}
       {pending > 0 && orgId && online ? (
         <button
           type="button"

@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -86,10 +87,11 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "draft-purchase-request": {
           const title = trimmedOrNull(body.title, 200) ?? `Spare-parts restock — ${seasonYear}`;
-          await draftPurchaseRequest(client, { orgId, userId, seasonYear, title });
+          render = await draftPurchaseRequest(client, { orgId, userId, seasonYear, title });
           break;
         }
         case "update-status": {
@@ -110,7 +112,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeSpareForecastView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeSpareForecastView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

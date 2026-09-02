@@ -6,6 +6,7 @@
 // are excluded from ETAs and flagged needsEstimate.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { receiveForSource } from "../parts/store";
 import {
   atRiskJobs,
   estimateBias,
@@ -68,6 +69,12 @@ export type PrintFarmSummary = {
   needsEstimateCount: number;
 };
 
+/** A CAD vault document a job can be printed from (0474 cad_documents). */
+export type CadDocumentOption = { id: string; title: string; kind: string; subsystemId: string | null };
+
+/** A stocked inventory item a finished print lands on (0505). */
+export type PrintInventoryOption = { id: string; name: string; unit: string; quantity: number };
+
 export type PrintFarmView =
   | {
       status: "setup_required";
@@ -85,6 +92,10 @@ export type PrintFarmView =
       recentFinished: JobView[];
       estimateBias: GatedMetric;
       summary: PrintFarmSummary;
+      /** Active CAD documents the queue form can link a job to. */
+      cadDocuments: CadDocumentOption[];
+      /** Inventory items a finished print can be received onto. */
+      inventoryItems: PrintInventoryOption[];
       computedAt: string;
     };
 
@@ -130,6 +141,7 @@ type JobRow = {
   subsystemId: string | null;
   subsystemName: string | null;
   inventoryItemId: string | null;
+  cadDocumentId?: string | null;
   buildTaskId: string | null;
   printerId: string | null;
   filamentId: string | null;
@@ -209,6 +221,7 @@ function mapJob(row: JobRow): PrintJob {
     subsystemId: row.subsystemId,
     subsystemName: row.subsystemName,
     inventoryItemId: row.inventoryItemId,
+    cadDocumentId: row.cadDocumentId ?? null,
     buildTaskId: row.buildTaskId,
     printerId: row.printerId,
     filamentId: row.filamentId,
@@ -262,7 +275,7 @@ export async function computePrintFarmView(
     };
   }
 
-  const [filamentResult, printerResult, jobResult, usageResult] = await Promise.all([
+  const [filamentResult, printerResult, jobResult, usageResult, cadResult, inventoryResult] = await Promise.all([
     client.query<FilamentRow>(
       `SELECT id, material, brand, color,
               diameter_mm::text AS "diameterMm", spool_grams_total::text AS "spoolGramsTotal",
@@ -287,7 +300,7 @@ export async function computePrintFarmView(
     client.query<JobRow>(
       `SELECT id, season_year AS "seasonYear", part_name AS "partName", quantity, purpose, status, priority,
               subsystem_id AS "subsystemId", subsystem_name AS "subsystemName",
-              inventory_item_id AS "inventoryItemId", build_task_id AS "buildTaskId",
+              inventory_item_id AS "inventoryItemId", cad_document_id AS "cadDocumentId", build_task_id AS "buildTaskId",
               printer_id AS "printerId", filament_id AS "filamentId",
               estimated_minutes AS "estimatedMinutes", estimated_grams::text AS "estimatedGrams",
               actual_minutes AS "actualMinutes", actual_grams::text AS "actualGrams",
@@ -307,6 +320,23 @@ export async function computePrintFarmView(
        WHERE org_id = $1::uuid
        ORDER BY created_at DESC
        LIMIT 1000`,
+      [org.orgId],
+    ),
+    // Appended LAST so positional test mocks for the four queries above stay valid.
+    client.query<CadDocumentOption>(
+      `SELECT id, title, kind, subsystem_id AS "subsystemId"
+       FROM cad_documents
+       WHERE org_id = $1::uuid AND status = 'active'
+       ORDER BY updated_at DESC
+       LIMIT 300`,
+      [org.orgId],
+    ),
+    client.query<PrintInventoryOption>(
+      `SELECT id, name, unit, quantity::float8 AS quantity
+       FROM inventory_items
+       WHERE org_id = $1::uuid AND archived = false
+       ORDER BY name
+       LIMIT 300`,
       [org.orgId],
     ),
   ]);
@@ -387,6 +417,8 @@ export async function computePrintFarmView(
     recentFinished,
     estimateBias: bias,
     summary,
+    cadDocuments: cadResult.rows,
+    inventoryItems: inventoryResult.rows.map((row) => ({ ...row, quantity: Number(row.quantity) || 0 })),
     computedAt: nowIso,
   };
 }
@@ -535,14 +567,32 @@ export async function queueJob(
     estimatedGrams: number | null;
     neededBy: string | null;
     reprintOfJobId: string | null;
+    /** CAD vault document this job prints from (0505). */
+    cadDocumentId?: string | null;
+    /** Inventory item the finished parts land on (0505) — finish-job receives job.quantity there. */
+    inventoryItemId?: string | null;
   },
 ): Promise<void> {
+  if (input.cadDocumentId) {
+    const doc = await client.query(`SELECT 1 FROM cad_documents WHERE id = $1::uuid AND org_id = $2::uuid`, [
+      input.cadDocumentId,
+      input.orgId,
+    ]);
+    if (!doc.rowCount) throw new Error("CAD document not found");
+  }
+  if (input.inventoryItemId) {
+    const item = await client.query(`SELECT 1 FROM inventory_items WHERE id = $1::uuid AND org_id = $2::uuid`, [
+      input.inventoryItemId,
+      input.orgId,
+    ]);
+    if (!item.rowCount) throw new Error("Inventory item not found");
+  }
   await client.query(
     `INSERT INTO print_farm_jobs (
        org_id, season_year, part_name, quantity, purpose, priority, subsystem_name,
        printer_id, filament_id, estimated_minutes, estimated_grams, needed_by,
-       reprint_of_job_id, requested_by
-     ) VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8::uuid,$9::uuid,$10,$11,$12::date,$13::uuid,$14::uuid)`,
+       reprint_of_job_id, requested_by, cad_document_id, inventory_item_id
+     ) VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8::uuid,$9::uuid,$10,$11,$12::date,$13::uuid,$14::uuid,$15::uuid,$16::uuid)`,
     [
       input.orgId,
       input.seasonYear,
@@ -558,6 +608,8 @@ export async function queueJob(
       input.neededBy,
       input.reprintOfJobId,
       input.userId,
+      input.cadDocumentId ?? null,
+      input.inventoryItemId ?? null,
     ],
   );
 }
@@ -632,22 +684,41 @@ export async function startJob(
 
 /**
  * Completes a job. In the SAME transaction: appends the filament-usage ledger row (negative
- * grams) and decrements the spool's grams_remaining. The printer, when known, is stamped back
- * to human-reported 'idle'.
+ * grams) and decrements the spool's grams_remaining; when the job is linked to an inventory
+ * item, the printed quantity is RECEIVED onto it through the ONE parts ledger (0505, keyed to
+ * the job so it can never land twice). The printer, when known, is stamped back to 'idle'.
  */
 export async function finishJob(
   client: PoolClient,
   input: { orgId: string; userId: string; jobId: string; actualMinutes: number | null; actualGrams: number | null },
 ): Promise<void> {
-  const result = await client.query<{ printerId: string | null; filamentId: string | null }>(
+  const result = await client.query<{
+    printerId: string | null;
+    filamentId: string | null;
+    inventoryItemId: string | null;
+    quantity: number;
+    partName: string;
+  }>(
     `UPDATE print_farm_jobs
      SET status = 'done', finished_at = now(), actual_minutes = $3, actual_grams = $4, updated_at = now()
      WHERE id = $1::uuid AND org_id = $2::uuid AND status IN ('printing','paused','queued')
-     RETURNING printer_id AS "printerId", filament_id AS "filamentId"`,
+     RETURNING printer_id AS "printerId", filament_id AS "filamentId",
+               inventory_item_id AS "inventoryItemId", quantity, part_name AS "partName"`,
     [input.jobId, input.orgId, input.actualMinutes, input.actualGrams],
   );
   const row = result.rows[0];
   if (!row) throw new Error("Job is not open");
+
+  if (row.inventoryItemId && Number(row.quantity) > 0) {
+    await receiveForSource(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      sourceKind: "print_farm_job",
+      sourceId: input.jobId,
+      note: `Printed: ${row.partName}`,
+      items: [{ itemId: row.inventoryItemId, quantity: Number(row.quantity) }],
+    });
+  }
 
   if (row.filamentId && input.actualGrams != null && input.actualGrams > 0) {
     await client.query(

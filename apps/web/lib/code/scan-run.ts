@@ -48,6 +48,8 @@ export type BugbotChunkOutcome = {
   deferredCount: number;
   treeTruncated: boolean;
   skippedListTruncated: boolean;
+  /** Files whose tail was cut at a read cap in this chunk. */
+  truncatedFiles?: string[];
   newCount: number;
   knownCount: number;
   fixedCount: number;
@@ -68,6 +70,9 @@ export type BugbotRunResult = {
   deferredCount: number;
   treeTruncated: boolean;
   skippedListTruncated: boolean;
+  /** True when any file in any chunk was cut at a read cap. */
+  truncated: boolean;
+  truncatedFiles: string[];
   chunksRun: number;
   chunkCount: number;
   spentUsd: number;
@@ -108,6 +113,8 @@ export function mergeBugbotScanRun(
   const skippedSeen = new Set<string>();
   const fixedFindings: BugbotRunFixedFinding[] = [];
   const fixedSeen = new Set<string>();
+  const truncatedFiles: string[] = [];
+  const truncatedSeen = new Set<string>();
   let skipCounts: ScanSkipCount[] = [];
   let droppedUngrounded = 0;
   let spentUsd = 0;
@@ -140,6 +147,11 @@ export function mergeBugbotScanRun(
       if (fixedSeen.has(fixed.fingerprint)) continue;
       fixedSeen.add(fixed.fingerprint);
       fixedFindings.push(fixed);
+    }
+    for (const file of outcome.truncatedFiles ?? []) {
+      if (truncatedSeen.has(file)) continue;
+      truncatedSeen.add(file);
+      truncatedFiles.push(file);
     }
     // Every chunk carries the same plan-wide skip tally; keep the fullest one.
     if (outcome.skipCounts.length > skipCounts.length) skipCounts = outcome.skipCounts;
@@ -176,6 +188,11 @@ export function mergeBugbotScanRun(
     reasons.push(`${deferredCount} robot-code file${deferredCount === 1 ? " is" : "s are"} beyond this scan's chunk budget`);
   }
   if (treeTruncated) reasons.push("the repository tree listing was truncated by GitHub");
+  if (truncatedFiles.length) {
+    reasons.push(
+      `${truncatedFiles.length} file${truncatedFiles.length === 1 ? " was" : "s were"} cut at the read cap — the model never saw the rest of ${truncatedFiles.length === 1 ? "it" : "them"}`,
+    );
+  }
 
   return {
     path: outcomes[0]?.path ?? "github-scan",
@@ -191,6 +208,8 @@ export function mergeBugbotScanRun(
     deferredCount,
     treeTruncated,
     skippedListTruncated,
+    truncated: truncatedFiles.length > 0,
+    truncatedFiles,
     chunksRun,
     chunkCount: plannedChunks,
     spentUsd: Number(spentUsd.toFixed(2)),
@@ -200,6 +219,52 @@ export function mergeBugbotScanRun(
     fixedFindings,
     partial: reasons.length > 0,
     partialReason: reasons.length ? reasons.join("; ") : null,
+  };
+}
+
+export type BugbotReviewLike = {
+  path: string;
+  riskLevel: "high" | "medium" | "low";
+  findings: BugbotRunFinding[];
+  localRiskCount: number;
+  modelFindingCount: number;
+  droppedUngrounded: number;
+};
+
+function fileOf(finding: BugbotRunFinding): string {
+  return (finding.filePath ?? finding.location.replace(/:\d+$/, ""))
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .toLowerCase();
+}
+
+/**
+ * Fold a single-file recheck back into the repo-wide table: the target file's
+ * rows are replaced by what the recheck found, every other file's rows stay
+ * exactly as they were — a one-file recheck never "clears" the rest of the repo.
+ */
+export function mergeBugbotFileRecheck(
+  previous: BugbotReviewLike | null,
+  recheck: { filePath: string; findings: BugbotRunFinding[]; droppedUngrounded: number },
+): BugbotReviewLike {
+  const target = recheck.filePath.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
+  const kept = (previous?.findings ?? []).filter((finding) => fileOf(finding) !== target);
+  const findings = [...kept, ...recheck.findings];
+  findings.sort(
+    (a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || a.location.localeCompare(b.location),
+  );
+  const riskLevel: "high" | "medium" | "low" = findings.some((item) => item.severity === "high")
+    ? "high"
+    : findings.some((item) => item.severity === "medium")
+      ? "medium"
+      : "low";
+  return {
+    path: previous?.path ?? recheck.filePath,
+    riskLevel,
+    findings,
+    localRiskCount: findings.filter((item) => item.source === "local_rule").length,
+    modelFindingCount: findings.filter((item) => item.source === "model").length,
+    droppedUngrounded: (previous?.droppedUngrounded ?? 0) + recheck.droppedUngrounded,
   };
 }
 

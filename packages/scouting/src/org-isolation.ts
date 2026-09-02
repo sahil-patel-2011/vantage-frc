@@ -60,6 +60,33 @@ export function orgIdFromUploadUrl(uploadUrl: string): string | null {
   }
 }
 
+export type ScoutMediaVariant = "full" | "thumb";
+
+/**
+ * Org-stamped media URL for the full photo or its thumbnail. The orgId lives in
+ * the query string on purpose: the server route re-checks membership for that
+ * org and the service worker caches per URL, so a thumb fetched under Org A
+ * can never be served to a session scoped to Org B.
+ */
+export function scoutMediaVariantUrl(
+  orgId: string,
+  clientId: string,
+  variant: ScoutMediaVariant = "full",
+): string {
+  if (!orgId.trim()) throw new OrgIsolationError(403, "orgId is required for media URLs");
+  if (!clientId.trim()) throw new Error("clientId is required for media URLs");
+  const base = `/api/scouting/media/${encodeURIComponent(clientId)}?orgId=${encodeURIComponent(orgId)}`;
+  return variant === "thumb" ? `${base}&variant=thumb` : base;
+}
+
+/** A media URL (full or thumb variant) must carry the org the session is scoped to. */
+export function assertMediaUrlForOrg(mediaUrl: string, orgId: string): void {
+  const urlOrg = orgIdFromUploadUrl(mediaUrl);
+  if (!urlOrg || !orgId || urlOrg !== orgId) {
+    throw new OrgIsolationError(403, "Media URL does not belong to this organization");
+  }
+}
+
 export function resourceBelongsToOrg(
   resourceOrgId: string | null | undefined,
   requestOrgId: string,

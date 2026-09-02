@@ -61,4 +61,16 @@ export type ImpactEssayDraft = {
   wordCount: number;
   citations: ImpactEssayCitation[];
   createdAt: string;
+  /** Award submission this draft was attached to as an award_items essay (0504), if any. */
+  awardSubmissionId: string | null;
+  awardItemId: string | null;
+};
+
+/** An award_submissions row a draft can be attached to. */
+export type ImpactEssayAwardSubmission = {
+  id: string;
+  awardType: string;
+  title: string | null;
+  seasonYear: number;
+  status: string;
 };

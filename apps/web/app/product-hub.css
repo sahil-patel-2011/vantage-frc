@@ -1,3 +1,5 @@
+/* Product hub shell (components/product-hub.tsx): header → workbench TabBar →
+   ToolStrip → panel. Breakpoint scale: 520 / 720 / 980 — see components/ui/ui.module.css. */
 .product-hub-tabs { margin: 0 0 8px; }
 .product-hub--team > .app-page-header {
   display: none;
@@ -27,10 +29,6 @@
   color: var(--soft-ink);
   background: transparent;
   box-shadow: inset 0 -2px 0 var(--soft-accent);
-}
-.product-hub-subtabs {
-  margin: 0 0 14px;
-  flex-wrap: wrap;
 }
 /* Visible tool switcher for a workbench — replaces a <select> whose options
    could not be discovered without opening it. Chips wrap instead of scrolling
@@ -83,51 +81,6 @@
   }
 }
 
-.product-hub-featured {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-.product-hub-featured .app-button {
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-.product-hub-more {
-  margin: 0 0 14px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-.product-hub-more > summary {
-  cursor: pointer;
-  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-muted);
-  list-style-position: outside;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-}
-.product-hub-more-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-top: 10px;
-}
-.product-hub-more-links a {
-  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-accent);
-  text-decoration: none;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 2px;
-}
-.product-hub-more-links a:hover { text-decoration: underline; }
-.product-hub-more-links a[data-featured="yes"] {
-  font-weight: 700;
-}
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
@@ -150,27 +103,19 @@
   border: 0;
   background: transparent;
 }
-/* Duplicate sibling strips inside Team/Build surfaces — hub tabs already cover these. */
-.product-hub-panel .team-hub-related,
-.product-hub-panel .tc-ops-related,
-.product-hub-panel .fmea-related,
-.product-hub-panel .batt-related,
-.product-hub-panel .practice-hero-links,
-.product-hub-panel .kb-hero-actions,
-.product-hub-panel .product-hub-related,
-.product-hub-panel .strategy-related,
-.product-hub-panel .myday-related,
-.product-hub-panel .strategy-next-actions-panel,
-.product-hub-panel .edc-next-actions,
-.product-hub-panel .myday-next-actions,
-.product-hub-panel .strategy-setup-steps,
-.product-hub-panel .scout-setup-steps,
-.product-hub-panel .att-next-actions,
-.product-hub-panel .todos-next-actions,
-.product-hub-panel .todos-metrics,
-.product-hub-panel .todos-filter-note,
-.product-hub-panel .att-empty-actions .app-button.secondary {
-  display: none !important;
+/* A leaf's own related-tools strip duplicates the hub's ToolStrip. The shell
+   stamps data-embedded on its panel, so one selector covers every page that
+   renders its strip as `.product-hub-related`. */
+.product-hub-panel[data-embedded="true"] .product-hub-related {
+  display: none;
+}
+/* Next-action / empty-state duplicates in Team surfaces that do not gate on an
+   `embedded` prop yet (todos, attendance). Move these to the prop when those
+   pages are touched; do not grow this list. */
+.product-hub-panel[data-embedded="true"] .todos-next-actions,
+.product-hub-panel[data-embedded="true"] .att-next-actions,
+.product-hub-panel[data-embedded="true"] .att-empty-actions .app-button.secondary {
+  display: none;
 }
 .product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
 .product-hub-setup h2 { margin: 0; font-size: 1.25rem; }
@@ -294,9 +239,6 @@
 .product-hub--build .proto-page .app-page-header {
   display: none;
 }
-.product-hub--build .build-hub-related {
-  display: none !important;
-}
 
 .product-hub--competition .edc-page,
 .product-hub--competition .myday-page,
@@ -322,24 +264,24 @@
 .product-hub--competition .match-checklist-page .app-page-header {
   display: none;
 }
-.product-hub--competition .edc-related,
-.product-hub--competition .myday-related,
-.product-hub--competition .strategy-header-actions .product-hub-related,
-.product-hub--competition .sfb-related {
-  display: none !important;
-}
 
-/* Business hub nested panels (Orders / Sponsorship) */
-.business-page .product-hub-panel .orders-embedded,
-.business-page .product-hub-panel .svp-page {
+/* Business hub: the portal client (ToolPage, embedded) plus its nested Orders /
+   Sponsorship / Season finance surfaces */
+.product-hub--business .business-page {
+  max-width: none;
+  margin: 0;
+  padding-bottom: 24px;
+}
+.product-hub--business .orders-embedded,
+.product-hub--business .svp-page {
   max-width: none;
   margin: 0;
   padding: 0 0 16px;
 }
-.business-page .product-hub-panel .svp-page .app-page-header {
+.product-hub--business .svp-page .app-page-header {
   display: none;
 }
-.business-page .product-hub-panel .svp-embed-toolbar {
+.product-hub--business .svp-embed-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -365,18 +307,6 @@
     flex: 0 0 auto;
     min-height: 44px;
     white-space: nowrap;
-  }
-  .product-hub-featured {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .product-hub-featured::-webkit-scrollbar { display: none; }
-  .product-hub-featured .app-button {
-    flex: 0 0 auto;
-    min-height: 44px;
   }
   .product-hub-panel .practice-hero {
     grid-template-columns: 1fr;

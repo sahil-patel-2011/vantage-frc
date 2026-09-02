@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
 
       let selectedSessionId = trimmedOrNull(body.sessionId, 64);
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "create-session": {
           const subsystem = trimmedOrNull(body.subsystem, 200);
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
           const sessionId = trimmedOrNull(body.sessionId, 64);
           if (!sessionId) throw new Error("sessionId is required");
           const gains = parseGains(body.gains);
-          await logIteration(client, {
+          render = (await logIteration(client, {
             orgId,
             userId,
             sessionId,
@@ -164,7 +166,7 @@ export async function POST(request: Request) {
               oscillating: Boolean(body.oscillating),
             },
             notes: trimmedOrNull(body.notes, 2000) ?? "",
-          });
+          })).render ?? undefined;
           selectedSessionId = sessionId;
           break;
         }
@@ -178,12 +180,13 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeTuningAutopilotView(client, {
+      const view = await computeTuningAutopilotView(client, {
         userId,
         requestedOrg: orgId,
         seasonYear,
         sessionId: selectedSessionId,
       });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

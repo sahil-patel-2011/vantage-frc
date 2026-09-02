@@ -31,6 +31,27 @@ export type ExitInterviewRecord = {
   knowledgePageId: string | null;
 };
 
+/** A self-serve link handed to an outgoing member (owner/admin view only). */
+export type ExitInterviewInvite = {
+  id: string;
+  memberName: string;
+  memberEmail: string | null;
+  memberUserId: string | null;
+  seasonYear: number;
+  expiresAt: string;
+  usedAt: string | null;
+  responseId: string | null;
+  createdAt: string;
+  state: "open" | "used" | "expired";
+};
+
+/** Roster entry offered when targeting an invite at a member. */
+export type ExitInterviewMember = {
+  userId: string;
+  name: string;
+  email: string;
+};
+
 export type ExitInterviewSummary = {
   totalRecords: number;
   submittedCount: number;

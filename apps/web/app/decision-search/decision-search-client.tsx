@@ -18,6 +18,8 @@ import {
   type DecisionSearchShellKind,
 } from "../../lib/decision-search/decision-search-related";
 import type { DecisionSearchSourceKind } from "../../lib/decision-search/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./decision-search.css";
@@ -155,6 +157,8 @@ export default function DecisionSearchClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest search render: "AI" only when a model wrote the summary.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
@@ -218,6 +222,8 @@ export default function DecisionSearchClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -364,6 +370,8 @@ export default function DecisionSearchClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="decision_search" />
 
       {orgId ? (
         <MeteredAiCutoffBanner

@@ -78,6 +78,37 @@ export type BriefingPitReport = {
   createdAt: string;
 };
 
+/** Latest opponent counter-book (counter_book_reports) for a robot in this match. */
+export type BriefingCounterPlan = {
+  id: string;
+  teamKey: string;
+  teamNumber: number | null;
+  title: string;
+  matchesScouted: number;
+  summary: string;
+  counterPlan: string;
+  failureTriggers: string[];
+  eventKey: string | null;
+  createdAt: string;
+};
+
+/** Latest saved match-simulator run (match_sim_runs) for this exact match-up. */
+export type BriefingSimulation = {
+  id: string;
+  label: string;
+  matchKey: string | null;
+  favored: "red" | "blue" | "even";
+  /** Positive = red ahead, from OUR perspective already resolved via `favored`. */
+  finalMargin: number;
+  redTotal: number;
+  blueTotal: number;
+  /** 0..1 share of alliance robots that had synced EPA data. */
+  dataCompleteness: number;
+  leverPhase: string | null;
+  leverRationale: string | null;
+  createdAt: string;
+};
+
 /** Sections added by the consolidation on top of the original briefing. */
 export type BriefingExtras = {
   /** EPA/rank rows for alliance partners (excluding us). */
@@ -96,6 +127,10 @@ export type BriefingExtras = {
   batteries: MatchCopilotBattery[];
   /** Prioritized do-this callouts (formerly Match Copilot's brief). */
   callouts: MatchCopilotCallout[];
+  /** Counter-books generated for opponents in this match — empty until one exists. */
+  counterPlans: BriefingCounterPlan[];
+  /** Saved simulator run for this match-up, or null when nobody has run one. */
+  simulation: BriefingSimulation | null;
 };
 
 export type FullBriefingView =

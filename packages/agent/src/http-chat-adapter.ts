@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import type { ChatAdapter, ContextItem } from "./index";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
+import { trimThreadHistory, type ChatTurn } from "./thread-history";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
   applyAnthropicCacheControl,
@@ -108,7 +109,7 @@ export class HttpChatAdapter implements ChatAdapter {
   readonly baseUrl: string;
   private readonly kind: HttpChatAdapterConfig["provider"];
   private readonly promptCachingEnabled: boolean;
-  private readonly prices: PromptCachePrices;
+  private readonly prices_: PromptCachePrices;
   private readonly fetchImpl: typeof fetch;
   private readonly providerLabel: string;
   private readonly timeoutMs: number;
@@ -123,7 +124,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.apiKey = config.apiKey;
     this.baseUrl = (config.baseUrl ?? defaultBase(config.provider)).replace(/\/$/, "");
     this.promptCachingEnabled = config.promptCachingEnabled;
-    this.prices = config.prices;
+    this.prices_ = config.prices;
     this.fetchImpl = config.fetchImpl ?? fetch;
     this.providerLabel = config.providerLabel?.trim() || this.provider;
     this.timeoutMs =
@@ -132,19 +133,31 @@ export class HttpChatAdapter implements ChatAdapter {
     this.extraHeaders = config.extraHeaders ?? {};
   }
 
+  /** Configured per-million prices — read by estimateCostUsd for the pre-call estimate. */
+  get prices(): PromptCachePrices {
+    return this.prices_;
+  }
+
   async complete(input: {
     message: string;
     context: ContextItem[];
+    history?: ChatTurn[];
     promptCachingEnabled?: boolean;
   }) {
     const caching = input.promptCachingEnabled ?? this.promptCachingEnabled;
+    const history = trimThreadHistory(input.history ?? []);
     if (this.kind === "anthropic") {
-      return this.completeAnthropic(input.message, input.context, caching);
+      return this.completeAnthropic(input.message, input.context, caching, history);
     }
-    return this.completeOpenAi(input.message, input.context, caching);
+    return this.completeOpenAi(input.message, input.context, caching, history);
   }
 
-  private async completeAnthropic(message: string, context: ContextItem[], caching: boolean) {
+  private async completeAnthropic(
+    message: string,
+    context: ContextItem[],
+    caching: boolean,
+    history: ChatTurn[],
+  ) {
     const systemBlocks = applyAnthropicCacheControl(
       [
         { type: "text", text: this.systemPrompt },
@@ -169,7 +182,10 @@ export class HttpChatAdapter implements ChatAdapter {
           model: this.model,
           max_tokens: 1024,
           system: systemBlocks,
-          messages: [{ role: "user", content: message }],
+          messages: [
+            ...history.map((turn) => ({ role: turn.role, content: turn.content })),
+            { role: "user", content: message },
+          ],
         }),
       },
       this.timeoutMs,
@@ -192,7 +208,7 @@ export class HttpChatAdapter implements ChatAdapter {
       .join("\n")
       .trim();
     const parsed = parseAnthropicUsage(payload.usage ?? {});
-    const priced = computeCacheAwareCost(parsed, this.prices);
+    const priced = computeCacheAwareCost(parsed, this.prices_);
     return {
       text: text || "No response.",
       promptTokens: priced.promptTokens,
@@ -205,7 +221,12 @@ export class HttpChatAdapter implements ChatAdapter {
     };
   }
 
-  private async completeOpenAi(message: string, context: ContextItem[], caching: boolean) {
+  private async completeOpenAi(
+    message: string,
+    context: ContextItem[],
+    caching: boolean,
+    history: ChatTurn[],
+  ) {
     const preference = openAiPromptCachePreference(caching);
     const headers: Record<string, string> = {
       "content-type": "application/json",
@@ -231,6 +252,7 @@ export class HttpChatAdapter implements ChatAdapter {
                 ...context.map((item) => `[${item.type}:${item.id}] ${item.content}`),
               ].join("\n"),
             },
+            ...history.map((turn) => ({ role: turn.role, content: turn.content })),
             { role: "user", content: message },
           ],
           ...preference,
@@ -251,7 +273,7 @@ export class HttpChatAdapter implements ChatAdapter {
     };
     const text = payload.choices?.[0]?.message?.content?.trim() || "No response.";
     const parsed = parseOpenAiUsage(payload.usage ?? {});
-    const priced = computeCacheAwareCost(parsed, this.prices);
+    const priced = computeCacheAwareCost(parsed, this.prices_);
     return {
       text,
       promptTokens: priced.promptTokens,

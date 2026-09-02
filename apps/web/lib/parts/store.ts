@@ -240,3 +240,58 @@ export async function consumeForSource(
   }
   return results;
 }
+
+export type ReceiptResult = { itemId: string; received: number; quantity: number | null };
+
+/**
+ * Receive stock because a source event produced it (e.g. a finished print-farm job), idempotently:
+ * the same 0462 partial UNIQUE means a replay of the same event adds nothing twice. The mirror
+ * image of consumeForSource — reason 'received', positive delta.
+ */
+export async function receiveForSource(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    sourceKind: string;
+    sourceId: string;
+    note?: string;
+    items: ConsumedPart[];
+  },
+): Promise<ReceiptResult[]> {
+  const results: ReceiptResult[] = [];
+  for (const part of input.items) {
+    const requested = Math.round(part.quantity * 100) / 100;
+    if (!Number.isFinite(requested) || requested <= 0) continue;
+
+    const moved = await client.query<{ itemId: string; quantity: number; received: number }>(
+      `WITH target AS (
+         SELECT id, org_id FROM inventory_items
+         WHERE id = $1::uuid AND org_id = $2::uuid
+         FOR UPDATE
+       ), ledger AS (
+         INSERT INTO inventory_transactions (org_id, item_id, delta, reason, note, created_by, source_kind, source_id)
+         SELECT t.org_id, t.id, $3::numeric, 'received', $4, $5::uuid, $6, $7::uuid
+         FROM target t
+         ON CONFLICT (item_id, source_kind, source_id)
+           WHERE source_kind IS NOT NULL AND source_id IS NOT NULL
+           DO NOTHING
+         RETURNING item_id, delta
+       )
+       UPDATE inventory_items i
+       SET quantity = i.quantity + l.delta, updated_at = now()
+       FROM ledger l
+       WHERE i.id = l.item_id
+       RETURNING i.id AS "itemId", i.quantity::float8 AS quantity, l.delta::float8 AS received`,
+      [part.itemId, input.orgId, requested, input.note ?? "", input.userId, input.sourceKind, input.sourceId],
+    );
+
+    const row = moved.rows[0];
+    results.push(
+      row
+        ? { itemId: part.itemId, received: num(row.received), quantity: num(row.quantity) }
+        : { itemId: part.itemId, received: 0, quantity: null },
+    );
+  }
+  return results;
+}

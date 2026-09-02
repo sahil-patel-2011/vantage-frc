@@ -8,6 +8,8 @@ import {
   deleteTeamTag,
   type TeamTagsView,
 } from "../../../lib/team-tags/compute-team-tags";
+import { tagsForTeam } from "../../../lib/team-tags/group";
+import { promoteToPickList, type PromoteToPickListResult } from "../../../lib/picklist";
 
 const FALLBACK: TeamTagsView = {
   status: "setup_required",
@@ -58,7 +60,38 @@ export async function POST(request: Request) {
         session.user.id,
       ]);
       if (!member.rowCount) throw new Error("Organization access denied");
-      if (action === "tag") {
+      let promoted: PromoteToPickListResult | null = null;
+      if (action === "promote_to_pick_list") {
+        // Lift a tagged robot onto THE pick list, carrying its drive-team tags as the note.
+        const teamNumber = Number(body.teamNumber);
+        if (!Number.isInteger(teamNumber) || teamNumber <= 0) throw new Error("Enter a valid FRC team number.");
+        const current = await computeTeamTagsView(client, { userId: session.user.id, requestedOrg: orgId });
+        if (current.status !== "live") throw new Error(current.message);
+        if (!current.eventKey) throw new Error("Set an active event before promoting to the pick list.");
+        const tags = tagsForTeam(current.assignments, teamNumber);
+        const notes = current.assignments
+          .filter((row) => row.teamNumber === teamNumber && row.notes)
+          .map((row) => row.notes!.trim())
+          .filter(Boolean);
+        const rationale =
+          typeof body.rationale === "string" && body.rationale.trim()
+            ? body.rationale
+            : tags.length
+              ? `Tagged ${tags.join(", ")}${notes.length ? ` — ${notes.slice(0, 3).join("; ")}` : ""}`
+              : "Promoted from the tag board";
+        promoted = await promoteToPickList(client, {
+          orgId,
+          userId: session.user.id,
+          eventKey: current.eventKey,
+          teamKey: teamNumber,
+          sourceKind: "tags",
+          sourceId: null,
+          rationale,
+          tags: current.assignments
+            .filter((row) => row.teamNumber === teamNumber)
+            .map((row) => row.tagSlug),
+        });
+      } else if (action === "tag") {
         const tagId = uuidOrNull(body.tagId);
         if (!tagId) throw new Error("Choose a tag from the vocabulary.");
         await addTeamTag(client, {
@@ -75,13 +108,14 @@ export async function POST(request: Request) {
       } else {
         throw new Error("Unknown team-tags action");
       }
-      return computeTeamTagsView(client, { userId: session.user.id, requestedOrg: orgId });
+      const next = await computeTeamTagsView(client, { userId: session.user.id, requestedOrg: orgId });
+      return { ...next, promoted };
     });
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Team tag write failed";
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
-    if (/required|tag|team number|vocabulary|Unknown team-tags/i.test(message)) {
+    if (/required|tag|team number|vocabulary|Unknown team-tags|active event|pick list|reference/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });
     }
     return Response.json(FALLBACK);

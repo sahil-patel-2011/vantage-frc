@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isFilled, subteamLabel } from "../../lib/roles";
 import { SUBTEAMS, type RolesView } from "../../lib/roles/compute-roles";
-import type { Subteam, TeamRole } from "../../lib/roles/types";
+import type { RoleMember, Subteam, TeamRole } from "../../lib/roles/types";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<RolesView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+/** Sentinel option for "held by someone who is not on the roster" (free text). */
+const OTHER_HOLDER = "__other__";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -177,7 +180,13 @@ export default function RolesClient() {
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
           {view.summary.openRoles.length > 0 ? <OpenRoles view={view} /> : null}
-          <AddRoleForm busy={busy} mutate={mutate} />
+          {view.canManage ? (
+            <AddRoleForm members={view.members} busy={busy} mutate={mutate} />
+          ) : (
+            <p className="app-muted" style={{ margin: 0 }}>
+              Only an owner or admin can add roles or change who holds them.
+            </p>
+          )}
           <RoleList view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -236,9 +245,83 @@ function OpenRoles({ view }: { view: LiveView }) {
   );
 }
 
-function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+/**
+ * Member picker: a roster select with "Unassigned" and an "outside the roster"
+ * escape hatch that reveals a free-text field (a parent mentor, an alumni
+ * volunteer). Real members are always the first choice.
+ */
+function HolderPicker({
+  members,
+  holderUserId,
+  holderName,
+  disabled,
+  label,
+  onChange,
+}: {
+  members: RoleMember[];
+  holderUserId: string | null;
+  holderName: string;
+  disabled: boolean;
+  label: string;
+  onChange: (next: { holderUserId: string | null; holderName: string }) => void;
+}) {
+  const knownMember = holderUserId != null && members.some((member) => member.userId === holderUserId);
+  const selectValue = knownMember ? holderUserId : holderName.trim() ? OTHER_HOLDER : "";
+  const [otherOpen, setOtherOpen] = useState(selectValue === OTHER_HOLDER);
+
+  return (
+    <div style={{ display: "grid", gap: 6, flex: "1 1 220px" }}>
+      <select
+        value={selectValue}
+        disabled={disabled}
+        aria-label={label}
+        onChange={(event) => {
+          const value = event.target.value;
+          if (value === OTHER_HOLDER) {
+            setOtherOpen(true);
+            onChange({ holderUserId: null, holderName });
+            return;
+          }
+          setOtherOpen(false);
+          if (!value) {
+            onChange({ holderUserId: null, holderName: "" });
+            return;
+          }
+          onChange({ holderUserId: value, holderName: "" });
+        }}
+      >
+        <option value="">Unassigned</option>
+        {members.map((member) => (
+          <option key={member.userId} value={member.userId}>
+            {member.name}
+            {member.role === "owner" || member.role === "admin" ? ` (${member.role})` : ""}
+          </option>
+        ))}
+        <option value={OTHER_HOLDER}>Someone not on the roster…</option>
+      </select>
+      {otherOpen || selectValue === OTHER_HOLDER ? (
+        <input
+          value={holderName}
+          disabled={disabled}
+          placeholder="Name (not a Vantage member)"
+          aria-label={`${label} (name)`}
+          onChange={(event) => onChange({ holderUserId: null, holderName: event.target.value })}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function AddRoleForm({ members, busy, mutate }: { members: RoleMember[]; busy: boolean; mutate: Mutate }) {
   const empty = useMemo(
-    () => ({ title: "", subteam: "mechanical" as Subteam, holderName: "", isLead: false, responsibilities: "" }),
+    () => ({
+      title: "",
+      subteam: "mechanical" as Subteam,
+      holderUserId: null as string | null,
+      holderName: "",
+      isLead: false,
+      responsibilities: "",
+    }),
     [],
   );
   const [form, setForm] = useState(empty);
@@ -255,7 +338,8 @@ function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           action: "create-role",
           title: form.title,
           subteam: form.subteam,
-          holderName: form.holderName || undefined,
+          holderUserId: form.holderUserId ?? undefined,
+          holderName: form.holderUserId ? undefined : form.holderName || undefined,
           isLead: form.isLead,
           responsibilities: form.responsibilities || undefined,
         });
@@ -279,10 +363,17 @@ function AddRoleForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             ))}
           </select>
         </label>
-        <label style={{ display: "grid", gap: 4 }}>
+        <div style={{ display: "grid", gap: 4 }}>
           <span className="app-muted">Held by</span>
-          <input value={form.holderName} onChange={set("holderName")} placeholder="Optional" />
-        </label>
+          <HolderPicker
+            members={members}
+            holderUserId={form.holderUserId}
+            holderName={form.holderName}
+            disabled={busy}
+            label="Held by"
+            onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+          />
+        </div>
         <label style={{ display: "flex", gap: 6, alignItems: "center", alignSelf: "end" }}>
           <input type="checkbox" checked={form.isLead} onChange={(e) => setForm((prev) => ({ ...prev, isLead: e.target.checked }))} />
           <span className="app-muted">Lead role</span>
@@ -314,14 +405,38 @@ function RoleList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutat
   return (
     <section style={{ display: "grid", gap: 12 }}>
       {view.roles.map((role) => (
-        <RoleCard key={role.id} role={role} busy={busy} mutate={mutate} />
+        <RoleCard key={role.id} role={role} members={view.members} canManage={view.canManage} busy={busy} mutate={mutate} />
       ))}
     </section>
   );
 }
 
-function RoleCard({ role, busy, mutate }: { role: TeamRole; busy: boolean; mutate: Mutate }) {
+function RoleCard({
+  role,
+  members,
+  canManage,
+  busy,
+  mutate,
+}: {
+  role: TeamRole;
+  members: RoleMember[];
+  canManage: boolean;
+  busy: boolean;
+  mutate: Mutate;
+}) {
   const filled = isFilled(role);
+  const [draftName, setDraftName] = useState(role.holderUserId ? "" : (role.holderName ?? ""));
+
+  useEffect(() => {
+    setDraftName(role.holderUserId ? "" : (role.holderName ?? ""));
+  }, [role.holderUserId, role.holderName]);
+
+  const commitName = () => {
+    const next = draftName.trim();
+    const current = role.holderUserId ? "" : (role.holderName ?? "");
+    if (next !== current) mutate({ action: "update-role", roleId: role.id, holderUserId: null, holderName: next });
+  };
+
   return (
     <article className="app-card soft-panel" style={{ borderLeft: filled ? "3px solid #1f7a3d" : "3px solid #b26a00" }}>
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
@@ -331,38 +446,64 @@ function RoleCard({ role, busy, mutate }: { role: TeamRole; busy: boolean; mutat
           <h2 style={{ margin: "4px 0 0", fontSize: "1.1rem" }}>{role.title}</h2>
           {role.responsibilities ? <small className="app-muted">{role.responsibilities}</small> : null}
         </div>
+        <span className="app-muted" style={{ whiteSpace: "nowrap" }}>
+          {filled ? (
+            <>
+              Held by <strong>{role.holderName}</strong>
+              {!role.holderUserId ? <small> (not on roster)</small> : null}
+            </>
+          ) : (
+            "Unfilled"
+          )}
+        </span>
       </header>
-      <footer style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center", flex: "1 1 200px" }}>
-          Held by
-          <input
-            defaultValue={role.holderName ?? ""}
-            placeholder="Unassigned"
+      {canManage ? (
+        <footer style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap", marginTop: 10 }}>
+          <span className="app-muted" style={{ alignSelf: "center" }}>
+            Held by
+          </span>
+          <HolderPicker
+            members={members}
+            holderUserId={role.holderUserId}
+            holderName={draftName}
             disabled={busy}
-            aria-label={`Holder of ${role.title}`}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-            }}
-            onBlur={(event) => {
-              const next = event.target.value.trim();
-              if (next !== (role.holderName ?? "")) {
-                mutate({ action: "update-role", roleId: role.id, holderName: next });
+            label={`Holder of ${role.title}`}
+            onChange={(next) => {
+              if (next.holderUserId) {
+                setDraftName("");
+                mutate({ action: "update-role", roleId: role.id, holderUserId: next.holderUserId, holderName: "" });
+                return;
+              }
+              if (!next.holderName && role.holderUserId) {
+                // "Unassigned" picked while a member held it: clear the link now.
+                setDraftName("");
+                mutate({ action: "update-role", roleId: role.id, holderUserId: null, holderName: "" });
+                return;
+              }
+              setDraftName(next.holderName);
+              if (!next.holderName && role.holderName) {
+                mutate({ action: "update-role", roleId: role.id, holderUserId: null, holderName: "" });
               }
             }}
-            style={{ flex: 1 }}
           />
-        </label>
-        <button
-          type="button"
-          className="text-button"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${role.title}"?`)) mutate({ action: "delete-role", roleId: role.id });
-          }}
-        >
-          Delete
-        </button>
-      </footer>
+          {!role.holderUserId ? (
+            <button type="button" className="app-button secondary" disabled={busy} onClick={commitName}>
+              Save name
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            style={{ marginLeft: "auto" }}
+            onClick={() => {
+              if (window.confirm(`Delete "${role.title}"?`)) mutate({ action: "delete-role", roleId: role.id });
+            }}
+          >
+            Delete
+          </button>
+        </footer>
+      ) : null}
     </article>
   );
 }

@@ -18,6 +18,8 @@ import {
   type OnboardingBuddyShellKind,
 } from "../../lib/onboarding-buddy/onboarding-buddy-related";
 import type { OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./onboarding-buddy.css";
@@ -174,6 +176,8 @@ export default function OnboardingBuddyClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest render: "AI" only when a model produced it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -245,6 +249,8 @@ export default function OnboardingBuddyClient() {
           return;
         }
         setView(data);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -310,6 +316,8 @@ export default function OnboardingBuddyClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="onboarding_buddy" />
 
       <BuddyNextActionsPanel actions={nextActions} />
 

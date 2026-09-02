@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { scoreIterations, suggestNextGains } from ".";
 import type {
   ScoredIteration,
@@ -316,7 +315,7 @@ export async function deleteSession(
 /**
  * Log a tuning iteration (gains actually run + observed result) and recompute the next-gain
  * suggestion from the session's own logged trend. The suggestion math is fully deterministic
- * (suggestNextGains); meteredAI wraps it so the run is billed and audited through the standard
+ * (suggestNextGains); renderWithModel asks the org's real model for the rationale lines (template fallback) so the run is billed and audited through the standard
  * usage-ledger path, matching every other metered feature.
  */
 export async function logIteration(
@@ -334,7 +333,7 @@ export async function logIteration(
     };
     notes: string;
   },
-): Promise<TuningSuggestion | null> {
+): Promise<{ suggestion: TuningSuggestion | null; render: RenderOutcome | null }> {
   const existingResult = await client.query<{ nextIndex: string }>(
     `SELECT COALESCE(MAX(iteration_index), -1) + 1 AS "nextIndex"
      FROM tuning_autopilot_iterations WHERE session_id = $1 AND org_id = $2`,
@@ -383,28 +382,23 @@ export async function logIteration(
   );
   const iterations = iterationResult.rows.map(mapIteration);
 
-  return meteredAI({
+  const suggestion = suggestNextGains(iterations);
+  if (!suggestion) return { suggestion: null, render: null };
+
+  // Real model call on the org's adapter with the deterministic suggestion as fallback: only
+  // the rationale lines may be rewritten; the suggested gains, confidence and convergence
+  // flag stay computed from the session's own logged iterations.
+  const { value, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "tuning_autopilot",
-    requestId: `tuning-autopilot-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      sessionId: input.sessionId,
-      iterationCount: iterations.length,
-      note: "Deterministic PID/feedforward next-gain suggestion from the session's own logged trend — no external model call",
-    },
-    invoke: async () => ({
-      value: suggestNextGains(iterations),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-tuning-autopilot-v1",
-      provider: "vantage-local",
-    }),
+    value: suggestion,
+    editableKeys: ["rationale"],
+    instructions: `Closed-loop tuning session after ${iterations.length} logged iteration(s). Rewrite each rationale line as one plain sentence a student tuner can follow, keeping every gain value, percentage and iteration reference exactly as given; do not change the number of lines.`,
+    metadata: { sessionId: input.sessionId, iterationCount: iterations.length },
   });
+  return { suggestion: value, render };
 }
 
 export async function deleteIteration(

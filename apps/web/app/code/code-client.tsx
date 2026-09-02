@@ -16,9 +16,15 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
-import { resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot/grounding";
+import {
+  bugbotFindingFile,
+  filterBugbotFindingsToFile,
+  resolveBugbotTarget,
+  type BugbotScanTarget,
+} from "../../lib/bugbot/grounding";
 import {
   describeBugbotCoverage,
+  mergeBugbotFileRecheck,
   mergeBugbotScanRun,
   type BugbotChunkOutcome,
 } from "../../lib/code/scan-run";
@@ -96,8 +102,22 @@ type ScanCoverage = {
   deferredCount: number;
   treeTruncated: boolean;
   skippedListTruncated: boolean;
+  /** True when any reviewed file was cut at a read cap — the model never saw its tail. */
+  truncated?: boolean;
+  truncatedFiles?: string[];
+  /** Set when the pass re-read exactly one file for a per-finding fix / recheck. */
+  targetFile?: string | null;
   partial?: boolean;
   partialReason?: string | null;
+};
+
+/** Per-finding fix / recheck: the file that owns the finding, and which of its findings to address. */
+type BugbotRunTarget = {
+  filePath: string;
+  /** The planned chunk that owns the file, when the scan plan lists it. */
+  chunkIndex?: number;
+  /** Restrict a fix to these findings; omitted = every finding in the file. */
+  fingerprints?: string[];
 };
 
 type ScanPlan = {
@@ -141,6 +161,10 @@ type BugbotResponse = {
   mode?: BugbotMode;
   phase?: BugbotPhase;
   chargeUsd?: number;
+  listedChargeUsd?: number;
+  /** The Ultra fix SKU was waived: no grounded diff came back, so nothing was charged. */
+  chargeWaived?: boolean;
+  contextAttached?: string[];
   proposedDiff?: string | null;
   filesScanned?: number;
   fixDropped?: boolean;
@@ -517,9 +541,16 @@ export function CodeClient({
     }
   }
 
-  async function runBugbot(options?: { mode?: BugbotMode; phase?: BugbotPhase; scanRepo?: boolean }) {
+  async function runBugbot(options?: {
+    mode?: BugbotMode;
+    phase?: BugbotPhase;
+    scanRepo?: boolean;
+    /** Per-finding fix / recheck: re-read the file that owns the finding, not chunk 0. */
+    target?: BugbotRunTarget;
+  }) {
     const mode = options?.mode ?? bugbotMode;
     const phase = options?.phase ?? "scan";
+    const fileTarget = phase === "scan" ? null : (options?.target ?? null);
     // Fix/recheck after a repo scan must target the scanned repo (fix pinned to
     // the scanned commit sha) — never the editor buffer, which may hold
     // unrelated source. Editor-paste scans keep buffer behaviour.
@@ -548,8 +579,19 @@ export function CodeClient({
     // and "we reviewed the first eight files and did not mention it". A recheck
     // chunks too: a recheck that only re-read chunk 0 would report the rest of the
     // repo as unchanged without having looked at it.
-    const isRepoScan = useRepo && (phase === "scan" || phase === "recheck");
+    //
+    // A per-finding fix / recheck is ONE call against the file that owns the
+    // finding: the server re-reads that file (pinned to the scanned sha for a
+    // fix) and only that file's findings travel with the request. Chunk 0 is
+    // never a default target.
+    const isRepoScan = useRepo && (phase === "scan" || phase === "recheck") && !fileTarget;
     const plannedChunks = isRepoScan ? Math.max(1, scanPlan?.chunkCount ?? 1) : 1;
+    const allFindings = bugbot?.findings ?? [];
+    const scopedFindings = fileTarget ? filterBugbotFindingsToFile(allFindings, fileTarget.filePath) : allFindings;
+    const pickedFindings = fileTarget?.fingerprints
+      ? scopedFindings.filter((item) => item.fingerprint && fileTarget.fingerprints!.includes(item.fingerprint))
+      : scopedFindings;
+    const findingsPayload = pickedFindings.length ? pickedFindings : scopedFindings;
 
     setBusy(true);
     setCutoffCode(null);
@@ -587,10 +629,12 @@ export function CodeClient({
           githubRef: targetRef,
           githubSha: target.pinnedSha ?? undefined,
           githubPath: !useRepo && path && githubConnected ? path : undefined,
-          findings: bugbot?.findings,
+          findings: findingsPayload,
+          targetFilePath: fileTarget?.filePath,
+          targetChunkIndex: fileTarget?.chunkIndex,
           chunkIndex,
           spentUsd,
-          parentReviewId: history[0]?.id && history[0].id !== "latest" ? history[0].id : undefined,
+          parentReviewId: history[0]?.id || undefined,
         }),
       });
     }
@@ -657,28 +701,51 @@ export function CodeClient({
         applyMeta(data);
 
         if (!isRepoScan) {
-          // Single-call phases (file scan, fix, buffer recheck) render directly.
-          setBugbot(data.review);
-          setProgress(null);
-          setCoverage(data.coverage ?? null);
-          setDelta(data.delta ? { new: data.delta.new, known: data.delta.known, fixed: data.delta.fixed } : null);
-          setFixedFindings(data.delta?.fixedFindings ?? []);
+          // Single-call phases: file scan, fix, one-file recheck, buffer recheck.
+          const review = data.review;
           const billed = billedNote(data.chargeUsd, data.mode);
           const shaShort = data.githubSha ? data.githubSha.slice(0, 7) : null;
           const grounded =
             useRepo && shaShort ? ` Source: ${data.githubRepo ?? targetRepo ?? "repo"}@${shaShort}.` : "";
           const moved = data.branchMoved ? " Branch moved since that scan — rescan recommended." : "";
+          const targetLabel = fileTarget ? ` ${fileTarget.filePath}` : " this source";
+          setProgress(null);
           if (phase === "fix") {
+            // A fix never replaces the findings table — the table is what the
+            // scan found; the diff lives in bugbotMeta.proposedDiff.
+            const waived = data.chargeWaived ? " Not charged — no grounded diff came back." : "";
             setMessage(
               data.proposedDiff
-                ? `Grounded fix ready — human approval required. Never pushed to GitHub.${grounded}${moved}${billed}`
-                : `No grounded diff (unquoted removals dropped). Nothing was pushed.${grounded}${moved}${billed}`,
+                ? `Grounded fix for${targetLabel} ready — human approval required. Never pushed to GitHub.${grounded}${moved}${billed}`
+                : `No grounded diff for${targetLabel} (unquoted removals dropped). Nothing was pushed.${grounded}${moved}${waived || billed}`,
+            );
+          } else if (fileTarget) {
+            // A one-file recheck replaces only that file's rows; every other
+            // file's findings stay exactly as the scan left them.
+            setBugbot((prev) =>
+              mergeBugbotFileRecheck(prev, {
+                filePath: fileTarget.filePath,
+                findings: review.findings,
+                droppedUngrounded: review.droppedUngrounded,
+              }),
+            );
+            setDelta(data.delta ? { new: data.delta.new, known: data.delta.known, fixed: data.delta.fixed } : null);
+            setFixedFindings(data.delta?.fixedFindings ?? []);
+            setMessage(
+              `Bugbot recheck of ${fileTarget.filePath}: ${review.findings.length} grounded finding${review.findings.length === 1 ? "" : "s"} still present · ${data.delta?.fixed ?? 0} fixed.${grounded}${moved}${billed} Other files were not re-read.`,
             );
           } else {
+            setBugbot(review);
+            setCoverage(data.coverage ?? null);
+            setDelta(data.delta ? { new: data.delta.new, known: data.delta.known, fixed: data.delta.fixed } : null);
+            setFixedFindings(data.delta?.fixedFindings ?? []);
+            const cut = data.coverage?.truncated
+              ? " Source was cut at the read cap — findings past the cut are not covered."
+              : "";
             setMessage(
-              data.review.findings.length
-                ? `Bugbot ${phase}: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded claims dropped: ${data.review.droppedUngrounded}.${grounded}${moved}${billed} Never deploys.`
-                : `Bugbot ${phase} complete — no grounded findings.${grounded}${moved}${billed} Empty is not certification.`,
+              review.findings.length
+                ? `Bugbot ${phase}: ${review.findings.length} grounded finding${review.findings.length === 1 ? "" : "s"} (${review.localRiskCount} local · ${review.modelFindingCount} model). Ungrounded claims dropped: ${review.droppedUngrounded}.${grounded}${moved}${cut}${billed} Never deploys.`
+                : `Bugbot ${phase} complete — no grounded findings.${grounded}${moved}${cut}${billed} Empty is not certification.`,
             );
           }
           await refreshBugbotState();
@@ -699,6 +766,7 @@ export function CodeClient({
           deferredCount: cover?.deferredCount ?? 0,
           treeTruncated: Boolean(cover?.treeTruncated),
           skippedListTruncated: Boolean(cover?.skippedListTruncated),
+          truncatedFiles: cover?.truncatedFiles ?? [],
           newCount: data.delta?.new ?? 0,
           knownCount: data.delta?.known ?? 0,
           fixedCount: data.delta?.fixed ?? 0,
@@ -751,6 +819,8 @@ export function CodeClient({
           deferredCount: run.deferredCount,
           treeTruncated: run.treeTruncated,
           skippedListTruncated: run.skippedListTruncated,
+          truncated: run.truncated,
+          truncatedFiles: run.truncatedFiles,
           partial: run.partial,
           partialReason: run.partialReason,
         });
@@ -989,7 +1059,10 @@ export function CodeClient({
         <article>
           <b>01 · Flag</b>
           <h2>Catch the risky line</h2>
-          <p>Blocking loops, hard-coded CAN IDs, unbounded motor output, missing units, disabled-state writes.</p>
+          <p>
+            Blocking loops, duplicate CAN IDs, missing current limits, motor safety off, empty catch blocks,
+            hard-coded ports and alliance colour, deprecated WPILib APIs — every hit, with its line.
+          </p>
         </article>
         <article>
           <b>02 · Explain</b>
@@ -1117,10 +1190,11 @@ export function CodeClient({
                 />
               ) : (
                 <ul className="cdc-findings">
-                  {review.risks.map((risk) => {
-                    const lesson = COACH_LESSONS[risk.pattern];
+                  {review.risks.map((risk, index) => {
+                    // Every rule ships its own lesson; the narration catalog wins when it has one.
+                    const lesson = COACH_LESSONS[risk.pattern] ?? risk.lesson;
                     return (
-                      <li className="cdc-finding" key={risk.pattern}>
+                      <li className="cdc-finding" key={`${risk.pattern}:${risk.line}:${index}`}>
                         <div className="cdc-finding-head">
                           <span className={`cdc-severity ${risk.severity}`}>{risk.severity}</span>
                           <b>{risk.pattern.replaceAll("-", " ")}</b>
@@ -1428,27 +1502,46 @@ export function CodeClient({
                   ? `Scan connected repo · ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
                   : "Scan connected repo"}
             </button>
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
-              onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}
-            >
-              {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
-            </button>
+            {lastScan?.scanRepo ? (
+              // After a repo scan a fix is per finding: it re-reads the file that
+              // owns the finding at the scanned commit, never "chunk 0".
+              <span className="app-muted" style={{ fontSize: 12, alignSelf: "center" }}>
+                {bugbot?.findings.length
+                  ? "Propose a fix from a finding row below (Fix this / Fix all in file)."
+                  : "No findings to fix in the scanned repo."}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy || !orgId || !hasSource}
+                onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}
+              >
+                {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
+              </button>
+            )}
             <button
               type="button"
               className="app-button secondary"
               disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}
             >
-              {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
+              {bugbotMode === "ultra"
+                ? `Recheck${lastScan?.scanRepo && (scanPlan?.chunkCount ?? 1) > 1 ? " repo" : ""} · $${(BUGBOT_ULTRA_PRICES_USD.recheck * (lastScan?.scanRepo ? Math.max(1, scanPlan?.chunkCount ?? 1) : 1)).toFixed(2)}`
+                : lastScan?.scanRepo && (scanPlan?.chunkCount ?? 1) > 1
+                  ? `Recheck repo · ${scanPlan?.chunkCount} chunks`
+                  : "Recheck"}
             </button>
           </footer>
           {lastScan?.scanRepo ? (
             <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
               Fix and recheck target the scanned repo{lastScan.repo ? ` ${lastScan.repo}` : ""}
-              {lastScan.sha ? ` (fix pinned to ${lastScan.sha.slice(0, 7)})` : ""} — not the editor buffer.
+              {lastScan.sha ? ` (fix pinned to ${lastScan.sha.slice(0, 7)})` : ""} — not the editor buffer. A
+              per-finding fix or recheck re-reads only that finding&apos;s file
+              {bugbotMode === "ultra"
+                ? ` ($${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} fix, waived when no grounded diff comes back; $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} recheck)`
+                : ""}
+              .
             </p>
           ) : null}
 
@@ -1498,6 +1591,22 @@ export function CodeClient({
                   : ""}
                 .
               </p>
+              {coverage.truncated && coverage.truncatedFiles?.length ? (
+                <details className="cdc-partial-note">
+                  <summary>
+                    <strong>Read cap hit.</strong> {coverage.truncatedFiles.length} file
+                    {coverage.truncatedFiles.length === 1 ? " was" : "s were"} cut before the end — the model never
+                    saw the rest, so findings past the cut are not covered.
+                  </summary>
+                  <ul>
+                    {coverage.truncatedFiles.map((file) => (
+                      <li key={file}>
+                        <code>{file}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
               {delta ? (
                 <p className="cdc-delta" style={{ margin: 0 }}>
                   <span className="cdc-delta-chip new">{delta.new} new</span>
@@ -1587,39 +1696,108 @@ export function CodeClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {bugbot.findings.map((item, index) => (
-                      <tr key={item.fingerprint ?? `${item.location}-${index}`}>
-                        <td>
-                          <span className={`cdc-severity ${item.severity}`}>{item.severity}</span>
-                          <small className="app-muted">{item.source === "model" ? "model" : "local"}</small>
-                        </td>
-                        <td>
-                          <code>{item.location}</code>
-                          {item.delta ? (
-                            <small className={`cdc-delta-chip ${item.delta}`}>{item.delta}</small>
-                          ) : null}
-                        </td>
-                        <td>
-                          <p style={{ margin: 0 }}>{item.finding}</p>
-                          <code>{item.evidence}</code>
-                        </td>
-                        <td>
-                          {item.fingerprint ? (
-                            <button
-                              type="button"
-                              className="app-button ghost"
-                              disabled={busy}
-                              onClick={() => {
-                                setDismissTarget(item);
-                                setDismissReason("");
-                              }}
-                            >
-                              Dismiss
-                            </button>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
+                    {bugbot.findings.map((item, index) => {
+                      // Per-finding targeting: a fix or recheck re-reads THIS
+                      // file (the server maps it to the chunk that owns it), and
+                      // only this file's findings travel with the request.
+                      const file = bugbotFindingFile(item);
+                      const inFile = bugbot.findings.filter((other) => bugbotFindingFile(other) === file);
+                      const firstOfFile =
+                        bugbot.findings.findIndex((other) => bugbotFindingFile(other) === file) === index;
+                      const chunk = scanPlan?.reviewed.find((planned) => planned.path === file)?.chunk;
+                      const fixLabel = bugbotMode === "ultra" ? ` · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "";
+                      const recheckLabel =
+                        bugbotMode === "ultra" ? ` · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "";
+                      return (
+                        <tr key={item.fingerprint ?? `${item.location}-${index}`}>
+                          <td>
+                            <span className={`cdc-severity ${item.severity}`}>{item.severity}</span>
+                            <small className="app-muted">{item.source === "model" ? "model" : "local"}</small>
+                          </td>
+                          <td>
+                            <code>{item.location}</code>
+                            {item.delta ? (
+                              <small className={`cdc-delta-chip ${item.delta}`}>{item.delta}</small>
+                            ) : null}
+                          </td>
+                          <td>
+                            <p style={{ margin: 0 }}>{item.finding}</p>
+                            <code>{item.evidence}</code>
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              <button
+                                type="button"
+                                className="app-button ghost"
+                                disabled={busy || !orgId}
+                                title={`Propose a human-approved diff for this finding — re-reads ${file}${chunk != null ? ` (chunk ${chunk + 1})` : ""}. Never pushed.`}
+                                onClick={() =>
+                                  void runBugbot({
+                                    mode: bugbotMode,
+                                    phase: "fix",
+                                    scanRepo: false,
+                                    target: {
+                                      filePath: file,
+                                      chunkIndex: chunk,
+                                      fingerprints: item.fingerprint ? [item.fingerprint] : undefined,
+                                    },
+                                  })
+                                }
+                              >
+                                Fix this{fixLabel}
+                              </button>
+                              {firstOfFile && inFile.length > 1 ? (
+                                <button
+                                  type="button"
+                                  className="app-button ghost"
+                                  disabled={busy || !orgId}
+                                  title={`One diff addressing all ${inFile.length} findings in ${file}.`}
+                                  onClick={() =>
+                                    void runBugbot({
+                                      mode: bugbotMode,
+                                      phase: "fix",
+                                      scanRepo: false,
+                                      target: { filePath: file, chunkIndex: chunk },
+                                    })
+                                  }
+                                >
+                                  Fix all in file ({inFile.length}){fixLabel}
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="app-button ghost"
+                                disabled={busy || !orgId}
+                                title={`Re-read ${file} at the current head and report what is still there.`}
+                                onClick={() =>
+                                  void runBugbot({
+                                    mode: bugbotMode,
+                                    phase: "recheck",
+                                    scanRepo: false,
+                                    target: { filePath: file, chunkIndex: chunk },
+                                  })
+                                }
+                              >
+                                Recheck file{recheckLabel}
+                              </button>
+                              {item.fingerprint ? (
+                                <button
+                                  type="button"
+                                  className="app-button ghost"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setDismissTarget(item);
+                                    setDismissReason("");
+                                  }}
+                                >
+                                  Dismiss
+                                </button>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {dismissTarget ? (

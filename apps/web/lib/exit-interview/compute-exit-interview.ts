@@ -1,11 +1,25 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeExitInterviews } from ".";
 import {
+  exitInviteExpiry,
+  hashExitInviteToken,
+  newExitInviteToken,
+  type ExitInviteResponse,
+  type ResolvedExitInvite,
+} from "./invites";
+import {
   buildExitInterviewWikiBody,
   exitInterviewWikiSlug,
   exitInterviewWikiTitle,
 } from "./wiki";
-import type { ExitInterviewRecord, ExitInterviewRole, ExitInterviewStatus, ExitInterviewSummary } from "./types";
+import type {
+  ExitInterviewInvite,
+  ExitInterviewMember,
+  ExitInterviewRecord,
+  ExitInterviewRole,
+  ExitInterviewStatus,
+  ExitInterviewSummary,
+} from "./types";
 
 export const EXIT_INTERVIEW_ROLES: ExitInterviewRole[] = [
   "mechanical",
@@ -42,6 +56,12 @@ export type ExitInterviewView =
       seasons: number[];
       records: ExitInterviewRecord[];
       summary: ExitInterviewSummary;
+      /** Owner/admin: may mint self-serve links and see the pending list. */
+      canManage: boolean;
+      /** Roster for targeting an invite at a member (empty for non-admins). */
+      members: ExitInterviewMember[];
+      /** Pending / used self-serve links (owner/admin only; RLS hides the rest). */
+      invites: ExitInterviewInvite[];
       computedAt: string;
     };
 
@@ -89,9 +109,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role?: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role?: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -101,6 +121,55 @@ async function resolveOrg(
     [userId, requestedOrg],
   );
   return membership.rows[0] ?? null;
+}
+
+type InviteRow = Omit<ExitInterviewInvite, "state" | "seasonYear"> & { seasonYear: number; expired: boolean };
+
+function mapInvite(row: InviteRow): ExitInterviewInvite {
+  return {
+    id: row.id,
+    memberName: row.memberName,
+    memberEmail: row.memberEmail,
+    memberUserId: row.memberUserId,
+    seasonYear: Number(row.seasonYear),
+    expiresAt: row.expiresAt,
+    usedAt: row.usedAt,
+    responseId: row.responseId,
+    createdAt: row.createdAt,
+    state: row.usedAt ? "used" : row.expired ? "expired" : "open",
+  };
+}
+
+/** Owner/admin only by RLS; degrades to [] before migration 0501 lands. */
+async function loadInvites(client: PoolClient, orgId: string, seasonYear: number): Promise<ExitInterviewInvite[]> {
+  try {
+    const rows = await client.query<InviteRow>(
+      `SELECT id, member_name AS "memberName", member_email AS "memberEmail",
+              member_user_id AS "memberUserId", season_year AS "seasonYear",
+              expires_at::text AS "expiresAt", used_at::text AS "usedAt",
+              response_id AS "responseId", created_at::text AS "createdAt",
+              (expires_at <= now()) AS expired
+       FROM exit_interview_invites
+       WHERE org_id = $1::uuid AND season_year = $2 AND revoked_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT 200`,
+      [orgId, seasonYear],
+    );
+    return rows.rows.map(mapInvite);
+  } catch {
+    return [];
+  }
+}
+
+async function loadMembers(client: PoolClient, orgId: string): Promise<ExitInterviewMember[]> {
+  const rows = await client.query<ExitInterviewMember>(
+    `SELECT m.user_id::text AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS name, u.email
+     FROM memberships m JOIN users u ON u.id = m.user_id
+     WHERE m.org_id = $1::uuid
+     ORDER BY lower(COALESCE(NULLIF(btrim(u.name), ''), u.email))`,
+    [orgId],
+  );
+  return rows.rows.filter((row) => typeof row.userId === "string");
 }
 
 export async function computeExitInterviewView(
@@ -122,7 +191,8 @@ export async function computeExitInterviewView(
     };
   }
 
-  const [recordResult, seasonResult] = await Promise.all([
+  const canManage = org.role === "owner" || org.role === "admin";
+  const [recordResult, seasonResult, invites, members] = await Promise.all([
     client.query<RecordRow>(
       `SELECT id, member_name AS "memberName", member_user_id AS "memberUserId", role,
               years_on_team AS "yearsOnTeam", graduation_year AS "graduationYear",
@@ -138,6 +208,8 @@ export async function computeExitInterviewView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM exit_interview_responses WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    canManage ? loadInvites(client, org.orgId, seasonYear) : Promise.resolve([]),
+    canManage ? loadMembers(client, org.orgId) : Promise.resolve([]),
   ]);
 
   const records = recordResult.rows.map(mapRecord);
@@ -153,6 +225,9 @@ export async function computeExitInterviewView(
     seasons,
     records,
     summary,
+    canManage,
+    members,
+    invites,
     computedAt: new Date().toISOString(),
   };
 }
@@ -165,6 +240,7 @@ export async function logExitInterview(
     orgId: string;
     userId: string;
     memberName: string;
+    memberUserId?: string | null;
     role: ExitInterviewRole;
     yearsOnTeam: number;
     graduationYear: number;
@@ -179,14 +255,15 @@ export async function logExitInterview(
 ): Promise<{ id: string; knowledgePageId: string | null }> {
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO exit_interview_responses (
-       org_id, member_name, role, years_on_team, graduation_year, season_year,
+       org_id, member_name, member_user_id, role, years_on_team, graduation_year, season_year,
        highlights, advice_for_future, skills_to_document, willing_to_mentor,
        contact_email, status, submitted_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+     ) VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      RETURNING id`,
     [
       input.orgId,
       input.memberName,
+      input.memberUserId ?? null,
       input.role,
       Math.max(0, Math.round(input.yearsOnTeam)),
       Math.round(input.graduationYear),
@@ -278,4 +355,94 @@ export async function deleteExitInterview(
     input.recordId,
     input.orgId,
   ]);
+}
+
+// ---- self-serve invites (owner/admin; RLS enforces) ----
+
+export async function createExitInvite(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    memberName: string;
+    memberUserId: string | null;
+    memberEmail: string | null;
+    seasonYear: number;
+  },
+): Promise<{ inviteId: string; token: string; expiresAt: string }> {
+  if (input.memberUserId) {
+    const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`, [
+      input.orgId,
+      input.memberUserId,
+    ]);
+    if (!member.rowCount) throw new Error("That member is not in this organization");
+  }
+  if (!input.memberUserId && !input.memberEmail) {
+    throw new Error("Pick a member or enter the email the link will be sent to");
+  }
+  const token = newExitInviteToken();
+  const expiresAt = exitInviteExpiry();
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO exit_interview_invites
+       (org_id, member_user_id, member_email, member_name, season_year, token_hash, expires_at, created_by)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7::timestamptz, $8::uuid)
+     RETURNING id`,
+    [
+      input.orgId,
+      input.memberUserId,
+      input.memberEmail,
+      input.memberName,
+      Math.round(input.seasonYear),
+      hashExitInviteToken(token),
+      expiresAt.toISOString(),
+      input.userId,
+    ],
+  );
+  const inviteId = inserted.rows[0]?.id;
+  if (!inviteId) throw new Error("invite insert failed");
+  return { inviteId, token, expiresAt: expiresAt.toISOString() };
+}
+
+export async function revokeExitInvite(client: PoolClient, input: { orgId: string; inviteId: string }): Promise<void> {
+  await client.query(
+    `UPDATE exit_interview_invites SET revoked_at = now()
+     WHERE id = $1::uuid AND org_id = $2::uuid AND used_at IS NULL`,
+    [input.inviteId, input.orgId],
+  );
+}
+
+/**
+ * Writes a self-serve response through the same path as the mentor form, then
+ * burns the invite. Runs inside withRls scoped as the invite's creator (an
+ * owner/admin) — the invitee has no session. Throws "used" if the link was
+ * consumed concurrently so the caller never double-writes.
+ */
+export async function submitExitInviteResponse(
+  client: PoolClient,
+  input: { invite: ResolvedExitInvite; response: ExitInviteResponse },
+): Promise<{ responseId: string; knowledgePageId: string | null }> {
+  const { invite, response } = input;
+  const logged = await logExitInterview(client, {
+    orgId: invite.orgId,
+    userId: invite.createdBy,
+    memberName: invite.memberName,
+    memberUserId: invite.memberUserId,
+    role: response.role,
+    yearsOnTeam: response.yearsOnTeam,
+    graduationYear: response.graduationYear,
+    seasonYear: invite.seasonYear,
+    highlights: response.highlights,
+    adviceForFuture: response.adviceForFuture,
+    skillsToDocument: response.skillsToDocument,
+    willingToMentor: response.willingToMentor,
+    contactEmail: response.contactEmail,
+    status: "submitted",
+  });
+  const burned = await client.query(
+    `UPDATE exit_interview_invites SET used_at = now(), response_id = $3::uuid
+     WHERE id = $1::uuid AND org_id = $2::uuid AND used_at IS NULL AND revoked_at IS NULL AND expires_at > now()`,
+    [invite.inviteId, invite.orgId, logged.id],
+  );
+  if (!burned.rowCount) throw new Error("used");
+  return { responseId: logged.id, knowledgePageId: logged.knowledgePageId };
 }

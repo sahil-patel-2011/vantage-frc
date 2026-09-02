@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { renderFeatureValue, type RenderOutcome } from "../ai-render/render";
 import { MOCK_JUDGING_AWARD_CATEGORIES, pickMockJudgingQuestion, scoreAnswer } from ".";
 import type {
   MockJudgingAwardCategory,
@@ -239,7 +238,7 @@ export async function runSession(
     question: string | null;
     answerText: string;
   },
-): Promise<void> {
+): Promise<RenderOutcome> {
   const [noteResult, countResult] = await Promise.all([
     client.query<NoteRow>(
       `SELECT id, title, note, award_category AS "awardCategory", tags, created_at AS "createdAt"
@@ -256,27 +255,19 @@ export async function runSession(
   const question =
     input.question?.trim() || pickMockJudgingQuestion(input.awardCategory, Number(countResult.rows[0]?.count ?? 0));
 
-  const grade = await meteredAI({
+  // Real model call on the org's adapter with the deterministic rubric score as fallback:
+  // only the feedback prose may be rewritten; criteria scores, overall score, strengths and
+  // improvements stay computed against the answer and the logged prep notes.
+  const { value: grade, render } = await renderFeatureValue({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "mock_judging",
-    requestId: `mock-judging-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      awardCategory: input.awardCategory,
-      seasonYear: input.seasonYear,
-      note: "Deterministic rubric scoring against the answer text and logged prep notes — no external model call",
-    },
-    invoke: async () => ({
-      value: scoreAnswer(input.answerText, notes),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-mock-judging-v1",
-      provider: "vantage-local",
-    }),
+    value: scoreAnswer(input.answerText, notes),
+    editableKeys: ["feedback"],
+    instructions: `Mock judging, ${input.awardCategory} award. Question: ${question}. The student answered: "${input.answerText.slice(0, 1500)}". Write the feedback as 2-4 plain sentences a mentor-judge would say, consistent with the criteria scores, strengths and improvements in the document; suggest one concrete thing to add next time.`,
+    facts: `Logged prep notes: ${notes.length}`,
+    metadata: { awardCategory: input.awardCategory, seasonYear: input.seasonYear },
   });
 
   await client.query(
@@ -298,6 +289,7 @@ export async function runSession(
       input.userId,
     ],
   );
+  return render;
 }
 
 export async function deleteSession(

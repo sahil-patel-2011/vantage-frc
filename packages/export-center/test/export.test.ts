@@ -62,6 +62,19 @@ describe("secure CSV exports", () => {
     expect(adapter?.columns).not.toContain("created_by");
   });
 
+  it("exports award submissions with their answers but without member identity", () => {
+    const adapter = createExportRegistry().get("awards");
+    expect(adapter).toMatchObject({
+      fileName: "award_submissions.csv",
+      scope: "team",
+      category: "ops",
+    });
+    expect(adapter?.columns).toEqual(expect.arrayContaining(["submission_id", "award_type", "prompt", "content", "done"]));
+    expect(adapter?.columns).not.toContain("owner_user_id");
+    expect(adapter?.columns).not.toContain("assignee_user_id");
+    expect(JSON.stringify(adapter)).toMatch(/s\.org_id=\$1/);
+  });
+
   it("exports shared CAD standards but never private user preferences", () => {
     const registry = createExportRegistry();
     expect(registry.get("cad-team-profile")?.columns).toContain("manufacturing_processes_json");

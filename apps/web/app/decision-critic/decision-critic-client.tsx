@@ -11,6 +11,8 @@ import {
 } from "../../lib/decision-critic";
 import type { DecisionCriticView } from "../../lib/decision-critic/compute-decision-critic";
 import type { DecisionCriticCategory, DecisionCriticVerdict } from "../../lib/decision-critic/types";
+import { renderReceiptFrom, type RenderReceipt } from "../../lib/ai-render/outcome";
+import { RenderAttribution } from "../../components/ui/render-attribution";
 
 const VERDICT_TONE: Record<DecisionCriticVerdict, string> = {
   proceed: "good",
@@ -40,6 +42,8 @@ export default function DecisionCriticClient() {
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  // Honest badge for the latest critique render: "AI" only when a model wrote it.
+  const [renderReceipt, setRenderReceipt] = useState<RenderReceipt | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -92,6 +96,8 @@ export default function DecisionCriticClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        const receipt = renderReceiptFrom(data);
+        if (receipt) setRenderReceipt(receipt);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -157,6 +163,8 @@ export default function DecisionCriticClient() {
           {error}
         </p>
       ) : null}
+
+      <RenderAttribution receipt={renderReceipt} feature="decision_critic" />
 
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>

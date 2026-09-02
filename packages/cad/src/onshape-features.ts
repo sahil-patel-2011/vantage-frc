@@ -120,6 +120,10 @@ export function booleanParameter(parameterId: string, value: boolean) {
   return { btType: "BTMParameterBoolean-144", value, parameterId };
 }
 
+export function stringParameter(parameterId: string, value: string) {
+  return { btType: "BTMParameterString-149", value, parameterId };
+}
+
 export function enumParameter(parameterId: string, enumName: string, value: string) {
   return { btType: "BTMParameterEnum-145", enumName, value, parameterId };
 }
@@ -539,6 +543,271 @@ export function mirrorFeature(input: { name?: string; featureIds: readonly strin
       deterministicQueryParameter("mirrorPlane", planeIds),
     ],
   });
+}
+
+// ---------------------------------------------------------------------------
+// Tier-3 sketch primitives: slot + regular polygon
+// ---------------------------------------------------------------------------
+
+/**
+ * Circular arc segment. Onshape parametrises an arc on a BTCurveGeometryCircle
+ * by angle (radians) from the circle's xDir, counter-clockwise; startParam and
+ * endParam are those two angles. Same entity shape the sketch UI writes for a
+ * slot end.
+ */
+function arcEntity(id: string, cx: number, cy: number, radius: number, startRad: number, endRad: number) {
+  return {
+    btType: "BTMSketchCurveSegment-155",
+    entityId: id,
+    startPointId: `${id}.start`,
+    endPointId: `${id}.end`,
+    startParam: startRad,
+    endParam: endRad,
+    centerId: `${id}.center`,
+    isConstruction: false,
+    geometry: {
+      btType: "BTCurveGeometryCircle-115",
+      radius,
+      xCenter: cx,
+      yCenter: cy,
+      xDir: 1,
+      yDir: 0,
+      clockwise: false,
+    },
+  };
+}
+
+/**
+ * Straight slot: two parallel lines closed by two semicircular ends. `lengthMm`
+ * is the overall end-to-end length and `widthMm` the slot width (the diameter of
+ * each end), so a "40 × 8 slot" reads exactly the way a drawing calls it out.
+ */
+export function slotSketchFeature(input: {
+  name?: string;
+  plane?: string;
+  lengthMm: number;
+  widthMm: number;
+  centerXMm?: number;
+  centerYMm?: number;
+  /** Direction of the slot's long axis, degrees from +X (default 0). */
+  angleDeg?: number;
+}) {
+  const length = sizeMm(input.lengthMm, "lengthMm");
+  const width = sizeMm(input.widthMm, "widthMm");
+  if (input.lengthMm <= input.widthMm) {
+    throw new Error(`A slot's lengthMm (${input.lengthMm}) must be greater than its widthMm (${input.widthMm}); equal makes a circle.`);
+  }
+  const cx = coordMm(input.centerXMm ?? 0, "centerXMm");
+  const cy = coordMm(input.centerYMm ?? 0, "centerYMm");
+  const angle = Number(input.angleDeg ?? 0);
+  if (!Number.isFinite(angle)) throw new Error("angleDeg must be a finite number of degrees.");
+  const theta = (angle * Math.PI) / 180;
+  const radius = width / 2;
+  const half = (length - width) / 2;
+  const dx = Math.cos(theta);
+  const dy = Math.sin(theta);
+  const nx = -dy;
+  const ny = dx;
+  const c1 = { x: cx - dx * half, y: cy - dy * half };
+  const c2 = { x: cx + dx * half, y: cy + dy * half };
+  return sketchFeature(input.name ?? "VantageSlot", input.plane ?? "Top", [
+    lineEntity("slot.side0", c1.x + nx * radius, c1.y + ny * radius, c2.x + nx * radius, c2.y + ny * radius),
+    arcEntity("slot.end1", c2.x, c2.y, radius, theta - Math.PI / 2, theta + Math.PI / 2),
+    lineEntity("slot.side1", c2.x - nx * radius, c2.y - ny * radius, c1.x - nx * radius, c1.y - ny * radius),
+    arcEntity("slot.end0", c1.x, c1.y, radius, theta + Math.PI / 2, theta + (3 * Math.PI) / 2),
+  ]);
+}
+
+export const POLYGON_SIDES_MIN = 3;
+export const POLYGON_SIDES_MAX = 24;
+
+/**
+ * Regular polygon as a closed chain of lines. Size is given either as the
+ * circumscribed diameter (corner to corner) or across flats — a hex for a 1/2"
+ * hex shaft is `acrossFlatsMm: 12.7`, which is the number on the drawing.
+ */
+export function polygonSketchFeature(input: {
+  name?: string;
+  plane?: string;
+  sides: number;
+  circumscribedDiameterMm?: number;
+  acrossFlatsMm?: number;
+  centerXMm?: number;
+  centerYMm?: number;
+  /** Rotation of the first vertex from +X, degrees (default 0). */
+  rotationDeg?: number;
+}) {
+  const sides = Math.round(Number(input.sides));
+  if (!Number.isFinite(sides) || sides < POLYGON_SIDES_MIN || sides > POLYGON_SIDES_MAX) {
+    throw new Error(`sides must be a whole number between ${POLYGON_SIDES_MIN} and ${POLYGON_SIDES_MAX}. Got ${String(input.sides)}.`);
+  }
+  let radius: number;
+  if (input.acrossFlatsMm !== undefined) {
+    radius = sizeMm(input.acrossFlatsMm, "acrossFlatsMm") / 2 / Math.cos(Math.PI / sides);
+  } else if (input.circumscribedDiameterMm !== undefined) {
+    radius = sizeMm(input.circumscribedDiameterMm, "circumscribedDiameterMm") / 2;
+  } else {
+    throw new Error("Give the polygon size as circumscribedDiameterMm (corner to corner) or acrossFlatsMm.");
+  }
+  const cx = coordMm(input.centerXMm ?? 0, "centerXMm");
+  const cy = coordMm(input.centerYMm ?? 0, "centerYMm");
+  const rotation = Number(input.rotationDeg ?? 0);
+  if (!Number.isFinite(rotation)) throw new Error("rotationDeg must be a finite number of degrees.");
+  const start = (rotation * Math.PI) / 180;
+  const vertices = Array.from({ length: sides }, (_, index) => {
+    const angle = start + (2 * Math.PI * index) / sides;
+    return { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+  });
+  const segments = vertices.map((a, index) => {
+    const b = vertices[(index + 1) % sides]!;
+    return lineEntity(`polygon.${index}`, a.x, a.y, b.x, b.y);
+  });
+  return sketchFeature(input.name ?? "VantagePolygon", input.plane ?? "Top", segments);
+}
+
+// ---------------------------------------------------------------------------
+// Tier-3 solids: shell + variables
+// ---------------------------------------------------------------------------
+
+/**
+ * Shell a solid to a wall thickness, removing the given faces. `faceIds` are
+ * deterministic ids from resolveOnshapeFaceIds — the open faces of a shelled
+ * box are real geometry, never guessed. `isHollow=false` is stated explicitly
+ * because Onshape's Shell feature reads `entities` as faces only in that mode.
+ */
+export function shellFeature(input: {
+  name?: string;
+  faceIds: readonly string[];
+  thicknessMm: number;
+  oppositeDirection?: boolean;
+}) {
+  const thickness = sizeMm(input.thicknessMm, "thicknessMm");
+  const faces = requireIds(input.faceIds, "faceIds");
+  const parameters: unknown[] = [
+    booleanParameter("isHollow", false),
+    deterministicQueryParameter("entities", faces),
+    quantityParameter("thickness", input.thicknessMm, thickness),
+  ];
+  if (input.oppositeDirection) parameters.push(booleanParameter("oppositeDirection", true));
+  return featureCall({
+    btType: "BTMFeature-134",
+    featureType: "shell",
+    name: input.name?.trim() || "VantageShell",
+    suppressed: false,
+    namespace: "",
+    parameters,
+  });
+}
+
+export const VARIABLE_TYPES = ["LENGTH", "ANGLE", "NUMBER"] as const;
+export type OnshapeVariableType = (typeof VARIABLE_TYPES)[number];
+
+/**
+ * Part Studio Variable feature (Onshape's `assignVariable`, the "Variable" tool
+ * in the toolbar). Adds `#name` to the variable table so later hand-edited
+ * dimensions can reference it. A LENGTH is given in mm, an ANGLE in degrees,
+ * a NUMBER is unitless. This is a real feature in the tree, so it is undoable
+ * with onshape_delete_feature like everything else Vantage adds.
+ */
+export function variableFeature(input: {
+  name: string;
+  value: number;
+  variableType?: OnshapeVariableType;
+  featureName?: string;
+}) {
+  const name = String(input.name ?? "").trim();
+  if (!/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(name)) {
+    throw new Error(`"${name}" is not a valid Onshape variable name. Use letters, digits and underscores, starting with a letter (e.g. wallThickness).`);
+  }
+  const variableType = input.variableType ?? "LENGTH";
+  if (!(VARIABLE_TYPES as readonly string[]).includes(variableType)) {
+    throw new Error(`variableType must be one of ${VARIABLE_TYPES.join(", ")}.`);
+  }
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) throw new Error(`Variable ${name} needs a numeric value.`);
+  let valueParameter: unknown;
+  if (variableType === "LENGTH") {
+    if (Math.abs(value) > 10_000) throw new Error(`Variable ${name} is ${value} mm, outside the ±10000 mm range Vantage models.`);
+    valueParameter = quantityParameter("value", value, value / 1000);
+  } else if (variableType === "ANGLE") {
+    valueParameter = angleParameter("value", value);
+  } else {
+    valueParameter = { btType: "BTMParameterQuantity-147", isInteger: false, value, units: "", expression: String(value), parameterId: "value" };
+  }
+  return featureCall({
+    btType: "BTMFeature-134",
+    featureType: "assignVariable",
+    name: input.featureName?.trim() || `#${name}`,
+    suppressed: false,
+    namespace: "",
+    parameters: [
+      stringParameter("name", name),
+      enumParameter("variableType", "VariableType", variableType),
+      valueParameter,
+    ],
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Exports: STL (synchronous) and STEP (translation + external data)
+// ---------------------------------------------------------------------------
+
+export const ONSHAPE_EXPORT_FORMATS = ["stl", "step"] as const;
+export type OnshapeExportFileFormat = (typeof ONSHAPE_EXPORT_FORMATS)[number];
+
+export function isOnshapeExportFileFormat(value: unknown): value is OnshapeExportFileFormat {
+  return typeof value === "string" && (ONSHAPE_EXPORT_FORMATS as readonly string[]).includes(value);
+}
+
+/**
+ * GET …/partstudios/d/{did}/w/{wid}/e/{eid}/stl — Onshape's synchronous STL
+ * export. Binary, millimetres, one body group per part. Onshape answers with a
+ * redirect to the file, which fetch follows.
+ */
+export function onshapeStlExportPath(
+  document: { documentId: string; workspaceId: string; elementId: string },
+  options: { mode?: "binary" | "text"; units?: "millimeter" | "inch" } = {},
+): string {
+  const query = new URLSearchParams({
+    mode: options.mode ?? "binary",
+    grouping: "true",
+    scale: "1",
+    units: options.units ?? "millimeter",
+  });
+  return `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}/stl?${query.toString()}`;
+}
+
+export function onshapeTranslationsPath(document: { documentId: string; workspaceId: string; elementId: string }): string {
+  return `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}/translations`;
+}
+
+export function onshapeTranslationStatusPath(translationId: string): string {
+  return `/translations/${encodeURIComponent(String(translationId ?? "").trim())}`;
+}
+
+/** Where a finished translation's bytes live when storeInDocument=false. */
+export function onshapeExternalDataPath(documentId: string, externalDataId: string): string {
+  return `/documents/d/${documentId}/externaldata/${encodeURIComponent(String(externalDataId ?? "").trim())}`;
+}
+
+/** Body for POST …/translations that produces a downloadable file, not a new tab in the document. */
+export function onshapeTranslationPayload(formatName: "STEP" | "STL" | "GLTF", documentId?: string) {
+  return {
+    formatName,
+    storeInDocument: false,
+    translate: true,
+    ...(formatName === "GLTF" && documentId ? { linkDocumentId: documentId } : {}),
+  };
+}
+
+/** Deterministic, filesystem-safe export filename from the element name. */
+export function onshapeExportFilename(elementName: string | undefined, format: OnshapeExportFileFormat): string {
+  const base = String(elementName ?? "")
+    .trim()
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+  return `${base || "part-studio"}.${format}`;
 }
 
 // ---------------------------------------------------------------------------

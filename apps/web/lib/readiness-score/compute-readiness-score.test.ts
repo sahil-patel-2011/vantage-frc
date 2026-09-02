@@ -123,7 +123,7 @@ describe("saveSubsystem", () => {
   it("computes a deterministic health score from wiring + code status and upserts it", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -151,7 +151,7 @@ describe("saveSubsystem", () => {
     // verified wiring (1.0) * 0.5 + deployed_tested code (1.0) * 0.5 = 1.0
     expect(subsystemInsert?.params).toContain(1);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

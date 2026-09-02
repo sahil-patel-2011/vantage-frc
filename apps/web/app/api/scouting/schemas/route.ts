@@ -8,10 +8,21 @@ import {
   scoutingErrorResponse,
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
+import {
+  isFormKind,
+  loadPreviousSeasonSchema,
+  resolveStudioYear,
+  saveFormDraft,
+} from "../../../../lib/scouting/form-studio";
 
 export const dynamic = "force-dynamic";
 
-/** List latest match/pit schemas for the org's active season (form builder). */
+/**
+ * List latest match/pit schemas for the org's authoring season (form builder).
+ * The season is the active event's year when one is set; otherwise it falls back to
+ * the FRC season year so a team can author forms in the offseason before any event
+ * exists. `yearSource` tells the client which it was.
+ */
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -22,40 +33,18 @@ export async function GET(request: Request) {
         `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
         [orgId],
       );
-      const context = await client.query<{ eventKey: string | null; year: number | null }>(
-        `SELECT c.active_event_key AS "eventKey", e.year
-         FROM org_active_context c
-         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
-         WHERE c.org_id = $1`,
-        [orgId],
-      );
-      const eventKey = context.rows[0]?.eventKey ?? null;
-      const year = context.rows[0]?.year ?? null;
-      if (!year) {
-        return {
-          eventKey,
-          year: null,
-          canManageSchemas: Boolean(allowed.rows[0]?.allowed),
-          schemas: [] as Array<{
-            id: string;
-            orgId: string;
-            year: number;
-            type: string;
-            version: number;
-            definition: SchemaDefinition;
-          }>,
-        };
-      }
+      const studio = await resolveStudioYear(client, orgId!);
       const schemas = await client.query(
         `SELECT DISTINCT ON (type) id, org_id AS "orgId", year, type, version,
           schema AS definition FROM scout_schemas
          WHERE org_id = $1 AND year = $2
          ORDER BY type, version DESC`,
-        [orgId, year],
+        [orgId, studio.year],
       );
       return {
-        eventKey,
-        year,
+        eventKey: studio.eventKey,
+        year: studio.year,
+        yearSource: studio.yearSource,
         canManageSchemas: Boolean(allowed.rows[0]?.allowed),
         schemas: schemas.rows.map((row) => ({
           ...row,
@@ -77,7 +66,7 @@ export async function POST(request: Request) {
     if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
     const body = (await request.json()) as {
       orgId?: string;
-      action?: "ensure_defaults";
+      action?: "ensure_defaults" | "clone_season";
       year?: number;
       type?: "match" | "pit";
       definition?: SchemaDefinition;
@@ -103,6 +92,36 @@ export async function POST(request: Request) {
         return repository.bootstrap(body.orgId!, session.user.id);
       });
       return Response.json(result);
+    }
+
+    if (body.action === "clone_season") {
+      // "Start from last season": copy the newest previous-season schema of this kind into
+      // THE draft for the authoring year. Nothing is published until the coach publishes.
+      const orgId = body.orgId;
+      if (!isFormKind(body.type)) return Response.json({ error: "type must be match or pit" }, { status: 400 });
+      const formKind = body.type;
+      const result = await withScoutingRequest(orgId, async (client) => {
+        const allowed = await client.query(
+          `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+          [orgId],
+        );
+        if (!allowed.rows[0]?.allowed) throw new Error("Coach role required");
+        const studio = await resolveStudioYear(client, orgId);
+        const targetYear = Number.isInteger(body.year) ? Number(body.year) : studio.year;
+        const source = await loadPreviousSeasonSchema(client, { orgId, formKind, year: targetYear });
+        if (!source) throw new Error(`No earlier-season ${formKind} form exists to clone.`);
+        const draft = await saveFormDraft(client, {
+          orgId,
+          userId: session.user.id,
+          formKind,
+          seasonYear: targetYear,
+          title: source.definition.title,
+          definition: source.definition,
+          baseSchemaId: source.id,
+        });
+        return { draft, source: { id: source.id, year: source.year, version: source.version } };
+      });
+      return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });
     }
 
     if (!body.year || !body.type || !body.definition?.fields.length) {

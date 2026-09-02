@@ -53,10 +53,21 @@ export function summarizeOutreach(rows: OutreachRow[]): GrantReportOutreachLine[
     .sort((a, b) => b.count - a.count);
 }
 
+/** Copy the report uses when nothing has been tagged — tested verbatim so it can never soften. */
+export const NO_TAGGED_EXPENSES_NOTE =
+  "No expenses tagged to this grant yet. Tag orders, season costs, or receipts to this grant in Finance to report fund usage — untagged season spend is never attributed to a grant.";
+
+/** Sum of tagged spend lines; the spend state follows from whether any line exists. */
+export function spendStateFor(spendByCategory: readonly GrantReportSpendLine[]): "no_tagged_expenses" | "tagged" {
+  return spendByCategory.some((line) => line.count > 0) ? "tagged" : "no_tagged_expenses";
+}
+
 /**
  * Build the deterministic report sections + narrative from only what was recorded: the awarded
- * amount, logged outreach to the funder/sponsor, and recorded spend. Skips any section that has
- * no underlying data rather than inventing figures.
+ * amount, logged outreach to the funder/sponsor, and the expenses a team TAGGED to this grant
+ * (finance_transactions.grant_application_id, 0504). Skips any section that has no underlying
+ * data rather than inventing figures; the spend section is always present so the absence of
+ * tagged expenses is stated, never implied.
  */
 export function buildGrantReportSections(input: {
   grantName: string;
@@ -64,6 +75,7 @@ export function buildGrantReportSections(input: {
   seasonYear: number;
   amountAwardedUsd: number;
   outreachByKind: GrantReportOutreachLine[];
+  /** Expenses tagged to THIS grant only. */
   spendByCategory: GrantReportSpendLine[];
 }): GrantReportSection[] {
   const sections: GrantReportSection[] = [];
@@ -84,26 +96,28 @@ export function buildGrantReportSections(input: {
     });
   }
 
-  // Honesty guard: Finance transactions carry no per-grant linkage (no grant tag/category link
-  // exists in the schema), so per-grant spend cannot be computed. Say so explicitly and present
-  // season totals only as clearly-labeled org-wide context — never as this grant's spend.
-  const linkageNote =
-    "Spend linkage is not configured — Finance expenses are not tagged to individual grants, so spend attributable to this specific grant cannot be reported.";
+  // Honesty guard: only expenses a team explicitly tagged to this grant are fund usage. The
+  // spend section always exists so "nothing tagged" is stated outright, never implied.
+  const taggedCount = input.spendByCategory.reduce((sum, line) => sum + line.count, 0);
   const totalSpendUsd = input.spendByCategory.reduce((sum, line) => sum + line.totalUsd, 0);
-  if (totalSpendUsd > 0) {
+  if (taggedCount > 0) {
     const parts = input.spendByCategory
       .slice(0, 6)
       .map((line) => `${line.category}: $${line.totalUsd.toLocaleString()} (${line.count} txn)`);
+    const coverage =
+      input.amountAwardedUsd > 0
+        ? ` That is ${Math.round((totalSpendUsd / input.amountAwardedUsd) * 100)}% of the $${input.amountAwardedUsd.toLocaleString()} award.`
+        : "";
     sections.push({
       id: "spend",
-      title: "Season spending context (not grant-attributed)",
-      body: `${linkageNote} For context only, the team recorded $${totalSpendUsd.toLocaleString()} in total ${input.seasonYear} season expenses across all funding sources, by category — ${parts.join("; ")}.`,
+      title: "Grant-attributed spending",
+      body: `The team tagged ${taggedCount} expense(s) totaling $${totalSpendUsd.toLocaleString()} to this grant in the ${input.seasonYear} season, by category — ${parts.join("; ")}.${coverage}`,
     });
   } else {
     sections.push({
       id: "spend",
-      title: "Season spending context (not grant-attributed)",
-      body: `${linkageNote} No expense transactions have been recorded for the ${input.seasonYear} season yet — log purchases in Finance for season-wide context.`,
+      title: "Grant-attributed spending",
+      body: NO_TAGGED_EXPENSES_NOTE,
     });
   }
 

@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "add-contact": {
           const fullName = trimmedOrNull(body.fullName, 200);
@@ -185,7 +187,7 @@ export async function POST(request: Request) {
           const programId = trimmedOrNull(body.programId, 64);
           if (!contactId) throw new Error("contactId is required");
           if (!programId) throw new Error("programId is required");
-          await generateDraftLetter(client, { orgId, userId, contactId, programId, seasonYear });
+          render = (await generateDraftLetter(client, { orgId, userId, contactId, programId, seasonYear })).render ?? undefined;
           break;
         }
         case "delete-draft": {
@@ -198,7 +200,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeMatchingGiftFinderView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeMatchingGiftFinderView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

@@ -9,6 +9,7 @@ function role(overrides: Partial<TeamRole> = {}): TeamRole {
     id: `r-${seq}`,
     title: `Role ${seq}`,
     subteam: "mechanical" as Subteam,
+    holderUserId: null,
     holderName: null,
     isLead: false,
     responsibilities: null,

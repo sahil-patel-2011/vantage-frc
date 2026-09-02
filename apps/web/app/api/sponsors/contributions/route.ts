@@ -1,4 +1,5 @@
 import { withRls } from "@vantage/db";
+import { mirrorSponsorContribution } from "../../../../lib/finance/mirrors";
 import {
   requireSponsorsAdmin,
   requireSponsorsMember,
@@ -69,13 +70,23 @@ export async function POST(request: Request) {
           body.description || null, body.receivedAt || null, current.user.id,
         ],
       );
-      if (type === "cash" && amountUsd && amountUsd > 0) {
-        await client.query(
-          `INSERT INTO finance_transactions(org_id, season_year, type, source, amount_usd, sponsor_contribution_id, description, created_by)
-           VALUES($1::uuid,$2,'income','sponsor_contribution',$3,$4::uuid,$5,$6::uuid)`,
-          [orgId, seasonYear, amountUsd, result.rows[0].id, "Sponsor contribution", current.user.id],
-        );
-      }
+      // ONE MONEY LEDGER: cash mirrors through recordMoney keyed
+      // (org, 'sponsor_contribution', contribution id) — same transaction, idempotent.
+      const sponsor = await client.query<{ name: string }>(
+        `SELECT name FROM sponsors WHERE id=$1::uuid AND org_id=$2::uuid`,
+        [sponsorId, orgId],
+      );
+      await mirrorSponsorContribution(client, {
+        orgId,
+        contributionId: String(result.rows[0].id),
+        sponsorName: sponsor.rows[0]?.name ?? "Sponsor",
+        seasonYear,
+        type,
+        amountUsd,
+        receivedAt: typeof body.receivedAt === "string" && body.receivedAt ? body.receivedAt : null,
+        description: typeof body.description === "string" && body.description.trim() ? body.description.trim() : null,
+        createdBy: current.user.id,
+      });
       await client.query(
         `UPDATE sponsors SET status='active' WHERE id=$1::uuid AND org_id=$2::uuid AND status='prospect'`,
         [sponsorId, orgId],

@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { factsBlock, renderFeatureText, renderOutcomeOf, type RenderOutcome } from "../ai-render/render";
 import { buildPostmortemNarrative, countItemsByKind, countOpenActions, groupItemsByKind } from ".";
 import { retroSetupSteps, type RetroSetupStep } from "./retro-related";
 import type {
@@ -336,7 +335,7 @@ export async function deleteActionItem(
 export async function generatePostmortem(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number },
-): Promise<RetroPostmortem> {
+): Promise<RetroPostmortem & { render: RenderOutcome }> {
   const [decisionsResult, risksResult, incidentsResult, fmeaResult, actionsResult] = await Promise.all([
     client.query<{ status: string; count: string }>(
       `SELECT status, count(*)::text AS count FROM decision_records
@@ -410,27 +409,24 @@ export async function generatePostmortem(
     retroActionItemsOpen: retroActionItemsTotal - retroActionItemsDone,
   };
 
-  const narrative = await meteredAI({
+  // Real model call on the org's adapter; the deterministic postmortem narrative is the
+  // fallback and its counts are the only facts the model may use.
+  const rendered = await renderFeatureText({
     client,
     orgId: input.orgId,
     userId: input.userId,
     feature: "retro_postmortem",
-    requestId: `retro-postmortem-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      seasonYear: input.seasonYear,
-      note: "Deterministic season-postmortem narrative synthesis — no external model call",
-    },
-    invoke: async () => ({
-      value: buildPostmortemNarrative({ seasonYear: input.seasonYear, counts }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-retro-postmortem-v1",
-      provider: "vantage-local",
-    }),
+    prompt: [
+      `Season postmortem narrative for the ${input.seasonYear} FRC season, for mentors and students. Write 2-3 short paragraphs in the template's order: decisions, risks, incidents, FMEA failures, retro action items.`,
+      "Use only these counts; invent no events, names or causes:",
+      factsBlock(counts as unknown as Record<string, unknown>),
+      `Template: ${buildPostmortemNarrative({ seasonYear: input.seasonYear, counts })}`,
+    ].join("\n"),
+    template: () => buildPostmortemNarrative({ seasonYear: input.seasonYear, counts }),
+    maxTokens: 600,
+    metadata: { seasonYear: input.seasonYear },
   });
+  const narrative = rendered.text;
 
   const result = await client.query<{ id: string; createdAt: string }>(
     `INSERT INTO retro_postmortems (org_id, season_year, narrative, counts, generated_by)
@@ -440,6 +436,7 @@ export async function generatePostmortem(
 
   return {
     id: result.rows[0]!.id,
+    render: renderOutcomeOf(rendered),
     seasonYear: input.seasonYear,
     narrative,
     counts,

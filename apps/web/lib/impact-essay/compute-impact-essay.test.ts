@@ -103,7 +103,7 @@ describe("generateEssayDraft", () => {
       if (sql.includes("FROM hour_logs")) return { rows: [{ totalHours: "10", contributorCount: "3" }] };
       if (sql.includes("FROM sponsors")) return { rows: [] };
       if (sql.includes("FROM attendance_events")) return { rows: [] };
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if (sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts")) {
         inserts.push({ sql, params });
         return { rows: [] };
       }
@@ -127,8 +127,12 @@ describe("generateEssayDraft", () => {
     expect(draft.citations[0]).toMatchObject({ kind: "outreach_activity", id: "act1" });
     expect(draft.wordCount).toBeGreaterThan(0);
 
-    const usageInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
-    expect(usageInsert).toBeDefined();
+    // Audited through the AI path either way: a metered usage row when an adapter answered,
+    // or a recorded template-only render attempt when none could (0498 ai_render_attempts).
+    const auditInsert = inserts.find(
+      (entry) => entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts"),
+    );
+    expect(auditInsert).toBeDefined();
     const draftInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO impact_essay_drafts"));
     expect(draftInsert).toBeDefined();
     expect(draftInsert?.params).toContain(ORG);

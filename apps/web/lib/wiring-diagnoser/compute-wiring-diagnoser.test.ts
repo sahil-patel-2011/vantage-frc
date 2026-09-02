@@ -83,7 +83,7 @@ describe("logCheck", () => {
   it("computes and persists a deterministic diagnosis grounded in expected vs observed circuits", async () => {
     const inserted: { sql: string; params: unknown[] }[] = [];
     const client = makeClient((sql, params) => {
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -118,7 +118,7 @@ describe("logCheck", () => {
     expect(flagsJson).toContain("miswire");
     expect(flagsJson).toContain("wire_undersized_for_breaker");
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

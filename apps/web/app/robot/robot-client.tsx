@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, ToolPage, useConfirm, type ShellState } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   cadProvider,
   robotRollup,
@@ -75,6 +74,7 @@ function SubsystemCard({
   busyKey: string | null;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
+  const confirm = useConfirm();
   const busy = busyKey === `sub:${subsystem.id}`;
   const readiness = subsystemReadiness(subsystem);
   const patch = (fields: Record<string, unknown>) =>
@@ -201,9 +201,14 @@ function SubsystemCard({
           className="robot-link danger"
           disabled={busy}
           onClick={() => {
-            if (confirm(`Delete subsystem "${subsystem.name}"?`)) {
-              void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
-            }
+            void confirm({
+              title: "Delete subsystem",
+              body: `"${subsystem.name}" is removed from the blueprint for good, along with its CAD, code, and strategy links.`,
+              confirmLabel: "Delete subsystem",
+              tone: "destructive",
+            }).then((ok) => {
+              if (ok) void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
+            });
           }}
         >
           Delete
@@ -285,191 +290,147 @@ export default function RobotClient() {
     [ready, robotLabel],
   );
 
-  if (fetchFailed || !view) {
-    return (
-      <main className="module-page robot-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Build / Robot</span>
-            <h1>Robot Blueprint</h1>
-          </div>
-        </header>
-        <div className="app-card robot-empty">
-          {fetchFailed ? (
-            (() => {
-              const copy = loadFailureCopy(
-                classifyLoadFailure({
-                  status: failureStatus,
-                  message: error,
-                  online: typeof navigator === "undefined" ? true : navigator.onLine,
-                }),
-                {
-                  nextPath:
-                    typeof window === "undefined"
-                      ? null
-                      : `${window.location.pathname}${window.location.search}`,
-                  message: error || "Check your connection and try again.",
-                },
-              );
-              return (
-                <>
-                  <strong>{copy.title}</strong>
-                  <p className="app-muted">{copy.description}</p>
-                  {copy.primary ? (
-                    <a className="app-button" href={copy.primary.href}>
-                      {copy.primary.label}
-                    </a>
-                  ) : null}
-                  {copy.showRetry ? (
-                    <button type="button" className="app-button secondary" onClick={() => void load()}>
-                      Retry
-                    </button>
-                  ) : null}
-                </>
-              );
-            })()
-          ) : (
-            <p className="app-muted">Loading robot blueprint…</p>
-          )}
-        </div>
-      </main>
-    );
-  }
+  const orgId = ready?.context.orgId ?? "";
+  const rollup = robotRollup(robotSubsystems);
+  const busy = busyKey != null;
+  const state: ShellState = fetchFailed
+    ? "error"
+    : !view
+      ? "loading"
+      : view.status === "setup_required"
+        ? "setup"
+        : "ready";
 
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page robot-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Build / Robot</span>
-            <h1>Robot Blueprint</h1>
-            <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
-          </div>
-        </header>
-        <EmptyState className="robot-empty" title="Select a team workspace" description={view.message}>
+  return (
+    <ToolPage
+      hub="build"
+      hubTab="robot"
+      title="Robot Blueprint"
+      description={
+        ready
+          ? `The digital twin for ${ready.context.orgName ?? "your team"}${ready.context.teamNumber ? ` (Team ${ready.context.teamNumber})` : ""} — CAD, code, strategy, and ops per subsystem, ${ready.context.seasonYear} season.`
+          : "Every subsystem linked to its CAD, code, strategy priority, and live ops data."
+      }
+      className="robot-page"
+      orgId={ready?.context.orgId ?? null}
+      state={state}
+      error={{ message: error || "Check your connection and try again.", status: failureStatus }}
+      onRetry={() => void load()}
+      setup={{
+        title: "Select a team workspace",
+        description: view?.status === "setup_required" ? view.message : undefined,
+        children: (
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </EmptyState>
-      </main>
-    );
-  }
-
-  const orgId = view.context.orgId ?? "";
-  const rollup = robotRollup(robotSubsystems);
-  const busy = busyKey != null;
-
-  return (
-    <main className="module-page robot-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Build / Robot</span>
-          <h1>Robot Blueprint</h1>
-          <p>
-            The digital twin for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — CAD, code, strategy, and ops per
-            subsystem, {view.context.seasonYear} season.
-          </p>
-        </div>
-        <div className="robot-header-actions">
-          <select value={robotLabel} aria-label="Robot" onChange={(event) => setRobotLabel(event.target.value)}>
-            {robotLabels.map((label) => (
-              <option key={label} value={label}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <section className="robot-rollup app-card">
-        <div className="robot-rollup-main">
-          <strong>{rollup.percent}%</strong>
-          <div className="robot-track big">
-            <i style={{ width: `${rollup.percent}%` }} className={rollup.percent >= 100 ? "done" : undefined} />
+        ),
+      }}
+      actions={
+        ready ? (
+          <div className="robot-header-actions">
+            <select value={robotLabel} aria-label="Robot" onChange={(event) => setRobotLabel(event.target.value)}>
+              {robotLabels.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
-          <span className="app-muted">
-            {rollup.ready}/{rollup.total} competition-ready · {rollup.blockers} active blocker{rollup.blockers === 1 ? "" : "s"}
-          </span>
-        </div>
-        <ul className="robot-gaps">
-          <li className={rollup.missingCad ? "gap" : undefined}>CAD links missing: {rollup.missingCad}</li>
-          <li className={rollup.missingCode ? "gap" : undefined}>Code refs missing: {rollup.missingCode}</li>
-          <li className={rollup.unlinkedStrategy ? "gap" : undefined}>No strategy link: {rollup.unlinkedStrategy}</li>
-          <li className={rollup.untested ? "gap" : undefined}>No practice reps: {rollup.untested}</li>
-        </ul>
-      </section>
+        ) : undefined
+      }
+    >
+      {ready ? (
+        <>
+          {error ? (
+            <p className="telemetry-status" role="alert">
+              {error}
+            </p>
+          ) : null}
 
-      {robotSubsystems.length === 0 ? (
-        <EmptyState
-          className="robot-empty"
-          title={`No subsystems yet for “${robotLabel}”`}
-          description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
-        >
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}
+          <section className="robot-rollup app-card">
+            <div className="robot-rollup-main">
+              <strong>{rollup.percent}%</strong>
+              <div className="robot-track big">
+                <i style={{ width: `${rollup.percent}%` }} className={rollup.percent >= 100 ? "done" : undefined} />
+              </div>
+              <span className="app-muted">
+                {rollup.ready}/{rollup.total} competition-ready · {rollup.blockers} active blocker{rollup.blockers === 1 ? "" : "s"}
+              </span>
+            </div>
+            <ul className="robot-gaps">
+              <li className={rollup.missingCad ? "gap" : undefined}>CAD links missing: {rollup.missingCad}</li>
+              <li className={rollup.missingCode ? "gap" : undefined}>Code refs missing: {rollup.missingCode}</li>
+              <li className={rollup.unlinkedStrategy ? "gap" : undefined}>No strategy link: {rollup.unlinkedStrategy}</li>
+              <li className={rollup.untested ? "gap" : undefined}>No practice reps: {rollup.untested}</li>
+            </ul>
+          </section>
+
+          {robotSubsystems.length === 0 ? (
+            <EmptyState
+              className="robot-empty"
+              title={`No subsystems yet for “${robotLabel}”`}
+              description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
+            >
+              <button
+                type="button"
+                className="app-button"
+                disabled={busy}
+                onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}
+              >
+                Seed standard subsystems
+              </button>
+            </EmptyState>
+          ) : (
+            <div className="robot-grid">
+              {robotSubsystems.map((subsystem) => (
+                <SubsystemCard
+                  key={subsystem.id}
+                  subsystem={subsystem}
+                  priorities={ready.priorities}
+                  orgId={orgId}
+                  busyKey={busyKey}
+                  run={run}
+                />
+              ))}
+            </div>
+          )}
+
+          <form
+            className="robot-add"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!newName.trim()) return;
+              void run({ action: "add_subsystem", orgId, robotLabel, name: newName.trim() }, "add").then(() => setNewName(""));
+            }}
           >
-            Seed standard subsystems
-          </button>
-        </EmptyState>
-      ) : (
-        <div className="robot-grid">
-          {robotSubsystems.map((subsystem) => (
-            <SubsystemCard
-              key={subsystem.id}
-              subsystem={subsystem}
-              priorities={view.priorities}
-              orgId={orgId}
-              busyKey={busyKey}
-              run={run}
-            />
-          ))}
-        </div>
-      )}
+            <input value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
+            <button type="submit" className="app-button secondary" disabled={busy || !newName.trim()}>
+              Add subsystem
+            </button>
+            {robotSubsystems.length > 0 ? (
+              <button type="button" className="robot-link" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>
+                Re-sync standard set
+              </button>
+            ) : null}
+          </form>
 
-      <form
-        className="robot-add"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!newName.trim()) return;
-          void run({ action: "add_subsystem", orgId, robotLabel, name: newName.trim() }, "add").then(() => setNewName(""));
-        }}
-      >
-        <input value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
-        <button type="submit" className="app-button secondary" disabled={busy || !newName.trim()}>
-          Add subsystem
-        </button>
-        {robotSubsystems.length > 0 ? (
-          <button type="button" className="robot-link" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>
-            Re-sync standard set
-          </button>
-        ) : null}
-      </form>
+          <nav className="product-hub-related intel-actions" aria-label="Robot systems of record">
+            <a href={withOrgHref("/fmea", orgId)}>FMEA</a>
+            <a href={withOrgHref("/batteries", orgId)}>Batteries</a>
+            <a href={withOrgHref("/robot-weigh-in", orgId)}>Weigh-in</a>
+            <a href={withOrgHref("/inspection-copilot", orgId)}>Inspection</a>
+            <a href={withOrgHref("/hours", orgId)}>Hours</a>
+          </nav>
 
-      <nav className="intel-actions" aria-label="Robot systems of record">
-        <a href={withOrgHref("/fmea", orgId)}>FMEA</a>
-        <a href={withOrgHref("/batteries", orgId)}>Batteries</a>
-        <a href={withOrgHref("/robot-weigh-in", orgId)}>Weigh-in</a>
-        <a href={withOrgHref("/inspection-copilot", orgId)}>Inspection</a>
-        <a href={withOrgHref("/hours", orgId)}>Hours</a>
-      </nav>
-
-      <AiInsightPanel
-        orgId={orgId}
-        kind="robot_blueprint"
-        robotLabel={robotLabel}
-        title="Blueprint review"
-        description="AI read of the digital twin — weakest subsystems with their blockers, missing CAD/code/strategy links, and what to close before the next event."
-      />
-    </main>
+          <AiInsightPanel
+            orgId={orgId}
+            kind="robot_blueprint"
+            robotLabel={robotLabel}
+            title="Blueprint review"
+            description="AI read of the digital twin — weakest subsystems with their blockers, missing CAD/code/strategy links, and what to close before the next event."
+          />
+        </>
+      ) : null}
+    </ToolPage>
   );
 }

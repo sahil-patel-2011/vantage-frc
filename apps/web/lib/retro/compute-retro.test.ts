@@ -138,7 +138,7 @@ describe("generatePostmortem", () => {
       if (sql.includes("FROM retro_action_items")) {
         return { rows: [{ status: "done", count: "2" }, { status: "open", count: "1" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserts.push({ sql, params });
         return { rows: [] };
       }
@@ -159,7 +159,7 @@ describe("generatePostmortem", () => {
     expect(postmortem.narrative).toContain(String(SEASON));
     expect(postmortem.narrative).toContain("Intake jam");
 
-    const usageInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserts.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
     const postmortemInsert = inserts.find((entry) => entry.sql.includes("INSERT INTO retro_postmortems"));
     expect(postmortemInsert).toBeDefined();

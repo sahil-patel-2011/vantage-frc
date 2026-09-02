@@ -97,7 +97,7 @@ async function loadOrgConnectorSnapshot(
 ): Promise<OrgConnectorSnapshot> {
   const onshape = await client.query<{ id: string }>(
     `SELECT id FROM cad_connections
-     WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape'
+     WHERE org_id=$1::uuid AND (user_id=$2::uuid OR user_id IS NULL) AND platform='onshape'
        AND status='connected' AND disabled_at IS NULL
      LIMIT 1`,
     [orgId, userId],

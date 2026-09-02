@@ -152,6 +152,35 @@ export function cylindricalFacesScript(featureId: string): string {
 export const ALL_SOLID_BODIES_SCRIPT =
   "function(context is Context, queries) { return transientQueriesToStrings(evaluateQuery(context, qAllSolidBodies())); }";
 
+export type FaceSign = "positive" | "negative" | "either";
+
+/**
+ * Planar faces of a feature whose outward normal points along `axis`. This is
+ * how "shell it, open at the top" becomes an exact selection: the top face of a
+ * Top-plane extrude is the planar face whose normal is +Z.
+ */
+export function planarFacesScript(featureId: string, axis: readonly [number, number, number], sign: FaceSign = "positive"): string {
+  const id = safeFeatureId(featureId);
+  const [ax, ay, az] = axis.map((value) => {
+    if (!Number.isFinite(value)) throw new Error("Axis components must be finite numbers.");
+    return Number(value);
+  }) as [number, number, number];
+  const test = sign === "positive" ? "d > 0.99" : sign === "negative" ? "d < -0.99" : "abs(d) > 0.99";
+  return [
+    "function(context is Context, queries) {",
+    `  var faces = evaluateQuery(context, qGeometry(qCreatedBy(makeId("${id}"), EntityType.FACE), GeometryType.PLANE));`,
+    `  var axis = normalize(vector(${ax}, ${ay}, ${az}));`,
+    "  var kept = [];",
+    "  for (var face in faces) {",
+    '    var plane = evPlane(context, { "face" : face });',
+    "    var d = dot(plane.normal, axis);",
+    `    if (${test}) { kept = append(kept, face); }`,
+    "  }",
+    "  return transientQueriesToStrings(kept);",
+    "}",
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Typed resolvers
 // ---------------------------------------------------------------------------
@@ -203,5 +232,33 @@ export async function resolveOnshapeAxisIds(
   featureId: string,
 ): Promise<string[]> {
   const { ids } = await evaluateOnshapeQuery(http, document, cylindricalFacesScript(featureId));
+  return ids;
+}
+
+export const FACE_SELECTIONS = ["top", "bottom", "ends", "all"] as const;
+export type FaceSelection = (typeof FACE_SELECTIONS)[number];
+
+/**
+ * Face ids for a shell.
+ * - "top": the planar face whose normal is the sketch plane normal (the +Z face of a Top extrude).
+ * - "bottom": the opposite face.
+ * - "ends": both.
+ * - "all": every face the feature created (rarely what a shell wants; offered for completeness).
+ */
+export async function resolveOnshapeFaceIds(
+  http: OnshapeResolveHttp,
+  document: OnshapeDocumentIds,
+  input: { featureId: string; selection?: FaceSelection; plane?: string },
+): Promise<string[]> {
+  const selection = input.selection ?? "top";
+  if (!(FACE_SELECTIONS as readonly string[]).includes(selection)) {
+    throw new Error(`faces must be one of ${FACE_SELECTIONS.join(", ")}.`);
+  }
+  const normal = onshapePlaneNormal(input.plane ?? "Top");
+  const script =
+    selection === "all"
+      ? createdByScript(input.featureId, "FACE")
+      : planarFacesScript(input.featureId, normal, selection === "top" ? "positive" : selection === "bottom" ? "negative" : "either");
+  const { ids } = await evaluateOnshapeQuery(http, document, script);
   return ids;
 }

@@ -51,6 +51,8 @@ export {
   ensurePickList,
   listPickList,
   listPickLists,
+  promoteToPickList,
+  promotionNote,
   recordVote,
   removeVote,
   renormalizeRanks,
@@ -62,5 +64,8 @@ export {
   setListStatus,
   upsertEntry,
   upsertEntryFromTier,
+  type PromoteSourceKind,
+  type PromoteToPickListInput,
+  type PromoteToPickListResult,
   type ReorderResult,
 } from "./store";

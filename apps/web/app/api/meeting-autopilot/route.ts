@@ -1,3 +1,4 @@
+import type { RenderOutcome } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -92,11 +93,12 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let render: RenderOutcome | undefined;
       switch (action) {
         case "generate-agenda": {
           const title = trimmedOrNull(body.title, 200) ?? "Team meeting";
           const meetingOn = isoDateOrNull(body.meetingOn);
-          await generateAgenda(client, { orgId, userId, seasonYear, title, meetingOn });
+          render = await generateAgenda(client, { orgId, userId, seasonYear, title, meetingOn });
           break;
         }
         case "draft-minutes": {
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
           const minutesText = trimmedOrNull(body.minutesText, 20_000);
           if (!agendaId) throw new Error("agendaId is required");
           if (!minutesText) throw new Error("minutesText is required");
-          await draftMinutesActionItems(client, { orgId, userId, agendaId, minutesText });
+          render = (await draftMinutesActionItems(client, { orgId, userId, agendaId, minutesText })).render ?? undefined;
           break;
         }
         case "update-action-item": {
@@ -139,7 +141,8 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeMeetingAutopilotView(client, { userId, requestedOrg: orgId, seasonYear });
+      const view = await computeMeetingAutopilotView(client, { userId, requestedOrg: orgId, seasonYear });
+      return render ? { ...view, render } : view;
     });
 
     return Response.json(view);

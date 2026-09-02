@@ -10,8 +10,10 @@ import {
   awardCatalogEntry,
   awardStatusLabel,
 } from "../../../lib/awards";
+import { answerText, slugForFile } from "../../../lib/awards-export";
 import { AWARDS_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { awardsNextActions } from "../../../lib/business/awards-next-actions";
+import { copyToClipboard, downloadTextFile } from "../../../lib/copy-download";
 import "./awards.css";
 
 type Submission = {
@@ -196,6 +198,54 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
       setItemForm({ kind: "essay", prompt: "", charLimit: "" });
       await loadItems(selectedId);
       await load();
+    }
+  }
+
+  /** Per-answer copy / download — built client-side from the drafted text, never from a placeholder. */
+  async function copyAnswer(item: Item, index: number) {
+    const ok = await copyToClipboard(answerText({ index, prompt: item.prompt, content: item.content, kind: item.kind }));
+    flash(ok, ok ? `Copied answer ${index}.` : "Clipboard is unavailable in this browser.");
+  }
+
+  function downloadAnswer(item: Item, index: number) {
+    const stem = selected ? slugForFile(awardCatalogEntry(selected.awardType)?.name ?? selected.awardType) : "award";
+    const ok = downloadTextFile(
+      `${stem}-q${index}.txt`,
+      `${answerText({ index, prompt: item.prompt, content: item.content, kind: item.kind })}\n`,
+    );
+    if (!ok) flash(false, "Downloads are unavailable in this browser.");
+  }
+
+  /** Whole submission: the server assembles every answer (`export` action) so the file matches the DB. */
+  async function fetchExport(submissionId: string) {
+    const response = await fetch(
+      `/api/awards?orgId=${encodeURIComponent(orgId)}&action=export&submissionId=${encodeURIComponent(submissionId)}`,
+    );
+    const data = (await response.json()) as { text?: string; bundle?: unknown; fileStem?: string; error?: string };
+    if (!response.ok || !data.text) throw new Error(data.error ?? "Could not export this submission");
+    return { text: data.text, bundle: data.bundle, fileStem: data.fileStem ?? "award" };
+  }
+
+  async function copyAll(submissionId: string) {
+    try {
+      const exported = await fetchExport(submissionId);
+      const ok = await copyToClipboard(exported.text);
+      flash(ok, ok ? "Copied every answer." : "Clipboard is unavailable in this browser.");
+    } catch (error) {
+      flash(false, error instanceof Error ? error.message : "Could not export this submission");
+    }
+  }
+
+  async function downloadAll(submissionId: string, format: "text" | "json") {
+    try {
+      const exported = await fetchExport(submissionId);
+      const ok =
+        format === "json"
+          ? downloadTextFile(`${exported.fileStem}.json`, JSON.stringify(exported.bundle, null, 2), "application/json")
+          : downloadTextFile(`${exported.fileStem}.txt`, exported.text);
+      if (!ok) flash(false, "Downloads are unavailable in this browser.");
+    } catch (error) {
+      flash(false, error instanceof Error ? error.message : "Could not export this submission");
     }
   }
 
@@ -389,6 +439,25 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                 Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award —
                 that feeds Business evidence for grant writing.
               </p>
+              <div className="awards-export-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="app-button secondary sm" onClick={() => void copyAll(selected.id)}>
+                  Copy all answers
+                </button>
+                <button
+                  type="button"
+                  className="app-button secondary sm"
+                  onClick={() => void downloadAll(selected.id, "text")}
+                >
+                  Download .txt
+                </button>
+                <button
+                  type="button"
+                  className="app-button secondary sm"
+                  onClick={() => void downloadAll(selected.id, "json")}
+                >
+                  Download .json bundle
+                </button>
+              </div>
 
               {items.length === 0 ? (
                 <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
@@ -396,9 +465,25 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                 </p>
               ) : (
                 <ul className="awards-item-list">
-                  {items.map((item) => (
+                  {items.map((item, index) => (
                     <li key={item.id}>
                       {item.prompt ? <p>{item.prompt}</p> : <strong>{item.kind ?? "essay"}</strong>}
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className="app-button secondary sm"
+                          onClick={() => void copyAnswer(item, index + 1)}
+                        >
+                          Copy answer
+                        </button>
+                        <button
+                          type="button"
+                          className="app-button secondary sm"
+                          onClick={() => downloadAnswer(item, index + 1)}
+                        >
+                          Download
+                        </button>
+                      </div>
                       <textarea
                         rows={5}
                         defaultValue={item.content ?? ""}

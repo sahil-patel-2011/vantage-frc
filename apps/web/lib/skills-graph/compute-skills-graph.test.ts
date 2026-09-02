@@ -170,7 +170,7 @@ describe("requestMentor", () => {
       if (sql.includes("FROM build_tasks")) {
         return { rows: [{ userName: "Mira Mentor", skillCategory: "software", completedCount: "3" }] };
       }
-      if (sql.includes("INSERT INTO ai_usage_events")) {
+      if ((sql.includes("INSERT INTO ai_usage_events") || sql.includes("INSERT INTO ai_render_attempts"))) {
         inserted.push({ sql, params });
         return { rows: [] };
       }
@@ -188,7 +188,7 @@ describe("requestMentor", () => {
     expect(requestInsert?.params).toContain("matched");
     expect(requestInsert?.params).toContain(MENTOR);
 
-    const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
+    const usageInsert = inserted.find((entry) => (entry.sql.includes("INSERT INTO ai_usage_events") || entry.sql.includes("INSERT INTO ai_render_attempts")));
     expect(usageInsert).toBeDefined();
   });
 });

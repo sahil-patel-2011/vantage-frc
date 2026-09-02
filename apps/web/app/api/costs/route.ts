@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { grantIdOrNull } from "../../../lib/finance/grant-options";
 import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
 import {
   COST_CATEGORIES,
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
             incurredOn,
             status: oneOf<CostStatus>(COST_STATUSES, body.status) ?? "planned",
             notes: trimmedOrNull(body.notes),
+            grantApplicationId: grantIdOrNull(body.grantApplicationId),
           });
           break;
         }
@@ -150,6 +152,8 @@ export async function POST(request: Request) {
             incurredOn: body.incurredOn === undefined ? undefined : (isoDateOrNull(body.incurredOn) ?? undefined),
             status: status ?? undefined,
             notes: body.notes === undefined ? undefined : trimmedOrNull(body.notes),
+            // undefined leaves the tag alone; "" / null untags; a uuid retags.
+            grantApplicationId: body.grantApplicationId === undefined ? undefined : grantIdOrNull(body.grantApplicationId),
           });
           break;
         }

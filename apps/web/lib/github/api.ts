@@ -287,7 +287,11 @@ export type GitHubScanBundle = {
   path: string;
   content: string;
   filesScanned: number;
+  /** True when any file was cut (per-file cap or chunk budget) or left out. */
   truncated: boolean;
+  /** Files whose tail was cut — the model never saw the rest of them. */
+  truncatedFiles: string[];
+  /** Files actually in the bundle. Coverage may claim these and only these. */
   files: string[];
   /** Files the plan chose that could not be read (binary / encoding / gone). */
   unreadable: Array<{ path: string; reason: BugbotSkipReason }>;
@@ -337,13 +341,14 @@ export async function fetchGitHubScanBundle(
     paths = plan.chunks[0] ?? [];
     treeTruncated = plan.treeTruncated;
   }
-  const files: Array<{ path: string; content: string }> = [];
+  const files: Array<{ path: string; content: string; truncated: boolean }> = [];
   const unreadable: Array<{ path: string; reason: BugbotSkipReason }> = [];
   for (const path of paths) {
     try {
       const snippet = await fetchGitHubFileSnippet(http, fullName, path, ref, GITHUB_SCAN_FILE_CHARS);
-      if (snippet.content.trim()) files.push({ path: snippet.path, content: snippet.content });
-      else unreadable.push({ path, reason: "not_robot_code" });
+      if (snippet.content.trim()) {
+        files.push({ path: snippet.path, content: snippet.content, truncated: snippet.truncated });
+      } else unreadable.push({ path, reason: "not_robot_code" });
     } catch {
       // Binary / missing / encoding skip — never fabricate the file, always report it.
       unreadable.push({ path, reason: "not_robot_code" });
@@ -352,8 +357,14 @@ export async function fetchGitHubScanBundle(
   const bundle = formatBugbotScanBundle(files);
   return {
     ...bundle,
-    files: files.map((file) => file.path),
-    unreadable,
+    // Only files that made it into the bundle count as read; a file the chunk
+    // budget pushed out is reported as skipped, never listed as reviewed.
+    files: bundle.included,
+    truncatedFiles: bundle.truncatedFiles,
+    unreadable: [
+      ...unreadable,
+      ...bundle.omitted.map((path) => ({ path, reason: "chunk_char_budget" as const })),
+    ],
     fullName,
     ref,
     treeTruncated,

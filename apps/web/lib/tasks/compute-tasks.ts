@@ -1,5 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { buildBoard, buildMemberWorkload, summarizeMeetingOutput, visibleBenchmarkMedian } from ".";
+import {
+  deleteTask as deleteStoredTask,
+  insertTask,
+  listTaskSeasons,
+  listTasks,
+  replaceTaskAssignees as storeReplaceAssignees,
+  updateTask as updateStoredTask,
+  type StoredTask,
+} from "./store";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 
 export const TASK_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked", "done", "archived"];
@@ -53,40 +62,23 @@ export function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-type TaskRow = {
-  id: string;
-  title: string;
-  subsystem: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  assignee: string | null;
-  assignees: string[] | null;
-  estimateHours: string | number | null;
-  dueOn: string | null;
-  blockedReason: string | null;
-  notes: string | null;
-  doneAt: string | null;
-  seasonYear: number;
-  createdAt: string;
-};
-
-function mapTask(row: TaskRow): BuildTask {
-  const estimate = row.estimateHours == null ? null : Number(row.estimateHours);
+/** Board shape over a merged-store row (lib/tasks/store). */
+export function mapStoredTask(task: StoredTask): BuildTask {
   return {
-    id: row.id,
-    title: row.title,
-    subsystem: row.subsystem,
-    status: row.status,
-    priority: row.priority,
-    assignee: row.assignee,
-    assignees: row.assignees?.length ? row.assignees : row.assignee ? [row.assignee] : [],
-    estimateHours: estimate != null && Number.isFinite(estimate) ? estimate : null,
-    dueOn: row.dueOn,
-    blockedReason: row.blockedReason,
-    notes: row.notes,
-    doneAt: row.doneAt,
-    seasonYear: row.seasonYear,
-    createdAt: row.createdAt,
+    id: task.id,
+    title: task.title,
+    subsystem: task.subsystem,
+    status: task.status,
+    priority: task.priority,
+    assignee: task.assignee ?? (task.assigneeUserId ? task.assigneeName : null),
+    assignees: task.assignees.length ? task.assignees : task.assigneeName ? [task.assigneeName] : [],
+    estimateHours: task.estimateHours,
+    dueOn: task.dueOn,
+    blockedReason: task.blockedReason,
+    notes: task.notes,
+    doneAt: task.doneAt,
+    seasonYear: task.seasonYear,
+    createdAt: task.createdAt,
   };
 }
 
@@ -127,21 +119,9 @@ export async function computeTasksView(
     };
   }
 
-  const [taskResult, seasonResult, memberResult, outputResult, benchmarkResult] = await Promise.all([
-    client.query<TaskRow>(
-      `SELECT t.id,t.title,t.subsystem,t.status,t.priority,t.assignee,
-              COALESCE(array_agg(a.assignee ORDER BY a.created_at) FILTER(WHERE a.assignee IS NOT NULL),'{}') AS assignees,
-              t.estimate_hours AS "estimateHours",t.due_on::text AS "dueOn",
-              t.blocked_reason AS "blockedReason",t.notes,t.done_at::text AS "doneAt",
-              t.season_year AS "seasonYear",t.created_at::text AS "createdAt"
-       FROM build_tasks t LEFT JOIN build_task_assignees a ON a.task_id=t.id AND a.org_id=t.org_id
-       WHERE t.org_id=$1 AND t.season_year=$2 GROUP BY t.id ORDER BY t.created_at DESC`,
-      [org.orgId, seasonYear],
-    ),
-    client.query<{ seasonYear: number }>(
-      `SELECT DISTINCT season_year AS "seasonYear" FROM build_tasks WHERE org_id = $1 ORDER BY season_year DESC`,
-      [org.orgId],
-    ),
+  const [stored, seasonList, memberResult, outputResult, benchmarkResult] = await Promise.all([
+    listTasks(client, { orgId: org.orgId, seasonYear, includeArchived: true }),
+    listTaskSeasons(client, org.orgId),
     client.query<{ userId: string; name: string }>(
       `SELECT m.user_id::text AS "userId",COALESCE(NULLIF(trim(u.name),''),u.email) AS name
        FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.org_id=$1 ORDER BY name`, [org.orgId]),
@@ -154,10 +134,10 @@ export async function computeTasksView(
       `SELECT opted_in AS "optedIn",team_count AS "teamCount",median_weekly_hours AS "medianWeeklyHours" FROM get_ops_norms_benchmark($1)`, [org.orgId]),
   ]);
 
-  const tasks = taskResult.rows.map(mapTask);
+  const tasks = stored.map(mapStoredTask);
   const board = buildBoard(tasks);
   const subsystems = [...new Set(tasks.map((t) => t.subsystem).filter(Boolean))].sort();
-  const seasons = seasonResult.rows.map((r) => r.seasonYear);
+  const seasons = [...seasonList];
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
   const output = outputResult.rows[0] ?? { weekStart: new Date().toISOString().slice(0,10), loggedHours: 0, tasksCompleted: 0 };
@@ -184,7 +164,7 @@ export async function computeTasksView(
   };
 }
 
-// ---- write helpers (run inside the caller's withRls transaction) ----
+// ---- write helpers (run inside the caller's withRls transaction; all via lib/tasks/store) ----
 
 export async function createTask(
   client: PoolClient,
@@ -201,50 +181,44 @@ export async function createTask(
     seasonYear: number;
   },
 ): Promise<void> {
-  const created = await client.query<{id:string}>(
-    `INSERT INTO build_tasks (org_id, title, subsystem, status, priority, assignee, estimate_hours, due_on, season_year, created_by)
-     VALUES ($1,$2,$3,'todo',$4,$5,$6::numeric,$7::date,$8,$9) RETURNING id`,
-    [
-      input.orgId,
-      input.title,
-      input.subsystem || "general",
-      input.priority,
-      input.assignee,
-      input.estimateHours,
-      input.dueOn,
-      input.seasonYear,
-      input.userId,
-    ],
-  );
-  await replaceTaskAssignees(client,{orgId:input.orgId,taskId:created.rows[0]!.id,userId:input.userId,assignees:input.assignees?.length?input.assignees:input.assignee?[input.assignee]:[]});
+  await insertTask(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    title: input.title,
+    seasonYear: input.seasonYear,
+    subsystem: input.subsystem || "general",
+    status: "todo",
+    priority: input.priority,
+    assignees: input.assignees?.length ? input.assignees : input.assignee ? [input.assignee] : [],
+    estimateHours: input.estimateHours,
+    dueOn: input.dueOn,
+  });
 }
 
-export async function replaceTaskAssignees(client:PoolClient,input:{orgId:string;taskId:string;userId:string;assignees:string[]}) {
-  const names=[...new Set(input.assignees.map((name)=>name.trim().slice(0,120)).filter(Boolean))].slice(0,12);
-  await client.query(`DELETE FROM build_task_assignees WHERE task_id=$1 AND org_id=$2`,[input.taskId,input.orgId]);
-  for(const name of names) await client.query(`INSERT INTO build_task_assignees(task_id,org_id,assignee,added_by) VALUES($1,$2,$3,$4)`,[input.taskId,input.orgId,name,input.userId]);
-  await client.query(`UPDATE build_tasks SET assignee=$3,updated_at=now() WHERE id=$1 AND org_id=$2`,[input.taskId,input.orgId,names[0]??null]);
+export async function replaceTaskAssignees(
+  client: PoolClient,
+  input: { orgId: string; taskId: string; userId: string; assignees: string[] },
+) {
+  await storeReplaceAssignees(client, input);
 }
 
 export async function setTaskStatus(
   client: PoolClient,
-  input: { orgId: string; taskId: string; status: TaskStatus; blockedReason?: string | null },
+  input: { orgId: string; userId?: string; taskId: string; status: TaskStatus; blockedReason?: string | null },
 ): Promise<void> {
-  await client.query(
-    `UPDATE build_tasks SET
-       status = $3,
-       blocked_reason = CASE WHEN $3 = 'blocked' THEN $4 ELSE NULL END,
-       done_at = CASE WHEN $3 = 'done' THEN COALESCE(done_at, now()) ELSE NULL END,
-       updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
-    [input.taskId, input.orgId, input.status, input.blockedReason ?? null],
-  );
+  await updateStoredTask(client, {
+    orgId: input.orgId,
+    taskId: input.taskId,
+    userId: input.userId ?? "",
+    patch: { status: input.status, blockedReason: input.blockedReason ?? null },
+  });
 }
 
 export async function updateTaskFields(
   client: PoolClient,
   input: {
     orgId: string;
+    userId?: string;
     taskId: string;
     title?: string;
     subsystem?: string;
@@ -254,35 +228,24 @@ export async function updateTaskFields(
     dueOn?: string | null;
   },
 ): Promise<void> {
-  await client.query(
-    `UPDATE build_tasks SET
-       title = COALESCE($3, title),
-       subsystem = COALESCE($4, subsystem),
-       priority = COALESCE($5, priority),
-       assignee = CASE WHEN $6::boolean THEN $7 ELSE assignee END,
-       estimate_hours = CASE WHEN $8::boolean THEN $9::numeric ELSE estimate_hours END,
-       due_on = CASE WHEN $10::boolean THEN $11::date ELSE due_on END,
-       updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
-    [
-      input.taskId,
-      input.orgId,
-      input.title ?? null,
-      input.subsystem ?? null,
-      input.priority ?? null,
-      input.assignee !== undefined,
-      input.assignee ?? null,
-      input.estimateHours !== undefined,
-      input.estimateHours ?? null,
-      input.dueOn !== undefined,
-      input.dueOn ?? null,
-    ],
-  );
+  await updateStoredTask(client, {
+    orgId: input.orgId,
+    taskId: input.taskId,
+    userId: input.userId ?? "",
+    patch: {
+      title: input.title,
+      subsystem: input.subsystem,
+      priority: input.priority,
+      assignees: input.assignee === undefined ? undefined : input.assignee ? [input.assignee] : [],
+      estimateHours: input.estimateHours,
+      dueOn: input.dueOn,
+    },
+  });
 }
 
 export async function deleteTask(
   client: PoolClient,
   input: { orgId: string; taskId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM build_tasks WHERE id = $1 AND org_id = $2`, [input.taskId, input.orgId]);
+  await deleteStoredTask(client, input);
 }

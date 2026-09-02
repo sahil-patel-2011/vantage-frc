@@ -42,7 +42,7 @@
 .robot-ops .robot-link.danger{margin-left:auto}
 .robot-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
 .robot-add input{flex:1;min-width:220px}
-@media(max-width:700px){.robot-rollup{flex-direction:column;align-items:stretch}.robot-domain{grid-template-columns:1fr}}
+@media(max-width:720px){.robot-rollup{flex-direction:column;align-items:stretch}.robot-domain{grid-template-columns:1fr}}
 
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}

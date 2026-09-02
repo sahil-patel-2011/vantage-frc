@@ -32,7 +32,9 @@ export * from "./ai-plan";
 export * from "./onshape-api-keys";
 export * from "./onshape-features";
 export * from "./onshape-resolve";
+export * from "./onshape-export";
 export * from "./cad-tool-catalog";
+export * from "./cad-tool-dry-run";
 export * from "./claude-cad";
 export type { ClaudeCadSession, CadSessionFeature, CadSessionFeatureKind } from "./claude-session";
 export {
@@ -123,7 +125,13 @@ export type {
 } from "./dfm";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};
-export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_assembly","create_hole","create_mirror","delete_feature","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;
+/**
+ * Every operation here is implemented by BOTH the mock adapter and the hosted
+ * Onshape transport (packages/cad/src/onshape.ts, which delegates to the same
+ * onshape-features builders the /cad agent runs). create_assembly and
+ * rollback_checkpoint were removed rather than left declared-but-throwing.
+ */
+export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_hole","create_mirror","delete_feature","feature_script","verify_topology","render_views","create_checkpoint","export_step","export_stl","export_gltf"] as const;
 export type CadOperation=typeof CAD_OPERATIONS[number];
 export type CadAction={operation:CadOperation;parameters:Record<string,unknown>;requiresApproval:boolean;reason:string};
 export type { CadExecutionResult };
