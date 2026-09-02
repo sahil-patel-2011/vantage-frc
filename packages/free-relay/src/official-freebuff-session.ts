@@ -10,7 +10,8 @@ import { resolveSelectableFreebuffModel } from "../../agent/src/freebuff-models.
  * FREEBUFF_WORKSPACE_ROOT/org-<uuid>/.
  */
 
-export const OFFICIAL_FREEBUFF_ORIGIN = "https://www.freebuff.com";
+/** Official CLI login talks to the Codebuff app host (Freebuff is the free mode). */
+export const OFFICIAL_FREEBUFF_ORIGIN = "https://www.codebuff.com";
 export const FREEBUFF_INSTANCE_HEADER = "x-freebuff-instance-id";
 export const FREEBUFF_MODEL_HEADER = "x-freebuff-model";
 
@@ -103,6 +104,7 @@ export async function admitOfficialFreebuffSession(input: {
       authorization: `Bearer ${input.token}`,
       [FREEBUFF_MODEL_HEADER]: model,
     },
+    redirect: "follow",
     signal: AbortSignal.timeout(20_000),
   });
   const body = (await response.json().catch(() => null)) as {
@@ -146,6 +148,7 @@ export async function officialFreebuffChat(input: {
       ...(input.instanceId ? { [FREEBUFF_INSTANCE_HEADER]: input.instanceId } : {}),
     },
     body: input.body,
+    redirect: "follow",
     signal: AbortSignal.timeout(120_000),
   });
   const text = await response.text();

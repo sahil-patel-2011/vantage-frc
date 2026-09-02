@@ -24,8 +24,8 @@ describe("official Freebuff login files", () => {
   });
 
   it("talks to official Freebuff session and chat URLs", () => {
-    expect(officialSessionUrl()).toBe("https://www.freebuff.com/api/v1/freebuff/session");
-    expect(officialChatUrl()).toBe("https://www.freebuff.com/api/v1/chat/completions");
+    expect(officialSessionUrl()).toBe("https://www.codebuff.com/api/v1/freebuff/session");
+    expect(officialChatUrl()).toBe("https://www.codebuff.com/api/v1/chat/completions");
   });
 });
 
