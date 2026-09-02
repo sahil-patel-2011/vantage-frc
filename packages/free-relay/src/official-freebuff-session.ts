@@ -186,6 +186,38 @@ export function openaiCompletionFromText(model: string, text: string): string {
   });
 }
 
+export async function readOfficialFreebuffSession(input: {
+  token: string;
+  origin?: string;
+  fetchImpl?: typeof fetch;
+}): Promise<{ status: string; instanceId?: string; model?: string }> {
+  const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const response = await fetchImpl(officialSessionUrl(origin), {
+    method: "GET",
+    headers: { authorization: `Bearer ${input.token}` },
+    redirect: "follow",
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (response.status === 404) return { status: "none" };
+  const body = (await response.json().catch(() => null)) as {
+    status?: string;
+    instanceId?: string;
+    model?: string;
+    currentModel?: string;
+  } | null;
+  return {
+    status: body?.status ?? `http_${response.status}`,
+    instanceId: typeof body?.instanceId === "string" ? body.instanceId : undefined,
+    model: body?.model ?? body?.currentModel,
+  };
+}
+
+function sessionModelOf(body: { model?: string; currentModel?: string } | null, fallback: string): string {
+  const raw = body?.model ?? body?.currentModel;
+  return typeof raw === "string" && raw.trim() ? toOfficialFreebuffWireModel(raw) : fallback;
+}
+
 export async function admitOfficialFreebuffSession(input: {
   token: string;
   model: string;
@@ -195,6 +227,15 @@ export async function admitOfficialFreebuffSession(input: {
   const origin = input.origin ?? OFFICIAL_FREEBUFF_ORIGIN;
   const model = toOfficialFreebuffWireModel(resolveSelectableFreebuffModel(input.model));
   const fetchImpl = input.fetchImpl ?? fetch;
+  const existing = await readOfficialFreebuffSession({ token: input.token, origin, fetchImpl });
+  if (existing.status === "active" && existing.instanceId) {
+    return {
+      ok: true,
+      status: "active",
+      instanceId: existing.instanceId,
+      model: existing.model ? toOfficialFreebuffWireModel(existing.model) : model,
+    };
+  }
   const response = await fetchImpl(officialSessionUrl(origin), {
     method: "POST",
     headers: {
@@ -208,14 +249,22 @@ export async function admitOfficialFreebuffSession(input: {
     status?: string;
     instanceId?: string;
     model?: string;
+    currentModel?: string;
     message?: string;
     error?: string;
   } | null;
   if (body?.status === "active" && body.instanceId) {
-    return { ok: true, status: "active", instanceId: body.instanceId, model: body.model ?? model };
+    return { ok: true, status: "active", instanceId: body.instanceId, model: sessionModelOf(body, model) };
   }
-  if (body?.status === "model_locked" && typeof body.model === "string") {
-    return { ok: true, status: "model_locked", model: body.model, detail: "existing session model" };
+  if (body?.status === "model_locked") {
+    const live = await readOfficialFreebuffSession({ token: input.token, origin, fetchImpl });
+    return {
+      ok: true,
+      status: "model_locked",
+      instanceId: live.instanceId,
+      model: sessionModelOf({ model: live.model, currentModel: body.currentModel }, model),
+      detail: "existing session model",
+    };
   }
   return {
     ok: false,
