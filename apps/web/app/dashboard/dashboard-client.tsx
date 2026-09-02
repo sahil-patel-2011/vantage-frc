@@ -1327,7 +1327,7 @@ export default function DashboardClient() {
           </p>
         </div>
         <div className="dash-home-actions">
-          {!orgId ? (
+          {!meLoaded ? null : !orgId ? (
             <a className="app-button" href="/workspace">
               Select workspace
             </a>
@@ -1432,12 +1432,33 @@ export default function DashboardClient() {
         </div>
       ) : null}
 
-      {meLoaded && dashShell !== "ready" ? (
+      {/* Steps read the snapshot; before it lands they would claim an event is set. */}
+      {meLoaded && (!orgId || updatedAt) && dashShell !== "ready" ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
             <Badge tone="setup">Setup</Badge>
             <h2>{dashboardSetupTitle(dashShell)}</h2>
             <p>{dashboardSetupBlurb(dashShell)}</p>
+            {orgId ? (
+              <ol className="dash-setup-steps" aria-label="Season setup steps">
+                {setupSteps.map((step, index) => (
+                  <li key={step.id} data-state={step.state}>
+                    <i aria-hidden="true">{step.state === "done" ? <Icon name="check" size={14} /> : index + 1}</i>
+                    {step.state === "done" ? (
+                      <span>
+                        <strong>{step.label}</strong>
+                        <small>{step.detail}</small>
+                      </span>
+                    ) : (
+                      <a href={step.href}>
+                        <strong>{step.label}</strong>
+                        <small>{step.detail}</small>
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
           </div>
           {(() => {
             const primary =
@@ -1463,6 +1484,41 @@ export default function DashboardClient() {
             );
           })()}
         </section>
+      ) : null}
+
+      {/* Most of the year there is no event: the team still needs somewhere to
+          start. Real destinations only — nothing here shows invented numbers. */}
+      {meLoaded && orgId && !editing && todayCards.length === 0 ? (
+        <nav className="dash-quickstart" aria-label="Team basics">
+          <p className="shell-section-head">Team basics</p>
+          <ul>
+            {(
+              [
+                ...(role === "owner" || role === "admin"
+                  ? [{ id: "invite", label: "Invite teammates", detail: "Exact-email invites", href: withOrgHref("/team/admin#invite-form", orgId), icon: "users" }]
+                  : []),
+                { id: "calendar", label: "Add a meeting", detail: "Build nights and practices", href: hubHref("/team", "calendar", orgId), icon: "calendar" },
+                { id: "chat", label: "Say hello in #general", detail: "Team chat with channels", href: hubHref("/team", "messages", orgId), icon: "chat" },
+                { id: "work", label: "Track the first task", detail: "List or board view", href: hubHref("/team", "todos", orgId), icon: "clipboard" },
+                { id: "forms", label: "Build scouting forms", detail: "Match and pit forms", href: hubHref("/competition", "forms", orgId), icon: "scout" },
+                { id: "playbook", label: "Start the playbook", detail: "Season wiki", href: hubHref("/team", "knowledge", orgId), icon: "pin" },
+              ] as Array<{ id: string; label: string; detail: string; href: string; icon: "users" | "calendar" | "chat" | "clipboard" | "scout" | "pin" }>
+            )
+              .map((item) => (
+                <li key={item.id}>
+                  <a href={item.href}>
+                    <i>
+                      <Icon name={item.icon} />
+                    </i>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </nav>
       ) : null}
 
       {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (

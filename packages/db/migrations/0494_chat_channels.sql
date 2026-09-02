@@ -81,6 +81,25 @@ CREATE INDEX IF NOT EXISTS org_conversation_members_user_idx
 
 ALTER TABLE org_conversation_members ENABLE ROW LEVEL SECURITY;
 
+-- Moderator check for the policies below. SECURITY DEFINER so the lookup does not
+-- re-enter this table's own row policy (that recursion is a hard Postgres error).
+CREATE OR REPLACE FUNCTION is_org_conversation_moderator(p_conversation_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM org_conversation_members mod
+    WHERE mod.conversation_id = p_conversation_id
+      AND mod.user_id = current_app_user_id()
+      AND mod.role = 'moderator'
+  );
+$$;
+REVOKE ALL ON FUNCTION is_org_conversation_moderator(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION is_org_conversation_moderator(uuid) TO vantage_app, vantage_worker;
+
 -- A member sees their own rows; owners/admins and channel moderators see everyone in the org.
 DROP POLICY IF EXISTS org_conversation_members_read ON org_conversation_members;
 CREATE POLICY org_conversation_members_read ON org_conversation_members FOR SELECT TO vantage_app
@@ -90,12 +109,7 @@ CREATE POLICY org_conversation_members_read ON org_conversation_members FOR SELE
       user_id = current_app_user_id()
       OR has_org_role(org_id, ARRAY['owner','admin']::org_role[])
       OR is_platform_admin()
-      OR EXISTS (
-        SELECT 1 FROM org_conversation_members mod
-        WHERE mod.conversation_id = org_conversation_members.conversation_id
-          AND mod.user_id = current_app_user_id()
-          AND mod.role = 'moderator'
-      )
+      OR is_org_conversation_moderator(org_conversation_members.conversation_id)
     )
   );
 
@@ -122,12 +136,7 @@ CREATE POLICY org_conversation_members_insert ON org_conversation_members FOR IN
         SELECT 1 FROM org_conversations c
         WHERE c.id = conversation_id AND c.created_by = current_app_user_id()
       )
-      OR EXISTS (
-        SELECT 1 FROM org_conversation_members mod
-        WHERE mod.conversation_id = org_conversation_members.conversation_id
-          AND mod.user_id = current_app_user_id()
-          AND mod.role = 'moderator'
-      )
+      OR is_org_conversation_moderator(org_conversation_members.conversation_id)
     )
   );
 
@@ -138,12 +147,7 @@ CREATE POLICY org_conversation_members_update ON org_conversation_members FOR UP
     AND (
       user_id = current_app_user_id()
       OR has_org_role(org_id, ARRAY['owner','admin']::org_role[])
-      OR EXISTS (
-        SELECT 1 FROM org_conversation_members mod
-        WHERE mod.conversation_id = org_conversation_members.conversation_id
-          AND mod.user_id = current_app_user_id()
-          AND mod.role = 'moderator'
-      )
+      OR is_org_conversation_moderator(org_conversation_members.conversation_id)
     )
   )
   WITH CHECK (is_org_member(org_id));
@@ -155,12 +159,7 @@ CREATE POLICY org_conversation_members_delete ON org_conversation_members FOR DE
     AND (
       user_id = current_app_user_id()
       OR has_org_role(org_id, ARRAY['owner','admin']::org_role[])
-      OR EXISTS (
-        SELECT 1 FROM org_conversation_members mod
-        WHERE mod.conversation_id = org_conversation_members.conversation_id
-          AND mod.user_id = current_app_user_id()
-          AND mod.role = 'moderator'
-      )
+      OR is_org_conversation_moderator(org_conversation_members.conversation_id)
     )
   );
 

@@ -9,6 +9,13 @@ import {
 } from "../../../lib/team/team-admin-related";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import TeamAdminClient from "../team-admin-client";
+import { auth } from "@vantage/core";
+import { withRls } from "@vantage/db";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+// Membership lookup per request — never cache one member's workspace for another.
+export const dynamic = "force-dynamic";
 import "../team-admin.css";
 
 export const metadata = {
@@ -24,6 +31,22 @@ export default async function TeamAdminPage({
 }) {
   const { orgId } = await searchParams;
   if (!orgId) {
+    // Land on the member's own team instead of a "pick a workspace" wall when
+    // they only have one (or an obvious primary): the hubs already do this.
+    const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+    if (session) {
+      const primary = await withRls({ userId: session.user.id }, (client) =>
+        client.query<{ orgId: string }>(
+          `SELECT org_id AS "orgId" FROM memberships
+           WHERE user_id = $1::uuid
+           ORDER BY CASE role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, created_at
+           LIMIT 1`,
+          [session.user.id],
+        ),
+      ).catch(() => null);
+      const active = primary?.rows[0]?.orgId;
+      if (active) redirect(`/team/admin?orgId=${encodeURIComponent(active)}`);
+    }
     const copy = teamAdminShellCopy("setup");
     const steps = teamAdminSetupSteps(null);
     const related = teamAdminRelatedLinks(null, {

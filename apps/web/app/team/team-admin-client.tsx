@@ -136,6 +136,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [inviteBusy, setInviteBusy] = useState(false);
   const [actingInviteId, setActingInviteId] = useState<string | null>(null);
   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
+  const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [inviteNotice, setInviteNotice] = useState<{ tone: "ok" | "warn" | "error"; message: string } | null>(
     null,
@@ -294,6 +295,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       );
       if (data.id && data.inviteUrl) {
         setInviteLinks((current) => ({ ...current, [data.id!]: data.inviteUrl! }));
+        setLastInviteUrl(data.inviteUrl);
         await copyInviteLink(data.id, data.inviteUrl);
       }
       setEmail("");
@@ -556,81 +558,136 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
 
-      <TeamProfilePanel orgId={orgId} />
-
-      <TeamBrandingPanel orgId={orgId} />
-
-      <nav className="settings-hub" aria-label="Workspace settings">
-        <a href={withOrgHref("/team/background", orgId)}>
-          <strong>Team background</strong>
-          <span>Mission, history, demographics for sponsors</span>
-        </a>
-        <a href={withOrgHref("/team/security", orgId)}>
-          <strong>Security &amp; delegation</strong>
-          <span>Auth policy and API-key powers</span>
-        </a>
-        <a href={withOrgHref("/team/ai-keys", orgId)}>
-          <strong>AI keys</strong>
-          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-        </a>
-        <a href={withOrgHref("/team/budgets", orgId)}>
-          <strong>API budgets</strong>
-          <span>Spend and token hard limits</span>
-        </a>
-        <a href={withOrgHref("/team/ai-policy", orgId)}>
-          <strong>AI governance</strong>
-          <span>Tools, spend alerts, approvals</span>
-        </a>
-        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
-          <strong>Prompt caching</strong>
-          <span>Reuse stable AI context blocks</span>
-        </a>
-        <a href={withOrgHref("/team/ai-memory", orgId)}>
-          <strong>AI memory</strong>
-          <span>Team memory governance</span>
-        </a>
-        <a href={withOrgHref("/team/data", orgId)}>
-          <strong>Live data</strong>
-          <span>TBA connectors</span>
-        </a>
-        <a href={withOrgHref("/team/discord", orgId)}>
-          <strong>Discord</strong>
-          <span>Guild, announcements, chat bridge</span>
-        </a>
-        <a href={withOrgHref("/team/slack", orgId)}>
-          <strong>Slack</strong>
-          <span>Two-way team chat bridge</span>
-        </a>
-        <a href="#github-connection">
-          <strong>GitHub</strong>
-          <span>Robot-code context for AI — never DEMO repos</span>
-        </a>
-        <a href="/account?tab=notifications">
-          <strong>Notification prefs</strong>
-          <span>In-app and email opt-ins</span>
-        </a>
-        <a href="/account?tab=integrations">
-          <strong>Account Connections</strong>
-          <span>TBA, Onshape, Discord, Slack, GitHub</span>
-        </a>
-      </nav>
-
-      <nav className="intel-actions settings-secondary-links" aria-label="More team admin links">
-        <a href={withOrgHref("/business", orgId)}>Business</a>
-        <a href={withOrgHref("/costs", orgId)}>Season costs</a>
-        <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
-        <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
-        <a href={withOrgHref("/chat", orgId)}>Assistant</a>
-        <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-        <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-        <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
-        <a href={withOrgHref("/exports", orgId)}>Export</a>
-        <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
-        <a href="/security">Personal security</a>
-        <a href="/account?tab=profile">Account</a>
-        <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
-        <a href="/account?tab=integrations">Connections</a>
-      </nav>
+      {/* People first: inviting and managing members is why an admin opens this page. */}
+      <section className="admin-grid team-invite-grid" id="invite-form">
+        <form className="team-invite-form" onSubmit={sendInvite}>
+          <span className="eyebrow">INVITE BY EMAIL</span>
+          <h2>Add a teammate</h2>
+          <p>
+            Send an invite to one email. They sign in with that address and accept the link. Team
+            numbers never grant access.
+          </p>
+          {adminTenure?.inviteHint ? (
+            <p className="app-muted team-admin-tenure-hint" role="note">
+              {adminTenure.inviteHint}
+            </p>
+          ) : null}
+          {deliveryBanner ? (
+            <p
+              className={`team-invite-banner ${deliveryBanner.tone === "setup" ? "setup" : "info"}`}
+              role="note"
+            >
+              <strong>{deliveryBanner.title}</strong>
+              <span>{deliveryBanner.detail}</span>
+            </p>
+          ) : null}
+          <label>
+            Email
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="teammate@example.com"
+            />
+          </label>
+          <label>
+            Role
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="scout">Scout</option>
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </label>
+          <button className="primary-action" type="submit" disabled={inviteBusy}>
+            {inviteBusy ? "Sending…" : "Send invite"}
+          </button>
+          {inviteNotice ? (
+            <p className={`team-invite-notice ${inviteNotice.tone}`} role="status">
+              {inviteNotice.message}
+            </p>
+          ) : null}
+          {lastInviteUrl ? (
+            <label className="team-invite-link">
+              Invite link — share it any way you like
+              <input
+                readOnly
+                value={lastInviteUrl}
+                aria-label="Invite link"
+                onFocus={(event) => event.currentTarget.select()}
+                onClick={(event) => event.currentTarget.select()}
+              />
+            </label>
+          ) : null}
+        </form>
+        <Panel className="invite-list team-invite-ledger" id="invitation-ledger">
+          <span className="eyebrow">Pending and past invites</span>
+          {!invites.length ? (
+            <EmptyState
+              soft
+              badge="No invitations yet"
+              badgeTone="setup"
+              title="No invites sent yet"
+              description="Send an email on the left. You will get a copyable link even if email is not configured."
+            />
+          ) : (
+            invites.map((inviteRow) => {
+              const link = inviteLinks[inviteRow.id];
+              const pending = inviteRow.status === "pending";
+              return (
+                <article key={inviteRow.id} className={pending ? "pending" : undefined}>
+                  <div>
+                    <strong>{inviteRow.email}</strong>
+                    <small>{formatInviteRowMeta(inviteRow)}</small>
+                  </div>
+                  <time>
+                    {inviteRow.acceptedAt
+                      ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
+                      : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
+                  </time>
+                  {pending ? (
+                    <div className="team-invite-row-actions">
+                      {link ? (
+                        <button
+                          type="button"
+                          onClick={() => void copyInviteLink(inviteRow.id, link)}
+                        >
+                          {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
+                        </button>
+                      ) : null}
+                      {link ? (
+                        <input
+                          readOnly
+                          className="team-invite-row-link"
+                          value={link}
+                          aria-label={`Invite link for ${inviteRow.email}`}
+                          onFocus={(event) => event.currentTarget.select()}
+                          onClick={(event) => event.currentTarget.select()}
+                        />
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={actingInviteId === inviteRow.id}
+                        onClick={() => void act(inviteRow.id, "resend")}
+                      >
+                        {actingInviteId === inviteRow.id ? "Working…" : link ? "Resend" : "Resend & copy link"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actingInviteId === inviteRow.id}
+                        onClick={() => void act(inviteRow.id, "revoke")}
+                      >
+                        Revoke
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })
+          )}
+        </Panel>
+      </section>
 
       <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">
         <span className="eyebrow">MEMBERS &amp; INVITES</span>
@@ -756,6 +813,83 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         ) : null}
       </section>
 
+      <TeamProfilePanel orgId={orgId} />
+
+      <TeamBrandingPanel orgId={orgId} />
+
+      <nav className="settings-hub" aria-label="Workspace settings">
+        <a href={withOrgHref("/team/background", orgId)}>
+          <strong>Team background</strong>
+          <span>Mission, history, demographics for sponsors</span>
+        </a>
+        <a href={withOrgHref("/team/security", orgId)}>
+          <strong>Security &amp; delegation</strong>
+          <span>Auth policy and API-key powers</span>
+        </a>
+        <a href={withOrgHref("/team/ai-keys", orgId)}>
+          <strong>AI keys</strong>
+          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
+        </a>
+        <a href={withOrgHref("/team/budgets", orgId)}>
+          <strong>API budgets</strong>
+          <span>Spend and token hard limits</span>
+        </a>
+        <a href={withOrgHref("/team/ai-policy", orgId)}>
+          <strong>AI governance</strong>
+          <span>Tools, spend alerts, approvals</span>
+        </a>
+        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
+          <strong>Prompt caching</strong>
+          <span>Reuse stable AI context blocks</span>
+        </a>
+        <a href={withOrgHref("/team/ai-memory", orgId)}>
+          <strong>AI memory</strong>
+          <span>Team memory governance</span>
+        </a>
+        <a href={withOrgHref("/team/data", orgId)}>
+          <strong>Live data</strong>
+          <span>TBA connectors</span>
+        </a>
+        <a href={withOrgHref("/team/discord", orgId)}>
+          <strong>Discord</strong>
+          <span>Guild, announcements, chat bridge</span>
+        </a>
+        <a href={withOrgHref("/team/slack", orgId)}>
+          <strong>Slack</strong>
+          <span>Two-way team chat bridge</span>
+        </a>
+        <a href="#github-connection">
+          <strong>GitHub</strong>
+          <span>Robot-code context for AI — never DEMO repos</span>
+        </a>
+        <a href="/account?tab=notifications">
+          <strong>Notification prefs</strong>
+          <span>In-app and email opt-ins</span>
+        </a>
+        <a href="/account?tab=integrations">
+          <strong>Account Connections</strong>
+          <span>TBA, Onshape, Discord, Slack, GitHub</span>
+        </a>
+      </nav>
+
+      <nav className="intel-actions settings-secondary-links" aria-label="More team admin links">
+        <a href={withOrgHref("/business", orgId)}>Business</a>
+        <a href={withOrgHref("/costs", orgId)}>Season costs</a>
+        <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
+        <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
+        <a href={withOrgHref("/chat", orgId)}>Assistant</a>
+        <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
+        <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
+        <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
+        <a href={withOrgHref("/exports", orgId)}>Export</a>
+        <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
+        <a href="/security">Personal security</a>
+        <a href="/account?tab=profile">Account</a>
+        <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
+        <a href="/account?tab=integrations">Connections</a>
+      </nav>
+
+
       <ConfirmDialog
         open={Boolean(resetTarget)}
         opts={
@@ -815,113 +949,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           ) : null}
         </div>
         {message ? <p className="team-access-message" role="status">{message}</p> : null}
-      </section>
-      <section className="admin-grid team-invite-grid" id="invite-form">
-        <form className="team-invite-form" onSubmit={sendInvite}>
-          <span className="eyebrow">INVITE BY EMAIL</span>
-          <h2>Add a teammate</h2>
-          <p>
-            Send an invite to one email. They sign in with that address and accept the link. Team
-            numbers never grant access.
-          </p>
-          {adminTenure?.inviteHint ? (
-            <p className="app-muted team-admin-tenure-hint" role="note">
-              {adminTenure.inviteHint}
-            </p>
-          ) : null}
-          {deliveryBanner ? (
-            <p
-              className={`team-invite-banner ${deliveryBanner.tone === "setup" ? "setup" : "info"}`}
-              role="note"
-            >
-              <strong>{deliveryBanner.title}</strong>
-              <span>{deliveryBanner.detail}</span>
-            </p>
-          ) : null}
-          <label>
-            Email
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="teammate@example.com"
-            />
-          </label>
-          <label>
-            Role
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="scout">Scout</option>
-              <option value="admin">Admin</option>
-              <option value="viewer">Viewer</option>
-            </select>
-          </label>
-          <button className="primary-action" type="submit" disabled={inviteBusy}>
-            {inviteBusy ? "Sending…" : "Send invite"}
-          </button>
-          {inviteNotice ? (
-            <p className={`team-invite-notice ${inviteNotice.tone}`} role="status">
-              {inviteNotice.message}
-            </p>
-          ) : null}
-        </form>
-        <Panel className="invite-list team-invite-ledger" id="invitation-ledger">
-          <span className="eyebrow">Pending and past invites</span>
-          {!invites.length ? (
-            <EmptyState
-              soft
-              badge="No invitations yet"
-              badgeTone="setup"
-              title="No invites sent yet"
-              description="Send an email on the left. You will get a copyable link even if email is not configured."
-            />
-          ) : (
-            invites.map((inviteRow) => {
-              const link = inviteLinks[inviteRow.id];
-              const pending = inviteRow.status === "pending";
-              return (
-                <article key={inviteRow.id} className={pending ? "pending" : undefined}>
-                  <div>
-                    <strong>{inviteRow.email}</strong>
-                    <small>{formatInviteRowMeta(inviteRow)}</small>
-                  </div>
-                  <time>
-                    {inviteRow.acceptedAt
-                      ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
-                      : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
-                  </time>
-                  {pending ? (
-                    <div className="team-invite-row-actions">
-                      {link ? (
-                        <button
-                          type="button"
-                          onClick={() => void copyInviteLink(inviteRow.id, link)}
-                        >
-                          {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={actingInviteId === inviteRow.id}
-                        onClick={() => void act(inviteRow.id, "resend")}
-                      >
-                        {actingInviteId === inviteRow.id ? "Working…" : link ? "Resend" : "Resend & copy link"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actingInviteId === inviteRow.id}
-                        onClick={() => void act(inviteRow.id, "revoke")}
-                      >
-                        Revoke
-                      </button>
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })
-          )}
-        </Panel>
       </section>
       <section className="compare-panel github-panel" id="github-connection">
         <h2>GitHub</h2>

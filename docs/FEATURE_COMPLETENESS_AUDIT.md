@@ -14,6 +14,18 @@
 > team-level Onshape connection (10), and deflated QR handoff batches. In flight at time of writing: the hub-shell
 > unification for Business/Media. See `docs/FEATURE_MAP.md` for the current surface list.
 
+> **Walkthrough 2026-09-02 (local Postgres, real sessions).** Sign-in, three-step onboarding, mentor invite,
+> acceptance, Home, chat, tasks, Code Coach, forms, Team admin and every hub were exercised end to end against
+> a from-zero migrated database. That surfaced and fixed: `0136` (the `team_announcements` table `0137`
+> altered was never created), `0113`/`0158` (reserved `current_role`, view column rename), `0494` (self-
+> referencing member policies recursed — now a SECURITY DEFINER `is_org_conversation_moderator()`), and `0506`
+> (invite acceptance failed RLS on `membership_audit_events`, so every self-service accept returned 400).
+> Product fixes from the same pass: `/team/admin` resolves the member's team instead of an empty page, the
+> invite link is shown after sending and beside each pending invite, Home's first-run banner is an ordered
+> checklist gated on the real snapshot with a "Team basics" row for quiet weeks, and the chat visibility
+> pill is neutral. `securityErrorResponse` now logs the hidden database error code before returning its
+> generic 400, which is how the RLS gap was found.
+
 100 features rated by a 15-agent audit (solid = would ship · thin = works but shallow · fragment = a piece of a job · broken = does not work), plus market research on what FRC teams actually use. Every claim cites file:line — grep the JSON at the transcript for detail beyond this summary.
 
 **Counts: 10 solid · 61 thin · 14 fragment · 15 broken**

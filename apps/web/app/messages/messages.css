@@ -666,3 +666,40 @@ html[data-theme="light"] .messages-page.v2 .channel-dialog {
     grid-template-columns: 1fr;
   }
 }
+
+/* styles.css still carries the legacy AI-chat rule `.chat-composer>div{background:#ffb936}`;
+   the team-chat composer shares the class, so neutralise it here and style the hint on its own. */
+.messages-page.v2 .chat-composer > div,
+body.has-app-shell .messages-page.v2 .chat-composer > div {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+.messages-page.v2 .chat-composer > div.messages-composer-hint,
+body.has-app-shell .messages-page.v2 .chat-composer > div.messages-composer-hint {
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--app-muted);
+  background: var(--app-soft, color-mix(in srgb, var(--app-ink) 5%, transparent));
+  font: 600 12px/1.4 var(--font-source-sans), sans-serif;
+}
+.messages-page.v2 .chat-composer textarea:focus-visible,
+body.has-app-shell .messages-page.v2 .chat-composer textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--app-accent) 55%, transparent);
+  outline-offset: 1px;
+  border-color: var(--app-accent);
+}
+
+/* Channel visibility is information, not a warning — the legacy AI-chat amber pill reads as an alert. */
+.messages-page.v2 .shared-warning,
+body.has-app-shell .messages-page.v2 .shared-warning {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--app-muted);
+  background: var(--app-soft, color-mix(in srgb, var(--app-ink) 6%, transparent));
+  border: 1px solid var(--app-line);
+  font: 600 11px/1.2 var(--font-source-sans), sans-serif;
+}

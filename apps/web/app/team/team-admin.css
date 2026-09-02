@@ -228,3 +228,8 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+/* Invite link is always visible after sending — clipboard access is not guaranteed. */
+.team-invite-link{display:grid;gap:6px;margin-top:10px;font:600 12px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted,var(--app-muted))}
+.team-invite-link input,.team-invite-row-link{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--soft-line,var(--app-line));border-radius:10px;background:var(--soft-bg,var(--app-bg));color:var(--soft-ink,var(--app-ink));font:600 12px ui-monospace,monospace}
+.team-invite-row-link{margin-top:6px}

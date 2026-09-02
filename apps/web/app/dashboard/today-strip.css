@@ -38,3 +38,29 @@
   .dash-today li:first-child{grid-column:1/-1}
   .dash-today li a{min-height:64px;padding:10px 12px;gap:10px}
 }
+
+/* Team basics — the quiet-season front door when no card is live. */
+.dash-quickstart{margin:0 0 18px}
+.dash-quickstart ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.dash-quickstart li a{
+  display:flex;align-items:center;gap:12px;min-height:66px;padding:10px 14px;border-radius:var(--soft-radius);
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);text-decoration:none;
+  transition:border-color .15s ease,transform .15s ease;
+}
+.dash-quickstart li a:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));transform:translateY(-1px)}
+.dash-quickstart li i{display:grid;place-items:center;width:36px;height:36px;flex:none;border-radius:11px;background:var(--soft-accent-soft);color:var(--soft-accent)}
+.dash-quickstart li span{display:grid;gap:2px;min-width:0}
+.dash-quickstart li strong{font:700 14px/1.15 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
+.dash-quickstart li small{color:var(--soft-muted);font:600 12px/1.2 var(--font-source-sans),ui-sans-serif}
+.dash-setup-steps{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.dash-setup-steps li{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-card)}
+.dash-setup-steps li i{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:999px;background:var(--soft-bg);color:var(--soft-muted);font:700 11px/1 var(--font-source-sans),ui-sans-serif;font-style:normal}
+.dash-setup-steps li[data-state="done"] i{background:color-mix(in srgb,#16a34a 16%,var(--soft-card));color:#15803d}
+.dash-setup-steps li[data-state="current"]{border-color:color-mix(in srgb,var(--soft-accent) 45%,var(--soft-line))}
+.dash-setup-steps li[data-state="current"] i{background:var(--soft-accent);color:var(--soft-accent-ink)}
+.dash-setup-steps li>a,.dash-setup-steps li>span{display:grid;gap:1px;min-width:0;color:inherit;text-decoration:none}
+.dash-setup-steps li strong{font:700 13px/1.15 var(--font-source-sans),ui-sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-setup-steps li small{color:var(--soft-muted);font:600 11.5px/1.2 var(--font-source-sans),ui-sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-setup-steps li[data-state="done"] strong{color:var(--soft-muted);font-weight:600}
+body.has-app-shell .dash-setup-banner{align-items:start}
+@media (max-width:720px){.dash-quickstart ul{grid-template-columns:1fr 1fr;gap:8px}.dash-quickstart li a{min-height:60px;padding:8px 10px;gap:9px}}

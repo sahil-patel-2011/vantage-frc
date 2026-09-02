@@ -4,15 +4,32 @@
     {
       "name": "web-3401",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--port", "3401"],
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "--port",
+        "3401"
+      ],
       "cwd": "apps/web",
       "port": 3401
     },
     {
       "name": "web-fixture-3402",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["scripts/dev-fixture.mjs", "3402"],
+      "runtimeArgs": [
+        "scripts/dev-fixture.mjs",
+        "3402"
+      ],
       "port": 3402
+    },
+    {
+      "name": "web-local-3403",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev-local-db.mjs",
+        "3403"
+      ],
+      "port": 3403
     }
   ]
 }

@@ -185,7 +185,7 @@ export async function computeAlumniNetworkView(
     // surface entries not already imported into the richer profile table so teams don't re-key them.
     client.query<TeamAlumRow>(
       `SELECT ta.id, ta.full_name AS "fullName", ta.grad_year AS "gradYear",
-              ta.current_role AS "currentRole", ta.email, ta.linkedin_url AS "linkedinUrl",
+              ta."current_role" AS "currentRole", ta.email, ta.linkedin_url AS "linkedinUrl",
               ta.is_mentor AS "isMentor", ta.mentor_topic AS "mentorTopic"
        FROM team_alumni ta
        WHERE ta.org_id = $1

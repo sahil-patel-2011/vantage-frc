@@ -8,7 +8,7 @@ CREATE TABLE team_alumni (
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   full_name text NOT NULL,
   grad_year integer CHECK (grad_year IS NULL OR grad_year BETWEEN 1990 AND 2100),
-  current_role text,
+  "current_role" text,
   email text,
   discord_handle text,
   linkedin_url text,

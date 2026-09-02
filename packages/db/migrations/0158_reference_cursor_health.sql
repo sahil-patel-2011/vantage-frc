@@ -39,6 +39,8 @@ $$;
 REVOKE ALL ON FUNCTION app_reference_cursor_summary() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app_reference_cursor_summary() TO vantage_app, vantage_worker;
 
+-- Column order changes from the 0079 definition; CREATE OR REPLACE cannot reorder columns.
+DROP VIEW IF EXISTS tba_cache_freshness;
 CREATE OR REPLACE VIEW tba_cache_freshness AS
 SELECT
   'tba'::text AS source,

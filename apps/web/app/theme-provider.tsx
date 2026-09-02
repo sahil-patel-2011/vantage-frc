@@ -148,7 +148,9 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const productRoute = !["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/desktop", "/for-teams", "/pricing", "/privacy", "/terms", "/signin", "/sign-in", "/offline"].includes(pathname)
+  const productRoute = !["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/desktop", "/for-teams", "/pricing", "/privacy", "/terms", "/signin", "/sign-in", "/offline",
+    // First-run and public-token flows are focused pages: no hub chrome until the member has a team.
+    "/onboarding", "/invite", "/claim", "/exit-interview/respond"].includes(pathname)
     && !pathname.startsWith("/display/kiosk")
     && !pathname.startsWith("/display/pit")
     && !pathname.startsWith("/showcase/present")

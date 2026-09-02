@@ -80,5 +80,9 @@ export function securityErrorResponse(error: unknown, fallback: string) {
   const message = error instanceof Error && !/^[0-9A-Z]{5}$/.test(databaseCode)
     ? error.message
     : fallback;
+  if (message === fallback && error instanceof Error) {
+    // The client gets the generic line; operators still need the SQLSTATE and text.
+    console.error(`[security] ${fallback}:`, databaseCode || "-", error.message);
+  }
   return json(message, 400);
 }

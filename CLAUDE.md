@@ -38,6 +38,18 @@ the preload; also wired as `web-fixture-3402` in `.claude/launch.json`), then se
 dir, so run the browser specs against that fixture server instead of the default 3310 webServer:
 `PLAYWRIGHT_BASE_URL=http://localhost:3402 npx playwright test --config playwright.fixture.config.ts`.
 
+**Local Postgres for real-session walkthroughs.** With no Docker on this box, run an embedded Postgres
+(the `embedded-postgres` npm package in a scratch dir), create a UTF-8 database (`ENCODING 'UTF8'
+TEMPLATE template0` — the Windows default is WIN1252 and migration 0144 has a UTF-8 arrow), put
+`DATABASE_ADMIN_URL=postgresql://postgres:local@localhost:5432/vantage` in `.env.migrate.local`
+(the runner also insists an empty `.env.production.local` exists), then `node scripts/run-migrations.mjs`,
+`scripts/local-db-roles.sql` (gives the NOLOGIN roles a local password), seed a user/org/membership,
+and `node scripts/dev-local-db.mjs 3403` (also `web-local-3403` in `.claude/launch.json`). A Better Auth
+session is just a `sessions` row plus the cookie `better-auth.session_token=<token>.<base64 HMAC-SHA256(token,
+BETTER_AUTH_SECRET)>` URL-encoded; the launcher pins the secret to `local-development-secret-change-me`.
+Replaying all migrations from zero surfaced and fixed three latent breaks (0113 reserved word, 0136 missing
+table, 0158 view column order) plus a recursive RLS policy in 0494 and the invite-accept audit policy (0506).
+
 ## Layout
 
 - `apps/web` — the only shipping web deployment: marketing, legal/pricing/waitlist, Better Auth, and every
