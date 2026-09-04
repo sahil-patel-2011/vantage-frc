@@ -29,7 +29,7 @@ export type ToolStripLayout<T extends ToolStripEntry> = {
 export function layoutToolStrip<T extends ToolStripEntry>(
   items: T[],
   activeId: string,
-  visibleCount = 6,
+  visibleCount = 3,
   expanded = false,
 ): ToolStripLayout<T> {
   const rank = (item: T): number => {

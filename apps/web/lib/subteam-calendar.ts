@@ -2,6 +2,12 @@
 // events. Framework-free domain logic for the API, client, and unit tests.
 // No demo defaults: empty orgs show empty states until leads create subteams.
 
+import {
+  optionalHttpsUrl,
+  requireAttachedLinks,
+  type AttachedLink,
+} from "./planner/links";
+
 export const SUBTEAM_EVENT_KINDS = [
   "practice",
   "build",
@@ -71,6 +77,10 @@ export type CalendarEvent = {
   endsAt: string | null;
   location: string;
   notes: string;
+  /** Optional https join URL (Meet / Zoom / Teams). Empty events stay in-person. */
+  meetingUrl: string | null;
+  /** Attached https docs / sheets / CAD — never invented. */
+  links: AttachedLink[];
   subteamId: string | null;
   subteamName: string | null;
   subteamColor: string | null;
@@ -273,6 +283,39 @@ export function upcomingEvents(events: CalendarEvent[], now: Date = new Date(), 
   return sortEvents(events)
     .filter((event) => (event.endsAt ?? event.startsAt) >= iso)
     .slice(0, limit);
+}
+
+/**
+ * Map a click on the timed grid (0 at the top of 7am, 1 at 10pm) to an hour.
+ * Out-of-range clicks return null so we never invent a slot.
+ */
+export function hourFromGridRatio(ratio: number): number | null {
+  if (!Number.isFinite(ratio) || ratio < 0 || ratio >= 1) return null;
+  const hour = CALENDAR_GRID_START_HOUR + Math.floor(ratio * CALENDAR_GRID_HOURS.length);
+  return CALENDAR_GRID_HOURS.includes(hour) ? hour : null;
+}
+
+/** Today's real events, duties, and roll-call — empty when nothing is scheduled. */
+export function calendarTodayAgenda(input: {
+  events: CalendarEvent[];
+  duties?: DutyOnCalendar[];
+  attendanceEvents?: LinkableAttendance[];
+  now?: Date;
+}): {
+  day: string;
+  events: CalendarEvent[];
+  duties: DutyOnCalendar[];
+  rollCall: LinkableAttendance | null;
+} {
+  const day = localDayKey(input.now ?? new Date());
+  return {
+    day,
+    events: sortEvents(input.events.filter((event) => localDayKey(new Date(event.startsAt)) === day)),
+    duties: [...(input.duties ?? [])]
+      .filter((duty) => localDayKey(new Date(duty.startsAt)) === day)
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.title.localeCompare(b.title)),
+    rollCall: input.attendanceEvents?.find((row) => row.occurredOn === day) ?? null,
+  };
 }
 
 /** Events for the signed-in member's subteams (plus whole-team rows). */
@@ -582,6 +625,8 @@ export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey:
       endsAt: new Date(start.getTime() + TBA_MATCH_MS).toISOString(),
       location: row.eventName?.trim() || "",
       notes: bumper === "red" ? "RED bumpers" : "BLUE bumpers",
+      meetingUrl: null,
+      links: [],
       subteamId: null,
       subteamName: null,
       subteamColor: bumper === "red" ? TBA_RED : TBA_BLUE,
@@ -762,6 +807,8 @@ export type EventPatch = {
   endsAt?: string | null;
   location?: string;
   notes?: string;
+  meetingUrl?: string | null;
+  links?: AttachedLink[];
   subteamId?: string | null;
   attendanceEventId?: string | null;
   driverSessionId?: string | null;
@@ -782,6 +829,8 @@ export type SubteamCalendarAction =
       endsAt: string | null;
       location: string;
       notes: string;
+      meetingUrl: string | null;
+      links: AttachedLink[];
       subteamId: string | null;
       attendanceEventId: string | null;
       driverSessionId: string | null;
@@ -880,6 +929,8 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
         endsAt,
         location: optionalText(body.location, 200),
         notes: optionalText(body.notes, 2000),
+        meetingUrl: optionalHttpsUrl(body.meetingUrl, "Meeting link"),
+        links: requireAttachedLinks(body.links),
         subteamId: optionalUuid(body.subteamId, "Subteam"),
         attendanceEventId: optionalUuid(body.attendanceEventId, "Attendance event"),
         driverSessionId: optionalUuid(body.driverSessionId, "Practice session"),
@@ -913,6 +964,12 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
       }
       if (Object.prototype.hasOwnProperty.call(source, "notes")) {
         patch.notes = optionalText(source.notes, 2000);
+      }
+      if (Object.prototype.hasOwnProperty.call(source, "meetingUrl")) {
+        patch.meetingUrl = optionalHttpsUrl(source.meetingUrl, "Meeting link");
+      }
+      if (Object.prototype.hasOwnProperty.call(source, "links")) {
+        patch.links = requireAttachedLinks(source.links);
       }
       if (Object.prototype.hasOwnProperty.call(source, "subteamId")) {
         patch.subteamId = optionalUuid(source.subteamId, "Subteam");

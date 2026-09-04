@@ -17,4 +17,13 @@ describe("Dashboard prediction honesty", () => {
     expect(widgets).not.toContain('alliance: "red"');
     expect(widgets).not.toMatch(/Math\.round\(pRed \* 100\)/);
   });
+
+  it("reads real ai_usage_events tokens and never fabricates a per-team count", () => {
+    expect(snapshot).toContain("FROM ai_usage_events");
+    expect(snapshot).toContain("sum(total_tokens)");
+    expect(snapshot).toContain("isPlatformAdmin");
+    expect(snapshot).toContain("HAVING count(e.id) > 0");
+    expect(widgets).toContain("formatTokenCount");
+    expect(widgets).not.toContain("DEMO tokens");
+  });
 });

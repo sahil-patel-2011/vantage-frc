@@ -6,6 +6,39 @@
 export const TELEMETRY_WINDOW_MS = 60_000;
 export const DEFAULT_MAX_CONCURRENT = 16;
 
+/** Jobs that can occupy a slot for hours. Most slots stay free for short chat. */
+export const LONG_RUNNING_FEATURES = new Set([
+  "deep_game_analysis",
+  "memory_dream",
+  "overnight_intel",
+  "team_dream",
+  "team_dream_week",
+]);
+
+export type SlotDecision = "ok" | "full" | "long_cap";
+
+export function longSlotCap(maxConcurrent: number): number {
+  return Math.max(1, Math.floor(maxConcurrent / 4));
+}
+
+/**
+ * Short-chat seats held for the default-fast team (6925). Tiny boxes keep every
+ * seat shared so a 2-slot test/dev layer does not lock out everyone else.
+ */
+export function prioritySlotCap(maxConcurrent: number): number {
+  if (maxConcurrent <= 2) return 0;
+  return Math.min(Math.max(2, Math.floor(maxConcurrent / 8)), Math.floor(maxConcurrent / 4));
+}
+
+export type SlotBeginOptions = {
+  /** Team 6925 short chats. Long jobs never take these reserved seats. */
+  priority?: boolean;
+};
+
+export function isLongRunningFeature(feature: string): boolean {
+  return LONG_RUNNING_FEATURES.has(sanitizeFeatureLabel(feature));
+}
+
 export type FeatureInFlight = Record<string, number>;
 
 export type DeviceTelemetrySnapshot = {
@@ -16,6 +49,10 @@ export type DeviceTelemetrySnapshot = {
   activeRequests: number;
   maxConcurrent: number;
   available: number;
+  longInFlight: number;
+  longSlotCap: number;
+  prioritySlotCap: number;
+  priorityReservedInFlight: number;
   byFeature: FeatureInFlight;
 };
 
@@ -95,6 +132,7 @@ export class PiDeviceTelemetry {
   private day = utcDayKey();
   private tokensIn = 0;
   private tokensOut = 0;
+  private priorityReservedInFlight = 0;
   private readonly outEvents: Array<{ atMs: number; tokens: number }> = [];
   private readonly features = new Map<string, number>();
 
@@ -107,20 +145,61 @@ export class PiDeviceTelemetry {
     return Math.max(0, this.maxConcurrent - this.inFlight);
   }
 
-  tryBegin(feature: string): boolean {
-    if (this.inFlight >= this.maxConcurrent) return false;
-    this.inFlight += 1;
-    const key = sanitizeFeatureLabel(feature);
-    this.features.set(key, (this.features.get(key) ?? 0) + 1);
-    return true;
+  longInFlight(): number {
+    let count = 0;
+    for (const [feature, n] of this.features) {
+      if (LONG_RUNNING_FEATURES.has(feature)) count += n;
+    }
+    return count;
   }
 
-  end(feature: string): void {
+  private generalInFlight(): number {
+    return Math.max(0, this.inFlight - this.priorityReservedInFlight);
+  }
+
+  canBegin(feature: string, options: SlotBeginOptions = {}): SlotDecision {
+    const long = isLongRunningFeature(feature);
+    if (long && this.longInFlight() >= longSlotCap(this.maxConcurrent)) {
+      return "long_cap";
+    }
+    if (this.inFlight >= this.maxConcurrent) return "full";
+    const reserved = prioritySlotCap(this.maxConcurrent);
+    const generalCap = this.maxConcurrent - reserved;
+    const priorityShort = options.priority === true && !long;
+    if (priorityShort) {
+      if (this.priorityReservedInFlight < reserved) return "ok";
+      return this.generalInFlight() < generalCap ? "ok" : "full";
+    }
+    return this.generalInFlight() < generalCap ? "ok" : "full";
+  }
+
+  beginSlot(
+    feature: string,
+    options: SlotBeginOptions = {},
+  ): { ok: boolean; reserved: boolean } {
+    if (this.canBegin(feature, options) !== "ok") return { ok: false, reserved: false };
+    const key = sanitizeFeatureLabel(feature);
+    const long = isLongRunningFeature(key);
+    const reservedCap = prioritySlotCap(this.maxConcurrent);
+    const reserved =
+      options.priority === true && !long && this.priorityReservedInFlight < reservedCap;
+    this.inFlight += 1;
+    this.features.set(key, (this.features.get(key) ?? 0) + 1);
+    if (reserved) this.priorityReservedInFlight += 1;
+    return { ok: true, reserved };
+  }
+
+  tryBegin(feature: string, options: SlotBeginOptions = {}): boolean {
+    return this.beginSlot(feature, options).ok;
+  }
+
+  end(feature: string, reserved = false): void {
     this.inFlight = Math.max(0, this.inFlight - 1);
     const key = sanitizeFeatureLabel(feature);
     const next = (this.features.get(key) ?? 1) - 1;
     if (next <= 0) this.features.delete(key);
     else this.features.set(key, next);
+    if (reserved) this.priorityReservedInFlight = Math.max(0, this.priorityReservedInFlight - 1);
   }
 
   record(promptTokens: number, completionTokens: number): void {
@@ -145,6 +224,10 @@ export class PiDeviceTelemetry {
       activeRequests: this.inFlight,
       maxConcurrent: this.maxConcurrent,
       available: this.available,
+      longInFlight: this.longInFlight(),
+      longSlotCap: longSlotCap(this.maxConcurrent),
+      prioritySlotCap: prioritySlotCap(this.maxConcurrent),
+      priorityReservedInFlight: this.priorityReservedInFlight,
       byFeature,
     };
   }

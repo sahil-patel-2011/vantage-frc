@@ -35,6 +35,8 @@ type ProductHubShellProps = {
    * a dead end.
    */
   embeddedTabs?: readonly string[];
+  /** Hide the inner tool strip for these workbenches (modes live inside the canvas). */
+  hideNestedStripFor?: readonly string[];
 };
 
 function readOrgId(): string | null {
@@ -123,6 +125,7 @@ export function ProductHubShell({
   children,
   headerActions,
   embeddedTabs,
+  hideNestedStripFor,
 }: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
@@ -229,7 +232,7 @@ export function ProductHubShell({
             and falls back to its workbench; renders nothing when neither has one. */}
         <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
       </TabBar>
-      {nestedTabs.length > 1 ? (
+      {nestedTabs.length > 1 && !hideNestedStripFor?.includes(workbenchId) ? (
         <ToolStrip
           aria-label={`${hub.label} tools`}
           value={tab}

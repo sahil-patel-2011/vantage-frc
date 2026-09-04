@@ -1,82 +1,92 @@
-/* Settings bar — one horizontal map of every settings surface.
-   Same chip language as the hub ToolStrip (product-hub.css), but it scrolls
-   horizontally with fade edges instead of wrapping, so at 360px the Personal
-   and Team groups stay one thumb-swipe row. Tokens only: --soft-* with
-   --app-* fallbacks keep light and dark both correct. */
-
-.settings-bar {
-  margin: 0 0 14px;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
-.settings-bar-scroll {
-  display: flex;
-  align-items: center;
+/* Tesla-style settings: one searchable list, not a chip dump. */
+.admin-subnav.tesla-settings,
+.settings-bar.tesla-settings {
+  display: grid;
   gap: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding: 2px;
-  /* Fade edges cue that more chips live off-screen; a mask is theme-neutral
-     (it fades whatever the page background is), so dark mode needs no fork. */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  margin: 0 0 18px;
+  padding: 12px;
+  background: var(--soft-card, var(--app-surface));
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: var(--soft-radius, 16px);
+  box-shadow: var(--soft-shadow, var(--app-shadow));
 }
-.settings-bar-scroll::-webkit-scrollbar {
-  display: none;
+.settings-bar-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: 12px;
+  background: var(--soft-bg, var(--app-bg));
+  color: var(--soft-ink, var(--app-ink));
+  font: 600 14px/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 .settings-bar-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-.settings-bar-group + .settings-bar-group {
-  border-left: 1px solid var(--soft-line, var(--app-line));
-  padding-left: 14px;
+  display: grid;
+  gap: 2px;
 }
 .settings-bar-group-label {
-  flex: none;
+  padding: 0 10px 6px;
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--soft-muted, var(--app-muted));
 }
-.settings-bar-chip {
-  display: inline-flex;
+.settings-bar-row {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  flex: none;
   min-height: 44px;
-  padding: 8px 14px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  border-radius: 999px;
-  background: var(--soft-card, var(--app-surface));
-  color: var(--soft-muted, var(--app-muted));
-  font: 600 13px/1.2 var(--font-source-sans), ui-sans-serif;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.settings-bar-chip svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  display: block;
-}
-.settings-bar-chip:hover {
+  padding: 8px 10px;
+  border-radius: 10px;
   color: var(--soft-ink, var(--app-ink));
-  border-color: var(--soft-accent, var(--app-accent));
+  font: 650 14px/1.2 var(--font-source-sans), ui-sans-serif;
+  text-decoration: none;
 }
-.settings-bar-chip.is-active {
+.settings-bar-row:hover {
+  background: var(--soft-bg, var(--app-bg));
+}
+.settings-bar-row.is-active {
   background: var(--soft-accent-soft, var(--app-soft));
-  border-color: var(--soft-accent, var(--app-accent));
   color: var(--soft-accent, var(--app-accent));
-  font-weight: 700;
 }
-.settings-bar-chip:focus-visible {
-  outline: 2px solid var(--soft-accent, var(--app-accent));
-  outline-offset: 2px;
+.settings-bar-empty {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--soft-muted, var(--app-muted));
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .settings-bar-chip {
-    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+@media (min-width: 900px) {
+  .account-page {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    align-items: start;
+    gap: 20px;
   }
+  .account-page > .app-page-header {
+    grid-column: 1 / -1;
+  }
+  .account-page > .settings-bar {
+    position: sticky;
+    top: 72px;
+  }
+  .account-page > .settings-bar ~ * {
+    grid-column: 2;
+  }
+}
+.account-page .account-related,
+.account-page .settings-hub,
+.account-page .account-tabs,
+.account-page .account-header-actions,
+.account-page .account-ai-keys {
+  display: none;
 }

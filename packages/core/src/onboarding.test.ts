@@ -54,10 +54,23 @@ describe("onboarding validation", () => {
       roleDescription: "CAD lead for the elevator",
     });
     expect(result.crewRole).toBe("cad");
+    expect(result.crewRoles).toEqual(["cad"]);
     expect(result.roleDescription).toBe("CAD lead for the elevator");
     expect(() =>
       validateOnboardingPayload({ ...base, roleDescription: "x".repeat(281) }),
     ).toThrow(/280/);
+  });
+
+  it("accepts many identities and crew jobs on one profile", () => {
+    const result = validateOnboardingPayload({
+      ...base,
+      teamRoles: ["student", "parent"],
+      crewRoles: ["scout", "programming", "cad"],
+    });
+    expect(result.teamRole).toBe("student");
+    expect(result.teamRoles).toEqual(["student", "parent"]);
+    expect(result.crewRole).toBe("scout");
+    expect(result.crewRoles).toEqual(["scout", "programming", "cad"]);
   });
 
   it("treats a missing workspace as a closed-join miss, not a crash", () => {

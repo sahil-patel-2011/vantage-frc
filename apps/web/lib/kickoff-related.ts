@@ -36,6 +36,7 @@ export function kickoffNextActions(input: {
   priorityCount: number;
   openRuleCount: number;
   cadJobId?: string | null;
+  teamNumber?: number | null;
 }): KickoffNextAction[] {
   const orgId = input.orgId ?? null;
 
@@ -52,6 +53,15 @@ export function kickoffNextActions(input: {
   }
 
   const actions: KickoffNextAction[] = [];
+  if (input.teamNumber === 6925) {
+    actions.push({
+      id: "deep-game-analysis",
+      label: "Start 5-hour deep analysis",
+      detail: "Team 6925 only. Pi + Freebuff Coder UI compares teasers to past official games. Guesses stay labeled speculation.",
+      href: hubHref("/build", "kickoff", orgId),
+      primary: true,
+    });
+  }
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const cadHref = hubHref("/build", "cad", orgId);

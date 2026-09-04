@@ -1,5 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { OrgIsolatedChatAdapter, orgHasAiAccessGrant, type ChatAdapter } from "@vantage/agent";
 import { createFreeRelayChatAdapter, type FreeRelayJobKind } from "./adapter";
+import { DEEP_GAME_ANALYSIS_FEATURE, DEEP_GAME_ANALYSIS_KIND } from "./deep-game-analysis";
+import { runDeepGameAnalysisJob } from "./deep-game-analysis-job";
 import { runMemoryDreamJob } from "./memory-dream";
 
 export type FreeRelaySweepResult = {
@@ -19,18 +22,34 @@ export async function scheduleMemoryDreamJobs(
   client: PoolClient,
   dayKey = localDayKey(),
 ): Promise<{ scheduled: number }> {
-  const orgs = await client.query<{ orgId: string }>(
-    `SELECT s.org_id AS "orgId"
-     FROM team_memory_settings s
-     WHERE s.enabled = true
-       AND NOT EXISTS (
-         SELECT 1 FROM free_relay_jobs j
-         WHERE j.org_id = s.org_id
-           AND j.kind = 'memory_dream'
-           AND j.created_at >= ($1::date - interval '20 hours')
-       )`,
-    [dayKey],
-  );
+  let orgs: { rows: Array<{ orgId: string }> };
+  try {
+    orgs = await client.query<{ orgId: string }>(
+      `SELECT s.org_id AS "orgId"
+       FROM team_memory_settings s
+       WHERE s.enabled = true
+         AND EXISTS (
+           SELECT 1 FROM org_ai_access_grants g
+            WHERE g.org_id = s.org_id
+              AND g.access_kind = 'platform_relay'
+              AND g.revoked_at IS NULL
+              AND g.starts_at <= now()
+              AND g.ends_at > now()
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM free_relay_jobs j
+           WHERE j.org_id = s.org_id
+             AND j.kind = 'memory_dream'
+             AND j.created_at >= ($1::date - interval '20 hours')
+         )`,
+      [dayKey],
+    );
+  } catch (error) {
+    if (error instanceof Error && /org_ai_access_grants/.test(error.message)) {
+      return { scheduled: 0 };
+    }
+    throw error;
+  }
 
   let scheduled = 0;
   for (const row of orgs.rows) {
@@ -47,12 +66,18 @@ export async function scheduleMemoryDreamJobs(
 export async function runFreeRelayJob(
   client: PoolClient,
   jobId: string,
-  adapter = createFreeRelayChatAdapter("free_relay"),
+  adapter?: ChatAdapter,
 ): Promise<void> {
   const job = await client.query<{
     orgId: string;
     kind: FreeRelayJobKind;
-    metadata: { dayKey?: string };
+    metadata: {
+      dayKey?: string;
+      runId?: string;
+      seasonYear?: number;
+      model?: string;
+      packHint?: { gameName: string; seasonTheme: string; status: string };
+    };
   }>(
     `SELECT org_id AS "orgId", kind, metadata
      FROM free_relay_jobs
@@ -62,10 +87,60 @@ export async function runFreeRelayJob(
   const row = job.rows[0];
   if (!row) throw new Error("Job not found or not running");
 
+  if (!(await orgHasAiAccessGrant(client, row.orgId, "platform_relay"))) {
+    await client.query(
+      `UPDATE free_relay_jobs
+       SET status = 'skipped', completed_at = now(),
+           result = $2::jsonb, updated_at = now()
+       WHERE id = $1`,
+      [
+        jobId,
+        JSON.stringify({
+          reason: "no_platform_relay_grant",
+          hint: "Background FreeBuff jobs only run for orgs with an active platform_relay grant.",
+        }),
+      ],
+    );
+    return;
+  }
+
+  const jobAdapter =
+    adapter ??
+    createFreeRelayChatAdapter(
+      row.kind === DEEP_GAME_ANALYSIS_KIND ? DEEP_GAME_ANALYSIS_FEATURE : "free_relay",
+      row.orgId,
+      row.kind === DEEP_GAME_ANALYSIS_KIND ? row.metadata?.model : undefined,
+    );
+  const isolated = new OrgIsolatedChatAdapter(jobAdapter, row.orgId);
+
   try {
     if (row.kind === "memory_dream") {
       const dayKey = row.metadata?.dayKey ?? localDayKey();
-      const result = await runMemoryDreamJob(client, adapter, row.orgId, dayKey);
+      const result = await runMemoryDreamJob(client, isolated, row.orgId, dayKey);
+      await client.query(
+        `UPDATE free_relay_jobs
+         SET status = $2, completed_at = now(), result = $3::jsonb, updated_at = now()
+         WHERE id = $1`,
+        [
+          jobId,
+          result.skipped ? "skipped" : "completed",
+          JSON.stringify(result),
+        ],
+      );
+      return;
+    }
+
+    if (row.kind === DEEP_GAME_ANALYSIS_KIND) {
+      const result = await runDeepGameAnalysisJob(
+        client,
+        isolated,
+        row.orgId,
+        {
+          runId: row.metadata?.runId,
+          seasonYear: row.metadata?.seasonYear,
+        },
+        { packHint: row.metadata?.packHint },
+      );
       await client.query(
         `UPDATE free_relay_jobs
          SET status = $2, completed_at = now(), result = $3::jsonb, updated_at = now()
@@ -168,11 +243,10 @@ export async function runFreeRelaySweep(input?: {
     const jobIds = await claimFreeRelayJobs(client, input?.jobLimit ?? 8);
     await client.query("COMMIT");
 
-    const adapter = createFreeRelayChatAdapter("free_relay");
     for (const jobId of jobIds) {
       processed += 1;
       try {
-        await runFreeRelayJob(client, jobId, adapter);
+        await runFreeRelayJob(client, jobId);
         completed += 1;
       } catch {
         failed += 1;

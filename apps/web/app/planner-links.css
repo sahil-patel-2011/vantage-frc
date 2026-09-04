@@ -1,0 +1,120 @@
+.planner-link-chips,
+.planner-link-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.planner-link-chips a,
+.planner-link-edit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface, var(--soft-bg)));
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.planner-link-chips a:hover,
+.planner-link-edit a:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+}
+.planner-links-editor,
+.planner-link-add {
+  display: grid;
+  gap: 8px;
+}
+.planner-link-add {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.planner-link-edit li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.planner-link-edit .app-button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.planner-links-empty,
+.planner-link-error {
+  margin: 0;
+  font-size: 12px;
+}
+.planner-link-error {
+  color: #b42318;
+}
+.tc-join {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--app-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.todos-sheet-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--soft-line);
+  border-radius: 14px;
+  background: var(--soft-bg);
+}
+.todos-sheet {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+.todos-sheet th,
+.todos-sheet td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--soft-line);
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+.todos-sheet th {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+  background: color-mix(in srgb, var(--soft-bg) 70%, var(--app-surface, #fff));
+}
+.todos-sheet tr.is-done td {
+  opacity: 0.62;
+}
+.todos-sheet tr.is-focused {
+  outline: 2px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+}
+.todos-sheet input,
+.todos-sheet select {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: var(--app-bg, #fff);
+  font: inherit;
+}
+.todos-sheet .todos-sheet-title {
+  font-weight: 700;
+}
+.todos-sheet-due {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.todos-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

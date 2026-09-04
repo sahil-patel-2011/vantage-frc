@@ -37,6 +37,7 @@ import {
   type ResolveOnshapeAuthOptions,
 } from "./onshape-session";
 import {
+  booleanFeature,
   chamferFeature,
   circleSketchFeature,
   circularPatternFeature,
@@ -51,16 +52,27 @@ import {
   pointsSketchFeature,
   polylineSketchFeature,
   rectangleSketchFeature,
+  revolveFeature,
+  shellFeature,
+  type BooleanOperation,
   type CircleSpec,
+  type ExtrudeOperation,
   type SketchPointMm,
 } from "./onshape-features";
 import {
   resolveOnshapeAxisIds,
   resolveOnshapeEdgeIds,
+  resolveOnshapeFaceIds,
+  resolveOnshapeSketchLineIds,
   resolveOnshapeSolidBodyIds,
   resolveOnshapeVertexIds,
   type EdgeSelection,
 } from "./onshape-resolve";
+import {
+  listOnshapeNativeVariables,
+  pickVariableStudioElementId,
+  setOnshapeNativeVariable,
+} from "./onshape-native-variables";
 import { explainFeatureTreeForStudents, type OnshapeFeatureSummary } from "./onshape";
 
 /** Optional hosted runtime so the web CAD agent can use org OAuth + DB session instead of env keys. */
@@ -88,10 +100,19 @@ Onshape (cloud, any OS)
    with 5 mm corner fillets and a 4x row of 5 mm holes on 20 mm pitch".
 
 Onshape tools: list/bind/describe · sketch rectangle, circle, polyline, hole points ·
-extrude (NEW/ADD/REMOVE/INTERSECT) · fillet · chamfer · hole · linear + circular pattern · mirror ·
-create Part Studio · native body details · create Assembly · insert instances · face-based mates ·
-delete-feature (undo the agent's own features). Sketch, extrude, Part Studio, instance, and mate tools
-use native Onshape feature/assembly endpoints; FeatureScript is optional. Run cad_tools for the full list.
+extrude (NEW/ADD/REMOVE/INTERSECT) · revolve · boolean · fillet · chamfer · shell · hole ·
+linear + circular pattern · mirror · list/set variables · create Part Studio · native body details ·
+create Assembly · insert instances · face-based mates · delete-feature (undo the agent's own features).
+Run cad_tools for the full list.
+
+Everything above writes an ordinary Onshape feature, so a human can open the result, re-sketch it, and
+drag a dimension. That is the point: FeatureScript custom features cannot be edited that way, so the
+cad_part_* generator is disabled unless VANTAGE_CAD_ALLOW_FEATURESCRIPT=1 is set.
+
+Two tools ask you to name geometry rather than guessing it:
+- onshape_revolve needs axisSketchFeatureId — a sketch holding exactly one line (the centreline).
+- onshape_shell takes openFace as a world direction: +Z (default), -Z, +X, -X, +Y, -Y.
+Prefer onshape_variable_set for any number likely to change; a human resizes the design by retyping it.
 
 Fusion 360 (Windows/macOS only — never hosted)
 1. Install Autodesk Fusion and the Vantage add-in:
@@ -333,6 +354,53 @@ function noGeometryMatched(what: string, featureId: string): Error {
   return new Error(
     `Onshape returned no ${what} for feature ${featureId}. Nothing was changed. Run onshape_describe to see the real feature tree, then pass an explicit featureId.`,
   );
+}
+
+const WORLD_DIRECTIONS: Record<string, [number, number, number]> = {
+  "+X": [1, 0, 0],
+  "-X": [-1, 0, 0],
+  "+Y": [0, 1, 0],
+  "-Y": [0, -1, 0],
+  "+Z": [0, 0, 1],
+  "-Z": [0, 0, -1],
+};
+
+/** "+Z" / "-x" / "z" → a unit world vector. Naming the face by direction is the only way to pick it without a click. */
+function worldDirection(spec: string): [number, number, number] {
+  const key = spec.trim().toUpperCase();
+  const normalized = key.startsWith("+") || key.startsWith("-") ? key : `+${key}`;
+  const direction = WORLD_DIRECTIONS[normalized];
+  if (!direction) {
+    throw new Error(`Direction must be one of ${Object.keys(WORLD_DIRECTIONS).join(", ")}. Got "${spec}".`);
+  }
+  return direction;
+}
+
+/**
+ * Find the document's Variable Studio tab. Variables live in their own element, not
+ * the Part Studio, so the bound elementId is the wrong target — this asks Onshape what
+ * tabs exist and picks a real one rather than assuming an id.
+ */
+async function resolveVariableStudio(
+  http: OnshapeKeyHttp,
+  session: ClaudeCadSession,
+  preferredId: string,
+): Promise<{ documentId: string; workspaceId: string; elementId: string }> {
+  const doc = requireBoundDocument(session);
+  const response = await http(`/documents/d/${doc.documentId}/w/${doc.workspaceId}/elements`);
+  const body = await readOnshapeJson(response);
+  if (!response.ok) throw onshapeHttpError(response.status, body);
+  const items = Array.isArray(body) ? body : ((body as { items?: unknown[] }).items ?? []);
+  const elementId = pickVariableStudioElementId(
+    items as Array<{ id?: unknown; elementType?: unknown }>,
+    preferredId || undefined,
+  );
+  if (!elementId) {
+    throw new Error(
+      "This document has no Variable Studio. Add one in Onshape (the + tab at the bottom → Variable Studio), then run this again.",
+    );
+  }
+  return { documentId: doc.documentId, workspaceId: doc.workspaceId, elementId };
 }
 
 // ---------------------------------------------------------------------------
@@ -847,6 +915,103 @@ export async function callClaudeCadTool(
         } satisfies CadToolNarration,
       };
     }
+    case "onshape_revolve": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const axisSketchFeatureId = str(args.axisSketchFeatureId);
+      if (!axisSketchFeatureId) {
+        throw new Error(
+          "axisSketchFeatureId is required — draw the centreline as its own sketch and pass that featureId. Vantage does not guess which line is the axis.",
+        );
+      }
+      const axisIds = await resolveOnshapeSketchLineIds(http, doc, axisSketchFeatureId);
+      if (!axisIds.length) throw noGeometryMatched("straight lines", axisSketchFeatureId);
+      if (axisIds.length > 1) {
+        throw new Error(
+          `Sketch ${axisSketchFeatureId} has ${axisIds.length} lines, so the revolve axis is ambiguous. Put the centreline in a sketch of its own.`,
+        );
+      }
+      const sketchFeatureId = str(args.sketchFeatureId) || session.lastSketchFeatureId || "";
+      if (!sketchFeatureId) {
+        throw new Error("No profile sketch to revolve yet. Sketch the profile first, or pass sketchFeatureId.");
+      }
+      const angleDeg = optionalNum(args.angleDeg) ?? 360;
+      const operationType = (str(args.operationType).toUpperCase() || "NEW") as ExtrudeOperation;
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        revolveFeature({
+          sketchFeatureId,
+          axisIds: [axisIds[0]!],
+          angleDeg,
+          operationType,
+          oppositeDirection: bool(args.oppositeDirection),
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "solid",
+        tool: name,
+        name: str(args.name) || "VantageRevolve",
+      });
+      return {
+        ok: true,
+        featureId,
+        operation: "create_revolve",
+        featureScriptUsed: false,
+        narration: {
+          title: `Revolved ${angleDeg}° (${operationType})`,
+          detail: `profile ${sketchFeatureId} about the line in ${axisSketchFeatureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_boolean": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const operationType = (str(args.operationType).toUpperCase() || "") as BooleanOperation;
+      if (operationType !== "UNION" && operationType !== "SUBTRACT" && operationType !== "INTERSECT") {
+        throw new Error("operationType must be UNION, SUBTRACT, or INTERSECT.");
+      }
+      const toolFeatureId = str(args.toolFeatureId);
+      if (!toolFeatureId) throw new Error("toolFeatureId is required — name the feature whose bodies act on the target.");
+      const toolBodyIds = await resolveOnshapeSolidBodyIds(http, doc, toolFeatureId);
+      if (!toolBodyIds.length) throw noGeometryMatched("solid bodies", toolFeatureId);
+      const targetFeatureId = str(args.targetFeatureId);
+      if (operationType !== "UNION" && !targetFeatureId) {
+        throw new Error(`${operationType} needs targetFeatureId — the body being cut or intersected.`);
+      }
+      const targetBodyIds = targetFeatureId ? await resolveOnshapeSolidBodyIds(http, doc, targetFeatureId) : [];
+      if (targetFeatureId && !targetBodyIds.length) throw noGeometryMatched("solid bodies", targetFeatureId);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        booleanFeature({
+          operationType,
+          toolBodyIds,
+          targetBodyIds,
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "modify",
+        tool: name,
+        name: str(args.name) || "VantageBoolean",
+      });
+      return {
+        ok: true,
+        featureId,
+        operation: "create_boolean",
+        featureScriptUsed: false,
+        narration: {
+          title: `${operationType} of ${toolBodyIds.length} body${toolBodyIds.length === 1 ? "" : "s"}`,
+          detail: targetFeatureId ? `into ${targetFeatureId}` : "into a new body",
+        } satisfies CadToolNarration,
+      };
+    }
     case "onshape_fillet":
     case "onshape_chamfer": {
       const isFillet = name === "onshape_fillet";
@@ -886,6 +1051,52 @@ export async function callClaudeCadTool(
         narration: {
           title: `${isFillet ? "Filleted" : "Chamfered"} ${edgeIds.length} ${selection === "corners" ? "corner " : ""}edge${edgeIds.length === 1 ? "" : "s"} at ${sizeMm} mm`,
           detail: `on feature ${target.featureId}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_shell": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const doc = requireBoundDocument(session);
+      const target = requireSessionFeature(
+        session,
+        str(args.featureId),
+        ["solid", "modify"],
+        "No solid to hollow yet. Extrude something first, or pass an explicit featureId from onshape_describe.",
+      );
+      const openFace = str(args.openFace) || "+Z";
+      const faceIds = await resolveOnshapeFaceIds(http, doc, {
+        featureId: target.featureId,
+        facing: worldDirection(openFace),
+      });
+      if (!faceIds.length) throw noGeometryMatched(`flat faces pointing ${openFace}`, target.featureId);
+      const thicknessMm = num(args.thicknessMm, 0);
+      const featureId = await addOnshapeFeature(
+        http,
+        doc,
+        shellFeature({
+          faceIds,
+          thicknessMm,
+          outward: bool(args.outward),
+          name: str(args.name) || undefined,
+        }),
+      );
+      await trackFeature(runtime, session, {
+        featureId,
+        kind: "modify",
+        tool: name,
+        name: str(args.name) || "VantageShell",
+        plane: target.plane,
+      });
+      return {
+        ok: true,
+        featureId,
+        faceCount: faceIds.length,
+        operation: "create_shell",
+        featureScriptUsed: false,
+        narration: {
+          title: `Hollowed to ${thicknessMm} mm wall, open at ${openFace}`,
+          detail: `removed ${faceIds.length} face${faceIds.length === 1 ? "" : "s"} of ${target.featureId}`,
         } satisfies CadToolNarration,
       };
     }
@@ -1060,6 +1271,45 @@ export async function callClaudeCadTool(
         operation: "create_pattern",
         narration: {
           title: `Mirrored ${targets.length} feature${targets.length === 1 ? "" : "s"} across ${plane}`,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_variable_list": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const document = await resolveVariableStudio(http, session, str(args.elementId));
+      const variables = await listOnshapeNativeVariables(http, document);
+      return {
+        ok: true,
+        elementId: document.elementId,
+        variables,
+        featureScriptUsed: false,
+        narration: {
+          title: variables.length
+            ? `Read ${variables.length} variable${variables.length === 1 ? "" : "s"}`
+            : "Variable Studio is empty",
+          detail: variables.map((variable) => `${variable.name} = ${variable.expression}`).join(", ") || undefined,
+        } satisfies CadToolNarration,
+      };
+    }
+    case "onshape_variable_set": {
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
+      const document = await resolveVariableStudio(http, session, str(args.elementId));
+      const result = await setOnshapeNativeVariable(http, {
+        document,
+        parameters: args,
+        idempotencyKey: randomUUID(),
+      });
+      return {
+        ok: true,
+        elementId: document.elementId,
+        variable: result,
+        operation: "set_variable",
+        featureScriptUsed: false,
+        narration: {
+          title: `Set ${result.name} = ${result.expression}`,
+          detail: "A human can change this number in the Variable Studio and the model rebuilds.",
         } satisfies CadToolNarration,
       };
     }

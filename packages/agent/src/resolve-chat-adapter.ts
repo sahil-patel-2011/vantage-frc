@@ -28,7 +28,7 @@ import {
   tryCreateHostedAnthropicAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
-import { orgHasAiAccessGrant } from "./org-ai-access";
+import { OrgIsolatedChatAdapter } from "./org-isolation";
 import { tryCreatePlatformRelayAdapter } from "./relay-failover-adapter";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
@@ -424,52 +424,110 @@ type RawPrefsJson = {
   mode?: string | null;
   fixed_model_id?: string | null;
   enabled_model_ids?: string[] | null;
+  use_platform_free_ai?: boolean | null;
+  freebuff_model?: string | null;
 } | null;
 
 type RawPolicyJson = { mode?: string | null; allowed_model_ids?: string[] | null } | null;
 
+type LoadedRouting = {
+  prefs: RoutingPrefs;
+  policy: OrgModelPolicy;
+  /** Default true so a grant takes effect without a second click. */
+  usePlatformFreeAi: boolean;
+  freebuffModel: string | null;
+  /** Folded into this SELECT so empty-row mocks still mean "no grant". */
+  hasRelayGrant: boolean;
+  /** organizations.team_number — 6925 is default-fast on the Freebuff pool. */
+  teamNumber: number | null;
+};
+
+function parseRoutingPrefs(prefsRaw: RawPrefsJson): RoutingPrefs {
+  if (!prefsRaw) return { mode: "automode", fixedModelId: null, enabledModelIds: null };
+  return {
+    mode: prefsRaw.mode === "fixed" ? "fixed" : "automode",
+    fixedModelId: prefsRaw.fixed_model_id ?? null,
+    enabledModelIds: prefsRaw.enabled_model_ids ?? null,
+  };
+}
+
+function parsePlatformFreePrefs(prefsRaw: RawPrefsJson): {
+  usePlatformFreeAi: boolean;
+  freebuffModel: string | null;
+} {
+  return {
+    usePlatformFreeAi: prefsRaw?.use_platform_free_ai !== false,
+    freebuffModel: typeof prefsRaw?.freebuff_model === "string" ? prefsRaw.freebuff_model : null,
+  };
+}
+
 /**
  * Load routing prefs plus the org model SELECTION policy (org_model_policy —
  * which models members may pick; distinct from billing's spend limits in
- * org_api_model_limits) in a single round trip. Falls back to the legacy
- * prefs-only query with the allow-everything default policy when the
- * org_model_policy table does not exist yet (pre-0443 deploys).
+ * org_api_model_limits) in a single round trip. The platform_relay grant is
+ * folded into the same SELECT so resolver tests that return an empty first
+ * row still mean "no grant" — a new sequential query would break them.
+ * Falls back to the legacy prefs-only query when org_model_policy (or
+ * org_ai_access_grants) does not exist yet.
  */
 async function loadRoutingPrefsAndPolicy(
   client: PoolClient,
   orgId: string,
-): Promise<{ prefs: RoutingPrefs; policy: OrgModelPolicy }> {
+): Promise<LoadedRouting> {
   try {
-    const result = await client.query<{ prefs: RawPrefsJson; policy: RawPolicyJson }>(
+    const result = await client.query<{
+      prefs: RawPrefsJson;
+      policy: RawPolicyJson;
+      hasRelayGrant: boolean;
+      teamNumber: number | null;
+    }>(
       `SELECT
          (SELECT to_jsonb(p) FROM org_byok_routing_prefs p WHERE p.org_id = $1::uuid) AS prefs,
-         (SELECT to_jsonb(mp) FROM org_model_policy mp WHERE mp.org_id = $1::uuid) AS policy`,
+         (SELECT to_jsonb(mp) FROM org_model_policy mp WHERE mp.org_id = $1::uuid) AS policy,
+         EXISTS (
+           SELECT 1 FROM org_ai_access_grants
+            WHERE org_id = $1::uuid
+              AND access_kind = 'platform_relay'
+              AND revoked_at IS NULL
+              AND starts_at <= now()
+              AND ends_at > now()
+         ) AS "hasRelayGrant",
+         (SELECT o.team_number FROM organizations o WHERE o.id = $1::uuid) AS "teamNumber"`,
       [orgId],
     );
     const row = result.rows[0];
     const prefsRaw = row?.prefs ?? null;
     const policyRaw = row?.policy ?? null;
+    const teamNumber =
+      row?.teamNumber != null && Number.isFinite(Number(row.teamNumber))
+        ? Math.floor(Number(row.teamNumber))
+        : null;
     return {
-      prefs: prefsRaw
-        ? {
-            mode: prefsRaw.mode === "fixed" ? "fixed" : "automode",
-            fixedModelId: prefsRaw.fixed_model_id ?? null,
-            enabledModelIds: prefsRaw.enabled_model_ids ?? null,
-          }
-        : { mode: "automode", fixedModelId: null, enabledModelIds: null },
+      prefs: parseRoutingPrefs(prefsRaw),
       policy: normalizeOrgModelPolicy(
         policyRaw
           ? { mode: policyRaw.mode, allowedModelIds: policyRaw.allowed_model_ids ?? null }
           : null,
       ),
+      ...parsePlatformFreePrefs(prefsRaw),
+      hasRelayGrant: row?.hasRelayGrant === true,
+      teamNumber,
     };
   } catch {
-    // org_model_policy may not exist yet — legacy prefs-only load, everything permitted.
+    // org_model_policy / org_ai_access_grants may not exist yet.
     return {
       prefs: await loadRoutingPrefs(client, orgId),
       policy: normalizeOrgModelPolicy(null),
+      usePlatformFreeAi: true,
+      freebuffModel: null,
+      hasRelayGrant: false,
+      teamNumber: null,
     };
   }
+}
+
+function isolatePlatformRelay(adapter: ChatAdapter, orgId: string): ChatAdapter {
+  return new OrgIsolatedChatAdapter(adapter, orgId);
 }
 
 export async function loadOrgLlmKeys(client: PoolClient, orgId: string): Promise<OrgKeyRow[]> {
@@ -778,11 +836,35 @@ export async function resolveOrgChatAdapterWithProvenance(
       // ai_bridge_devices may not exist yet (pre-0486 deploys) — normal chain unchanged.
     }
   }
-  const { prefs: storedPrefs, policy } = await loadRoutingPrefsAndPolicy(client, input.orgId);
+  const {
+    prefs: storedPrefs,
+    policy,
+    usePlatformFreeAi,
+    freebuffModel,
+    hasRelayGrant,
+    teamNumber,
+  } = await loadRoutingPrefsAndPolicy(client, input.orgId);
   // Org selection policy overrides member/org picks: force_auto drops any fixed
   // model; allowlist coerces a disallowed fixed model to the best allowed one and
   // narrows the automode pool. Never an error mid-chat.
   const prefs = applyPolicyToRoutingPrefs(policy, storedPrefs, BYOK_MODEL_OPTIONS);
+
+  // Grant + toggle ON: the team's own keys do not win. One Pi session serves
+  // every org, so the adapter is wrapped to drop any context that names another
+  // team before it leaves this process.
+  if (hasRelayGrant && usePlatformFreeAi) {
+    const preferredRelay = tryCreatePlatformRelayAdapter({
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+      model: freebuffModel,
+      orgId: input.orgId,
+      teamNumber,
+    });
+    if (preferredRelay) {
+      return resolved(isolatePlatformRelay(preferredRelay, input.orgId), "platform-relay");
+    }
+  }
   const memberKeys = input.userId
     ? await loadMemberLlmKeys(client, input.orgId, input.userId)
     : [];
@@ -1074,26 +1156,21 @@ export async function resolveOrgChatAdapterWithProvenance(
     if (hostedAnthropic) return resolved(hostedAnthropic, "hosted");
   }
 
-  // A platform admin can open a time-boxed window onto the platform's own free relay
-  // (FREE_RELAY_BASE_URL — a Freebuff/OpenCode-style OpenAI-compatible proxy) for one
-  // team. Checked before the generic free pools because it is an explicit per-team
-  // operator decision, and after everything above because the team's own keys always
-  // get first refusal.
-  //
-  // The adapter is built from env FIRST so deployments with no relay configured pay no
-  // database round-trip on this hot path. Granting relay access on a deployment that has
-  // no relay is refused up front by the /api/admin/ai-grants route.
-  //
-  // The relay is a self-hosted box on a home connection drawing on a small daily pool,
-  // so it is wrapped in a failover chain: unreachable or spent falls through to the
-  // platform free pools rather than failing a team's request.
-  const platformRelay = tryCreatePlatformRelayAdapter({
-    promptCachingEnabled: input.promptCachingEnabled,
-    fetchImpl: input.fetchImpl,
-    capability: input.feature,
-  });
-  if (platformRelay && (await orgHasAiAccessGrant(client, input.orgId, "platform_relay"))) {
-    return resolved(platformRelay, "platform-relay");
+  // Toggle OFF: team keys already had first refusal above. The grant is still a
+  // fallback so a team that turned Free AI off is not left with no model when
+  // they also have no key. Same isolation wrap — the Pi is still one session.
+  if (hasRelayGrant && !usePlatformFreeAi) {
+    const fallbackRelay = tryCreatePlatformRelayAdapter({
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+      model: freebuffModel,
+      orgId: input.orgId,
+      teamNumber,
+    });
+    if (fallbackRelay) {
+      return resolved(isolatePlatformRelay(fallbackRelay, input.orgId), "platform-relay");
+    }
   }
 
   if (tier === "free") {

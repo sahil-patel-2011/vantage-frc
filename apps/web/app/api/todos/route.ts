@@ -10,6 +10,7 @@ import {
   type TodosView,
 } from "../../../lib/todos/compute-todos";
 import type { TodoStatus } from "../../../lib/todos/types";
+import { requireAttachedLinks } from "../../../lib/planner/links";
 
 export type { TodosView };
 
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
             subteamId:
               body.subteamId === undefined || body.subteamId === "" ? null : uuidOrNull(body.subteamId),
             dueOn: body.dueOn === undefined || body.dueOn === "" ? null : isoDateOrNull(body.dueOn),
+            links: body.links === undefined ? [] : requireAttachedLinks(body.links),
           });
           break;
         }
@@ -144,6 +146,7 @@ export async function POST(request: Request) {
                 : body.dueOn === null || body.dueOn === ""
                   ? null
                   : isoDateOrNull(body.dueOn),
+            links: body.links === undefined ? undefined : requireAttachedLinks(body.links),
           });
           break;
         }

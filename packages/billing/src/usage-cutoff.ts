@@ -15,7 +15,8 @@ export type UsageCutoffReason =
   | "budget_limit"
   | "billing_disabled"
   | "policy_denied"
-  | "approval_required";
+  | "approval_required"
+  | "free_tokens_exhausted";
 
 export type UsageCutoffCode =
   | "usage_hard_cutoff"
@@ -93,6 +94,8 @@ export function cutoffMessage(reason: string): string {
       return "AI policy denied this request.";
     case "approval_required":
       return "This AI run requires administrator approval.";
+    case "free_tokens_exhausted":
+      return "This team is out of free tokens. Ask a platform admin to gift more, or add your own API key.";
     default:
       if (reason.includes("daily_") || reason.includes("monthly_")) {
         return `API budget limit reached (${reason}).`;
@@ -106,7 +109,7 @@ function ctaFor(reason: string): UsageCutoffCta {
   if (reason.includes("daily_") || reason.includes("monthly_") || reason === "budget_limit") {
     return CTA_BUDGETS;
   }
-  if (reason === "sponsored_promo_expired") return CTA_AI_KEYS;
+  if (reason === "sponsored_promo_expired" || reason === "free_tokens_exhausted") return CTA_AI_KEYS;
   if (reason === "managed_allowance_exhausted" || reason === "sponsored_allowance_exhausted") {
     return CTA_UPGRADE;
   }
@@ -182,6 +185,16 @@ export function classifyMeteredAiError(error: unknown): ClassifiedMeteredAiError
       reason: "policy_denied",
       message: message || cutoffMessage("policy_denied"),
       cta: CTA_POLICY,
+    };
+  }
+
+  if (name === "FreeTokensExhaustedError" || /out of free tokens/i.test(message)) {
+    return {
+      status: 402,
+      code: "usage_hard_cutoff",
+      reason: "free_tokens_exhausted",
+      message: message || cutoffMessage("free_tokens_exhausted"),
+      cta: CTA_AI_KEYS,
     };
   }
 

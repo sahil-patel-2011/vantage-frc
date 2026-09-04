@@ -34,6 +34,24 @@ export {
 } from "./team-lookup";
 
 export {
+  formatRoleList,
+  parseStoredCrews,
+  parseStoredRoles,
+  primaryStoredCrew,
+  primaryStoredRole,
+  serializeStoredRoles,
+  splitRoleTokens,
+} from "./roles";
+
+export {
+  clampGreetingHint,
+  clampPersonalizedIsland,
+  personalizeFromRoles,
+  type PersonalizeInput,
+  type RolePersonalization,
+} from "./personalize";
+
+export {
   buildOnboardingPendingPlan,
   defaultFocusForRole,
   emptyOnboardingDraft,

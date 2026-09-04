@@ -72,8 +72,12 @@ export type OnboardingPayload = {
   dateOfBirth: string;
   gender: GenderOption;
   preferredTeamNumber: number | null;
-  teamRole?: TeamRoleOption | null;
-  crewRole?: CrewRoleOption | null;
+  teamRole?: TeamRoleOption | TeamRoleOption[] | string | null;
+  crewRole?: CrewRoleOption | CrewRoleOption[] | string | null;
+  /** Extra identities — stored comma-separated in `profiles.team_role`. */
+  teamRoles?: TeamRoleOption[];
+  /** Extra crew jobs — stored comma-separated in `profiles.crew_role`. */
+  crewRoles?: CrewRoleOption[];
   roleDescription?: string | null;
   primaryFocus: PrimaryFocusOption;
   displayName?: string | null;
@@ -133,7 +137,7 @@ export type OnboardingState = {
 
 export type OnboardingDraftInput =
   | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> & { step: "profile" }
-  | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "crewRole" | "roleDescription" | "primaryFocus"> & { step: "team" }
+  | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "crewRole" | "teamRoles" | "crewRoles" | "roleDescription" | "primaryFocus"> & { step: "team" }
   | Pick<OnboardingPayload, "displayName" | "themePreference"> & { step: "preferences" };
 
 function trimOrNull(value: unknown, max: number): string | null {
@@ -153,12 +157,56 @@ export function parsePreferredTeamNumber(value: unknown): number | null {
   return teamNumber;
 }
 
-export function parseCrewRole(value: unknown): CrewRoleOption | null {
-  if (value == null || value === "") return null;
-  if (typeof value !== "string" || !CREW_ROLE_OPTIONS.includes(value as CrewRoleOption)) {
-    throw new Error("Select a valid crew role.");
+const ROLE_SPLIT = /[\s,|/]+/;
+
+function tokensFromRoleValue(value: unknown): string[] {
+  if (value == null || value === "") return [];
+  const parts = Array.isArray(value) ? value : String(value).split(ROLE_SPLIT);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of parts) {
+    const token = String(part ?? "").trim().toLowerCase();
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    out.push(token);
   }
-  return value as CrewRoleOption;
+  return out;
+}
+
+export function serializeRoleList(roles: readonly string[]): string | null {
+  const cleaned = roles.map((role) => role.trim().toLowerCase()).filter(Boolean);
+  return cleaned.length ? Array.from(new Set(cleaned)).join(",") : null;
+}
+
+export function parseTeamRoles(value: unknown): TeamRoleOption[] {
+  const tokens = tokensFromRoleValue(value);
+  if (tokens.length === 0) return [];
+  const out: TeamRoleOption[] = [];
+  for (const token of tokens) {
+    if (!TEAM_ROLE_OPTIONS.includes(token as TeamRoleOption)) {
+      throw new Error("Select a valid team role.");
+    }
+    out.push(token as TeamRoleOption);
+  }
+  return out.slice(0, 5);
+}
+
+export function parseCrewRoles(value: unknown): CrewRoleOption[] {
+  const tokens = tokensFromRoleValue(value);
+  if (tokens.length === 0) return [];
+  const out: CrewRoleOption[] = [];
+  for (const token of tokens) {
+    if (!CREW_ROLE_OPTIONS.includes(token as CrewRoleOption)) {
+      throw new Error("Select a valid crew role.");
+    }
+    out.push(token as CrewRoleOption);
+  }
+  return out.slice(0, 10);
+}
+
+/** First listed crew, or null. Accepts a single value or a comma-separated list. */
+export function parseCrewRole(value: unknown): CrewRoleOption | null {
+  return parseCrewRoles(value)[0] ?? null;
 }
 
 export function parseRoleDescription(value: unknown): string | null {
@@ -222,10 +270,8 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
   if (lastName.length < 1 || lastName.length > 60) throw new Error("Last name is required (max 60 characters).");
   if (!GENDER_OPTIONS.includes(input.gender)) throw new Error("Select a gender option.");
   const teamNumber = parsePreferredTeamNumber(input.preferredTeamNumber);
-  if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) {
-    throw new Error("Select a valid team role.");
-  }
-  const crewRole = parseCrewRole(input.crewRole);
+  const teamRoles = parseTeamRoles(input.teamRoles?.length ? input.teamRoles : input.teamRole);
+  const crewRoles = parseCrewRoles(input.crewRoles?.length ? input.crewRoles : input.crewRole);
   const roleDescription = parseRoleDescription(input.roleDescription);
   if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) {
     throw new Error("Select a valid primary focus.");
@@ -250,8 +296,10 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     termsAccepted: true,
     privacyAccepted: true,
     preferredTeamNumber: teamNumber,
-    teamRole: input.teamRole || null,
-    crewRole,
+    teamRole: teamRoles[0] ?? null,
+    crewRole: crewRoles[0] ?? null,
+    teamRoles,
+    crewRoles,
     roleDescription,
     primaryFocus: input.primaryFocus,
     displayName,
@@ -433,9 +481,9 @@ export async function saveOnboardingProgress(
   } else if (input.step === "team") {
     const teamNumber =
       state.lockedTeamNumber ?? parsePreferredTeamNumber(input.preferredTeamNumber);
-    if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) throw new Error("Select a valid team role.");
+    const teamRoles = parseTeamRoles(input.teamRoles?.length ? input.teamRoles : input.teamRole);
     if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) throw new Error("Select a valid primary focus.");
-    const crewRole = parseCrewRole(input.crewRole);
+    const crewRoles = parseCrewRoles(input.crewRoles?.length ? input.crewRoles : input.crewRole);
     const roleDescription = parseRoleDescription(input.roleDescription);
     await client.query(
       `INSERT INTO profiles(user_id,preferred_team_number,team_role,crew_role,role_description,primary_focus,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
@@ -444,7 +492,14 @@ export async function saveOnboardingProgress(
          team_role=excluded.team_role,crew_role=excluded.crew_role,role_description=excluded.role_description,
          primary_focus=excluded.primary_focus,onboarding_current_step='preferences',
          onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
-      [userId, teamNumber, input.teamRole ?? null, crewRole, roleDescription, input.primaryFocus],
+      [
+        userId,
+        teamNumber,
+        serializeRoleList(teamRoles),
+        serializeRoleList(crewRoles),
+        roleDescription,
+        input.primaryFocus,
+      ],
     );
   } else {
     const displayName = trimOrNull(input.displayName, 80);
@@ -547,8 +602,8 @@ export async function completeOnboarding(
       payload.dateOfBirth,
       payload.gender,
       teamNumber,
-      payload.teamRole,
-      payload.crewRole,
+      serializeRoleList(payload.teamRoles?.length ? payload.teamRoles : parseTeamRoles(payload.teamRole)),
+      serializeRoleList(payload.crewRoles?.length ? payload.crewRoles : parseCrewRoles(payload.crewRole)),
       payload.roleDescription,
       payload.primaryFocus,
       payload.displayName,

@@ -3,13 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import {
-  NOTIFICATION_RELATED_INCLUDE,
-  notificationNextActions,
-  notificationReadLabel,
-  notificationReadTone,
-  notificationRelatedLinks,
-} from "../../lib/notifications";
+import { notificationReadLabel, notificationReadTone } from "../../lib/notifications";
 import "../product-hub.css";
 import "./notifications.css";
 
@@ -23,67 +17,6 @@ type NotifItem = {
   readAt: string | null;
   createdAt: string;
 };
-
-function InboxRelated() {
-  const links = notificationRelatedLinks({ include: [...NOTIFICATION_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related notif-related" aria-label="Related account tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({
-  itemCount,
-  unreadCount,
-  filter,
-  onMarkAllRead,
-  busy,
-}: {
-  itemCount: number;
-  unreadCount: number;
-  filter: "all" | "unread";
-  onMarkAllRead: () => void;
-  busy: boolean;
-}) {
-  const actions = notificationNextActions({ itemCount, unreadCount, filter });
-  return (
-    <section className="notif-next-actions app-card soft-panel" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From your real inbox only — empty means nothing has been sent yet. Never DEMO notifications.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            {action.id === "mark-read" ? (
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy || unreadCount < 1}
-                onClick={onMarkAllRead}
-              >
-                Mark all as read
-              </button>
-            ) : (
-              <a className="app-button secondary" href={action.href}>
-                Open
-              </a>
-            )}
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 export default function NotificationsClient({ orgId }: { orgId: string | null }) {
   const [items, setItems] = useState<NotifItem[]>([]);
@@ -180,15 +113,10 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             <span className="app-badge good">Inbox clear</span>
           )}
           <a className="app-button secondary" href="/notifications/preferences">
-            Notification prefs
-          </a>
-          <a className="app-button secondary" href="/account?tab=notifications">
-            Account
+            Preferences
           </a>
         </div>
       </PageHeader>
-
-      <InboxRelated />
 
       {message ? (
         <p className="telemetry-status" role="status">
@@ -241,13 +169,6 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                 </a>
               </div>
             </EmptyState>
-            <NextActions
-              itemCount={0}
-              unreadCount={0}
-              filter={filter}
-              busy={busy}
-              onMarkAllRead={() => void patch("read_all")}
-            />
           </>
           );
         })()
@@ -272,19 +193,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
               >
                 Mark all as read
               </button>
-              <a className="app-button secondary" href="/notifications/preferences">
-                Which events notify
-              </a>
             </div>
           </TabBar>
-
-          <NextActions
-            itemCount={items.length}
-            unreadCount={unreadCount}
-            filter={filter}
-            busy={busy}
-            onMarkAllRead={() => void patch("read_all")}
-          />
 
           {items.length === 0 ? (
             <EmptyState
@@ -300,16 +210,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             >
               <div className="notif-empty-actions">
                 <a className="app-button secondary" href="/notifications/preferences">
-                  Notification prefs
-                </a>
-                <a className="app-button secondary" href="/whats-new">
-                  What’s new
-                </a>
-                <a className="app-button secondary" href="/support">
-                  Help & Support
-                </a>
-                <a className="app-button secondary" href="/account?tab=notifications">
-                  Account
+                  Preferences
                 </a>
               </div>
             </EmptyState>

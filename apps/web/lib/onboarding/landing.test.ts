@@ -122,6 +122,17 @@ describe("role-aware landing", () => {
     expect(view.trackKeys).toContain("electrical");
   });
 
+  it("assigns a track for every crew job when the profile lists several", () => {
+    const view = landing({
+      teamRole: "student,parent",
+      crewRole: "scout,cad",
+      primaryFocus: "competition",
+      orgId: ORG,
+      orgName: null,
+    });
+    expect(view.trackKeys).toEqual(expect.arrayContaining(["scouting", "cad", "role_student", "role_parent"]));
+  });
+
   it("falls back to the neutral role when given an unknown one", () => {
     const view = landing({
       teamRole: "sponsor-liaison",

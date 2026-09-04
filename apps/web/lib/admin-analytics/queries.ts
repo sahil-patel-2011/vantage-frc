@@ -69,8 +69,10 @@ export type PlatformOrgSummary = {
   daysActive: number;
   topSource: string | null;
   aiCalls: number;
+  aiTokens: number;
   aiCostUsd: number;
   topAiFeature: string | null;
+  topAiModel: string | null;
 };
 
 export type PlatformOrgDrilldown = {
@@ -209,8 +211,10 @@ type OrgBaseRow = {
   createdAt: string;
   members: string;
   aiCalls: string;
+  aiTokens: string;
   aiCostUsd: string;
   topAiFeature: string | null;
+  topAiModel: string | null;
 };
 
 async function readOrgBase(client: PoolClient, sinceDay: string, orgId?: string): Promise<OrgBaseRow[]> {
@@ -218,18 +222,26 @@ async function readOrgBase(client: PoolClient, sinceDay: string, orgId?: string)
     `SELECT o.id, o.name, o.slug, o.team_number AS "teamNumber", o.created_at::text AS "createdAt",
             COALESCE(mc.members, 0)::text AS members,
             COALESCE(ai.calls, 0)::text AS "aiCalls",
+            COALESCE(ai.tokens, 0)::text AS "aiTokens",
             COALESCE(ai.cost_usd, 0)::text AS "aiCostUsd",
-            ai.top_feature AS "topAiFeature"
+            ai.top_feature AS "topAiFeature",
+            ai.top_model AS "topAiModel"
      FROM organizations o
      LEFT JOIN LATERAL (
        SELECT count(DISTINCT m.user_id) AS members FROM memberships m WHERE m.org_id = o.id
      ) mc ON true
      LEFT JOIN LATERAL (
        SELECT count(*) AS calls,
+              COALESCE(sum(e.total_tokens), 0) AS tokens,
               COALESCE(sum(e.cost_usd), 0) AS cost_usd,
               (SELECT f.feature FROM ai_usage_events f
                 WHERE f.org_id = o.id AND f.created_at >= $1::date
-                GROUP BY f.feature ORDER BY count(*) DESC LIMIT 1) AS top_feature
+                GROUP BY f.feature ORDER BY count(*) DESC LIMIT 1) AS top_feature,
+              (SELECT m.model FROM ai_usage_events m
+                WHERE m.org_id = o.id AND m.created_at >= $1::date
+                GROUP BY m.model
+                ORDER BY sum(m.total_tokens) DESC NULLS LAST, count(*) DESC
+                LIMIT 1) AS top_model
        FROM ai_usage_events e
        WHERE e.org_id = o.id AND e.created_at >= $1::date
      ) ai ON true
@@ -260,8 +272,10 @@ function orgSummaries(
     daysActive: daysActive.get(org.id) ?? 0,
     topSource: topSource.get(org.id) ?? null,
     aiCalls: safeCount(org.aiCalls),
+    aiTokens: safeCount(org.aiTokens),
     aiCostUsd: roundMoney(safeMoney(org.aiCostUsd)),
     topAiFeature: org.topAiFeature,
+    topAiModel: org.topAiModel,
   }));
 }
 

@@ -2,12 +2,12 @@
  * The `vantage-cad mcp` server: JSON-RPC framing, the per-operation Onshape /
  * Fusion tools from claude-cad.ts, and the part pipeline.
  *
- * WHY THE PIPELINE EXISTS. Onshape's API allowance is ANNUAL and small — 2,500
- * to 10,000 calls per year depending on plan, pooled per company
- * (https://onshape-public.github.io/docs/auth/limits/, verified 2026-08-25). A
- * sketch -> extrude -> describe -> render loop spends one call per operation and
- * can burn a season's allowance in an afternoon. Two facts fix that, and both
- * are load-bearing here:
+ * WHY THE PIPELINE EXISTS, AND WHY IT IS NOW OFF BY DEFAULT. Onshape's API
+ * allowance is ANNUAL and small — 2,500 to 10,000 calls per year depending on
+ * plan, pooled per company (https://onshape-public.github.io/docs/auth/limits/,
+ * verified 2026-08-25). A sketch -> extrude -> describe -> render loop spends one
+ * call per operation and can burn a season's allowance in an afternoon. Two facts
+ * fix that:
  *
  *  1. Calls made with a signed-in browser session are NOT counted against the
  *     allowance (same page: calls from "the Onshape browser, mobile clients, or
@@ -17,6 +17,14 @@
  *  2. ONE FeatureScript custom feature builds the whole solid, so a plate with
  *     four counterbored holes and filleted corners costs the same as a bare
  *     plate. featurescript/generate.ts is that generator.
+ *
+ * Only the first of those survives contact with the requirement that a human has
+ * to edit the part afterwards. Fact 1 costs nothing and is the preferred path
+ * anyway; fact 2 buys call savings that fact 1 already gives for free, and pays
+ * for them with a custom feature nobody can re-sketch. So `cad_part_push` is
+ * gated behind `featureScriptPartsEnabled()` and refuses by default, naming the
+ * native onshape_* tools instead. The pipeline below still works, and is still
+ * tested, for the deployment that knowingly turns it on.
  *
  * WHAT THIS FILE ENFORCES. The canonical flow is local check -> preview -> push
  * one feature -> single verification pull, and it is enforced here rather than
@@ -210,6 +218,30 @@ export type CadPartRuntime = {
 function runtimeEnv(runtime: CadPartRuntime): NodeJS.ProcessEnv {
   return runtime.env ?? process.env;
 }
+
+/**
+ * The generated-FeatureScript part pipeline is off unless a deployment asks for it.
+ *
+ * A generated custom feature is one opaque node in the tree. A human can retype its
+ * parameters, but cannot open the sketch, drag a dimension, or insert a feature in the
+ * middle of it — which is what a team actually does to a part after the agent leaves.
+ * The native onshape_* tools build ordinary sketches and features instead, and they now
+ * cover revolve, boolean, shell and variables, so this pipeline is no longer the only
+ * way to get a real solid.
+ *
+ * Its remaining argument was Onshape's annual call allowance. A browser session from
+ * `vantage-cad login` is not counted against that allowance at all, so on the path this
+ * connector prefers the trade no longer buys anything worth an uneditable part.
+ */
+export function featureScriptPartsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = String(env.VANTAGE_CAD_ALLOW_FEATURESCRIPT ?? "")
+    .trim()
+    .toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
+export const FEATURESCRIPT_DISABLED_FIX =
+  "Build it with the native tools instead: onshape_sketch_rectangle / _circle / _polyline, then onshape_extrude or onshape_revolve, and onshape_fillet, onshape_chamfer, onshape_shell, onshape_hole, onshape_boolean and onshape_variable_set. Every one of those lands as a feature a human can open and edit.";
 
 async function loadSession(runtime: CadPartRuntime): Promise<ClaudeCadSession> {
   if (runtime.loadSession) return runtime.loadSession();
@@ -1235,9 +1267,11 @@ async function toolPartPreview(args: Json, runtime: CadPartRuntime): Promise<Jso
     notes,
     ...(bool(args.includeSource) ? { source: preview.source } : {}),
     callBudget: budgetView(null, undefined, null),
-    nextStep: checked
-      ? `cad_part_push with previewToken="${token}" — ${preview.callPlan.total} Onshape calls including verification.`
-      : "Run cad_part_check on this part first; cad_part_push will not accept an unchecked preview.",
+    nextStep: !featureScriptPartsEnabled(runtimeEnv(runtime))
+      ? `cad_part_push is disabled on this install because it builds one uneditable custom feature. ${FEATURESCRIPT_DISABLED_FIX}`
+      : checked
+        ? `cad_part_push with previewToken="${token}" — ${preview.callPlan.total} Onshape calls including verification.`
+        : "Run cad_part_check on this part first; cad_part_push will not accept an unchecked preview.",
   };
 }
 
@@ -1274,6 +1308,16 @@ function metaParameters(input: {
 }
 
 async function toolPartPush(args: Json, runtime: CadPartRuntime): Promise<Json> {
+  if (!featureScriptPartsEnabled(runtimeEnv(runtime))) {
+    return {
+      tool: "cad_part_push",
+      status: "blocked",
+      reason: "featurescript_disabled",
+      onshapeCallsMade: 0,
+      fix: FEATURESCRIPT_DISABLED_FIX,
+      why: "This tool builds the part as one generated FeatureScript custom feature. That is a single opaque node in the feature tree — a human can retype its parameters but cannot open the sketch or add a feature inside it. Set VANTAGE_CAD_ALLOW_FEATURESCRIPT=1 if you accept that trade for a specific part.",
+    };
+  }
   const previewToken = str(args.previewToken);
   if (!previewToken) {
     return outOfOrder("cad_part_push", "preview", "previewToken is required — push only builds something you have previewed.");

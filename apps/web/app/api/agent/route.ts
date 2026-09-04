@@ -95,6 +95,20 @@ export async function POST(request: Request) {
       });
 
       const bridgeContext = [
+        ...(historyContext.droppedDigest
+          ? [
+              {
+                type: "team_memory" as const,
+                id: `thread-digest:${orgId}`,
+                importance: 40,
+                content: [
+                  `Earlier turns from this team thread only (organization ${orgId}).`,
+                  "These are the caller's own words, in order — not a recap of any other team.",
+                  historyContext.droppedDigest,
+                ].join("\n"),
+              },
+            ]
+          : []),
         ...(body.editorContextId
           ? await loadEditorContextItems(client, orgId, session.user.id, body.editorContextId)
           : []),

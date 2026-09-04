@@ -43,7 +43,10 @@ export type StudentHomeStripInput = {
 
 /** Coach counts as mentor for ops strips; everyone else gets the student strip. */
 export function homeAudienceFromTeamRole(teamRole: string | null | undefined): HomeAudience {
-  if (teamRole === "mentor" || teamRole === "coach") return "mentor";
+  const tokens = String(teamRole ?? "")
+    .split(/[\s,|/]+/)
+    .map((role) => role.trim().toLowerCase());
+  if (tokens.some((role) => role === "mentor" || role === "coach")) return "mentor";
   return "student";
 }
 

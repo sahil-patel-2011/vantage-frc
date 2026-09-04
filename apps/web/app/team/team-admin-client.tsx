@@ -10,11 +10,9 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
-  TEAM_ADMIN_RELATED_INCLUDE,
   classifyTeamAdminShell,
   formatTeamAdminMetric,
   teamAdminNextActions,
-  teamAdminRelatedLinks,
   teamAdminSetupSteps,
   teamAdminShellCopy,
   shouldShowTeamAdminSummaryTiles,
@@ -531,9 +529,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     pendingInviteCount: pendingInvites,
     pendingAccessCount: pendingAccess,
   });
-  const membershipRelated = teamAdminRelatedLinks(orgId, {
-    include: [...TEAM_ADMIN_RELATED_INCLUDE],
-  });
   const membershipSteps = membershipShell === "setup" ? teamAdminSetupSteps(orgId) : [];
   const showMembershipTiles = shouldShowTeamAdminSummaryTiles({
     memberCount: members.length,
@@ -546,104 +541,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         breadcrumbs="Team / Admin"
         title="Team admin"
         description="Invite exact emails, manage real members, configure GitHub robot-code context, and BYO model providers (API keys). Rosters and repo lists stay blank until real rows exist — never DEMO members or repositories."
-      >
-        <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
-          {membershipRelated.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </PageHeader>
+      />
       <TeamOpsNav orgId={orgId} active="admin" />
 
       <TeamProfilePanel orgId={orgId} />
 
       <TeamBrandingPanel orgId={orgId} />
 
-      <nav className="settings-hub" aria-label="Workspace settings">
-        <a href={withOrgHref("/team/background", orgId)}>
-          <strong>Team background</strong>
-          <span>Mission, history, demographics for sponsors</span>
-        </a>
-        <a href={withOrgHref("/team/security", orgId)}>
-          <strong>Security &amp; delegation</strong>
-          <span>Auth policy and API-key powers</span>
-        </a>
-        <a href={withOrgHref("/team/ai-keys", orgId)}>
-          <strong>AI keys</strong>
-          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-        </a>
-        <a href={withOrgHref("/team/budgets", orgId)}>
-          <strong>API budgets</strong>
-          <span>Spend and token hard limits</span>
-        </a>
-        <a href={withOrgHref("/team/ai-policy", orgId)}>
-          <strong>AI governance</strong>
-          <span>Tools, spend alerts, approvals</span>
-        </a>
-        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
-          <strong>Prompt caching</strong>
-          <span>Reuse stable AI context blocks</span>
-        </a>
-        <a href={withOrgHref("/team/ai-memory", orgId)}>
-          <strong>AI memory</strong>
-          <span>Team memory governance</span>
-        </a>
-        <a href={withOrgHref("/team/data", orgId)}>
-          <strong>Live data</strong>
-          <span>TBA connectors</span>
-        </a>
-        <a href={withOrgHref("/team/discord", orgId)}>
-          <strong>Discord</strong>
-          <span>Guild, announcements, chat bridge</span>
-        </a>
-        <a href={withOrgHref("/team/slack", orgId)}>
-          <strong>Slack</strong>
-          <span>Two-way team chat bridge</span>
-        </a>
-        <a href="#github-connection">
-          <strong>GitHub</strong>
-          <span>Robot-code context for AI — never DEMO repos</span>
-        </a>
-        <a href="/account?tab=notifications">
-          <strong>Notification prefs</strong>
-          <span>In-app and email opt-ins</span>
-        </a>
-        <a href="/account?tab=integrations">
-          <strong>Account Connections</strong>
-          <span>TBA, Onshape, Discord, Slack, GitHub</span>
-        </a>
-      </nav>
-
-      <nav className="intel-actions settings-secondary-links" aria-label="More team admin links">
-        <a href={withOrgHref("/business", orgId)}>Business</a>
-        <a href={withOrgHref("/costs", orgId)}>Season costs</a>
-        <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
-        <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
-        <a href={withOrgHref("/chat", orgId)}>Assistant</a>
-        <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-        <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-        <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
-        <a href={withOrgHref("/exports", orgId)}>Export</a>
-        <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
-        <a href="/security">Personal security</a>
-        <a href="/account?tab=profile">Account</a>
-        <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
-        <a href="/account?tab=integrations">Connections</a>
-      </nav>
-
       <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">
         <span className="eyebrow">MEMBERS &amp; INVITES</span>
         <h2 id="membership-title">{membershipCopy.title}</h2>
         <p className="app-muted">{membershipCopy.description}</p>
-        <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
-          {membershipRelated.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
 
         {membershipShell === "loading" || membershipShell === "error" ? (
           <EmptyState

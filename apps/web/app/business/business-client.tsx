@@ -2,9 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, TabBar, ToolStrip } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import SustainabilityPanel from "./sustainability-panel";
@@ -16,7 +15,6 @@ import {
   type GrantApplication,
   type PurchaseRequest,
 } from "../../lib/business-portal";
-import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import {
@@ -388,7 +386,7 @@ export default function BusinessClient() {
         className="product-hub-tabs"
       />
       {visibleNested.length > 1 ? (
-        <TabBar
+        <ToolStrip
           aria-label="Business tools"
           value={tab}
           onChange={(id) => {
@@ -401,9 +399,15 @@ export default function BusinessClient() {
               window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
             }
           }}
-          tabs={visibleNested.map((entry) => ({ id: entry.id, label: entry.label }))}
-          className="product-hub-subtabs"
-          variant="toolbar"
+          items={visibleNested.map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            featured: entry.featured || !entry.group,
+            href:
+              entry.legacyHref && !isTab(entry.id)
+                ? hubLegacyHref(entry, orgId ?? live?.orgId ?? null)
+                : undefined,
+          }))}
         />
       ) : null}
 
@@ -634,12 +638,6 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
     };
   }, [view.orgId, view.seasonYear]);
   return <div className="biz-stack">
-    <div className="biz-detail-link">
-      <span>Need help reading the season budget against open purchase requests?</span>
-      <a href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}>Season finance →</a>
-      <a href={financeAiHref}>Finance AI →</a>
-      <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs →</a>
-    </div>
     <section className="biz-grid two">
       <article className="app-card">
         <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2><p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>For event-by-event spend tracking, use <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs</a>. Chat guidance lives under <a href={financeAiHref}>Finance AI</a>.</p></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
@@ -737,29 +735,8 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
-  const grantsAiHref = `/ai?tab=writer&orgId=${encodeURIComponent(view.orgId)}`;
-  const grantsRelated = useMemo(() => {
-    const include = [...BUSINESS_GRANTS_RELATED_INCLUDE];
-    if (view.sponsorsAllowed === false) {
-      return include.filter((id) => id !== "sponsors" && id !== "sponsorship" && id !== "placements");
-    }
-    return include;
-  }, [view.sponsorsAllowed]);
   return (
     <div className="biz-stack">
-      <BusinessRelated
-        orgId={view.orgId}
-        active="grants"
-        include={grantsRelated}
-        ariaLabel="Related grant writing tools"
-      />
-      <div className="biz-detail-link">
-        <span>Need guided need · impact · budget · timeline essays with metered AI assist?</span>
-        <a href={grantsAiHref}>Grants AI →</a>
-        <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the grant writing workbench →</a>
-        <a href={`/writer?orgId=${encodeURIComponent(view.orgId)}`}>Writer →</a>
-        <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>
-      </div>
       {!view.grants.length ? (
         <EmptyState
           soft
@@ -767,13 +744,7 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
           description="Add opportunities below or compose narratives in the writing workbench. Award $ appears only after you record a real award — never DEMO totals."
-        >
-          <BusinessRelated
-            orgId={view.orgId}
-            include={["grant-workbench", "sponsors", "fundraisers", "writer"]}
-            ariaLabel="Empty grants next links"
-          />
-        </EmptyState>
+        />
       ) : null}
       <section className="biz-grid two">
         <article className="app-card">
@@ -951,11 +922,6 @@ function Evidence({ view, busy, submit }: { view: BusinessView; busy: boolean; s
     return byYear;
   }, [view.awards]);
   return <div className="biz-stack">
-    <div className="biz-detail-link">
-      <span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span>
-      <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open the full awards workbench →</a>
-      <a href={`/award-tracker?orgId=${encodeURIComponent(view.orgId)}`}>Award tracker →</a>
-    </div>
     <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><button className="app-button" disabled={busy}>Add award to {view.seasonYear}</button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><a className="app-button" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</a></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;
 }

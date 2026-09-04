@@ -2,6 +2,7 @@ import { auth, completeOnboarding, getOnboardingState, saveOnboardingProgress } 
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { applyRolePersonalization } from "../../../lib/onboarding/apply-personalization";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
 
@@ -17,6 +18,8 @@ const teamAffiliation = z.enum(["private_school", "public_school", "community"])
 
 const crew = z.enum(["scout", "driver", "operator", "mechanical", "electrical", "programming", "cad", "pit", "business", "other"]);
 const teamNumber = z.number().int().min(1).max(99999).nullable();
+const roleList = z.union([role, z.array(role).max(5), z.string().max(80)]).optional().nullable();
+const crewList = z.union([crew, z.array(crew).max(10), z.string().max(120)]).optional().nullable();
 
 const completeSchema = z.object({
   firstName: z.string().trim().min(1).max(60),
@@ -24,8 +27,10 @@ const completeSchema = z.object({
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["female", "male", "non_binary", "prefer_not_to_say", "other"]),
   preferredTeamNumber: teamNumber,
-  teamRole: role.nullable().optional(),
-  crewRole: crew.nullable().optional(),
+  teamRole: roleList,
+  crewRole: crewList,
+  teamRoles: z.array(role).max(5).optional(),
+  crewRoles: z.array(crew).max(10).optional(),
   roleDescription: z.string().trim().max(280).nullable().optional(),
   primaryFocus: focus,
   displayName: z.string().trim().max(80).nullable().optional(),
@@ -53,8 +58,10 @@ const draftSchema = z.discriminatedUnion("step", [
   z.object({
     step: z.literal("team"),
     preferredTeamNumber: teamNumber,
-    teamRole: role.nullable().optional(),
-    crewRole: crew.nullable().optional(),
+    teamRole: roleList,
+    crewRole: crewList,
+    teamRoles: z.array(role).max(5).optional(),
+    crewRoles: z.array(crew).max(10).optional(),
     roleDescription: z.string().trim().max(280).nullable().optional(),
     primaryFocus: focus,
   }).strict(),
@@ -94,9 +101,18 @@ export async function POST(request: Request) {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
     const body = await parseSecureJson(request, completeSchema);
-    const state = await withRls({ userId: current.user.id }, (client) =>
-      completeOnboarding(client, current.user.id, body),
-    );
+    const state = await withRls({ userId: current.user.id }, async (client) => {
+      const next = await completeOnboarding(client, current.user.id, body);
+      await applyRolePersonalization(client, {
+        userId: current.user.id,
+        orgId: next.workspaceOrgId,
+        teamRole: body.teamRoles ?? body.teamRole,
+        crewRole: body.crewRoles ?? body.crewRole,
+        primaryFocus: body.primaryFocus,
+        replaceDefaultIsland: true,
+      });
+      return next;
+    });
     return privateJson({ ok: true, ...state });
   } catch (error) {
     return securityErrorResponse(error, "Could not complete onboarding.");

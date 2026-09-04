@@ -40,6 +40,8 @@ describe("team number parsing", () => {
     expect(isAdultRole("student")).toBe(false);
     expect(isAdultRole("other")).toBe(false);
     expect(isAdultRole(null)).toBe(false);
+    expect(isAdultRole("student,parent")).toBe(true);
+    expect(isAdultRole(["student", "mentor"])).toBe(true);
   });
 });
 

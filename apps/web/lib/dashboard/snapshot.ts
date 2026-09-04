@@ -1,7 +1,17 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { isPlatformAdmin } from "@vantage/core";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { buildOnboardingChecklistSteps } from "../onboarding-workflow";
 import { canAccessWidget, type DashboardWidgetType } from "./catalog";
+import {
+  AI_TOKEN_SPARK_DAYS,
+  AI_TOKEN_WINDOW_DAYS,
+  fillTokenSpark,
+  pickMostUsedModel,
+  rankTeamsByTokens,
+  safeTokenCount,
+  type TokenTeamRow,
+} from "./ai-token-stats";
 import {
   buildMentorHomeStrip,
   buildStudentHomeStrip,
@@ -472,7 +482,8 @@ export async function loadDashboardSnapshot(
       widgets.ai_usage = stamp("setup_required", "ai_usage", undefined, "Owner/admin access required.");
       return;
     }
-    const [entitlement, models, wallet] = await Promise.all([
+    const platformAdmin = await isPlatformAdmin(client);
+    const [entitlement, spend, wallet, totals, models, days] = await Promise.all([
       client.query<{ planCode: string; includedAllowance: number }>(
         `SELECT e.plan_code AS "planCode", p.included_allowance_usd AS "includedAllowance"
          FROM org_entitlements e JOIN pricing_plans p ON p.code = e.plan_code WHERE e.org_id = $1`,
@@ -486,16 +497,119 @@ export async function loadDashboardSnapshot(
         `SELECT COALESCE(sum(amount_usd), 0)::text AS balance FROM wallet_ledger WHERE org_id = $1`,
         [input.orgId],
       ),
+      client.query<{ tokens: string; prompt: string; completion: string; calls: string }>(
+        `SELECT COALESCE(sum(total_tokens), 0)::text AS tokens,
+                COALESCE(sum(prompt_tokens), 0)::text AS prompt,
+                COALESCE(sum(completion_tokens), 0)::text AS completion,
+                count(*)::text AS calls
+         FROM ai_usage_events
+         WHERE org_id = $1::uuid AND created_at >= now() - interval '30 days'`,
+        [input.orgId],
+      ),
+      client.query<{ model: string; tokens: string; calls: string }>(
+        `SELECT model,
+                COALESCE(sum(total_tokens), 0)::text AS tokens,
+                count(*)::text AS calls
+         FROM ai_usage_events
+         WHERE org_id = $1::uuid AND created_at >= now() - interval '30 days'
+         GROUP BY model`,
+        [input.orgId],
+      ),
+      client.query<{ day: string; tokens: string; calls: string }>(
+        `SELECT (created_at AT TIME ZONE 'UTC')::date::text AS day,
+                COALESCE(sum(total_tokens), 0)::text AS tokens,
+                count(*)::text AS calls
+         FROM ai_usage_events
+         WHERE org_id = $1::uuid AND created_at >= now() - interval '30 days'
+         GROUP BY 1`,
+        [input.orgId],
+      ),
     ]);
+
+    let teams: TokenTeamRow[] = [];
+    if (platformAdmin) {
+      const teamRows = await client.query<{
+        orgId: string;
+        name: string;
+        teamNumber: number | null;
+        tokens: string;
+        calls: string;
+        lastUsedAt: string | null;
+        mostUsed: string | null;
+      }>(
+        `SELECT o.id AS "orgId", o.name, o.team_number AS "teamNumber",
+                COALESCE(sum(e.total_tokens), 0)::text AS tokens,
+                count(e.id)::text AS calls,
+                max(e.created_at)::text AS "lastUsedAt",
+                (SELECT e2.model FROM ai_usage_events e2
+                  WHERE e2.org_id = o.id AND e2.created_at >= now() - interval '30 days'
+                  GROUP BY e2.model
+                  ORDER BY sum(e2.total_tokens) DESC NULLS LAST, count(*) DESC
+                  LIMIT 1) AS "mostUsed"
+         FROM organizations o
+         LEFT JOIN ai_usage_events e
+           ON e.org_id = o.id AND e.created_at >= now() - interval '30 days'
+         GROUP BY o.id
+         HAVING count(e.id) > 0
+         ORDER BY sum(e.total_tokens) DESC NULLS LAST
+         LIMIT 24`,
+      );
+      teams = rankTeamsByTokens(
+        teamRows.rows.map((row) => ({
+          orgId: row.orgId,
+          name: row.name,
+          teamNumber: row.teamNumber,
+          tokens: safeTokenCount(row.tokens),
+          calls: safeTokenCount(row.calls),
+          mostUsed: row.mostUsed,
+          lastUsedAt: row.lastUsedAt,
+        })),
+      );
+    }
+
+    const tokens = safeTokenCount(totals.rows[0]?.tokens);
+    const calls = safeTokenCount(totals.rows[0]?.calls);
+    const mostUsed = pickMostUsedModel(
+      models.rows.map((row) => ({
+        model: row.model,
+        tokens: safeTokenCount(row.tokens),
+        calls: safeTokenCount(row.calls),
+      })),
+    );
+    const spark = fillTokenSpark(
+      days.rows.map((row) => ({
+        day: row.day,
+        tokens: safeTokenCount(row.tokens),
+        calls: safeTokenCount(row.calls),
+      })),
+      new Date().toISOString().slice(0, 10),
+      AI_TOKEN_SPARK_DAYS,
+    );
     const allowance = Number(entitlement.rows[0]?.includedAllowance ?? 0);
-    const used = Number(models.rows[0]?.cost ?? 0);
-    widgets.ai_usage = stamp("live", "ai_usage", {
-      planCode: entitlement.rows[0]?.planCode ?? null,
-      allowance,
-      used,
-      walletBalance: Number(wallet.rows[0]?.balance ?? 0),
-      allowancePercent: allowance > 0 ? Math.min(100, (used / allowance) * 100) : null,
-    });
+    const used = Number(spend.rows[0]?.cost ?? 0);
+    const hasUsage = tokens > 0 || calls > 0 || used > 0 || teams.length > 0;
+    widgets.ai_usage = stamp(
+      hasUsage ? "live" : "empty",
+      "ai_usage",
+      {
+        planCode: entitlement.rows[0]?.planCode ?? null,
+        allowance,
+        used,
+        walletBalance: Number(wallet.rows[0]?.balance ?? 0),
+        allowancePercent: allowance > 0 ? Math.min(100, (used / allowance) * 100) : null,
+        windowDays: AI_TOKEN_WINDOW_DAYS,
+        tokens,
+        promptTokens: safeTokenCount(totals.rows[0]?.prompt),
+        completionTokens: safeTokenCount(totals.rows[0]?.completion),
+        calls,
+        mostUsed: mostUsed?.model ?? null,
+        mostUsedTokens: mostUsed?.tokens ?? 0,
+        spark,
+        platformAdmin,
+        teams: platformAdmin ? teams : [],
+      },
+      hasUsage ? undefined : "No AI usage recorded in the last 30 days.",
+    );
   }
 
   async function notifications() {

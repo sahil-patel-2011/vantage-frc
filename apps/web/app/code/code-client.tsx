@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BUGBOT_ULTRA_PRICES_USD, isBugbotScanPath } from "@vantage/agent/bugbot";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
-import { AiHubRelated } from "../../components/ai-hub-related";
-import { BuildHubRelated } from "../../components/build-hub-related";
 import { EmptyState } from "../../components/ui";
 import { WhyPanel } from "../../components/why-panel";
 import { CODE_RULE_LESSONS, narrateCodeFindings } from "../../lib/agent-narration/narration";
@@ -13,7 +11,6 @@ import {
   resolveCutoffErrorCode,
   UsageCutoffBanner,
 } from "../../components/usage-cutoff-banner";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
 import { enforceBugbotFileCap, prepareBugbotWritePr, resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot";
@@ -25,10 +22,7 @@ import {
   type BugbotChunkOutcome,
 } from "../../lib/code/scan-run";
 import {
-  CODE_COACH_RELATED_INCLUDE,
   CODE_COACH_SAMPLE,
-  codeCoachNextActions,
-  codeCoachRelatedLinks,
   groundedCodeCoachProposal,
 } from "../../lib/code/code-related";
 
@@ -244,13 +238,6 @@ export function CodeClient({
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
-  const relatedLinks = codeCoachRelatedLinks(orgId || null, { include: [...CODE_COACH_RELATED_INCLUDE] });
-  const nextActions = codeCoachNextActions({
-    orgId: orgId || null,
-    hasSource,
-    hasReview: Boolean(review),
-  });
-  const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
   const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
 
   const githubHref = orgId ? githubConnectionHref(orgId) : "/team/admin#github-connection";
@@ -958,21 +945,8 @@ export function CodeClient({
         </div>
         <div className="cdc-header-actions">
           <span className="app-badge good">Local · proposal-only</span>
-          {orgId ? (
-            <a className="app-button secondary" href={withOrgHref("/editor/pair", orgId)}>
-              Pair VS Code
-            </a>
-          ) : null}
         </div>
       </header>
-      ) : null}
-
-      {!embedded ? (
-        related === "ai" ? (
-          orgId ? <AiHubRelated orgId={orgId} active="code" /> : null
-        ) : (
-          <BuildHubRelated orgId={orgId} active="code" />
-        )
       ) : null}
 
       {!orgId ? (
@@ -988,17 +962,7 @@ export function CodeClient({
             Choose workspace
           </a>
         </EmptyState>
-      ) : (
-        <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
-          {relatedLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a href={budgetsHref}>Budgets</a>
-          <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-        </nav>
-      )}
+      ) : null}
 
       <section className="cdc-billing" aria-label="Local versus metered">
         <article className="cdc-billing-local">
@@ -1048,26 +1012,6 @@ export function CodeClient({
         <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" />
       ) : null}
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} className="cdc-cutoff" /> : null}
-
-      <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
-        <header>
-          <h2>Next actions</h2>
-          <p className="app-muted">Setup and cross-links — never placeholder review findings.</p>
-        </header>
-        <ol>
-          {nextActions.map((action) => (
-            <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <a className="app-button secondary" href={action.href}>
-                Open
-              </a>
-            </li>
-          ))}
-        </ol>
-      </section>
 
       <section className="cdc-flow" aria-label="Teach, don't just do">
         <article>

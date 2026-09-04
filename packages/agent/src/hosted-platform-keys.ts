@@ -1,6 +1,8 @@
 import { preferredTierForFeature } from "./byok-model-routing";
+import { resolveSelectableFreebuffModel } from "./freebuff-models";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
 import { isLocalOrLanOrigin } from "./model-tier";
+import { isPriorityFreebuffTeam } from "./priority-team";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
@@ -54,10 +56,24 @@ export type FreeRelayConfig = {
  */
 export type FreeRelayRefusal = "unset" | "public_url_without_key";
 
+/** Comma / semicolon / whitespace / pipe-separated tunnel URLs (one per Pi). */
+export function parseFreeRelayBaseUrls(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) return [];
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const part of raw.split(/[\s,;|]+/)) {
+    const url = part.trim().replace(/\/+$/, "");
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+  }
+  return urls;
+}
+
 export function freeRelayRefusal(env: NodeJS.ProcessEnv = process.env): FreeRelayRefusal | null {
-  const baseUrl = env.FREE_RELAY_BASE_URL?.trim().replace(/\/+$/, "");
-  if (!baseUrl) return "unset";
-  if (!env.FREE_RELAY_API_KEY?.trim() && !isLocalOrLanOrigin(baseUrl)) {
+  const urls = parseFreeRelayBaseUrls(env.FREE_RELAY_BASE_URL);
+  if (urls.length === 0) return "unset";
+  if (!env.FREE_RELAY_API_KEY?.trim() && urls.some((url) => !isLocalOrLanOrigin(url))) {
     return "public_url_without_key";
   }
   return null;
@@ -70,22 +86,57 @@ export function describeFreeRelayRefusal(refusal: FreeRelayRefusal): string {
   return "The free relay base URL is not loopback or LAN, so FREE_RELAY_API_KEY is required — an internet-reachable relay without a key would serve free AI on the platform's own upstream token to anyone who finds the URL.";
 }
 
+export function readFreeRelayConfigs(
+  env: NodeJS.ProcessEnv = process.env,
+): FreeRelayConfig[] {
+  if (freeRelayRefusal(env)) return [];
+  const urls = parseFreeRelayBaseUrls(env.FREE_RELAY_BASE_URL);
+  const apiKey = env.FREE_RELAY_API_KEY?.trim();
+  const model = resolveSelectableFreebuffModel(env.FREE_RELAY_MODEL);
+  const providerLabel = env.FREE_RELAY_PROVIDER?.trim() || "free-relay";
+  return urls
+    .filter((baseUrl) => Boolean(apiKey) || isLocalOrLanOrigin(baseUrl))
+    .map((baseUrl) => ({
+      baseUrl,
+      apiKey: apiKey || "local-relay",
+      model,
+      providerLabel,
+    }));
+}
+
 export function readFreeRelayConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): FreeRelayConfig | null {
-  const baseUrl = env.FREE_RELAY_BASE_URL?.trim().replace(/\/+$/, "");
-  if (!baseUrl) return null;
-  const apiKey = env.FREE_RELAY_API_KEY?.trim();
-  // A bare loopback/LAN relay may go unauthenticated — nothing off-box can reach it.
-  // Anything internet-reachable (a tunnel hostname, a public IP) must carry a key, or
-  // the endpoint is an open pass-through to the platform's upstream account.
-  if (!apiKey && !isLocalOrLanOrigin(baseUrl)) return null;
-  return {
-    baseUrl,
-    apiKey: apiKey || "local-relay",
-    model: env.FREE_RELAY_MODEL?.trim() || OPENROUTER_FREE_MODEL,
-    providerLabel: env.FREE_RELAY_PROVIDER?.trim() || "free-relay",
+  return readFreeRelayConfigs(env)[0] ?? null;
+}
+
+export function freeRelayPoolLabel(config: FreeRelayConfig): string {
+  try {
+    const url = new URL(config.baseUrl);
+    const port = url.port ? `:${url.port}` : "";
+    return `${config.providerLabel}:${url.hostname}${port}`;
+  } catch {
+    return config.providerLabel;
+  }
+}
+
+export function freeRelayExtraHeaders(input: {
+  capability: string;
+  orgId?: string | null;
+  teamNumber?: number | null;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    "x-vantage-feature": input.capability.slice(0, 48),
   };
+  const orgId = input.orgId?.trim().toLowerCase() ?? "";
+  if (orgId) headers["x-vantage-org-id"] = orgId.slice(0, 36);
+  if (input.teamNumber != null && Number.isFinite(input.teamNumber)) {
+    headers["x-vantage-team-number"] = String(Math.floor(Number(input.teamNumber)));
+  }
+  if (isPriorityFreebuffTeam(input.teamNumber)) {
+    headers["x-vantage-priority"] = "1";
+  }
+  return headers;
 }
 
 export function hostedAnthropicModel(feature?: string | null): string {
@@ -154,19 +205,38 @@ export function tryCreateFreeRelayAdapter(input?: {
   fetchImpl?: typeof fetch;
   env?: NodeJS.ProcessEnv;
   capability?: string;
+  /** Team-picked Freebuff slug. DeepSeek V4 Flash is the free default. */
+  model?: string | null;
+  /** Isolates the Pi coding folder. Never send another org's id. */
+  orgId?: string | null;
+  /** FRC team number — 6925 is default-fast on the shared pool. */
+  teamNumber?: number | null;
+  /** One tunnel from a multi-URL pool. Defaults to the first configured URL. */
+  config?: FreeRelayConfig;
 }): HttpChatAdapter | null {
-  const config = readFreeRelayConfig(input?.env ?? process.env);
+  const config = input?.config ?? readFreeRelayConfig(input?.env ?? process.env);
   if (!config) return null;
+  const capability = input?.capability ?? "chat";
+  const longJob = /^(cad|coding|bugbot|maintenance)/i.test(capability);
   return new HttpChatAdapter({
     provider: "openai-compatible",
-    model: config.model,
+    model: resolveSelectableFreebuffModel(input?.model ?? config.model),
     apiKey: config.apiKey,
     baseUrl: config.baseUrl,
     promptCachingEnabled: input?.promptCachingEnabled ?? true,
     prices: OPENROUTER_PRICES,
     fetchImpl: input?.fetchImpl,
     providerLabel: config.providerLabel,
-    capability: input?.capability ?? "chat",
+    capability,
+    // Official Freebuff is a chat completion, not OpenAI tools. Vantage runs CAD
+    // hops and scouting tools itself after the model answers.
+    supportsNativeTools: false,
+    timeoutMs: longJob ? 180_000 : undefined,
+    extraHeaders: freeRelayExtraHeaders({
+      capability,
+      orgId: input?.orgId,
+      teamNumber: input?.teamNumber,
+    }),
   });
 }
 

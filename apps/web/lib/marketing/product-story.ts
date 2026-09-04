@@ -3,6 +3,36 @@
  * No invented scores, ranks, EPA, or DEMO metrics.
  */
 
+export const MARKETING_DEFINITION = {
+  kicker: "FIRST Robotics Competition · Invite-only",
+  headline: "Your FRC team, in one place.",
+  lead:
+    "Vantage is operations software for an FRC season: offline scouting, event day, alliance selection, CAD, robot code, calendar, money, and metered AI. One invite-only login. Screens stay empty until TBA, scouting, or a connector has real data.",
+} as const;
+
+export const MARKETING_JOBS = [
+  {
+    icon: "clipboard" as const,
+    title: "Scout",
+    copy: "Match and pit forms stay on the tablet. QR handoff and pit mesh. Sync when the venue network returns.",
+  },
+  {
+    icon: "flag" as const,
+    title: "Compete",
+    copy: "Event day, alliance desk, pick clock, and pit repair share one TBA event — or stay empty.",
+  },
+  {
+    icon: "wrench" as const,
+    title: "Build",
+    copy: "Kickoff, Onshape or Fusion CAD, Code Coach, and inspection. Mutations stay human-gated.",
+  },
+  {
+    icon: "calendar" as const,
+    title: "Run the season",
+    copy: "Calendar, chat, hours, budget, sponsors, and grants between the six competition weekends.",
+  },
+] as const;
+
 export const MARKETING_HUBS = [
   {
     id: "competition",
@@ -72,8 +102,8 @@ export const MARKETING_HUBS = [
     title: "AI",
     href: "/features#ai",
     route: "/ai",
-    promise: "Metered FRC Assistant, writer, and agent — sourced or empty.",
-    modules: ["Chat", "Writer", "Agent", "Controls", "Notes"],
+    promise: "One assistant for the team — write, agent, and settings live inside Ask.",
+    modules: ["Ask", "Library", "Settings"],
     tools: [
       "FRC Assistant with TBA, Statbotics cache, and scout facts",
       "Grant and sponsor writer from org profile",

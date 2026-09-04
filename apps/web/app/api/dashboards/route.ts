@@ -6,6 +6,7 @@ import {
   canWriteOrgDashboard,
   catalogEntry,
   DEFAULT_DASHBOARD_LAYOUT,
+  ensureAiUsageWidget,
   filterLayoutForRole,
   isDashboardWidgetType,
   validateDashboardLayout,
@@ -173,7 +174,9 @@ export async function GET(request: Request) {
       });
 
       const layout = filterLayoutForRole(
-        ensureOnboardingChecklist(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT),
+        ensureAiUsageWidget(
+          ensureOnboardingChecklist(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT),
+        ),
         role,
       );
 
@@ -383,7 +386,9 @@ export async function POST(request: Request) {
         }
 
         const layout = filterLayoutForRole(
-          ensureOnboardingChecklist(board.layout?.length ? board.layout : DEFAULT_DASHBOARD_LAYOUT),
+          ensureAiUsageWidget(
+            ensureOnboardingChecklist(board.layout?.length ? board.layout : DEFAULT_DASHBOARD_LAYOUT),
+          ),
           role,
         );
         return {

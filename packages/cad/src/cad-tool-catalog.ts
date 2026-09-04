@@ -375,6 +375,66 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     mutating: true,
   },
   {
+    name: "onshape_revolve",
+    label: "Revolve",
+    group: "solid",
+    description:
+      "Turn a sketch profile about a centreline — rollers, shafts, and spacers. The axis is a straight line from a sketch, so the result is an ordinary Revolve a human can re-open and re-dimension.",
+    params: [
+      {
+        name: "axisSketchFeatureId",
+        type: "string",
+        required: true,
+        description:
+          "Sketch holding the centreline to turn about. Use a sketch with exactly one line — Vantage will not pick between several.",
+      },
+      {
+        name: "sketchFeatureId",
+        type: "string",
+        description: "Profile sketch to revolve (defaults to the last sketch this session).",
+      },
+      { name: "angleDeg", type: "number", description: "Sweep angle in degrees (default 360)." },
+      { name: "operationType", type: "string", description: "NEW, ADD, REMOVE, or INTERSECT (default NEW)." },
+      { name: "oppositeDirection", type: "boolean", description: "Turn the other way." },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Revolve is Onshape-only in Vantage today.",
+    mutating: true,
+  },
+  {
+    name: "onshape_boolean",
+    label: "Boolean",
+    group: "solid",
+    description:
+      "Combine, subtract, or intersect whole bodies from two features — the way a pocket or a welded bracket is built without a cut sketch.",
+    params: [
+      {
+        name: "operationType",
+        type: "string",
+        required: true,
+        description: "UNION, SUBTRACT, or INTERSECT.",
+      },
+      {
+        name: "toolFeatureId",
+        type: "string",
+        required: true,
+        description: "Feature whose bodies act on the target (the subtracted body, for SUBTRACT).",
+      },
+      {
+        name: "targetFeatureId",
+        type: "string",
+        description: "Feature whose bodies are kept and modified. Required for SUBTRACT and INTERSECT.",
+      },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Boolean is Onshape-only in Vantage today.",
+    mutating: true,
+  },
+  {
     name: "onshape_fillet",
     label: "Fillet",
     group: "modify",
@@ -411,6 +471,29 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     fusionOperation: "create_chamfer",
     fusionNote:
       "Fusion bevels every edge of the most recent body — the corners-only selection is Onshape only.",
+    mutating: true,
+  },
+  {
+    name: "onshape_shell",
+    label: "Shell",
+    group: "modify",
+    description:
+      "Hollow a solid to a wall thickness, opening the face you name. Thickness goes inward, so the part keeps its outside size.",
+    params: [
+      mm("thicknessMm", "Wall thickness in millimetres."),
+      {
+        name: "openFace",
+        type: "string",
+        description:
+          "Which face to remove, by the world direction it points: +Z (default, the top), -Z, +X, -X, +Y, or -Y.",
+      },
+      { name: "featureId", type: "string", description: "Feature to hollow (defaults to the last solid feature)." },
+      { name: "outward", type: "boolean", description: "Thicken outward instead of inward." },
+      { name: "name", type: "string", description: "Feature name." },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Shell is Onshape-only in Vantage today.",
     mutating: true,
   },
   {
@@ -489,6 +572,50 @@ export const CAD_TOOL_CATALOG: readonly CadToolSpec[] = [
     onshape: "supported",
     fusion: "unsupported",
     fusionNote: "Mirror is Onshape-only in Vantage today.",
+    mutating: true,
+  },
+  {
+    name: "onshape_variable_list",
+    label: "List variables",
+    group: "inspect",
+    description:
+      "Read the Variable Studio for this document — the named dimensions a human edits to resize the design.",
+    params: [
+      {
+        name: "elementId",
+        type: "string",
+        description: "Variable Studio to read (defaults to the first one in the document).",
+      },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion parameters are not exposed through the relay today.",
+    mutating: false,
+  },
+  {
+    name: "onshape_variable_set",
+    label: "Set variable",
+    group: "modify",
+    description:
+      "Create or update a named variable such as `wallThickness = 3 mm`. This is the most re-editable thing the agent can leave behind: a human changes the number and the model rebuilds.",
+    params: [
+      { name: "name", type: "string", required: true, description: "Variable name, e.g. wallThickness." },
+      {
+        name: "value",
+        type: "string",
+        required: true,
+        description: 'Expression with units, e.g. "3 mm", "15 deg", or a plain number.',
+      },
+      { name: "description", type: "string", description: "What the variable is for." },
+      {
+        name: "elementId",
+        type: "string",
+        description: "Variable Studio to write to (defaults to the first one in the document).",
+      },
+    ],
+    onshape: "supported",
+    fusion: "unsupported",
+    fusionNote: "Fusion parameters are not exposed through the relay today.",
     mutating: true,
   },
   {
@@ -664,6 +791,14 @@ export function cadToolSupportMatrix() {
 
 /**
  * A second catalog, deliberately not more rows in CAD_TOOL_CATALOG.
+ *
+ * NOTE: this pipeline ships DISABLED. `cad_part_push` is gated behind
+ * `featureScriptPartsEnabled()` in mcp-stdio.ts because it builds the part as one
+ * generated FeatureScript custom feature, which a human cannot open, re-sketch, or
+ * insert a feature into. The native tools in CAD_TOOL_CATALOG above now cover
+ * revolve, boolean, shell and variables as well, so nothing forces a part through
+ * here. The catalog stays because the tools still work — and are still tested —
+ * for a deployment that sets VANTAGE_CAD_ALLOW_FEATURESCRIPT=1 knowingly.
  *
  * The tools above are one-REST-call-per-operation primitives, and
  * `hostedCadToolNames()` feeds the hosted /cad agent's allowlist straight from

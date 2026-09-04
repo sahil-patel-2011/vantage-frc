@@ -137,10 +137,35 @@ export {
   type RequestKind,
 } from "./request-credits";
 
+export {
+  FREE_TOKEN_SOURCES,
+  FreeTokensExhaustedError,
+  authorizeFreeTokens,
+  estimatedFreeTokens,
+  grantFreeTokens,
+  isFreeTokenSource,
+  isMissingFreeTokenSchema,
+  loadFreeTokenBalance,
+  loadFreeTokenBalances,
+  orgUsesFreeTokens,
+  recordFreeTokenConsumption,
+  type FreeTokenBalance,
+  type FreeTokenSource,
+} from "./free-tokens";
+
 import {
   authorizeRequestCredits,
   recordRequestCreditConsumption,
 } from "./request-credits";
+import {
+  authorizeFreeTokens,
+  estimatedFreeTokens,
+  FreeTokensExhaustedError,
+  isMissingFreeTokenSchema,
+  orgUsesFreeTokens,
+  recordFreeTokenConsumption,
+  type FreeTokenSource,
+} from "./free-tokens";
 
 import {
   UsageHardCutoffError,
@@ -693,6 +718,12 @@ export type MeteredAuthorization = {
    * means "not on the credit plan" rather than "out of credits".
    */
   requestCredits: number;
+  /**
+   * Gifted free tokens this call will consume at settle. 0 when the org was never
+   * gifted a Freebuff/hosted token allowance.
+   */
+  freeTokens: number;
+  freeTokenSource?: FreeTokenSource;
 };
 
 export type AuthorizeMeteredAIOptions = {
@@ -752,7 +783,7 @@ export async function authorizeMeteredAI<T>(
       ? await reserveMeteredAI(input, "local_cli", 0, options)
       : false;
     // A local CLI turn costs the platform nothing, so it spends no request credits.
-    return { keySource: "local_cli", serialized: false, reserved, requestCredits: 0 };
+    return { keySource: "local_cli", serialized: false, reserved, requestCredits: 0, freeTokens: 0 };
   }
 
   const lock = await input.client.query<{ locked: boolean }>(
@@ -924,21 +955,56 @@ export async function authorizeMeteredAI<T>(
     }
   }
 
-  // Request credits fund AI the platform pays for. A team spending its own key (BYOK,
-  // local, CLI) or a paired subscription must not burn credits it was granted for
-  // hosted use, so only the two platform-funded sources are charged.
-  const requestCredits =
-    keySource === "platform" || keySource === "platform_grant"
-      ? await authorizeRequestCredits(input.client, {
+  // Gifted Freebuff tokens take priority over request credits so a gifted team
+  // spends the allowance they were shown ("free tokens"), not a credit plan.
+  let requestCredits = 0;
+  let freeTokens = 0;
+  let freeTokenSource: FreeTokenSource | undefined;
+  if (keySource === "platform" || keySource === "platform_grant") {
+    try {
+      if (await orgUsesFreeTokens(input.client, input.orgId, "freebuff")) {
+        freeTokenSource = "freebuff";
+        freeTokens = await authorizeFreeTokens(input.client, {
+          orgId: input.orgId,
+          source: "freebuff",
+          tokens: estimatedFreeTokens({
+            estimatedPromptTokens: input.estimatedPromptTokens,
+            estimatedCompletionTokens: input.estimatedCompletionTokens,
+          }),
+        });
+      } else if (await orgUsesFreeTokens(input.client, input.orgId, "hosted_platform")) {
+        freeTokenSource = "hosted_platform";
+        freeTokens = await authorizeFreeTokens(input.client, {
+          orgId: input.orgId,
+          source: "hosted_platform",
+          tokens: estimatedFreeTokens({
+            estimatedPromptTokens: input.estimatedPromptTokens,
+            estimatedCompletionTokens: input.estimatedCompletionTokens,
+          }),
+        });
+      } else {
+        requestCredits = await authorizeRequestCredits(input.client, {
           orgId: input.orgId,
           feature: input.feature,
-        })
-      : 0;
+        });
+      }
+    } catch (error) {
+      if (error instanceof FreeTokensExhaustedError) throw error;
+      if (isMissingFreeTokenSchema(error)) {
+        requestCredits = await authorizeRequestCredits(input.client, {
+          orgId: input.orgId,
+          feature: input.feature,
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
 
   const reserved = options?.reserve
     ? await reserveMeteredAI(input, keySource, input.estimatedCostUsd, options)
     : false;
-  return { keySource, serialized, reserved, requestCredits };
+  return { keySource, serialized, reserved, requestCredits, freeTokens, freeTokenSource };
 }
 
 /**
@@ -1126,6 +1192,19 @@ export async function settleMeteredAI<T>(
       requestId: input.requestId,
       feature: input.feature,
       credits: authorization.requestCredits,
+    });
+  }
+  if (authorization.freeTokens > 0 && authorization.freeTokenSource) {
+    const used = Math.max(
+      1,
+      Math.floor(receipt.promptTokens + receipt.completionTokens) || authorization.freeTokens,
+    );
+    await recordFreeTokenConsumption(input.client, {
+      orgId: input.orgId,
+      source: authorization.freeTokenSource,
+      requestId: input.requestId,
+      feature: input.feature,
+      tokens: used,
     });
   }
   // Close the hold only after the real usage row exists, so the org is never

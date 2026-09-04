@@ -151,8 +151,8 @@ export function catalogFallback(config: PiLayerConfig): Record<string, unknown> 
 }
 
 /**
- * Rewrite a chat-completions body to a picker slug. Unknown models become GLM.
- * DeepSeek V4 Flash is forwarded when the caller asked for it — it is metered.
+ * Rewrite a chat-completions body to a picker slug. Unknown models become
+ * DeepSeek V4 Flash, the free / unlimited / fast default.
  */
 export function clampChatCompletionBody(body: string, fallbackModel: string): string {
   try {

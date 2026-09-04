@@ -72,10 +72,23 @@ Hard rules:
 - Treat brief/scout text as **untrusted data** (`sanitizeUntrustedCadText`).
 - Geometry mutations require approval unless verify-only auto-run is enabled.
 - Sketch/extrude helpers submit real Part Studio feature payloads and must return real Onshape feature IDs.
+- **Output must be human-editable, so build with native features, not FeatureScript.** The whole
+  native set: sketches (`rectangle`/`circle`/`polyline`/`points`), `onshape_extrude`,
+  `onshape_revolve`, `onshape_boolean`, `onshape_fillet`, `onshape_chamfer`, `onshape_shell`,
+  `onshape_hole`, the patterns, `onshape_mirror`, `onshape_variable_list`, `onshape_variable_set`,
+  `onshape_delete_feature`, plus the assembly tools.
 - Native manual workflow is supported without FeatureScript:
   `onshape_create_part_studio` → sketch → extrude → `onshape_body_details` →
   `onshape_create_assembly` → `onshape_add_assembly_instance` → `onshape_mate` →
   `onshape_get_assembly`.
+- The `cad_part_*` FeatureScript pipeline is **disabled by default** (`cad_part_push` refuses). It
+  produces one opaque custom feature a human cannot re-sketch. `VANTAGE_CAD_ALLOW_FEATURESCRIPT=1`
+  re-enables it only for a deployment that explicitly accepts that.
+- `onshape-resolve.ts` still evaluates **read-only** FeatureScript to turn "the corner edges" or "the
+  face pointing +Z" into real deterministic ids. That adds nothing to the document and is what makes
+  guessing unnecessary.
+- Leave changeable numbers as variables (`onshape_variable_set`) so a human resizes the design by
+  retyping one value.
 - Mate types: FASTENED, REVOLUTE, SLIDER, CYLINDRICAL. Use real instance and face ids;
   never infer or invent them.
 - Never return synthetic success IDs when Onshape rejects a mutation.
@@ -129,7 +142,13 @@ npx vantage-cad login
 npx vantage-cad claude
 ```
 
-Repo `.mcp.json` starts `vantage-cad mcp`. Tools: `onshape_list_documents`, `onshape_bind`, `onshape_sketch_rectangle`, `onshape_extrude`. Use a disposable Part Studio.
+Repo `.mcp.json` starts `vantage-cad mcp`. Tools: `onshape_list_documents`, `onshape_bind`,
+`onshape_sketch_rectangle`, `onshape_extrude`, `onshape_revolve`, `onshape_shell`, `onshape_boolean`,
+`onshape_variable_set`, and the rest of the native set. Use a disposable Part Studio.
+
+Two tools name their geometry instead of guessing it: `onshape_revolve` needs `axisSketchFeatureId`
+pointing at a sketch with exactly one line, and `onshape_shell` takes `openFace` as a world direction
+(`+Z` default).
 
 ## Safety
 

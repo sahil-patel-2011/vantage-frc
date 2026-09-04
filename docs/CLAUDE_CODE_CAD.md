@@ -8,8 +8,15 @@ There are **two toolsets** behind one MCP server, and they exist for different j
 
 | Toolset | What it is | When to use it |
 |---------|-----------|----------------|
-| **The part pipeline** (`cad_part_*`) | Local design-for-manufacturing checks, then ONE generated FeatureScript feature that builds the whole solid | Any printable part: plates, brackets, boxes, hole patterns, insert bosses |
-| **The per-operation tools** (`onshape_*`, `fusion_*`) | One REST call per sketch / extrude / fillet | Poking at an existing model, Fusion work, anything the part schema cannot express |
+| **The per-operation tools** (`onshape_*`, `fusion_*`) — **the default** | One REST call per sketch / extrude / revolve / fillet / shell / boolean / variable | Everything. Each one lands as an ordinary Onshape feature a human can open and edit. |
+| **The part pipeline** (`cad_part_*`) — **off by default** | Local design-for-manufacturing checks, then ONE generated FeatureScript feature that builds the whole solid | Only when Onshape's annual call allowance is the binding constraint and you accept an uneditable part. Requires `VANTAGE_CAD_ALLOW_FEATURESCRIPT=1`. |
+
+**Why the pipeline ships disabled.** A generated custom feature is one opaque node in the feature
+tree. A human can retype its parameters, but cannot open the sketch, drag a dimension, or insert a
+feature in the middle of it — which is exactly what a team does to a part after the agent leaves. The
+per-operation tools now cover revolve, boolean, shell and variables too, so the pipeline is no longer
+the only way to get a real solid. `cad_part_push` refuses with the native alternative named, and
+spends zero Onshape calls doing so.
 
 > Not certified engineering software. Use a **disposable** document the first time. Never point a
 > first run at the competition robot.
@@ -42,7 +49,13 @@ sources are only charged when they return 2xx/3xx. Two consequences run through 
    custom feature rather than a REST call each.
 
 A naive sketch → extrude → describe → render → fillet loop spends a call per operation and can burn a
-season's allowance in an afternoon. That is the thing this design exists to prevent.
+season's allowance in an afternoon. That is the thing the pipeline was designed to prevent.
+
+**But note which of those two facts actually applies to you.** On the browser-session path — the one
+this connector prefers and the one `vantage-cad login` sets up — calls are not counted at all, so the
+per-operation loop costs nothing against the allowance and fact 2 buys nothing. The pipeline's
+call-saving only matters on the API-key or OAuth path, and it pays for that saving with a part a human
+cannot edit. That is why it is off unless you set `VANTAGE_CAD_ALLOW_FEATURESCRIPT=1`.
 
 ---
 
@@ -326,12 +339,17 @@ created in the current binding, so it can never eat hand-built history.
 | `onshape_sketch_polyline` | yes | — | Open path or closed polygon from explicit mm points. |
 | `onshape_sketch_points` | yes | — | Bare points — the drill locations `onshape_hole` consumes. |
 | `onshape_extrude` | yes | yes | NEW / ADD / REMOVE / INTERSECT, depth in mm. |
+| `onshape_revolve` | yes | — | Turn a profile about a centreline — rollers, shafts, spacers. The axis is the single line in a sketch you name. |
+| `onshape_boolean` | yes | — | UNION / SUBTRACT / INTERSECT whole bodies from two features. |
 | `onshape_fillet` | yes | yes | `selection='corners'` rounds only the plate corners. <br>_Fusion rounds every edge._ |
 | `onshape_chamfer` | yes | yes | Equal-offset bevel. <br>_Fusion bevels every edge._ |
+| `onshape_shell` | yes | — | Hollow a solid to a wall thickness, opening the face that points `+Z`/`-Z`/`±X`/`±Y`. |
 | `onshape_hole` | yes | — | A real Hole feature at the points of a point sketch. |
 | `onshape_linear_pattern` | yes | — | Repeat features along X/Y/Z. |
 | `onshape_circular_pattern` | yes | — | Repeat features around a cylindrical face. |
 | `onshape_mirror` | yes | — | Mirror features across a standard plane. |
+| `onshape_variable_list` | yes | — | Read the Variable Studio — the named dimensions a human edits. |
+| `onshape_variable_set` | yes | — | Create or update `wallThickness = 3 mm`. The most re-editable thing the agent can leave behind. |
 | `onshape_delete_feature` | yes | yes | Undo a feature *this session* created. |
 | `fusion_status` | — | yes | Ping the local VantageCadRelay add-in on loopback. |
 | `fusion_describe` | — | yes | Body / feature counts in the open design. |
@@ -343,9 +361,24 @@ created in the current binding, so it can never eat hand-built history.
 | `fusion_undo_last` | — | yes | Delete the most recent feature the relay created. |
 
 Selections are never guessed. `onshape_body_details` obtains native part and face ids without
-FeatureScript for assembly work. Fillet/chamfer/pattern convenience selectors still use a read-only
-FeatureScript query (`packages/cad/src/onshape-resolve.ts`); callers can avoid that path by supplying
-explicit ids where the tool accepts them.
+FeatureScript for assembly work. The fillet / chamfer / shell / pattern / revolve selectors resolve
+their geometry with a **read-only** FeatureScript query (`packages/cad/src/onshape-resolve.ts`) — it
+evaluates a lambda against the regenerated Part Studio to turn "the corner edges" or "the face
+pointing +Z" into real deterministic ids, and it does not add anything to the document. Callers can
+avoid even that by supplying explicit ids where the tool accepts them.
+
+That read-only query is the only remaining FeatureScript on this path, and it is what makes the
+no-FeatureScript *output* possible: without it there would be no way to name an edge or a face, and a
+guessed id is a fabricated result. The features that get written are ordinary `fillet`, `shell`,
+`revolve`, and `boolean` nodes.
+
+Two tools refuse rather than guess, because the answer is genuinely ambiguous:
+
+- `onshape_revolve` needs `axisSketchFeatureId` to point at a sketch containing **exactly one** line.
+  Draw the centreline in its own sketch. More than one line and it reports the ambiguity instead of
+  picking.
+- `onshape_shell` names the face to remove by the world direction it points (`openFace: "+Z"`). If no
+  flat face points that way, it says so and writes nothing.
 
 ---
 

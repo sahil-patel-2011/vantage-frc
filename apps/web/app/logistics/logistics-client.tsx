@@ -11,7 +11,6 @@ import {
   TextBlockSkeleton,
   CardGridSkeleton,
 } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
 import {
@@ -117,7 +116,6 @@ function LogisticsShell({
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
-        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <div aria-busy="true" aria-label="Loading logistics">
           <TextBlockSkeleton lines={2} />
@@ -138,7 +136,6 @@ function LogisticsShell({
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
-        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
         <LogisticsNextActionsPanel actions={actions} />
@@ -155,7 +152,6 @@ function LogisticsShell({
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
       {children}
       <EmptyState
         soft
@@ -174,10 +170,6 @@ function LogisticsShell({
             Add a trip
           </a>
         ) : null}
-        <LogisticsRelated
-          orgId={orgId}
-          include={shell === "setup" ? ["command", "my-day", "visit-invites"] : [...LOGISTICS_RELATED_INCLUDE]}
-        />
         {steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {steps.map((step) => (
@@ -403,7 +395,6 @@ export default function LogisticsClient() {
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="logistics" />
       <OfflineBanner
         feature="Logistics"
         fromCache={fromCache}
@@ -955,9 +946,7 @@ export default function LogisticsClient() {
                       ? "Add leave / arrive times so they show on My Day and Team Calendar."
                       : "Mentors publish leave and arrive times before departure."
                   }
-                >
-                  <LogisticsRelated orgId={orgId} include={["my-day", "calendar"]} />
-                </EmptyState>
+                />
               ) : (
                 <ol className="logistics-timeline">
                   {legs.map((leg) => (

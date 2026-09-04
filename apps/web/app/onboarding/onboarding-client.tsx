@@ -10,8 +10,12 @@ import {
   buildOnboardingStepMeta,
   defaultFocusForRole,
   emptyOnboardingDraft,
+  formatRoleList,
   isAdultRole,
   lookupTeamNumber,
+  parseStoredCrews,
+  parseStoredRoles,
+  personalizeFromRoles,
   onboardingAdvance,
   onboardingCanSubmit,
   onboardingGoBack,
@@ -223,8 +227,10 @@ export default function OnboardingClient() {
       lastName: data.lastName ?? current.lastName,
       dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
       gender: isGender(data.gender) ? data.gender : current.gender,
-      teamRole: isRole(data.teamRole) ? data.teamRole : current.teamRole,
-      crewRole: isCrew(data.crewRole) ? data.crewRole : current.crewRole,
+      teamRole: parseStoredRoles(data.teamRole)[0] ?? (isRole(data.teamRole) ? data.teamRole : current.teamRole),
+      teamRoles: parseStoredRoles(data.teamRole).length ? parseStoredRoles(data.teamRole) : current.teamRoles,
+      crewRole: parseStoredCrews(data.crewRole)[0] ?? (isCrew(data.crewRole) ? data.crewRole : current.crewRole),
+      crewRoles: parseStoredCrews(data.crewRole),
       roleDescription: data.roleDescription ?? current.roleDescription,
       teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),
       noTeam: data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null ? true : current.noTeam,
@@ -337,7 +343,7 @@ export default function OnboardingClient() {
     [state, legalNeeded, locked],
   );
 
-  const adult = isAdultRole(draft.teamRole);
+  const adult = isAdultRole(draft.teamRoles);
   const lookup = useMemo(
     () =>
       lookupTeamNumber({
@@ -366,15 +372,25 @@ export default function OnboardingClient() {
   });
 
   function pickRole(value: OnboardingRole) {
-    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(value, draft.crewRole);
-    patch({ teamRole: value, primaryFocus: nextFocus });
+    const next = draft.teamRoles.includes(value)
+      ? draft.teamRoles.filter((role) => role !== value)
+      : [...draft.teamRoles, value];
+    const teamRoles = next.length ? next : [value];
+    const nextFocus = focusTouched.current
+      ? draft.primaryFocus
+      : defaultFocusForRole(teamRoles, draft.crewRoles);
+    patch({ teamRoles, teamRole: teamRoles[0] ?? value, primaryFocus: nextFocus });
     setErrorField(null);
   }
 
   function pickCrew(value: OnboardingCrew) {
-    const next = draft.crewRole === value ? "" : value;
-    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(draft.teamRole, next);
-    patch({ crewRole: next, primaryFocus: nextFocus });
+    const next = draft.crewRoles.includes(value)
+      ? draft.crewRoles.filter((crew) => crew !== value)
+      : [...draft.crewRoles, value];
+    const nextFocus = focusTouched.current
+      ? draft.primaryFocus
+      : defaultFocusForRole(draft.teamRoles, next);
+    patch({ crewRoles: next, crewRole: next[0] ?? "", primaryFocus: nextFocus });
   }
 
   function goBack() {
@@ -414,8 +430,10 @@ export default function OnboardingClient() {
         : {
             step: "team" as const,
             preferredTeamNumber: submittedTeamNumber(draft, context),
-            teamRole: draft.teamRole,
-            crewRole: draft.crewRole || null,
+            teamRole: draft.teamRoles[0] ?? draft.teamRole,
+            crewRole: draft.crewRoles[0] ?? (draft.crewRole || null),
+            teamRoles: draft.teamRoles,
+            crewRoles: draft.crewRoles,
             roleDescription: draft.roleDescription.trim() || null,
             primaryFocus: draft.primaryFocus,
           };
@@ -463,8 +481,10 @@ export default function OnboardingClient() {
           dateOfBirth: draft.dateOfBirth,
           gender: draft.gender,
           preferredTeamNumber: submittedTeamNumber(draft, context),
-          teamRole: draft.teamRole,
-          crewRole: draft.crewRole || null,
+          teamRole: draft.teamRoles[0] ?? draft.teamRole,
+          crewRole: draft.crewRoles[0] ?? (draft.crewRole || null),
+          teamRoles: draft.teamRoles,
+          crewRoles: draft.crewRoles,
           roleDescription: draft.roleDescription.trim() || null,
           primaryFocus: draft.primaryFocus,
           displayName: draft.displayName.trim() || undefined,
@@ -648,14 +668,16 @@ export default function OnboardingClient() {
             </div>
 
             <fieldset className="onboarding-cards onboarding-cards-role">
-              <legend>What are you on the team?</legend>
+              <legend>
+                What are you on the team? <small>Pick every role that fits</small>
+              </legend>
               {ROLES.map((option) => (
-                <label key={option.value} className={draft.teamRole === option.value ? "selected" : undefined}>
+                <label key={option.value} className={draft.teamRoles.includes(option.value) ? "selected" : undefined}>
                   <input
-                    type="radio"
+                    type="checkbox"
                     name="teamRole"
                     value={option.value}
-                    checked={draft.teamRole === option.value}
+                    checked={draft.teamRoles.includes(option.value)}
                     onChange={() => pickRole(option.value)}
                   />
                   <i aria-hidden="true">{option.glyph}</i>
@@ -667,15 +689,15 @@ export default function OnboardingClient() {
 
             <fieldset className="onboarding-cards onboarding-cards-crew">
               <legend>
-                What do you actually do? <small>Optional — tap again to clear</small>
+                What do you actually do? <small>Pick as many as you want</small>
               </legend>
               {CREW_ROLES.map((option) => (
-                <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
+                <label key={option.value} className={draft.crewRoles.includes(option.value) ? "selected" : undefined}>
                   <input
                     type="checkbox"
                     name="crewRole"
                     value={option.value}
-                    checked={draft.crewRole === option.value}
+                    checked={draft.crewRoles.includes(option.value)}
                     onChange={() => pickCrew(option.value)}
                   />
                   <strong>{option.label}</strong>
@@ -801,8 +823,8 @@ export default function OnboardingClient() {
           <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void advance(); }}>
             <section className="onboarding-review-card" aria-label="Access request summary">
               <div><span>TEAM</span><strong>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</strong></div>
-              <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</strong></div>
-              <div><span>CREW</span><strong>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Not specified"}</strong></div>
+              <div><span>ROLE</span><strong>{formatRoleList(draft.teamRoles, Object.fromEntries(ROLES.map((option) => [option.value, option.label])))}</strong></div>
+              <div><span>CREW</span><strong>{formatRoleList(draft.crewRoles, Object.fromEntries(CREW_ROLES.map((option) => [option.value, option.label])))}</strong></div>
               <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</strong></div>
               {draft.roleDescription.trim() ? (
                 <div><span>HOW YOU HELP</span><strong>{draft.roleDescription.trim()}</strong></div>
@@ -1035,18 +1057,24 @@ function PendingPanel({
 
 function LandingPanel({ state, draft }: { state: OnboardingState; draft: OnboardingDraft }) {
   const landing = buildOnboardingLanding({
-    teamRole: draft.teamRole,
-    crewRole: draft.crewRole || null,
+    teamRole: draft.teamRoles.join(",") || draft.teamRole,
+    crewRole: draft.crewRoles.join(",") || draft.crewRole || null,
     roleDescription: draft.roleDescription || null,
     primaryFocus: draft.primaryFocus,
     orgId: state.workspaceOrgId,
     orgName: state.workspaceOrgName,
     platformAdmin: state.platformAdmin,
   });
+  const personalized = personalizeFromRoles({
+    teamRole: draft.teamRoles,
+    crewRole: draft.crewRoles,
+    primaryFocus: draft.primaryFocus,
+  });
 
   return (
     <div className="onboarding-landing">
       <p className="onboarding-landing-summary">{landing.summary}</p>
+      <p className="onboarding-landing-summary">{personalized.greetingHint}</p>
       <ol className="onboarding-landing-list">
         {landing.firstFiveMinutes.map((link, index) => (
           <li key={link.key}>

@@ -1,8 +1,8 @@
 /**
  * FreeBuff models Vantage will send to the Pi.
  *
- * The picker can include metered slugs (DeepSeek V4 Flash) when the operator
- * chooses them. Those are labeled metered. Unknown slugs still clamp to GLM.
+ * DeepSeek V4 Flash is first: free, unlimited, and the fast routing default.
+ * Unknown slugs clamp to that default rather than being forwarded.
  */
 
 export type FreebuffUnmeteredModel = {
@@ -17,24 +17,8 @@ export type FreebuffSelectableModel = FreebuffUnmeteredModel & {
   note: string;
 };
 
-/** Explicit picker entries. Metered slugs are labeled — they are not "free forever". */
+/** Picker entries. DeepSeek V4 Flash is the free / unlimited / fast default. */
 export const FREEBUFF_SELECTABLE_MODELS: readonly FreebuffSelectableModel[] = [
-  {
-    id: "glm-5.3-flash",
-    slug: "glm/glm-5.3-flash",
-    label: "GLM 5.3 Flash",
-    aliases: ["glm/glm-5.3-flash", "z-ai/glm-5.3-flash", "glm-5.3-flash", "glm-5.3-flash-free", "flash"],
-    metered: false,
-    note: "Unmetered — no daily session.",
-  },
-  {
-    id: "mimo-2.5",
-    slug: "mimo/mimo-2.5",
-    label: "MiMo 2.5",
-    aliases: ["mimo/mimo-2.5", "mimo/mimo-v2.5", "mimo-2.5", "mimo-2.5-free", "mimo"],
-    metered: false,
-    note: "Unmetered — no daily session.",
-  },
   {
     id: "deepseek-v4-flash",
     slug: "deepseek/deepseek-v4-flash",
@@ -44,13 +28,30 @@ export const FREEBUFF_SELECTABLE_MODELS: readonly FreebuffSelectableModel[] = [
       "deepseek-v4-flash",
       "deepseek-v4-flash-0731",
       "deepseek/deepseek-v4-flash-0731",
+      "deepseek",
     ],
-    metered: true,
-    note: "Metered — uses daily sessions and can pause at peak hours.",
+    metered: false,
+    note: "Free, unlimited, and fast request routing.",
+  },
+  {
+    id: "glm-5.3-flash",
+    slug: "glm/glm-5.3-flash",
+    label: "GLM 5.3 Flash",
+    aliases: ["glm/glm-5.3-flash", "z-ai/glm-5.3-flash", "glm-5.3-flash", "glm-5.3-flash-free", "flash"],
+    metered: false,
+    note: "Free and unmetered.",
+  },
+  {
+    id: "mimo-2.5",
+    slug: "mimo/mimo-2.5",
+    label: "MiMo 2.5",
+    aliases: ["mimo/mimo-2.5", "mimo/mimo-v2.5", "mimo-2.5", "mimo-2.5-free", "mimo"],
+    metered: false,
+    note: "Free and unmetered.",
   },
 ];
 
-export const FREEBUFF_UNMETERED_MODELS: readonly FreebuffUnmeteredModel[] =
+export const FREEBUFF_UNMETERED_MODELS: readonly FreebuffSelectableModel[] =
   FREEBUFF_SELECTABLE_MODELS.filter((model) => !model.metered);
 
 export const FREEBUFF_UNMETERED_DEFAULT = FREEBUFF_UNMETERED_MODELS[0]!.slug;
@@ -82,16 +83,12 @@ function matchFreebuffModel(
   return null;
 }
 
-/**
- * Always returns one of the two unmetered slugs. A metered or unknown request
- * becomes the default rather than being forwarded — that is what keeps DeepSeek
- * V4 Flash off the wire even if someone set FREE_RELAY_MODEL to it.
- */
+/** Always returns a picker slug. Unknown requests become DeepSeek V4 Flash. */
 export function resolveUnmeteredFreebuffModel(requested?: string | null): string {
   return canonicalizeFreebuffModel(requested) ?? FREEBUFF_UNMETERED_DEFAULT;
 }
 
-/** Forwards an explicit picker choice (including metered). Unknown slugs become GLM. */
+/** Forwards an explicit picker choice. Unknown slugs become DeepSeek V4 Flash. */
 export function resolveSelectableFreebuffModel(requested?: string | null): string {
   return canonicalizeSelectableFreebuffModel(requested) ?? FREEBUFF_UNMETERED_DEFAULT;
 }
@@ -105,11 +102,28 @@ export function isUnmeteredFreebuffModel(requested: string | null | undefined): 
   return canonicalizeFreebuffModel(requested) !== null;
 }
 
-export function freebuffModelCatalog(): Array<{ id: string; slug: string; label: string }> {
+export function freebuffPickerLabel(model: {
+  label: string;
+  note?: string;
+  metered?: boolean;
+}): string {
+  if (model.metered) return `${model.label} (metered)`;
+  return model.note ? `${model.label} — ${model.note}` : model.label;
+}
+
+export function freebuffModelCatalog(): Array<{
+  id: string;
+  slug: string;
+  label: string;
+  metered: boolean;
+  note: string;
+}> {
   return FREEBUFF_UNMETERED_MODELS.map((model) => ({
     id: model.id,
     slug: model.slug,
     label: model.label,
+    metered: model.metered,
+    note: model.note,
   }));
 }
 

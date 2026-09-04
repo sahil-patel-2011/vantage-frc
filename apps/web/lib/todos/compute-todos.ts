@@ -6,6 +6,7 @@ import {
 } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
 import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
+import { linksToJson, parseAttachedLinks, type AttachedLink } from "../planner/links";
 import type {
   TeamTodo,
   TodoMember,
@@ -22,6 +23,7 @@ type TodoRow = {
   id: string;
   title: string;
   notes: string;
+  links: unknown;
   status: TodoStatus;
   assigneeUserId: string | null;
   assigneeName: string | null;
@@ -84,11 +86,12 @@ async function loadSubteams(client: PoolClient, orgId: string): Promise<TodoSubt
 }
 
 async function loadTodos(client: PoolClient, orgId: string, asOf: string): Promise<TeamTodo[]> {
-  const rows = await client.query<TodoRow>(
-    `SELECT
+  const sql = (withLinks: boolean) => `
+    SELECT
        t.id,
        t.title,
        t.notes,
+       ${withLinks ? `coalesce(t.links, '[]'::jsonb)` : `'[]'::jsonb`} AS "links",
        t.status,
        t.assignee_user_id AS "assigneeUserId",
        a.name AS "assigneeName",
@@ -107,10 +110,18 @@ async function loadTodos(client: PoolClient, orgId: string, asOf: string): Promi
      LEFT JOIN users c ON c.id = t.created_by
      LEFT JOIN team_subteams s ON s.id = t.subteam_id AND s.org_id = t.org_id
      WHERE t.org_id = $1
-     ORDER BY t.created_at DESC`,
-    [orgId],
+     ORDER BY t.created_at DESC`;
+  let rows;
+  try {
+    rows = await client.query<TodoRow>(sql(true), [orgId]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (!/links|column .* does not exist/i.test(message)) throw error;
+    rows = await client.query<TodoRow>(sql(false), [orgId]);
+  }
+  return sortTodos(
+    rows.rows.map((row) => withFlags({ ...row, links: parseAttachedLinks(row.links) }, asOf)),
   );
-  return sortTodos(rows.rows.map((row) => withFlags(row, asOf)));
 }
 
 export async function computeTodosView(
@@ -279,6 +290,7 @@ export async function createTodo(
     assigneeUserId?: string | null;
     subteamId?: string | null;
     dueOn?: string | null;
+    links?: AttachedLink[];
   },
 ): Promise<string> {
   await assertMember(client, input.orgId, input.userId);
@@ -287,10 +299,10 @@ export async function createTodo(
   const status = input.status && TODO_STATUSES.includes(input.status) ? input.status : "todo";
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO team_todos
-       (org_id, title, notes, status, assignee_user_id, subteam_id, due_on, created_by,
+       (org_id, title, notes, links, status, assignee_user_id, subteam_id, due_on, created_by,
         completed_at, completed_by)
      VALUES (
-       $1::uuid, $2, coalesce($3, ''), $4, $5::uuid, $6::uuid, $7::date, $8::uuid,
+       $1::uuid, $2, coalesce($3, ''), $9::jsonb, $4, $5::uuid, $6::uuid, $7::date, $8::uuid,
        CASE WHEN $4 = 'done' THEN now() ELSE NULL END,
        CASE WHEN $4 = 'done' THEN $8::uuid ELSE NULL END
      )
@@ -304,6 +316,7 @@ export async function createTodo(
       input.subteamId ?? null,
       input.dueOn ?? null,
       input.userId,
+      linksToJson(input.links ?? []),
     ],
   );
   const todoId = inserted.rows[0]!.id;
@@ -331,6 +344,7 @@ export async function updateTodo(
     assigneeUserId?: string | null;
     subteamId?: string | null;
     dueOn?: string | null;
+    links?: AttachedLink[];
   },
 ): Promise<void> {
   await assertMember(client, input.orgId, input.userId);
@@ -366,6 +380,7 @@ export async function updateTodo(
        assignee_user_id = CASE WHEN $7::boolean THEN $8::uuid ELSE assignee_user_id END,
        subteam_id = CASE WHEN $9::boolean THEN $10::uuid ELSE subteam_id END,
        due_on = CASE WHEN $11::boolean THEN $12::date ELSE due_on END,
+       links = CASE WHEN $14::boolean THEN $15::jsonb ELSE links END,
        completed_at = CASE
          WHEN coalesce($6, status) = 'done' AND status <> 'done' THEN now()
          WHEN coalesce($6, status) <> 'done' THEN NULL
@@ -392,6 +407,8 @@ export async function updateTodo(
       input.dueOn !== undefined,
       input.dueOn ?? null,
       input.userId,
+      input.links !== undefined,
+      linksToJson(input.links ?? []),
     ],
   );
 

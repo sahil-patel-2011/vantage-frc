@@ -7,11 +7,18 @@ import {
 } from "@vantage/core";
 import {
   REQUEST_KINDS,
+  grantFreeTokens,
   grantRequestCredits,
+  isFreeTokenSource,
   isRequestKind,
   type OrgAiAccessKind,
 } from "@vantage/billing";
-import { describeFreeRelayRefusal, freeRelayRefusal } from "@vantage/agent";
+import {
+  describeFreeRelayRefusal,
+  freeRelayRefusal,
+  freebuffSelectableCatalog,
+  readFreeRelayConfig,
+} from "@vantage/agent";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -73,7 +80,33 @@ export async function GET() {
             LIMIT 200`,
         ),
       ]);
-      return { teams: teams.rows, weights: weights.rows, accessGrants: grants.rows };
+      let tokenBalances: unknown[] = [];
+      try {
+        const tokens = await client.query(
+          `SELECT t.org_id AS "orgId", t.source, t.granted, t.spent, t.balance
+             FROM org_ai_free_tokens t
+            ORDER BY t.source`,
+        );
+        tokenBalances = tokens.rows;
+      } catch (error) {
+        if (!(error instanceof Error) || !/org_ai_free_tokens|ai_free_token_ledger/.test(error.message)) {
+          throw error;
+        }
+      }
+      const relayConfig = readFreeRelayConfig();
+      const refusal = freeRelayRefusal();
+      return {
+        teams: teams.rows,
+        weights: weights.rows,
+        accessGrants: grants.rows,
+        tokenBalances,
+        relay: {
+          configured: Boolean(relayConfig),
+          model: relayConfig?.model ?? null,
+          models: freebuffSelectableCatalog(),
+          refusal: refusal ? describeFreeRelayRefusal(refusal) : null,
+        },
+      };
     });
     return Response.json(data);
   } catch (error) {
@@ -92,7 +125,137 @@ type Body = {
   note?: string;
   grantId?: string;
   requestKind?: string;
+  preset?: "none" | "credits_100" | "unlimited";
+  source?: string;
+  tokens?: number;
 };
+
+const UNLIMITED_WINDOW_DAYS = 365;
+
+async function upsertUsePlatformFreeAi(
+  client: Parameters<Parameters<typeof withRls>[1]>[0],
+  orgId: string,
+  actorUserId: string,
+  enabled: boolean,
+) {
+  try {
+    await client.query(
+      `INSERT INTO org_byok_routing_prefs
+         (org_id, use_platform_free_ai, updated_by, updated_at)
+       VALUES ($1::uuid, $2, $3::uuid, now())
+       ON CONFLICT (org_id) DO UPDATE SET
+         use_platform_free_ai = excluded.use_platform_free_ai,
+         updated_by = excluded.updated_by,
+         updated_at = now()`,
+      [orgId, enabled, actorUserId],
+    );
+  } catch (error) {
+    if (error instanceof Error && /use_platform_free_ai/.test(error.message)) return;
+    throw error;
+  }
+}
+
+async function grantRelayWindow(
+  client: Parameters<Parameters<typeof withRls>[1]>[0],
+  input: { orgId: string; actorUserId: string; days: number; note: string },
+) {
+  const refusal = freeRelayRefusal();
+  if (refusal) {
+    throw new Error(
+      `${describeFreeRelayRefusal(refusal)} Set FREE_RELAY_BASE_URL, FREE_RELAY_API_KEY, and FREE_RELAY_MODEL before granting relay access.`,
+    );
+  }
+  const endsAt = new Date(Date.now() + input.days * 86_400_000);
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO org_ai_access_grants(org_id, access_kind, ends_at, granted_by, note)
+     VALUES ($1::uuid, 'platform_relay', $2, $3::uuid, $4)
+     RETURNING id`,
+    [input.orgId, endsAt, input.actorUserId, input.note],
+  );
+  await upsertUsePlatformFreeAi(client, input.orgId, input.actorUserId, true);
+  return { grantId: inserted.rows[0]!.id, endsAt };
+}
+
+async function grantHostedWindow(
+  client: Parameters<Parameters<typeof withRls>[1]>[0],
+  input: { orgId: string; actorUserId: string; days: number; note: string },
+) {
+  const endsAt = new Date(Date.now() + input.days * 86_400_000);
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO org_ai_access_grants(org_id, access_kind, ends_at, granted_by, note)
+     VALUES ($1::uuid, 'hosted_platform', $2, $3::uuid, $4)
+     RETURNING id`,
+    [input.orgId, endsAt, input.actorUserId, input.note],
+  );
+  return { grantId: inserted.rows[0]!.id, endsAt };
+}
+
+async function applyFreeAiPreset(
+  client: Parameters<Parameters<typeof withRls>[1]>[0],
+  input: {
+    orgId: string;
+    actorUserId: string;
+    preset: "none" | "credits_100" | "unlimited";
+    note: string;
+  },
+) {
+  if (input.preset === "none") {
+    const revoked = await client.query<{ id: string }>(
+      `UPDATE org_ai_access_grants SET revoked_at = now()
+        WHERE org_id = $1::uuid
+          AND access_kind = 'platform_relay'
+          AND revoked_at IS NULL
+        RETURNING id`,
+      [input.orgId],
+    );
+    await upsertUsePlatformFreeAi(client, input.orgId, input.actorUserId, false);
+    await writeAdminAction(client, {
+      actorUserId: input.actorUserId,
+      action: "ai_free.preset",
+      targetOrgId: input.orgId,
+      payload: { preset: "none", revoked: revoked.rows.map((row) => row.id) },
+    });
+    return { preset: "none" as const, revoked: revoked.rowCount ?? 0 };
+  }
+
+  const window = await grantRelayWindow(client, {
+    orgId: input.orgId,
+    actorUserId: input.actorUserId,
+    days: UNLIMITED_WINDOW_DAYS,
+    note:
+      input.note ||
+      (input.preset === "unlimited" ? "Unlimited platform Free AI" : "100 request credits + Free AI"),
+  });
+
+  if (input.preset === "credits_100") {
+    const ledgerId = await grantRequestCredits(client, {
+      orgId: input.orgId,
+      credits: 100,
+      actorUserId: input.actorUserId,
+      reason: input.note || "Free AI 100-request grant",
+    });
+    await writeAdminAction(client, {
+      actorUserId: input.actorUserId,
+      action: "ai_free.preset",
+      targetOrgId: input.orgId,
+      payload: {
+        preset: "credits_100",
+        grantId: window.grantId,
+        endsAt: window.endsAt.toISOString(),
+        ledgerId,
+      },
+    });
+    return { preset: "credits_100" as const, credits: 100, endsAt: window.endsAt.toISOString() };
+  }
+
+  await writeAdminAction(client, {
+    actorUserId: input.actorUserId,
+    action: "ai_free.preset",
+    targetOrgId: input.orgId,
+    payload: { preset: "unlimited", grantId: window.grantId, endsAt: window.endsAt.toISOString() },
+  });
+  return { preset: "unlimited" as const, endsAt: window.endsAt.toISOString() };
+}
 
 function badRequest(message: string) {
   return Response.json({ error: message }, { status: 400 });
@@ -116,6 +279,78 @@ export async function POST(request: Request) {
       });
 
       switch (body.action) {
+        case "gift_tokens": {
+          if (!body.orgId) throw new Error("orgId is required");
+          if (!isFreeTokenSource(body.source)) {
+            throw new Error("source must be freebuff, hosted_platform, or credits");
+          }
+          const amount = Math.floor(Number(body.tokens ?? body.credits));
+          if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_GRANT_CREDITS) {
+            throw new Error(`amount must be a whole number between 1 and ${MAX_GRANT_CREDITS}`);
+          }
+          const days = Number(body.expiresInDays);
+          const expiresAt =
+            Number.isFinite(days) && days > 0
+              ? new Date(Date.now() + Math.min(days, MAX_WINDOW_DAYS) * 86_400_000)
+              : null;
+          const reason = (body.reason ?? "").slice(0, 500);
+
+          if (body.source === "credits") {
+            const id = await grantRequestCredits(client, {
+              orgId: body.orgId,
+              credits: amount,
+              actorUserId: current.user.id,
+              reason: reason || "Gifted request credits",
+              expiresAt,
+            });
+            await writeAdminAction(client, {
+              actorUserId: current.user.id,
+              action: "ai_tokens.gifted",
+              targetOrgId: body.orgId,
+              payload: { source: "credits", amount, expiresAt: expiresAt?.toISOString() ?? null, ledgerId: id },
+            });
+            return { source: "credits", tokens: amount, expiresAt: expiresAt?.toISOString() ?? null };
+          }
+
+          const ledgerId = await grantFreeTokens(client, {
+            orgId: body.orgId,
+            tokens: amount,
+            source: body.source,
+            actorUserId: current.user.id,
+            reason: reason || (body.source === "freebuff" ? "Gifted Freebuff tokens" : "Gifted hosted tokens"),
+            expiresAt,
+          });
+          const windowDays =
+            Number.isFinite(days) && days > 0 ? Math.min(days, MAX_WINDOW_DAYS) : UNLIMITED_WINDOW_DAYS;
+          if (body.source === "freebuff") {
+            await grantRelayWindow(client, {
+              orgId: body.orgId,
+              actorUserId: current.user.id,
+              days: windowDays,
+              note: reason || "Gifted Freebuff tokens",
+            });
+          } else if (body.source === "hosted_platform") {
+            await grantHostedWindow(client, {
+              orgId: body.orgId,
+              actorUserId: current.user.id,
+              days: windowDays,
+              note: reason || "Gifted hosted tokens",
+            });
+          }
+          await writeAdminAction(client, {
+            actorUserId: current.user.id,
+            action: "ai_tokens.gifted",
+            targetOrgId: body.orgId,
+            payload: {
+              source: body.source,
+              amount,
+              expiresAt: expiresAt?.toISOString() ?? null,
+              ledgerId,
+            },
+          });
+          return { source: body.source, tokens: amount, expiresAt: expiresAt?.toISOString() ?? null };
+        }
+
         case "grant_credits": {
           if (!body.orgId) throw new Error("orgId is required");
           const credits = Math.floor(Number(body.credits));
@@ -141,6 +376,20 @@ export async function POST(request: Request) {
             payload: { credits, expiresAt: expiresAt?.toISOString() ?? null, ledgerId: id },
           });
           return { granted: credits, expiresAt: expiresAt?.toISOString() ?? null };
+        }
+
+        case "set_free_ai": {
+          if (!body.orgId) throw new Error("orgId is required");
+          const preset = body.preset;
+          if (preset !== "none" && preset !== "credits_100" && preset !== "unlimited") {
+            throw new Error("preset must be none, credits_100, or unlimited");
+          }
+          return applyFreeAiPreset(client, {
+            orgId: body.orgId,
+            actorUserId: current.user.id,
+            preset,
+            note: (body.note ?? "").slice(0, 500),
+          });
         }
 
         case "grant_access": {
@@ -178,6 +427,9 @@ export async function POST(request: Request) {
             targetOrgId: body.orgId,
             payload: { accessKind, endsAt: endsAt.toISOString(), grantId: inserted.rows[0]!.id },
           });
+          if (accessKind === "platform_relay") {
+            await upsertUsePlatformFreeAi(client, body.orgId, current.user.id, true);
+          }
           return { accessKind, endsAt: endsAt.toISOString() };
         }
 
@@ -223,7 +475,7 @@ export async function POST(request: Request) {
 
         default:
           throw new Error(
-            "action must be grant_credits, grant_access, revoke_access, or set_weight",
+            "action must be gift_tokens, grant_credits, grant_access, revoke_access, set_weight, or set_free_ai",
           );
       }
     });

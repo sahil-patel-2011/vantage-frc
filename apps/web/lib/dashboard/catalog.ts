@@ -164,9 +164,8 @@ export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardW
 const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist", "quick_actions"]);
 
 /**
- * View-mode Home keeps every user-placed widget, including honest empty
- * states with a destination CTA. Setup-only cards hide once the workspace
- * is ready. Next match stays a full-width hero.
+ * View-mode Home keeps user-placed widgets. Setup-only cards stay off the
+ * board (the first-run banner is the CTA). Next match stays a full-width hero.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
@@ -177,8 +176,9 @@ export function homeViewLayout(
   },
 ): DashboardWidgetLayout[] {
   if (input.editing) return layout.map((item) => ({ ...item }));
-  const ready = input.shell === "ready";
-  const visible = layout.filter((item) => !(ready && SETUP_ONLY_WIDGETS.has(item.type)));
+  // First-run Home is the setup banner only — an empty widget grid is more buttons.
+  if (input.shell !== "ready") return [];
+  const visible = layout.filter((item) => !SETUP_ONLY_WIDGETS.has(item.type));
   return packDashboardLayout(
     visible.map((item) =>
       item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,
@@ -315,12 +315,12 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "ai_usage",
-    label: "AI usage",
-    description: "Credits and allowance (owner/admin only)",
-    defaultW: 4,
-    defaultH: 3,
+    label: "AI tokens",
+    description: "This team's tokens, most-used model, and 30-day trend (owner/admin). Platform owners also see every team.",
+    defaultW: 6,
+    defaultH: 4,
     minW: 3,
-    minH: 2,
+    minH: 3,
     roles: ["owner", "admin"],
   },
 ];
@@ -332,6 +332,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-alerts", type: "alerts", x: 0, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-recent_result", type: "recent_result", x: 4, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-scouting_coverage", type: "scouting_coverage", x: 8, y: 7, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-ai_usage", type: "ai_usage", x: 0, y: 10, w: 12, h: 4, minW: 3, minH: 3 },
 ];
 
 export type DashboardPrimaryFocus = "competition" | "build" | "business" | "leadership";
@@ -356,7 +357,7 @@ const FOCUS_DASHBOARD_LAYOUTS: Record<DashboardPrimaryFocus, DashboardWidgetLayo
     { i: "w-alerts", type: "alerts", x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 2 },
     { i: "w-notifications", type: "notifications", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
     { i: "w-quick_actions", type: "quick_actions", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-    { i: "w-ai_usage", type: "ai_usage", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-ai_usage", type: "ai_usage", x: 0, y: 7, w: 12, h: 4, minW: 3, minH: 3 },
   ],
 };
 
@@ -375,6 +376,7 @@ export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
   "team_todos",
   "prediction_summary",
   "subteam_upcoming",
+  "ai_usage",
 ];
 
 export function isDashboardWidgetType(value: unknown): value is DashboardWidgetType {
@@ -397,6 +399,26 @@ export function filterLayoutForRole(
   role: string | null | undefined,
 ): DashboardWidgetLayout[] {
   return layout.filter((item) => canAccessWidget(item.type, role));
+}
+
+/** Append the token widget on saved homes that predate it. Does not invent stats. */
+export function ensureAiUsageWidget(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  if (layout.some((item) => item.type === "ai_usage")) return layout;
+  const entry = catalogEntry("ai_usage");
+  const y = layout.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+  return [
+    ...layout,
+    {
+      i: "w-ai_usage",
+      type: "ai_usage",
+      x: 0,
+      y,
+      w: 12,
+      h: entry?.defaultH ?? 4,
+      minW: entry?.minW ?? 3,
+      minH: entry?.minH ?? 3,
+    },
+  ];
 }
 
 export function validateDashboardLayout(

@@ -101,7 +101,12 @@ function makeRuntime(overrides: Partial<CadPartRuntime> = {}) {
     saveSession: async (next) => {
       session = next;
     },
-    env: { VANTAGE_CAD_HOME: join(tmpdir(), "vantage-cad-test-home") },
+    // These tests cover the FeatureScript pipeline itself, which ships disabled because a
+    // generated custom feature is not human-editable. Opt in so the pipeline is still tested.
+    env: {
+      VANTAGE_CAD_HOME: join(tmpdir(), "vantage-cad-test-home"),
+      VANTAGE_CAD_ALLOW_FEATURESCRIPT: "1",
+    },
     ...overrides,
   };
   return { runtime, onshape, session: () => session };
@@ -605,6 +610,76 @@ async function buildPlate(runtime: CadPartRuntime) {
     featureId: string;
   };
 }
+
+describe("FeatureScript is off by default because it is not human-editable", () => {
+  /** Same harness, minus the opt-in — i.e. what a real install does. */
+  function defaultRuntime() {
+    const { runtime, onshape } = makeRuntime();
+    return {
+      onshape,
+      runtime: {
+        ...runtime,
+        env: { VANTAGE_CAD_HOME: join(tmpdir(), "vantage-cad-test-home") },
+      } satisfies CadPartRuntime,
+    };
+  }
+
+  it("refuses cad_part_push and spends no Onshape calls doing it", async () => {
+    const { runtime, onshape } = defaultRuntime();
+    await callCadPartTool("cad_open_document", { url: PART_STUDIO_URL }, runtime);
+    const checked = (await callCadPartTool(
+      "cad_part_check",
+      { part: plateBrief(), printerId: "bambu-x1c", materialId: "pla" },
+      runtime,
+    )) as { checkToken: string };
+    const preview = (await callCadPartTool("cad_part_preview", { checkToken: checked.checkToken }, runtime)) as {
+      previewToken: string;
+      nextStep: string;
+    };
+    const before = onshape.calls.length;
+
+    const push = (await callCadPartTool("cad_part_push", { previewToken: preview.previewToken }, runtime)) as {
+      status: string;
+      reason: string;
+      fix: string;
+      why: string;
+      onshapeCallsMade: number;
+    };
+
+    expect(push.status).toBe("blocked");
+    expect(push.reason).toBe("featurescript_disabled");
+    expect(push.onshapeCallsMade).toBe(0);
+    expect(onshape.calls.length).toBe(before);
+    // The refusal has to name the way forward, not just say no.
+    expect(push.fix).toMatch(/onshape_extrude/);
+    expect(push.fix).toMatch(/onshape_revolve/);
+    expect(push.fix).toMatch(/onshape_variable_set/);
+    expect(push.why).toMatch(/VANTAGE_CAD_ALLOW_FEATURESCRIPT/);
+    // Preview must not send the agent to a tool that is going to refuse it.
+    expect(preview.nextStep).toMatch(/disabled/i);
+  });
+
+  it("still lets the local DFM check run, since that costs nothing and is useful", async () => {
+    const { runtime, onshape } = defaultRuntime();
+    await callCadPartTool("cad_open_document", { url: PART_STUDIO_URL }, runtime);
+    const before = onshape.calls.length;
+    const checked = (await callCadPartTool(
+      "cad_part_check",
+      { part: plateBrief(), printerId: "bambu-x1c", materialId: "pla" },
+      runtime,
+    )) as { status: string; checkToken: string };
+    expect(checked.status).toBe("ok");
+    expect(checked.checkToken).toBeTruthy();
+    expect(onshape.calls.length).toBe(before);
+  });
+
+  it("builds the part when a deployment explicitly opts in", async () => {
+    const { runtime } = makeRuntime();
+    const push = await buildPlate(runtime);
+    expect(push.status).toBe("ok");
+    expect(push.featureId).toBeTruthy();
+  });
+});
 
 describe("cad_part_edit", () => {
   it("makes the plate 8 mm instead of 6 in ONE call, with no rebuild", async () => {

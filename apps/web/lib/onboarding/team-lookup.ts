@@ -73,8 +73,11 @@ export const TEAM_NUMBER_MIN = 1;
 export const TEAM_NUMBER_MAX = 99999;
 
 /** Roles that may create a workspace for a team that has none yet. */
-export function isAdultRole(teamRole: string | null | undefined): boolean {
-  return teamRole === "mentor" || teamRole === "coach" || teamRole === "parent";
+export function isAdultRole(teamRole: string | string[] | null | undefined): boolean {
+  const tokens = Array.isArray(teamRole)
+    ? teamRole
+    : String(teamRole ?? "").split(/[\s,|/]+/);
+  return tokens.some((role) => role === "mentor" || role === "coach" || role === "parent");
 }
 
 /** Digits only, capped at 5 — the inputMode="numeric" field's sanitizer. */

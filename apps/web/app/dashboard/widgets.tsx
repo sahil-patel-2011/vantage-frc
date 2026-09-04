@@ -8,6 +8,7 @@ import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { parseYouTubeEmbed } from "../../lib/youtube";
 import { Icon, type IconName } from "../../components/icon";
 import { Badge, EmptyState } from "../../components/ui";
+import { formatTokenCount, shortModelLabel } from "../../lib/dashboard/ai-token-stats";
 
 type EmptyHint = {
   title: string;
@@ -78,9 +79,9 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
     ctaLabel: "Open displays",
   },
   ai_usage: {
-    title: "AI usage unavailable",
-    body: "Owner/admin access required.",
-    // The widget is about AI spend, so send people to the AI key/usage screen rather
+    title: "No AI usage yet",
+    body: "Tokens, most-used model, and daily stats appear after real AI calls. Other teams never appear here.",
+    // The widget is about AI usage, so send people to the AI key/usage screen rather
     // than the team hub root, which lands on the calendar.
     ctaHref: "/team/ai-keys",
     ctaLabel: "AI keys",
@@ -832,34 +833,103 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     }
-    case "ai_usage":
+    case "ai_usage": {
+      const spark = Array.isArray(data.spark)
+        ? (data.spark as Array<{ day?: string; tokens?: number }>)
+        : [];
+      const teams = Array.isArray(data.teams)
+        ? (data.teams as Array<{
+            orgId?: string;
+            name?: string;
+            teamNumber?: number | null;
+            tokens?: number;
+            calls?: number;
+            mostUsed?: string | null;
+            lastUsedAt?: string | null;
+          }>)
+        : [];
+      const sparkMax = Math.max(0, ...spark.map((day) => Number(day.tokens ?? 0)));
       return (
         <Shell
           type={type}
-          title="AI usage"
+          title="AI tokens"
           payload={payload}
-          href={withOrg("/team/ai-keys")}
-          emptyHint={hint}
+          href={data.platformAdmin ? "/admin/analytics" : withOrg("/team/usage")}
+          emptyHint={{
+            ...hint,
+            ctaHref: data.platformAdmin ? "/admin/analytics" : "/team/usage",
+            ctaLabel: data.platformAdmin ? "All teams" : "Usage",
+          }}
           orgId={orgId}
         >
           {payload?.status === "live" ? (
-            <div className="dash-metric-grid">
-              <div>
-                <strong>{data.planCode ? String(data.planCode) : "—"}</strong>
-                <span>plan</span>
+            <>
+              <div className="dash-metric-grid">
+                <div>
+                  <strong>{formatTokenCount(Number(data.tokens ?? 0))}</strong>
+                  <span>tokens · {Number(data.windowDays ?? 30)}d</span>
+                </div>
+                <div>
+                  <strong>{formatTokenCount(Number(data.calls ?? 0))}</strong>
+                  <span>calls</span>
+                </div>
+                <div>
+                  <strong>{shortModelLabel(typeof data.mostUsed === "string" ? data.mostUsed : null)}</strong>
+                  <span>most used</span>
+                </div>
               </div>
-              <div>
-                <strong>${Number(data.used ?? 0).toFixed(2)}</strong>
-                <span>used</span>
-              </div>
-              <div>
-                <strong>{data.allowancePercent != null ? `${Math.round(Number(data.allowancePercent))}%` : "—"}</strong>
-                <span>of allowance</span>
-              </div>
-            </div>
+              {spark.length > 0 ? (
+                <div>
+                  <div className="dash-token-spark" role="img" aria-label="Tokens per day, last 7 days">
+                    {spark.map((day) => {
+                      const tokens = Number(day.tokens ?? 0);
+                      const height =
+                        sparkMax > 0 && tokens > 0 ? `${Math.max(8, (tokens / sparkMax) * 100)}%` : "0";
+                      return (
+                        <i
+                          key={day.day ?? "day"}
+                          style={{ height }}
+                          title={`${day.day ?? ""}: ${formatTokenCount(tokens)} tokens`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="dash-token-spark-label">
+                    <span>{spark[0]?.day ?? ""}</span>
+                    <span>7 days</span>
+                    <span>{spark[spark.length - 1]?.day ?? ""}</span>
+                  </div>
+                </div>
+              ) : null}
+              <p className="dash-ai-spend">
+                {data.planCode ? String(data.planCode) : "no plan"}
+                {` · $${Number(data.used ?? 0).toFixed(2)} used`}
+                {data.allowancePercent != null ? ` · ${Math.round(Number(data.allowancePercent))}% of allowance` : ""}
+              </p>
+              {data.platformAdmin && teams.length > 0 ? (
+                <ul className="dash-team-tokens">
+                  {teams.map((team) => (
+                    <li key={team.orgId ?? team.name}>
+                      <span>
+                        <strong>
+                          {team.teamNumber != null ? `#${team.teamNumber} ` : ""}
+                          {team.name ?? "Team"}
+                        </strong>
+                        <small>{shortModelLabel(team.mostUsed)}</small>
+                      </span>
+                      <em>
+                        {formatTokenCount(Number(team.tokens ?? 0))}
+                        <small>{formatTokenCount(Number(team.calls ?? 0))} calls</small>
+                      </em>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
           ) : null}
         </Shell>
       );
+    }
     case "quick_actions": {
       const fromPayload = (data.links as Array<{ href: string; label: string; detail: string }> | undefined) ?? [];
       const needsSetup = !orgId || tbaConfigured === false;

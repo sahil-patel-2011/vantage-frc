@@ -144,8 +144,8 @@ export function dashboardFeatureDesks(orgId?: string | null): DashboardFeatureDe
     },
     {
       id: "ai",
-      label: "AI",
-      detail: "Chat and routing",
+      label: "Ask",
+      detail: "Assistant for this team",
       href: hubHref("/ai", "chat", orgId),
       icon: "bolt",
     },

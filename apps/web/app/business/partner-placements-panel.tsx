@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState } from "../../components/ui";
-import { PLACEMENTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 
 type Program = {
@@ -250,7 +248,6 @@ export function PartnerPlacementsPanel({
   if (!program) {
     return (
       <div className="biz-stack">
-        <BusinessRelated orgId={orgId} active="placements" include={PLACEMENTS_RELATED_INCLUDE} />
         <PlacementsNextActions orgId={orgId} canManage={canManage} program={null} migrationMissing={migrationMissing} />
         <EmptyState
           badge="Setup required"
@@ -261,7 +258,6 @@ export function PartnerPlacementsPanel({
           <button className="app-button" type="button" onClick={() => void load()}>
             Try again
           </button>
-          <BusinessRelated orgId={orgId} include={["sponsors", "fundraisers", "finance-ai"]} ariaLabel="Setup related links" />
         </EmptyState>
       </div>
     );
@@ -269,12 +265,6 @@ export function PartnerPlacementsPanel({
 
   return (
     <div className="biz-stack placement-stack">
-      <BusinessRelated
-        orgId={orgId}
-        active="placements"
-        include={PLACEMENTS_RELATED_INCLUDE}
-        ariaLabel="Related fundraising tools"
-      />
       <PlacementsNextActions orgId={orgId} canManage={canManage} program={program} />
 
       {error ? (
@@ -321,9 +311,7 @@ export function PartnerPlacementsPanel({
           badge="Get started"
           title="No placement packages yet"
           description="Add a priced package with surfaces below. Totals only reflect packages you configure for this team."
-        >
-          <BusinessRelated orgId={orgId} include={["sponsors", "fundraisers", "orders"]} ariaLabel="Empty packages links" />
-        </EmptyState>
+        />
       ) : null}
 
       {!program.sponsors.length ? (

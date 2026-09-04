@@ -15,6 +15,13 @@ type Team = {
 
 type Weight = { requestKind: string; credits: number; description: string };
 
+type RelayStatus = {
+  configured: boolean;
+  model: string | null;
+  models: Array<{ id: string; slug: string; label: string }>;
+  refusal: string | null;
+};
+
 type AccessGrant = {
   id: string;
   orgId: string;
@@ -25,6 +32,22 @@ type AccessGrant = {
   revokedAt: string | null;
   note: string;
 };
+
+type TokenBalance = {
+  orgId: string;
+  source: "freebuff" | "hosted_platform" | "credits";
+  granted: string | number;
+  spent: string | number;
+  balance: string | number;
+};
+
+const TOKEN_SOURCES = [
+  { id: "freebuff", label: "Freebuff (team sees free tokens only)" },
+  { id: "hosted_platform", label: "Hosted platform keys" },
+  { id: "credits", label: "Request credits" },
+] as const;
+
+const TOKEN_PRESETS = [10_000, 50_000, 100_000, 250_000, 1_000_000] as const;
 
 /** Every kind, so an existing row still renders with a readable name. */
 const ACCESS_LABELS: Record<string, string> = {
@@ -46,11 +69,17 @@ export default function AiGrantsClient() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [weights, setWeights] = useState<Weight[]>([]);
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
+  const [relay, setRelay] = useState<RelayStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [ok, setOk] = useState(false);
 
   const [selectedOrg, setSelectedOrg] = useState("");
+  const [giftSource, setGiftSource] = useState<(typeof TOKEN_SOURCES)[number]["id"]>("freebuff");
+  const [giftTokens, setGiftTokens] = useState("100000");
+  const [giftReason, setGiftReason] = useState("");
+  const [giftExpiryDays, setGiftExpiryDays] = useState("");
   const [credits, setCredits] = useState("500");
   const [creditReason, setCreditReason] = useState("");
   const [creditExpiryDays, setCreditExpiryDays] = useState("");
@@ -70,6 +99,8 @@ export default function AiGrantsClient() {
         setTeams(data.teams ?? []);
         setWeights(data.weights ?? []);
         setAccessGrants(data.accessGrants ?? []);
+        setTokenBalances(data.tokenBalances ?? []);
+        setRelay(data.relay ?? null);
         if (!selectedOrg && data.teams?.[0]) setSelectedOrg(data.teams[0].id);
       }
     } catch {
@@ -104,20 +135,32 @@ export default function AiGrantsClient() {
       <header className="intel-header">
         <div>
           <span className="eyebrow">VANTAGE / AI FUNDING</span>
-          <h1>Request credits &amp; time-boxed AI access</h1>
+          <h1>Gift tokens &amp; time-boxed AI access</h1>
           <p className="app-muted">
-            Push AI request credits to one team, or open a temporary window onto a
-            platform-owned model path. One request spends one credit at the base weight;
-            an agent run spends more because it makes more model calls. A team with no
-            grants is not on the credit plan and is never blocked by this budget — it
-            uses its own keys.
+            Gift a chosen amount from Freebuff, hosted keys, or request credits. A
+            Freebuff gift shows the team only that they have more free tokens — never
+            credits. Each team keeps its own chat, memory, and coding folder.
           </p>
         </div>
-        <a href="/admin/sponsored">Sponsored economics →</a>
+        <a href="/admin/free-relay">Manage Pis →</a>
       </header>
 
       {message && <p className={`telemetry-status${ok ? " success" : ""}`}>{message}</p>}
       {loading && <p className="app-muted">Loading AI grants…</p>}
+
+      {relay ? (
+        <section className="intel-panel" style={{ marginTop: "1rem" }}>
+          <span className="eyebrow">PI / FREEBUFF ROUTE</span>
+          <p className="app-muted" style={{ marginTop: "0.5rem" }}>
+            {relay.configured
+              ? `Relay is configured. Default is ${relay.model ?? "deepseek/deepseek-v4-flash"}. Teams pick DeepSeek V4 Flash (free, unlimited, fast), GLM 5.3 Flash, or MiMo 2.5.`
+              : relay.refusal ?? "Free relay is not configured on this deployment."}
+          </p>
+          <small className="app-muted">
+            Models: {relay.models.map((model) => `${model.label} (${model.slug})`).join(" · ")}
+          </small>
+        </section>
+      ) : null}
 
       {!loading && !teams.length && (
         <section className="intel-panel">
@@ -170,7 +213,11 @@ export default function AiGrantsClient() {
 
           <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
             <span className="eyebrow">TEAM BALANCES</span>
-            {teams.map((team) => (
+            {teams.map((team) => {
+              const tokens = tokenBalances.filter((row) => row.orgId === team.id);
+              const freebuff = tokens.find((row) => row.source === "freebuff");
+              const hosted = tokens.find((row) => row.source === "hosted_platform");
+              return (
               <article
                 className="admin-org"
                 key={team.id}
@@ -187,16 +234,190 @@ export default function AiGrantsClient() {
                   </strong>
                   <small>
                     {team.tier ?? "no billing row"} ·{" "}
-                    {team.onCreditPlan
-                      ? `${num(team.granted)} granted, ${num(team.spent)} spent`
-                      : "not on the credit plan (uses its own keys)"}
+                    {freebuff
+                      ? `${num(freebuff.balance)} Freebuff free tokens`
+                      : hosted
+                        ? `${num(hosted.balance)} hosted free tokens`
+                        : team.onCreditPlan
+                          ? `${num(team.granted)} granted, ${num(team.spent)} spent`
+                          : "not on a gift plan (uses its own keys)"}
                   </small>
                 </div>
-                <b style={{ color: Number(team.balance) > 0 ? "#16d9e8" : undefined }}>
-                  {team.onCreditPlan ? `${num(team.balance)} left` : "—"}
+                <b style={{ color: Number(freebuff?.balance ?? hosted?.balance ?? team.balance) > 0 ? "#16d9e8" : undefined }}>
+                  {freebuff
+                    ? `${num(freebuff.balance)} free tokens`
+                    : hosted
+                      ? `${num(hosted.balance)} free tokens`
+                      : team.onCreditPlan
+                        ? `${num(team.balance)} left`
+                        : "—"}
                 </b>
               </article>
-            ))}
+              );
+            })}
+          </section>
+
+          <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
+            <span className="eyebrow">GIFT TOKENS</span>
+            <p className="app-muted" style={{ marginTop: "0.5rem" }}>
+              Choose the source and the amount. Freebuff gifts open the Pi relay for
+              that team and show them only &ldquo;you have more free tokens.&rdquo;
+            </p>
+            <label style={{ display: "block", marginTop: "0.75rem" }}>
+              Team
+              <select
+                value={selectedOrg}
+                onChange={(event) => setSelectedOrg(event.target.value)}
+              >
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    #{team.teamNumber} {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "block", marginTop: "0.5rem" }}>
+              Source
+              <select
+                value={giftSource}
+                onChange={(event) =>
+                  setGiftSource(event.target.value as (typeof TOKEN_SOURCES)[number]["id"])
+                }
+              >
+                {TOKEN_SOURCES.map((source) => (
+                  <option key={source.id} value={source.id}>
+                    {source.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "block", marginTop: "0.5rem" }}>
+              Tokens
+              <input
+                value={giftTokens}
+                inputMode="numeric"
+                onChange={(event) => setGiftTokens(event.target.value)}
+              />
+            </label>
+            <div className="intel-actions" style={{ marginTop: "0.5rem", flexWrap: "wrap" }}>
+              {TOKEN_PRESETS.map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => setGiftTokens(String(amount))}
+                >
+                  {num(amount)}
+                </button>
+              ))}
+            </div>
+            <label style={{ display: "block", marginTop: "0.5rem" }}>
+              Expires in days (blank = never)
+              <input
+                value={giftExpiryDays}
+                inputMode="numeric"
+                onChange={(event) => setGiftExpiryDays(event.target.value)}
+              />
+            </label>
+            <label style={{ display: "block", marginTop: "0.5rem" }}>
+              Reason
+              <input
+                value={giftReason}
+                onChange={(event) => setGiftReason(event.target.value)}
+                placeholder="Kickoff week gift"
+              />
+            </label>
+            <div className="intel-actions" style={{ marginTop: "1rem" }}>
+              <button
+                type="button"
+                disabled={!selectedOrg || !Number(giftTokens)}
+                onClick={() =>
+                  void post(
+                    {
+                      action: "gift_tokens",
+                      orgId: selectedOrg,
+                      source: giftSource,
+                      tokens: Number(giftTokens),
+                      reason: giftReason,
+                      expiresInDays: giftExpiryDays ? Number(giftExpiryDays) : undefined,
+                    },
+                    giftSource === "freebuff"
+                      ? `Gifted ${num(giftTokens)} free tokens to ${
+                          selectedTeam ? `#${selectedTeam.teamNumber}` : "the team"
+                        }. They will only see free tokens.`
+                      : giftSource === "credits"
+                        ? `Gifted ${num(giftTokens)} request credits to ${
+                            selectedTeam ? `#${selectedTeam.teamNumber}` : "the team"
+                          }.`
+                        : `Gifted ${num(giftTokens)} hosted free tokens to ${
+                            selectedTeam ? `#${selectedTeam.teamNumber}` : "the team"
+                          }.`,
+                  )
+                }
+              >
+                Gift tokens
+              </button>
+            </div>
+          </section>
+
+          <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
+            <span className="eyebrow">FREE AI FOR A TEAM</span>
+            <p className="app-muted" style={{ marginTop: "0.5rem" }}>
+              Only teams you select get Freebuff Coder UI (platform Pi{" "}
+              <strong>frcvantagefreebuff relay</strong>, or their own Pi). Each team is a
+              separate coding folder. Everyone else stays on their API keys or the credits
+              you include. None / 100 requests / unlimited.
+            </p>
+            <label style={{ display: "block", marginTop: "0.75rem" }}>
+              Team
+              <select
+                value={selectedOrg}
+                onChange={(event) => setSelectedOrg(event.target.value)}
+              >
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    #{team.teamNumber} {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="intel-actions" style={{ marginTop: "1rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                disabled={!selectedOrg}
+                onClick={() =>
+                  void post(
+                    { action: "set_free_ai", orgId: selectedOrg, preset: "none" },
+                    "Free AI revoked for that team.",
+                  )
+                }
+              >
+                None
+              </button>
+              <button
+                type="button"
+                disabled={!selectedOrg}
+                onClick={() =>
+                  void post(
+                    { action: "set_free_ai", orgId: selectedOrg, preset: "credits_100" },
+                    "100 request credits and a year of Free AI opened.",
+                  )
+                }
+              >
+                100 requests
+              </button>
+              <button
+                type="button"
+                disabled={!selectedOrg}
+                onClick={() =>
+                  void post(
+                    { action: "set_free_ai", orgId: selectedOrg, preset: "unlimited" },
+                    "Unlimited Free AI opened for a year.",
+                  )
+                }
+              >
+                Unlimited
+              </button>
+            </div>
           </section>
 
           <section className="admin-grid" style={{ marginTop: "1.5rem" }}>

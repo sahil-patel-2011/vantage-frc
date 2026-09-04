@@ -1,36 +1,14 @@
 "use client";
 
-import {
-  competitionRelatedLinks,
-  type CompetitionRelatedId,
-} from "../lib/strategy/competition-related";
+import type { CompetitionRelatedId } from "../lib/strategy/competition-related";
 
-/** Soft-UI cross-links between Competition Strategy / scouting / pick surfaces. */
-export function CompetitionHubRelated({
-  orgId,
-  active,
-  include,
-  className,
-  ariaLabel = "Related competition tools",
-}: {
+/** Retired: Competition tools live in hub tabs and search. */
+export function CompetitionHubRelated(_props: {
   orgId?: string | null;
   active?: CompetitionRelatedId;
   include?: CompetitionRelatedId[];
   className?: string;
   ariaLabel?: string;
 }) {
-  const links = competitionRelatedLinks(orgId, { active, include });
-  if (!links.length) return null;
-  return (
-    <nav
-      className={["product-hub-related", "competition-hub-related", className].filter(Boolean).join(" ")}
-      aria-label={ariaLabel}
-    >
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
+  return null;
 }

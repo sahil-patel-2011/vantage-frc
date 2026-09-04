@@ -24,6 +24,11 @@ import {
 } from "../../../../lib/github";
 import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
 import {
+  describeAttachedLinks,
+  linksToJson,
+  parseAttachedLinks,
+} from "../../../../lib/planner/links";
+import {
   attendanceDateFromStart,
   CALENDAR_FEED_SCOPES,
   defaultSeasonYear,
@@ -217,6 +222,20 @@ const BASE_EVENT_COLUMNS = `e.id, e.title, e.kind, e.starts_at::text AS "startsA
               e.driver_session_id AS "driverSessionId",
               cb.name AS "createdByName"`;
 
+const PLANNER_EVENT_COLUMNS = `${BASE_EVENT_COLUMNS},
+              nullif(trim(e.meeting_url), '') AS "meetingUrl",
+              coalesce(e.links, '[]'::jsonb) AS "links"`;
+
+function withPlannerFields<T extends { meetingUrl?: string | null; links?: unknown }>(
+  row: T,
+): T & { meetingUrl: string | null; links: ReturnType<typeof parseAttachedLinks> } {
+  return {
+    ...row,
+    meetingUrl: row.meetingUrl?.trim() ? row.meetingUrl : null,
+    links: parseAttachedLinks(row.links),
+  };
+}
+
 const EVENT_JOINS = `FROM subteam_calendar_events e
        LEFT JOIN team_subteams st ON st.id = e.subteam_id
        LEFT JOIN attendance_events ae ON ae.id = e.attendance_event_id
@@ -234,7 +253,7 @@ async function loadStoredEventRows(
 ): Promise<{ rows: StoredEventRow[]; recurrenceReady: boolean }> {
   try {
     const result = await client.query<StoredEventRow>(
-      `SELECT ${BASE_EVENT_COLUMNS},
+      `SELECT ${PLANNER_EVENT_COLUMNS},
               e.rrule, e.recurrence_end::text AS "recurrenceEnd",
               e.series_id AS "seriesId",
               e.recurrence_timezone AS "recurrenceTimezone"
@@ -252,11 +271,38 @@ async function loadStoredEventRows(
        LIMIT 800`,
       [orgId],
     );
-    return { rows: result.rows, recurrenceReady: true };
+    return { rows: result.rows.map(withPlannerFields), recurrenceReady: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (!/rrule|recurrence_end|series_id|recurrence_timezone|column .* does not exist/i.test(message)) {
+    if (!/rrule|recurrence_end|series_id|recurrence_timezone|meeting_url|links|column .* does not exist/i.test(message)) {
       throw error;
+    }
+    try {
+      const withRecurrence = await client.query<StoredEventRow>(
+        `SELECT ${BASE_EVENT_COLUMNS},
+                e.rrule, e.recurrence_end::text AS "recurrenceEnd",
+                e.series_id AS "seriesId",
+                e.recurrence_timezone AS "recurrenceTimezone"
+         ${EVENT_JOINS}
+         WHERE e.org_id = $1
+           AND (
+             e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+             OR (
+               e.rrule IS NOT NULL
+               AND (e.recurrence_end IS NULL
+                    OR e.recurrence_end > CURRENT_DATE - ${OCCURRENCE_LOOKBACK_DAYS})
+             )
+           )
+         ORDER BY e.starts_at ASC
+         LIMIT 800`,
+        [orgId],
+      );
+      return { rows: withRecurrence.rows.map(withPlannerFields), recurrenceReady: true };
+    } catch (inner) {
+      const innerMessage = inner instanceof Error ? inner.message : "";
+      if (!/rrule|recurrence_end|series_id|recurrence_timezone|column .* does not exist/i.test(innerMessage)) {
+        throw inner;
+      }
     }
     const result = await client.query<StoredEventRow>(
       `SELECT ${BASE_EVENT_COLUMNS}
@@ -267,7 +313,7 @@ async function loadStoredEventRows(
        LIMIT 800`,
       [orgId],
     );
-    return { rows: result.rows, recurrenceReady: false };
+    return { rows: result.rows.map(withPlannerFields), recurrenceReady: false };
   }
 }
 
@@ -569,7 +615,13 @@ function eventsToIcs(view: Extract<SubteamCalendarView, { status: "ready" }>, sc
     title: event.title,
     kind: event.kind,
     location: event.location,
-    description: event.notes,
+    description: [
+      event.notes,
+      event.meetingUrl ? `Join: ${event.meetingUrl}` : null,
+      event.links?.length ? describeAttachedLinks(event.links) : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
     startsAt: event.startsAt,
     endsAt: event.endsAt,
     updatedAt: event.startsAt,
@@ -776,12 +828,13 @@ async function materializeOccurrence(
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO subteam_calendar_events
        (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+        meeting_url, links,
         milestone_id, driver_session_id, series_id, recurrence_timezone, created_by)
      SELECT e.org_id, e.subteam_id, e.title, e.kind,
             $3::timestamptz,
             CASE WHEN e.ends_at IS NULL THEN NULL
                  ELSE $3::timestamptz + (e.ends_at - e.starts_at) END,
-            e.location, e.notes, e.milestone_id, e.driver_session_id,
+            e.location, e.notes, e.meeting_url, e.links, e.milestone_id, e.driver_session_id,
             e.id, e.recurrence_timezone, $4::uuid
      FROM subteam_calendar_events e
      WHERE e.id = $2::uuid AND e.org_id = $1::uuid AND e.rrule IS NOT NULL
@@ -836,6 +889,8 @@ type EventFieldPatch = {
   endsAt?: string | null;
   location?: string;
   notes?: string;
+  meetingUrl?: string | null;
+  links?: ReturnType<typeof parseAttachedLinks>;
   subteamId?: string | null;
 };
 
@@ -852,6 +907,12 @@ function readEventPatch(source: Record<string, unknown>): EventFieldPatch {
     patch.location = text(source.location, 200);
   }
   if (Object.prototype.hasOwnProperty.call(source, "notes")) patch.notes = text(source.notes, 2000);
+  if (Object.prototype.hasOwnProperty.call(source, "meetingUrl")) {
+    patch.meetingUrl = source.meetingUrl == null || source.meetingUrl === "" ? null : text(source.meetingUrl, 500);
+  }
+  if (Object.prototype.hasOwnProperty.call(source, "links")) {
+    patch.links = parseAttachedLinks(source.links);
+  }
   if (Object.prototype.hasOwnProperty.call(source, "subteamId")) {
     const value = source.subteamId;
     patch.subteamId = value == null || value === "" ? null : String(value);
@@ -891,6 +952,12 @@ async function applyPatchToRow(
   if (patch.kind != null) push("kind", patch.kind);
   if (patch.location != null) push("location", patch.location);
   if (patch.notes != null) push("notes", patch.notes);
+  if (Object.prototype.hasOwnProperty.call(patch, "meetingUrl")) {
+    push("meeting_url", patch.meetingUrl ?? "");
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "links")) {
+    push("links", linksToJson(patch.links ?? []), "::jsonb");
+  }
   if (Object.prototype.hasOwnProperty.call(patch, "subteamId")) {
     push("subteam_id", patch.subteamId, "::uuid");
   }
@@ -931,12 +998,13 @@ async function forkSeries(
   const inserted = await client.query<{ id: string }>(
     `INSERT INTO subteam_calendar_events
        (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+        meeting_url, links,
         milestone_id, driver_session_id, rrule, recurrence_end, recurrence_timezone, created_by)
      SELECT e.org_id, e.subteam_id, e.title, e.kind,
             $3::timestamptz,
             CASE WHEN e.ends_at IS NULL THEN NULL
                  ELSE $3::timestamptz + (e.ends_at - e.starts_at) END,
-            e.location, e.notes, e.milestone_id, e.driver_session_id,
+            e.location, e.notes, e.meeting_url, e.links, e.milestone_id, e.driver_session_id,
             $4, $5::date, e.recurrence_timezone, $6::uuid
      FROM subteam_calendar_events e
      WHERE e.id = $2::uuid AND e.org_id = $1::uuid
@@ -1350,10 +1418,11 @@ export async function POST(request: Request) {
             const inserted = await client.query<{ id: string }>(
               `INSERT INTO subteam_calendar_events
                  (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+                  meeting_url, links,
                   attendance_event_id, milestone_id, driver_session_id, created_by,
                   rrule, recurrence_end, recurrence_timezone)
-               VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12,
-                       $13, $14::date, $15)
+               VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10::jsonb,
+                       $11, $12, $13, $14, $15, $16::date, $17)
                RETURNING id`,
               [
                 action.orgId,
@@ -1364,6 +1433,8 @@ export async function POST(request: Request) {
                 action.endsAt,
                 action.location,
                 action.notes,
+                action.meetingUrl ?? "",
+                linksToJson(action.links),
                 attendanceEventId,
                 action.milestoneId,
                 action.driverSessionId,
@@ -1394,8 +1465,10 @@ export async function POST(request: Request) {
               const inserted = await client.query<{ id: string }>(
                 `INSERT INTO subteam_calendar_events
                    (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+                    meeting_url, links,
                     attendance_event_id, milestone_id, driver_session_id, created_by)
-                 VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12)
+                 VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10::jsonb,
+                         $11, $12, $13, $14)
                  RETURNING id`,
                 [
                   action.orgId,
@@ -1406,6 +1479,8 @@ export async function POST(request: Request) {
                   action.endsAt,
                   action.location,
                   action.notes,
+                  action.meetingUrl ?? "",
+                  linksToJson(action.links),
                   attendanceEventId,
                   action.milestoneId,
                   action.driverSessionId,
@@ -1435,9 +1510,9 @@ export async function POST(request: Request) {
         case "update_event": {
           const values: unknown[] = [action.id, action.orgId];
           const sets: string[] = [];
-          const push = (column: string, value: unknown) => {
+          const push = (column: string, value: unknown, cast = "") => {
             values.push(value);
-            sets.push(`${column} = $${values.length}`);
+            sets.push(`${column} = $${values.length}${cast}`);
           };
           const patch = action.patch;
           if (Object.prototype.hasOwnProperty.call(patch, "title")) push("title", patch.title);
@@ -1446,6 +1521,10 @@ export async function POST(request: Request) {
           if (Object.prototype.hasOwnProperty.call(patch, "endsAt")) push("ends_at", patch.endsAt);
           if (Object.prototype.hasOwnProperty.call(patch, "location")) push("location", patch.location);
           if (Object.prototype.hasOwnProperty.call(patch, "notes")) push("notes", patch.notes);
+          if (Object.prototype.hasOwnProperty.call(patch, "meetingUrl")) push("meeting_url", patch.meetingUrl ?? "");
+          if (Object.prototype.hasOwnProperty.call(patch, "links")) {
+            push("links", linksToJson(patch.links ?? []), "::jsonb");
+          }
           if (Object.prototype.hasOwnProperty.call(patch, "subteamId")) push("subteam_id", patch.subteamId);
           if (Object.prototype.hasOwnProperty.call(patch, "attendanceEventId")) {
             push("attendance_event_id", patch.attendanceEventId);

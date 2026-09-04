@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import {
   BILLING_DISPLAY_STATUSES,
   type BillingDisplayStatus,
@@ -87,19 +86,7 @@ export default function AdminPlansClient() {
         breadcrumbs="Platform / Plans"
         title="Org plans"
         description="Which teams are on which plan — entitlement status, included API allowance, and Stripe IDs when present. Live ledger only — never DEMO plan metrics."
-      >
-        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-          {adminRelatedLinks({
-            active: "plans",
-            include: ["teams", "support", "releases", "waitlist"],
-          }).map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a href="/admin/commercial">Commercial</a>
-        </nav>
-      </PageHeader>
+      />
 
       <div className="cards">
         <article className="card">

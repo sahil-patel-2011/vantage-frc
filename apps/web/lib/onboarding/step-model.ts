@@ -46,7 +46,11 @@ export type OnboardingDraft = {
   dateOfBirth: string;
   gender: OnboardingGender;
   teamRole: OnboardingRole;
+  /** All identity roles — `teamRole` is the first of these. */
+  teamRoles: OnboardingRole[];
   crewRole: OnboardingCrew | "";
+  /** All crew jobs — `crewRole` is the first of these, or "". */
+  crewRoles: OnboardingCrew[];
   roleDescription: string;
   teamNumber: string;
   noTeam: boolean;
@@ -86,7 +90,9 @@ export function emptyOnboardingDraft(): OnboardingDraft {
     dateOfBirth: "",
     gender: "prefer_not_to_say",
     teamRole: "student",
+    teamRoles: ["student"],
     crewRole: "",
+    crewRoles: [],
     roleDescription: "",
     teamNumber: "",
     noTeam: false,
@@ -110,28 +116,36 @@ export function emptyOnboardingDraft(): OnboardingDraft {
  * a pre-selection the person can change on screen 2 — never silently submitted
  * without being shown.
  */
+function asRoleList(
+  teamRole: OnboardingRole | OnboardingRole[] | null | undefined,
+): OnboardingRole[] {
+  if (Array.isArray(teamRole)) return teamRole;
+  return teamRole ? [teamRole] : [];
+}
+
+function asCrewList(
+  crewRole: OnboardingCrew | "" | OnboardingCrew[] | null | undefined,
+): OnboardingCrew[] {
+  if (Array.isArray(crewRole)) return crewRole.filter(Boolean);
+  return crewRole ? [crewRole] : [];
+}
+
 export function defaultFocusForRole(
-  teamRole: OnboardingRole | null | undefined,
-  crewRole: OnboardingCrew | "" | null | undefined,
+  teamRole: OnboardingRole | OnboardingRole[] | null | undefined,
+  crewRole: OnboardingCrew | "" | OnboardingCrew[] | null | undefined,
 ): OnboardingFocus {
-  switch (crewRole) {
-    case "scout":
-    case "driver":
-    case "operator":
-    case "pit":
-      return "competition";
-    case "mechanical":
-    case "electrical":
-    case "programming":
-    case "cad":
-      return "build";
-    case "business":
-      return "business";
-    default:
-      break;
+  const crews = asCrewList(crewRole);
+  if (crews.some((crew) => crew === "mechanical" || crew === "electrical" || crew === "programming" || crew === "cad")) {
+    return "build";
   }
-  if (teamRole === "coach") return "leadership";
-  if (teamRole === "parent" || teamRole === "mentor") return "leadership";
+  if (crews.some((crew) => crew === "scout" || crew === "driver" || crew === "operator" || crew === "pit")) {
+    return "competition";
+  }
+  if (crews.includes("business")) return "business";
+  const roles = asRoleList(teamRole);
+  if (roles.some((role) => role === "coach" || role === "parent" || role === "mentor")) {
+    return "leadership";
+  }
   return "competition";
 }
 
@@ -144,8 +158,8 @@ function validateProfileStep(draft: OnboardingDraft): StepValidation {
   if (!draft.lastName.trim()) {
     return { ok: false, field: "lastName", message: "Add your last name." };
   }
-  if (!draft.teamRole) {
-    return { ok: false, field: "teamRole", message: "Pick the card that matches your role." };
+  if (!draft.teamRole && draft.teamRoles.length === 0) {
+    return { ok: false, field: "teamRole", message: "Pick at least one role." };
   }
   // Required by the account system, not by us — kept on screen 1 with that reason
   // shown, because `POST /api/onboarding` rejects the submit without them.

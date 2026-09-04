@@ -766,3 +766,47 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);
   white-space:nowrap;border:0;
 }
+
+/* First fold: Soft-UI workspace + four jobs that name the product. */
+.marketing-lux .lux-hero h1{max-width:14ch}
+.marketing-lux .mk-hero-figure{
+  margin:0;justify-self:end;width:min(100%,560px);
+}
+.marketing-lux .mk-hero-figure .hero-soft-shell{
+  display:block;width:100%;justify-self:stretch;
+}
+.marketing-lux .mk-hero-figure figcaption{
+  margin:12px 4px 0;color:var(--m-muted);
+  font-size:13px;line-height:1.5;
+}
+
+.marketing-lux .lux-define{
+  padding:clamp(56px,7vw,88px) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:var(--m-surface);
+}
+.marketing-lux .mk-jobs{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(12px,1.8vw,20px);margin:0;padding:0;list-style:none;
+}
+.marketing-lux .mk-jobs li{
+  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  padding:22px 20px 24px;
+  border:1px solid var(--m-line);border-radius:var(--m-card-radius,16px);
+  background:var(--m-surface);box-shadow:var(--m-card-shadow);
+}
+.marketing-lux .mk-jobs strong{
+  font:600 17px/1.25 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .mk-jobs li>span:last-child{
+  color:var(--m-muted);font-size:14px;line-height:1.5;
+}
+
+@media(max-width:900px){
+  .marketing-lux .mk-jobs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marketing-lux .mk-hero-figure{justify-self:stretch;width:100%;max-width:560px}
+}
+@media(max-width:680px){
+  .marketing-lux .mk-jobs{grid-template-columns:1fr}
+  .marketing-lux .lux-hero h1{max-width:11ch}
+}

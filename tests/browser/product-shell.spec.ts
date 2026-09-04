@@ -25,28 +25,19 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.goto("/dashboard");
   // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Edit mode", { exact: true }).first()).toBeVisible();
-  await expect(page.locator(".dash-editor-bar")).toBeVisible();
-  await expect(page.getByTestId("dash-catalog-inline").locator("button").first()).toBeVisible();
-  await expect(page.getByTestId("dash-preview")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
   await expect(page.getByTestId("dash-open-library")).toBeVisible();
-  await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByTestId("dash-preview-back")).toBeVisible();
-  await expect(page.getByTestId("dash-preview-save")).toBeVisible();
-  await expect(page.getByText("Previewing unsaved changes")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible();
+  await page.getByTestId("dash-open-library").evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByRole("heading", { name: "Widget library" })).toBeVisible();
 });
 
 test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/dashboard");
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByText("Customize Home")).toBeVisible();
   await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
   await expect(page.locator(".dash-grid")).toBeVisible();
-  // The palette uses Pointer Events (so it works on touch), not HTML5 draggable —
-  // assert it is a real enabled control rather than a legacy drag attribute.
-  await expect(page.locator(".dash-widget-palette button").first()).toBeEnabled();
 
   const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
   await expect(snapshot).toBeVisible();
@@ -65,46 +56,33 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
     .not.toBe(before);
 
   const beforeCount = await page.getByTestId("dash-grid-item").count();
-  const palette = page.locator(".dash-widget-palette button").first();
-  await palette.scrollIntoViewIfNeeded();
-  const paletteBox = await palette.boundingBox();
-  const gridBox = await page.locator(".dash-grid").boundingBox();
-  expect(paletteBox).toBeTruthy();
-  expect(gridBox).toBeTruthy();
-  // Playwright's dragTo() drives HTML5 drag-and-drop, which this grid no longer
-  // uses. Driving the mouse exercises the same pointer path a touch user gets.
-  await page.mouse.move(paletteBox!.x + paletteBox!.width / 2, paletteBox!.y + paletteBox!.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(gridBox!.x + 40, gridBox!.y + 40, { steps: 15 });
-  await page.mouse.up();
+  await page.getByTestId("dash-open-library").evaluate((node) => (node as HTMLButtonElement).click());
+  const addFirst = page.locator(".dash-library-grid button").first();
+  await expect(addFirst).toBeEnabled();
+  await addFirst.click();
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps four favorite apps plus an explicit all-apps button", async ({ page }) => {
+test("product shell keeps four favorite apps and opens the rest from the menu", async ({ page }) => {
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
-  await island.getByRole("button", { name: "Open all apps" }).click();
+  await page.getByRole("button", { name: "Open navigation" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole("button", { name: /Find any page or action/ })).toBeVisible();
   await drawer.getByRole("button", { name: "Competition" }).click();
   await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
-  await expect(drawer.locator(".soft-drawer-foot a").first()).toHaveText("Account");
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
   await drawer.getByRole("button", { name: "Close", exact: true }).click();
 
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
-  await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {

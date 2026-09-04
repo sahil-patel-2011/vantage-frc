@@ -19,11 +19,9 @@ export type MediaRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Kit / Outreach / Impact / Sponsor Wall. */
+/** Cross-hub only — Kit and Impact already live on the Media TabBar. */
 export const MEDIA_RELATED_INCLUDE: MediaRelatedId[] = [
-  "media-kit",
   "outreach-calendar",
-  "impact",
   "sponsor-wall",
 ];
 

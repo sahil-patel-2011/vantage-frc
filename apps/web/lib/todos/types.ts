@@ -1,3 +1,5 @@
+import type { AttachedLink } from "../planner/links";
+
 export const TODO_STATUSES = ["todo", "doing", "done"] as const;
 export type TodoStatus = (typeof TODO_STATUSES)[number];
 
@@ -5,6 +7,7 @@ export type TeamTodo = {
   id: string;
   title: string;
   notes: string;
+  links: AttachedLink[];
   status: TodoStatus;
   assigneeUserId: string | null;
   assigneeName: string | null;

@@ -842,6 +842,30 @@ export const memberLlmKeys = pgTable(
   ],
 );
 
+export const freeRelayDevices = pgTable("free_relay_devices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  lastProbeAt: timestamp("last_probe_at", { withTimezone: true }),
+  lastProbeOk: boolean("last_probe_ok"),
+  lastProbeError: text("last_probe_error"),
+  tokensDay: date("tokens_day"),
+  tokensInToday: integer("tokens_in_today").notNull().default(0),
+  tokensOutToday: integer("tokens_out_today").notNull().default(0),
+  tokensOutPerSec: numeric("tokens_out_per_sec"),
+  activeRequests: integer("active_requests").notNull().default(0),
+  maxConcurrent: integer("max_concurrent"),
+  model: text("model"),
+  bindLabel: text("bind_label"),
+  upstreamOk: boolean("upstream_ok"),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamps.createdAt,
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
 export const orgByokRoutingPrefs = pgTable("org_byok_routing_prefs", {
   orgId: uuid("org_id")
     .primaryKey()
@@ -849,6 +873,10 @@ export const orgByokRoutingPrefs = pgTable("org_byok_routing_prefs", {
   mode: text("mode").$type<"fixed" | "automode">().notNull().default("automode"),
   fixedModelId: text("fixed_model_id"),
   enabledModelIds: text("enabled_model_ids").array().notNull().default([]),
+  /** Prefer the platform FreeBuff relay when this org holds a platform_relay grant. */
+  usePlatformFreeAi: boolean("use_platform_free_ai").notNull().default(true),
+  /** Team-picked Freebuff slug (DeepSeek V4 Flash default, plus GLM / MiMo); null = platform default. */
+  freebuffModel: text("freebuff_model"),
   updatedBy: uuid("updated_by").references(() => users.id),
   createdAt: timestamps.createdAt,
   updatedAt: timestamps.updatedAt,
@@ -3653,4 +3681,72 @@ export const autonomousAgentSteps = pgTable(
     index("autonomous_agent_steps_run_seq_idx").on(table.runId, table.sequence),
     index("autonomous_agent_steps_org_created_idx").on(table.orgId, table.createdAt),
   ],
+);
+
+export const deepGameAnalysisRuns = pgTable(
+  "deep_game_analysis_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    status: text("status").notNull().default("queued"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    minHours: integer("min_hours").notNull().default(5),
+    minLoops: integer("min_loops").notNull().default(1),
+    loopCount: integer("loop_count").notNull().default(0),
+    model: text("model").notNull().default("glm/glm-5.3-flash"),
+    startedBy: uuid("started_by").references(() => users.id),
+    error: text("error"),
+    latestGuess: jsonb("latest_guess"),
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [index("deep_game_analysis_runs_org_idx").on(table.orgId, table.seasonYear)],
+);
+
+export const deepGameAnalysisSources = pgTable(
+  "deep_game_analysis_sources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => deepGameAnalysisRuns.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    title: text("title").notNull().default(""),
+    kind: text("kind").notNull(),
+    fetchOk: boolean("fetch_ok"),
+    excerpt: text("excerpt").notNull().default(""),
+    error: text("error"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("deep_game_analysis_sources_org_idx").on(table.orgId, table.runId)],
+);
+
+export const deepGameAnalysisLoops = pgTable(
+  "deep_game_analysis_loops",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => deepGameAnalysisRuns.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    status: text("status").notNull().default("running"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    focus: text("focus").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    turns: jsonb("turns").notNull().default([]),
+    guess: jsonb("guess"),
+  },
+  (table) => [index("deep_game_analysis_loops_org_idx").on(table.orgId, table.runId, table.sequence)],
 );

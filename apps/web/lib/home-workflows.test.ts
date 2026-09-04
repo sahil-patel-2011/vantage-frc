@@ -16,6 +16,7 @@ describe("home-workflows", () => {
     expect(homeAudienceFromTeamRole("student")).toBe("student");
     expect(homeAudienceFromTeamRole("parent")).toBe("student");
     expect(homeAudienceFromTeamRole(null)).toBe("student");
+    expect(homeAudienceFromTeamRole("student,coach")).toBe("mentor");
   });
 
   it("builds mentor strip with warn tones only when counts are real", () => {

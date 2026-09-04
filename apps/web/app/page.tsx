@@ -6,6 +6,7 @@ import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
 import { ScrollReveal } from "../components/marketing/scroll-reveal";
 import { PricingStrip } from "../components/marketing/pricing-strip";
+import { MARKETING_DEFINITION } from "../lib/marketing/product-story";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
@@ -29,22 +30,19 @@ export default function Home() {
           <div className="lux-hero-backdrop" aria-hidden="true" />
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
-              <p className="lux-kicker">For FRC teams · Invite-only</p>
-              <h1 id="lux-hero-title">The workspace your team actually runs.</h1>
-              <p>
-                Offline scouting, event day, alliance selection, CAD, robot code, and season ops in one login. Screens
-                stay empty until TBA, scouting, or a connector has real data.
-              </p>
+              <p className="lux-kicker">{MARKETING_DEFINITION.kicker}</p>
+              <h1 id="lux-hero-title">{MARKETING_DEFINITION.headline}</h1>
+              <p>{MARKETING_DEFINITION.lead}</p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
                   Request access
                 </a>
-                <a className="button secondary" href="#how-it-works">
-                  See how it works
+                <a className="button secondary" href="#what-it-is">
+                  What you get
                 </a>
               </div>
               <ul className="mk-hero-proof">
-                <li>Invite-only</li>
+                <li>Scout · Compete · Build · Season</li>
                 <li>Empty until real data</li>
                 <li>CAD and code stay human-gated</li>
               </ul>

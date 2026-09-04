@@ -3,11 +3,15 @@ import {
   emailNotificationsSetupStatus,
   getUserEmailPreferences,
   mergeInAppNotificationPrefs,
+  parseCrewRoles,
   parseDob,
+  parseTeamRoles,
+  serializeRoleList,
   updateUserEmailPreferences,
   type InAppNotificationPrefs,
   type UserEmailPreferences,
 } from "@vantage/core";
+import { applyRolePersonalization } from "../../../lib/onboarding/apply-personalization";
 import { onshapeSetupStatus } from "@vantage/cad";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -49,6 +53,11 @@ const putSchema = z.object({
   dateOfBirth: z.string().trim().min(8).max(10).optional(),
   recoveryEmail: z.string().trim().max(254).optional().nullable(),
   phoneE164: z.string().trim().max(20).optional().nullable(),
+  teamRoles: z.array(z.enum(["student", "mentor", "coach", "parent", "other"])).max(5).optional(),
+  crewRoles: z
+    .array(z.enum(["scout", "driver", "operator", "mechanical", "electrical", "programming", "cad", "pit", "business", "other"]))
+    .max(10)
+    .optional(),
   notificationPrefs: prefsSchema.optional(),
   emailPrefs: emailPrefsSchema.optional(),
 });
@@ -330,6 +339,8 @@ export async function GET() {
         recoveryEmail: string | null;
         phoneE164: string | null;
         phoneVerifiedAt: string | null;
+        teamRole: string | null;
+        crewRole: string | null;
       }>(
         `SELECT display_name AS "displayName",
                 notification_prefs AS "notificationPrefs",
@@ -339,7 +350,9 @@ export async function GET() {
                 date_of_birth::text AS "dateOfBirth",
                 recovery_email AS "recoveryEmail",
                 phone_e164 AS "phoneE164",
-                phone_verified_at::text AS "phoneVerifiedAt"
+                phone_verified_at::text AS "phoneVerifiedAt",
+                team_role AS "teamRole",
+                crew_role AS "crewRole"
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
@@ -396,6 +409,8 @@ export async function GET() {
       firstName: profile.row?.firstName ?? null,
       lastName: profile.row?.lastName ?? null,
       dateOfBirth: profile.row?.dateOfBirth ?? null,
+      teamRole: profile.row?.teamRole ?? null,
+      crewRole: profile.row?.crewRole ?? null,
       recoveryEmail: profile.row?.recoveryEmail ?? null,
       phoneE164: profile.row?.phoneE164 ?? null,
       phoneVerified: Boolean(profile.row?.phoneVerifiedAt),
@@ -486,6 +501,45 @@ export async function PUT(request: Request) {
           phoneE164 !== undefined,
         ],
       );
+
+      if (body.data.teamRoles || body.data.crewRoles) {
+        const teamRoles = parseTeamRoles(body.data.teamRoles ?? []);
+        const crewRoles = parseCrewRoles(body.data.crewRoles ?? []);
+        if (body.data.teamRoles && teamRoles.length === 0) {
+          throw new Error("Pick at least one role.");
+        }
+        await client.query(
+          `UPDATE profiles SET
+             team_role = CASE WHEN $2 THEN $3 ELSE team_role END,
+             crew_role = CASE WHEN $4 THEN $5 ELSE crew_role END
+           WHERE user_id = $1`,
+          [
+            session.user.id,
+            Boolean(body.data.teamRoles),
+            serializeRoleList(teamRoles),
+            Boolean(body.data.crewRoles),
+            serializeRoleList(crewRoles),
+          ],
+        );
+        const org = await resolveMembershipOrgId(client, session.user.id);
+        const stored = await client.query<{
+          teamRole: string | null;
+          crewRole: string | null;
+          primaryFocus: string | null;
+        }>(
+          `SELECT team_role AS "teamRole", crew_role AS "crewRole", primary_focus AS "primaryFocus"
+           FROM profiles WHERE user_id = $1`,
+          [session.user.id],
+        );
+        await applyRolePersonalization(client, {
+          userId: session.user.id,
+          orgId: org,
+          teamRole: stored.rows[0]?.teamRole,
+          crewRole: stored.rows[0]?.crewRole,
+          primaryFocus: stored.rows[0]?.primaryFocus,
+          replaceDefaultIsland: true,
+        });
+      }
 
       if (body.data.displayName || body.data.firstName || body.data.lastName) {
         const name =

@@ -59,23 +59,18 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   classifyDashboardShell,
-  dashboardFeatureDesks,
   dashboardNextActions,
   dashboardSetupBlurb,
   dashboardSetupSteps,
   dashboardSetupTitle,
   type DashboardShellKind,
 } from "../../lib/dashboard/dashboard-related";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { DashboardGridItem } from "./dashboard-grid-item";
-import { LiveCountdown } from "./widgets";
-import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
 import { Badge, Modal } from "../../components/ui";
-import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import {
   mergeDashboardContext,
@@ -94,6 +89,8 @@ type Me = {
   teamNumber?: number | null;
   role?: string | null;
   teamRole?: string | null;
+  crewRole?: string | null;
+  primaryFocus?: string | null;
   tbaConfigured?: boolean;
 };
 
@@ -361,6 +358,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
           orgName: data.orgName,
           teamNumber: data.teamNumber,
           role: data.role,
+          teamRole: data.teamRole,
+          crewRole: data.crewRole,
+          primaryFocus: typeof data.primaryFocus === "string" ? data.primaryFocus : null,
           tbaConfigured: data.tbaConfigured,
         });
         setRole(data.role ?? null);
@@ -881,20 +881,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     context.dataSourceHealth && typeof context.dataSourceHealth === "object"
       ? (context.dataSourceHealth as DataSourceHealthView)
       : null;
-  const homeStripRaw = context.homeStrip as
-    | { audience?: string; items?: HomeStripItem[] }
-    | undefined;
-  const homeStripItems = prioritizeHomeStrip(
-    Array.isArray(homeStripRaw?.items) ? homeStripRaw.items : [],
-    3,
-  );
-  const homeAudience =
-    homeStripRaw?.audience === "mentor" || homeStripRaw?.audience === "student"
-      ? homeStripRaw.audience
-      : null;
-  const nextMatchPayload = widgets.next_match;
-  const nextMatchData =
-    nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
   const dashShell = classifyDashboardShell({
     loaded: meLoaded || Boolean(orgId && updatedAt),
     orgId: orgId || null,
@@ -1344,39 +1330,14 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       ? cellBox({ x: drag.cell.col, y: drag.cell.row, ...drag.span }, canvasWidth, cols, grid.rowHeight, gap)
       : null;
   const boardIsEmpty = layout.length === 0;
-  const quickStart = [
-    {
-      id: "my-day",
-      label: "My day",
-      detail: "Assignments and next match",
-      href: withOrgHref("/my-day", orgId || null),
-      icon: "calendar" as const,
-    },
-    {
-      id: "scout",
-      label: "Scout",
-      detail: "Open your event form",
-      href: hubHref("/competition", "scouting", orgId || null),
-      icon: "clipboard" as const,
-    },
-    {
-      id: "work",
-      label: "Work",
-      detail: "Your open team tasks",
-      href: withOrgHref("/todos", orgId || null),
-      icon: "grid" as const,
-    },
-    {
-      id: "messages",
-      label: "Messages",
-      detail: "Team channels and DMs",
-      href: hubHref("/team", "messages", orgId || null),
-      icon: "chat" as const,
-    },
-  ];
 
   return (
-    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
+    <main
+      className={`dash-home${editing ? " is-editing" : ""}`}
+      data-grid={grid.label}
+      data-cols={cols}
+      data-setup={dashShell !== "ready" ? "1" : undefined}
+    >
       <p className="dash-live-region" role="status" aria-live="polite">
         {announce}
       </p>
@@ -1399,168 +1360,32 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               <strong>{board.name}</strong>
             </p>
           ) : null}
-          <p>
-            {!meLoaded
-              ? "Loading your workspace…"
-              : !orgId
-                ? "Select a team workspace to load live data."
-                : tbaConfigured === false
-                  ? "Connect The Blue Alliance for live match and rank data."
-                  : setupRequired
-                    ? "Select an active event to load competition data."
-                    : context.eventName
-                      ? String(context.eventName)
-                      : "Home — widgets appear when live data exists."}
-          </p>
+          {!meLoaded ? (
+            <p>Loading your workspace…</p>
+          ) : dashShell === "ready" && context.eventName ? (
+            <p>{String(context.eventName)}</p>
+          ) : null}
         </div>
         <div className="dash-home-actions">
-          {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
-            <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
-              <span>Next</span>
-              <strong>
-                {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
-              </strong>
-              <b>
-                <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
-              </b>
-            </a>
-          ) : null}
           {!orgId ? (
-            <a className="app-button secondary" href="/workspace">
+            <a className="app-button" href="/workspace">
               Select workspace
             </a>
-          ) : setupRequired || tbaConfigured === false ? (
-            <a
-              className="app-button secondary"
-              href={
-                tbaConfigured === false
-                  ? withOrgHref("/team/data", orgId)
-                  : hubHref("/competition", "command", orgId)
-              }
-            >
-              {tbaConfigured === false ? "Connect TBA" : "Select event"}
-            </a>
           ) : null}
-          {!editing && !previewing ? (
+          {!editing && !previewing && orgId ? (
             <button
-              className="app-button secondary dash-edit-trigger"
+              className="dash-edit-quiet"
               type="button"
               data-testid="dash-customize"
               aria-label="Edit Home — rearrange, add, or remove widgets"
               onClick={enterEditMode}
             >
-              Edit Home
+              Edit
             </button>
           ) : null}
-          <details className="dash-home-more">
-            <summary aria-label="More home tools">More</summary>
-            <div>
-              <CopyShareLink orgId={orgId || null} />
-              {orgId && meLoaded && !editing ? (
-                <button
-                  type="button"
-                  className="dash-board-manage"
-                  data-testid="dash-manage-boards"
-                  disabled={saving}
-                  aria-expanded={boardsOpen}
-                  onClick={() => {
-                    setBoardsOpen(true);
-                    setRenameId(null);
-                  }}
-                >
-                  Manage boards
-                </button>
-              ) : null}
-              {updatedAt && orgId && !editing ? (
-                <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
-              ) : null}
-            </div>
-          </details>
         </div>
       </header>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
-
-      {meLoaded && !editing ? (
-        <nav className="dash-quick-start" aria-label="Quick start">
-          <div className="dash-quick-start-heading">
-            <strong>Jump back in</strong>
-            <span>Four common team jobs, always one tap away</span>
-          </div>
-          <div className="dash-quick-start-links">
-            {quickStart.map((item) => (
-              <a key={item.id} href={item.href}>
-                <i aria-hidden="true">
-                  <Icon name={item.icon} />
-                </i>
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </span>
-                <b aria-hidden="true">→</b>
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
-
-      {meLoaded && !editing ? (
-        <nav className="dash-feature-desk" aria-label="Team features">
-          <div className="dash-feature-desk-heading">
-            <strong>Open a desk</strong>
-            <span>Live numbers stay off until this workspace has data</span>
-          </div>
-          <div className="dash-feature-desk-links">
-            {dashboardFeatureDesks(orgId || null).map((item) => (
-              <a key={item.id} href={item.href} data-desk={item.id}>
-                <i aria-hidden="true">
-                  <Icon name={item.icon} />
-                </i>
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </span>
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
-
-      {orgId && !editing && homeStripItems.length > 0 ? (
-        <section
-          className="dash-role-strip"
-          data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Mentor focus" : "Student focus"}
-        >
-          <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Mentor focus" : "Student focus"}</span>
-            <a href={withOrgHref("/logistics", orgId)}>
-              {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
-            </a>
-          </header>
-          <ul>
-            {homeStripItems.map((item) => (
-              <li key={item.key} data-tone={item.tone}>
-                <a href={item.href}>
-                  <span>{item.label}</span>
-                  <strong>
-                    {item.at ? (
-                      <>
-                        {item.detail}
-                        <em className="dash-strip-countdown">
-                          {" · "}
-                          <LiveCountdown iso={item.at} />
-                        </em>
-                      </>
-                    ) : (
-                      item.detail
-                    )}
-                  </strong>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       {message ? (
         <p className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">
@@ -1568,7 +1393,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         </p>
       ) : null}
 
-      {orgId && meLoaded && !editing && switcherBoards.length > 1 ? (
+      {orgId && meLoaded && editing && switcherBoards.length > 1 ? (
         <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
           <div className="dash-board-switcher" data-testid="dash-board-switcher">
             {switcherBoards.map((item) => (
@@ -1643,115 +1468,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         </section>
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (
-        <p className="dash-ready-cue" role="status">
-          <span>
-            <strong>{nextActions[0]?.label}</strong>
-            {nextActions[0]?.detail ? ` — ${nextActions[0].detail}` : ""}
-          </span>
-          <a href={nextActions[0]?.href}>{nextActions[0]?.label}</a>
-        </p>
-      ) : null}
-
       {meLoaded && orgId && tbaConfigured !== false ? (
         <DataSourceDegradedBanner health={dataSourceHealth} />
       ) : null}
 
-      {editing ? (
-        <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
-          <div className="dash-edit-strip" role="toolbar" aria-label="Edit Home toolbar">
-            <span className="dash-edit-flag">
-              <i aria-hidden="true" />
-              Edit mode
-            </span>
-            <span className="dash-edit-meta">
-              {cols === 1 ? "Single column" : `${cols}-column grid`} · {grid.label} · {layout.length} widget
-              {layout.length === 1 ? "" : "s"}
-            </span>
-            <div className="dash-edit-strip-actions">
-              <button type="button" disabled={saving} onClick={tidyLayout}>
-                Snap &amp; tidy
-              </button>
-              <button
-                type="button"
-                aria-pressed={libraryOpen}
-                onClick={() => setLibraryOpen((open) => !open)}
-              >
-                Widget library
-              </button>
-              <button className="is-primary" type="button" disabled={saving} onClick={() => void save("personal")}>
-                {saving ? "Saving…" : "Done"}
-              </button>
-            </div>
-          </div>
-          <div className="dash-editor-copy">
-            <strong>Customize Home</strong>
-            <span>
-              Press and hold a card — or use its grip — to move it. Keyboard: focus a grip, press space, then
-              use the arrow keys.
-              {orgId
-                ? canShareOrg
-                  ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
-                  : " Done saves your personal Home — teammates keep their own layouts."
-                : " Select a workspace to persist."}
-            </span>
-          </div>
-          <div className="dash-palette-heading">
-            <span>Add widgets</span>
-            <small>
-              {layout.length} on board · {addableEntries.length} available
-            </small>
-          </div>
-          <div className="dash-widget-palette" data-testid="dash-catalog-inline">
-            {paletteEntries.map(({ entry, status, reason }) => {
-              const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
-              const isDragging = drag?.kind === "add" && drag.type === entry.type;
-              return (
-                <button
-                  className={`${status === "add" ? "" : "is-unavailable "}${isDragging ? "dragging" : ""}`.trim()}
-                  key={entry.type}
-                  type="button"
-                  data-status={status}
-                  disabled={status !== "add"}
-                  title={
-                    status === "placed"
-                      ? `${entry.label} is already on the board.`
-                      : status === "locked"
-                        ? `${entry.label} — ${reason}`
-                        : `${entry.description}. Drag onto the board or tap to add.`
-                  }
-                  onPointerDown={(event) => {
-                    if (status !== "add") return;
-                    beginPaletteDrag(event, entry);
-                  }}
-                  onPointerMove={onDragPointerMove}
-                  onPointerUp={onDragPointerUp}
-                  onPointerCancel={onDragPointerCancel}
-                  onClick={() => {
-                    if (suppressClickRef.current) {
-                      suppressClickRef.current = false;
-                      return;
-                    }
-                    if (status !== "add") return;
-                    addWidget(entry.type);
-                  }}
-                >
-                  <i>
-                    <Icon name={icon} />
-                  </i>
-                  <span>
-                    <strong>{entry.label}</strong>
-                    <small>{status === "locked" ? reason : entry.description}</small>
-                  </span>
-                  <em>{status === "placed" ? "On board" : status === "locked" ? "Locked" : "Add"}</em>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      {meLoaded && (dashShell !== "no_org" || editing) ? (
+      {meLoaded && (dashShell === "ready" || editing) ? (
         <section
           className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""
@@ -1907,12 +1628,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
           <button className="dash-dock-ghost" type="button" disabled={saving} onClick={cancelEditing}>
             Cancel
           </button>
-          <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
-            Reset
-          </button>
-          <button className="dash-dock-ghost dash-dock-tidy" type="button" disabled={saving} onClick={tidyLayout}>
-            <span aria-hidden="true">⌗</span> Snap &amp; tidy
-          </button>
           <button
             className="dash-dock-add"
             type="button"
@@ -1921,50 +1636,10 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
             onClick={() => setLibraryOpen((open) => !open)}
           >
             <span aria-hidden="true">+</span>
-            Widgets
-          </button>
-          <button
-            className="dash-dock-ghost"
-            type="button"
-            data-testid="dash-preview"
-            onClick={() => {
-              setEditing(false);
-              setPreviewing(true);
-              setLibraryOpen(false);
-            }}
-          >
-            Preview
+            Add
           </button>
           <button className="dash-dock-done" type="button" disabled={saving} onClick={() => void save("personal")}>
             {saving ? "Saving…" : "Done"}
-          </button>
-          {canShareOrg ? (
-            <button className="dash-dock-team" type="button" disabled={saving} onClick={() => void save("org")}>
-              Save for team
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {previewing ? (
-        <div className="dash-edit-dock dash-preview-dock" role="status" aria-label="Previewing unsaved home changes">
-          <span>Previewing unsaved changes</span>
-          <button
-            className="dash-dock-ghost"
-            type="button"
-            data-testid="dash-preview-back"
-            onClick={enterEditMode}
-          >
-            Back to edit
-          </button>
-          <button
-            className="dash-dock-done"
-            type="button"
-            disabled={saving}
-            data-testid="dash-preview-save"
-            onClick={() => void save("personal")}
-          >
-            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       ) : null}

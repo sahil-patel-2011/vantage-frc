@@ -52,7 +52,7 @@ function classifyShell(input: {
   return "ready";
 }
 
-export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
+export function AutonomousAgentPanel({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [steps, setSteps] = useState<StepRow[]>([]);
@@ -198,25 +198,18 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
   const coverage = useMemo(() => narrationCoverage(narrations), [narrations]);
 
   return (
-    <div className="aa-page">
-      <header className="aa-header">
-        <div>
-          <p className="aa-eyebrow">Autonomous agent</p>
-          <h1>Goal → tools → answer</h1>
-          <p>
-            ReAct-style loop with allowlisted web fetch and optional search. Org facts and tool
-            results are injected each step. Metered via feature=agent — never DEMO runs.
-          </p>
-        </div>
-        <div className="aa-header-actions">
-          <a className="app-button secondary" href={hubHref("/ai", "chat", orgId)}>
-            Chat
-          </a>
-          <a className="app-button secondary" href={hubHref("/ai", "budgets", orgId)}>
-            Budgets
-          </a>
-        </div>
-      </header>
+    <div className={`aa-page${embedded ? " aa-page--embedded" : ""}`}>
+      {embedded ? null : (
+        <header className="aa-header">
+          <div>
+            <p className="aa-eyebrow">Agent</p>
+            <h1>Goal → tools → answer</h1>
+            <p>
+              ReAct-style loop with allowlisted web fetch. Metered — never DEMO runs.
+            </p>
+          </div>
+        </header>
+      )}
 
       <SponsoredPromoBanner orgId={orgId} />
       <MeteredAiCutoffBanner orgId={orgId} />
@@ -386,7 +379,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         </section>
       </div>
 
-      <AiHubRelated orgId={orgId} active="agent" />
+      {embedded ? null : <AiHubRelated orgId={orgId} active="agent" />}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import {
   readUsageFromSse,
   sanitizeFeatureLabel,
 } from "./device-telemetry";
+import { isPriorityRelayRequest } from "./priority-request";
 import { ensureOrgWorkspace } from "./org-workspace-fs";
 import { PLATFORM_FREEBUFF_RELAY_NAME } from "./org-workspace";
 import {
@@ -91,6 +92,10 @@ async function handle(req: IncomingMessage, res: ServerResponse, cfg: PiLayerCon
         active: snap.activeRequests,
         max: snap.maxConcurrent,
         available: snap.available,
+        longInFlight: snap.longInFlight,
+        longSlotCap: snap.longSlotCap,
+        prioritySlotCap: snap.prioritySlotCap,
+        priorityReservedInFlight: snap.priorityReservedInFlight,
         byFeature: snap.byFeature,
       },
       tokens: {
@@ -104,13 +109,25 @@ async function handle(req: IncomingMessage, res: ServerResponse, cfg: PiLayerCon
   }
 
   const feature = sanitizeFeatureLabel(header(req, "x-vantage-feature"));
-  if (route === "chat" && !telemetry.tryBegin(feature)) {
-    json(
-      res,
-      429,
-      piLayerErrorBody(429, `Relay is at ${cfg.maxConcurrent} concurrent requests. Chat, CAD, and agents share this box.`),
-    );
-    return;
+  const priority = isPriorityRelayRequest({
+    priorityHeader: header(req, "x-vantage-priority"),
+    teamNumberHeader: header(req, "x-vantage-team-number"),
+  });
+  let reservedSlot = false;
+  if (route === "chat") {
+    const decision = telemetry.canBegin(feature, { priority });
+    const slot = decision === "ok" ? telemetry.beginSlot(feature, { priority }) : { ok: false, reserved: false };
+    if (!slot.ok) {
+      const message =
+        decision === "long_cap"
+          ? "Long-running jobs (deep analysis, overnight intel) are at reserved capacity. Short chat and generation stay available."
+          : priority
+            ? `Relay is at ${cfg.maxConcurrent} concurrent requests, including reserved priority seats.`
+            : `Relay is at shared capacity. Priority short chats may still be admitted.`;
+      json(res, 429, piLayerErrorBody(429, message));
+      return;
+    }
+    reservedSlot = slot.reserved;
   }
 
   try {
@@ -124,7 +141,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, cfg: PiLayerCon
       res.end();
     }
   } finally {
-    if (route === "chat") telemetry.end(feature);
+    if (route === "chat") telemetry.end(feature, reservedSlot);
   }
 }
 
@@ -147,6 +164,40 @@ async function forward(
       ? attachWorkspaceToChatBody(clampChatCompletionBody(rawBody, cfg.model), workspace)
       : rawBody;
   const target = joinUpstream(cfg.upstreamBaseUrl, pathname);
+  if (route === "chat" && body) {
+    const official = await chatViaOfficialLogin(cfg, body).catch(() => null);
+    if (official?.ok) {
+      writeOfficialChat(res, official, body);
+      return;
+    }
+    let upstream: Response | null = null;
+    try {
+      upstream = await fetch(target, {
+        method: req.method,
+        headers: {
+          accept: header(req, "accept") || "application/json",
+          "content-type": header(req, "content-type") || "application/json",
+          authorization: header(req, "authorization") || `Bearer ${cfg.apiKey}`,
+          "x-vantage-feature": feature,
+          ...(orgId ? { "x-vantage-org-id": orgId } : {}),
+        },
+        body,
+      });
+    } catch {
+      if (official) {
+        writeOfficialChat(res, official, body);
+        return;
+      }
+      throw new Error("Upstream FreeBuff proxy is unreachable.");
+    }
+    if (!upstream.ok && official) {
+      writeOfficialChat(res, official, body);
+      return;
+    }
+    await streamUpstream(res, upstream, body, true);
+    return;
+  }
+
   let upstream: Response;
   try {
     upstream = await fetch(target, {
@@ -165,17 +216,6 @@ async function forward(
       json(res, 200, catalogFallback(cfg));
       return;
     }
-    if (route === "chat" && body) {
-      const official = await chatViaOfficialLogin(cfg, body);
-      if (official) {
-        res.statusCode = official.status;
-        res.setHeader("content-type", official.contentType);
-        res.setHeader("cache-control", "no-store");
-        tallyChat(body, official.text, official.contentType);
-        res.end(official.text);
-        return;
-      }
-    }
     throw error;
   }
 
@@ -184,18 +224,27 @@ async function forward(
     return;
   }
 
-  if (route === "chat" && !upstream.ok && body) {
-    const official = await chatViaOfficialLogin(cfg, body);
-    if (official) {
-      res.statusCode = official.status;
-      res.setHeader("content-type", official.contentType);
-      res.setHeader("cache-control", "no-store");
-      tallyChat(body, official.text, official.contentType);
-      res.end(official.text);
-      return;
-    }
-  }
+  await streamUpstream(res, upstream, body ?? "", route === "chat");
+}
 
+function writeOfficialChat(
+  res: ServerResponse,
+  official: { status: number; contentType: string; text: string },
+  requestBody: string,
+): void {
+  res.statusCode = official.status;
+  res.setHeader("content-type", official.contentType);
+  res.setHeader("cache-control", "no-store");
+  tallyChat(requestBody, official.text, official.contentType);
+  res.end(official.text);
+}
+
+async function streamUpstream(
+  res: ServerResponse,
+  upstream: Response,
+  requestBody: string,
+  tally: boolean,
+): Promise<void> {
   const contentType = upstream.headers.get("content-type") ?? "application/json";
   res.statusCode = upstream.status;
   res.setHeader("content-type", contentType);
@@ -203,7 +252,7 @@ async function forward(
 
   if (!upstream.body) {
     const text = await upstream.text();
-    if (route === "chat") tallyChat(body ?? "", text, contentType);
+    if (tally) tallyChat(requestBody, text, contentType);
     res.end(text);
     return;
   }
@@ -221,7 +270,7 @@ async function forward(
     }
   } finally {
     res.end();
-    if (route === "chat") tallyChat(body ?? "", Buffer.concat(chunks).toString("utf8"), contentType);
+    if (tally) tallyChat(requestBody, Buffer.concat(chunks).toString("utf8"), contentType);
   }
 }
 
@@ -254,13 +303,14 @@ async function probeUpstream(cfg: PiLayerConfig): Promise<boolean> {
 async function chatViaOfficialLogin(
   cfg: PiLayerConfig,
   body: string,
-): Promise<{ status: number; contentType: string; text: string } | null> {
+): Promise<{ ok: boolean; status: number; contentType: string; text: string } | null> {
   const home = process.env.HOME?.trim() || process.env.USERPROFILE?.trim() || "";
   const creds = home ? await readOfficialFreebuffCredentials(home) : null;
   if (!creds) return null;
   const session = await admitOfficialFreebuffSession({ token: creds.authToken, model: cfg.model });
   if (!session.ok && session.status !== "model_locked") {
     return {
+      ok: false,
       status: 503,
       contentType: "application/json",
       text: JSON.stringify(piLayerErrorBody(503, session.detail ?? "Official Freebuff session was refused.")),
@@ -274,7 +324,7 @@ async function chatViaOfficialLogin(
     userId: creds.id,
     clientId: creds.fingerprintId ?? creds.id,
   });
-  return { status: result.status, contentType: result.contentType, text: result.text };
+  return { ok: result.ok, status: result.status, contentType: result.contentType, text: result.text };
 }
 
 function header(req: IncomingMessage, name: string): string {

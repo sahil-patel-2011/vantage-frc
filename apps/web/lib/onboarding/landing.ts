@@ -99,11 +99,10 @@ export function buildOnboardingLanding(input: {
   orgName?: string | null;
   platformAdmin?: boolean;
 }): OnboardingLanding {
-  const role = (
-    ["student", "mentor", "coach", "parent", "other"].includes(String(input.teamRole))
-      ? input.teamRole
-      : "other"
-  ) as OnboardingRole;
+  const firstRole = String(input.teamRole ?? "")
+    .split(/[\s,|/]+/)
+    .find((token) => ["student", "mentor", "coach", "parent", "other"].includes(token));
+  const role = (firstRole ?? "other") as OnboardingRole;
 
   const assigned = assignOnboardingTracks({
     teamRole: input.teamRole ?? null,

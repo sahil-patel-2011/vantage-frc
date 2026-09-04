@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 import "./partners.css";
 
@@ -142,9 +141,6 @@ export default function AdminPartnersClient() {
     }
   }
 
-  const related = adminRelatedLinks({
-    include: ["teams", "plans", "support", "releases", "waitlist", "audit"],
-  });
   const activeCount = sponsors.filter((row) => row.status === "active").length;
 
   return (
@@ -153,41 +149,7 @@ export default function AdminPartnersClient() {
         breadcrumbs="Platform / Partners"
         title="App sponsors & AI partners"
         description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Soft-UI branding appears on AI surfaces only when status is active. API keys stay in env or BYOK — never here."
-      >
-        <nav className="admin-related" aria-label="Related admin">
-          {related.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a className="app-button secondary" href="/admin/outreach">
-            Org outreach
-          </a>
-        </nav>
-      </PageHeader>
-
-      <section className="admin-ai-smoke" aria-label="AI entry points">
-        <header>
-          <h2>AI tools for platform admin</h2>
-          <p className="app-muted">
-            Smoke paths into working Soft-UI AI and key vaults. No DEMO usage metrics.
-          </p>
-        </header>
-        <div className="admin-ai-smoke-links">
-          <a className="app-button" href="/admin/models">
-            Models &amp; keys
-          </a>
-          <a className="app-button secondary" href="/admin/sponsored">
-            Sponsored AI policy
-          </a>
-          <a className="app-button secondary" href="/ai">
-            Open Soft-UI AI hub
-          </a>
-          <a className="app-button secondary" href="/ai?tab=chat">
-            Test AI chat
-          </a>
-        </div>
-      </section>
+      />
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

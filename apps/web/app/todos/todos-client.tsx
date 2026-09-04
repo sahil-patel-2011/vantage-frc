@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { AttachedLinkChips, AttachedLinksEditor } from "../../components/attached-links";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import type { AttachedLink } from "../../lib/planner/links";
+import "../planner-links.css";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -15,7 +18,6 @@ import {
   TODO_STATUSES,
   filterTodos,
   statusLabel,
-  todoDeepLink,
   todosNextActions,
   type TodoListFilter,
   type TeamTodo,
@@ -243,8 +245,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             title="Team work"
             description={
               <>
-                Todos, build tasks, and season milestones in one workbench. Create quick team todos here and open
-                specialized work in its owning board; never a DEMO task list.
+                A shared sheet of things to do — owner, due date, and attached links. Build tasks and milestones stay
+                in their boards; this list never invents DEMO rows.
               </>
             }
           >
@@ -408,6 +410,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     [],
   );
   const [form, setForm] = useState(empty);
+  const [links, setLinks] = useState<AttachedLink[]>([]);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -424,8 +427,10 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           assigneeUserId: form.assigneeUserId || null,
           subteamId: form.subteamId || null,
           dueOn: form.dueOn || null,
+          links,
         });
         setForm(empty);
+        setLinks([]);
       }}
       style={{ display: "grid", gap: 10 }}
     >
@@ -464,6 +469,9 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
         </FormRow>
         <FormRow label="Notes" wide>
           <input value={form.notes} onChange={set("notes")} placeholder="Optional context" />
+        </FormRow>
+        <FormRow label="Links" wide>
+          <AttachedLinksEditor links={links} onChange={setLinks} disabled={busy} addLabel="Attach link" />
         </FormRow>
         </FormGrid>
       </details>
@@ -530,22 +538,36 @@ function Board({
   }
 
   return (
-    <div className="todos-list">
-      {filtered.map((todo) => (
-        <TodoCard
-          key={todo.id}
-          todo={todo}
-          view={view}
-          busy={busy}
-          mutate={mutate}
-          focused={todo.id === view.focusTodoId}
-        />
-      ))}
+    <div className="todos-sheet-wrap">
+      <table className="todos-sheet">
+        <thead>
+          <tr>
+            <th scope="col">Done</th>
+            <th scope="col">What</th>
+            <th scope="col">Who</th>
+            <th scope="col">Due</th>
+            <th scope="col">Links</th>
+            <th scope="col"> </th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((todo) => (
+            <TodoSheetRow
+              key={todo.id}
+              todo={todo}
+              view={view}
+              busy={busy}
+              mutate={mutate}
+              focused={todo.id === view.focusTodoId}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function TodoCard({
+function TodoSheetRow({
   todo,
   view,
   busy,
@@ -559,41 +581,112 @@ function TodoCard({
   focused: boolean;
 }) {
   const due = dueLabel(todo);
-  const deepLink = todoDeepLink(view.orgId, todo.id);
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(todo.title);
+
+  useEffect(() => {
+    setTitle(todo.title);
+  }, [todo.title]);
 
   return (
-    <article className={focused ? "todos-card is-focused" : "todos-card"} id={`todo-${todo.id}`}>
-      <div className="todos-card-head">
-        <div>
-          <strong>{todo.title}</strong>
-          <div className="todos-card-meta">
-            {todo.assigneeName ? todo.assigneeName : "Unassigned"}
-            {todo.subteamName ? (
-              <>
-                {" · "}
-                <span style={{ color: todo.subteamColor ?? "inherit" }}>{todo.subteamName}</span>
-              </>
-            ) : null}
-            {due ? (
-              <span style={{ color: due.tone }}>
-                {" · "}
-                {due.text}
-              </span>
-            ) : null}
+    <tr
+      id={`todo-${todo.id}`}
+      className={`${todo.status === "done" ? "is-done" : ""} ${focused ? "is-focused" : ""}`.trim()}
+    >
+      <td>
+        <input
+          type="checkbox"
+          checked={todo.status === "done"}
+          disabled={busy}
+          aria-label={`Mark ${todo.title} done`}
+          onChange={(event) =>
+            mutate({
+              action: "update-todo",
+              todoId: todo.id,
+              status: event.target.checked ? "done" : "todo",
+            })
+          }
+        />
+      </td>
+      <td>
+        <input
+          className="todos-sheet-title"
+          value={title}
+          disabled={busy}
+          aria-label="Title"
+          onChange={(event) => setTitle(event.target.value)}
+          onBlur={() => {
+            const next = title.trim();
+            if (!next || next === todo.title) {
+              setTitle(todo.title);
+              return;
+            }
+            mutate({ action: "update-todo", todoId: todo.id, title: next });
+          }}
+        />
+        {todo.notes ? <div className="app-muted">{todo.notes}</div> : null}
+      </td>
+      <td>
+        <select
+          value={todo.assigneeUserId ?? ""}
+          disabled={busy}
+          aria-label="Assignee"
+          onChange={(event) =>
+            mutate({
+              action: "update-todo",
+              todoId: todo.id,
+              assigneeUserId: event.target.value || null,
+            })
+          }
+        >
+          <option value="">Unassigned</option>
+          {view.members.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <input
+          type="date"
+          value={todo.dueOn ?? ""}
+          disabled={busy}
+          aria-label="Due date"
+          onChange={(event) =>
+            mutate({
+              action: "update-todo",
+              todoId: todo.id,
+              dueOn: event.target.value || null,
+            })
+          }
+        />
+        {due ? (
+          <div className="todos-sheet-due" style={{ color: due.tone }}>
+            {due.text}
           </div>
-        </div>
-        <a className="app-muted" href={deepLink} title="Deep link">
-          Link
-        </a>
-      </div>
-
-      {todo.notes ? <p style={{ margin: 0 }}>{todo.notes}</p> : null}
-
-      <FormGrid min={140}>
-        <FormRow label="Status">
+        ) : null}
+      </td>
+      <td>
+        <AttachedLinkChips links={todo.links ?? []} empty={<span className="app-muted">—</span>} />
+        {open ? (
+          <AttachedLinksEditor
+            links={todo.links ?? []}
+            disabled={busy}
+            addLabel="Attach"
+            onChange={(next) => mutate({ action: "update-todo", todoId: todo.id, links: next })}
+          />
+        ) : null}
+      </td>
+      <td>
+        <div className="todos-sheet-actions">
+          <button type="button" className="app-button secondary" onClick={() => setOpen((value) => !value)}>
+            {open ? "Hide" : "Links"}
+          </button>
           <select
             value={todo.status}
             disabled={busy}
+            aria-label="Status"
             onChange={(event) =>
               mutate({ action: "update-todo", todoId: todo.id, status: event.target.value as TodoStatus })
             }
@@ -604,108 +697,20 @@ function TodoCard({
               </option>
             ))}
           </select>
-        </FormRow>
-        <FormRow label="Assignee">
-          <select
-            value={todo.assigneeUserId ?? ""}
+          <button
+            type="button"
+            className="app-button secondary"
             disabled={busy}
-            onChange={(event) =>
-              mutate({
-                action: "update-todo",
-                todoId: todo.id,
-                assigneeUserId: event.target.value || null,
-              })
-            }
-          >
-            <option value="">Unassigned</option>
-            {view.members.map((member) => (
-              <option key={member.userId} value={member.userId}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-        {view.subteams.length > 0 ? (
-          <FormRow label="Subteam">
-            <select
-              value={todo.subteamId ?? ""}
-              disabled={busy}
-              onChange={(event) =>
-                mutate({
-                  action: "update-todo",
-                  todoId: todo.id,
-                  subteamId: event.target.value || null,
-                })
+            onClick={() => {
+              if (window.confirm(`Delete “${todo.title}”?`)) {
+                mutate({ action: "delete-todo", todoId: todo.id });
               }
-            >
-              <option value="">Whole team</option>
-              {view.subteams.map((subteam) => (
-                <option key={subteam.id} value={subteam.id}>
-                  {subteam.name}
-                </option>
-              ))}
-            </select>
-          </FormRow>
-        ) : null}
-        <FormRow label="Due">
-          <input
-            type="date"
-            value={todo.dueOn ?? ""}
-            disabled={busy}
-            onChange={(event) =>
-              mutate({
-                action: "update-todo",
-                todoId: todo.id,
-                dueOn: event.target.value || null,
-              })
-            }
-          />
-        </FormRow>
-      </FormGrid>
-
-      <div className="todos-card-actions">
-        {todo.status !== "doing" && todo.status !== "done" ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "doing" })}
+            }}
           >
-            Start
+            Delete
           </button>
-        ) : null}
-        {todo.status !== "done" ? (
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}
-          >
-            Mark done
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy}
-            onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "todo" })}
-          >
-            Reopen
-          </button>
-        )}
-        <button
-          type="button"
-          className="app-button secondary"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete “${todo.title}”?`)) {
-              mutate({ action: "delete-todo", todoId: todo.id });
-            }
-          }}
-        >
-          Delete
-        </button>
-      </div>
-    </article>
+        </div>
+      </td>
+    </tr>
   );
 }

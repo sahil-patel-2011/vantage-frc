@@ -13,6 +13,8 @@ export type ProductSession = {
   teamNumber?: number | null;
   role?: string | null;
   teamRole?: string | null;
+  crewRole?: string | null;
+  primaryFocus?: string | null;
   tbaConfigured?: boolean;
   memberships?: Array<{
     orgId: string;

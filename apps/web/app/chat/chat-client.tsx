@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { ModelProvenance } from "../../components/ui";
 import {
-  AI_CHAT_RELATED_INCLUDE,
-  AI_CHAT_SCOPE_CARDS,
   aiChatNextActions,
-  aiChatRelatedLinks,
   aiChatShellCopy,
   classifyAiChatShell,
   type AiChatShellKind,
 } from "../../lib/ai-chat/ai-chat-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FreebuffModelPicker } from "./freebuff-model-picker";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -67,19 +64,6 @@ function bridgeRefs(refs: SourceRef[] | null | undefined) {
   );
 }
 
-function ChatRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiChatRelatedLinks(orgId, { include: [...AI_CHAT_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ch-related" aria-label="Related AI and competition tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
 function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }) {
   const actions = aiChatNextActions({ orgId, shell });
   if (!actions.length) return null;
@@ -111,11 +95,13 @@ export default function ChatClient({
   initialPrompt = "",
   source = "",
   contextId = "",
+  embedded = false,
 }: {
   orgId: string;
   initialPrompt?: string;
   source?: string;
   contextId?: string;
+  embedded?: boolean;
 }) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<Thread | null>(null);
@@ -351,13 +337,6 @@ export default function ChatClient({
 
   const budgetsHref = hubHref("/ai", "budgets", orgId);
   const memoryHref = hubHref("/ai", "memory", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const knowledgeHref = withOrgHref("/team?tab=knowledge", orgId);
-  const usageHref = hubHref("/ai", "usage", orgId);
-  const runsHref = withOrgHref("/team/ai-runs", orgId);
-  const relatedExtra = aiChatRelatedLinks(orgId, {
-    include: ["usage", "scouting", "knowledge", "governance", "code"],
-  });
 
   const shell = classifyAiChatShell({
     loading,
@@ -376,48 +355,19 @@ export default function ChatClient({
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
 
+  const Root = embedded ? "div" : "main";
+
   return (
-    <main className="module-page ch-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">AI / Assistant</span>
-          <h1>FRC Assistant</h1>
-          <p>
-            Ask about teams, matchups, and scout evidence. Authorized tools run when you mention teams or matches.
-            Empty Neon/TBA/scout results stay empty — nothing is invented.
-          </p>
-        </div>
-        <div className="ch-header-actions">
-          <span className={`app-badge ${thread?.scope === "team" ? "setup" : "good"}`}>
-            {thread?.scope === "team" ? "Team shared" : thread ? "Private" : "No channel"}
-          </span>
-          <button
-            type="button"
-            className="app-button secondary ch-context-toggle"
-            aria-expanded={contextOpen}
-            onClick={() => setContextOpen((v) => !v)}
-          >
-            {contextOpen ? "Hide context" : "Context controls"}
-          </button>
-        </div>
-      </header>
-
-      <AiHubRelated orgId={orgId} active="chat" />
-      <ChatRelatedStrip orgId={orgId} />
-
-      <nav className="ch-gov" aria-label="AI governance">
-        <span className="ch-cache">
-          Prompt caching{" "}
-          <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
-        </span>
-        <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
-        <a href={budgetsHref}>Budgets</a>
-        <a href={memoryHref}>Memory</a>
-        <a href={strategyHref}>Strategy</a>
-        <a href={usageHref}>Usage</a>
-        <a href={runsHref}>AI runs</a>
-        <a href={knowledgeHref}>Knowledge</a>
-      </nav>
+    <Root className={`ch-page${embedded ? " ch-page--embedded" : " module-page"}`}>
+      {embedded ? null : (
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">AI / Ask</span>
+            <h1>Ask</h1>
+            <p>Ask about teams, matchups, and scout evidence. Empty results stay empty.</p>
+          </div>
+        </header>
+      )}
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
       <SponsoredPromoBanner orgId={orgId} />
@@ -451,33 +401,18 @@ export default function ChatClient({
         </section>
       ) : null}
 
-      {shell === "empty" ? (
-        <>
-          <NextActions orgId={orgId} shell={shell} />
-          <section className="ch-scope" aria-label="Private versus team-shared channels">
-            {AI_CHAT_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="ch-scope-card soft-panel">
-                <h2>{card.title}</h2>
-                <p>{card.body}</p>
-              </article>
-            ))}
-          </section>
-        </>
-      ) : null}
-
       {!blocked ? (
       <div className="ch-layout">
-        <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
-          <div>
-            <span className="eyebrow">Channels</span>
-            <h2>Your threads</h2>
+        <aside className="ch-sidebar" id="ch-channels" aria-label="Chats">
+          <div className="ch-sidebar-head">
+            <h2>Chats</h2>
+            <button type="button" className="ch-new-chat" onClick={() => void newThread("private")}>
+              New
+            </button>
           </div>
           <div className="ch-thread-actions">
-            <button type="button" onClick={() => void newThread("private")}>
-              + Private chat
-            </button>
-            <button type="button" onClick={() => void newThread("team")}>
-              + Team-shared chat
+            <button type="button" className="secondary" onClick={() => void newThread("team")}>
+              New team chat
             </button>
           </div>
           <ul className="ch-thread-list">
@@ -503,33 +438,25 @@ export default function ChatClient({
         <section className="ch-main">
           {!thread ? (
             <div className="ch-empty">
-              <span className="app-badge setup">{shellCopy.badge ?? "Start here"}</span>
-              <h1>{shell === "empty" ? shellCopy.title : "Pick or create a channel"}</h1>
+              <h1>Ask anything about this team</h1>
               <p>
-                {shell === "empty"
-                  ? shellCopy.description
-                  : "Private chats stay yours. Team-shared channels are visible to members. Authorized tools never invent rows."}
+                Answers use your scouting and TBA cache. Empty stays empty — nothing is invented.
               </p>
               <div className="ch-empty-actions">
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>
-                  New private chat
+                  New chat
                 </button>
-                <a className="app-button secondary" href={budgetsHref}>
-                  Budgets
-                </a>
-                <a className="app-button secondary" href={memoryHref}>
+                <button type="button" className="app-button secondary" onClick={() => void newThread("team")}>
+                  Team chat
+                </button>
+                <button
+                  type="button"
+                  className="app-button secondary ch-context-toggle"
+                  aria-expanded={contextOpen}
+                  onClick={() => setContextOpen((v) => !v)}
+                >
                   Memory
-                </a>
-                <a className="app-button secondary" href={strategyHref}>
-                  Strategy
-                </a>
-                {relatedExtra
-                  .filter((link) => link.id === "scouting" || link.id === "knowledge")
-                  .map((link) => (
-                    <a key={link.id} className="app-button secondary" href={link.href}>
-                      {link.label}
-                    </a>
-                  ))}
+                </button>
               </div>
             </div>
           ) : (
@@ -537,13 +464,23 @@ export default function ChatClient({
               <header className="ch-thread-head">
                 <div>
                   <span className="eyebrow">
-                    {thread.scope === "team" ? "Team shared channel" : "Private channel"}
+                    {thread.scope === "team" ? "Team shared" : "Private"}
                   </span>
                   <h1>{thread.title}</h1>
                 </div>
-                {thread.scope === "team" ? (
-                  <strong className="ch-shared-banner">Every message in this channel is shared</strong>
-                ) : null}
+                <div className="ch-header-actions">
+                  {thread.scope === "team" ? (
+                    <strong className="ch-shared-banner">Shared with the team</strong>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="app-button secondary ch-context-toggle"
+                    aria-expanded={contextOpen}
+                    onClick={() => setContextOpen((v) => !v)}
+                  >
+                    Memory
+                  </button>
+                </div>
               </header>
 
               <div className="ch-messages">
@@ -654,6 +591,7 @@ export default function ChatClient({
                   <button type="submit" className="primary-action">
                     Send
                   </button>
+                  <FreebuffModelPicker orgId={orgId} />
                   {status ? (
                     <p className="ch-status" role="status">
                       {status}
@@ -665,12 +603,25 @@ export default function ChatClient({
           )}
         </section>
 
-        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Context controls">
+        {contextOpen ? (
+          <button
+            type="button"
+            className="ch-context-backdrop"
+            aria-label="Close memory"
+            onClick={() => setContextOpen(false)}
+          />
+        ) : null}
+        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Memory">
           <div>
-            <span className="eyebrow">Context</span>
-            <h2>Injection & memory</h2>
+            <div className="ch-row">
+              <h2>Memory</h2>
+              <button type="button" className="secondary" onClick={() => setContextOpen(false)}>
+                Close
+              </button>
+            </div>
             <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
-              Private memory never enters team memory automatically. Admins set team policy under AI memory.
+              Private memory never enters team memory automatically.
+              Caching is {promptCachingEnabled ? "on" : "off"}.
             </p>
           </div>
 
@@ -771,6 +722,6 @@ export default function ChatClient({
         </aside>
       </div>
       ) : null}
-    </main>
+    </Root>
   );
 }

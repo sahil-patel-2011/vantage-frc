@@ -86,6 +86,15 @@
 .kick-setup-steps span{color:var(--app-muted);font-size:12px}
 .kick-setup-steps a{display:inline-flex;align-items:center;flex:none;min-height:44px;font-size:12px;font-weight:700;color:var(--app-accent)}
 
+.kick-deep{display:grid;gap:12px}
+.kick-deep h3,.kick-deep h4{margin:0;font-size:14px}
+.kick-deep-guess{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--app-line);border-radius:12px}
+.kick-deep-guess dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.kick-deep-guess dt{color:var(--app-muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.kick-deep-guess dd{margin:0;font-size:14px}
+.kick-deep-guess ul,.kick-deep-loops,.kick-deep-sources{margin:0;padding-left:18px;display:grid;gap:4px}
+.kick-deep-loops li,.kick-deep-sources li{display:grid;gap:2px}
+.kick-deep-loops span,.kick-deep-sources span{color:var(--app-muted);font-size:12px}
 @media(max-width:900px){
 .kick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kick-intel-grid,.kick-intel-entry{grid-template-columns:1fr}

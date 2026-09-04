@@ -1,3 +1,5 @@
+import { digestThreadTurns } from "@vantage/agent";
+
 /**
  * Shape stored chat turns for the model.
  *
@@ -30,6 +32,11 @@ export type ChatHistoryContext = {
   /** The new user message only — never duplicated into `history`. */
   message: string;
   estimatedTokens: number;
+  /**
+   * Extractive digest of turns that did not fit the token/count budget.
+   * Caller's own words only — never an invented recap. Empty when nothing was dropped.
+   */
+  droppedDigest: string;
 };
 
 function trimContent(value: string | null | undefined): string {
@@ -76,13 +83,16 @@ export function buildHistoryContext(input: {
   }
 
   const selected: ChatModelMessage[] = [];
+  const dropped: ChatModelMessage[] = [];
   let estimatedTokens = 0;
   const budget = Math.max(0, tokenBudget);
   const cap = Math.max(0, maxTurns);
   for (const turn of usable.slice().reverse()) {
-    if (selected.length >= cap) break;
     const tokens = estimateTokens(turn.content);
-    if (estimatedTokens + tokens > budget) break;
+    if (selected.length >= cap || estimatedTokens + tokens > budget) {
+      dropped.push(turn);
+      continue;
+    }
     selected.push(turn);
     estimatedTokens += tokens;
   }
@@ -91,5 +101,8 @@ export function buildHistoryContext(input: {
     history: selected.reverse(),
     message,
     estimatedTokens,
+    droppedDigest: digestThreadTurns(
+      dropped.reverse().map((turn) => ({ role: turn.role, content: turn.content })),
+    ),
   };
 }

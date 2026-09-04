@@ -2,7 +2,8 @@ import type { ChatAdapter, ChatCompletionResult, ContextItem } from "./index";
 import { ProviderRateLimitError } from "./http-chat-adapter";
 import { isChatUpstreamTimeout } from "./chat-timeout";
 import {
-  readFreeRelayConfig,
+  freeRelayPoolLabel,
+  readFreeRelayConfigs,
   tryCreateFreeRelayAdapter,
   tryCreateGroqFreeAdapter,
   tryCreateOpenRouterFreeAdapter,
@@ -27,6 +28,8 @@ export type RelayFailoverEntry = {
   /** Short label for error text — never a key or a full URL with credentials. */
   label: string;
   adapter: ChatAdapter;
+  /** Pi tunnels rotate for throughput; OpenRouter/Groq stay last-resort. */
+  kind?: "relay" | "fallback";
 };
 
 /** Node/undici surfaces a refused or unroutable socket as `TypeError: fetch failed`. */
@@ -98,27 +101,50 @@ export function isRelayFailoverWorthy(error: unknown): boolean {
  * lookup entirely on deployments that have no Pi — the fallback pools on their own
  * are the generic free-tier path, not a relay grant.
  */
+let relayRotateCursor = 0;
+
+export function resetRelayRotateCursor(): void {
+  relayRotateCursor = 0;
+}
+
 export function tryCreatePlatformRelayAdapter(input?: {
   promptCachingEnabled?: boolean;
   fetchImpl?: typeof fetch;
   env?: NodeJS.ProcessEnv;
   capability?: string;
+  model?: string | null;
+  orgId?: string | null;
+  teamNumber?: number | null;
 }): RelayFailoverChatAdapter | null {
   const env = input?.env ?? process.env;
-  const relay = tryCreateFreeRelayAdapter({ ...input, env });
-  if (!relay) return null;
+  const configs = readFreeRelayConfigs(env);
+  if (configs.length === 0) return null;
 
-  const entries: RelayFailoverEntry[] = [
-    { label: readFreeRelayConfig(env)?.providerLabel ?? "free-relay", adapter: relay },
-  ];
+  const entries: RelayFailoverEntry[] = [];
+  for (const config of configs) {
+    const adapter = tryCreateFreeRelayAdapter({
+      ...input,
+      env,
+      model: input?.model,
+      config,
+      teamNumber: input?.teamNumber,
+    });
+    if (!adapter) continue;
+    entries.push({
+      label: freeRelayPoolLabel(config),
+      kind: "relay",
+      adapter,
+    });
+  }
+  if (entries.length === 0) return null;
 
   const openrouter = tryCreateOpenRouterFreeAdapter({ ...input, env });
-  if (openrouter) entries.push({ label: "openrouter-free", adapter: openrouter });
+  if (openrouter) entries.push({ label: "openrouter-free", kind: "fallback", adapter: openrouter });
 
   const groq = tryCreateGroqFreeAdapter({ ...input, env });
-  if (groq) entries.push({ label: "groq-free", adapter: groq });
+  if (groq) entries.push({ label: "groq-free", kind: "fallback", adapter: groq });
 
-  return new RelayFailoverChatAdapter(entries);
+  return new RelayFailoverChatAdapter(entries, { rotateRelays: true });
 }
 
 export class RelayFailoverChatAdapter implements ChatAdapter {
@@ -128,19 +154,34 @@ export class RelayFailoverChatAdapter implements ChatAdapter {
   readonly supportsNativeTools: boolean;
 
   private readonly entries: RelayFailoverEntry[];
+  private readonly rotateRelays: boolean;
   private live: RelayFailoverEntry;
 
-  constructor(entries: RelayFailoverEntry[]) {
+  constructor(
+    entries: RelayFailoverEntry[],
+    options?: { rotateRelays?: boolean },
+  ) {
     if (entries.length === 0) {
       throw new Error("RelayFailoverChatAdapter requires at least one entry.");
     }
     this.entries = entries;
+    this.rotateRelays = options?.rotateRelays === true;
     this.live = entries[0]!;
     this.provider = entries[0]!.adapter.provider;
     this.model = entries[0]!.adapter.model;
     // Conservative: a caller branching on native tool support must not be surprised
     // when a later entry serves the call.
     this.supportsNativeTools = entries.every((e) => e.adapter.supportsNativeTools === true);
+  }
+
+  private orderedEntries(): RelayFailoverEntry[] {
+    if (!this.rotateRelays) return this.entries;
+    const relays = this.entries.filter((entry) => entry.kind !== "fallback");
+    const fallbacks = this.entries.filter((entry) => entry.kind === "fallback");
+    if (relays.length <= 1) return this.entries;
+    const start = relayRotateCursor % relays.length;
+    relayRotateCursor += 1;
+    return [...relays.slice(start), ...relays.slice(0, start), ...fallbacks];
   }
 
   get configuredLabels(): string[] {
@@ -159,9 +200,10 @@ export class RelayFailoverChatAdapter implements ChatAdapter {
     promptCachingEnabled?: boolean;
   }): Promise<ChatCompletionResult> {
     const failures: string[] = [];
+    const order = this.orderedEntries();
 
-    for (let i = 0; i < this.entries.length; i += 1) {
-      const entry = this.entries[i]!;
+    for (let i = 0; i < order.length; i += 1) {
+      const entry = order[i]!;
       try {
         // Identical input every attempt — never strip context, history, or tools.
         const result = await entry.adapter.complete(input);
@@ -172,7 +214,7 @@ export class RelayFailoverChatAdapter implements ChatAdapter {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         failures.push(`${entry.label}: ${message}`);
-        const last = i === this.entries.length - 1;
+        const last = i === order.length - 1;
         if (last || !isRelayFailoverWorthy(error)) {
           throw new Error(
             `Platform free relay could not serve this request. Tried ${failures.length} upstream(s) — ${failures.join(" | ")}`,

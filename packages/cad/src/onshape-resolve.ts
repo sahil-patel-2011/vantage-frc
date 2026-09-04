@@ -143,6 +143,48 @@ export function parallelEdgesScript(featureId: string, axis: readonly [number, n
   ].join("\n");
 }
 
+/**
+ * Planar faces of a feature whose outward normal points along `axis`.
+ *
+ * This is what turns "shell this box, open at the top" into an exact face pick.
+ * Shell takes the faces to *remove*, and there is no way to name one without
+ * measuring it: `evFaceTangentPlane` gives the outward normal at the face centre,
+ * and a dot product against the requested direction selects it. Same shape as
+ * parallelEdgesScript, which picks corner edges the same way.
+ */
+export function facesFacingScript(featureId: string, axis: readonly [number, number, number]): string {
+  const id = safeFeatureId(featureId);
+  const [ax, ay, az] = axis.map((value) => {
+    if (!Number.isFinite(value)) throw new Error("Axis components must be finite numbers.");
+    return Number(value);
+  }) as [number, number, number];
+  return [
+    "function(context is Context, queries) {",
+    `  var faces = evaluateQuery(context, qGeometry(qCreatedBy(makeId("${id}"), EntityType.FACE), GeometryType.PLANE));`,
+    `  var axis = normalize(vector(${ax}, ${ay}, ${az}));`,
+    "  var kept = [];",
+    "  for (var face in faces) {",
+    '    var plane = evFaceTangentPlane(context, { "face" : face, "parameter" : vector(0.5, 0.5) });',
+    "    if (dot(plane.normal, axis) > 0.99) { kept = append(kept, face); }",
+    "  }",
+    "  return transientQueriesToStrings(kept);",
+    "}",
+  ].join("\n");
+}
+
+/**
+ * Straight line edges a sketch created — the axis a revolve turns about.
+ *
+ * A human revolving a roller draws the profile and a centreline, then picks the
+ * centreline. There is no way to guess which line that is, so the caller names the
+ * sketch and this returns its lines; a sketch with exactly one line is unambiguous
+ * and anything else is reported back rather than picked at random.
+ */
+export function sketchLinesScript(sketchFeatureId: string): string {
+  const id = safeFeatureId(sketchFeatureId);
+  return `function(context is Context, queries) { return transientQueriesToStrings(evaluateQuery(context, qGeometry(qCreatedBy(makeId("${id}"), EntityType.EDGE), GeometryType.LINE))); }`;
+}
+
 /** Cylindrical faces created by a feature — the axis input for a circular pattern. */
 export function cylindricalFacesScript(featureId: string): string {
   const id = safeFeatureId(featureId);
@@ -203,5 +245,25 @@ export async function resolveOnshapeAxisIds(
   featureId: string,
 ): Promise<string[]> {
   const { ids } = await evaluateOnshapeQuery(http, document, cylindricalFacesScript(featureId));
+  return ids;
+}
+
+/** Faces of a feature pointing along a world direction — the faces a shell removes. */
+export async function resolveOnshapeFaceIds(
+  http: OnshapeResolveHttp,
+  document: OnshapeDocumentIds,
+  input: { featureId: string; facing: readonly [number, number, number] },
+): Promise<string[]> {
+  const { ids } = await evaluateOnshapeQuery(http, document, facesFacingScript(input.featureId, input.facing));
+  return ids;
+}
+
+/** Straight lines a sketch drew — candidate revolve axes. */
+export async function resolveOnshapeSketchLineIds(
+  http: OnshapeResolveHttp,
+  document: OnshapeDocumentIds,
+  sketchFeatureId: string,
+): Promise<string[]> {
+  const { ids } = await evaluateOnshapeQuery(http, document, sketchLinesScript(sketchFeatureId));
   return ids;
 }

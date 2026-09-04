@@ -117,6 +117,24 @@
 }
 .mk-menu-block{margin-top:clamp(36px,5vw,56px)}
 
+.marketing-lux .lux-hero h1{max-width:14ch}
+.marketing-lux .mk-hero-figure{
+  margin:0;justify-self:end;width:min(100%,560px);
+}
+.marketing-lux .mk-hero-figure .hero-soft-shell{
+  display:block;width:100%;
+}
+.marketing-lux .mk-hero-figure figcaption{
+  margin:12px 4px 0;color:var(--m-muted);
+  font-size:13px;line-height:1.5;max-width:40rem;
+}
+@media(max-width:900px){
+  .marketing-lux .mk-hero-figure{justify-self:stretch;width:100%;max-width:560px}
+}
+@media(max-width:680px){
+  .marketing-lux .lux-hero h1{max-width:11ch}
+}
+
 .shx-pipeline-copy .shx-stage{
   padding:clamp(18px,2.4vw,26px);
   border:1px solid var(--m-line);

@@ -44,6 +44,8 @@ describe("adult classification", () => {
     expect(isAdultTeamRole(null)).toBe(false);
     expect(isAdultTeamRole(undefined)).toBe(false);
     expect(classifyTeamRole("")).toBe("youth");
+    expect(isAdultTeamRole("mentor,coach")).toBe(true);
+    expect(isAdultTeamRole("student,parent")).toBe(false);
   });
 
   it("only flags mixed pairs", () => {

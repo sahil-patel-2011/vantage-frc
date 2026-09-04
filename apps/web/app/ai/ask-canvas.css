@@ -1,0 +1,61 @@
+/* One assistant surface. Ask / Write / Agent are modes, not sibling products. */
+.ask-canvas {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: min(72vh, 820px);
+}
+.ask-modes {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--soft-card, var(--app-surface));
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: 999px;
+  box-shadow: var(--soft-shadow, var(--app-shadow));
+}
+.ask-modes button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--soft-muted, var(--app-muted));
+  font: 650 14px/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+.ask-modes button.is-active,
+.ask-modes button[aria-selected="true"] {
+  background: var(--soft-accent, var(--app-accent));
+  color: var(--soft-accent-ink, var(--app-accent-ink));
+}
+.ask-canvas-body {
+  min-width: 0;
+  min-height: 0;
+}
+.ask-canvas .ch-page--embedded,
+.ask-canvas .writer-page--embedded,
+.ask-canvas .aa-page--embedded {
+  padding: 0;
+  gap: 12px;
+}
+.ask-canvas .writer-page--embedded .app-page-header,
+.ask-canvas .aa-page--embedded .aa-header,
+.ask-canvas .product-hub-related,
+.ask-canvas .writer-cross-links,
+.ask-canvas .writer-next-actions,
+.ask-canvas .aa-header-actions,
+.ask-canvas .ch-gov,
+.ask-canvas .ch-related,
+.ask-canvas .ch-next-actions,
+.ask-canvas .ch-scope {
+  display: none !important;
+}
+@media (pointer: coarse) {
+  .ask-modes button {
+    min-height: 44px;
+    padding: 10px 18px;
+  }
+}

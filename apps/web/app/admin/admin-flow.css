@@ -1,9 +1,8 @@
 /* Platform admin Soft-UI — empty / setup / forbidden + Plans·Support·Releases. Never DEMO metrics. */
 
-.admin-flow-page .admin-related {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.admin-flow-page .admin-related,
+.admin-flow-page .admin-next-actions {
+  display: none !important;
 }
 
 .admin-flow-page .admin-shell-badge {

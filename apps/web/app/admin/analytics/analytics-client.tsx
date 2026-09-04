@@ -335,6 +335,14 @@ export default function AdminAnalyticsClient() {
                 <BarChart series={data.ai.perDay.map((p) => ({ day: p.day, value: p.calls }))} ariaLabel="AI calls per day" />
               </section>
               <section>
+                <h3>Tokens per day</h3>
+                <BarChart
+                  series={data.ai.perDay.map((p) => ({ day: p.day, value: p.tokens }))}
+                  ariaLabel="AI tokens per day"
+                  format={formatCount}
+                />
+              </section>
+              <section>
                 <h3>Cost per day</h3>
                 <BarChart
                   series={data.ai.perDay.map((p) => ({ day: p.day, value: p.costUsd }))}
@@ -406,6 +414,8 @@ export default function AdminAnalyticsClient() {
                   <th scope="col">Days active</th>
                   <th scope="col">Top source</th>
                   <th scope="col">AI calls</th>
+                  <th scope="col">Tokens</th>
+                  <th scope="col">Most used</th>
                   <th scope="col">AI spend</th>
                   <th scope="col"></th>
                 </tr>
@@ -422,6 +432,8 @@ export default function AdminAnalyticsClient() {
                     <td>{org.daysActive}</td>
                     <td>{org.topSource ? sourceLabel(org.topSource) : "—"}</td>
                     <td>{org.aiCalls}</td>
+                    <td>{formatCount(org.aiTokens)}</td>
+                    <td>{org.topAiModel ?? "—"}</td>
                     <td>{formatUsd(org.aiCostUsd)}</td>
                     <td>
                       <button

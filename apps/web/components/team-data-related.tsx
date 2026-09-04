@@ -1,36 +1,14 @@
 "use client";
 
-import {
-  teamDataRelatedLinks,
-  type TeamDataRelatedId,
-} from "../lib/team-data/team-data-related";
+import type { TeamDataRelatedId } from "../lib/team-data/team-data-related";
 
-/** Soft-UI cross-links between Team Data and Schedule / Event Day / Strategy. */
-export function TeamDataRelated({
-  orgId,
-  active,
-  include,
-  className,
-  ariaLabel = "Related team data tools",
-}: {
+/** Retired: Team-data tools live in hub tabs and search. */
+export function TeamDataRelated(_props: {
   orgId?: string | null;
   active?: TeamDataRelatedId;
   include?: TeamDataRelatedId[];
   className?: string;
   ariaLabel?: string;
 }) {
-  const links = teamDataRelatedLinks(orgId, { active, include });
-  if (!links.length) return null;
-  return (
-    <nav
-      className={["product-hub-related", "team-data-related", className].filter(Boolean).join(" ")}
-      aria-label={ariaLabel}
-    >
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
+  return null;
 }

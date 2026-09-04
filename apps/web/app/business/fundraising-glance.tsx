@@ -1,6 +1,5 @@
 "use client";
 
-import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui";
 import type { BusinessView } from "../../lib/business-portal";
 import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
@@ -49,13 +48,7 @@ export function FundraisingGlance({
         badge="Get started"
         title="No season fundraising goal yet"
         description="Set a budget goal, then add sponsors, grants, or fundraiser events. Progress never invents DEMO raised totals."
-      >
-        <BusinessRelated
-          orgId={view.orgId}
-          include={["budget", "sponsors", "grants", "fundraisers", "orders"]}
-          ariaLabel="Fundraising glance setup links"
-        />
-      </EmptyState>
+      />
     );
   }
 
@@ -104,12 +97,6 @@ export function FundraisingGlance({
         <span>{money(progress.grantIncomeCents)} grants</span>
         <span>{money(progress.pledgedPipelineCents)} pledged</span>
       </footer>
-
-      <BusinessRelated
-        orgId={view.orgId}
-        include={["fundraisers", "sponsors", "grants", "orders"]}
-        ariaLabel="Fundraising glance related links"
-      />
 
       <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
         <header>

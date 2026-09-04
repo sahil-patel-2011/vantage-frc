@@ -256,6 +256,28 @@
   }
 }
 
+.account-role-picks {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+.account-role-picks legend {
+  margin: 0 0 6px;
+  font: 700 13px/1.2 var(--font-source-sans), ui-sans-serif;
+}
+.account-role-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.account-role-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font: 650 14px var(--font-source-sans), ui-sans-serif;
+}
+
 /* The Appearance tab now carries the island editor grid — give it room. */
 .appearance-panel{max-width:920px}
 .appearance-panel .theme-setting legend{font-size:16px}

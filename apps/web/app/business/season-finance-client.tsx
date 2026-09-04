@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import { Badge, EmptyState, StatTile } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import {
@@ -10,7 +9,6 @@ import {
   type UnifiedLedgerEntry,
 } from "../../lib/finance/balance";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { SEASON_FINANCE_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   FUNDING_KIND_LABELS,
   FUNDING_KINDS,
@@ -180,13 +178,6 @@ export default function SeasonFinanceClient({
 
   return (
     <div className={`biz-stack season-finance${embedded ? " embedded" : ""}`}>
-      <BusinessRelated
-        orgId={orgId}
-        active="finance"
-        include={SEASON_FINANCE_RELATED_INCLUDE}
-        ariaLabel="Related season finance tools"
-      />
-
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>

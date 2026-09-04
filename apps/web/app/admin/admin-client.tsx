@@ -4,14 +4,10 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
-  ADMIN_RELATED_INCLUDE,
   adminEmptyCopy,
-  adminNextActions,
   adminOrgMetric,
-  adminRelatedLinks,
   classifyAdminShell,
   formatAdminOrgLabel,
-  type AdminShellKind,
 } from "../../lib/admin";
 import {
   confirmationLines,
@@ -28,48 +24,6 @@ type Organization = {
   pendingOwnerEmail: string | null;
   pendingOwnerInviteExpiresAt: string | null;
 };
-
-function AdminRelated({ active }: { active?: "teams" }) {
-  const links = adminRelatedLinks({
-    active,
-    include: [...ADMIN_RELATED_INCLUDE],
-  });
-  return (
-    <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-      {links.map((link) => (
-        <a key={link.id} href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function AdminNextActions({ kind }: { kind: AdminShellKind }) {
-  const actions = adminNextActions(kind);
-  if (actions.length === 0) return null;
-  return (
-    <section className="admin-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Real platform rows only — never DEMO org counts, plan metrics, or invented tickets.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 function AdminClientInner() {
   const searchParams = useSearchParams();
@@ -220,7 +174,6 @@ function AdminClientInner() {
             </button>
           ) : null}
         </EmptyState>
-        <AdminNextActions kind={shell} />
       </main>
     );
   }
@@ -231,9 +184,7 @@ function AdminClientInner() {
         breadcrumbs="Platform / Global Team Manager"
         title="Global Team Manager"
         description="Closed membership: provision each real team workspace and seed the first owner by exact verified email. Never DEMO organizations — waitlist interest stays on the waitlist surface."
-      >
-        <AdminRelated active="teams" />
-      </PageHeader>
+      />
 
       <div className="cards" aria-label="Provisioning summary">
         <article className="card">
@@ -366,7 +317,6 @@ function AdminClientInner() {
         </Panel>
       </section>
 
-      <AdminNextActions kind={shell} />
     </main>
   );
 }

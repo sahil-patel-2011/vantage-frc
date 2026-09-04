@@ -24,7 +24,7 @@ const body = `# Vantage
 - Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.
 - Business hub: Overview, Money, Sponsors, Grants, Outreach.
 - Build hub: Kickoff, CAD, Code, Robot (FMEA/batteries/inspection as Robot tabs).
-- AI hub: Chat, Writer, Agent, Controls, Notes; API keys under Controls.
+- AI hub: Ask, Library, Settings; Write and Agent are modes inside Ask; API keys under Settings.
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
 

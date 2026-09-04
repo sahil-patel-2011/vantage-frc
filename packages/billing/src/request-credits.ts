@@ -55,6 +55,7 @@ const AGENTIC_FEATURES = new Set([
   "team_dream_week",
   "memory_dream",
   "overnight_intel",
+  "deep_game_analysis",
 ]);
 
 /** Features that never touch an external model — metered for accounting only. */

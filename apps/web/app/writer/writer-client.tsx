@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AiHubRelated } from "../../components/ai-hub-related";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { ModelProvenance } from "../../components/ui";
 import {
@@ -9,9 +8,7 @@ import {
   composeSponsorEmail,
   emailKindLabel,
   grantFocusLabel,
-  writerRelatedLinks,
   writerShellCopy,
-  WRITER_RELATED_INCLUDE,
 } from "../../lib/writer";
 import { DRAFT_STATUSES, WRITER_TONES, type WriterView } from "../../lib/writer/compute-writer";
 import type {
@@ -74,21 +71,10 @@ function WriterNextActions({
   );
 }
 
-function WriterCrossLinks({ orgId }: { orgId: string }) {
-  const links = writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE });
-  if (!links.length) return null;
-  return (
-    <nav className="writer-cross-links intel-actions" aria-label="Related writing tools">
-      {links.map((link) => (
-        <a key={link.id} href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | null } = {}) {
+export default function WriterClient({
+  orgId: orgIdProp,
+  embedded = false,
+}: { orgId?: string | null; embedded?: boolean } = {}) {
   const [view, setView] = useState<WriterView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -159,22 +145,11 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const loadingCopy = writerShellCopy("loading");
   const errorCopy = writerShellCopy("error");
   const setupCopy = writerShellCopy("setup");
-  const neighborLinks = orgId
-    ? writerRelatedLinks(orgId, { include: ["chat", "budgets", "usage"] })
-    : [];
 
   return (
-    <main className="module-page writer-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">AI / Writing Assistant</span>
-          <h1>Grant &amp; Sponsorship Writer</h1>
-          <p>
-            Draft grant answers and sponsor pitches from this team&apos;s profile and business data only — template or
-            metered FRC Assistant. Review and edit before sending; nothing is invented across orgs.
-          </p>
-        </div>
-        {live && live.seasons.length > 0 ? (
+    <main className={`module-page writer-page${embedded ? " writer-page--embedded" : ""}`}>
+      {embedded ? (
+        live && live.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
@@ -192,20 +167,37 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
               ))}
             </select>
           </label>
-        ) : null}
-      </header>
-
-      {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
-      {orgId ? <WriterCrossLinks orgId={orgId} /> : null}
-      {neighborLinks.length ? (
-        <nav className="writer-cross-links writer-ai-neighbors" aria-label="Related AI tools">
-          {neighborLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      ) : null}
+        ) : null
+      ) : (
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">AI / Write</span>
+            <h1>Write</h1>
+            <p>
+              Draft grant answers and sponsor pitches from this team&apos;s profile only — nothing is invented.
+            </p>
+          </div>
+          {live && live.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? live.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {live.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </header>
+      )}
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -845,14 +837,7 @@ function Composer({
           <p className="app-muted" style={{ margin: 0 }}>
             Pick a grant or sponsor template above, then <strong>Compose from template</strong> for org-scoped text from
             your profile only. FRC Assistant requires a configured provider key and shows setup — it never invents essays
-            when keys are missing. Pair with{" "}
-            {writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE }).map((link, index, arr) => (
-              <span key={link.id}>
-                <a href={link.href}>{link.label}</a>
-                {index < arr.length - 1 ? (index === arr.length - 2 ? ", or " : ", ") : ""}
-              </span>
-            ))}{" "}
-            for longer narratives.
+            when keys are missing.
           </p>
         </div>
       )}
@@ -868,7 +853,6 @@ function DraftLibrary({ view, busy, mutate }: { view: LiveView; busy: boolean; m
         <span className="app-badge setup">{emptyCopy.badge ?? "No saved drafts"}</span>
         <h2>{emptyCopy.title}</h2>
         <p className="app-muted">{emptyCopy.description}</p>
-        <WriterCrossLinks orgId={view.orgId} />
       </section>
     );
   }
@@ -876,7 +860,6 @@ function DraftLibrary({ view, busy, mutate }: { view: LiveView; busy: boolean; m
     <section className="writer-drafts" style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Saved drafts ({view.drafts.length})</h2>
-        <WriterCrossLinks orgId={view.orgId} />
       </div>
       {view.drafts.map((draft) => (
         <DraftCard key={draft.id} draft={draft} busy={busy} mutate={mutate} />

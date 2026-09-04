@@ -1,14 +1,6 @@
 "use client";
 
-/**
- * One horizontal map of every settings surface — Personal chips, then Team
- * chips for owners/admins. Rendered at the top of settings pages so "where do
- * I change X" always has an answer on screen.
- *
- * Fetches nothing: the mounting page passes the role it already loaded.
- */
-
-import { Icon } from "./app-shell";
+import { useMemo, useState } from "react";
 import {
   activeSettingsId,
   visibleSettingsNav,
@@ -18,16 +10,9 @@ import { withOrgHref } from "../lib/nav/product-nav";
 import "./settings-bar.css";
 
 type SettingsBarProps = {
-  /** Raw org role from the page's own data ("owner" | "admin" | "scout" | …, or null). */
   role: string | null | undefined;
-  /** Active workspace, so team links keep their ?orgId= context. */
   orgId?: string | null;
-  /** Current route path, e.g. "/account". */
   pathname: string;
-  /**
-   * Current ?tab= value when the page manages tabs client-side (the /account
-   * tabs use history.replaceState, so the mount passes its live tab state).
-   */
   activeTab?: string | null;
 };
 
@@ -37,54 +22,51 @@ function chipHref(item: SettingsNavItem, orgId: string | null | undefined): stri
     : item.href;
 }
 
-function ChipGroup({
-  label,
-  items,
-  activeId,
-  orgId,
-}: {
-  label: string;
-  items: SettingsNavItem[];
-  activeId: string | null;
-  orgId: string | null | undefined;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <div className="settings-bar-group" role="group" aria-label={`${label} settings`}>
-      <span className="settings-bar-group-label" aria-hidden>
-        {label}
-      </span>
-      {items.map((item) => {
-        const active = item.id === activeId;
-        return (
-          <a
-            key={item.id}
-            className={`settings-bar-chip${active ? " is-active" : ""}`}
-            href={chipHref(item, orgId)}
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon name={item.icon} />
-            <span>{item.label}</span>
-          </a>
-        );
-      })}
-    </div>
-  );
-}
-
 export function SettingsBar({ role, orgId, pathname, activeTab }: SettingsBarProps) {
   const items = visibleSettingsNav(role);
   const search = activeTab ? `tab=${activeTab}` : "";
   const activeId = activeSettingsId(items, pathname, search);
-  const personal = items.filter((item) => item.scope === "personal");
-  const team = items.filter((item) => item.scope === "team");
+  const [query, setQuery] = useState("");
+  const groups = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const match = (item: SettingsNavItem) =>
+      !needle || item.label.toLowerCase().includes(needle);
+    return [
+      { id: "you", label: "You", items: items.filter((item) => item.scope === "personal" && match(item)) },
+      { id: "team", label: "Team", items: items.filter((item) => item.scope === "team" && match(item)) },
+    ].filter((group) => group.items.length > 0);
+  }, [items, query]);
 
   return (
-    <nav className="settings-bar" aria-label="All settings">
-      <div className="settings-bar-scroll">
-        <ChipGroup label="Personal" items={personal} activeId={activeId} orgId={orgId} />
-        <ChipGroup label="Team" items={team} activeId={activeId} orgId={orgId} />
-      </div>
+    <nav className="settings-bar tesla-settings" aria-label="Settings">
+      <label className="settings-bar-search">
+        <span className="visually-hidden">Search settings</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search settings"
+        />
+      </label>
+      {groups.map((group) => (
+        <div key={group.id} className="settings-bar-group" role="group" aria-label={`${group.label} settings`}>
+          <span className="settings-bar-group-label">{group.label}</span>
+          {group.items.map((item) => {
+            const active = item.id === activeId;
+            return (
+              <a
+                key={item.id}
+                className={`settings-bar-row${active ? " is-active" : ""}`}
+                href={chipHref(item, orgId)}
+                aria-current={active ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </div>
+      ))}
+      {groups.length === 0 ? <p className="settings-bar-empty">Nothing matches.</p> : null}
     </nav>
   );
 }

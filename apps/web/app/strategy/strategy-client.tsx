@@ -8,7 +8,6 @@ import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { strategyCoverageLinks } from "../../lib/strategy/competition-related";
 import {
   STRATEGY_RELATED_INCLUDE,
   classifyStrategyShell,
@@ -302,27 +301,8 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
     `/cad?matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`,
     view.orgId,
   );
-  const relatedLinks = strategyRelatedLinks(view.orgId, {
-    include: [...STRATEGY_RELATED_INCLUDE],
-  });
-  const coverageLinks = strategyCoverageLinks(view.orgId, { eventKey: view.eventKey });
-
   return (
     <section className="strategy-workbench strategy-live-grid">
-      <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
-        {relatedLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
-            {link.label}
-          </a>
-        ))}
-      </nav>
-      <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
-        {coverageLinks.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
-            {link.label}
-          </a>
-        ))}
-      </nav>
       <Panel className="strategy-primary">
         <header>
           <div>

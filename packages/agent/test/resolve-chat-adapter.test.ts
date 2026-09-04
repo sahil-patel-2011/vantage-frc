@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpChatAdapter } from "../src/http-chat-adapter";
+import { OrgIsolatedChatAdapter } from "../src/org-isolation";
 import {
   ChatProviderResolutionError,
   resolveOrgChatAdapter,
@@ -18,7 +19,14 @@ function fakeClient(handlers: Array<(sql: string, params?: unknown[]) => QueryRe
   };
 }
 
-const PLATFORM_ENV_KEYS = ["OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "MISTRAL_API_KEY"] as const;
+const PLATFORM_ENV_KEYS = [
+  "OPENROUTER_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "MISTRAL_API_KEY",
+  "FREE_RELAY_BASE_URL",
+  "FREE_RELAY_API_KEY",
+  "FREE_RELAY_MODEL",
+] as const;
 
 describe("resolveOrgChatAdapter", () => {
   const savedEnv: Record<string, string | undefined> = {};
@@ -454,5 +462,81 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.provider).toBe("openai-compatible");
     expect(adapter.model).toBe("llama3.2");
     expect((adapter as HttpChatAdapter).baseUrl).toBe("http://127.0.0.1:11434/v1");
+  });
+
+  it("uses isolated Freebuff when the org has a relay grant and the toggle is on, skipping BYOK", async () => {
+    process.env.FREE_RELAY_BASE_URL = "http://127.0.0.1:8080/v1";
+    process.env.FREE_RELAY_API_KEY = "relay-secret";
+    const client = fakeClient([
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            prefs: {
+              mode: "automode",
+              use_platform_free_ai: true,
+              freebuff_model: "mimo/mimo-2.5",
+            },
+            policy: null,
+            hasRelayGrant: true,
+          },
+        ],
+      }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      promptCachingEnabled: false,
+      decrypt: async () => {
+        throw new Error("BYOK must not be decrypted when Free AI is preferred");
+      },
+    });
+
+    expect(adapter).toBeInstanceOf(OrgIsolatedChatAdapter);
+    expect(adapter.model).toBe("mimo/mimo-2.5");
+    expect(client.query).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses team BYOK when the Free AI toggle is off even if a relay grant exists", async () => {
+    process.env.FREE_RELAY_BASE_URL = "http://127.0.0.1:8080/v1";
+    process.env.FREE_RELAY_API_KEY = "relay-secret";
+    const client = fakeClient([
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            prefs: { mode: "automode", use_platform_free_ai: false },
+            policy: null,
+            hasRelayGrant: true,
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k1",
+            provider: "anthropic",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "sk-ant-org",
+    });
+
+    expect(adapter.provider).toBe("anthropic");
+    expect(adapter.model).toContain("claude");
   });
 });

@@ -100,21 +100,20 @@ describe("product hubs", () => {
     expect(hubNestedTabs(build, "code").map((tab) => tab.id)).toContain("bugbot");
   });
 
-  it("keeps AI workbenches to chat, writer, agent, controls, and notes", () => {
+  it("keeps AI to Ask, Library, and Settings — Write and Agent live inside Ask", () => {
     const ai = hubById("ai");
-    expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
-      "chat",
-      "writer",
-      "agent",
-      "budgets",
-      "decisions",
-    ]);
+    expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual(["chat", "decisions", "budgets"]);
+    expect(hubNestedTabs(ai, "chat").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["chat", "writer", "agent"]),
+    );
     expect(hubNestedTabs(ai, "budgets").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["memory", "governance", "finance", "ai-keys"]),
     );
     expect(hubNestedTabs(ai, "decisions").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["decision-search", "season-report"]),
     );
+    expect(hubWorkbenchId(ai, "writer")).toBe("chat");
+    expect(hubWorkbenchId(ai, "agent")).toBe("chat");
   });
 
   it("resolves nested tools back to their workbench", () => {

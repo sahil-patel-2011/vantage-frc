@@ -22,7 +22,9 @@ function filledProfile(overrides: Partial<OnboardingDraft> = {}): OnboardingDraf
     dateOfBirth: "2009-04-11",
     gender: "prefer_not_to_say",
     teamRole: "student",
+    teamRoles: ["student"],
     crewRole: "scout",
+    crewRoles: ["scout"],
     ...overrides,
   };
 }
@@ -248,6 +250,7 @@ describe("default focus for a role + crew", () => {
     expect(defaultFocusForRole("coach", "")).toBe("leadership");
     expect(defaultFocusForRole("mentor", "")).toBe("leadership");
     expect(defaultFocusForRole("student", "")).toBe("competition");
+    expect(defaultFocusForRole(["student", "parent"], ["cad", "scout"])).toBe("build");
   });
 });
 

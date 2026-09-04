@@ -36,7 +36,12 @@ export function normalizeDmMode(value: unknown): DmMode {
  */
 export function isAdultTeamRole(teamRole: string | null | undefined): boolean {
   if (typeof teamRole !== "string") return false;
-  return (ADULT_TEAM_ROLES as readonly string[]).includes(teamRole.trim().toLowerCase());
+  const tokens = teamRole
+    .split(/[\s,|/]+/)
+    .map((role) => role.trim().toLowerCase())
+    .filter(Boolean);
+  if (tokens.includes("student")) return false;
+  return tokens.some((role) => (ADULT_TEAM_ROLES as readonly string[]).includes(role));
 }
 
 export function classifyTeamRole(teamRole: string | null | undefined): ChatMemberClass {

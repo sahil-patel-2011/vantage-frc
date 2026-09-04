@@ -10,10 +10,8 @@
 
 import {
   booleanFeature,
-  booleanParameter,
   chamferFeature,
   circularPatternFeature,
-  deterministicQueryParameter,
   filletFeature,
   holeFeature,
   linearPatternFeature,
@@ -21,8 +19,8 @@ import {
   onshapeFeaturePath,
   parseAddedFeatureId,
   patternAxisPlaneId,
-  quantityParameter,
   revolveFeature,
+  shellFeature,
   type BooleanOperation,
   type ExtrudeOperation,
   type HoleEndStyle,
@@ -154,34 +152,17 @@ function buildNativeFeature(
 }
 
 /**
- * Native Shell (faces-to-remove). Same BTFeatureDefinitionCall-1406 envelope as
- * fillet/chamfer — thickness in mm, metres on the wire. Face ids must already
- * be resolved; this never invents them or falls back to FeatureScript.
+ * Native Shell (faces-to-remove). Face ids must already be resolved; this never
+ * invents them or falls back to FeatureScript. The payload itself comes from
+ * onshape-features so the MCP tool and this job path cannot drift apart.
  */
 function buildShellFeature(parameters: Record<string, unknown>) {
-  const faceIds = requireEntityIds(parameters, ["faceIds", "entities", "faces"], "faceIds");
-  const thicknessMm = requireNumber(parameters, ["thicknessMm", "thickness"], "Shell thickness");
-  if (thicknessMm <= 0 || thicknessMm > 10_000) {
-    throw new Error(`Shell thickness must be a positive number of millimetres (max 10000). Got ${String(thicknessMm)}.`);
-  }
-  const featureParameters: unknown[] = [
-    deterministicQueryParameter("entities", faceIds),
-    quantityParameter("thickness", thicknessMm, thicknessMm / 1000),
-  ];
-  if (bool(parameters.outward, false) || bool(parameters.oppositeDirection, false)) {
-    featureParameters.push(booleanParameter("oppositeDirection", true));
-  }
-  return {
-    btType: "BTFeatureDefinitionCall-1406" as const,
-    feature: {
-      btType: "BTMFeature-134",
-      featureType: "shell",
-      name: optionalName(parameters, "VantageShell"),
-      suppressed: false,
-      namespace: "",
-      parameters: featureParameters,
-    },
-  };
+  return shellFeature({
+    faceIds: requireEntityIds(parameters, ["faceIds", "entities", "faces"], "faceIds"),
+    thicknessMm: requireNumber(parameters, ["thicknessMm", "thickness"], "Shell thickness"),
+    outward: bool(parameters.outward, false) || bool(parameters.oppositeDirection, false),
+    name: optionalName(parameters, "VantageShell"),
+  });
 }
 
 /**

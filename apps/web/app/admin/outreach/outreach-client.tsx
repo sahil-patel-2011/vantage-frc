@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 import "../partners/partners.css";
 
@@ -124,28 +123,13 @@ export default function AdminOutreachClient() {
     }
   }
 
-  const related = adminRelatedLinks({
-    include: ["teams", "plans", "support", "releases", "waitlist", "audit"],
-  });
-
   return (
     <main className="module-page admin-control admin-flow-page admin-partners-page">
       <PageHeader
         breadcrumbs="Platform / Outreach"
         title="Organization outreach"
         description="CRM-lite for teams and schools you are talking to — name, contact, status, notes, next action. Not Salesforce."
-      >
-        <nav className="admin-related" aria-label="Related admin">
-          {related.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a className="app-button secondary" href="/admin/partners">
-            App partners
-          </a>
-        </nav>
-      </PageHeader>
+      />
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

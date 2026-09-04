@@ -41,6 +41,14 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     scope: "personal",
     requiredRole: "member",
   },
+  {
+    id: "connections",
+    label: "Connections",
+    href: "/account?tab=integrations",
+    icon: "grid",
+    scope: "personal",
+    requiredRole: "member",
+  },
   { id: "security", label: "Security", href: "/security", icon: "pin", scope: "personal", requiredRole: "member" },
   {
     id: "my-ai-keys",

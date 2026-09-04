@@ -71,6 +71,29 @@ describe("kickoff-related Soft-UI helpers", () => {
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
 
+  it("offers the 5-hour Pi analysis only to team 6925", () => {
+    const allowed = kickoffNextActions({
+      orgId: "org-1",
+      seasonYear: 2027,
+      hasIntelligence: false,
+      actionCount: 0,
+      priorityCount: 0,
+      openRuleCount: 0,
+      teamNumber: 6925,
+    });
+    expect(allowed.some((action) => action.id === "deep-game-analysis")).toBe(true);
+    const denied = kickoffNextActions({
+      orgId: "org-1",
+      seasonYear: 2027,
+      hasIntelligence: false,
+      actionCount: 0,
+      priorityCount: 0,
+      openRuleCount: 0,
+      teamNumber: 254,
+    });
+    expect(denied.some((action) => action.id === "deep-game-analysis")).toBe(false);
+  });
+
   it("hides zeroed summary tiles until real rows exist", () => {
     expect(
       shouldShowKickoffSummaryTiles({ actions: 0, bestAction: null, committed: 0, openQuestions: 0 }),

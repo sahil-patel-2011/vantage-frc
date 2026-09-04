@@ -49,6 +49,9 @@ export {
   DEFAULT_MAX_CONCURRENT,
   PiDeviceTelemetry,
   estimateTokensFromText,
+  longSlotCap,
+  prioritySlotCap,
   sanitizeFeatureLabel,
 } from "./device-telemetry";
 export type { DeviceTelemetrySnapshot } from "./device-telemetry";
+export { PRIORITY_RELAY_TEAM_NUMBER, isPriorityRelayRequest } from "./priority-request";

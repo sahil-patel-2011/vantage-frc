@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("public site uses a restrained light palette", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByRole("heading", { name: "The workspace your team actually runs." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your FRC team, in one place." })).toBeVisible();
   await expect(page.locator("#waitlist").getByLabel("Email")).toBeVisible();
   await expect(page.locator(".marketing-site")).toHaveCSS("background-color", "rgb(250, 249, 246)");
 });

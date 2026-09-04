@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui";
-import { SPONSOR_CRM_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
   SPONSOR_PIPELINE_STAGES,
@@ -166,13 +164,6 @@ export function SponsorPipelinePanel({
 
   return (
     <div className="biz-stack">
-      <BusinessRelated
-        orgId={view.orgId}
-        active="sponsors"
-        include={SPONSOR_CRM_RELATED_INCLUDE}
-        ariaLabel="Related fundraising tools"
-      />
-
       <NextActions view={view} />
 
       <section className="app-card soft-panel biz-pipeline-goal">
@@ -236,13 +227,7 @@ export function SponsorPipelinePanel({
               ? "Add a partner below, run source-linked research, or open Fundraisers and Grants. Pipeline totals only reflect recorded contributions."
               : "A finance lead adds CRM rows. You can still open related fundraising tools while the board is empty."
           }
-        >
-          <BusinessRelated
-            orgId={view.orgId}
-            include={["fundraisers", "grants", "placements", "finance-ai"]}
-            ariaLabel="Empty CRM next links"
-          />
-        </EmptyState>
+        />
       ) : null}
 
       {reminders.length ? (
@@ -511,13 +496,6 @@ export function SponsorPipelinePanel({
         </section>
       ) : null}
 
-      <div className="biz-detail-link">
-        <span>Need packages, walls, or recognition surfaces?</span>
-        <a href={`/business?tab=placements&orgId=${encodeURIComponent(view.orgId)}`}>Partner packages →</a>
-        <a href={`/sponsor-suite?orgId=${encodeURIComponent(view.orgId)}`}>Sponsor Suite →</a>
-        <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit →</a>
-        <a href={`/business?tab=sponsorship&orgId=${encodeURIComponent(view.orgId)}`}>Sponsorship one-pager →</a>
-      </div>
     </div>
   );
 }

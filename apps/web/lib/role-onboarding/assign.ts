@@ -90,9 +90,14 @@ export function assignOnboardingTracks(input: AssignInput): AssignedTrack[] {
 
   pushUnique(out, seen, "welcome", "welcome", "Everyone starts here");
 
-  const role = input.teamRole ? normalize(input.teamRole) : "";
-  if (role && ROLE_TRACK[role]) {
-    pushUnique(out, seen, ROLE_TRACK[role], "role", `From your team role (${input.teamRole})`);
+  const roles = String(input.teamRole ?? "")
+    .split(/[\s,|/]+/)
+    .map(normalize)
+    .filter(Boolean);
+  for (const role of roles) {
+    if (ROLE_TRACK[role]) {
+      pushUnique(out, seen, ROLE_TRACK[role], "role", `From your team role (${role})`);
+    }
   }
 
   const focus = input.primaryFocus ? normalize(input.primaryFocus) : "";
@@ -112,9 +117,13 @@ export function assignOnboardingTracks(input: AssignInput): AssignedTrack[] {
     }
   }
 
-  if (input.crewRole) {
-    for (const trackKey of matchSubteamTracks(input.crewRole.replaceAll("_", " "))) {
-      pushUnique(out, seen, trackKey, "role", `From your crew role (${input.crewRole})`);
+  const crews = String(input.crewRole ?? "")
+    .split(/[\s,|/]+/)
+    .map((crew) => crew.trim())
+    .filter(Boolean);
+  for (const crew of crews) {
+    for (const trackKey of matchSubteamTracks(crew.replaceAll("_", " "))) {
+      pushUnique(out, seen, trackKey, "role", `From your crew role (${crew})`);
     }
   }
 

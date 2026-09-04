@@ -104,14 +104,28 @@ export function officialAgentRunsUrl(origin: string = OFFICIAL_FREEBUFF_ORIGIN):
   return `${origin.replace(/\/+$/, "")}/api/v1/agent-runs`;
 }
 
-export function attachOfficialRunToChatBody(
-  body: string,
-  run: { runId: string; instanceId?: string; clientId?: string; model?: string },
-): string {
+/** Official Freebuff is not an OpenAI tools endpoint — drop function-calling keys. */
+export function stripOfficialChatTools(body: string): string {
   try {
     const parsed = JSON.parse(body) as Record<string, unknown>;
-    parsed.runId = run.runId;
+    delete parsed.tools;
+    delete parsed.tool_choice;
+    delete parsed.functions;
+    delete parsed.function_call;
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
+}
+
+export function attachOfficialRunToChatBody(
+  body: string,
+  run: { runId?: string; instanceId?: string; clientId?: string; model?: string },
+): string {
+  try {
+    const parsed = JSON.parse(stripOfficialChatTools(body)) as Record<string, unknown>;
     parsed.costMode = "free";
+    if (run.runId) parsed.runId = run.runId;
     if (run.model) parsed.model = run.model;
     const messages = Array.isArray(parsed.messages)
       ? (parsed.messages as Array<{ role?: string; content?: unknown }>)
@@ -121,8 +135,8 @@ export function attachOfficialRunToChatBody(
       parsed.codebuff_metadata && typeof parsed.codebuff_metadata === "object"
         ? { ...(parsed.codebuff_metadata as Record<string, unknown>) }
         : {};
-    meta.run_id = run.runId;
     meta.cost_mode = "free";
+    if (run.runId) meta.run_id = run.runId;
     if (run.instanceId) meta.freebuff_instance_id = run.instanceId;
     if (run.clientId) meta.client_id = run.clientId;
     parsed.codebuff_metadata = meta;
@@ -321,14 +335,12 @@ export async function officialFreebuffChat(input: {
     origin,
     fetchImpl,
   });
-  const body = runId
-    ? attachOfficialRunToChatBody(input.body, {
-        runId,
-        instanceId: input.instanceId,
-        clientId: input.clientId,
-        model,
-      })
-    : input.body;
+  const body = attachOfficialRunToChatBody(input.body, {
+    runId: runId ?? undefined,
+    instanceId: input.instanceId,
+    clientId: input.clientId,
+    model,
+  });
   const response = await fetchImpl(officialChatUrl(origin), {
     method: "POST",
     headers: {

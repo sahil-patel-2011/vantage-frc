@@ -55,6 +55,8 @@ describe("SSRF guards for autonomous web fetch", () => {
   it("only allowlists public FRC doc hosts", () => {
     expect(isAllowlistedFetchHost("www.thebluealliance.com")).toBe(true);
     expect(isAllowlistedFetchHost("docs.wpilib.org")).toBe(true);
+    expect(isAllowlistedFetchHost("www.chiefdelphi.com")).toBe(true);
+    expect(isAllowlistedFetchHost("www.youtube.com")).toBe(true);
     expect(isAllowlistedFetchHost("evil.example.com")).toBe(false);
     expect(WEB_FETCH_HOST_ALLOWLIST.length).toBeGreaterThan(5);
   });

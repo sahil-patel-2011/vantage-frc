@@ -145,7 +145,7 @@ async function main(): Promise<number> {
       }
       if (models.length && !models.includes(config.model)) {
         // The single most common misconfiguration: the slug differs between proxy
-        // projects (deepseek/deepseek-v4-flash vs deepseek-v4-flash-free).
+        // projects (glm/glm-5.3-flash vs a local alias).
         warn(
           `FREE_RELAY_MODEL "${config.model}" is not in the relay's catalog`,
           "the proxy may coerce it, or every request may 404",

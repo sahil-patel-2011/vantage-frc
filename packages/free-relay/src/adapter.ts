@@ -11,12 +11,16 @@ import {
  * Adapter for background / Pi worker jobs. Prefers FREE_RELAY_* (Freebuff proxy on Pi),
  * then platform OPENROUTER_API_KEY free pool.
  */
-export function createFreeRelayChatAdapter(capability?: string): ChatAdapter {
+export function createFreeRelayChatAdapter(
+  capability?: string,
+  orgId?: string,
+  model?: string | null,
+): ChatAdapter {
+  const freeRelay = tryCreateFreeRelayAdapter({ capability, orgId, model });
+  if (freeRelay) return freeRelay;
+
   const groq = tryCreateGroqFreeAdapter({ capability });
   if (groq) return groq;
-
-  const freeRelay = tryCreateFreeRelayAdapter({ capability });
-  if (freeRelay) return freeRelay;
 
   const openrouter = tryCreateOpenRouterFreeAdapter({ capability });
   if (openrouter) return openrouter;
@@ -45,6 +49,7 @@ export const FREE_RELAY_FEATURES = new Set([
   "overnight_intel",
   "bugbot_scan",
   "bugbot",
+  "deep_game_analysis",
 ]);
 
 export function isFreeRelayFeature(feature: string | null | undefined): boolean {
@@ -54,6 +59,6 @@ export function isFreeRelayFeature(feature: string | null | undefined): boolean 
   return normalized.startsWith("bugbot");
 }
 
-export type FreeRelayJobKind = "memory_dream" | "overnight_intel" | "bugbot_scan";
+export type FreeRelayJobKind = "memory_dream" | "overnight_intel" | "bugbot_scan" | "deep_game_analysis";
 
 export type FreeRelayJobStatus = "queued" | "running" | "completed" | "failed" | "skipped";

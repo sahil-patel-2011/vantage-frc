@@ -4,6 +4,7 @@
 
 import {
   MARKETING_HUBS,
+  MARKETING_JOBS,
   MARKETING_PROBLEMS,
   MARKETING_SEASON,
   MARKETING_TRUST,
@@ -36,6 +37,30 @@ const PIPELINE = [
 export function HomeShowcase() {
   return (
     <>
+      <section className="lux-problem" id="what-it-is" aria-labelledby="lux-define-title">
+        <div className="lux-content">
+          <header className="lux-section-head">
+            <p className="lux-eyebrow">What it is</p>
+            <h2 id="lux-define-title">One workspace for the FRC season.</h2>
+            <p>
+              Mentors invite exact emails. Students open Competition, Team, Business, Build, AI, and Media. The same
+              event context follows every desk. There is no public directory and no DEMO workspace.
+            </p>
+          </header>
+          <ul className="lux-feature-grid lux-feature-grid-4">
+            {MARKETING_JOBS.map((job) => (
+              <li key={job.title}>
+                <span className="lux-card-icon">
+                  <MIcon name={job.icon} />
+                </span>
+                <strong>{job.title}</strong>
+                <span>{job.copy}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       <section className="lux-problem" aria-labelledby="lux-problem-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>

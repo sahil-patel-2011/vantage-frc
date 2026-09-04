@@ -22,9 +22,9 @@ import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
 import {
   KICKOFF_BUILD_RELATED_INCLUDE,
   kickoffNextActions,
-  kickoffPipelineLinks,
   shouldShowKickoffSummaryTiles,
 } from "../../lib/kickoff-related";
+import { DeepGameAnalysisPanel } from "./deep-analysis-panel";
 import { hubHref } from "../../lib/nav/hubs";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
@@ -50,6 +50,7 @@ function NextActionsPanel({
   priorityCount,
   openRuleCount,
   cadJobId,
+  teamNumber,
 }: {
   orgId?: string | null;
   seasonYear: number;
@@ -58,6 +59,7 @@ function NextActionsPanel({
   priorityCount: number;
   openRuleCount: number;
   cadJobId?: string | null;
+  teamNumber?: number | null;
 }) {
   const actions = kickoffNextActions({
     orgId,
@@ -67,6 +69,7 @@ function NextActionsPanel({
     priorityCount,
     openRuleCount,
     cadJobId,
+    teamNumber,
   });
   if (!actions.length) return null;
   return (
@@ -127,7 +130,6 @@ function IntelligenceSection({
   );
   const busy = busyKey != null;
   const selected = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
-  const pipeline = kickoffPipelineLinks({ orgId, cadJobId: selected?.cadJobId ?? null });
 
   const loadIntel = useCallback(async () => {
     try {
@@ -263,13 +265,6 @@ function IntelligenceSection({
             rules or fabricated match stats.
           </p>
         </div>
-        <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
-          {pipeline.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
       </header>
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
@@ -411,14 +406,6 @@ function IntelligenceSection({
                   </select>
                 </label>
               ) : null}
-              <nav className="kick-pipeline-links" aria-label="Open strategy and CAD">
-                <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-                  Strategy seeds
-                </a>
-                <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-                  {selected.cadJobId ? "Open CAD brief" : "CAD briefs"}
-                </a>
-              </nav>
             </div>
           </header>
 
@@ -527,12 +514,6 @@ function IntelligenceSection({
             >
               {selected.cadJobId ? "Create another CAD brief" : "Create CAD brief"}
             </button>
-            <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-              Open CAD
-            </a>
             <button
               type="button"
               className="kick-link danger"
@@ -758,7 +739,7 @@ function PrioritySection({
           title="No priorities yet"
           description="Generate a release summary above to seed Strategy priorities, or add capabilities manually."
         >
-          <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+          <a className="app-button" href={hubHref("/competition", "strategy", orgId)}>
             Open Strategy
           </a>
         </EmptyState>
@@ -1218,6 +1199,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         priorityCount={priorities.length}
         openRuleCount={summary.openQuestions}
         cadJobId={cadJobId}
+        teamNumber={view.context.teamNumber}
       />
 
       {showTiles ? (
@@ -1241,6 +1223,12 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         </section>
       ) : null}
 
+      <DeepGameAnalysisPanel
+        orgId={orgId}
+        seasonYear={year}
+        teamNumber={view.context.teamNumber}
+        role={view.context.role}
+      />
       <IntelligenceSection
         orgId={orgId}
         seasonYear={year}

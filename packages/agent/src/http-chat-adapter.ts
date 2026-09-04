@@ -43,6 +43,11 @@ export type HttpChatAdapterConfig = {
   capability?: string;
   /** Extra headers (OpenRouter HTTP-Referer / X-Title). Never log values. */
   extraHeaders?: Record<string, string>;
+  /**
+   * Official Freebuff does not implement OpenAI function-calling. Relay adapters
+   * set this false so chat/CAD/agent use Vantage's own tool loop.
+   */
+  supportsNativeTools?: boolean;
 };
 
 /**
@@ -110,7 +115,7 @@ async function fetchWithTimeout(
 export class HttpChatAdapter implements ChatAdapter {
   readonly provider: string;
   readonly model: string;
-  readonly supportsNativeTools = true;
+  readonly supportsNativeTools: boolean;
   private readonly apiKey: string;
   readonly baseUrl: string;
   private readonly kind: HttpChatAdapterConfig["provider"];
@@ -139,6 +144,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.capability = config.capability ?? "chat";
     this.systemPrompt = buildVantageChatSystemPrompt({ capability: this.capability });
     this.extraHeaders = config.extraHeaders ?? {};
+    this.supportsNativeTools = config.supportsNativeTools !== false;
   }
 
   async complete(input: {

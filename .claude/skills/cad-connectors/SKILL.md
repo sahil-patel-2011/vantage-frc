@@ -27,6 +27,30 @@ Use the **vantage-cad MCP** tools. Do not invent geometry. Prefer a **disposable
 6. For assemblies without FeatureScript: `onshape_body_details`, `onshape_create_assembly`,
    `onshape_add_assembly_instance`, `onshape_mate`, then `onshape_get_assembly`
 
+### Everything the native path covers
+
+Sketches (`rectangle`, `circle`, `polyline`, `points`), `onshape_extrude`, `onshape_revolve`,
+`onshape_boolean`, `onshape_fillet`, `onshape_chamfer`, `onshape_shell`, `onshape_hole`,
+`onshape_linear_pattern`, `onshape_circular_pattern`, `onshape_mirror`, `onshape_variable_list`,
+`onshape_variable_set`, `onshape_delete_feature`, plus the assembly tools above.
+
+Two need naming rather than guessing:
+
+- `onshape_revolve` — `axisSketchFeatureId` must be a sketch with **exactly one** line (the
+  centreline, in its own sketch).
+- `onshape_shell` — `openFace` is the world direction the removed face points: `+Z` (default), `-Z`,
+  `±X`, `±Y`.
+
+Leave dimensions behind as variables (`onshape_variable_set`) whenever a number is likely to change.
+A human retypes a variable; they cannot retype a hard-coded extrude as easily.
+
+### Do not use the `cad_part_*` FeatureScript pipeline
+
+It ships **disabled** and `cad_part_push` will refuse. It builds the part as one generated custom
+feature, which a human cannot open, re-sketch, or insert a feature into. Build with the native tools
+above instead. Only if the user explicitly asks for it, and accepts an uneditable part, does
+`VANTAGE_CAD_ALLOW_FEATURESCRIPT=1` turn it back on.
+
 ## Fusion
 
 1. `fusion_status` must be reachable on `127.0.0.1:32145`

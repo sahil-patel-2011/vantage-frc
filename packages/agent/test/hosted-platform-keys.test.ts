@@ -4,8 +4,11 @@ import {
   HOSTED_ANTHROPIC_SONNET,
   OPENROUTER_FREE_MODEL,
   describeFreeRelayRefusal,
+  freeRelayExtraHeaders,
   freeRelayRefusal,
+  parseFreeRelayBaseUrls,
   readFreeRelayConfig,
+  readFreeRelayConfigs,
   tryCreateFreeRelayAdapter,
   tryCreateGroqFreeAdapter,
   tryCreateHostedAnthropicAdapter,
@@ -39,10 +42,17 @@ describe("hosted platform keys", () => {
     };
     expect(readFreeRelayConfig(env)).toMatchObject({
       baseUrl: "http://pi.local:8080/v1",
-      model: "freebuff",
+      model: "glm/glm-5.3-flash",
       providerLabel: "free-relay",
     });
     expect(tryCreateFreeRelayAdapter({ env })?.provider).toBe("openai-compatible");
+    const tagged = tryCreateFreeRelayAdapter({
+      env: { ...env, FREE_RELAY_API_KEY: "vr_test" },
+      orgId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    });
+    expect(tagged?.provider).toBe("openai-compatible");
+    expect(tagged?.supportsNativeTools).toBe(false);
+    expect(tryCreateFreeRelayAdapter({ env, capability: "cad" })?.supportsNativeTools).toBe(false);
   });
 
   it("refuses an internet-reachable relay that carries no key", () => {
@@ -58,6 +68,28 @@ describe("hosted platform keys", () => {
     expect(
       readFreeRelayConfig({ ...exposed, FREE_RELAY_API_KEY: "relay-secret" }),
     ).toMatchObject({ baseUrl: "https://relay.example.org/v1", apiKey: "relay-secret" });
+  });
+
+  it("accepts a comma-separated pool of Pi tunnels and tags team 6925 as default-fast", () => {
+    expect(
+      parseFreeRelayBaseUrls("https://a.trycloudflare.com/v1, https://b.trycloudflare.com/v1/"),
+    ).toEqual(["https://a.trycloudflare.com/v1", "https://b.trycloudflare.com/v1"]);
+    const env = {
+      FREE_RELAY_BASE_URL: "https://a.trycloudflare.com/v1,https://b.trycloudflare.com/v1",
+      FREE_RELAY_API_KEY: "relay-secret",
+    };
+    expect(readFreeRelayConfigs(env).map((row) => row.baseUrl)).toEqual([
+      "https://a.trycloudflare.com/v1",
+      "https://b.trycloudflare.com/v1",
+    ]);
+    expect(readFreeRelayConfig(env)?.baseUrl).toBe("https://a.trycloudflare.com/v1");
+    expect(freeRelayExtraHeaders({ capability: "chat", orgId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", teamNumber: 6925 })).toMatchObject({
+      "x-vantage-feature": "chat",
+      "x-vantage-org-id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "x-vantage-team-number": "6925",
+      "x-vantage-priority": "1",
+    });
+    expect(freeRelayExtraHeaders({ capability: "chat", teamNumber: 254 })["x-vantage-priority"]).toBeUndefined();
   });
 
   it("still allows a keyless relay on loopback or the LAN, where nothing off-box can reach it", () => {

@@ -3,10 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
-import ReportBugButton from "./report-bug-button";
 import {
   ISLAND_TAB_CATALOG,
-  LOGISTICS_DEEP_LINKS,
   ORG_EXEMPT_HREFS,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
@@ -14,9 +12,7 @@ import {
   navTitleForPath,
   withOrgHref,
   withSelectedOrgHref,
-  type ProductNavGroup,
 } from "../lib/nav/product-nav";
-import { hubHref, hubPrimaryTabs, navHubByLabel } from "../lib/nav/hubs";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
@@ -70,22 +66,6 @@ type Me = {
 };
 
 const groups = PRODUCT_NAV_GROUPS;
-
-function drawerNestedItems(group: ProductNavGroup): Array<{ href: string; label: string }> {
-  if (group.label === "Home") return [];
-  if (group.label === "Logistics") {
-    return [
-      { href: "/logistics", label: "Travel & hotels" },
-      ...LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label })),
-    ];
-  }
-  const hub = navHubByLabel(group.label);
-  if (!hub) return [];
-  return hubPrimaryTabs(hub).map((tab) => ({
-    href: hubHref(hub.href, tab.id),
-    label: tab.label,
-  }));
-}
 
 function formatMembershipLabel(row: MembershipOption): string {
   const team =
@@ -142,7 +122,6 @@ export default function AppShell() {
   const router = useRouter();
   const [orgId, setOrgId] = useState("");
   const [open, setOpen] = useState(false);
-  const [expandedHub, setExpandedHub] = useState<string | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
@@ -157,7 +136,6 @@ export default function AppShell() {
   const [islandEditorOpen, setIslandEditorOpen] = useState(false);
   const [islandSaving, setIslandSaving] = useState(false);
   const [islandMessage, setIslandMessage] = useState("");
-  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
@@ -179,10 +157,6 @@ export default function AppShell() {
   const activeGroupLabel = activeNav?.group.label;
 
   useEffect(() => {
-    if (open) setExpandedHub(activeGroupLabel ?? "Home");
-  }, [open, activeGroupLabel]);
-
-  useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
     document.body.classList.add("has-app-shell");
@@ -192,10 +166,10 @@ export default function AppShell() {
   useEffect(() => {
     document.body.classList.toggle(
       "soft-nav-open",
-      open || commandOpen || accountMenuOpen || islandEditorOpen || workspaceOpen,
+      open || commandOpen || accountMenuOpen || islandEditorOpen,
     );
     return () => document.body.classList.remove("soft-nav-open");
-  }, [open, commandOpen, accountMenuOpen, islandEditorOpen, workspaceOpen]);
+  }, [open, commandOpen, accountMenuOpen, islandEditorOpen]);
 
   useEffect(() => {
     setPathSearch(window.location.search);
@@ -206,7 +180,6 @@ export default function AppShell() {
     setCommandOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-    setWorkspaceOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -405,7 +378,6 @@ export default function AppShell() {
         setOpen(false);
         setAccountMenuOpen(false);
         setIslandEditorOpen(false);
-        setWorkspaceOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -591,7 +563,6 @@ export default function AppShell() {
     setCommandOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-    setWorkspaceOpen(false);
   }, []);
 
   const switchWorkspaceHref = useCallback(
@@ -742,8 +713,6 @@ export default function AppShell() {
         </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
-          {/* Inline (not floating) so it never overlays the four-app island on mobile. */}
-          <ReportBugButton variant="inline" />
           <button
             className="soft-icon-btn soft-search-btn"
             type="button"
@@ -822,24 +791,12 @@ export default function AppShell() {
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Settings
                 </a>
-                <a role="menuitem" href="/account?tab=appearance" onClick={() => setAccountMenuOpen(false)}>
-                  Appearance
-                </a>
-                <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
-                  Security
-                </a>
-                <a role="menuitem" href="/docs" onClick={() => setAccountMenuOpen(false)}>
-                  App manual
-                </a>
-                <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
-                  Support tickets
-                </a>
                 <a role="menuitem" href="/report-bug" onClick={() => setAccountMenuOpen(false)}>
                   Report a bug
                 </a>
                 {me.platformAdmin ? (
                   <a role="menuitem" href="/admin" onClick={() => setAccountMenuOpen(false)}>
-                    Global Team Manager
+                    Admin
                   </a>
                 ) : null}
                 <button
@@ -874,11 +831,13 @@ export default function AppShell() {
               <span>{eventFocus.detail}</span>
             </div>
             <small>{eventFocus.freshness}</small>
-            <nav aria-label="Next match actions">
-              {eventFocus.actions.map((action) => (
-                <a className={action.emphasis} href={action.href} key={action.label}>{action.label}</a>
-              ))}
-            </nav>
+            {eventFocus.actions[0] ? (
+              <nav aria-label="Next match actions">
+                <a className={eventFocus.actions[0].emphasis} href={eventFocus.actions[0].href}>
+                  {eventFocus.actions[0].label}
+                </a>
+              </nav>
+            ) : null}
             <button
               className="soft-focus-collapse"
               type="button"
@@ -913,203 +872,41 @@ export default function AppShell() {
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
-            <span className="soft-avatar">
-              {me.image ? (
-                <img src={me.image} alt="" />
-              ) : (
-                initial
-              )}
-            </span>
+          <div className="soft-org-chip" title={orgLabel} data-workspace="label">
+            <Icon name="users" />
             <div>
-              <strong>{accountLabel ?? "Account"}</strong>
-              <span>{orgLabel}</span>
+              <strong>{orgLabel}</strong>
+              <span>{orgId ? rolePlanCue : "Pick a team"}</span>
             </div>
-          </a>
-          <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
-            <button
-              type="button"
-              className="soft-org-chip soft-org-chip-btn"
-              title={orgLabel}
-              aria-expanded={workspaceOpen}
-              aria-controls="soft-workspace-picker"
-              onClick={() => setWorkspaceOpen((value) => !value)}
-            >
-              <Icon name="users" />
-              <div>
-                <strong>{orgLabel}</strong>
-                <span>{orgId ? rolePlanCue : "Pick a team"}</span>
-              </div>
-              <span className={`soft-nav-caret${workspaceOpen ? " open" : ""}`} aria-hidden="true">
-                <Icon name="chevron" />
-              </span>
-            </button>
-            {workspaceOpen ? (
-              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Team workspaces">
-                {memberships.length === 0 ? (
-                  <p className="soft-workspace-empty">No team yet — open an invite from email.</p>
-                ) : (
-                  orderedMemberships.map((row) => (
-                    <a
-                      key={row.orgId}
-                      role="option"
-                      aria-selected={row.orgId === orgId}
-                      href={switchWorkspaceHref(row.orgId)}
-                      onClick={() => {
-                        onWorkspaceSwitch(row.orgId);
-                        setWorkspaceOpen(false);
-                        setOpen(false);
-                      }}
-                    >
-                      <strong>{formatMembershipLabel(row)}</strong>
-                      <span>
-                        {row.role ?? "member"}
-                        {row.orgId === orgId ? " · active" : ""}
-                      </span>
-                    </a>
-                  ))
-                )}
-                <div className="soft-workspace-links">
-                  <a href={withOrgHref("/workspace", orgId)} onClick={() => setOpen(false)}>
-                    Workspace
-                  </a>
-                  <a href="/invite" onClick={() => setOpen(false)}>
-                    Invite
-                  </a>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
-        <button
-          type="button"
-          className="soft-drawer-search"
-          onClick={() => {
-            setOpen(false);
-            setCommandOpen(true);
-          }}
-        >
-          <Icon name="search" />
-          <span>
-            <strong>Find any page or action</strong>
-            <small>Search tools, tasks, inventory, and team knowledge</small>
-          </span>
-          {shortcutHint ? <kbd aria-hidden="true">{shortcutHint}</kbd> : null}
-        </button>
         <nav className="soft-drawer-flat" aria-label="Hubs">
           {visibleNavGroups.map((group) => {
             const item = group.items[0];
             if (!item || item.state === "planned") return null;
             const isActive = activeGroupLabel === group.label;
-            const nested = drawerNestedItems(group).filter((entry) => navHrefAllowed(entry.href));
-            const expanded = expandedHub === group.label;
             const toneStyle = { ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg };
-            if (nested.length === 0) {
-              return (
-                <a
-                  key={group.label}
-                  className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
-                  aria-current={
-                    activeNav?.item.href === item.href && activeNav.group.label === group.label
-                      ? "page"
-                      : undefined
-                  }
-                  href={withOrgHref(item.href, orgId)}
-                  onClick={() => setOpen(false)}
-                  style={toneStyle}
-                >
-                  <i>
-                    <Icon name={group.icon} />
-                  </i>
-                  <span>{item.label}</span>
-                </a>
-              );
-            }
-            const hub = navHubByLabel(group.label);
-            const liveTab = new URLSearchParams(pathSearch.replace(/^\?/, "")).get("tab");
-            const panelId = `soft-nav-items-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
             return (
-              <div
+              <a
                 key={group.label}
-                className={`soft-nav-group${isActive ? " is-active" : ""}`}
+                className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
+                aria-current={
+                  activeNav?.item.href === item.href && activeNav.group.label === group.label
+                    ? "page"
+                    : undefined
+                }
+                href={withOrgHref(item.href, orgId)}
+                onClick={() => setOpen(false)}
                 style={toneStyle}
               >
-                {/* Destination and disclosure are separate controls: hubs with a
-                    single child (Build, AI) must open in one tap, not two. */}
-                <div className="soft-nav-heading soft-nav-heading-row">
-                  <span className="soft-nav-hub-lead">
-                    <a
-                      className="soft-nav-hub-link"
-                      href={withOrgHref(item.href, orgId)}
-                      onClick={() => setOpen(false)}
-                    >
-                      <i>
-                        <Icon name={group.icon} />
-                      </i>
-                      <span>{group.label}</span>
-                    </a>
-                  </span>
-                  <em className="soft-nav-count">{nested.length}</em>
-                  <button
-                    type="button"
-                    className="soft-icon-btn soft-nav-heading-toggle"
-                    aria-expanded={expanded}
-                    aria-controls={panelId}
-                    aria-label={`${expanded ? "Hide" : "Show"} ${group.label} pages`}
-                    onClick={() => setExpandedHub(expanded ? null : group.label)}
-                  >
-                    <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
-                      <Icon name="chevron" />
-                    </span>
-                  </button>
-                </div>
-                {expanded ? (
-                  <div className="soft-nav-items" id={panelId}>
-                    {nested.map((entry) => {
-                      const hrefTab = new URLSearchParams(entry.href.split("?")[1] ?? "").get("tab");
-                      const pathOnly = entry.href.split("?")[0] ?? entry.href;
-                      const onThisHub = pathname === pathOnly || pathname === item.href;
-                      const isCurrent =
-                        onThisHub &&
-                        (liveTab === hrefTab ||
-                          (!liveTab && hrefTab === hub?.defaultTab) ||
-                          (group.label === "Logistics" && pathname === pathOnly));
-                      return (
-                        <a
-                          key={entry.href}
-                          href={withOrgHref(entry.href, orgId)}
-                          aria-current={isCurrent ? "page" : undefined}
-                          onClick={() => setOpen(false)}
-                        >
-                          {entry.label}
-                        </a>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
+                <i>
+                  <Icon name={group.icon} />
+                </i>
+                <span>{item.label}</span>
+              </a>
             );
           })}
         </nav>
-        {me.platformAdmin ? (
-          <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={() => setOpen(false)}>
-            <i>
-              <Icon name="grid" />
-            </i>
-            <span>Team manager</span>
-          </a>
-        ) : null}
-        <footer className="soft-drawer-foot">
-          <a href="/account" onClick={() => setOpen(false)}>
-            Account
-          </a>
-          <button type="button" onClick={() => openIslandEditor()}>
-            Customize island
-          </button>
-          <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
-            {signingOut ? "Signing out…" : "Sign out"}
-          </button>
-        </footer>
       </aside>
 
       <nav
@@ -1149,16 +946,6 @@ export default function AppShell() {
             ) : null}
           </a>
         ))}
-        <button
-          type="button"
-          className="soft-island-more"
-          aria-label="Open all apps"
-          aria-expanded={open}
-          onClick={() => setOpen(true)}
-        >
-          <Icon name="grid" />
-          <span>All</span>
-        </button>
       </nav>
 
       {islandEditorOpen ? (

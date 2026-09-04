@@ -5,15 +5,16 @@ instead of a paid provider.
 
 ## Why a box at all
 
-FreeBuff (Codebuff's free coding agent) exposes its models **only through its official
-CLI**. The backend fingerprints traffic and rejects direct API calls with
-`403 free_mode_cli_required`. So you cannot point Vantage at FreeBuff directly — you need
-an always-on process that replicates the CLI's request envelope and holds the session.
-That process is the only reason a Pi is involved.
+FreeBuff (Codebuff's free coding agent) exposes its models **through the official
+Coder UI / CLI session**. The backend fingerprints traffic and rejects raw API calls
+with `403 free_mode_cli_required`. Vantage does not impersonate that client. You keep
+**Freebuff Coder UI signed in on the Pi**; the Vantage layer only forwards OpenAI-shaped
+requests to that UI's local `/v1`. That logged-in session is the only reason a Pi is
+involved.
 
-The Pi does **no inference**. DeepSeek V4 is a several-hundred-billion-parameter model; the
-Pi is a credential holder and traffic shaper. Its CPU is irrelevant — its uptime and your
-home upload bandwidth are what matter.
+The Pi does **no inference**. The unmetered models (GLM 5.3 Flash, MiMo 2.5) run in
+FreeBuff's cloud; the Pi is a credential holder and traffic shaper. Its CPU is irrelevant —
+its uptime and your home upload bandwidth are what matter.
 
 If you would rather not run a box, an OpenAI-compatible hosted gateway with a real API key
 (for example OpenCode Zen's free tier) drops into the same `FREE_RELAY_*` variables with no
@@ -34,14 +35,36 @@ there is no source range to allowlist.
 
 ## Setup
 
+From a Raspberry Pi Connect remote shell on the Pi 5 (see `docs/FREE_RELAY_CONNECT.md`):
+
+The platform box is named **frcvantagefreebuff relay**. Each granted team gets its
+own `org-<uuid>/` coding folder on that box. Teams without a grant never use this
+path — they stay on API keys or included credits. Granted teams can also connect
+their own Pi and Freebuff account (Team → AI keys walkthrough).
+
+Sign in once **on the Pi** (`npx --yes @codebuff/cli login`). That session lives
+in `~/.config/manicode/credentials.json` and does not need a laptop or a GUI.
+Then:
+
 ```sh
-FREEBUFF_AUTH_TOKENS=eyJ... bash scripts/pi/install-free-relay.sh
+bash scripts/pi/connect-bootstrap.sh
 ```
 
+Or, already in a checkout:
+
+```sh
+bash scripts/pi/install-free-relay.sh
+```
+
+That starts the Vantage layer on `:8080` and points it at Coder UI's local `/v1`
+(default `http://127.0.0.1:3457`). No FreeBuff token is pasted into the installer.
+Vantage (and the tunnel) talk only to `:8080`. Override with `FREEBUFF_UPSTREAM_URL`
+if the UI listens on `:8080` or another port.
+
 The installer generates a `FREE_RELAY_API_KEY`, writes `.env.free-relay` (chmod 600,
-gitignored), starts the proxy bound to `127.0.0.1` with that key as its required client
-key, verifies that a keyless request is *refused*, and installs the sweep as a systemd
-unit. It is idempotent and never overwrites an existing key.
+gitignored), starts the Vantage layer bound to `127.0.0.1` with that key as its
+required client key, verifies that a keyless request is *refused*, and installs the
+sweep as a systemd unit. It is idempotent and never overwrites an existing key.
 
 Then, only if you want interactive chat on the relay:
 
@@ -52,16 +75,23 @@ cloudflared tunnel route dns vantage-relay relay.yourdomain.com
 cloudflared tunnel run --url http://127.0.0.1:8080 vantage-relay
 ```
 
+Raspberry Pi Connect is how you operate the box. It is not this tunnel.
+
 and set on the Vercel project:
 
 ```
-FREE_RELAY_BASE_URL=https://relay.yourdomain.com/v1
+FREE_RELAY_BASE_URL=https://relay.yourdomain.com/v1,https://second-pi.yourdomain.com/v1
 FREE_RELAY_API_KEY=<the generated key>
-FREE_RELAY_MODEL=deepseek/deepseek-v4-flash
+FREE_RELAY_MODEL=glm/glm-5.3-flash
 FREE_RELAY_PROVIDER=freebuff
 ```
 
-`FREE_RELAY_API_KEY` must match one of the proxy's `API_KEYS`. Vantage **refuses** a
+Comma-separate one `/v1` URL per Pi so Vantage load-balances across both official
+Freebuff sessions. `FREE_RELAY_MODEL` is the default slug (`deepseek/deepseek-v4-flash`,
+`glm/glm-5.3-flash`, or `mimo/mimo-2.5`). Team pickers offer those three free models,
+with DeepSeek V4 Flash first. Unknown slugs clamp to DeepSeek V4 Flash.
+
+`FREE_RELAY_API_KEY` must match the Pi layer key. Vantage **refuses** a
 non-loopback `FREE_RELAY_BASE_URL` with no key (`readFreeRelayConfig` returns null and
 `/api/admin/ai-grants` explains why at grant time), because an internet-reachable relay
 without a key is an open pass-through to your FreeBuff account for anyone who finds the
@@ -78,9 +108,9 @@ chain Vantage actually uses rather than a hand-rolled `curl`:
 
 - resolves the relay config through `readFreeRelayConfig`, so a refused config fails here
   with the reason instead of at request time;
-- lists `/v1/models` and **warns when `FREE_RELAY_MODEL` is not in the catalog** — the slug
-  differs between proxy projects (`deepseek/deepseek-v4-flash` vs `deepseek-v4-flash-free`)
-  and a mismatch otherwise shows up as every request 404ing;
+- lists `/v1/models` and **warns when `FREE_RELAY_MODEL` is not in the catalog** — the
+  forever-free slugs are `glm/glm-5.3-flash` and `mimo/mimo-2.5`, and a mismatch otherwise
+  shows up as every request 404ing;
 - asserts a keyless request is **refused**, and fails loudly if the relay is an open
   pass-through to your FreeBuff account;
 - runs a real completion through `tryCreateFreeRelayAdapter` + `HttpChatAdapter`, so a pass
@@ -97,21 +127,16 @@ to get backwards. Per Codebuff's README:
 
 | Model | Metering |
 | --- | --- |
-| **GLM 5.3 Flash** | **Unmetered — costs no session at all.** Full-mode default. |
-| **MiMo 2.5** | **Unmetered — costs no session at all.** Limited-mode default. |
-| DeepSeek V4 Flash 07/31 | Draws on your normal daily sessions; pauses during peak hours. |
+| **DeepSeek V4 Flash** | **Free, unlimited, and fast request routing.** Vantage default. |
+| **GLM 5.3 Flash** | **Unmetered — costs no session at all.** |
+| **MiMo 2.5** | **Unmetered — costs no session at all.** |
 | DeepSeek V4 Pro | Retired from the catalog. |
 
-So if the goal is "always on, never runs out," `FREE_RELAY_MODEL` wants one of the two
-**unmetered** models — not DeepSeek V4 Flash, which is the one that spends sessions. Region
-matters too: full access is region-gated, and outside those regions (or on a VPN) you get
-limited mode, currently MiMo 2.5 with three one-hour sessions a day, earnable up to seven.
-
-Do not guess the slug. Each proxy project namespaces model ids differently
-(`deepseek/deepseek-v4-flash` vs `deepseek-v4-flash-free` vs a `glm→flash` alias), so run
-`npm run free-relay:verify` and use an id from the `/v1/models` catalog it prints. The
-verifier warns when `FREE_RELAY_MODEL` is absent from that catalog, which is the difference
-between a working relay and every request 404ing.
+Vantage forwards the picker slugs (`deepseek/deepseek-v4-flash`, `glm/glm-5.3-flash`,
+and `mimo/mimo-2.5`).
+Run `npm run free-relay:verify` and use an id from the `/v1/models` catalog it prints if
+the proxy names them differently. The verifier warns when `FREE_RELAY_MODEL` is absent
+from that catalog, which is the difference between a working relay and every request 404ing.
 
 ## Two product-level caveats
 
@@ -131,14 +156,29 @@ the relay for background jobs over interactive chat if that clause is unresolved
 
 ## Granting it to a team
 
-`/admin/ai-grants` → open a `platform_relay` window for one team for N days. Teams without
-a grant are untouched and keep using their own keys. A team's own BYOK keys always take
-precedence over the relay, so lending someone the relay never overrides a key they pay for.
+`/admin/ai-grants` → **None / 100 requests / Unlimited** for one team. None revokes the
+active `platform_relay` window. 100 requests grants 100 credits plus a year of relay.
+Unlimited opens the relay window without putting them on the credit plan. Teams without
+a grant are untouched and keep using their own keys.
+
+The team can turn **Use platform Free AI** off under Team → AI API keys. When that
+toggle is on (the default after a grant), chat, the CAD / design assistant, Bugbot,
+agent loops, and Pi background jobs go to FreeBuff *before* team keys. Isolation is
+per-request: Vantage tags every completion with exactly one `org_id` and drops context
+that names another team. The Pi holds one session; it never becomes shared memory.
+Chat, CAD words, and agents share the box concurrently (default 16 in-flight). Onshape
+and Fusion tools still talk to CAD hosts — only the assistant text uses FreeBuff.
+
+Watch the box from `/admin/free-relay`: connect a named Pi, probe tok/s out, and see
+tokens in/out for the UTC day. Those numbers are device totals. Per-team tokens stay
+on the home dashboard and `/admin/analytics`.
+
+The model picker offers DeepSeek V4 Flash (free, unlimited, fast), GLM 5.3 Flash,
+and MiMo 2.5. Unknown slugs still clamp to DeepSeek V4 Flash.
 
 ## What happens when it breaks
 
-Assume it will: metered models consume daily sessions, DeepSeek V4 Flash "pauses during
-peak hours" per Codebuff's own README, and the box is on a home connection.
+Assume it will: the box is on a home connection, and a relay can still 429 or drop.
 `RelayFailoverChatAdapter` treats that as normal. On an unreachable host
 (`ECONNREFUSED`, dead tunnel DNS, TLS failure, timeout), a spent pool (402/429/503), or a
 rejected operator token (401/403, including `free_mode_cli_required`), it falls through to
@@ -173,16 +213,21 @@ If every upstream fails, the error names each attempt so you can tell "Pi asleep
 ```sh
 npm run free-relay:sweep     # one pass, prints backend + counts
 npm run free-relay:daemon    # loop on FREE_RELAY_INTERVAL_MS (default 5m)
+journalctl -u vantage-pi-layer -f
 journalctl -u vantage-free-relay -f
-docker logs vantage-freebuff-proxy
 ```
+
+Coder UI must stay signed in on the box. The layer only forwards to that UI’s `/v1`.
 
 The sweep logs `backend=<provider>@<url>` so you can confirm which upstream it resolved
 without printing any key.
 
 ## Job kinds
 
-`memory_dream` is implemented. `overnight_intel` and `bugbot_scan` are enqueueable but
+`memory_dream` is implemented. `deep_game_analysis` is implemented for FRC team **6925
+only** — one job thinks continuously for five wall-clock hours on Freebuff Coder UI,
+fetching teasers/theme/community text, comparing it to official past games, and
+storing a labeled guess. It does not schedule hourly loops. `overnight_intel` and `bugbot_scan` are enqueueable but
 marked `skipped` with `reason: not_implemented_on_pi_yet` — they are not silently faked.
 Neither is a wiring job: bugbot needs a GitHub repo and token that `free_relay_jobs.metadata`
 does not model, and overnight intel's compute is currently bound to web-only nav helpers.

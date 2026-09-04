@@ -26,6 +26,11 @@ export const WEB_FETCH_HOST_ALLOWLIST: readonly string[] = [
   "frc-events.firstinspires.org",
   "www.first.org",
   "first.org",
+  "www.chiefdelphi.com",
+  "chiefdelphi.com",
+  "www.youtube.com",
+  "youtube.com",
+  "youtu.be",
 ];
 
 export function isBlockedPrivateIp(address: string): boolean {

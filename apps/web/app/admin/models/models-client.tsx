@@ -27,7 +27,7 @@ export default function ModelsClient() {
     const data = await response.json(); setMessage(response.ok ? "Configuration saved." : data.error);
     if (response.ok) await load();
   }
-  return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / MODEL CONTROL</span><h1>Provider vault + router</h1><p className="app-muted">Encrypt platform keys, route models, then smoke Soft-UI AI. Keys never appear in Partners CRM.</p></div><nav className="admin-related" aria-label="AI entry points" style={{display:"flex",flexWrap:"wrap",gap:8}}><a className="app-button secondary" href="/admin">Teams</a><a className="app-button secondary" href="/admin/partners">Partners</a><a className="app-button secondary" href="/admin/sponsored">Sponsored AI</a><a className="app-button" href="/ai">Soft-UI AI hub</a><a className="app-button secondary" href="/ai?tab=chat">Test chat</a></nav></header>
+  return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / MODEL CONTROL</span><h1>Provider vault + router</h1><p className="app-muted">Encrypt platform keys, route models, then smoke Soft-UI AI. Keys never appear in Partners CRM.</p></div></header>
     <section className="admin-grid">
       <form className="intel-panel" onSubmit={(e) => { e.preventDefault(); void post({ action: "providerKey", ...key }); setKey({ ...key, apiKey: "" }); }}>
         <span className="eyebrow">ENCRYPTED PLATFORM KEY</span><p>Keys are encrypted before storage and are never returned to this screen.</p>

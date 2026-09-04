@@ -17,6 +17,7 @@ describe("buildHistoryContext", () => {
       history: [],
       message: "Scout 254 this weekend",
       estimatedTokens: 0,
+      droppedDigest: "",
     });
     expect(buildHistoryContext({ turns: null, message: "  Hello  " }).history).toEqual([]);
     expect(buildHistoryContext({ message: "Hello" }).history).toEqual([]);
@@ -88,6 +89,8 @@ describe("buildHistoryContext", () => {
     ]);
     expect(bounded.estimatedTokens).toBeLessThanOrEqual(220);
     expect(bounded.estimatedTokens).toBeLessThanOrEqual(CHAT_HISTORY_TOKEN_BUDGET);
+    expect(bounded.droppedDigest).toMatch(/^user: 0:/);
+    expect(bounded.droppedDigest).not.toContain("27:");
   });
 
   it("yields empty history when even the newest prior turn exceeds the budget", () => {
@@ -99,5 +102,7 @@ describe("buildHistoryContext", () => {
     expect(context.history).toEqual([]);
     expect(context.message).toBe("Short follow-up");
     expect(context.estimatedTokens).toBe(0);
+    expect(context.droppedDigest).toContain("assistant: ");
+    expect(context.droppedDigest).toContain("y".repeat(20));
   });
 });

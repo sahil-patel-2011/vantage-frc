@@ -5,11 +5,15 @@ import {
   createdByScript,
   cylindricalFacesScript,
   evaluateOnshapeQuery,
+  facesFacingScript,
   parallelEdgesScript,
   resolveOnshapeAxisIds,
   resolveOnshapeEdgeIds,
+  resolveOnshapeFaceIds,
+  resolveOnshapeSketchLineIds,
   resolveOnshapeSolidBodyIds,
   resolveOnshapeVertexIds,
+  sketchLinesScript,
   type OnshapeResolveHttp,
 } from "../src/onshape-resolve";
 
@@ -62,9 +66,46 @@ describe("script builders", () => {
     expect(script).toContain("vector(0, 0, 1)");
   });
 
+  it("filters shell faces by the direction they point", () => {
+    const script = facesFacingScript("FExtrude", [0, 0, 1]);
+    expect(script).toContain("GeometryType.PLANE");
+    expect(script).toContain("evFaceTangentPlane");
+    expect(script).toContain("vector(0, 0, 1)");
+    // A face pointing the other way must not be swept up with the one asked for.
+    expect(script).toContain("dot(plane.normal, axis) > 0.99");
+    expect(facesFacingScript("FExtrude", [0, 0, -1])).toContain("vector(0, 0, -1)");
+  });
+
+  it("asks a sketch only for its straight lines when finding a revolve axis", () => {
+    const script = sketchLinesScript("FSketchAxis");
+    expect(script).toContain('qCreatedBy(makeId("FSketchAxis"), EntityType.EDGE)');
+    expect(script).toContain("GeometryType.LINE");
+  });
+
   it("refuses a feature id that could inject FeatureScript", () => {
     expect(() => createdByScript('X"); doSomething("', "EDGE")).toThrow(/not a valid Onshape feature id/i);
     expect(() => parallelEdgesScript("", [0, 0, 1])).toThrow(/not a valid Onshape feature id/i);
+    expect(() => facesFacingScript('X"); evil("', [0, 0, 1])).toThrow(/not a valid Onshape feature id/i);
+    expect(() => sketchLinesScript('X"); evil("', )).toThrow(/not a valid Onshape feature id/i);
+  });
+});
+
+describe("shell and revolve resolvers", () => {
+  it("returns the faces pointing the requested way", async () => {
+    const http = vi.fn(async () => fsResponse(["JFC", "JFD"])) as unknown as OnshapeResolveHttp;
+    const ids = await resolveOnshapeFaceIds(http, DOC, { featureId: "FExtrude", facing: [0, 0, 1] });
+    expect(ids).toEqual(["JFC", "JFD"]);
+  });
+
+  it("returns the lines a sketch drew", async () => {
+    const http = vi.fn(async () => fsResponse(["JLine1"])) as unknown as OnshapeResolveHttp;
+    expect(await resolveOnshapeSketchLineIds(http, DOC, "FSketchAxis")).toEqual(["JLine1"]);
+  });
+
+  it("reports nothing rather than inventing an id when the query matches no geometry", async () => {
+    const http = vi.fn(async () => fsResponse([])) as unknown as OnshapeResolveHttp;
+    expect(await resolveOnshapeFaceIds(http, DOC, { featureId: "FExtrude", facing: [1, 0, 0] })).toEqual([]);
+    expect(await resolveOnshapeSketchLineIds(http, DOC, "FSketchAxis")).toEqual([]);
   });
 });
 

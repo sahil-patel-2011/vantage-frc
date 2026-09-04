@@ -1,20 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
-  ACCOUNT_RELATED_INCLUDE,
-  CONNECTIONS_RELATED_INCLUDE,
-  accountNextActions,
-  accountRelatedLinks,
   buildConnectionConnectors,
   classifyConnectionsShell,
   connectionBadgeLabel,
   connectionBadgeTone,
   connectionsEmptyCopy,
-  connectionsNextActions,
-  connectionsRelatedLinks,
   formatAccountOrgLabel,
   formatAccountRole,
   type ConnectionConnectorStatus,
@@ -26,8 +20,29 @@ import {
   unsubscribeFromPush,
   type PushClientState,
 } from "../../lib/push/client";
+import { parseStoredCrews, parseStoredRoles } from "../../lib/onboarding/roles";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
+
+const ACCOUNT_ROLES = [
+  { value: "student", label: "Student" },
+  { value: "mentor", label: "Mentor" },
+  { value: "coach", label: "Coach" },
+  { value: "parent", label: "Parent" },
+  { value: "other", label: "Something else" },
+] as const;
+
+const ACCOUNT_CREWS = [
+  { value: "scout", label: "Scout" },
+  { value: "driver", label: "Driver" },
+  { value: "operator", label: "Operator" },
+  { value: "mechanical", label: "Mechanical" },
+  { value: "electrical", label: "Electrical" },
+  { value: "programming", label: "Programming" },
+  { value: "cad", label: "CAD" },
+  { value: "pit", label: "Pit" },
+  { value: "business", label: "Business" },
+] as const;
 import AppearancePanel from "./appearance-panel";
 import "./account.css";
 
@@ -67,6 +82,8 @@ type AccountView = {
   firstName?: string | null;
   lastName?: string | null;
   dateOfBirth?: string | null;
+  teamRole?: string | null;
+  crewRole?: string | null;
   recoveryEmail?: string | null;
   phoneE164?: string | null;
   phoneVerified?: boolean;
@@ -244,128 +261,6 @@ function PushDevicePanel({ orgId }: { orgId: string | null }) {
   );
 }
 
-function AccountRelated({ orgId }: { orgId: string | null }) {
-  const links = accountRelatedLinks(orgId, { include: [...ACCOUNT_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related account-related" aria-label="Related account tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ConnectionsRelated({ orgId }: { orgId: string | null }) {
-  const links = connectionsRelatedLinks(orgId, { include: [...CONNECTIONS_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related connections-related" aria-label="Related connection tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ConnectionsNextActions({
-  orgId,
-  googleReady,
-  tbaReady,
-  onshapeStatus,
-  discordStatus,
-  githubStatus,
-  slackStatus,
-}: {
-  orgId: string | null;
-  googleReady: boolean;
-  tbaReady: boolean;
-  onshapeStatus: ConnectionConnectorStatus;
-  discordStatus: ConnectionConnectorStatus;
-  githubStatus: ConnectionConnectorStatus;
-  slackStatus: ConnectionConnectorStatus;
-}) {
-  const actions = connectionsNextActions({
-    orgId,
-    googleReady,
-    tbaReady,
-    onshapeStatus,
-    discordStatus,
-    githubStatus,
-    slackStatus,
-  });
-  return (
-    <section className="account-next-actions app-card soft-panel" aria-label="Connection next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>
-          Connected appears only for real OAuth, webhook, or PAT rows — never a DEMO linked account.
-        </p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function NextActions({
-  orgId,
-  hasProfile,
-  emailDeliveryReady,
-  googleReady,
-  tbaReady,
-}: {
-  orgId: string | null;
-  hasProfile: boolean;
-  emailDeliveryReady: boolean;
-  googleReady: boolean;
-  tbaReady: boolean;
-}) {
-  const actions = accountNextActions({
-    orgId,
-    hasProfile,
-    emailDeliveryReady,
-    googleReady,
-    tbaReady,
-  });
-  return (
-    <section className="account-next-actions app-card soft-panel" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>
-          Profile is personal; billing and usage follow your active workspace — never DEMO plan or ledger figures.
-        </p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function OrgContextCard({ org }: { org: OrgContext }) {
   const label = formatAccountOrgLabel(org);
   const role = formatAccountRole(org.role);
@@ -414,12 +309,6 @@ function OrgContextCard({ org }: { org: OrgContext }) {
       <p className="app-muted">
         Display name and notification prefs are personal. AI keys, billing, and connectors follow this workspace.
       </p>
-      <div className="settings-inline-links">
-        <a href="/workspace">Switch workspace</a>
-        <a href={withOrgHref("/team/ai-keys", org.orgId)}>AI keys</a>
-        <a href={withOrgHref("/ai?tab=budgets", org.orgId)}>Billing</a>
-        <a href={withOrgHref("/team/usage", org.orgId)}>AI usage</a>
-      </div>
     </Panel>
   );
 }
@@ -439,6 +328,8 @@ export default function AccountClient() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [teamRoles, setTeamRoles] = useState<string[]>([]);
+  const [crewRoles, setCrewRoles] = useState<string[]>([]);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [phoneE164, setPhoneE164] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -511,6 +402,8 @@ export default function AccountClient() {
       setFirstName(data.firstName ?? "");
       setLastName(data.lastName ?? "");
       setDateOfBirth(data.dateOfBirth ?? "");
+      setTeamRoles(parseStoredRoles(data.teamRole));
+      setCrewRoles(parseStoredCrews(data.crewRole));
       setRecoveryEmail(data.recoveryEmail ?? "");
       setPhoneE164(data.phoneE164 ?? "");
       if (data.notificationPrefs) setPrefs(data.notificationPrefs);
@@ -574,6 +467,8 @@ export default function AccountClient() {
           firstName: firstName.trim() || undefined,
           lastName: lastName.trim() || undefined,
           dateOfBirth: dateOfBirth.trim() || undefined,
+          teamRoles,
+          crewRoles,
           recoveryEmail: recoveryEmail.trim() || null,
           phoneE164: phoneE164.trim() || null,
         }),
@@ -666,10 +561,6 @@ export default function AccountClient() {
 
   const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "?").toUpperCase();
   const orgId = org.orgId;
-  const hasProfile = Boolean(displayName.trim());
-  const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
-  const googleReady = account?.integrations?.google.status === "available";
-  const tbaReady = account?.integrations?.tba.status === "available";
   const onshapeStatus: ConnectionConnectorStatus =
     account?.integrations?.onshape?.status ?? (orgId ? "empty" : "setup_required");
   const discordStatus: ConnectionConnectorStatus =
@@ -695,45 +586,13 @@ export default function AccountClient() {
     connectors: connectionCards.filter((c) => c.id !== "google").map((c) => ({ status: c.status })),
   });
   const connectionsCopy = connectionsEmptyCopy(connectionsShell);
-  const showConnectionNextActions =
-    !loading &&
-    !fetchFailed &&
-    account != null &&
-    tab === "integrations" &&
-    (connectionsShell === "setup" ||
-      connectionsShell === "empty" ||
-      !googleReady ||
-      !tbaReady ||
-      onshapeStatus === "setup_required" ||
-      onshapeStatus === "empty" ||
-      discordStatus === "setup_required" ||
-      discordStatus === "empty" ||
-      slackStatus === "setup_required" ||
-      slackStatus === "empty" ||
-      githubStatus === "empty");
-  const showNextActions =
-    !loading &&
-    !fetchFailed &&
-    account != null &&
-    tab !== "integrations" &&
-    (!orgId || !hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
-
   return (
     <main className="module-page account-page">
       <PageHeader
         breadcrumbs="Account / Settings"
         title="Your settings"
         description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your active workspace."
-      >
-        <div className="account-header-actions">
-          <a className="app-button secondary" href="/whats-new">
-            What’s new
-          </a>
-          <a className="app-button secondary" href="/support">
-            Support
-          </a>
-        </div>
-      </PageHeader>
+      />
 
       <SettingsBar
         role={org.role}
@@ -741,8 +600,6 @@ export default function AccountClient() {
         pathname="/account"
         activeTab={tab === "profile" ? null : tab}
       />
-
-      <AccountRelated orgId={orgId} />
 
       {message ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
@@ -802,103 +659,12 @@ export default function AccountClient() {
               </EmptyState>
             );
           })()}
-          <NextActions
-            orgId={null}
-            hasProfile={false}
-            emailDeliveryReady
-            googleReady
-            tbaReady
-          />
         </>
       ) : null}
 
       {!loading && !fetchFailed && account ? (
         <>
           <OrgContextCard org={org} />
-
-          {showNextActions ? (
-            <NextActions
-              orgId={orgId}
-              hasProfile={hasProfile}
-              emailDeliveryReady={emailDeliveryReady}
-              googleReady={googleReady}
-              tbaReady={tbaReady}
-            />
-          ) : null}
-
-          {orgId ? (
-            <section className="account-ai-keys app-card soft-panel" aria-label="AI keys">
-              <header>
-                <span className="app-badge">Keys</span>
-                <h2>AI keys</h2>
-                <p>
-                  Your OpenAI or Anthropic key, or an Ollama / LM Studio URL. Yours override the team for your chats.
-                </p>
-              </header>
-              <div className="account-ai-keys-actions">
-                <a className="app-button primary" href={withOrgHref("/team/ai-keys", orgId)}>
-                  Open AI keys
-                </a>
-              </div>
-            </section>
-          ) : null}
-
-          <nav className="settings-hub" aria-label="Related settings">
-            <a href="/security">
-              <strong>Security</strong>
-              <span>Authenticator app, remembered devices</span>
-            </a>
-            <a href="/notifications">
-              <strong>Inbox</strong>
-              <span>In-app alerts for this account</span>
-            </a>
-            <button type="button" onClick={() => selectTab("notifications")}>
-              <strong>Notification prefs</strong>
-              <span>In-app alerts and email opt-ins</span>
-            </button>
-            <a href="/whats-new">
-              <strong>What’s new</strong>
-              <span>Published releases for your plan</span>
-            </a>
-            {orgId ? (
-              <>
-                <a href={withOrgHref("/team/ai-keys", orgId)}>
-                  <strong>AI keys</strong>
-                  <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
-                </a>
-                <a href={withOrgHref("/ai?tab=budgets", orgId)}>
-                  <strong>Billing</strong>
-                  <span>API budgets and Usage Credits</span>
-                </a>
-                <a href={withOrgHref("/team/usage", orgId)}>
-                  <strong>AI usage</strong>
-                  <span>Live metered ledger for this team</span>
-                </a>
-                <a href={withOrgHref("/team/security", orgId)}>
-                  <strong>Team security</strong>
-                  <span>Auth policy and delegated powers</span>
-                </a>
-              </>
-            ) : (
-              <a href="/workspace">
-                <strong>Workspace</strong>
-                <span>Choose a team for keys, billing, and usage</span>
-              </a>
-            )}
-          </nav>
-
-          <TabBar
-            className="account-tabs"
-            aria-label="Account sections"
-            value={tab}
-            onChange={(id) => selectTab(id as Tab)}
-            tabs={[
-              { id: "profile", label: "Profile" },
-              { id: "appearance", label: "Appearance" },
-              { id: "notifications", label: "Notifications" },
-              { id: "integrations", label: "Connections" },
-            ]}
-          />
 
           {tab === "profile" ? (
             <Panel className="account-panel">
@@ -948,6 +714,49 @@ export default function AccountClient() {
                     autoComplete="family-name"
                   />
                 </label>
+                <fieldset className="account-role-picks">
+                  <legend>Roles</legend>
+                  <p className="app-muted">Pick every role that fits. Freebuff uses this to set your island.</p>
+                  <div className="account-role-grid">
+                    {ACCOUNT_ROLES.map((option) => (
+                      <label key={option.value}>
+                        <input
+                          type="checkbox"
+                          checked={teamRoles.includes(option.value)}
+                          onChange={() =>
+                            setTeamRoles((current) =>
+                              current.includes(option.value)
+                                ? current.filter((role) => role !== option.value)
+                                : [...current, option.value],
+                            )
+                          }
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="account-role-picks">
+                  <legend>Jobs on the team</legend>
+                  <div className="account-role-grid">
+                    {ACCOUNT_CREWS.map((option) => (
+                      <label key={option.value}>
+                        <input
+                          type="checkbox"
+                          checked={crewRoles.includes(option.value)}
+                          onChange={() =>
+                            setCrewRoles((current) =>
+                              current.includes(option.value)
+                                ? current.filter((crew) => crew !== option.value)
+                                : [...current, option.value],
+                            )
+                          }
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <label>
                   Date of birth
                   <input
@@ -1103,8 +912,6 @@ export default function AccountClient() {
 
           {tab === "integrations" ? (
             <section className="settings-connections" aria-label="Connections">
-              <ConnectionsRelated orgId={orgId} />
-
               {connectionsShell === "setup" || connectionsShell === "empty" ? (
                 <EmptyState
                   soft
@@ -1123,31 +930,8 @@ export default function AccountClient() {
                         Open CAD Connections
                       </a>
                     )}
-                    <a
-                      className="app-button secondary"
-                      href={orgId ? withOrgHref("/team/discord", orgId) : "/support"}
-                    >
-                      {orgId ? "Open Discord" : "Help & Support"}
-                    </a>
-                    {orgId ? (
-                      <a className="app-button secondary" href={withOrgHref("/team/slack", orgId)}>
-                        Open Slack
-                      </a>
-                    ) : null}
                   </div>
                 </EmptyState>
-              ) : null}
-
-              {showConnectionNextActions ? (
-                <ConnectionsNextActions
-                  orgId={orgId}
-                  googleReady={googleReady}
-                  tbaReady={tbaReady}
-                  onshapeStatus={onshapeStatus}
-                  discordStatus={discordStatus}
-                  githubStatus={githubStatus}
-                  slackStatus={slackStatus}
-                />
               ) : null}
 
               <div className="admin-grid settings-connections-grid">
@@ -1164,27 +948,6 @@ export default function AccountClient() {
                   </Panel>
                 ))}
               </div>
-
-              <Panel as="article" className="settings-connection-footer">
-                <h2>Security, keys &amp; usage</h2>
-                <p>
-                  Personal 2FA lives on Security. Workspace AI keys, billing, and usage follow the active team — never
-                  invented spend. Team connectors above stay empty until real links exist.
-                </p>
-                <div className="settings-inline-links">
-                  <a href="/security">Security</a>
-                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a> : null}
-                  {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
-                  {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
-                  {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
-                  {orgId ? <a href={withOrgHref("/cad/setup", orgId)}>Onshape setup</a> : null}
-                  <a href="/account?tab=appearance">Cockpit</a>
-                  {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
-                  <a href="/account?tab=profile">Account</a>
-                  <a href="/whats-new">What’s new</a>
-                  <a href="/support">Support</a>
-                </div>
-              </Panel>
             </section>
           ) : null}
         </>

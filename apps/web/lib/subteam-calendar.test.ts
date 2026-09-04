@@ -9,9 +9,11 @@ import {
   filterEventsBySubteam,
   githubItemsToIcsEvents,
   groupEventsByDay,
+  hourFromGridRatio,
   isReadonlyCalendarEvent,
   layoutTimedEventsForDay,
   localDayKey,
+  calendarTodayAgenda,
   overlayItemsForDay,
   parseSubteamCalendarAction,
   shiftAnchor,
@@ -33,6 +35,8 @@ function event(partial: Partial<CalendarEvent> & Pick<CalendarEvent, "id" | "tit
     endsAt: null,
     location: "",
     notes: "",
+    meetingUrl: null,
+    links: [],
     subteamId: null,
     subteamName: null,
     subteamColor: null,
@@ -100,6 +104,71 @@ describe("groupEventsByDay / upcoming", () => {
   });
 });
 
+describe("timed grid click + today agenda", () => {
+  it("maps a click ratio to a real shop hour and ignores the edges", () => {
+    expect(hourFromGridRatio(0)).toBe(7);
+    expect(hourFromGridRatio(1 / 15)).toBe(8);
+    expect(hourFromGridRatio(14 / 15)).toBe(21);
+    expect(hourFromGridRatio(-0.01)).toBeNull();
+    expect(hourFromGridRatio(1)).toBeNull();
+    expect(hourFromGridRatio(Number.NaN)).toBeNull();
+  });
+
+  it("keeps Today to events and duties that actually fall on that local day", () => {
+    const now = new Date(2026, 2, 11, 10, 0);
+    const day = localDayKey(now);
+    const agenda = calendarTodayAgenda({
+      now,
+      events: [
+        event({ id: "today", title: "Shop", startsAt: new Date(2026, 2, 11, 16, 0).toISOString() }),
+        event({ id: "tomorrow", title: "Later", startsAt: new Date(2026, 2, 12, 16, 0).toISOString() }),
+      ],
+      duties: [
+        {
+          id: "d1",
+          title: "Pit open",
+          kind: "pit",
+          startsAt: new Date(2026, 2, 11, 8, 0).toISOString(),
+          endsAt: null,
+          subteamId: null,
+          subteamName: null,
+          subteamColor: null,
+          assignedUserId: null,
+          assignedUserName: null,
+          calendarEventId: null,
+          notes: "",
+          createdByName: null,
+          mine: true,
+        },
+        {
+          id: "d2",
+          title: "Tomorrow scout",
+          kind: "scouting",
+          startsAt: new Date(2026, 2, 12, 8, 0).toISOString(),
+          endsAt: null,
+          subteamId: null,
+          subteamName: null,
+          subteamColor: null,
+          assignedUserId: null,
+          assignedUserName: null,
+          calendarEventId: null,
+          notes: "",
+          createdByName: null,
+          mine: false,
+        },
+      ],
+      attendanceEvents: [
+        { id: "att-1", title: "Shop night", occurredOn: day, kind: "practice" },
+        { id: "att-2", title: "Other", occurredOn: "2026-03-12", kind: "practice" },
+      ],
+    });
+    expect(agenda.day).toBe(day);
+    expect(agenda.events.map((row) => row.id)).toEqual(["today"]);
+    expect(agenda.duties.map((row) => row.id)).toEqual(["d1"]);
+    expect(agenda.rollCall?.id).toBe("att-1");
+  });
+});
+
 describe("parseSubteamCalendarAction", () => {
   it("creates a subteam with hex color", () => {
     expect(
@@ -144,6 +213,25 @@ describe("parseSubteamCalendarAction", () => {
       subteamId: SUB_A,
       createAttendance: true,
       attendanceCreditHours: 2.5,
+      meetingUrl: null,
+      links: [],
+    });
+  });
+
+  it("parses a meeting join link and attached docs", () => {
+    const parsed = parseSubteamCalendarAction({
+      action: "create_event",
+      orgId: ORG,
+      title: "Design review",
+      kind: "meeting",
+      startsAt: "2026-02-10T23:00:00.000Z",
+      meetingUrl: "https://meet.google.com/abc-defg-hij",
+      links: [{ label: "CAD", url: "https://cad.onshape.com/documents/a" }],
+    });
+    expect(parsed).toMatchObject({
+      action: "create_event",
+      meetingUrl: "https://meet.google.com/abc-defg-hij",
+      links: [{ label: "CAD", url: "https://cad.onshape.com/documents/a" }],
     });
   });
 

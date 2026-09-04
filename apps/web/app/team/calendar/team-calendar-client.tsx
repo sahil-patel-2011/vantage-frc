@@ -21,7 +21,10 @@ import {
   type OccurrenceScope,
   type RepeatDraft,
 } from "./repeat-control";
+import { AttachedLinkChips, AttachedLinksEditor } from "../../../components/attached-links";
 import { githubConnectionHref } from "../../../lib/github/github-related";
+import { meetingProvider, type AttachedLink } from "../../../lib/planner/links";
+import "../../planner-links.css";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
 import {
   DUTY_KIND_LABELS,
@@ -34,7 +37,9 @@ import {
   buildDayCells,
   buildMonthCells,
   buildWeekCells,
+  calendarTodayAgenda,
   CALENDAR_GRID_HOURS,
+  hourFromGridRatio,
   defaultQuickAddStartsAt,
   filterEventsBySubteam,
   formatAnchorLabel,
@@ -227,16 +232,18 @@ function TimedCalendarGrid({
           {cells.map((cell) => {
             const blocks = layoutTimedEventsForDay(cell.items);
             return (
-              <div key={`c-${cell.day}`} className="tc-timed-col">
-                {CALENDAR_GRID_HOURS.map((hour) => (
-                  <button
-                    key={hour}
-                    type="button"
-                    className="tc-timed-slot"
-                    aria-label={`Add at ${formatHourLabel(hour)} on ${cell.day}`}
-                    onClick={() => onPickSlot(cell.day, hour)}
-                  />
-                ))}
+              <div
+                key={`c-${cell.day}`}
+                className="tc-timed-col"
+                role="presentation"
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest(".tc-timed-block")) return;
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  if (rect.height <= 0) return;
+                  const hour = hourFromGridRatio((event.clientY - rect.top) / rect.height);
+                  if (hour != null) onPickSlot(cell.day, hour);
+                }}
+              >
                 {blocks.map((block) => (
                   <button
                     key={block.event.id}
@@ -303,6 +310,8 @@ function OccurrenceEditor({
   const [startsAt, setStartsAt] = useState(() => toLocalInputValue(event.startsAt));
   const [endsAt, setEndsAt] = useState(() => toLocalInputValue(event.endsAt));
   const [location, setLocation] = useState(event.location ?? "");
+  const [meetingUrl, setMeetingUrl] = useState(event.meetingUrl ?? "");
+  const [links, setLinks] = useState<AttachedLink[]>(event.links ?? []);
   const repeats = isSeriesEvent(event);
 
   const buildPatch = (): Record<string, unknown> | null => {
@@ -317,6 +326,8 @@ function OccurrenceEditor({
       startsAt: new Date(startMs).toISOString(),
       endsAt: endMs == null ? null : new Date(endMs).toISOString(),
       location,
+      meetingUrl: meetingUrl.trim() || null,
+      links,
     };
   };
 
@@ -355,6 +366,20 @@ function OccurrenceEditor({
           <span>Location</span>
           <input value={location} disabled={busy} onChange={(e) => setLocation(e.target.value)} />
         </label>
+        <label className="tc-field wide">
+          <span>Join link</span>
+          <input
+            type="url"
+            value={meetingUrl}
+            disabled={busy}
+            placeholder="https://meet.google.com/…"
+            onChange={(e) => setMeetingUrl(e.target.value)}
+          />
+        </label>
+        <div className="tc-field wide">
+          <span>Attached links</span>
+          <AttachedLinksEditor links={links} onChange={setLinks} disabled={busy} />
+        </div>
       </div>
       {repeats ? (
         <OccurrenceScopeChoice
@@ -472,6 +497,12 @@ function EventCard({
         )}
         {event.location ? <span>{event.location}</span> : null}
       </div>
+      {event.meetingUrl ? (
+        <a className="tc-join" href={event.meetingUrl} target="_blank" rel="noopener noreferrer">
+          Join {meetingProvider(event.meetingUrl) ?? "meeting"}
+        </a>
+      ) : null}
+      <AttachedLinkChips links={event.links ?? []} />
       {event.notes ? <p className="tc-muted">{event.notes}</p> : null}
 
       {event.source === "tba" ? null : (
@@ -525,10 +556,13 @@ function QuickAddForm({
   onDone?: () => void;
 }) {
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<SubteamEventKind>("practice");
+  const [kind, setKind] = useState<SubteamEventKind>("meeting");
   const [startsAt, setStartsAt] = useState(initialStartsAt);
+  const [endsAt, setEndsAt] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
+  const [links, setLinks] = useState<AttachedLink[]>([]);
   const [subteamId, setSubteamId] = useState(filterSubteamId ?? "");
-  const [createAttendance, setCreateAttendance] = useState(true);
+  const [createAttendance, setCreateAttendance] = useState(false);
 
   useEffect(() => {
     setStartsAt(initialStartsAt);
@@ -555,9 +589,11 @@ function QuickAddForm({
             title: title.trim(),
             kind,
             startsAt: new Date(startsAt).toISOString(),
-            endsAt: null,
+            endsAt: endsAt ? new Date(endsAt).toISOString() : null,
             location: "",
             notes: "",
+            meetingUrl: meetingUrl.trim() || null,
+            links,
             subteamId: subteamId || null,
             createAttendance,
             attendanceEventId: null,
@@ -567,21 +603,24 @@ function QuickAddForm({
         ).then((ok) => {
           if (ok) {
             setTitle("");
+            setEndsAt("");
+            setMeetingUrl("");
+            setLinks([]);
             onDone?.();
           }
         });
       }}
     >
       <div className="tc-quick-head">
-        <h2>Add event</h2>
+        <h2>Add</h2>
       </div>
       <div className="tc-quick-grid">
         <input
           value={title}
           disabled={busy}
           required
-          placeholder="e.g. Tuesday drive practice"
-          aria-label="Event title"
+          placeholder="e.g. Monday design review"
+          aria-label="Meeting title"
           onChange={(e) => setTitle(e.target.value)}
         />
         <select value={kind} disabled={busy} aria-label="Kind" onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
@@ -599,6 +638,21 @@ function QuickAddForm({
           aria-label="Starts"
           onChange={(e) => setStartsAt(e.target.value)}
         />
+        <input
+          type="datetime-local"
+          value={endsAt}
+          disabled={busy}
+          aria-label="Ends"
+          onChange={(e) => setEndsAt(e.target.value)}
+        />
+        <input
+          type="url"
+          value={meetingUrl}
+          disabled={busy}
+          placeholder="https://meet.google.com/…"
+          aria-label="Join link"
+          onChange={(e) => setMeetingUrl(e.target.value)}
+        />
         <select value={subteamId} disabled={busy} aria-label="Subteam" onChange={(e) => setSubteamId(e.target.value)}>
           <option value="">Whole team</option>
           {subteams.map((st) => (
@@ -608,6 +662,7 @@ function QuickAddForm({
           ))}
         </select>
       </div>
+      <AttachedLinksEditor links={links} onChange={setLinks} disabled={busy} addLabel="Attach a doc or sheet" />
       <label className="tc-check">
         <input
           type="checkbox"
@@ -618,7 +673,7 @@ function QuickAddForm({
         <span>Create attendance roll-call</span>
       </label>
       <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsAt}>
-        Add event
+        Schedule
       </button>
     </form>
   );
@@ -647,6 +702,8 @@ function CreateEventForm({
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
+  const [links, setLinks] = useState<AttachedLink[]>([]);
   const [subteamId, setSubteamId] = useState(filterSubteamId ?? "");
   const [createAttendance, setCreateAttendance] = useState(kind === "practice" || kind === "build");
   const [attendanceEventId, setAttendanceEventId] = useState("");
@@ -692,6 +749,8 @@ function CreateEventForm({
             endsAt: endsAt ? new Date(endsAt).toISOString() : null,
             location,
             notes,
+            meetingUrl: meetingUrl.trim() || null,
+            links,
             subteamId: subteamId || null,
             // Attendance roll-call is a single dated row, so it only makes sense
             // for a one-off — a series would silently link every meeting to it.
@@ -707,6 +766,8 @@ function CreateEventForm({
             setTitle("");
             setNotes("");
             setLocation("");
+            setMeetingUrl("");
+            setLinks([]);
             setRepeat(EMPTY_REPEAT_DRAFT);
           }
         });
@@ -752,6 +813,20 @@ function CreateEventForm({
           <span>Location</span>
           <input value={location} disabled={busy} placeholder="Shop / Room 12" onChange={(e) => setLocation(e.target.value)} />
         </label>
+        <label className="tc-field wide">
+          <span>Join link</span>
+          <input
+            type="url"
+            value={meetingUrl}
+            disabled={busy}
+            placeholder="https://meet.google.com/…"
+            onChange={(e) => setMeetingUrl(e.target.value)}
+          />
+        </label>
+        <div className="tc-field wide">
+          <span>Attached links</span>
+          <AttachedLinksEditor links={links} onChange={setLinks} disabled={busy} />
+        </div>
         <label className="tc-field wide">
           <span>Notes</span>
           <textarea value={notes} disabled={busy} placeholder="Goals, packing list, or agenda" onChange={(e) => setNotes(e.target.value)} />
@@ -1617,6 +1692,15 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     return [...focused, ...rest];
   }, [days, githubItems, quickDay]);
   const upcoming = useMemo(() => upcomingEvents(filtered, new Date(), 6), [filtered]);
+  const todayAgenda = useMemo(
+    () =>
+      calendarTodayAgenda({
+        events: filtered,
+        duties: view && view.status === "ready" ? view.duties : [],
+        attendanceEvents: view && view.status === "ready" ? view.attendanceEvents : [],
+      }),
+    [filtered, view],
+  );
   const weekCells = useMemo(() => buildWeekCells(anchor, filtered), [anchor, filtered]);
   const dayCells = useMemo(() => buildDayCells(anchor, filtered), [anchor, filtered]);
   const monthCells = useMemo(() => buildMonthCells(anchor, filtered), [anchor, filtered]);
@@ -1841,16 +1925,20 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
           <div className="tc-toolbar">
             <div className="tc-mode" role="group" aria-label="Calendar view">
-              {(["day", "week", "month", "agenda"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={mode === value ? "active" : undefined}
-                  onClick={() => setMode(value)}
-                >
-                  {value === "agenda" ? "List" : value === "week" ? "Week" : value === "month" ? "Month" : "Day"}
-                </button>
-              ))}
+              <button
+                type="button"
+                className={mode === "week" || mode === "day" ? "active" : undefined}
+                onClick={() => setMode("week")}
+              >
+                Week
+              </button>
+              <button
+                type="button"
+                className={mode === "month" ? "active" : undefined}
+                onClick={() => setMode("month")}
+              >
+                Month
+              </button>
             </div>
             {mode !== "agenda" ? (
               <div className="tc-nav-range">
@@ -1861,40 +1949,41 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 <button type="button" className="tc-icon-btn" aria-label="Next" onClick={() => setAnchor((d) => shiftAnchor(d, mode, 1))}>
                   ›
                 </button>
-                <button type="button" className="tc-text-link" onClick={() => setAnchor(new Date())}>
+                <button
+                  type="button"
+                  className="tc-text-link"
+                  onClick={() => {
+                    setAnchor(new Date());
+                    setMode("week");
+                  }}
+                >
                   Today
                 </button>
               </div>
-            ) : quickDay ? (
-              <div className="tc-nav-range">
-                <strong>List · {formatDayLabelLocal(quickDay)}</strong>
-                <button type="button" className="tc-text-link" onClick={() => setQuickDay(null)}>
-                  Clear day focus
+            ) : null}
+            <details className="tc-more">
+              <summary>More</summary>
+              <div className="tc-more-list">
+                <button type="button" onClick={() => setTab("sync")}>
+                  Phone calendar
                 </button>
+                {showDuties ? (
+                  <button type="button" onClick={() => setTab("duties")}>
+                    Duties
+                  </button>
+                ) : null}
+                {showTrip ? (
+                  <button type="button" onClick={() => setTab("trip")}>
+                    Trip
+                  </button>
+                ) : null}
+                {canManage ? (
+                  <button type="button" onClick={() => setTab("subteams")}>
+                    Subteams
+                  </button>
+                ) : null}
               </div>
-            ) : (
-              <p className="tc-muted tc-list-hint">By day.</p>
-            )}
-            <div className="tc-toolbar-links">
-              <button type="button" className="tc-text-link" onClick={() => setTab("sync")}>
-                Phone calendar
-              </button>
-              {showDuties ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("duties")}>
-                  Duties
-                </button>
-              ) : null}
-              {showTrip ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("trip")}>
-                  Trip
-                </button>
-              ) : null}
-              {canManage ? (
-                <button type="button" className="tc-text-link" onClick={() => setTab("subteams")}>
-                  Subteams
-                </button>
-              ) : null}
-            </div>
+            </details>
           </div>
 
           <div className="tc-layout">
@@ -2043,9 +2132,6 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                             ))}
                             {overflow > 0 ? <li className="more">+{overflow}</li> : null}
                           </ul>
-                          {cell.items.length === 0 && github.length === 0 && cell.inMonth ? (
-                            <span className="tc-month-empty">Add</span>
-                          ) : null}
                         </button>
                       );
                     })}
@@ -2059,6 +2145,50 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </section>
 
             <aside className="tc-panel">
+              <section className="tc-today" aria-label="Today">
+                <h2>Today</h2>
+                {todayAgenda.events.length === 0 && todayAgenda.duties.length === 0 ? (
+                  <p className="tc-muted">Nothing on the calendar today.</p>
+                ) : (
+                  <ul className="tc-today-list">
+                    {todayAgenda.events.map((event) => (
+                      <li key={event.id}>
+                        <button type="button" className="tc-today-item" onClick={() => setSelectedEventId(event.id)}>
+                          <strong>{event.title}</strong>
+                          <span>
+                            {fmtTime(event.startsAt)}
+                            {event.subteamName ? ` · ${event.subteamName}` : ""}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                    {todayAgenda.duties.map((duty) => (
+                      <li key={duty.id}>
+                        <button
+                          type="button"
+                          className="tc-today-item is-duty"
+                          onClick={() => {
+                            setHighlightDutyId(duty.id);
+                            setTab("duties");
+                          }}
+                        >
+                          <strong>{duty.title}</strong>
+                          <span>
+                            {DUTY_KIND_LABELS[duty.kind]}
+                            {duty.assignedUserName ? ` · ${duty.assignedUserName}` : duty.mine ? " · you" : ""}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {todayAgenda.rollCall ? (
+                  <a className="tc-today-roll" href={withOrg("/attendance", orgId)}>
+                    Roll call · {todayAgenda.rollCall.title}
+                  </a>
+                ) : null}
+              </section>
+
               <div id="tc-quick-add">
                 <QuickAddForm
                   orgId={orgId}

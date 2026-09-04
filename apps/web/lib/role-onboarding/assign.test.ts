@@ -63,6 +63,16 @@ describe("assignOnboardingTracks", () => {
     );
   });
 
+  it("assigns a track for every crew job on a comma-separated profile", () => {
+    const keys = assignOnboardingTracks({
+      teamRole: "student,parent",
+      crewRole: "scout,cad",
+      primaryFocus: "competition",
+      subteamNames: [],
+    }).map((t) => t.trackKey);
+    expect(keys).toEqual(expect.arrayContaining(["role_student", "role_parent", "scouting", "cad"]));
+  });
+
   it("maps scouting and business subteams", () => {
     const keys = assignOnboardingTracks({
       teamRole: "student",

@@ -179,8 +179,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // The rookie-survival roadmap. Community research rates "what do I even
         // prioritize" a blocker for rookie coaches, so it is pinned to the front of
         // the Playbook workbench rather than buried in the tail.
-        { id: "roadmap", label: "Season roadmap", legacyHref: "/roadmap", featured: true },
-        { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
+        { id: "roadmap", label: "Season roadmap", legacyHref: "/roadmap" },
+        { id: "migrate", label: "Bring your season", legacyHref: "/migrate" },
         // The team's shared shelf: any file (STEP/DXF, PDFs, manuals), nestable
         // folders, and external links — with team-wide vs restricted sharing.
         { id: "library", label: "Library", legacyHref: "/library", featured: true },
@@ -322,28 +322,30 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/ai",
     label: "AI",
     title: "AI",
-    description: "Chat, writer, agent, and controls — usage and memory live as tabs inside Controls.",
+    description: "One assistant. Write and Agent are modes inside Ask; keys and memory live in Settings.",
     defaultTab: "chat",
     tabs: [
-      { id: "chat", label: "Chat", legacyHref: "/chat" },
-      { id: "writer", label: "Writer", legacyHref: "/writer" },
-      { id: "agent", label: "Agent" },
-      { id: "budgets", label: "Controls", legacyHref: "/team/budgets" },
-      ...nest("budgets", [
-        { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },
-        { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
-        { id: "finance", label: "Finance" },
-        { id: "ai-keys", label: "API keys", legacyHref: "/team/ai-keys", featured: true },
-        { id: "ai-bridge", label: "Subscription bridge", legacyHref: "/team/ai-bridge" },
-        { id: "ai-usage", label: "BYOK usage", legacyHref: "/team/ai-usage" },
-        { id: "usage", label: "Usage", legacyHref: "/team/usage" },
+      { id: "chat", label: "Ask", legacyHref: "/chat" },
+      ...nest("chat", [
+        { id: "writer", label: "Write", legacyHref: "/writer" },
+        { id: "agent", label: "Agent" },
       ]),
-      { id: "decisions", label: "Notes", legacyHref: "/decisions" },
+      { id: "decisions", label: "Library", legacyHref: "/decisions" },
       ...nest("decisions", [
         { id: "decision-search", label: "Search", legacyHref: "/decision-search" },
         { id: "season-report", label: "Season report", legacyHref: "/season-report" },
-        { id: "code", label: "Code assist", legacyHref: "/code" },
+        { id: "code", label: "Code", legacyHref: "/code" },
         { id: "bugbot", label: "Bugbot", legacyHref: "/bugbot" },
+      ]),
+      { id: "budgets", label: "Settings", legacyHref: "/team/budgets" },
+      ...nest("budgets", [
+        { id: "ai-keys", label: "API keys", legacyHref: "/team/ai-keys", featured: true },
+        { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },
+        { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
+        { id: "finance", label: "Finance" },
+        { id: "ai-bridge", label: "Subscription bridge", legacyHref: "/team/ai-bridge" },
+        { id: "ai-usage", label: "BYOK usage", legacyHref: "/team/ai-usage" },
+        { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),
     ],
   },

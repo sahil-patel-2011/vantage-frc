@@ -96,6 +96,10 @@ export function HeroProductVisual() {
               ))}
             </div>
             <div className="hero-soft-panel hero-soft-board">
+              <header>
+                <strong>What this desk runs</strong>
+                <span>Setup required</span>
+              </header>
               <ul className="hero-soft-cues">
                 <li>
                   <b>Event day</b>
@@ -114,6 +118,10 @@ export function HeroProductVisual() {
                   <span>Repair triage · batteries</span>
                 </li>
               </ul>
+              <div className="hero-soft-empty">
+                <b>Waiting on this team’s TBA event</b>
+                <p>No DEMO schedule, EPA, or win rates. Connect the event and scout entries fill these rows.</p>
+              </div>
             </div>
           </div>
         </div>

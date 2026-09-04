@@ -27,7 +27,7 @@ Overview, Money, Sponsors, Grants, Outreach — budget and orders are Money tabs
 Kickoff, CAD, Code, Robot. Bugbot is a Code tab; FMEA, batteries, and inspection are Robot tabs. CAD agent needs Onshape OAuth or Fusion relay (setup required). Code Coach proposes human-approved diffs only.
 
 ### AI (signed-in /ai)
-Chat, Writer, Agent, Controls, Notes. API keys, memory, and usage live under Controls.
+Ask, Library, Settings. Write and Agent are modes inside Ask. API keys, memory, and usage live under Settings.
 
 ## Island navigation
 Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build, AI.

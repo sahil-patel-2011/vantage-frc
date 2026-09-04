@@ -534,6 +534,37 @@ export function chamferFeature(input: { name?: string; edgeIds: readonly string[
   });
 }
 
+/**
+ * Hollow a solid, removing the named faces.
+ *
+ * `faceIds` are the faces to open, resolved by onshape-resolve — an empty list
+ * would shell every face into a closed void, so it is refused rather than guessed.
+ * Thickness goes inward unless `outward` is set, which matches Onshape's own
+ * default and keeps the part inside its original bounding box.
+ */
+export function shellFeature(input: {
+  name?: string;
+  faceIds: readonly string[];
+  thicknessMm: number;
+  outward?: boolean;
+}) {
+  const thickness = sizeMm(input.thicknessMm, "thicknessMm");
+  const faces = requireIds(input.faceIds, "faceIds");
+  const parameters: unknown[] = [
+    deterministicQueryParameter("entities", faces),
+    quantityParameter("thickness", input.thicknessMm, thickness),
+  ];
+  if (input.outward) parameters.push(booleanParameter("oppositeDirection", true));
+  return featureCall({
+    btType: "BTMFeature-134",
+    featureType: "shell",
+    name: input.name?.trim() || "VantageShell",
+    suppressed: false,
+    namespace: "",
+    parameters,
+  });
+}
+
 export const HOLE_END_STYLES = ["THROUGH", "BLIND"] as const;
 export type HoleEndStyle = (typeof HOLE_END_STYLES)[number];
 

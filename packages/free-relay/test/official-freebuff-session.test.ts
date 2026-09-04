@@ -65,6 +65,26 @@ describe("official Freebuff login files", () => {
     expect(withRun.codebuff_metadata.client_id).toBe("fp-1");
     expect(withRun.messages[0]?.content.startsWith(OFFICIAL_FREEBUFF_SYSTEM_OPENING)).toBe(true);
     expect(withRun.messages[0]?.content).toContain("Coding folder for organization aaa only.");
+    const withoutRun = JSON.parse(
+      attachOfficialRunToChatBody(
+        JSON.stringify({
+          model: "glm/glm-5.3-flash",
+          tools: [{ type: "function", function: { name: "cad_extrude" } }],
+          tool_choice: "auto",
+          messages: [{ role: "user", content: "extrude 10mm" }],
+        }),
+        { model: "z-ai/glm-5.3-flash" },
+      ),
+    ) as {
+      tools?: unknown;
+      tool_choice?: unknown;
+      messages: Array<{ role: string; content: string }>;
+      codebuff_metadata: { cost_mode: string };
+    };
+    expect(withoutRun.tools).toBeUndefined();
+    expect(withoutRun.tool_choice).toBeUndefined();
+    expect(withoutRun.messages[0]?.content.startsWith(OFFICIAL_FREEBUFF_SYSTEM_OPENING)).toBe(true);
+    expect(withoutRun.codebuff_metadata.cost_mode).toBe("free");
     expect(toOfficialFreebuffWireModel("glm/glm-5.3-flash")).toBe("z-ai/glm-5.3-flash");
     expect(toOfficialFreebuffWireModel("mimo/mimo-2.5")).toBe("mimo/mimo-v2.5");
     expect(officialAgentIdForModel("mimo/mimo-v2.5")).toBe("base3-free-mimo");

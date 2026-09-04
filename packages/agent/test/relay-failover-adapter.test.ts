@@ -5,6 +5,7 @@ import {
   RelayFailoverChatAdapter,
   isRelayFailoverWorthy,
   isRelayUnreachableError,
+  resetRelayRotateCursor,
   tryCreatePlatformRelayAdapter,
 } from "../src/relay-failover-adapter";
 import type { ChatAdapter, ChatCompletionResult, ContextItem } from "../src/index";
@@ -263,7 +264,11 @@ describe("tryCreatePlatformRelayAdapter", () => {
     });
 
     expect(chain).not.toBeNull();
-    expect(chain!.configuredLabels).toEqual(["freebuff", "openrouter-free", "groq-free"]);
+    expect(chain!.configuredLabels).toEqual([
+      "freebuff:relay.example.org",
+      "openrouter-free",
+      "groq-free",
+    ]);
     expect(chain!.model).toBe("deepseek/deepseek-v4-flash");
   });
 
@@ -275,6 +280,45 @@ describe("tryCreatePlatformRelayAdapter", () => {
       } as NodeJS.ProcessEnv,
     });
 
-    expect(chain!.configuredLabels).toEqual(["free-relay"]);
+    expect(chain!.configuredLabels).toEqual(["free-relay:127.0.0.1:3457"]);
+  });
+
+  it("puts every configured Pi tunnel ahead of the free pools", () => {
+    const chain = tryCreatePlatformRelayAdapter({
+      env: {
+        FREE_RELAY_BASE_URL: "http://127.0.0.1:8080/v1,http://127.0.0.1:8081/v1",
+        FREE_RELAY_API_KEY: "relay-secret",
+        OPENROUTER_API_KEY: "sk-or-test",
+      } as NodeJS.ProcessEnv,
+    });
+
+    expect(chain!.configuredLabels).toEqual([
+      "free-relay:127.0.0.1:8080",
+      "free-relay:127.0.0.1:8081",
+      "openrouter-free",
+    ]);
+  });
+});
+
+describe("relay pool rotation", () => {
+  it("spreads successive chats across both Pi tunnels", async () => {
+    resetRelayRotateCursor();
+    const first = new FakeAdapter("relay-a", "glm/glm-5.3-flash");
+    const second = new FakeAdapter("relay-b", "mimo/mimo-2.5");
+    const adapter = new RelayFailoverChatAdapter(
+      [
+        { label: "a", kind: "relay", adapter: first },
+        { label: "b", kind: "relay", adapter: second },
+      ],
+      { rotateRelays: true },
+    );
+
+    await adapter.complete({ message: "one", context: [] });
+    await adapter.complete({ message: "two", context: [] });
+
+    expect(first.calls).toHaveLength(1);
+    expect(second.calls).toHaveLength(1);
+    expect(first.calls[0]?.message).toBe("one");
+    expect(second.calls[0]?.message).toBe("two");
   });
 });

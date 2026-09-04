@@ -258,6 +258,7 @@ export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./hosted-platform-keys";
+export * from "./priority-team";
 export * from "./org-ai-access";
 export * from "./freebuff-models";
 export * from "./org-isolation";

@@ -81,6 +81,7 @@ export async function GET(request: Request) {
         preferredTeamNumber: number | null;
         primaryFocus: string | null;
         teamRole: string | null;
+        crewRole: string | null;
         onboardingCompletedAt: string | null;
       }>(
         `SELECT first_name AS "firstName",
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
                 preferred_team_number AS "preferredTeamNumber",
                 primary_focus AS "primaryFocus",
                 team_role AS "teamRole",
+                crew_role AS "crewRole",
                 onboarding_completed_at::text AS "onboardingCompletedAt"
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
@@ -205,6 +207,7 @@ export async function GET(request: Request) {
       onboardingComplete: Boolean(profile.profile?.onboardingCompletedAt),
       primaryFocus: profile.profile?.primaryFocus ?? "competition",
       teamRole: profile.profile?.teamRole ?? null,
+      crewRole: profile.profile?.crewRole ?? null,
       tbaConfigured: profile.tbaConfigured,
       planCode: profile.planCode,
       planStatus: profile.planStatus,

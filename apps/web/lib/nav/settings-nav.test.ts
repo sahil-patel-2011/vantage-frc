@@ -102,8 +102,8 @@ describe("activeSettingsId", () => {
     expect(activeSettingsId(member, "/account", "tab=notifications")).toBe("notifications");
   });
 
-  it("a tab with no chip activates nothing", () => {
-    expect(activeSettingsId(member, "/account", "?tab=integrations")).toBeNull();
+  it("tab query picks Connections", () => {
+    expect(activeSettingsId(member, "/account", "?tab=integrations")).toBe("connections");
   });
 
   it("matches team routes and ignores unrelated query params", () => {

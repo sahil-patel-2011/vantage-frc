@@ -24,6 +24,7 @@
     "free-relay:verify": "npm run verify --workspace=@vantage/free-relay",
     "free-relay:sweep": "npm run sweep --workspace=@vantage/free-relay -- --once",
     "free-relay:daemon": "npm run sweep --workspace=@vantage/free-relay",
+    "free-relay:serve": "npm run serve --workspace=@vantage/free-relay",
     "cad:package": "node scripts/cad/package-relay.mjs",
     "cad:package:linux": "bash scripts/cad/package-linux.sh",
     "cad:package:macos": "bash scripts/cad/package-macos.sh",

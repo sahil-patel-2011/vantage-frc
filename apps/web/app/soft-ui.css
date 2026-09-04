@@ -53,6 +53,17 @@ body.has-app-shell{
   color:var(--soft-ink);
   font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
   overflow-x:hidden;
+  /* One token system inside the product shell — leaf CSS can keep --app-* names. */
+  --app-bg:var(--soft-bg);
+  --app-surface:var(--soft-card);
+  --app-ink:var(--soft-ink);
+  --app-muted:var(--soft-muted);
+  --app-line:var(--soft-line);
+  --app-accent:var(--soft-accent);
+  --app-accent-ink:var(--soft-accent-ink);
+  --app-soft:var(--soft-accent-soft);
+  --app-shadow:var(--soft-shadow);
+  --app-radius:var(--soft-radius-sm);
 }
 body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
 body.has-app-shell.dash-editing .soft-fab{opacity:.25;pointer-events:none}
@@ -628,8 +639,16 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
   .soft-drawer,.soft-toggle i{transition:none!important}
 }
 
-/* Customizable dashboard ? Apple Home Screen-inspired */
+/* Home is one calm surface — the toolbox strips live behind Edit Home. */
 .dash-home{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,36px) 16px 28px;position:relative}
+.dash-home:not(.is-editing) .dash-quick-start,
+.dash-home:not(.is-editing) .dash-feature-desk,
+.dash-home:not(.is-editing) .dash-board-bar,
+.dash-home:not(.is-editing) .dash-role-strip,
+.dash-home:not(.is-editing) .dash-ready-cue{display:none}
+.dash-home:not(.is-editing) .dash-home-header{margin-bottom:12px}
+.dash-home:not(.is-editing) .dash-home-header h1{font-size:clamp(24px,2.6vw,30px)}
+.dash-home:not(.is-editing) .dash-home-header p{max-width:40ch;font-size:14px}
 .dash-home.is-editing{padding-bottom:24px}
 .dash-home-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px;scroll-margin-top:72px}
 .dash-home-header h1{margin:6px 0 8px;font-size:clamp(26px,3.2vw,34px);letter-spacing:-.035em;line-height:1.08}
@@ -673,11 +692,13 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
 .dash-ready-cue strong{font-weight:700}
 .dash-ready-cue a{color:var(--soft-accent);font:700 13px var(--font-source-sans),ui-sans-serif;text-decoration:none;white-space:nowrap}
 .dash-ready-cue a:hover{text-decoration:underline}
-.dash-edit-trigger{
-  min-height:36px;padding:0 14px;font:700 13px var(--font-source-sans),ui-sans-serif;
-  box-shadow:none;
+.dash-edit-trigger,
+.dash-edit-quiet{
+  min-height:36px;padding:0 4px;border:0;background:none;box-shadow:none;cursor:pointer;
+  color:var(--soft-muted);font:650 13px var(--font-source-sans),ui-sans-serif;
 }
-.dash-edit-trigger:hover{filter:none;border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));color:var(--soft-accent)}
+.dash-edit-trigger:hover,
+.dash-edit-quiet:hover{filter:none;color:var(--soft-accent)}
 .dash-updated{color:var(--soft-muted);font-size:11px}
 .dash-next-glance{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:6px 14px;border-radius:999px;background:var(--soft-accent-soft);color:var(--soft-accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
 .dash-next-glance:hover{box-shadow:0 4px 14px color-mix(in srgb,var(--soft-accent) 25%,transparent);transform:translateY(-1px)}
@@ -1076,6 +1097,15 @@ html[data-theme="dark"] .dash-remove-btn{background:#ef4444;color:#fff}
 .dash-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .dash-metric-grid strong{display:block;font-size:22px;line-height:1.1}
 .dash-metric-grid span{color:var(--soft-muted);font-size:11px}
+.dash-token-spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin:10px 0 4px}
+.dash-token-spark i{flex:1;min-width:4px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--soft-accent) 70%,transparent)}
+.dash-token-spark-label{display:flex;justify-content:space-between;color:var(--soft-muted);font-size:11px}
+.dash-ai-spend{margin:8px 0 0;color:var(--soft-muted);font-size:11px}
+.dash-team-tokens{margin:10px 0 0;padding:0;list-style:none}
+.dash-team-tokens li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--soft-line);font-size:12px}
+.dash-team-tokens span{display:grid;min-width:0}
+.dash-team-tokens em{display:grid;justify-items:end;font-style:normal;font-weight:700}
+.dash-team-tokens small{color:var(--soft-muted);font-weight:500}
 .dash-result{display:flex;align-items:center;gap:14px}
 .dash-result .wl{display:grid;place-items:center;width:48px;height:48px;border-radius:12px;font:800 18px ui-sans-serif;color:#fff;background:#64748b}
 .dash-result .wl.w{background:#16a34a}.dash-result .wl.l{background:#dc2626}.dash-result .wl.t{background:#ca8a04}
@@ -1328,7 +1358,7 @@ html[data-theme="dark"] .edc-caveat{background:#2a2416;border-color:#5c4d24;colo
 body.has-app-shell{
   --app-bg:var(--soft-bg);
   --app-surface:var(--soft-card);
-  --app-soft:color-mix(in srgb,var(--soft-bg) 82%,var(--soft-line));
+  --app-soft:var(--soft-accent-soft);
   --app-ink:var(--soft-ink);
   --app-muted:var(--soft-muted);
   --app-line:var(--soft-line);
@@ -1923,17 +1953,63 @@ body.has-app-shell .danger-action{
 body.has-app-shell .admin-shell{
   max-width:1120px;margin:0 auto;padding:clamp(12px,2.2vw,28px) clamp(12px,2.5vw,24px) 20px;
 }
-body.has-app-shell .admin-shell .admin-subnav{
-  display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:4px;
-  background:var(--soft-bg);border:1px solid var(--soft-line);border-radius:14px;
+body.has-app-shell .admin-shell .admin-subnav.tesla-settings{
+  display:grid;gap:12px;margin:0 0 18px;padding:12px;
+  background:var(--soft-card);border:1px solid var(--soft-line);border-radius:var(--soft-radius);
+  box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .admin-shell .admin-subnav-groups{
+  display:flex;flex-wrap:wrap;gap:4px;padding:4px;width:fit-content;max-width:100%;
+  background:var(--soft-bg);border:1px solid var(--soft-line);border-radius:999px;
+}
+body.has-app-shell .admin-shell .admin-subnav-groups button{
+  min-height:34px;padding:0 12px;border:0;border-radius:999px;background:transparent;
+  color:var(--soft-muted);font:650 13px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+body.has-app-shell .admin-shell .admin-subnav-groups button.is-active,
+body.has-app-shell .admin-shell .admin-subnav-groups button[aria-selected="true"]{
+  color:var(--soft-accent);background:var(--soft-card);box-shadow:0 2px 8px rgba(28,36,48,.06);
 }
 body.has-app-shell .admin-shell .admin-subnav a{
-  display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:10px;
-  color:var(--soft-muted);text-decoration:none;font:700 12px var(--font-source-sans),ui-sans-serif;
+  color:inherit;text-decoration:none;
 }
-body.has-app-shell .admin-shell .admin-subnav a[aria-current="page"],
-body.has-app-shell .admin-shell .admin-subnav a.active{
-  color:var(--soft-accent);background:var(--soft-card);box-shadow:0 4px 14px rgba(28,36,48,.08);
+/* One search + one island + one avatar. Kill leftover chip dumps. */
+body.has-app-shell .app-page-header .product-hub-related,
+body.has-app-shell .app-page-header .settings-inline-links,
+body.has-app-shell .admin-shell .admin-related,
+body.has-app-shell .admin-shell .settings-inline-links,
+body.has-app-shell .admin-shell .admin-ai-smoke-links,
+body.has-app-shell .admin-shell .admin-next-actions,
+body.has-app-shell .settings-hub,
+body.has-app-shell .settings-secondary-links,
+body.has-app-shell .settings-inline-links,
+body.has-app-shell .account-related,
+body.has-app-shell .account-ai-keys,
+body.has-app-shell .connections-related,
+body.has-app-shell .settings-connection-footer,
+body.has-app-shell .writer-cross-links,
+body.has-app-shell .ai-hub-related,
+body.has-app-shell .notif-related,
+body.has-app-shell .notif-next-actions,
+body.has-app-shell .account-next-actions,
+body.has-app-shell .business-related,
+body.has-app-shell .product-hub-related,
+body.has-app-shell .product-hub-featured,
+body.has-app-shell .biz-detail-link,
+body.has-app-shell .team-admin-next-actions,
+body.has-app-shell .team-ops-nav,
+body.has-app-shell .kick-pipeline-links,
+body.has-app-shell .cdc-gov,
+body.has-app-shell [class*="next-actions"],
+body.has-app-shell .dash-home[data-setup="1"] .dash-empty-cta,
+body.has-app-shell .dash-home:not(.is-editing) .dash-next-glance,
+body.has-app-shell .app-empty .app-button.secondary,
+body.has-app-shell .soft-empty .app-button.secondary,
+body.has-app-shell .app-empty a.app-button ~ a.app-button,
+body.has-app-shell .soft-empty a.app-button ~ a.app-button,
+body.has-app-shell .app-empty a.app-button ~ button.app-button,
+body.has-app-shell .soft-empty a.app-button ~ button.app-button{
+  display:none !important;
 }
 body.has-app-shell .admin-control{padding:0;max-width:none}
 body.has-app-shell .admin-control > .eyebrow{display:block;margin-bottom:6px}
@@ -2474,9 +2550,11 @@ body.has-app-shell .command-empty{margin:8px 0;color:var(--soft-muted);font:600 
 /* Search reads as a field on desktop with its shortcut on show; stays an icon on phones. */
 body.has-app-shell .soft-search-label,
 body.has-app-shell .soft-search-kbd{display:none}
+body.has-app-shell .soft-ask-btn{color:var(--soft-accent-ink);background:var(--soft-accent);border-color:transparent}
 @media (min-width:900px){
   body.has-app-shell .soft-search-btn{
-    width:auto;gap:8px;padding:0 10px;justify-content:flex-start;min-width:200px;
+    display:inline-flex;align-items:center;width:auto;gap:8px;padding:0 10px;
+    justify-content:flex-start;min-width:200px;
     border-radius:10px;background:var(--soft-card);border:1px solid var(--soft-line);
   }
   body.has-app-shell .soft-search-label{
@@ -2489,6 +2567,11 @@ body.has-app-shell .soft-search-kbd{display:none}
   }
   body.has-app-shell .soft-search-btn:hover{border-color:var(--soft-accent)}
   body.has-app-shell .soft-search-btn:hover .soft-search-label{color:var(--soft-ink)}
+  body.has-app-shell .soft-ask-btn{
+    width:40px;padding:0;justify-content:center;
+    border-radius:10px;background:var(--soft-accent);border-color:transparent;color:var(--soft-accent-ink);
+  }
+  body.has-app-shell .soft-ask-btn .soft-search-label{display:none}
 }
 /* Ranked palette rows: hub breadcrumb under each label, one keyboard cursor across both groups. */
 body.has-app-shell .command-group-head{

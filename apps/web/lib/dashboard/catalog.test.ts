@@ -7,6 +7,7 @@ import {
   dashboardGridForWidth,
   dashboardRectsOverlap,
   findDashboardSlot,
+  ensureAiUsageWidget,
   filterLayoutForRole,
   homeViewLayout,
   inferWidgetSize,
@@ -18,13 +19,13 @@ import {
 describe("dashboard catalog persistence helpers", () => {
   it("ships a coherent default home with 3–6 high-value widgets", () => {
     expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeGreaterThanOrEqual(3);
-    expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeLessThanOrEqual(6);
+    expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeLessThanOrEqual(7);
     expect(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type)).toEqual(
-      expect.arrayContaining(["next_match", "competition_snapshot", "robot_readiness", "alerts"]),
+      expect.arrayContaining(["next_match", "competition_snapshot", "robot_readiness", "alerts", "ai_usage"]),
     );
     expect(DEFAULT_DASHBOARD_LAYOUT.some((item) => item.type === "onboarding_checklist")).toBe(false);
-    const validated = validateDashboardLayout(DEFAULT_DASHBOARD_LAYOUT, "scout");
-    expect(validated.ok).toBe(true);
+    expect(validateDashboardLayout(DEFAULT_DASHBOARD_LAYOUT, "owner").ok).toBe(true);
+    expect(validateDashboardLayout(DEFAULT_DASHBOARD_LAYOUT, "scout").ok).toBe(false);
   });
 
   it("rejects oversized layouts and unknown widgets", () => {
@@ -111,6 +112,12 @@ describe("dashboard tenant and role isolation rules", () => {
     expect(filterLayoutForRole(withAi, "admin").some((item) => item.type === "ai_usage")).toBe(true);
     expect(validateDashboardLayout(withAi, "scout").ok).toBe(false);
     expect(validateDashboardLayout(withAi, "admin").ok).toBe(true);
+
+    const withoutAi = DEFAULT_DASHBOARD_LAYOUT.filter((item) => item.type !== "ai_usage");
+    const ensured = ensureAiUsageWidget(withoutAi);
+    expect(ensured.some((item) => item.type === "ai_usage")).toBe(true);
+    expect(ensureAiUsageWidget(ensured)).toHaveLength(ensured.length);
+    expect(filterLayoutForRole(ensured, "scout").some((item) => item.type === "ai_usage")).toBe(false);
   });
 
   it("only allows owner/admin to write org-shared dashboards", () => {
@@ -183,9 +190,21 @@ describe("home view layout", () => {
       "alerts",
       "recent_result",
       "scouting_coverage",
+      "ai_usage",
     ]);
     expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
+  });
+
+  it("hides the widget board while the first-run banner is showing", () => {
+    const viewed = homeViewLayout(
+      [
+        ...DEFAULT_DASHBOARD_LAYOUT,
+        { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 20, w: 12, h: 4 },
+      ],
+      { editing: false, shell: "setup", widgets: {} },
+    );
+    expect(viewed).toEqual([]);
   });
 
   it("leaves the saved board untouched in edit mode", () => {
