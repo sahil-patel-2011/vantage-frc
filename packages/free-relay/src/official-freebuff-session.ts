@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { resolveSelectableFreebuffModel } from "../../agent/src/freebuff-models.ts";
+import { resolveSelectableFreebuffModel } from "@vantage/agent";
 
 /**
  * Official Freebuff CLI login — not a third-party proxy.

@@ -18,18 +18,11 @@ import {
 } from "../../lib/robot-weigh-in/compute-robot-weigh-in";
 import type { RobotWeighInStation } from "../../lib/robot-weigh-in/types";
 import {
-  ROBOT_WEIGH_IN_RELATED_INCLUDE,
   classifyRobotWeighInShell,
   formatRobotWeighInMetric,
-  robotWeighInNextActions,
-  robotWeighInRelatedLinks,
-  robotWeighInSetupSteps,
   robotWeighInShellCopy,
-  shouldShowRobotWeighInSummaryTiles,
-  type RobotWeighInNextAction,
   type RobotWeighInShellKind,
 } from "../../lib/robot-weigh-in/robot-weigh-in-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./robot-weigh-in.css";
 
@@ -48,47 +41,6 @@ function marginTone(margin: number | null): MarginTone {
   return "good";
 }
 
-function RelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = robotWeighInRelatedLinks(orgId, {
-    include: [...ROBOT_WEIGH_IN_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related rwi-related" aria-label="Related build tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActionsPanel({ actions }: { actions: RobotWeighInNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section className="app-card soft-panel edc-next-actions rwi-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Readiness, Inspection, and Spare Kit — never DEMO scale readings.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function WeighShell({
   description,
   orgId,
@@ -102,25 +54,15 @@ function WeighShell({
   error?: string;
   onRetry?: () => void;
 }) {
-  const actions = robotWeighInNextActions({ orgId, shell });
   const copy = robotWeighInShellCopy(shell);
-  const buildHref = hubWorkbenchHref("build", "robot-weigh-in", orgId);
-  const steps = shell === "setup" ? robotWeighInSetupSteps(orgId) : [];
 
   return (
     <main className="module-page rwi-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Robot Weigh-In"}
-          </>
-        }
+        breadcrumbs="Build / Robot Weigh-In"
         title="Robot weigh-in log"
         description={description}
-      >
-        <RelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading Robot Weigh-In">
           <SoftBlockSkeleton lines={4} />
@@ -141,39 +83,12 @@ function WeighShell({
             </a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href={hubHref("/build", "readiness-score", orgId)}>
-                Open Readiness
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-                Open Inspection Copilot
-              </a>
-            </>
+            <a className="app-button" href="#robot-weigh-in-form">
+              Log a weigh-in
+            </a>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="rwi-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Readiness and Inspection — never DEMO scale readings.</p>
-          </header>
-          <ul className="rwi-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted rwi-tip">{step.detail}</p>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <NextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -213,7 +128,6 @@ export default function RobotWeighInClient() {
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
-  const overLimitCount = view?.status === "live" ? view.summary.overLimitCount : 0;
 
   const shell = classifyRobotWeighInShell({
     loading: view == null && !fetchFailed,
@@ -223,15 +137,6 @@ export default function RobotWeighInClient() {
     entryCount,
   });
   const shellCopy = robotWeighInShellCopy(shell);
-  const nextActions = robotWeighInNextActions({
-    orgId,
-    shell: shell === "empty" ? "ready" : shell,
-    entryCount,
-    overLimitCount,
-    playoffReweighCue: view?.status === "live" ? view.playoffReweighCue : null,
-  });
-  const buildHref = hubWorkbenchHref("build", "robot-weigh-in", orgId);
-  const showTiles = shouldShowRobotWeighInSummaryTiles(entryCount);
   const loaded = view?.status === "live";
 
   const mutate = useCallback(
@@ -288,17 +193,11 @@ export default function RobotWeighInClient() {
   return (
     <main className="module-page rwi-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Robot Weigh-In"}
-          </>
-        }
+        breadcrumbs="Build / Robot Weigh-In"
         title="Robot weigh-in log"
         description="Log robot weigh-ins and track the trend against the competition weight limit — never DEMO scale readings."
       >
         <div className="rwi-header-actions">
-          <RelatedStrip orgId={orgId} />
           {view.seasons.length > 0 ? (
             <label className="app-muted rwi-filter">
               Season
@@ -333,11 +232,10 @@ export default function RobotWeighInClient() {
         </p>
       ) : null}
 
-      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      {entryCount > 0 ? <SummaryTiles view={view} loaded={loaded} /> : null}
       <LogWeighInForm busy={busy} mutate={mutate} />
       {view.summary.totalEntries > 0 ? <TrendPanel view={view} /> : null}
       <RecentEntries view={view} busy={busy} mutate={mutate} />
-      <NextActionsPanel actions={nextActions} />
     </main>
   );
 }

@@ -170,7 +170,7 @@ async function forward(
       writeOfficialChat(res, official, body);
       return;
     }
-    let upstream: Response | null = null;
+    let upstream: Response;
     try {
       upstream = await fetch(target, {
         method: req.method,

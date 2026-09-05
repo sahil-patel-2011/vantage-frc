@@ -10,14 +10,14 @@ import {
 const catalog = new Set(ISLAND_TAB_CATALOG.map((item) => item.href));
 
 describe("personalizeFromRoles", () => {
-  it("puts a scout on Scout + Team, never a made-up href", () => {
+  it("puts a scout on Scout and keeps only real workspace hrefs", () => {
     const view = personalizeFromRoles({
       teamRole: "student",
       crewRole: "scout",
       primaryFocus: "competition",
     });
     expect(isValidIslandSelection(view.islandHrefs)).toBe(true);
-    expect(view.islandHrefs[0]).toBe("/dashboard");
+    expect(view.islandHrefs[0]).toBe("/competition?tab=scouting");
     expect(view.islandHrefs).toContain("/competition?tab=scouting");
     expect(view.islandHrefs).toContain("/team");
     expect(view.islandHrefs.every((href) => catalog.has(href))).toBe(true);
@@ -36,13 +36,12 @@ describe("personalizeFromRoles", () => {
     expect(view.greetingHint).toMatch(/programming/i);
   });
 
-  it("puts a parent with no crew on Logistics", () => {
+  it("puts a parent with no crew on Run season", () => {
     const view = personalizeFromRoles({
       teamRole: "parent",
       crewRole: null,
       primaryFocus: "leadership",
     });
-    expect(view.islandHrefs).toContain("/logistics");
     expect(view.islandHrefs).toContain("/team");
   });
 
@@ -53,7 +52,7 @@ describe("personalizeFromRoles", () => {
       primaryFocus: "competition",
     });
     expect(view.islandHrefs).toContain("/competition?tab=scouting");
-    expect(view.islandHrefs).toContain("/business");
+    expect(view.islandHrefs).toContain("/team");
     expect(view.greetingHint).toMatch(/student/i);
   });
 });
@@ -62,7 +61,7 @@ describe("clampPersonalizedIsland", () => {
   it("drops off-catalog model output", () => {
     const fallback = personalizeFromRoles({ teamRole: "student", crewRole: "cad" });
     const clamped = clampPersonalizedIsland(
-      ["/dashboard", "/not-a-real-app", "/team", "/ai"],
+      ["/competition", "/not-a-real-app", "/team", "/build"],
       fallback,
     );
     expect(clamped.islandHrefs).toEqual(fallback.islandHrefs);
@@ -70,7 +69,7 @@ describe("clampPersonalizedIsland", () => {
 
   it("keeps a valid four from the catalog", () => {
     const fallback = personalizeFromRoles({ teamRole: "student", crewRole: "cad" });
-    const proposed = ["/dashboard", "/build", "/team", "/ai"];
+    const proposed = ["/competition?tab=scouting", "/build", "/team", "/competition"];
     expect(clampPersonalizedIsland(proposed, fallback).islandHrefs).toEqual(proposed);
   });
 

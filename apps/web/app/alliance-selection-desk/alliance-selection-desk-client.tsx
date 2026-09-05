@@ -20,15 +20,10 @@ import {
   type AllianceSelectionDeskView,
 } from "../../lib/alliance-selection-desk";
 import {
-  ALLIANCE_SELECTION_DESK_RELATED_INCLUDE,
-  allianceSelectionDeskNextActions,
-  allianceSelectionDeskRelatedLinks,
-  allianceSelectionDeskSetupSteps,
   allianceSelectionDeskShellCopy,
   classifyAllianceSelectionDeskShell,
   formatAllianceSelectionDeskMetric,
   shouldShowAllianceSelectionDeskSummaryTiles,
-  type AllianceSelectionDeskNextAction,
   type AllianceSelectionDeskShellKind,
 } from "../../lib/alliance-selection-desk/alliance-selection-desk-related";
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
@@ -43,50 +38,6 @@ function conflictTone(count: number): BadgeTone {
   if (count === 0) return "good";
   if (count <= 2) return "setup";
   return "demo";
-}
-
-function DeskRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = allianceSelectionDeskRelatedLinks(orgId, {
-    include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related alliance-desk-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function DeskNextActionsPanel({ actions }: { actions: AllianceSelectionDeskNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions alliance-desk-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick list, and Pick clock — never DEMO rankings.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 function DeskShell({
@@ -104,10 +55,8 @@ function DeskShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = allianceSelectionDeskNextActions({ orgId, shell });
   const copy = allianceSelectionDeskShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
-  const steps = shell === "setup" ? allianceSelectionDeskSetupSteps(orgId) : [];
 
   return (
     <main className="module-page alliance-desk-page soft-gate">
@@ -120,9 +69,7 @@ function DeskShell({
         }
         title="Alliance selection desk"
         description={description}
-      >
-        <DeskRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading alliance selection desk">
@@ -145,28 +92,6 @@ function DeskShell({
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="alliance-desk-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Scouting — never DEMO rankings.</p>
-          </header>
-          <ul className="alliance-desk-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted alliance-desk-tip">{step.detail}</p>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <DeskNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -344,15 +269,6 @@ export default function AllianceSelectionDeskClient() {
     orgId,
   });
   const shellCopy = allianceSelectionDeskShellCopy(shell);
-  const nextActions = allianceSelectionDeskNextActions({
-    orgId,
-    shell,
-    conflictCount,
-    filledSlots,
-  });
-  const relatedLinks = allianceSelectionDeskRelatedLinks(orgId, {
-    include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const showTiles = shouldShowAllianceSelectionDeskSummaryTiles(sessionCount);
 
@@ -478,11 +394,6 @@ export default function AllianceSelectionDeskClient() {
               </Button>
             </>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
         </div>
       </PageHeader>
 
@@ -491,8 +402,6 @@ export default function AllianceSelectionDeskClient() {
           {error}
         </p>
       ) : null}
-
-      <DeskNextActionsPanel actions={nextActions} />
 
       {showTiles && view?.status === "live" ? (
         <section className="alliance-desk-stats" aria-label="Alliance selection desk counts">

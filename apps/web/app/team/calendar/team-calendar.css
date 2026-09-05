@@ -514,16 +514,28 @@
 }
 .tc-more {
   position: relative;
+  z-index: 5;
   margin-left: auto;
 }
-.tc-more > summary {
-  cursor: pointer;
+.tc-more-trigger {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--app-muted);
   font: 650 13px inherit;
-  list-style: none;
+  cursor: pointer;
 }
-.tc-more > summary::-webkit-details-marker {
-  display: none;
+.tc-more.is-open .tc-more-trigger {
+  color: var(--app-ink);
+}
+.tc-more-scrim {
+  position: fixed;
+  z-index: 3;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
 }
 .tc-more-list {
   position: absolute;
@@ -552,6 +564,21 @@
 }
 .tc-more-list button:hover {
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tc-more-list {
+    animation: tc-pop-in 160ms cubic-bezier(.22, 1, .36, 1);
+  }
+}
+@keyframes tc-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .tc-back {
   display: inline-flex;

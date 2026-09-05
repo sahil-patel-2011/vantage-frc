@@ -194,7 +194,9 @@ export async function POST(request: Request) {
         );
       } catch (error) {
         if (error instanceof Error && /use_platform_free_ai|freebuff_model/.test(error.message)) {
-          throw new Error("Apply migration 0519_platform_free_ai_prefs.sql to save Free AI settings.");
+          throw new Error("Apply migration 0519_platform_free_ai_prefs.sql to save Free AI settings.", {
+            cause: error,
+          });
         }
         throw error;
       }

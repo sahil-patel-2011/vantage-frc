@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ToolStripEntry } from "../../lib/nav/tool-strip-layout";
+import { useDismissable } from "../../lib/ui/use-dismissable";
 
 export type ToolStripItem = ToolStripEntry;
 
@@ -49,10 +50,17 @@ function ToolLink({
 /**
  * One control for the rest of a workbench. The current tool is a label;
  * everything else lives in a searchable list — not a chip row.
+ * Click outside or Escape closes it; the × is not required.
  */
 export function ToolStrip({ items, value, onChange, "aria-label": ariaLabel }: ToolStripProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+  }, []);
+  useDismissable(open, close, rootRef);
   const current = items.find((item) => item.id === value) ?? items[0];
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -63,7 +71,15 @@ export function ToolStrip({ items, value, onChange, "aria-label": ariaLabel }: T
   if (items.length <= 1) return null;
 
   return (
-    <div className={`hub-tool-strip${open ? " is-open" : ""}`}>
+    <div ref={rootRef} className={`hub-tool-strip${open ? " is-open" : ""}`}>
+      {open ? (
+        <button
+          type="button"
+          className="hub-tool-finder-scrim"
+          aria-label="Dismiss tools"
+          onClick={close}
+        />
+      ) : null}
       <button
         type="button"
         className="hub-tool-finder-trigger"
@@ -75,7 +91,7 @@ export function ToolStrip({ items, value, onChange, "aria-label": ariaLabel }: T
         }}
       >
         <span>{current?.label ?? "Tools"}</span>
-        <span aria-hidden="true">{open ? "×" : "▾"}</span>
+        <span aria-hidden="true">▾</span>
       </button>
       {open ? (
         <div className="hub-tool-finder" role="dialog" aria-label={ariaLabel}>
@@ -96,7 +112,7 @@ export function ToolStrip({ items, value, onChange, "aria-label": ariaLabel }: T
                 item={item}
                 active={item.id === value}
                 onChange={onChange}
-                onPick={() => setOpen(false)}
+                onPick={close}
               />
             ))}
             {filtered.length === 0 ? <p className="hub-tool-finder-empty">Nothing matches.</p> : null}

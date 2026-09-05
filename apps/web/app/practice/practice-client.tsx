@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { hubHref } from "../../lib/nav/hubs";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -17,11 +15,9 @@ import {
   type LinkableBuildTask,
 } from "../../lib/driver-practice";
 import {
-  PRACTICE_TEAM_RELATED_INCLUDE,
   attendanceRollCallHref,
   formatAttendanceOption,
   formatSessionEvidence,
-  practiceNextActions,
 } from "../../lib/practice/practice-related";
 import "./practice.css";
 
@@ -44,31 +40,6 @@ function driverLabel(session: DriverSession, membersById: Map<string, DriverPrac
 
 function teamTab(tab: string, orgId: string) {
   return hubHref("/team", tab, orgId);
-}
-
-function PracticeNextActions({ actions }: { actions: ReturnType<typeof practiceNextActions> }) {
-  if (actions.length === 0) return null;
-  return (
-    <section className="practice-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From your real sessions and roll calls — empty until those exist. Never DEMO attendance %.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; disabled?: boolean }) {
@@ -453,7 +424,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   if (fetchFailed || !view) {
     return (
       <main className="practice-page">
-        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
             <p className="practice-kicker">Team / Practice</p>
@@ -504,10 +474,8 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   }
 
   if (view.status === "setup_required") {
-    const setupActions = practiceNextActions({ sessions: [], attendanceEventCount: 0 });
     return (
       <main className="practice-page">
-        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
             <p className="practice-kicker">Team / Practice</p>
@@ -520,7 +488,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           <p className="practice-muted">{view.message}</p>
           <a className="app-button" href="/workspace">Choose workspace</a>
         </div>
-        <PracticeNextActions actions={setupActions} />
       </main>
     );
   }
@@ -532,20 +499,8 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   const overall = sessionStats(sessions.flatMap((session) => session.cycles));
   const withGoals = sessions.filter((session) => session.goal.trim()).length;
   const withRollCalls = sessions.filter((session) => session.attendanceEventId).length;
-  const nextActions = practiceNextActions({
-    orgId,
-    sessions,
-    attendanceEventCount: attendanceEvents.length,
-  });
-
   return (
     <main className={`practice-page${embedded ? " is-embedded" : ""}`}>
-      {!embedded ? (
-        <>
-          <TeamOpsNav orgId={orgId} active="practice" />
-          <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
-        </>
-      ) : null}
       <header className="practice-hero">
         <div>
           {!embedded ? (
@@ -556,15 +511,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             Schedule drive sessions, write the goal for the day, time every cycle, and link roll calls by occurred_on
             for {context.orgName ?? "your team"} — never DEMO attendance %.
           </p>
-          {!embedded ? (
-            <div className="practice-hero-links">
-              <a href={teamTab("calendar", orgId)}>Calendar</a>
-              <a href={teamTab("attendance", orgId)}>Attendance</a>
-              <a href={teamTab("batteries", orgId)}>Batteries</a>
-              <a href={teamTab("todos", orgId)}>Todos</a>
-              <a href={teamTab("messages", orgId)}>Messages</a>
-            </div>
-          ) : null}
         </div>
         <div className="practice-hero-score">
           <strong>{overall.reps > 0 ? overall.reps : "—"}</strong>
@@ -574,8 +520,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
       </header>
 
       {error ? <p className="practice-alert error" role="alert">{error}</p> : null}
-
-      <PracticeNextActions actions={nextActions} />
 
       <section className="practice-kpis">
         <article><span>Sessions</span><strong>{sessions.length}</strong></article>
@@ -610,12 +554,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             Start a session with a clear goal, link an attendance roll call by occurred_on when ready, then log each
             scoring rep with the stopwatch. Totals stay empty until you log real work.
           </p>
-          <div className="practice-empty-actions">
-            <button type="button" className="app-button" onClick={() => setShowNew(true)}>Start your first session</button>
-            <a className="app-button secondary" href={teamTab("calendar", orgId)}>Open Calendar</a>
-            <a className="app-button secondary" href={teamTab("attendance", orgId)}>Open Attendance</a>
-            <a className="app-button secondary" href={teamTab("batteries", orgId)}>Open Batteries</a>
-          </div>
+          <button type="button" className="app-button" onClick={() => setShowNew(true)}>Start your first session</button>
         </div>
       ) : (
         <div className="practice-layout">

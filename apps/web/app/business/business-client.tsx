@@ -3,13 +3,12 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, PageHeader, TabBar, ToolStrip } from "../../components/ui";
+import { EmptyState, TabBar, ToolStrip } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import SustainabilityPanel from "./sustainability-panel";
 import {
   GRANT_STATUSES,
-  sponsorHealth,
   type BusinessPortalView,
   type BusinessView,
   type GrantApplication,
@@ -290,91 +289,7 @@ export default function BusinessClient() {
   }
 
   return (
-    <main className="module-page business-page">
-      <PageHeader
-        breadcrumbs="Business / Business Hub"
-        title="Business"
-        description={
-          live
-            ? `Season finance, budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth."
-        }
-      >
-        {live ? (
-          <div className="biz-header-actions">
-            <label className="biz-season">
-              Season
-              <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
-                {live.seasons.map((season) => (
-                  <option key={season} value={season}>
-                    {season}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <ToneBadge tone={live.canManageFinance ? "blue" : "neutral"}>
-              {live.canManageFinance ? "Finance lead" : "Team member"}
-            </ToneBadge>
-          </div>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <div className="biz-alert danger" role="alert">
-          <strong>Couldn’t complete that.</strong>
-          <span>{error}</span>
-          <button type="button" onClick={() => setError("")}>
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="biz-alert success" role="status">
-          <strong>Done.</strong>
-          <span>{notice}</span>
-          <button type="button" onClick={() => setNotice("")}>
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-
-      {!view ? (
-        loadFailure ? (
-          (() => {
-            const copy = loadFailureCopy(
-              classifyLoadFailure({
-                status: loadFailure.status,
-                message: loadFailure.message,
-                online: typeof navigator === "undefined" ? true : navigator.onLine,
-              }),
-              {
-                nextPath:
-                  typeof window === "undefined"
-                    ? null
-                    : `${window.location.pathname}${window.location.search}`,
-                message: loadFailure.message,
-              },
-            );
-            return (
-              <EmptyState soft title={copy.title} description={copy.description}>
-                {copy.primary ? (
-                  <a className="app-button" href={copy.primary.href}>
-                    {copy.primary.label}
-                  </a>
-                ) : null}
-                {copy.showRetry ? (
-                  <button type="button" className="app-button secondary" onClick={() => void load()}>
-                    Retry
-                  </button>
-                ) : null}
-              </EmptyState>
-            );
-          })()
-        ) : (
-          <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
-        )
-      ) : null}
-
+    <main className="module-page product-hub product-hub--business business-page">
       <TabBar
         aria-label="Business sections"
         value={workbenchId}
@@ -410,17 +325,87 @@ export default function BusinessClient() {
           }))}
         />
       ) : null}
-
-      {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
-        </EmptyState>
-      ) : null}
-
-      {live ? (
-        <>
+      <div className="product-hub-panel" data-hub-tab={tab}>
+        {live ? (
+          <div className="biz-context-bar">
+            <label className="biz-season">
+              Season
+              <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
+                {live.seasons.map((season) => (
+                  <option key={season} value={season}>
+                    {season}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ToneBadge tone={live.canManageFinance ? "blue" : "neutral"}>
+              {live.canManageFinance ? "Finance lead" : "Team member"}
+            </ToneBadge>
+          </div>
+        ) : null}
+        {error ? (
+          <div className="biz-alert danger" role="alert">
+            <strong>Couldn’t complete that.</strong>
+            <span>{error}</span>
+            <button type="button" onClick={() => setError("")}>
+              Dismiss
+            </button>
+          </div>
+        ) : null}
+        {notice ? (
+          <div className="biz-alert success" role="status">
+            <strong>Done.</strong>
+            <span>{notice}</span>
+            <button type="button" onClick={() => setNotice("")}>
+              Dismiss
+            </button>
+          </div>
+        ) : null}
+        {!view ? (
+          loadFailure ? (
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: loadFailure.status,
+                  message: loadFailure.message,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: loadFailure.message,
+                },
+              );
+              return (
+                <EmptyState soft title={copy.title} description={copy.description}>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </EmptyState>
+              );
+            })()
+          ) : (
+            <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+          )
+        ) : null}
+        {view?.status === "setup_required" ? (
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
+            <a className="app-button" href="/workspace">
+              Choose workspace
+            </a>
+          </EmptyState>
+        ) : null}
+        {live ? (
+          <>
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "finance" ? (
             <div className="product-hub-panel">
@@ -452,8 +437,9 @@ export default function BusinessClient() {
           ) : null}
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </div>
     </main>
   );
 }
@@ -461,10 +447,6 @@ export default function BusinessClient() {
 function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => void }) {
   const available = view.budget.totalBudgetCents + view.budget.sponsorIncomeCents + view.budget.grantIncomeCents;
   const utilization = percent(view.budget.committedCents, available);
-  const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
-  const followUps = view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy");
-  const grantDeadlines = view.grants.filter((grant) => grant.deadline && !["awarded", "declined"].includes(grant.status)).slice(0, 5);
-  const reminders = view.sponsorReminders.slice(0, 5);
   const progress = view.fundraisingProgress;
   const pulse = view.ordersPulse ?? {
     pendingCount: 0,
@@ -546,27 +528,6 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
               { id: "orders", label: "Purchase orders", hint: "Approve, order, receive", href: businessOrdersHref },
             ]}
           />
-        </article>
-        <article className="app-card">
-          <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
-          <ul className="biz-action-list">
-            {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>Review</a></li>)}
-            {reminders.map((reminder) => (
-              <li key={`${reminder.kind}-${reminder.sponsorId}`}>
-                <ToneBadge tone={reminder.kind === "thank_you" ? "good" : reminder.kind === "renewal" ? "blue" : "danger"}>
-                  {reminder.kind === "thank_you" ? "Thank-you" : reminder.kind === "renewal" ? "Renewal" : "Follow-up"}
-                </ToneBadge>
-                <div>
-                  <strong>{reminder.sponsorName}</strong>
-                  <span>{reminder.message} · due {reminder.dueOn}</span>
-                </div>
-                <button type="button" onClick={() => setTab("sponsors")}>Open</button>
-              </li>
-            ))}
-            {followUps.slice(0, 3).map((sponsor) => <li key={sponsor.id}><ToneBadge tone={sponsorHealth(sponsor) === "due" ? "danger" : "warn"}>Sponsor</ToneBadge><div><strong>{sponsor.name}</strong><span>{sponsor.nextFollowUpOn ? `Follow-up ${sponsor.nextFollowUpOn}` : "Relationship needs a next step"}</span></div><button type="button" onClick={() => setTab("sponsors")}>Connect</button></li>)}
-            {grantDeadlines.map((grant) => <li key={grant.id}><ToneBadge tone="blue">Grant</ToneBadge><div><strong>{grant.title}</strong><span>Due {grant.deadline}</span></div><button type="button" onClick={() => setTab("grants")}>Open</button></li>)}
-            {!submitted.length && !reminders.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Queue clear.</strong><span>Add a purchase, sponsor, or grant opportunity to start the operating rhythm.</span></li> : null}
-          </ul>
         </article>
       </section>
 

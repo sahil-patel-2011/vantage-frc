@@ -102,6 +102,7 @@ function NextActions({
 export default function FmeaClient({ embedded = false }: { embedded?: boolean } = {}) {
   const pathEmbed = useHubEmbed();
   const embed = pathEmbed ?? (embedded ? "team" : null);
+  const isEmbedded = embedded || pathEmbed !== null;
   const [view, setView] = useState<FmeaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -189,11 +190,13 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       : null;
     return (
       <main className="module-page fmea-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture in-match and pit failures with real O×S×D scores — never demo RPN."
-        />
+        {!isEmbedded ? (
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Failure Log (FMEA)"
+            description="Capture in-match and pit failures with real O×S×D scores — never demo RPN."
+          />
+        ) : null}
         <EmptyState
           soft
           title={failure ? failure.title : "Loading failure log…"}
@@ -218,11 +221,13 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   if (view.status === "setup_required") {
     return (
       <main className="module-page fmea-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
-        />
+        {!isEmbedded ? (
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Failure Log (FMEA)"
+            description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
+          />
+        ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="fmea-setup-steps">
             {view.steps.map((step) => (
@@ -238,13 +243,15 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
             ))}
           </ol>
         </EmptyState>
-        <NextActions
-          orgId={view.orgId}
-          failureCount={0}
-          activeCount={0}
-          needsFixCount={0}
-          highestRpn={0}
-        />
+        {!isEmbedded ? (
+          <NextActions
+            orgId={view.orgId}
+            failureCount={0}
+            activeCount={0}
+            needsFixCount={0}
+            highestRpn={0}
+          />
+        ) : null}
       </main>
     );
   }
@@ -254,52 +261,73 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
 
   return (
     <main className="module-page fmea-page">
-      <PageHeader
-        breadcrumbs={crumbs}
-        title="Failure Log (FMEA)"
-        description={
-          <>
-            Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix — RPN only from logged scores, never demo numbers.
-          </>
-        }
-      >
-        <div className="fmea-header-actions">
-          {view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
-            Knowledge
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
-            Prototypes
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
-            Inspection
-          </a>
-        </div>
-      </PageHeader>
+      {!isEmbedded ? (
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Failure Log (FMEA)"
+          description={
+            <>
+              Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
+              detection, record root cause and fix — RPN only from logged scores, never demo numbers.
+            </>
+          }
+        >
+          <div className="fmea-header-actions">
+            {view.seasons.length > 0 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={season ?? view.seasonYear}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeason(next);
+                    load(next);
+                  }}
+                >
+                  {view.seasons.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+              Knowledge
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+              CAD
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
+              Prototypes
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
+              Inspection
+            </a>
+          </div>
+        </PageHeader>
+      ) : null}
 
-      {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
+      {orgId && !isEmbedded ? <FmeaRelated orgId={orgId} /> : null}
+      {isEmbedded && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {error ? (
         <p className="fmea-alert" role="alert">
@@ -307,14 +335,16 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         </p>
       ) : null}
 
-      <NextActions
-        orgId={orgId}
-        failureCount={view.summary.total}
-        activeCount={view.summary.active}
-        needsFixCount={view.summary.needsFix.length}
-        highestRpn={view.summary.highestRpn}
-        topTitle={topTitle}
-      />
+      {!isEmbedded ? (
+        <NextActions
+          orgId={orgId}
+          failureCount={view.summary.total}
+          activeCount={view.summary.active}
+          needsFixCount={view.summary.needsFix.length}
+          highestRpn={view.summary.highestRpn}
+          topTitle={topTitle}
+        />
+      ) : null}
 
       <SummaryTiles view={view} />
       <BatteryReliabilitySignals view={view} />

@@ -6,7 +6,7 @@ import { HomeShowcase } from "../components/marketing/home-showcase";
 import { HeroProductPanel } from "../components/marketing/hero-product";
 import { ScrollReveal } from "../components/marketing/scroll-reveal";
 import { PricingStrip } from "../components/marketing/pricing-strip";
-import { MARKETING_DEFINITION } from "../lib/marketing/product-story";
+import { MARKETING_DEFINITION, MARKETING_WORKSPACES } from "../lib/marketing/product-story";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 import "./marketing-showcase.css";
 
@@ -42,7 +42,8 @@ export default function Home() {
                 </a>
               </div>
               <ul className="mk-hero-proof">
-                <li>Scout · Compete · Build · Season</li>
+                {/* The four workspaces, spelled the way the app spells them. */}
+                <li>{MARKETING_WORKSPACES.map((workspace) => workspace.title).join(" · ")}</li>
                 <li>Empty until real data</li>
                 <li>CAD and code stay human-gated</li>
               </ul>

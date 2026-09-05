@@ -15,6 +15,7 @@ import { buildAccentPlan } from "../../lib/branding/colors";
 import {
   ISLAND_SLOT_COUNT,
   defaultIslandHrefs,
+  defaultIslandSentence,
   isDefaultIslandSelection,
   isValidIslandSelection,
   toggleIslandDraft,
@@ -375,12 +376,14 @@ export default function AppearancePanel() {
         ) : null}
       </section>
 
-      <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
-        <h3 id="appearance-cockpit-title">Cockpit</h3>
-        <p>
-          A few useful switches — like the car, not the factory. These stay small on purpose so nothing
-          surprising breaks.
-        </p>
+      <details className="appearance-group appearance-advanced">
+        <summary>Advanced workspace preferences</summary>
+        <div className="appearance-advanced-body">
+          <section aria-labelledby="appearance-cockpit-title">
+            <h3 id="appearance-cockpit-title">Cockpit</h3>
+            <p>
+              Personal defaults for Bugbot and live boards.
+            </p>
         <label className="appearance-check">
           <input
             type="checkbox"
@@ -448,19 +451,19 @@ export default function AppearancePanel() {
             {cockpitBusy ? "Saving…" : "Save cockpit"}
           </button>
         </div>
-        {cockpitNote ? (
-          <p className={`brand-notice ${cockpitNote.tone === "ok" ? "ok" : "error"}`} role="status">
-            {cockpitNote.text}
-          </p>
-        ) : null}
-      </section>
+            {cockpitNote ? (
+              <p className={`brand-notice ${cockpitNote.tone === "ok" ? "ok" : "error"}`} role="status">
+                {cockpitNote.text}
+              </p>
+            ) : null}
+          </section>
 
-      <section className="appearance-group" aria-labelledby="appearance-island-title">
-        <h3 id="appearance-island-title">Bottom island — your four apps</h3>
-        <p>
-          The four shortcuts at the bottom of every screen. Tap in the order you want them; tap a
-          chosen app again to remove it.
-        </p>
+          <section aria-labelledby="appearance-island-title">
+            <h3 id="appearance-island-title">Bottom island</h3>
+            <p>
+              Choose the four shortcuts at the bottom of every screen. Tap in the order you want them;
+              tap a chosen app again to remove it.
+            </p>
         <div
           className="appearance-island-slots"
           aria-label={`${islandDraft.length} of ${ISLAND_SLOT_COUNT} island apps selected`}
@@ -519,7 +522,7 @@ export default function AppearancePanel() {
             onClick={() =>
               void saveIsland(
                 defaultIslandHrefs(),
-                "Island reset to Home, Compete, Team, Business. It appears on your next page load.",
+                `Island reset to ${defaultIslandSentence()}. It appears on your next page load.`,
               )
             }
           >
@@ -531,12 +534,14 @@ export default function AppearancePanel() {
             </button>
           ) : null}
         </div>
-        {islandNote ? (
-          <p className="brand-notice" role="status">
-            {islandNote}
-          </p>
-        ) : null}
-      </section>
+            {islandNote ? (
+              <p className="brand-notice" role="status">
+                {islandNote}
+              </p>
+            ) : null}
+          </section>
+        </div>
+      </details>
     </div>
   );
 }

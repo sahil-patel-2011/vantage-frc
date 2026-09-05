@@ -6,9 +6,7 @@ import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner
 import { AiFundingPanel } from "./ai-funding-panel";
 import { hubHref } from "../../../lib/nav/hubs";
 import {
-  AI_KEYS_RELATED_INCLUDE,
   aiKeysBillingNote,
-  aiKeysRelatedLinks,
   aiKeysShellCopy,
   classifyAiKeysShell,
   type AiKeysShellKind,
@@ -103,19 +101,6 @@ type Payload = {
   setupMessage?: string | null;
   error?: string;
 };
-
-function RelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiKeysRelatedLinks(orgId, { include: [...AI_KEYS_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-keys-related" aria-label="Related AI settings">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
 
 function ShellPanel({
   shell,
@@ -683,10 +668,8 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         navPath="/team/ai-keys"
         title="AI API keys"
         description={PAGE_DESCRIPTION}
-      >
-      </PageHeader>
+      />
 
-      {orgId ? <RelatedStrip orgId={orgId} /> : null}
       {orgId ? <SponsoredPromoBanner orgId={orgId} /> : null}
       <AiFundingPanel orgId={orgId} />
 

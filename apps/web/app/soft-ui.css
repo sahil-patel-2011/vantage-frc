@@ -165,12 +165,18 @@ body.has-app-shell .app-topbar{display:none}
   position:fixed;z-index:100;inset:0 auto 0 0;width:min(340px,90vw);padding:16px 14px calc(28px + env(safe-area-inset-bottom,0px));
   padding-top:calc(16px + env(safe-area-inset-top,0px));
   background:var(--soft-bg);overflow:auto;transform:translateX(-104%);
-  transition:transform .32s cubic-bezier(.22,1,.36,1);
+  /* Hidden (not just offscreen) while closed, so its links leave the tab order
+     and the a11y tree. step-end holds it visible through the close slide. */
+  visibility:hidden;
+  transition:transform .32s cubic-bezier(.22,1,.36,1),visibility .32s step-end;
   box-shadow:none;will-change:transform;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
 }
-.soft-drawer.open{transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14)}
+.soft-drawer.open{
+  transform:translateX(0);visibility:visible;box-shadow:24px 0 48px rgba(15,20,28,.14);
+  transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s;
+}
 .soft-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .soft-drawer-brand{display:flex;align-items:center;gap:10px}
 .soft-drawer-brand .mark{
@@ -217,6 +223,9 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-drawer-foot a:hover,.soft-drawer-foot button:hover{color:var(--soft-ink)}
 .soft-drawer-foot button:disabled{opacity:.65;cursor:wait}
+/* Signing out is not one more utility link — it gets its own line so it never
+   lands mid-wrap next to Admin. */
+.soft-drawer-foot button{flex:1 0 100%;margin-top:6px;text-align:left;color:var(--soft-ink);font-weight:700}
 /* Keeps the 8px inset the workspace picker below it also uses. */
 .soft-org-chip{
   display:flex;align-items:center;gap:10px;margin:0 8px 8px;padding:10px 12px;border-radius:var(--soft-radius-sm);
@@ -308,8 +317,14 @@ body.has-app-shell .app-topbar{display:none}
 .soft-account-teams a[aria-current="true"]{background:var(--soft-accent-soft);color:var(--soft-accent)}
 .soft-drawer-hint{margin:0 4px 10px;color:var(--soft-muted);font-size:12px}
 .soft-drawer-flat{
-  display:grid;gap:4px;padding:4px 2px 12px;
+  display:grid;gap:4px;padding:4px 2px 12px;align-content:start;
 }
+/* Rows arrive just behind the panel so the drawer reads as one motion. */
+.soft-drawer.open .soft-drawer-hub{animation:soft-drawer-row .26s cubic-bezier(.22,1,.36,1) both}
+.soft-drawer.open .soft-drawer-hub:nth-child(2){animation-delay:.03s}
+.soft-drawer.open .soft-drawer-hub:nth-child(3){animation-delay:.06s}
+.soft-drawer.open .soft-drawer-hub:nth-child(4){animation-delay:.09s}
+@keyframes soft-drawer-row{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
 .soft-drawer-hub{
   display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:14px;
   color:var(--soft-ink);text-decoration:none;font:650 14px/1.2 var(--font-source-sans),ui-sans-serif;
@@ -447,6 +462,11 @@ body.has-app-shell .app-topbar{display:none}
 .soft-island-editor{position:fixed;z-index:120;inset:0;display:grid;place-items:end center;padding:18px 12px 0}
 .soft-island-editor-scrim{position:absolute;inset:0;border:0;background:rgba(11,18,32,.52);backdrop-filter:blur(4px);cursor:pointer}
 .soft-island-editor>section{position:relative;z-index:1;width:min(680px,100%);max-height:min(780px,90dvh,90svh);overflow:auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));border:1px solid var(--soft-line);border-bottom:0;border-radius:24px 24px 0 0;background:var(--soft-card);box-shadow:0 -18px 54px rgba(8,18,38,.2)}
+@media (prefers-reduced-motion: no-preference) {
+  .soft-island-editor-scrim{animation:soft-scrim-in .2s ease}
+  .soft-island-editor>section{animation:soft-sheet-in .28s cubic-bezier(.22,1,.36,1)}
+}
+@keyframes soft-sheet-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .soft-island-editor header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px}
 .soft-island-editor header>div{display:grid;gap:4px}.soft-island-editor header span{color:var(--soft-accent);font:800 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.1em}.soft-island-editor h2{margin:0;font-size:clamp(21px,4vw,28px);letter-spacing:-.035em}.soft-island-editor header p{max-width:540px;margin:2px 0 0;color:var(--soft-muted);font-size:13px;line-height:1.45}
 .soft-island-slot-preview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px;border:1px solid var(--soft-line);border-radius:18px;background:var(--soft-bg)}
@@ -461,8 +481,13 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-fab-desktop{display:none!important}
 @media(min-width:980px){
-  .soft-island{bottom:calc(14px + var(--soft-safe-bottom));width:min(368px,calc(100vw - 48px))}
-  body.has-app-shell{padding-bottom:calc(86px + var(--soft-safe-bottom)) !important}
+  /*
+   * The island is a thumb-reach control. Desktop already has Search and the
+   * workspace drawer; duplicating app navigation at the bottom makes the
+   * canvas feel boxed in and leaves a permanent empty gutter.
+   */
+  .soft-island{display:none}
+  body.has-app-shell{padding-bottom:32px !important}
 }
 @media(max-width:620px){
   .soft-island-editor{padding-inline:0}
@@ -637,15 +662,11 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
 }
 @media(prefers-reduced-motion:reduce){
   .soft-drawer,.soft-toggle i{transition:none!important}
+  .soft-drawer.open .soft-drawer-hub{animation:none!important}
 }
 
 /* Home is one calm surface — the toolbox strips live behind Edit Home. */
 .dash-home{max-width:1180px;margin:0 auto;padding:clamp(18px,3vw,36px) 16px 28px;position:relative}
-.dash-home:not(.is-editing) .dash-quick-start,
-.dash-home:not(.is-editing) .dash-feature-desk,
-.dash-home:not(.is-editing) .dash-board-bar,
-.dash-home:not(.is-editing) .dash-role-strip,
-.dash-home:not(.is-editing) .dash-ready-cue{display:none}
 .dash-home:not(.is-editing) .dash-home-header{margin-bottom:12px}
 .dash-home:not(.is-editing) .dash-home-header h1{font-size:clamp(24px,2.6vw,30px)}
 .dash-home:not(.is-editing) .dash-home-header p{max-width:40ch;font-size:14px}
@@ -660,96 +681,19 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
   letter-spacing:.04em;text-transform:uppercase;
 }
 .dash-home-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px}
-.dash-home-more{position:relative}
-.dash-home-more>summary{
-  list-style:none;cursor:pointer;min-height:36px;padding:8px 12px;border:1px solid var(--soft-line);
-  border-radius:999px;background:var(--soft-card);color:var(--soft-muted);font:600 12px/1 var(--font-source-sans),system-ui;
-}
-.dash-home-more>summary::-webkit-details-marker{display:none}
-.dash-home-more[open]>summary{color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
-.dash-home-more>div{
-  position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:grid;gap:8px;min-width:200px;padding:10px;
-  border:1px solid var(--soft-line);border-radius:var(--soft-radius-sm);background:var(--soft-card);box-shadow:var(--soft-shadow-pop);
-}
 .dash-home .app-button{border:0;background:var(--soft-accent);color:var(--soft-accent-ink);cursor:pointer;border-radius:12px;box-shadow:0 8px 20px color-mix(in srgb,var(--soft-accent) 28%,transparent)}
 .dash-home .app-button.secondary{background:var(--soft-card);color:var(--soft-ink);border:1px solid var(--soft-line);box-shadow:none}
-.dash-hub-rail{
-  display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;
-}
-.dash-hub-rail a{
-  display:inline-flex;align-items:center;min-height:34px;padding:0 12px;border-radius:999px;
-  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);
-  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;box-shadow:var(--soft-shadow);
-}
-.dash-hub-rail a:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));color:var(--soft-accent)}
-.dash-next-actions{margin:0 0 14px}
-.dash-ready-cue{
-  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
-  margin:0 0 16px;padding:10px 14px;border-radius:14px;
-  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);
-  font:600 13px/1.4 var(--font-source-sans),ui-sans-serif;
-}
-.dash-ready-cue strong{font-weight:700}
-.dash-ready-cue a{color:var(--soft-accent);font:700 13px var(--font-source-sans),ui-sans-serif;text-decoration:none;white-space:nowrap}
-.dash-ready-cue a:hover{text-decoration:underline}
-.dash-edit-trigger,
 .dash-edit-quiet{
   min-height:36px;padding:0 4px;border:0;background:none;box-shadow:none;cursor:pointer;
   color:var(--soft-muted);font:650 13px var(--font-source-sans),ui-sans-serif;
 }
-.dash-edit-trigger:hover,
 .dash-edit-quiet:hover{filter:none;color:var(--soft-accent)}
 .dash-updated{color:var(--soft-muted);font-size:11px}
-.dash-next-glance{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:6px 14px;border-radius:999px;background:var(--soft-accent-soft);color:var(--soft-accent);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
-.dash-next-glance:hover{box-shadow:0 4px 14px color-mix(in srgb,var(--soft-accent) 25%,transparent);transform:translateY(-1px)}
-.dash-next-glance span{font:700 9px var(--font-source-sans),ui-sans-serif;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
-.dash-next-glance strong{font:700 12px var(--font-source-sans),ui-sans-serif}
-.dash-next-glance b{font:700 12px ui-monospace,monospace}
-
-.dash-role-strip{
-  margin:0 0 16px;padding:12px 14px;border-radius:var(--soft-radius);
-  background:color-mix(in srgb,var(--soft-card) 94%,var(--soft-accent-soft));
-  border:1px solid color-mix(in srgb,var(--soft-accent) 16%,var(--soft-line));
-  box-shadow:var(--soft-shadow);
-}
-.dash-role-strip[data-audience="mentor"]{
-  background:color-mix(in srgb,var(--soft-card) 92%,#fff7ed);
-  border-color:color-mix(in srgb,#ea580c 18%,var(--soft-line));
-}
-.dash-role-strip-head{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;
-}
-.dash-role-strip-head span{
-  font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--soft-muted);
-}
-.dash-role-strip-head a{
-  color:var(--soft-accent);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
-}
-.dash-role-strip ul{
-  list-style:none;margin:0;padding:0;display:grid;gap:8px;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-}
-.dash-role-strip li a{
-  display:grid;gap:4px;min-height:64px;padding:10px 12px;border-radius:14px;
-  background:var(--soft-card);border:1px solid var(--soft-line);text-decoration:none;color:inherit;
-  transition:transform .15s ease,box-shadow .15s ease;
-}
-.dash-role-strip li a:hover{transform:translateY(-1px);box-shadow:var(--soft-shadow)}
-.dash-role-strip li span{font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--soft-muted)}
-.dash-role-strip li strong{font:600 13px/1.35 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
-.dash-role-strip li .dash-strip-countdown{font:700 12px ui-monospace,monospace;color:var(--soft-accent);font-style:normal}
-.dash-role-strip li[data-tone="warn"] a{border-color:color-mix(in srgb,#ea580c 35%,var(--soft-line))}
-.dash-role-strip li[data-tone="ok"] a{border-color:color-mix(in srgb,#15803d 28%,var(--soft-line))}
 
 .dash-home-header{margin-bottom:14px}
 .dash-home-header p{max-width:42ch;font-size:14px}
-.dash-hub-rail{margin-bottom:12px}
 .dash-board-bar{margin-bottom:12px}
 
-.dash-editor-bar{display:grid;gap:12px;margin-bottom:16px;padding:14px 16px;border-radius:var(--soft-radius);background:color-mix(in srgb,var(--soft-card) 92%,var(--soft-accent-soft));border:1px solid color-mix(in srgb,var(--soft-accent) 18%,var(--soft-line));box-shadow:var(--soft-shadow)}
-.dash-editor-copy{display:grid;gap:4px}
-.dash-editor-copy strong{font-size:14px;letter-spacing:-.01em}
-.dash-editor-copy span{color:var(--soft-muted);font-size:13px;line-height:1.4}
 .dash-catalog{display:flex;flex-wrap:wrap;gap:8px}
 .dash-catalog button{min-height:40px;padding:8px 12px;border-radius:999px;border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);font:600 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .dash-catalog button:hover:not(:disabled){border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));background:var(--soft-accent-soft)}
@@ -1133,7 +1077,7 @@ html[data-theme="dark"] .dash-remove-btn{background:#ef4444;color:#fff}
   .dash-metric-grid{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){
-  .dash-grid-item.jiggling,.dash-edit-dock,.dash-library-sheet,.dash-library-scrim,.dash-next-glance{animation:none!important}
+  .dash-grid-item.jiggling,.dash-edit-dock,.dash-library-sheet,.dash-library-scrim{animation:none!important}
 }
 
 /* Clean waitlist-gated sign-in */
@@ -1761,8 +1705,9 @@ body.has-app-shell{
 }
 @media(min-width:980px){
   .soft-more-sheet,.soft-more-scrim,.soft-fab,.soft-fab.soft-fab-desktop{display:none!important}
-  .soft-island{display:flex}
-  body.has-app-shell{padding-bottom:calc(86px + var(--soft-safe-bottom)) !important}
+  /* Desktop navigates from the drawer — this block used to re-show the island and,
+     being later in the file, silently overrode the rule that hides it. The bottom
+     padding it reserved for the island goes with it. */
 }
 @media(max-width:380px){
   .soft-island a span,.soft-island-more span{display:none}
@@ -2000,15 +1945,7 @@ body.has-app-shell .team-admin-next-actions,
 body.has-app-shell .team-ops-nav,
 body.has-app-shell .kick-pipeline-links,
 body.has-app-shell .cdc-gov,
-body.has-app-shell [class*="next-actions"],
-body.has-app-shell .dash-home[data-setup="1"] .dash-empty-cta,
-body.has-app-shell .dash-home:not(.is-editing) .dash-next-glance,
-body.has-app-shell .app-empty .app-button.secondary,
-body.has-app-shell .soft-empty .app-button.secondary,
-body.has-app-shell .app-empty a.app-button ~ a.app-button,
-body.has-app-shell .soft-empty a.app-button ~ a.app-button,
-body.has-app-shell .app-empty a.app-button ~ button.app-button,
-body.has-app-shell .soft-empty a.app-button ~ button.app-button{
+body.has-app-shell .dash-home[data-setup="1"] .dash-empty-cta{
   display:none !important;
 }
 body.has-app-shell .admin-control{padding:0;max-width:none}
@@ -2585,6 +2522,11 @@ body.has-app-shell .command-dialog [role="option"].is-active{
   box-shadow:inset 2px 0 0 var(--soft-accent);
 }
 body.has-app-shell .command-dialog [role="option"].is-active>small{color:var(--soft-accent);font-weight:700}
+@media (prefers-reduced-motion: no-preference) {
+  body.has-app-shell .command-dialog{animation:soft-scrim-in .18s ease}
+  body.has-app-shell .command-dialog>div{animation:command-pop .2s cubic-bezier(.22,1,.36,1)}
+}
+@keyframes command-pop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:no-preference){
   body.has-app-shell .command-dialog [role="option"]{transition:background 120ms ease}
 }

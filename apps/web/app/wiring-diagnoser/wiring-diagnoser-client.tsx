@@ -144,12 +144,7 @@ export default function WiringDiagnoserClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Wiring Diagnoser"}
-          </>
-        }
+        breadcrumbs="Build / Wiring Diagnoser"
         title="Wiring / Power Fault Diagnoser"
         description="Compare a board photo against your stored wiring diagram and power budget to flag miswires, undersized breakers, and over-spec channels before they cost you a match."
       >
@@ -197,17 +192,11 @@ export default function WiringDiagnoserClient() {
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          {view.steps[0] ? (
+            <a className="app-button" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </a>
+          ) : null}
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>

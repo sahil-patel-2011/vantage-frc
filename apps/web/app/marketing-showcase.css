@@ -107,6 +107,10 @@
   content:"";position:absolute;left:0;top:1.05em;width:6px;height:6px;
   border-radius:50%;background:var(--m-blue);
 }
+.mk-hub-where{
+  margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);
+  color:var(--m-muted);font:600 13px var(--m-sans);
+}
 .mk-related-links{
   margin:clamp(22px,3vw,36px) 0 0;color:var(--m-muted);font-size:14.5px;line-height:1.6;
 }

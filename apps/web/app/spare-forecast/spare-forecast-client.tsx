@@ -1,21 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
 import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
-  SPARE_FORECAST_RELATED_INCLUDE,
   classifySpareForecastShell,
   formatSpareForecastMetric,
-  spareForecastNextActions,
-  spareForecastRelatedLinks,
   spareForecastShellCopy,
-  type SpareForecastNextAction,
   type SpareForecastShellKind,
 } from "../../lib/spare-forecast/spare-forecast-related";
 import type { ForecastUrgency, PurchaseRequestStatus } from "../../lib/spare-forecast/types";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./spare-forecast.css";
 
@@ -35,86 +30,29 @@ const STATUS_LABEL: Record<PurchaseRequestStatus, string> = {
 
 type LiveView = Extract<SpareForecastView, { status: "live" }>;
 
-function SpareForecastRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = spareForecastRelatedLinks(orgId, { include: [...SPARE_FORECAST_RELATED_INCLUDE] });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related spare-forecast-related" aria-label="Related spare tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function SpareForecastNextActionsPanel({ actions }: { actions: SpareForecastNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions spare-forecast-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Batteries, Orders, and Subsystems — never DEMO spare counts.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function SpareForecastShell({
   description,
   orgId,
   shell,
   error,
   onRetry,
-  children,
 }: {
   description: string;
   orgId?: string | null;
   shell: SpareForecastShellKind;
   error?: string;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
-  const actions = spareForecastNextActions({ orgId, shell });
-  const buildHref = hubHref("/build", "fmea", orgId);
   const copy = spareForecastShellCopy(shell);
   const inventoryHref = withOrgHref("/inventory", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const ordersHref = hubHref("/business", "orders", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   return (
     <main className="module-page spare-forecast-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
-          </>
-        }
+        breadcrumbs="Build / Spare Forecast"
         title="Spare-Parts Failure Forecast"
         description={description}
-      >
-        <SpareForecastRelatedStrip orgId={orgId} />
-      </PageHeader>
-      {children}
+      />
       <EmptyState
         soft
         badge={
@@ -144,33 +82,16 @@ function SpareForecastShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={inventoryHref}>
-              Open Inventory
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-          </>
+          <a className="app-button" href={inventoryHref}>
+            Open Inventory
+          </a>
         ) : null}
         {shell === "no_risk" ? (
-          <>
-            <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
-              Open FMEA
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-            <a className="app-button secondary" href={ordersHref}>
-              Open Orders
-            </a>
-          </>
+          <a className="app-button" href="#spare-forecast-draft">
+            Review forecast
+          </a>
         ) : null}
       </EmptyState>
-      <SpareForecastNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -211,11 +132,6 @@ export default function SpareForecastClient() {
   const orgId = view && "orgId" in view ? view.orgId : null;
   const spareBinCount = view?.status === "live" ? view.spareBinCount : 0;
   const forecastLineCount = view?.status === "live" ? view.forecastLines.length : 0;
-  const criticalCount =
-    view?.status === "live"
-      ? view.forecastLines.filter((line) => line.forecast.urgency === "critical").length
-      : 0;
-  const purchaseRequestCount = view?.status === "live" ? view.purchaseRequests.length : 0;
 
   const shell = classifySpareForecastShell({
     loading: view == null && !fetchFailed,
@@ -226,22 +142,6 @@ export default function SpareForecastClient() {
     forecastLineCount,
   });
   const shellCopy = spareForecastShellCopy(shell);
-  const nextActions = spareForecastNextActions({
-    orgId,
-    shell,
-    spareBinCount,
-    forecastLineCount,
-    criticalCount,
-    purchaseRequestCount,
-    seasonHorizon: view?.status === "live" ? view.seasonHorizon : undefined,
-  });
-  const relatedLinks = spareForecastRelatedLinks(orgId, {
-    include: [...SPARE_FORECAST_RELATED_INCLUDE],
-  });
-  const buildHref = hubHref("/build", "fmea", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const ordersHref = hubHref("/business", "orders", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
   const inventoryHref = withOrgHref("/inventory", orgId);
 
   const mutate = useCallback(
@@ -308,12 +208,7 @@ export default function SpareForecastClient() {
   return (
     <main className="module-page spare-forecast-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Spare Forecast"}
-          </>
-        }
+        breadcrumbs="Build / Spare Forecast"
         title="Spare-Parts Failure Forecast"
         description={
           view.seasonHorizon === "offseason"
@@ -341,11 +236,6 @@ export default function SpareForecastClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
         </div>
       </PageHeader>
 
@@ -354,8 +244,6 @@ export default function SpareForecastClient() {
           {error}
         </p>
       ) : null}
-
-      <SpareForecastNextActionsPanel actions={nextActions} />
 
       {shell === "empty" ? (
         <EmptyState
@@ -368,12 +256,6 @@ export default function SpareForecastClient() {
           <a className="app-button" href={inventoryHref}>
             Open Inventory
           </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
-          <a className="app-button secondary" href={batteriesHref}>
-            Open Batteries
-          </a>
         </EmptyState>
       ) : null}
 
@@ -385,14 +267,8 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
-          <a className="app-button secondary" href={ordersHref}>
-            Open Orders
+          <a className="app-button" href="#spare-forecast-draft">
+            Review forecast
           </a>
         </EmptyState>
       ) : null}
@@ -402,16 +278,6 @@ export default function SpareForecastClient() {
       {shell === "ready" ? (
         <div className="spare-forecast-layout">
           <ForecastPanel view={view} busy={busy} mutate={mutate} />
-          <Panel className="spare-forecast-tip" aria-label="Restock tip">
-            <span className="eyebrow">Restock path</span>
-            <p className="app-muted" style={{ marginTop: 8 }}>
-              Draft from projected shortfalls, then promote through{" "}
-              <a href={ordersHref}>Orders</a>. Keep{" "}
-              <a href={batteriesHref}>Batteries</a> and{" "}
-              <a href={subsystemsHref}>Subsystems</a> aligned with inventory tags — never invent DEMO
-              spare counts.
-            </p>
-          </Panel>
         </div>
       ) : null}
 

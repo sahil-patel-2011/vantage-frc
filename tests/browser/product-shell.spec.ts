@@ -12,77 +12,42 @@ test.beforeEach(async ({ context }) => {
   ]);
 });
 
-test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
+/*
+ * The E2E fixture authenticates without a team, so every product route here is
+ * exercised in its no-workspace state (see the /code expectation below). Home
+ * customization saves to a team-scoped board, so Edit Home is deliberately
+ * absent until a workspace is selected; the layout/collision engine behind it
+ * is covered by apps/web/lib/dashboard/grid-drag.test.ts.
+ */
+test("dashboard home stays calm and defers customization until a team is selected", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByTestId("dash-customize")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
-  await expect(page.getByText("Competition Command Center")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
+  await expect(page.getByTestId("dash-customize")).toHaveCount(0);
+  await expect(page.getByText("Competition Command Center")).toHaveCount(0);
 });
 
-test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {
-  await page.goto("/dashboard");
-  // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
-  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByTestId("dash-open-library")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible();
-  await page.getByTestId("dash-open-library").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByRole("heading", { name: "Widget library" })).toBeVisible();
-});
-
-test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) => {
-  await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto("/dashboard");
-  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
-  await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
-  await expect(page.locator(".dash-grid")).toBeVisible();
-
-  const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
-  await expect(snapshot).toBeVisible();
-  await snapshot.evaluate((node) => node.scrollIntoView({ block: "center" }));
-  const before = `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`;
-  const handle = snapshot.getByTestId("dash-drag-handle");
-  const box = await handle.boundingBox();
-  expect(box).toBeTruthy();
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box!.x + 280, box!.y + 90, { steps: 20 });
-  await expect(page.locator(".dash-snap-hud")).toBeVisible();
-  await page.mouse.up();
-  await expect
-    .poll(async () => `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`)
-    .not.toBe(before);
-
-  const beforeCount = await page.getByTestId("dash-grid-item").count();
-  await page.getByTestId("dash-open-library").evaluate((node) => (node as HTMLButtonElement).click());
-  const addFirst = page.locator(".dash-library-grid button").first();
-  await expect(addFirst).toBeEnabled();
-  await addFirst.click();
-  await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
-});
-
-test("product shell keeps four favorite apps and opens the rest from the menu", async ({ page }) => {
+test("product shell keeps four workspace shortcuts on phone and uses the drawer on desktop", async ({ page }) => {
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
-  await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(island.getByRole("link", { name: "Scout" })).toBeVisible();
+  await expect(island.getByRole("link", { name: "Run season" })).toBeVisible();
   await page.getByRole("button", { name: "Open navigation" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
-  await drawer.getByRole("button", { name: "Competition" }).click();
-  await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
+  // Home is a sibling of the four workspaces — without it the only way back is the wordmark.
+  await expect(drawer.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Scout" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Compete" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Build" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Run season" })).toBeVisible();
   await drawer.getByRole("button", { name: "Close", exact: true }).click();
 
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeVisible();
-  await expect(island.getByRole("link")).toHaveCount(4);
+  await expect(island).toBeHidden();
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
@@ -94,9 +59,9 @@ test("onboarding route is reachable when authenticated fixture skips incomplete 
 test("account route keeps settings discoverable when the API session is unavailable", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Your settings" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "My AI keys" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your session ended" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });

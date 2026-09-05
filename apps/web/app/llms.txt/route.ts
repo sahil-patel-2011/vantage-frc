@@ -8,7 +8,7 @@ const c = PRICING_CATALOG;
 
 const body = `# Vantage
 
-> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. It runs Soft-UI hubs for Competition, Team, Business, Build, and AI in one invite-only org workspace. Surfaces stay empty until real TBA, scout, or connector data exists. AI actions are human-gated.
+> Vantage is competition operations software for FIRST Robotics Competition (FRC) teams. Members navigate four workspaces — Scout, Compete, Build, and Run season — over Soft-UI hubs for Competition, Team, Business, Build, Media, and AI in one invite-only org workspace. Surfaces stay empty until real TBA, scout, or connector data exists. AI actions are human-gated.
 
 ## Entity
 - Name: Vantage (also "Vantage FRC")
@@ -19,6 +19,7 @@ const body = `# Vantage
 - Site: ${CANONICAL}/
 
 ## What Vantage does (citeable)
+- Four workspaces carry the whole app: Scout (offline forms and coverage), Compete (event day, strategy, checklist), Build (kickoff, CAD, code, robot), Run season (calendar, chat, money, sponsors, media, AI).
 - Offline-first match and pit scouting with form builder, voice notes (opt-in), and sync when Wi-Fi returns.
 - Competition hub: Event day, Scouting, Strategy, and Pit workbenches; My Day / Forms / Alliance desk live as inner tabs — not a 40-item More tools list.
 - Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.

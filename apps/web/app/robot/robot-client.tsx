@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState } from "../../components/ui";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   cadProvider,
@@ -80,7 +79,6 @@ function SubsystemCard({
   const patch = (fields: Record<string, unknown>) =>
     run({ action: "update_subsystem", orgId, id: subsystem.id, ...fields }, `sub:${subsystem.id}`);
   const provider = cadProvider(subsystem.cadUrl);
-  const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
 
   return (
     <article className="robot-card app-card">
@@ -125,9 +123,9 @@ function SubsystemCard({
             </span>
           ) : (subsystem.vaultDocumentCount ?? 0) > 0 ? (
             <span className="robot-domain-value">
-              <a className="robot-cad-btn" href={withOrg("/cad-vault")}>
+              <span className="robot-cad-btn">
                 In CAD vault
-              </a>
+              </span>
             </span>
           ) : (
             <LinkEditor value="" placeholder="https://cad.onshape.com/…" buttonLabel="+ Link CAD model" busy={busy} onSave={(next) => void patch({ cadUrl: next || null })} />
@@ -193,15 +191,15 @@ function SubsystemCard({
       </div>
 
       <footer className="robot-ops">
-        <a className={subsystem.ops.bom && !subsystem.ops.bom.buildable ? "robot-chip warn" : "robot-chip"} href={withOrg("/inventory")}>
+        <span className={subsystem.ops.bom && !subsystem.ops.bom.buildable ? "robot-chip warn" : "robot-chip"}>
           BOM: {subsystem.ops.bom ? (subsystem.ops.bom.buildable ? "buildable" : `${subsystem.ops.bom.shortCount} short`) : "not mapped"}
-        </a>
-        <a className={subsystem.ops.failures7d > 0 ? "robot-chip warn" : "robot-chip"} href={withOrg("/pit")}>
+        </span>
+        <span className={subsystem.ops.failures7d > 0 ? "robot-chip warn" : "robot-chip"}>
           Failures 7d: {subsystem.ops.failures7d}
-        </a>
-        <a className={subsystem.ops.openMaintenance > 0 ? "robot-chip warn" : "robot-chip"} href={withOrg("/pit")}>
+        </span>
+        <span className={subsystem.ops.openMaintenance > 0 ? "robot-chip warn" : "robot-chip"}>
           Maintenance: {subsystem.ops.openMaintenance}
-        </a>
+        </span>
         <button
           type="button"
           className="robot-link danger"
@@ -460,14 +458,6 @@ export default function RobotClient() {
           </button>
         ) : null}
       </form>
-
-      <nav className="intel-actions" aria-label="Robot systems of record">
-        <a href={withOrgHref("/fmea", orgId)}>FMEA</a>
-        <a href={withOrgHref("/batteries", orgId)}>Batteries</a>
-        <a href={withOrgHref("/robot-weigh-in", orgId)}>Weigh-in</a>
-        <a href={withOrgHref("/inspection-copilot", orgId)}>Inspection</a>
-        <a href={withOrgHref("/hours", orgId)}>Hours</a>
-      </nav>
 
       <AiInsightPanel
         orgId={orgId}

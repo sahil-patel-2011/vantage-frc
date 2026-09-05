@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import {
   errorStreak,
   errorStreakChecklist,
@@ -13,69 +12,14 @@ import {
   type DreamJournalPage,
 } from "../../../lib/dreaming/journal";
 import {
-  AI_MEMORY_RELATED_INCLUDE,
-  AI_MEMORY_SCOPE_CARDS,
-  aiMemoryNextActions,
-  aiMemoryRelatedLinks,
   aiMemoryShellCopy,
   classifyAiMemoryShell,
   formatAiMemoryMetric,
-  type AiMemoryShellKind,
 } from "../../../lib/ai-memory/ai-memory-related";
-import { hubHref } from "../../../lib/nav/hubs";
 import "./ai-memory.css";
 
 type TeamSettings = { enabled: boolean; tokenBudget: number; retentionDays: number };
 type Counts = { active: string; expiringSoon: string; total: string };
-
-function MemoryRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiMemoryRelatedLinks(orgId, { include: [...AI_MEMORY_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-memory-related" aria-label="Related AI tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({
-  orgId,
-  shell,
-  enabled,
-  activeCount,
-}: {
-  orgId: string;
-  shell: AiMemoryShellKind;
-  enabled: boolean;
-  activeCount: number;
-}) {
-  const actions = aiMemoryNextActions({ orgId, shell, enabled, activeCount });
-  if (!actions.length) return null;
-  return (
-    <section className="ai-memory-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From real team memory policy and Neon counts only — never DEMO memories.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 function JournalEntryCard({ entry }: { entry: DreamJournalEntry }) {
   const chips = sourceChips(entry.sourceCounts);
@@ -285,10 +229,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
   const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
   const showEmptyBanner = shell === "empty" || shell === "setup";
 
-  const chatHref = hubHref("/ai", "chat", orgId);
-  const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const governanceLinks = aiMemoryRelatedLinks(orgId);
-
   return (
     <main className="intel-app ai-memory-page">
       <header className="intel-header">
@@ -300,21 +240,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
             real promoted messages — empty Neon memory stays empty.
           </p>
         </div>
-        <nav className="intel-actions" aria-label="AI Memory shortcuts">
-          <a href={chatHref}>Chat</a>
-          <a href={budgetsHref}>Budgets</a>
-          {governanceLinks
-            .filter((link) => link.id === "prompt-caching" || link.id === "governance" || link.id === "knowledge")
-            .map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-        </nav>
       </header>
-
-      <AiHubRelated orgId={orgId} active="memory" />
-      <MemoryRelatedStrip orgId={orgId} />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -334,12 +260,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
           {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
           <h2>{shellCopy.title}</h2>
           <p className="app-muted">{shellCopy.description}</p>
-          <NextActions
-            orgId={orgId}
-            shell={shell}
-            enabled={settings.enabled}
-            activeCount={Number.isFinite(activeCount) ? activeCount : 0}
-          />
           {shell === "error" ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
@@ -350,25 +270,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
 
       {!loading && !blocked ? (
         <>
-          <section className="ai-memory-scope" aria-label="Private versus team-shared memory">
-            {AI_MEMORY_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="app-card soft-panel ai-memory-scope-card">
-                <span className="eyebrow">{card.id === "private" ? "PRIVATE" : "TEAM-SHARED"}</span>
-                <h2>{card.title}</h2>
-                <p className="app-muted">{card.body}</p>
-                {card.id === "private" ? (
-                  <a className="app-button secondary" href={chatHref}>
-                    Open Chat context
-                  </a>
-                ) : (
-                  <a className="app-button secondary" href="#team-memory-policy">
-                    Admin policy
-                  </a>
-                )}
-              </article>
-            ))}
-          </section>
-
           <section className="metric-grid" aria-label="Team memory counts">
             <article>
               <span>Injection</span>
@@ -395,13 +296,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               <p className="app-muted">{shellCopy.description}</p>
             </section>
           ) : null}
-
-          <NextActions
-            orgId={orgId}
-            shell={shell}
-            enabled={settings.enabled}
-            activeCount={Number.isFinite(activeCount) ? activeCount : 0}
-          />
 
           <section className="app-card soft-panel dream-journal" aria-label="Team journal">
             <header className="dream-journal-header">
@@ -539,12 +433,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               <button className="primary-action" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save team memory policy"}
               </button>
-              <a className="app-button secondary" href={chatHref}>
-                Open Chat
-              </a>
-              <a className="app-button secondary" href={budgetsHref}>
-                Open Budgets
-              </a>
             </div>
           </form>
         </>

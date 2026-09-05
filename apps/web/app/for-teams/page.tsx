@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
-import { MARKETING_SEASON } from "../../lib/marketing/product-story";
+import { MARKETING_SEASON, MARKETING_WORKSPACE_SENTENCE } from "../../lib/marketing/product-story";
 import "../marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "For FRC teams — Vantage",
   description:
-    "How mentors, drive team, scouts, and business leads share one invite-only FRC workspace: Competition, Team, Business, Build, AI, and Media.",
+    "How mentors, drive team, scouts, and business leads share one invite-only FRC workspace: Scout, Compete, Build, and Run season over the same event context.",
   path: "/for-teams",
 });
 
@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Home island is four apps: Home, Compete, Team, Business. Menu and search for the rest. Chat stays org-scoped.",
+    copy: `The bottom island is the four workspaces — ${MARKETING_WORKSPACE_SENTENCE}. Menu and search reach the rest. Chat stays org-scoped.`,
   },
 ] as const;
 
@@ -47,8 +47,8 @@ export default function ForTeamsPage() {
           <p className="lux-kicker">For teams</p>
           <h1>Built for the whole FRC team.</h1>
           <p>
-            Mentors provision access. Students open Competition, Team, Business, Build, AI, and Media. Everyone shares
-            one event context. There is no DEMO workspace and no invented win rates.
+            Mentors provision access. Students open {MARKETING_WORKSPACE_SENTENCE}. Everyone shares one event context. There is no
+            DEMO workspace and no invented win rates.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">

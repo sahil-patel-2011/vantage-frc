@@ -77,7 +77,7 @@ async function json(path, { method = "GET", body, cookie } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await response.text();
-  let data = null;
+  let data;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {

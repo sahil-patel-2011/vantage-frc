@@ -13,6 +13,7 @@
 import {
   PRODUCT_HUBS,
   hubHref,
+  workspaceForHubTab,
   type HubTabDef,
   type ProductHubDef,
 } from "./hubs";
@@ -321,10 +322,10 @@ const KEYWORDS: Record<string, string[]> = {
 /** Destinations that are not hub tabs but people still search for. */
 const STANDALONE: CommandEntry[] = [
   { id: "home", label: "Home", context: "Vantage", href: "/dashboard", kind: "destination", keywords: ["home", "dashboard", "start", "overview"], featured: true },
-  { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
-  { id: "packing", label: "Packing list", context: "Logistics", href: "/packing", kind: "destination", keywords: ["packing", "load out", "trailer", "what to bring", "cart"] },
-  { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
-  { id: "visit-invites", label: "Visit invites", context: "Logistics", href: "/visit-invites", kind: "destination", keywords: ["visit", "tour", "demo day", "rsvp"] },
+  { id: "logistics", label: "Logistics", context: "Run season", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
+  { id: "packing", label: "Packing list", context: "Run season › Logistics", href: "/packing", kind: "destination", keywords: ["packing", "load out", "trailer", "what to bring", "cart"] },
+  { id: "duties", label: "Duties", context: "Run season › Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
+  { id: "visit-invites", label: "Visit invites", context: "Run season › Logistics", href: "/visit-invites", kind: "destination", keywords: ["visit", "tour", "demo day", "rsvp"] },
   { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },
   { id: "appearance", label: "Appearance & theme", context: "Settings", href: "/account?tab=appearance", kind: "destination", keywords: ["theme", "dark mode", "light mode", "appearance", "colors"] },
   { id: "notifications", label: "Notifications", context: "Settings", href: "/notifications", kind: "destination", keywords: ["notifications", "alerts", "inbox", "unread"] },
@@ -350,9 +351,11 @@ const ACTIONS: Array<Omit<CommandEntry, "kind">> = [
 ];
 
 function tabContext(hub: ProductHubDef, tab: HubTabDef): string {
-  if (!tab.group) return hub.label;
+  const workspace = workspaceForHubTab(hub.id, tab.id);
+  const workspaceLabel = workspace?.label ?? hub.label;
+  if (!tab.group) return workspaceLabel;
   const parent = hub.tabs.find((entry) => entry.id === tab.group && !entry.group);
-  return parent ? `${hub.label} › ${parent.label}` : hub.label;
+  return parent ? `${workspaceLabel} › ${parent.label}` : workspaceLabel;
 }
 
 /**

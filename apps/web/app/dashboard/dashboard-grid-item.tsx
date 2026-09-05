@@ -20,6 +20,8 @@ type DashboardGridItemProps = {
   editing: boolean;
   isDragging: boolean;
   isGrabbed: boolean;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
   currentSize: WidgetSizeKey;
   atDefault: boolean;
   payload?: WidgetPayload;
@@ -43,6 +45,8 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   editing,
   isDragging,
   isGrabbed,
+  isSelected,
+  onSelect,
   currentSize,
   atDefault,
   payload,
@@ -62,7 +66,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
     <article
       className={`dash-grid-item${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${
         isGrabbed ? " is-grabbed" : ""
-      }`}
+      }${editing && isSelected ? " is-selected" : ""}`}
       data-testid="dash-grid-item"
       data-widget-type={item.type}
       data-widget-x={item.x}
@@ -74,7 +78,13 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           height: `${box.height}px`,
         } as CSSProperties
       }
-      onPointerDown={(event) => onCardPointerDown(event, item)}
+      onPointerDown={(event) => {
+        if (editing) onSelect(item.i);
+        onCardPointerDown(event, item);
+      }}
+      onFocusCapture={() => {
+        if (editing) onSelect(item.i);
+      }}
       onPointerMove={onDragPointerMove}
       onPointerUp={onDragPointerUp}
       onPointerCancel={onDragPointerCancel}
@@ -116,10 +126,13 @@ export const DashboardGridItem = memo(function DashboardGridItem({
               <span className="dash-drag-label">{isGrabbed ? "Moving" : "Drag"}</span>
             </button>
           </div>
+          {/* Sizes belong to the selected card only — every card showing S/M/L/XL
+              plus Reset put 40 chips on an 8-widget board. */}
           <div
             className="dash-item-sizes"
             role="group"
             aria-label={`Resize ${label}`}
+            hidden={!isSelected}
             onPointerDown={(event) => event.stopPropagation()}
           >
             <span aria-hidden="true">Size</span>
@@ -153,7 +166,9 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           </div>
         </>
       ) : null}
-      <div className="dash-widget-hit">
+      {/* While arranging, a card is an object to move — following one of its links
+          would navigate away and throw the unsaved layout out. */}
+      <div className="dash-widget-hit" inert={editing}>
         <DashboardWidgetView type={item.type} payload={payload} orgId={orgId} tbaConfigured={tbaConfigured} />
       </div>
     </article>

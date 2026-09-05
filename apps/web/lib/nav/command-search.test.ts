@@ -22,10 +22,10 @@ describe("commandCatalog", () => {
     }
   });
 
-  it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
+  it("gives nested tabs a workspace breadcrumb so labels are unambiguous", () => {
     const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
     expect(coverage?.label).toBe("Coverage");
-    expect(coverage?.context).toBe("Competition › Scouting");
+    expect(coverage?.context).toBe("Scout › Scouting");
   });
 
   it("lists Media library so search opens a real destination", () => {
@@ -165,7 +165,7 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
     const workspaces = new Set(results.map((hit) => hit.context.split("›")[0]!.trim()));
     expect(workspaces.size).toBeGreaterThanOrEqual(4);
     expect(workspaces.has("Build")).toBe(true);
-    expect(workspaces.has("Business")).toBe(true);
+    expect(workspaces.has("Run season")).toBe(true);
   });
 
   it("keeps recents ahead of the round-robin", () => {

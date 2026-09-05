@@ -6,7 +6,6 @@ import {
   ANALYSIS_TURN_FOCUSES,
   buildLoopTurnPrompt,
   DEEP_GAME_ANALYSIS_FEATURE,
-  DEEP_GAME_ANALYSIS_KIND,
   DEEP_GAME_ANALYSIS_TEAM_NUMBER,
   emptyGuess,
   isDeepGameAnalysisTeam,

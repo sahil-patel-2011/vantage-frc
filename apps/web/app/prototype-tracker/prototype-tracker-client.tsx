@@ -109,8 +109,9 @@ function StatusTiles({ view }: { view: LiveView }) {
   );
 }
 
-export default function PrototypeTrackerClient(_props: { embedded?: boolean } = {}) {
+export default function PrototypeTrackerClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
+  const isEmbedded = embedded || embed !== null;
   const [view, setView] = useState<PrototypeTrackerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -204,11 +205,13 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
       : null;
     return (
       <main className="module-page ptk-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Prototype-to-Decision Tracker"
-          description="Log a real prototype test — hypothesis, outcome, metric vs. target — then draft the design decision it informs."
-        />
+        {!isEmbedded ? (
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Prototype-to-Decision Tracker"
+            description="Log a real prototype test — hypothesis, outcome, metric vs. target — then draft the design decision it informs."
+          />
+        ) : null}
         <EmptyState
           soft
           title={copy ? copy.title : "Loading prototype tracker…"}
@@ -233,11 +236,13 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
   if (view.status === "setup_required") {
     return (
       <main className="module-page ptk-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Prototype-to-Decision Tracker"
-          description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
-        />
+        {!isEmbedded ? (
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Prototype-to-Decision Tracker"
+            description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
+          />
+        ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="ptk-setup-steps">
             {view.steps.map((step) => (
@@ -253,14 +258,16 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             ))}
           </ol>
         </EmptyState>
-        <NextActionsPanel
-          orgId={view.orgId}
-          seasonYear={view.seasonYear}
-          testCount={0}
-          decisionCount={0}
-          draftDecisionCount={0}
-          testsWithoutDecision={0}
-        />
+        {!isEmbedded ? (
+          <NextActionsPanel
+            orgId={view.orgId}
+            seasonYear={view.seasonYear}
+            testCount={0}
+            decisionCount={0}
+            draftDecisionCount={0}
+            testsWithoutDecision={0}
+          />
+        ) : null}
       </main>
     );
   }
@@ -272,50 +279,71 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
 
   return (
     <main className="module-page ptk-page">
-      <PageHeader
-        breadcrumbs={crumbs}
-        title="Prototype-to-Decision Tracker"
-        description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
-      >
-        <div className="ptk-header-actions">
-          {view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
-            CAD
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
-            Kickoff
-          </a>
-        </div>
-      </PageHeader>
+      {!isEmbedded ? (
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Prototype-to-Decision Tracker"
+          description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
+        >
+          <div className="ptk-header-actions">
+            {view.seasons.length > 0 ? (
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                Season
+                <select
+                  value={season ?? view.seasonYear}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setSeason(next);
+                    load(next);
+                  }}
+                >
+                  {view.seasons.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+              FMEA
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+              CAD
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
+              Kickoff
+            </a>
+          </div>
+        </PageHeader>
+      ) : null}
 
-      {orgId ? (
+      {!isEmbedded && orgId ? (
         <BuildHubRelated
           orgId={orgId}
           active="prototype"
           include={[...PROTOTYPE_BUILD_RELATED_INCLUDE]}
           ariaLabel="Related build tools"
         />
+      ) : null}
+      {isEmbedded && view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
 
       {error ? (
@@ -324,14 +352,16 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         </p>
       ) : null}
 
-      <NextActionsPanel
-        orgId={orgId}
-        seasonYear={view.seasonYear}
-        testCount={view.tests.length}
-        decisionCount={view.decisions.length}
-        draftDecisionCount={draftDecisionCount}
-        testsWithoutDecision={testsWithoutDecision}
-      />
+      {!isEmbedded ? (
+        <NextActionsPanel
+          orgId={orgId}
+          seasonYear={view.seasonYear}
+          testCount={view.tests.length}
+          decisionCount={view.decisions.length}
+          draftDecisionCount={draftDecisionCount}
+          testsWithoutDecision={testsWithoutDecision}
+        />
+      ) : null}
 
       <StatusTiles view={view} />
 

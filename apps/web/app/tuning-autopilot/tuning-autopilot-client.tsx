@@ -1,22 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TUNING_CONTROLLER_TYPES, tuningControllerTypeLabel, tuningSessionStatusLabel } from "../../lib/tuning-autopilot";
 import type { TuningAutopilotView } from "../../lib/tuning-autopilot/compute-tuning-autopilot";
 import {
-  TUNING_AUTOPILOT_RELATED_INCLUDE,
   classifyTuningAutopilotShell,
   formatTuningAutopilotMetric,
   formatTuningScorePct,
-  tuningAutopilotNextActions,
-  tuningAutopilotRelatedLinks,
   tuningAutopilotShellCopy,
-  type TuningAutopilotNextAction,
   type TuningAutopilotShellKind,
 } from "../../lib/tuning-autopilot/tuning-autopilot-related";
 import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./tuning-autopilot.css";
 
@@ -28,87 +23,28 @@ function scoreTone(score: number): string {
 
 type LiveView = Extract<TuningAutopilotView, { status: "live" }>;
 
-function TuningRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = tuningAutopilotRelatedLinks(orgId, {
-    include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related tuning-autopilot-related" aria-label="Related build tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function TuningNextActionsPanel({ actions }: { actions: TuningAutopilotNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions tuning-autopilot-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">CAD, FMEA, and Practice — never DEMO gain metrics.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function TuningShell({
   description,
   orgId,
   shell,
   error,
   onRetry,
-  children,
 }: {
   description: string;
   orgId?: string | null;
   shell: TuningAutopilotShellKind;
   error?: string;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
-  const actions = tuningAutopilotNextActions({ orgId, shell });
   const copy = tuningAutopilotShellCopy(shell);
-  const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const practiceHref = hubHref("/team", "practice", orgId);
 
   return (
     <main className="module-page tuning-autopilot-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Tuning Autopilot"}
-          </>
-        }
+        breadcrumbs="Build / Tuning Autopilot"
         title="Tuning Autopilot"
         description={description}
-      >
-        <TuningRelatedStrip orgId={orgId} />
-      </PageHeader>
-      {children}
+      />
       <EmptyState
         soft
         badge={
@@ -136,23 +72,11 @@ function TuningShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#tuning-autopilot-new-session">
-              Start a session
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Open CAD
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-            <a className="app-button secondary" href={practiceHref}>
-              Open Practice
-            </a>
-          </>
+          <a className="app-button" href="#tuning-autopilot-new-session">
+            Start a session
+          </a>
         ) : null}
       </EmptyState>
-      <TuningNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -202,8 +126,6 @@ export default function TuningAutopilotClient() {
     view?.status === "live"
       ? (view.sessions.find((row) => row.session.id === view.selectedSessionId)?.bestScore ?? null)
       : null;
-  const hasSuggestion = view?.status === "live" ? Boolean(view.suggestion) : false;
-  const converged = view?.status === "live" ? Boolean(view.suggestion?.converged) : false;
 
   const shell = classifyTuningAutopilotShell({
     loading: view == null && !fetchFailed,
@@ -213,21 +135,6 @@ export default function TuningAutopilotClient() {
     sessionCount,
   });
   const shellCopy = tuningAutopilotShellCopy(shell);
-  const nextActions = tuningAutopilotNextActions({
-    orgId,
-    shell,
-    sessionCount,
-    iterationCount,
-    hasSuggestion,
-    converged,
-  });
-  const relatedLinks = tuningAutopilotRelatedLinks(orgId, {
-    include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
-  });
-  const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
-  const cadHref = hubHref("/build", "cad", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const practiceHref = hubHref("/team", "practice", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -289,12 +196,7 @@ export default function TuningAutopilotClient() {
   return (
     <main className="module-page tuning-autopilot-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Tuning Autopilot"}
-          </>
-        }
+        breadcrumbs="Build / Tuning Autopilot"
         title="Tuning Autopilot"
         description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend — never DEMO gain metrics. Cross-check CAD, FMEA, and Practice."
       >
@@ -318,11 +220,6 @@ export default function TuningAutopilotClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
         </div>
       </PageHeader>
 
@@ -331,8 +228,6 @@ export default function TuningAutopilotClient() {
           {error}
         </p>
       ) : null}
-
-      <TuningNextActionsPanel actions={nextActions} />
 
       <SummaryTiles
         sessionCount={sessionCount}
@@ -353,15 +248,6 @@ export default function TuningAutopilotClient() {
           <a className="app-button" href="#tuning-autopilot-new-session">
             Start a session
           </a>
-          <a className="app-button secondary" href={cadHref}>
-            Open CAD
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={practiceHref}>
-            Open Practice
-          </a>
         </EmptyState>
       ) : null}
 
@@ -373,14 +259,6 @@ export default function TuningAutopilotClient() {
             <SuggestionPanel view={view} />
             <LogIterationForm view={view} busy={busy} mutate={mutate} />
             <IterationHistory view={view} busy={busy} mutate={mutate} />
-            <Panel className="tuning-autopilot-tip" aria-label="Tuning tip">
-              <span className="eyebrow">Before you converge</span>
-              <p className="app-muted" style={{ marginTop: 8 }}>
-                Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
-                <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
-                subsystem you’re tuning — never invent DEMO gain metrics.
-              </p>
-            </Panel>
           </>
         ) : null}
         {shell === "ready" && !view.selectedSessionId ? (

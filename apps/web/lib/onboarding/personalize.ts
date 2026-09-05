@@ -15,14 +15,10 @@ import type { OnboardingCrew, OnboardingFocus, OnboardingRole } from "./step-mod
 const BUILD_CREW = new Set<OnboardingCrew>(["mechanical", "electrical", "programming", "cad"]);
 const COMPETE_CREW = new Set<OnboardingCrew>(["scout", "driver", "operator", "pit"]);
 
-const HOME = "/dashboard";
 const COMPETE = "/competition";
 const SCOUT = "/competition?tab=scouting";
-const TEAM = "/team";
-const BUSINESS = "/business";
 const BUILD = "/build";
-const AI = "/ai";
-const LOGISTICS = "/logistics";
+const RUN_SEASON = "/team";
 
 const CATALOG = new Set(ISLAND_TAB_CATALOG.map((item) => item.href));
 
@@ -81,12 +77,12 @@ function greetingHint(identities: OnboardingRole[], crews: OnboardingCrew[]): st
     return `${roleNames.join(" + ")} · ${crewNames.join(" + ")}. Your island follows those jobs.`;
   }
   if (crewNames.length) {
-    return `${crewNames.join(" + ")} — Home opens the tools those jobs use.`;
+    return `${crewNames.join(" + ")} — your workspaces are set around those jobs.`;
   }
   if (roleNames.length) {
     return `${roleNames.join(" + ")}. Pick the jobs you actually do to tighten this further.`;
   }
-  return "Home, Compete, Team, Business — change any slot from the island.";
+  return "Scout, Compete, Build, and Run season — change their order from the island.";
 }
 
 export function personalizeFromRoles(input: PersonalizeInput): RolePersonalization {
@@ -102,22 +98,23 @@ export function personalizeFromRoles(input: PersonalizeInput): RolePersonalizati
     identities.some((role) => role === "mentor" || role === "coach") && crews.length === 0;
   const parentFollow = identities.includes("parent") && !wantsScout && !wantsBuild && !wantsCompete;
 
-  const preferred: string[] = [HOME];
+  const preferred: string[] = [];
   if (wantsScout) preferred.push(SCOUT);
   else if (wantsCompete) preferred.push(COMPETE);
   if (wantsBuild) preferred.push(BUILD);
-  if (wantsBusiness) preferred.push(BUSINESS);
-  if (parentFollow) preferred.push(LOGISTICS);
-  preferred.push(TEAM);
-  if (crews.length > 0 || identities.includes("student")) preferred.push(AI);
-  if (adultLead) preferred.push(COMPETE, BUSINESS);
+  // Funding, sponsorships, logistics, and AI live under Run season and remain
+  // role/funding-profile gated once a member arrives there.
+  if (wantsBusiness || parentFollow) preferred.push(RUN_SEASON);
+  preferred.push(RUN_SEASON);
+  if (crews.length > 0 || identities.includes("student")) preferred.push(BUILD);
+  if (adultLead) preferred.push(COMPETE, RUN_SEASON);
   if (!preferred.includes(COMPETE) && !preferred.includes(SCOUT)) preferred.push(COMPETE);
-  preferred.push(BUSINESS);
+  preferred.push(SCOUT, BUILD, RUN_SEASON);
 
   const islandHrefs = fillIsland(preferred);
   return {
     islandHrefs,
-    defaultHub: islandHrefs[1] ?? PRIMARY_TABS[1]?.href ?? HOME,
+    defaultHub: islandHrefs[0] ?? PRIMARY_TABS[0]?.href ?? COMPETE,
     greetingHint: greetingHint(identities, crews),
     source: "roles",
   };

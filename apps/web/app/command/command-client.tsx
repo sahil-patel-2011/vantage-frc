@@ -7,11 +7,8 @@ import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSk
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
-import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import {
-  EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
-  eventDayRelatedLinks,
   eventDayShellCopy,
   formatEventDayMatchCount,
   type EventDayShellKind,
@@ -71,22 +68,6 @@ function AllianceChips({
         </li>
       ))}
     </ul>
-  );
-}
-
-function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = eventDayRelatedLinks(orgId, {
-    include: [...EVENT_DAY_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related edc-related" aria-label="Related live ops tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
   );
 }
 
@@ -333,7 +314,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
   const countdown = useMemo(() => countdownLabel(next?.scheduledTime), [next?.scheduledTime, tick]);
-  const liveActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
   const myDayHref = snap?.links.myDay ?? hubHref("/competition", "my-day", orgId || null);
   const scheduleHref = snap?.links.schedule ?? withOrgHref("/schedule", orgId || null);
   const strategyHref = snap?.links.strategy ?? hubHref("/competition", "strategy", orgId || null);
@@ -342,10 +322,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const matchChecklistHref =
     snap?.links.matchChecklist ?? hubHref("/competition", "match-checklist", orgId || null);
   const logisticsHref = snap?.links.logistics ?? withOrgHref("/logistics", orgId || null);
-  const pitHref = snap?.links.pit ?? withOrgHref("/pit", orgId || null);
-  const batteriesHref = snap?.links.batteries ?? withOrgHref("/batteries", orgId || null);
-  const intelHref = snap?.links.intel ?? withOrgHref("/intel", orgId || null);
-  const chemistryHref = snap?.links.chemistry ?? hubHref("/competition", "chemistry", orgId || null);
 
   const eventPicker = eventOpen ? (
     <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
@@ -506,8 +482,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       </PageHeader>
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      <EventDayRelatedStrip orgId={orgId || null} />
-
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
       <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
@@ -523,28 +497,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       ) : null}
 
       <NexusQueuePanel nexus={snap?.nexus ?? null} eventKey={snap?.eventKey ?? null} />
-
-      {liveActions.length ? (
-        <section className="edc-next-actions soft-panel" aria-label="Next actions">
-          <header>
-            <h2>Next actions</h2>
-            <p>Field-side steps from schedule and scout gaps.</p>
-          </header>
-          <ol>
-            {liveActions.slice(0, 5).map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
 
       <section className="edc-priority" aria-label="Priority panels">
         <article className={`edc-card edc-next ${next ? "live" : "empty"}`}>
@@ -980,54 +932,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           )}
         </article>
       </section>
-
-      <nav className="edc-actions" aria-label="Primary competition links">
-        <a href={myDayHref}>
-          <Icon name="calendar" />
-          <strong>My Day</strong>
-          <span>Personal next match</span>
-        </a>
-        <a href={scheduleHref}>
-          <Icon name="calendar" />
-          <strong>Schedule</strong>
-          <span>Full event board</span>
-        </a>
-        <a href={strategyHref}>
-          <Icon name="bolt" />
-          <strong>Strategy</strong>
-          <span>Playbook & prediction</span>
-        </a>
-        <a href={scoutingHref}>
-          <Icon name="clipboard" />
-          <strong>Scouting</strong>
-          <span>Match & pit forms</span>
-        </a>
-        <a href={pitHref}>
-          <Icon name="cube" />
-          <strong>Pit</strong>
-          <span>Release gate & batteries</span>
-        </a>
-        <a href={batteriesHref}>
-          <Icon name="bolt" />
-          <strong>Batteries</strong>
-          <span>Fleet readiness</span>
-        </a>
-        <a href={logisticsHref}>
-          <Icon name="pin" />
-          <strong>Logistics</strong>
-          <span>Hotel & travel</span>
-        </a>
-        <a href={intelHref}>
-          <Icon name="stats" />
-          <strong>Intel</strong>
-          <span>Team lookup</span>
-        </a>
-        <a href={chemistryHref}>
-          <Icon name="users" />
-          <strong>Chemistry</strong>
-          <span>Alliance fit</span>
-        </a>
-      </nav>
 
       {eventPicker}
     </main>

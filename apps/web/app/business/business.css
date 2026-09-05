@@ -11,15 +11,12 @@
   padding-bottom: 64px;
 }
 
-.business-page .app-page-header {
-  align-items: flex-start;
-}
-
-.biz-header-actions {
+.biz-context-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  margin-bottom: 16px;
 }
 
 .biz-season {
@@ -32,19 +29,12 @@
 
 .biz-season select {
   min-width: 86px;
-  min-height: 44px;
+  min-height: 40px;
   padding: 6px 10px;
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
   border-radius: 10px;
-}
-
-.biz-related {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: -4px 0 4px;
 }
 
 .biz-alert {
@@ -316,75 +306,6 @@
 .biz-split-metrics strong {
   font-size: 16px;
   font-variant-numeric: tabular-nums;
-}
-
-.biz-text-button {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-top: 12px;
-  padding: 0;
-  color: var(--app-accent);
-  background: transparent;
-  border: 0;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.biz-action-list {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.biz-action-list li {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  border-top: 1px solid var(--app-line);
-}
-
-.biz-action-list li:first-child {
-  border-top: 0;
-}
-
-.biz-action-list li div {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.biz-action-list li strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-}
-
-.biz-action-list li span {
-  color: var(--app-muted);
-  font-size: 12px;
-}
-
-.biz-action-list li button {
-  min-height: 44px;
-  color: var(--app-accent);
-  background: transparent;
-  border: 0;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.biz-action-list li.empty {
-  display: grid;
-  grid-template-columns: 1fr;
-  text-align: center;
-  padding: 32px 12px;
 }
 
 .biz-big-stat {
@@ -1344,13 +1265,6 @@
   }
   .biz-split-metrics {
     grid-template-columns: 1fr;
-  }
-  .biz-action-list li {
-    grid-template-columns: auto 1fr;
-  }
-  .biz-action-list li > button {
-    grid-column: 2;
-    justify-self: start;
   }
   .biz-grant-board {
     grid-template-columns: repeat(6, minmax(205px, 1fr));

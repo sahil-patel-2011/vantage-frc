@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDismissable } from "../../../lib/ui/use-dismissable";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { OfflineBanner } from "../../../components/offline-banner";
 import {
@@ -1553,6 +1554,10 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
   const [syncSubteamId, setSyncSubteamId] = useState<string | null>(null);
   const [highlightDutyId, setHighlightDutyId] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const closeMore = useCallback(() => setMoreOpen(false), []);
+  useDismissable(moreOpen, closeMore, moreRef);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
@@ -1961,29 +1966,70 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 </button>
               </div>
             ) : null}
-            <details className="tc-more">
-              <summary>More</summary>
-              <div className="tc-more-list">
-                <button type="button" onClick={() => setTab("sync")}>
-                  Phone calendar
-                </button>
-                {showDuties ? (
-                  <button type="button" onClick={() => setTab("duties")}>
-                    Duties
-                  </button>
-                ) : null}
-                {showTrip ? (
-                  <button type="button" onClick={() => setTab("trip")}>
-                    Trip
-                  </button>
-                ) : null}
-                {canManage ? (
-                  <button type="button" onClick={() => setTab("subteams")}>
-                    Subteams
-                  </button>
-                ) : null}
-              </div>
-            </details>
+            <div ref={moreRef} className={`tc-more${moreOpen ? " is-open" : ""}`}>
+              <button
+                type="button"
+                className="tc-more-trigger"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen((current) => !current)}
+              >
+                More
+              </button>
+              {moreOpen ? (
+                <>
+                  <button
+                    type="button"
+                    className="tc-more-scrim"
+                    aria-label="Dismiss more"
+                    onClick={closeMore}
+                  />
+                  <div className="tc-more-list">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMore();
+                        setTab("sync");
+                      }}
+                    >
+                      Phone calendar
+                    </button>
+                    {showDuties ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMore();
+                          setTab("duties");
+                        }}
+                      >
+                        Duties
+                      </button>
+                    ) : null}
+                    {showTrip ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMore();
+                          setTab("trip");
+                        }}
+                      >
+                        Trip
+                      </button>
+                    ) : null}
+                    {canManage ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMore();
+                          setTab("subteams");
+                        }}
+                      >
+                        Subteams
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
 
           <div className="tc-layout">

@@ -14,6 +14,7 @@ import {
   tryCreateHostedAnthropicAdapter,
   tryCreateOpenRouterFreeAdapter,
 } from "../src/hosted-platform-keys";
+import { FREEBUFF_UNMETERED_DEFAULT } from "../src/freebuff-models";
 
 describe("hosted platform keys", () => {
   it("skips OpenRouter when the platform key is missing", () => {
@@ -42,7 +43,8 @@ describe("hosted platform keys", () => {
     };
     expect(readFreeRelayConfig(env)).toMatchObject({
       baseUrl: "http://pi.local:8080/v1",
-      model: "glm/glm-5.3-flash",
+      // "freebuff" is not a slug, so it falls back to the unmetered default.
+      model: FREEBUFF_UNMETERED_DEFAULT,
       providerLabel: "free-relay",
     });
     expect(tryCreateFreeRelayAdapter({ env })?.provider).toBe("openai-compatible");

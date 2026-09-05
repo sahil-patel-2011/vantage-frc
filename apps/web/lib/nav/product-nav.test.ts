@@ -13,39 +13,32 @@ import {
 } from "./product-nav";
 
 describe("product-nav", () => {
-  it("exposes flat pillar groups (no Settings accordion)", () => {
+  it("exposes the four product workspaces", () => {
     expect(PRODUCT_NAV_GROUPS.map((group) => group.label)).toEqual([
-      "Home",
-      "Competition",
-      "Team",
-      "Logistics",
-      "Business",
-      "Media",
+      "Scout",
+      "Compete",
       "Build",
-      "AI",
+      "Run season",
     ]);
   });
 
-  it("keeps Soft-UI hubs in the primary island tabs", () => {
+  it("keeps the four workspaces in the primary island tabs", () => {
     expect(PRIMARY_TABS.map((tab) => tab.href)).toEqual([
-      "/dashboard",
+      "/competition?tab=scouting",
       "/competition",
+      "/build",
       "/team",
-      "/business",
     ]);
   });
 
-  it("keeps pillar and glanceable shortcuts for Search", () => {
+  it("keeps workspace and glanceable shortcuts for Search", () => {
     expect(PILLAR_SHEET_LINKS.map((link) => link.label)).toEqual([
-      "Competition",
-      "Team",
-      "Logistics",
-      "Business",
-      "Media",
+      "Scout",
+      "Compete",
       "Build",
-      "AI",
+      "Run season",
     ]);
-    expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Media")?.icon).toBe("camera");
+    expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Scout")?.icon).toBe("scout");
     expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
       "My Day",
       "Forms",
@@ -63,19 +56,20 @@ describe("product-nav", () => {
     ]);
   });
 
-  it("keeps one drawer link per pillar (hub root only)", () => {
+  it("keeps one drawer link per workspace", () => {
     for (const group of PRODUCT_NAV_GROUPS) {
       const live = group.items.filter((i) => i.state !== "planned");
       expect(live.length).toBe(1);
-      expect(live[0]?.href.includes("?tab=")).toBe(false);
     }
-    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")?.items[0]?.href).toBe(
+    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Compete")?.items[0]?.href).toBe(
       "/competition",
     );
-    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Team")?.items[0]?.href).toBe("/team");
+    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Scout")?.items[0]?.href).toBe(
+      "/competition?tab=scouting",
+    );
   });
 
-  it("puts deep tools in Cmd+K catalog, not the drawer", () => {
+  it("puts deep tools in Cmd+K, except the Scout workspace entry", () => {
     const catalog = cmdkNavCatalog();
     expect(catalog.some((i) => i.href === "/competition?tab=scouting")).toBe(true);
     expect(catalog.some((i) => i.href === "/competition?tab=strategy")).toBe(true);
@@ -84,43 +78,43 @@ describe("product-nav", () => {
     expect(catalog.some((i) => i.href === "/packing")).toBe(true);
     expect(catalog.some((i) => i.href === "/docs")).toBe(true);
     expect(
-      PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")?.items.some(
+      PRODUCT_NAV_GROUPS.find((g) => g.label === "Scout")?.items.some(
         (i) => i.href === "/competition?tab=scouting",
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("resolves breadcrumbs by hub roots and PRODUCT_HUBS legacy paths", () => {
-    expect(breadcrumbForPath("/team")).toBe("Team");
-    expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
-    expect(breadcrumbForPath("/todos")).toBe("Team / Work");
-    expect(breadcrumbForPath("/command")).toBe("Competition / Event day");
-    expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
-    expect(breadcrumbForPath("/business")).toBe("Business");
-    expect(breadcrumbForPath("/sponsorship")).toBe("Business / Packages");
-    expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
-    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / API keys");
+    expect(breadcrumbForPath("/team")).toBe("Run season");
+    expect(breadcrumbForPath("/team/calendar")).toBe("Run season / Calendar");
+    expect(breadcrumbForPath("/todos")).toBe("Run season / Work");
+    expect(breadcrumbForPath("/command")).toBe("Compete / Event day");
+    expect(breadcrumbForPath("/my-day")).toBe("Compete / My Day");
+    expect(breadcrumbForPath("/business")).toBe("Run season");
+    expect(breadcrumbForPath("/sponsorship")).toBe("Run season / Packages");
+    expect(breadcrumbForPath("/orders")).toBe("Run season / Orders");
+    expect(breadcrumbForPath("/team/ai-keys")).toBe("Run season / API keys");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
-    expect(breadcrumbForPath("/logistics")).toBe("Logistics");
-    expect(breadcrumbForPath("/packing")).toBe("Logistics / Packing");
-    expect(breadcrumbForPath("/duties")).toBe("Logistics / Duties");
-    expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit invites");
-    expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
-    expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
-    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
-    expect(breadcrumbForPath("/competition")).toBe("Competition");
-    expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
-    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season plan");
-    expect(breadcrumbForPath("/media")).toBe("Media");
-    expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
-    expect(breadcrumbForPath("/chat")).toBe("AI / Ask");
+    expect(breadcrumbForPath("/logistics")).toBe("Run season / Logistics");
+    expect(breadcrumbForPath("/packing")).toBe("Run season / Packing");
+    expect(breadcrumbForPath("/duties")).toBe("Run season / Duties");
+    expect(breadcrumbForPath("/visit-invites")).toBe("Run season / Visit invites");
+    expect(breadcrumbForPath("/strategy")).toBe("Compete / Strategy");
+    expect(breadcrumbForPath("/scouting")).toBe("Scout / Scouting");
+    expect(breadcrumbForPath("/scouting/forms")).toBe("Scout / Forms");
+    expect(breadcrumbForPath("/competition")).toBe("Compete");
+    expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Compete / Alliance desk");
+    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Run season / Season plan");
+    expect(breadcrumbForPath("/media")).toBe("Run season");
+    expect(breadcrumbForPath("/media-kit")).toBe("Run season / Kit");
+    expect(breadcrumbForPath("/chat")).toBe("Run season / Ask");
   });
 
   it("resolves hub tabs via PRODUCT_HUBS when not in the flat drawer", () => {
     const match = findNavMatch("/competition");
-    expect(match?.group.label).toBe("Competition");
+    expect(match?.group.label).toBe("Compete");
     expect(
-      PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
+      PRODUCT_NAV_GROUPS.find((group) => group.label === "Scout")?.items.some(
         (item) => item.href === "/competition?tab=forms",
       ),
     ).toBe(false);
@@ -131,13 +125,13 @@ describe("product-nav", () => {
   it("resolves nested team knowledge via hub legacy href", () => {
     const match = findNavMatch("/team/knowledge");
     expect(match?.item.href).toBe("/team?tab=knowledge");
-    expect(match?.group.label).toBe("Team");
+    expect(match?.group.label).toBe("Run season");
   });
 
-  it("prefers Team hub over Settings for bare /team", () => {
+  it("prefers Run season over Settings for bare /team", () => {
     const match = findNavMatch("/team");
-    expect(match?.group.label).toBe("Team");
-    expect(match?.item.label).toBe("Team");
+    expect(match?.group.label).toBe("Run season");
+    expect(match?.item.label).toBe("Run season");
   });
 
   it("appends orgId except on exempt chrome routes", () => {
@@ -157,7 +151,7 @@ describe("product-nav", () => {
     const catalog = cmdkNavCatalog();
     expect(catalog.some((i) => i.href === "/competition?tab=strategy")).toBe(true);
     expect(catalog.some((i) => i.href === "/build?tab=kickoff")).toBe(true);
-    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")?.items[0]?.href).toBe(
+    expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Compete")?.items[0]?.href).toBe(
       "/competition",
     );
     expect(PRODUCT_NAV_GROUPS.find((g) => g.label === "Build")?.items[0]?.href).toBe("/build");

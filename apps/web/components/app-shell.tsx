@@ -13,7 +13,7 @@ import {
   withOrgHref,
   withSelectedOrgHref,
 } from "../lib/nav/product-nav";
-import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
+import { defaultIslandHrefs, defaultIslandSentence, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
@@ -27,6 +27,7 @@ import { Icon, type IconName } from "./icon";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+import { useDismissable } from "../lib/ui/use-dismissable";
 
 type SearchHit = {
   title: string;
@@ -147,6 +148,8 @@ export default function AppShell() {
   // Rendered after mount so the server and client markup agree.
   const [shortcutHint, setShortcutHint] = useState("");
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const searchRequestId = useRef(0);
   const islandQueryOpened = useRef(false);
   const islandPressTimer = useRef<number | null>(null);
@@ -536,10 +539,19 @@ export default function AppShell() {
                 ? "Security"
                 : null);
 
-  const orgLabel =
-    me.teamNumber != null
-      ? `Team ${me.teamNumber}${me.orgName ? ` · ${me.orgName}` : ""}`
-      : (me.orgName ?? (orgId ? "Active workspace" : "No workspace selected"));
+  const orgLabel = useMemo(() => {
+    if (me.teamNumber == null) {
+      return me.orgName ?? (orgId ? "Active workspace" : "No workspace selected");
+    }
+    const teamLabel = `Team ${me.teamNumber}`;
+    const name = me.orgName?.trim();
+    // Most orgs are named exactly "Team 6925", so appending the name blindly
+    // rendered "Team 6925 · Team 6925" in the topbar and the drawer.
+    if (!name || name.toLowerCase() === teamLabel.toLowerCase() || name === String(me.teamNumber)) {
+      return teamLabel;
+    }
+    return `${teamLabel} · ${name}`;
+  }, [me.orgName, me.teamNumber, orgId]);
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
 
   const crumbHint = breadcrumbForPath(pathname);
@@ -564,6 +576,9 @@ export default function AppShell() {
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
   }, []);
+
+  const closeDrawer = useCallback(() => setOpen(false), []);
+  useDismissable(open, closeDrawer, drawerRef, menuButtonRef);
 
   const switchWorkspaceHref = useCallback(
     (nextOrgId: string) => {
@@ -680,6 +695,7 @@ export default function AppShell() {
       <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
         <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
           <button
+            ref={menuButtonRef}
             className={`soft-icon-btn soft-menu-btn${open ? " is-open" : ""}`}
             type="button"
             aria-label={open ? "Close navigation" : "Open navigation"}
@@ -859,28 +875,54 @@ export default function AppShell() {
       ) : null}
 
       {open ? <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={() => setOpen(false)} /> : null}
-      <aside className={`soft-drawer ${open ? "open" : ""}`} aria-label="Product navigation">
+      <aside
+        ref={drawerRef}
+        className={`soft-drawer ${open ? "open" : ""}`}
+        aria-label="Product navigation"
+      >
         <div className="soft-drawer-head">
           <div className="soft-drawer-brand">
             <span className="mark">v</span>
             <div>
               <strong>Vantage</strong>
+              <small>{orgId ? orgLabel : "No workspace selected"}</small>
             </div>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setOpen(false)}>
             <Icon name="x" />
           </button>
         </div>
-        <div className="soft-profile-block soft-profile-compact">
-          <div className="soft-org-chip" title={orgLabel} data-workspace="label">
-            <Icon name="users" />
-            <div>
-              <strong>{orgLabel}</strong>
-              <span>{orgId ? rolePlanCue : "Pick a team"}</span>
-            </div>
-          </div>
-        </div>
-        <nav className="soft-drawer-flat" aria-label="Hubs">
+        {/* Search first: the drawer is the one place to get anywhere, so it opens
+            the palette instead of dead-ending at four workspace links. */}
+        <button
+          className="soft-drawer-search"
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setCommandOpen(true);
+          }}
+        >
+          <Icon name="search" />
+          <span>
+            <strong>Search Vantage</strong>
+            <small>Jump to any tool, page, or team</small>
+          </span>
+          {shortcutHint ? <kbd aria-hidden="true">{shortcutHint}</kbd> : null}
+        </button>
+        <nav className="soft-drawer-flat" aria-label="Workspaces">
+          {/* Home is only reachable from the wordmark otherwise — the four
+              workspaces are siblings of it, not replacements for it. */}
+          <a
+            className={`soft-drawer-hub${pathname === "/dashboard" ? " is-active" : ""}`}
+            aria-current={pathname === "/dashboard" ? "page" : undefined}
+            href={withOrgHref("/dashboard", orgId)}
+            onClick={() => setOpen(false)}
+          >
+            <i>
+              <Icon name="home" />
+            </i>
+            <span>Home</span>
+          </a>
           {visibleNavGroups.map((group) => {
             const item = group.items[0];
             if (!item || item.state === "planned") return null;
@@ -907,6 +949,28 @@ export default function AppShell() {
             );
           })}
         </nav>
+        <div className="soft-drawer-foot">
+          <a href="/account" onClick={() => setOpen(false)}>
+            Settings
+          </a>
+          <a href="/notifications" onClick={() => setOpen(false)}>
+            Notifications
+          </a>
+          <a href="/docs" onClick={() => setOpen(false)}>
+            App manual
+          </a>
+          <a href="/report-bug" onClick={() => setOpen(false)}>
+            Report a bug
+          </a>
+          {me.platformAdmin ? (
+            <a href="/admin" onClick={() => setOpen(false)}>
+              Admin
+            </a>
+          ) : null}
+          <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        </div>
       </aside>
 
       <nav
@@ -956,7 +1020,7 @@ export default function AppShell() {
               <div>
                 <span>BOTTOM ISLAND</span>
                 <h2 id="island-editor-title">Four apps</h2>
-                <p>Home, Compete, Team, and Business by default. Long-press the island or use the menu to change them.</p>
+                <p>{defaultIslandSentence()} by default. Long-press the island or use the menu to change them.</p>
               </div>
               <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setIslandEditorOpen(false)}><Icon name="x" /></button>
             </header>

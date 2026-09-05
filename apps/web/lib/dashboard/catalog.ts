@@ -166,6 +166,10 @@ const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist",
 /**
  * View-mode Home keeps user-placed widgets. Setup-only cards stay off the
  * board (the first-run banner is the CTA). Next match stays a full-width hero.
+ *
+ * While setup is still outstanding the banner leads, but widgets that already
+ * have their own data stay on the board: "no active event" is the normal state
+ * for months of the offseason, and blanking Home for it hides working tools.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
@@ -176,9 +180,16 @@ export function homeViewLayout(
   },
 ): DashboardWidgetLayout[] {
   if (input.editing) return layout.map((item) => ({ ...item }));
-  // First-run Home is the setup banner only — an empty widget grid is more buttons.
-  if (input.shell !== "ready") return [];
-  const visible = layout.filter((item) => !SETUP_ONLY_WIDGETS.has(item.type));
+  // Without a workspace there is no data at all, so the banner is the whole page.
+  if (input.shell === "loading" || input.shell === "no_org") return [];
+  const placeable = layout.filter((item) => !SETUP_ONLY_WIDGETS.has(item.type));
+  const visible =
+    input.shell === "ready"
+      ? placeable
+      : placeable.filter((item) => {
+          const status = input.widgets?.[item.type]?.status;
+          return status === "live" || status === "empty";
+        });
   return packDashboardLayout(
     visible.map((item) =>
       item.type === "next_match" ? { ...item, x: 0, w: DASHBOARD_COLUMNS } : item,

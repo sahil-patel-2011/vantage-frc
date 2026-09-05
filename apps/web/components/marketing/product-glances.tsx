@@ -3,27 +3,15 @@
  * Hub names match product pillars. No DEMO metrics or status chips.
  */
 
-import { MARKETING_HUBS } from "../../lib/marketing/product-story";
+import {
+  MARKETING_HUBS,
+  MARKETING_WORKSPACES,
+  marketingWorkspacesForHub,
+} from "../../lib/marketing/product-story";
 
-/** Hub directory used on /features. */
-export function ProductGlances() {
-  return (
-    <div className="product-glances product-glances-hubs" aria-label="Product hubs">
-      {MARKETING_HUBS.map((hub) => (
-        <article className="product-glance" key={hub.id} id={hub.id}>
-          <h3>
-            <a href={`#${hub.id}-detail`}>{hub.title}</a>
-          </h3>
-          <p>{hub.promise}</p>
-          <ul className="product-glance-modules">
-            {hub.modules.map((mod) => (
-              <li key={mod}>{mod}</li>
-            ))}
-          </ul>
-        </article>
-      ))}
-    </div>
-  );
+function joinNames(names: readonly string[]): string {
+  if (names.length < 2) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 export function ProductHubCatalog() {
@@ -41,14 +29,22 @@ export function ProductHubCatalog() {
               <li key={tool}>{tool}</li>
             ))}
           </ul>
+          {/* Where to find it in the menu, so the page teaches the real chrome. */}
+          <p className="mk-hub-where">Opens from {joinNames(marketingWorkspacesForHub(hub.id))}.</p>
         </article>
       ))}
     </div>
   );
 }
 
-const islandApps = ["Home", "Compete", "Team", "Business"] as const;
-const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Media", "Build", "AI"] as const;
+/**
+ * The mock is a picture of the shipped chrome, so both lists come from the
+ * product nav: the drawer is Home plus the four workspaces, and the island is
+ * those same four. Retyping them here is how the hero drifted into showing a
+ * seven-pillar drawer that no longer exists.
+ */
+const workspaceNames = MARKETING_WORKSPACES.map((workspace) => workspace.title);
+const drawerRows = ["Home", ...workspaceNames] as const;
 const competitionTabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 /** Hero chrome — labeled product areas, no invented match or scores. */
@@ -79,9 +75,9 @@ export function HeroProductVisual() {
               </div>
             </div>
             <nav>
-              {drawerPillars.map((pillar) => (
-                <span key={pillar} className={pillar === "Competition" ? "is-active" : undefined}>
-                  {pillar}
+              {drawerRows.map((row) => (
+                <span key={row} className={row === "Compete" ? "is-active" : undefined}>
+                  {row}
                 </span>
               ))}
             </nav>
@@ -127,9 +123,9 @@ export function HeroProductVisual() {
         </div>
 
         <nav className="hero-soft-island">
-          {islandApps.map((app) => (
-            <span key={app} className={app === "Compete" ? "is-active" : undefined}>
-              {app}
+          {workspaceNames.map((name) => (
+            <span key={name} className={name === "Compete" ? "is-active" : undefined}>
+              {name}
             </span>
           ))}
         </nav>

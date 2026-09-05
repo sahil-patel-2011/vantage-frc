@@ -140,7 +140,9 @@ export async function grantFreeTokens(
     return result.rows[0]!.id;
   } catch (error) {
     if (isMissingFreeTokenSchema(error)) {
-      throw new Error("Apply migration 0523_ai_free_token_gifts.sql before gifting tokens.");
+      throw new Error("Apply migration 0523_ai_free_token_gifts.sql before gifting tokens.", {
+        cause: error,
+      });
     }
     throw error;
   }

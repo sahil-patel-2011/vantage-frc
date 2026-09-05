@@ -229,6 +229,7 @@ function FormBuilderNextActionsPanel({ actions }: { actions: FormBuilderNextActi
 
 function FormBuilderShell({
   orgId,
+  embedded = false,
   shell,
   entryType,
   error,
@@ -237,6 +238,7 @@ function FormBuilderShell({
   children,
 }: {
   orgId?: string | null;
+  embedded?: boolean;
   shell: FormBuilderShellKind;
   entryType?: EntryType;
   error?: string;
@@ -272,13 +274,15 @@ function FormBuilderShell({
 
   return (
     <main className="module-page sfb-page soft-gate">
-      <PageHeader
-        breadcrumbs="Competition / Form builder"
-        title="Scouting form builder"
-        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
-      >
-        <FormBuilderRelatedStrip orgId={orgId} />
-      </PageHeader>
+      {!embedded ? (
+        <PageHeader
+          breadcrumbs="Competition / Form builder"
+          title="Scouting form builder"
+          description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
+        >
+          <FormBuilderRelatedStrip orgId={orgId} />
+        </PageHeader>
+      ) : null}
       {children}
       <EmptyState
         soft
@@ -334,7 +338,7 @@ function FormBuilderShell({
           </ol>
         ) : null}
       </EmptyState>
-      {shell !== "loading" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
+      {!embedded && shell !== "loading" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -647,7 +651,7 @@ function PreviewField({ question }: { question: DraftQuestion }) {
   );
 }
 
-export default function FormsClient({ orgId }: { orgId: string; embedded?: boolean }) {
+export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadError, setLoadError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -826,12 +830,13 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         error={loadError}
         errorStatus={loadErrorStatus}
         onRetry={() => void load()}
+        embedded={embedded}
       />
     );
   }
 
   if (!payload) {
-    return <FormBuilderShell orgId={orgId} shell="loading" entryType={type} />;
+    return <FormBuilderShell orgId={orgId} embedded={embedded} shell="loading" entryType={type} />;
   }
 
   const currentSchema = payload.schemas.find((schema) => schema.type === type);
@@ -873,7 +878,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
 
   if (shell === "setup") {
     return (
-      <FormBuilderShell orgId={orgId} shell="setup" entryType={type}>
+      <FormBuilderShell orgId={orgId} embedded={embedded} shell="setup" entryType={type}>
         {!payload.canManageSchemas ? (
           <EmptyState
             badge="Coach role"
@@ -888,24 +893,26 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
 
   return (
     <main className="module-page sfb-page">
-      <PageHeader
-        breadcrumbs="Competition / Form builder"
-        title="Scouting form builder"
-        description="Configure required fields, preview, and publish versioned match or pit schemas — never DEMO fields."
-      >
-        <div className="sfb-toolbar">
-          <FormBuilderRelatedStrip orgId={orgId} />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy || Boolean(publishBlocked)}
-            title={publishBlocked ?? publishStatus.detail}
-            onClick={() => void publish()}
-          >
-            {publishLabel}
-          </button>
-        </div>
-      </PageHeader>
+      {!embedded ? (
+        <PageHeader
+          breadcrumbs="Competition / Form builder"
+          title="Scouting form builder"
+          description="Configure required fields, preview, and publish versioned match or pit schemas — never DEMO fields."
+        >
+          <div className="sfb-toolbar">
+            <FormBuilderRelatedStrip orgId={orgId} />
+            <button
+              type="button"
+              className="app-button"
+              disabled={busy || Boolean(publishBlocked)}
+              title={publishBlocked ?? publishStatus.detail}
+              onClick={() => void publish()}
+            >
+              {publishLabel}
+            </button>
+          </div>
+        </PageHeader>
+      ) : null}
 
       {shell === "empty" ? (
         <EmptyState
@@ -1376,7 +1383,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               ))}
             </ul>
           </Panel>
-          <FormBuilderNextActionsPanel actions={readyActions} />
+          {!embedded ? <FormBuilderNextActionsPanel actions={readyActions} /> : null}
         </aside>
       </div>
     </main>

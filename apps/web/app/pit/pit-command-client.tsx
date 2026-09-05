@@ -12,16 +12,11 @@ import {
   type PitTurnaround,
 } from "../../lib/pit/board";
 import {
-  PIT_RELATED_INCLUDE,
   classifyPitShell,
   formatPitBatteryReady,
   formatPitMetric,
-  pitNextActions,
-  pitRelatedLinks,
-  pitSetupSteps,
   pitShellCopy,
   shouldShowPitSummaryTiles,
-  type PitNextAction,
   type PitShellKind,
 } from "../../lib/pit/pit-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -134,49 +129,6 @@ const countdown = (
   return "—";
 };
 
-function PitRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = pitRelatedLinks(orgId, {
-    include: [...PIT_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related pit-related" aria-label="Related pit tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function PitNextActionsPanel({ actions }: { actions: PitNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section className="app-card soft-panel edc-next-actions pit-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">
-          Batteries, Match checklist, and Event Day — never DEMO release metrics.
-        </p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function PitShell({
   description,
   orgId,
@@ -195,7 +147,6 @@ function PitShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = pitNextActions({ orgId, shell });
   const copy = pitShellCopy(shell);
   // A failed load names its own recovery — Retry cannot fix an expired session.
   const failure =
@@ -216,10 +167,6 @@ function PitShell({
         )
       : null;
   const competitionHref = withOrgHref("/competition", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const checklistHref = hubHref("/competition", "match-checklist", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
-
   return (
     <main className="module-page pit-page soft-gate">
       <PageHeader
@@ -231,9 +178,7 @@ function PitShell({
         }
         title="Pit command"
         description={description}
-      >
-        <PitRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {children}
       <EmptyState
         soft
@@ -266,24 +211,8 @@ function PitShell({
             Open Workspace
           </a>
         ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#pit-actions">
-              Log first evidence
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={checklistHref}>
-              Open Match checklist
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Event Day
-            </a>
-          </>
-        ) : null}
+        {shell === "empty" ? <a className="app-button" href="#pit-actions">Log first evidence</a> : null}
       </EmptyState>
-      <PitNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -385,22 +314,9 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
     flags: data?.flags,
   });
   const shellCopy = pitShellCopy(shell);
-  const nextActions = pitNextActions({
-    orgId,
-    shell,
-    batteryCount,
-    openIssues,
-    overdueMaintenance: data?.summary.overdueMaintenance ?? 0,
-    readyBatteries: data?.summary.readyBatteries ?? 0,
-    activeBatteries: data?.summary.activeBatteries ?? 0,
-  });
-  const relatedLinks = pitRelatedLinks(orgId, { include: [...PIT_RELATED_INCLUDE] });
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
-  const checklistHref = hubHref("/competition", "match-checklist", orgId);
-  const commandHref = hubHref("/competition", "command", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
-  const setupSteps = pitSetupSteps(orgId);
   const showSummary = shouldShowPitSummaryTiles({
     batteryCount,
     openIssues,
@@ -461,7 +377,6 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             : `${data.context.eventName ?? "No active event"} · explicit evidence, no invented percentage`
         }
       >
-        <PitRelatedStrip orgId={orgId} />
         <div className="pit-next">
           <span>NEXT MATCH</span>
           <strong>{matchLabel(data.nextMatch)}</strong>
@@ -492,27 +407,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             <a className="app-button" href="#pit-actions">
               Log first evidence
             </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={checklistHref}>
-              Open Match checklist
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Event Day
-            </a>
           </EmptyState>
-          <ol className="strategy-setup-steps">
-            {setupSteps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
         </>
       ) : null}
 
@@ -886,18 +781,6 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           </footer>
         </article>
       </section>
-
-      <PitNextActionsPanel actions={nextActions} />
-
-      {relatedLinks.length ? (
-        <nav className="product-hub-related pit-related pit-related-footer" aria-label="More pit tools">
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      ) : null}
 
       <PartnerPlacement orgId={orgId} surface="pit_footer" title="Pit command partners" />
       <footer className="pit-foot">

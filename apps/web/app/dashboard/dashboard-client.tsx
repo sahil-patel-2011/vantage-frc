@@ -29,7 +29,6 @@ import {
   dashboardGridForWidth,
   homeViewLayout,
   inferWidgetSize,
-  packDashboardLayout,
   scaleLayoutToCols,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
@@ -65,7 +64,6 @@ import {
   dashboardSetupTitle,
   type DashboardShellKind,
 } from "../../lib/dashboard/dashboard-related";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
@@ -282,6 +280,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   const [snapFeedback, setSnapFeedback] = useState<SnapFeedback | null>(null);
   const [announce, setAnnounce] = useState("");
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
+  /** Edit mode shows one card's size controls at a time — 8 cards × 5 chips is noise. */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
   const [boardsOpen, setBoardsOpen] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -289,6 +289,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   const orgId = me.orgId ?? "";
   const userId = me.userId ?? "";
+  // Orgs are usually named "Team 6925", which made the crumb read "Team 6925 · 6925".
+  const workspaceCrumb = (() => {
+    const name = me.orgName?.trim();
+    if (!name) return me.teamNumber != null ? `Team ${me.teamNumber}` : "Workspace";
+    if (me.teamNumber == null || name.includes(String(me.teamNumber))) return name;
+    return `${name} · ${me.teamNumber}`;
+  })();
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId || null);
 
   const dragRef = useRef<DragSession | null>(null);
@@ -502,13 +509,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
     if (orgId) void loadSnapshot(orgId, result.layout.map((item) => item.type));
-  }
-
-  function tidyLayout() {
-    setLayout((current) => packDashboardLayout(current));
-    setMessageKind("success");
-    setMessage("Widgets snapped upward into a clean, collision-free layout.");
-    setAnnounce("Board tidied. Widgets snapped upward with no gaps.");
   }
 
   function setWidgetSize(id: string, size: WidgetSizeKey) {
@@ -812,6 +812,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setPreviewing(false);
     setLibraryOpen(false);
     setGrabbedId(null);
+    setSelectedId(null);
     setMessage("");
   }
 
@@ -819,9 +820,12 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     setEditing(true);
     setPreviewing(false);
     setLibraryOpen(false);
+    // Size controls follow the selected card, so start on the first one rather
+    // than opening edit mode with no card selected and no sizes in sight.
+    setSelectedId(layoutRef.current[0]?.i ?? null);
     setMessageKind("success");
     setMessage(
-      "Edit mode — press and hold a card (or use its grip) to move it, arrow keys reorder from the keyboard, and Remove clears a card.",
+      "Edit mode — tap a card to select it, press and hold (or use its grip) to move it, and arrow keys reorder from the keyboard.",
     );
   }
 
@@ -1147,31 +1151,6 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     });
   }
 
-  function beginPaletteDrag(event: ReactPointerEvent<HTMLElement>, entry: WidgetCatalogEntry) {
-    if (!editing || saving) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const span = {
-      w: Math.max(1, Math.min(cols, Math.round((entry.defaultW * cols) / DASHBOARD_COLUMNS))),
-      h: entry.defaultH,
-    };
-    const box = cellBox({ x: 0, y: 0, ...span }, canvasWidth, cols, grid.rowHeight, gap);
-    beginSession(event, {
-      kind: "add",
-      id: `add-${entry.type}`,
-      type: entry.type,
-      label: entry.label,
-      activation: event.pointerType === "mouse" ? "intent" : "longpress",
-      grab: { x: Math.min(event.clientX - rect.left, box.width / 2), y: Math.min(event.clientY - rect.top, 28) },
-      size: { width: box.width, height: box.height },
-      span,
-      cell: { col: 0, row: 0 },
-      cols,
-      rowHeight: grid.rowHeight,
-      gap,
-    });
-  }
-
   function onDragPointerMove(event: ReactPointerEvent<HTMLElement>) {
     const session = dragRef.current;
     if (!session || session.pointerId !== event.pointerId) return;
@@ -1345,7 +1324,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
-            {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
+            {workspaceCrumb}
             {board && !board.isDefault ? (
               <span className="dash-scope-pill" data-scope={scope}>
                 {scope === "org" ? "Team board" : "Personal board"}
@@ -1355,7 +1334,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
           <h1>
             {greeting()}, {firstName}
           </h1>
-          {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
+          {/* While editing the board bar is hidden, so the header names the board
+              being edited. Outside edit mode the bar already shows it as pressed. */}
+          {orgId && board && !board.isDefault && editing ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
             </p>
@@ -1372,16 +1353,30 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               Select workspace
             </a>
           ) : null}
-          {!editing && !previewing && orgId ? (
-            <button
-              className="dash-edit-quiet"
-              type="button"
-              data-testid="dash-customize"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
-              onClick={enterEditMode}
-            >
-              Edit
-            </button>
+          {!editing && !previewing && orgId && meLoaded ? (
+            <>
+              <button
+                className="dash-edit-quiet"
+                type="button"
+                data-testid="dash-manage-boards"
+                aria-expanded={boardsOpen}
+                onClick={() => {
+                  setBoardsOpen(true);
+                  setRenameId(null);
+                }}
+              >
+                Boards
+              </button>
+              <button
+                className="dash-edit-quiet"
+                type="button"
+                data-testid="dash-customize"
+                aria-label="Edit Home — rearrange, add, or remove widgets"
+                onClick={enterEditMode}
+              >
+                Edit
+              </button>
+            </>
           ) : null}
         </div>
       </header>
@@ -1393,7 +1388,11 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         </p>
       ) : null}
 
-      {orgId && meLoaded && editing && switcherBoards.length > 1 ? (
+      {/* Boards belong to reading Home, not editing it: switching mid-edit would
+          throw away the arrangement in progress. With a single board there is
+          nothing to switch between, so the row stays out of the way and creating
+          or renaming happens in the Boards sheet. */}
+      {orgId && meLoaded && !editing && switcherBoards.length > 1 ? (
         <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
           <div className="dash-board-switcher" data-testid="dash-board-switcher">
             {switcherBoards.map((item) => (
@@ -1401,37 +1400,14 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                 key={item.id}
                 type="button"
                 aria-pressed={board?.id === item.id}
-                disabled={saving || editing}
+                disabled={saving}
                 onClick={() => void switchBoard(item.id)}
                 title={item.scope === "org" ? "Team board" : "Personal board"}
               >
                 {item.name}
               </button>
             ))}
-            <button
-              type="button"
-              className="dash-board-add"
-              disabled={saving || editing}
-              aria-label="Create personal board"
-              title="New personal board"
-              onClick={() => void createBoard("personal")}
-            >
-              +
-            </button>
           </div>
-          <button
-            type="button"
-            className="dash-board-manage"
-            data-testid="dash-manage-boards"
-            disabled={saving}
-            aria-expanded={boardsOpen}
-            onClick={() => {
-              setBoardsOpen(true);
-              setRenameId(null);
-            }}
-          >
-            Manage boards
-          </button>
         </div>
       ) : null}
 
@@ -1472,7 +1448,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
         <DataSourceDegradedBanner health={dataSourceHealth} />
       ) : null}
 
-      {meLoaded && (dashShell === "ready" || editing) ? (
+      {meLoaded && (dashShell === "ready" || editing || viewLayout.length > 0) ? (
         <section
           className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""
@@ -1572,6 +1548,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                         editing={editing}
                         isDragging={drag?.kind === "move" && drag.id === item.i}
                         isGrabbed={grabbedId === item.i}
+                        isSelected={selectedId === item.i}
+                        onSelect={setSelectedId}
                         currentSize={inferWidgetSize(saved)}
                         atDefault={!entry || (saved.w === entry.defaultW && saved.h === entry.defaultH)}
                         payload={widgets[item.type]}
@@ -1874,6 +1852,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                 </div>
               ) : null}
             </section>
+            {/* The one way back to the shipped layout — the default board cannot be
+                deleted, so without this a rearranged Home has no undo. */}
+            <div className="dash-boards-reset">
+              <button type="button" disabled={saving || editing} onClick={() => void resetDefault()}>
+                Reset {board?.name ?? "this board"} to the default widgets
+              </button>
+            </div>
       </Modal>
     </main>
   );

@@ -6,15 +6,10 @@ import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 import {
-  CHEMISTRY_RELATED_INCLUDE,
   classifyChemistryShell,
-  chemistryNextActions,
-  chemistryRelatedLinks,
-  chemistrySetupSteps,
   chemistryShellCopy,
   formatChemistryMetric,
   shouldShowChemistrySummaryTiles,
-  type ChemistryNextAction,
   type ChemistryShellKind,
 } from "../../lib/chemistry/chemistry-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -22,50 +17,6 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import "./chemistry.css";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null };
-
-function ChemistryRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = chemistryRelatedLinks(orgId, {
-    include: [...CHEMISTRY_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related chem-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ChemistryNextActionsPanel({ actions }: { actions: ChemistryNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions chem-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 function ChemistryShell({
   orgId,
@@ -83,7 +34,6 @@ function ChemistryShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = chemistryNextActions({ orgId, shell });
   const copy = chemistryShellCopy(shell);
   const failure =
     shell === "error"
@@ -102,10 +52,6 @@ function ChemistryShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? chemistrySetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const draftHref = withOrgHref("/strategy/draft", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
@@ -115,9 +61,7 @@ function ChemistryShell({
         breadcrumbs="Competition / Chemistry"
         title="Alliance chemistry"
         description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats — never DEMO chemistry scores."
-      >
-        <ChemistryRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {children}
       <EmptyState
         soft
@@ -151,45 +95,8 @@ function ChemistryShell({
             {orgId ? "Set active event" : "Select workspace"}
           </a>
         ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync event metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={draftHref}>
-              Open Draft board
-            </a>
-          </>
-        ) : null}
+        {shell === "empty" ? <a className="app-button" href={teamDataHref}>Sync event metrics</a> : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="chem-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
-          </header>
-          <ul className="chem-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <ChemistryNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -206,7 +113,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
   // Promotion to the ONE pick list: which team keys are in flight, and the last outcome.
   const [saving, setSaving] = useState<string>("");
   const [saveMessage, setSaveMessage] = useState("");
-  const [savedPickListId, setSavedPickListId] = useState<string>("");
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -287,7 +193,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       const busyKey = teamKeys.join(",");
       setSaving(busyKey);
       setSaveMessage("");
-      setSavedPickListId("");
       try {
         const response = await fetch("/api/chemistry", {
           method: "POST",
@@ -313,7 +218,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         }
         setView(data);
         setSaveMessage(data.promotion?.message ?? "Saved to the pick list.");
-        setSavedPickListId(data.promotion?.pickListId ?? "");
       } catch {
         setSaveMessage("Network error — nothing was saved to the pick list.");
       } finally {
@@ -368,17 +272,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
     );
   }
 
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const draftHref = withOrgHref("/strategy/draft", orgId);
   const showTiles = shouldShowChemistrySummaryTiles(seatCount, hasScore);
-  const readyActions = chemistryNextActions({
-    orgId,
-    shell: hasScore ? "ready" : "empty",
-    eventKey: view?.eventKey,
-    seatCount,
-    hasScore,
-  });
   const emptyCopy = chemistryShellCopy("empty");
 
   return (
@@ -393,18 +287,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         }
       >
         <div className="chem-heading">
-          <ChemistryRelatedStrip orgId={orgId} />
-          <div className="edc-header-actions">
-            <a className="app-button secondary" href={strategyHref}>
-              Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Pick desk
-            </a>
-            <a className="app-button secondary" href={draftHref}>
-              Draft
-            </a>
-          </div>
         </div>
       </PageHeader>
 
@@ -412,14 +294,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       {saveMessage ? (
         <p className="edc-banner" role="status">
           {saveMessage}
-          {savedPickListId ? (
-            <>
-              {" "}
-              <a className="edc-link" href={pickDeskHref}>
-                Open Pick desk
-              </a>
-            </>
-          ) : null}
         </p>
       ) : null}
 
@@ -538,9 +412,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
                   ? "Promoting…"
                   : "Promote partner fit"}
               </button>
-              <a className="app-button secondary" href={pickDeskHref}>
-                Open Pick desk
-              </a>
             </div>
           </article>
 
@@ -624,15 +495,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               : emptyCopy.description
           }
         >
-          <a className="app-button secondary" href={strategyHref}>
-            Open Strategy
-          </a>
-          <a className="app-button secondary" href={pickDeskHref}>
-            Open Pick desk
-          </a>
-          <a className="app-button secondary" href={draftHref}>
-            Open Draft board
-          </a>
         </EmptyState>
       )}
 
@@ -714,7 +576,6 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         </section>
       ) : null}
 
-      <ChemistryNextActionsPanel actions={readyActions} />
     </main>
   );
 }

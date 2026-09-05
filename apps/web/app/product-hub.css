@@ -1,15 +1,24 @@
 .product-hub-tabs { margin: 0 0 8px; }
-.product-hub--team > .app-page-header,
-.product-hub--ai > .app-page-header:not(:has(.app-page-actions)) {
-  display: none;
-}
+/*
+ * The shell chrome and the tab strip carry a hub's visible identity, so its own
+ * page header is not painted. It stays in the accessibility tree though — a
+ * page with its h1 set to `display: none` announces with no name at all.
+ */
 .product-hub > .app-page-header .breadcrumbs,
-.product-hub > .app-page-header h1,
 .product-hub > .app-page-header > div > p {
   display: none;
 }
+.product-hub > .app-page-header h1,
 .product-hub > .app-page-header:not(:has(.app-page-actions)) {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .product-hub--ai {
   display: flex;
@@ -58,7 +67,17 @@
 }
 /* One finder for the rest of a workbench — not a chip row. */
 .hub-tool-strip {
+  position: relative;
+  z-index: 6;
   margin: 0 0 16px;
+}
+.hub-tool-finder-scrim {
+  position: fixed;
+  z-index: 5;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
 }
 .hub-tool-finder-trigger {
   display: inline-flex;
@@ -75,6 +94,10 @@
 .hub-tool-finder-trigger span:last-child {
   color: var(--soft-muted, var(--app-muted));
   font-size: 12px;
+  transition: transform 160ms cubic-bezier(.22, 1, .36, 1);
+}
+.hub-tool-strip.is-open .hub-tool-finder-trigger span:last-child {
+  transform: rotate(180deg);
 }
 .hub-tool-strip-row {
   display: none;
@@ -104,7 +127,12 @@
   border-color: var(--soft-line, var(--app-line));
 }
 .hub-tool-finder {
-  margin-top: 8px;
+  position: absolute;
+  z-index: 7;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(360px, calc(100vw - 32px));
+  margin: 0;
   padding: 12px;
   background: var(--soft-card, var(--app-surface));
   border: 1px solid var(--soft-line, var(--app-line));
@@ -164,6 +192,19 @@
 @media (prefers-reduced-motion: no-preference) {
   .hub-tool-chip {
     transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  }
+  .hub-tool-finder {
+    animation: hub-pop-in 160ms cubic-bezier(.22, 1, .36, 1);
+  }
+}
+@keyframes hub-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 

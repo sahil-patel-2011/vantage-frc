@@ -16,7 +16,8 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
+  // The shell itself is the proof we landed inside the product, not on a redirect.
+  await expect(page.getByRole("button", { name: "Open navigation" })).toBeVisible();
 });
 
 test("protected routes preserve their requested destination", async ({ page }) => {

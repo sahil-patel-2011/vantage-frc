@@ -11,7 +11,6 @@ import {
   resolveCutoffErrorCode,
   UsageCutoffBanner,
 } from "../../components/usage-cutoff-banner";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
 import { enforceBugbotFileCap, prepareBugbotWritePr, resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot";
 import { BUGBOT_INSTRUCTION_MAX } from "../../lib/cockpit/prefs";
@@ -238,7 +237,6 @@ export function CodeClient({
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
-  const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
 
   const githubHref = orgId ? githubConnectionHref(orgId) : "/team/admin#github-connection";
   const robotFiles = useMemo(
@@ -963,50 +961,6 @@ export function CodeClient({
           </a>
         </EmptyState>
       ) : null}
-
-      <section className="cdc-billing" aria-label="Local versus metered">
-        <article className="cdc-billing-local">
-          <span className="app-badge good">Local · free</span>
-          <h2>Code Coach pattern review</h2>
-          <p>
-            Risk rules run in the browser against pasted or loaded source. No provider key, no plan credits, and no
-            findings unless a rule matches evidence in your file.
-          </p>
-        </article>
-        <article className="cdc-billing-metered">
-          <span className="app-badge">Subscription</span>
-          <h2>Bugbot on your plan</h2>
-          <p>
-            Scan connected GitHub robot-code (or a pasted file) on your workspace allowance / BYO key. Findings must
-            quote the source. Distinct from CAD briefs and chat.
-          </p>
-          <div className="cdc-billing-actions">
-            <a className="app-button secondary" href="#bugbot">
-              AI Bugbot
-            </a>
-            <a className="app-button secondary" href={keysHref}>
-              AI keys
-            </a>
-          </div>
-        </article>
-        <article className="cdc-billing-ultra">
-          <span className="app-badge">Bugbot Ultra</span>
-          <h2>Hosted API · published prices</h2>
-          <p>
-            Straight hosted pass that does not use your BYO key: ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} to scan, $
-            {BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} to propose a fix, ${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} to
-            recheck. Fixes stay diffs — never pushed to GitHub.
-          </p>
-          <div className="cdc-billing-actions">
-            <a className="app-button secondary" href="#bugbot">
-              Ultra prices
-            </a>
-            <a className="app-button secondary" href={githubHref}>
-              Connect GitHub
-            </a>
-          </div>
-        </article>
-      </section>
 
       {showMeteredBanner ? (
         <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" />

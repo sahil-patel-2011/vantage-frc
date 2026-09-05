@@ -14,6 +14,8 @@ export type ThemePreference = Theme | "system";
 
 const STORAGE_KEY = "vantage-theme";
 const PREF_STORAGE_KEY = "vantage-theme-pref";
+/** Matches the inline bootstrap in app/layout.tsx and the server-rendered <html>. */
+const DEFAULT_THEME: Theme = "light";
 
 function systemTheme(): Theme {
   if (typeof window === "undefined") return "light";
@@ -24,7 +26,8 @@ function resolveTheme(pref: ThemePreference): Theme {
   return pref === "system" ? systemTheme() : pref;
 }
 
-function readStoredPreference(): ThemePreference {
+/** The preference this browser has actually recorded, or null when untouched. */
+function readStoredPreference(): ThemePreference | null {
   try {
     const pref = localStorage.getItem(PREF_STORAGE_KEY);
     if (pref === "light" || pref === "dark" || pref === "system") return pref;
@@ -33,7 +36,7 @@ function readStoredPreference(): ThemePreference {
   } catch {
     /* ignore */
   }
-  return "light";
+  return null;
 }
 
 function syncBrowserColor(theme: Theme) {
@@ -41,13 +44,18 @@ function syncBrowserColor(theme: Theme) {
     .forEach((meta) => { meta.content = theme === "dark" ? "#0b1014" : "#f7f6f2"; });
 }
 
-function applyResolvedTheme(theme: Theme) {
+/** Paint a theme without recording it, so an untouched browser stays untouched. */
+function showTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
   syncBrowserColor(theme);
+  window.dispatchEvent(new CustomEvent("vantage-theme", { detail: theme }));
+}
+
+function applyResolvedTheme(theme: Theme) {
   localStorage.setItem(STORAGE_KEY, theme);
   document.cookie = `vantage-theme=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
-  window.dispatchEvent(new CustomEvent("vantage-theme", { detail: theme }));
+  showTheme(theme);
 }
 
 function applyPreference(pref: ThemePreference) {
@@ -61,8 +69,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const pref = readStoredPreference();
-    setPreference(pref);
+    setPreference(readStoredPreference() ?? DEFAULT_THEME);
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     setTheme(current);
     syncBrowserColor(current);
@@ -161,6 +168,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       document.documentElement.classList.add("theme-ready");
       return;
     }
+    // Nothing chosen anywhere means "no preference" — paint the default but do
+    // not write it down, or a first visit would silently harden into Light.
+    const settle = (pref: ThemePreference | null) => {
+      if (pref) applyPreference(pref);
+      else showTheme(DEFAULT_THEME);
+    };
     void fetch("/api/theme")
       .then(async (response) => response.ok ? response.json() as Promise<{ theme?: Theme; persisted?: boolean }> : null)
       .then((result) => {
@@ -168,12 +181,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           applyPreference(result.theme);
           setTimeout(() => document.documentElement.classList.add("theme-ready"), 0);
         } else {
-          applyPreference(localPref);
+          settle(localPref);
           document.documentElement.classList.add("theme-ready");
         }
       })
       .catch(() => {
-        applyPreference(localPref);
+        settle(localPref);
         document.documentElement.classList.add("theme-ready");
       });
   }, [productRoute]);

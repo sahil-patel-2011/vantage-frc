@@ -2,23 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { AttachedLinkChips, AttachedLinksEditor } from "../../components/attached-links";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { AttachedLink } from "../../lib/planner/links";
 import "../planner-links.css";
 import { useOnline } from "../../lib/offline";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import type { WorkItemsView } from "../../lib/work-items/service";
 import {
   TODO_LIST_FILTERS,
-  TODOS_RELATED_INCLUDE,
   TODO_STATUSES,
   filterTodos,
   statusLabel,
-  todosNextActions,
   type TodoListFilter,
   type TeamTodo,
   type TodoStatus,
@@ -27,7 +21,6 @@ import {
 import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;
-type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
@@ -38,102 +31,11 @@ function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   return { text: `Due ${todo.dueOn}`, tone: "inherit" };
 }
 
-function NextActions({
-  orgId,
-  todoCount,
-  mineOpen,
-  overdue,
-}: {
-  orgId?: string | null;
-  todoCount: number;
-  mineOpen: number;
-  overdue: number;
-}) {
-  const actions = todosNextActions({ orgId, todoCount, mineOpen, overdue });
-  if (actions.length === 0) return null;
-  return (
-    <section className="todos-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From real team_todos only — never a DEMO task list.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
-  if (!view) return null;
-  const crossTrackerItems = view.items
-    .filter((item) => item.source !== "todo" && item.flags.open)
-    .slice(0, 8);
-
-  return (
-    <Panel className="todos-unified-work" aria-label="All team work">
-      <header>
-        <div>
-          <span className="app-badge">One work view</span>
-          <h2>Todos, build tasks, and milestones</h2>
-          <p className="app-muted">
-            One read across the team&apos;s trackers. Open an item in its owning board to update it.
-          </p>
-        </div>
-        <a className="app-button secondary" href={withOrgHref("/tasks", view.orgId)}>
-          Open build board
-        </a>
-      </header>
-      <div className="todos-unified-metrics">
-        <StatTile label="Open" value={view.summary.open} />
-        <StatTile label="Overdue" value={view.summary.overdue} />
-        <StatTile label="Blocked" value={view.summary.blocked} />
-        <StatTile label="Unowned" value={view.summary.unowned} />
-      </div>
-      {crossTrackerItems.length ? (
-        <ul className="todos-cross-tracker-list">
-          {crossTrackerItems.map((item) => (
-            <li key={`${item.source}:${item.id}`}>
-              <div>
-                <span>{item.source === "build_task" ? "Build task" : "Milestone"}</span>
-                <strong>{item.title}</strong>
-                <small>
-                  {item.status.replace("_", " ")}
-                  {item.dueOn ? ` · due ${item.dueOn}` : ""}
-                  {item.owners.length ? ` · ${item.owners.map((owner) => owner.name).join(", ")}` : " · unowned"}
-                </small>
-              </div>
-              <a className="app-button secondary" href={withOrgHref(item.href, view.orgId)}>
-                Open
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="app-muted todos-unified-empty">
-          No open build tasks or milestones. Team todos remain below.
-        </p>
-      )}
-    </Panel>
-  );
-}
-
 export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
   const [fromCache] = useState(false);
   const [cachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TodosView | null>(null);
-  const [workView, setWorkView] = useState<LiveWorkView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -172,21 +74,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/work-items${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-    })
-      .then(async (response) => (response.ok ? (await response.json()) as WorkItemsView : null))
-      .then((data) => {
-        if (data?.status === "live") setWorkView(data);
-      })
-      .catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     if (view?.status !== "live" || !view.focusTodoId) return;
@@ -249,19 +136,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
                 in their boards; this list never invents DEMO rows.
               </>
             }
-          >
-            {view?.status === "live" ? (
-              <a className="app-button secondary" href={withOrgHref("/tasks", orgId)}>
-                Build-season board
-              </a>
-            ) : null}
-          </PageHeader>
-          <TeamOpsNav orgId={orgId} active="todos" />
-          <TeamHubRelated
-            orgId={orgId}
-            active="todos"
-            include={[...TODOS_RELATED_INCLUDE]}
-            ariaLabel="Related team ops for todos"
           />
         </>
       ) : null}
@@ -302,7 +176,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               Choose workspace
             </a>
           </div>
-          <NextActions orgId={orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your workspace for real todos." aria-busy />
@@ -319,12 +192,10 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               </li>
             ))}
           </ol>
-          <NextActions orgId={view.orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           {embedded ? null : <MetricsTiles view={view} />}
-          <UnifiedWorkSummary view={workView} />
           <CreateTodoForm view={view} busy={busy} mutate={mutate} />
           <FilterBar
             filter={filter}
@@ -333,14 +204,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             overdue={view.metrics.overdue}
           />
           <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} />
-          {view.todos.length === 0 || view.metrics.overdue > 0 || view.metrics.mineOpen > 0 ? (
-            <NextActions
-              orgId={view.orgId}
-              todoCount={view.todos.length}
-              mineOpen={view.metrics.mineOpen}
-              overdue={view.metrics.overdue}
-            />
-          ) : null}
         </div>
       )}
     </main>
@@ -507,19 +370,7 @@ function Board({
         badgeTone="setup"
         title="No team todos yet"
         description="Add the first shared action item when your team has real work to track. Vantage does not invent DEMO task lists."
-      >
-        <div className="soft-btn-row">
-          <a className="app-button secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
-            Calendar
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
-            Messages
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
-            Practice
-          </a>
-        </div>
-      </EmptyState>
+      />
     );
   }
 

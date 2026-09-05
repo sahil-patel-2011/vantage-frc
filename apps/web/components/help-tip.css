@@ -45,7 +45,12 @@
 }
 
 .help-tip-scrim {
-  display: none;
+  position: fixed;
+  z-index: 94;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
 }
 
 .help-tip-panel {
@@ -225,10 +230,6 @@
 /* Phone: bottom sheet, so the panel never hangs off a 360px viewport. */
 @media (max-width: 720px) {
   .help-tip-scrim {
-    display: block;
-    position: fixed;
-    z-index: 94;
-    inset: 0;
     background: rgba(9, 18, 30, 0.42);
   }
 

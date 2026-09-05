@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import {
-  AI_GOVERNANCE_RELATED_INCLUDE,
-  AI_GOVERNANCE_SCOPE_CARDS,
-  aiGovernanceNextActions,
-  aiGovernanceRelatedLinks,
   aiGovernanceShellCopy,
   classifyAiGovernanceShell,
   formatAiGovernanceCount,
   formatAiGovernanceMoney,
   type AiGovernancePolicySnapshot,
-  type AiGovernanceShellKind,
 } from "../../../lib/ai-governance/ai-governance-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -82,48 +76,6 @@ function toSnapshot(form: PolicyForm, pendingApprovals: number): AiGovernancePol
   };
 }
 
-function GovernanceRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiGovernanceRelatedLinks(orgId, { include: [...AI_GOVERNANCE_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-governance-related" aria-label="Related AI tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({ orgId, shell }: { orgId: string; shell: AiGovernanceShellKind }) {
-  const actions = aiGovernanceNextActions({ orgId, shell });
-  if (!actions.length) return null;
-  return (
-    <section
-      className="ai-governance-next-actions app-card soft-panel edc-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p>From real org policy and Neon spend only — never DEMO policy stats.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 export default function AiPolicyClient({ orgId }: { orgId: string }) {
   const [form, setForm] = useState<PolicyForm>(defaultForm);
   const [features, setFeatures] = useState<string[]>([]);
@@ -153,13 +105,9 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     Boolean(catalogFinanceAckVersion) &&
     financeInAiAckVersion === catalogFinanceAckVersion;
 
-  const chatHref = hubHref("/ai", "chat", orgId);
   const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const memoryHref = hubHref("/ai", "memory", orgId);
   const financeHref = hubHref("/ai", "finance", orgId);
   const runsHref = withOrgHref("/team/ai-runs", orgId);
-  const headerLinks = aiGovernanceRelatedLinks(orgId);
-
   async function load() {
     setLoading(true);
     setLoadError(null);
@@ -335,21 +283,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             shared memory under Memory; enforcement happens in Chat.
           </p>
         </div>
-        <nav className="intel-actions" aria-label="Governance links">
-          {headerLinks
-            .filter((link) =>
-              ["chat", "budgets", "memory", "finance", "usage", "runs", "admin"].includes(link.id),
-            )
-            .map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-        </nav>
       </header>
-
-      <AiHubRelated orgId={orgId} active="governance" />
-      <GovernanceRelatedStrip orgId={orgId} />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -369,7 +303,6 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
           <h2>{shellCopy.title}</h2>
           <p className="app-muted">{shellCopy.description}</p>
-          <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
@@ -380,44 +313,6 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
 
       {!loading && !blocked ? (
         <>
-          <section className="ai-governance-scope" aria-label="What governance owns">
-            {AI_GOVERNANCE_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="app-card soft-panel ai-governance-scope-card">
-                <span className="eyebrow">
-                  {card.id === "policy"
-                    ? "POLICY"
-                    : card.id === "budgets"
-                      ? "BUDGETS"
-                      : card.id === "memory"
-                        ? "MEMORY"
-                        : "CHAT"}
-                </span>
-                <h2>{card.title}</h2>
-                <p className="app-muted">{card.body}</p>
-                {card.id === "policy" ? (
-                  <a className="app-button secondary" href="#ai-governance-policy">
-                    Edit policy
-                  </a>
-                ) : null}
-                {card.id === "budgets" ? (
-                  <a className="app-button secondary" href={budgetsHref}>
-                    Open Budgets
-                  </a>
-                ) : null}
-                {card.id === "memory" ? (
-                  <a className="app-button secondary" href={memoryHref}>
-                    Open Memory
-                  </a>
-                ) : null}
-                {card.id === "chat" ? (
-                  <a className="app-button secondary" href={chatHref}>
-                    Open Chat
-                  </a>
-                ) : null}
-              </article>
-            ))}
-          </section>
-
           <section className="metric-grid" aria-label="Live spend and policy state">
             <article>
               <span>Spend today</span>
@@ -454,8 +349,6 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <p className="app-muted">{shellCopy.description}</p>
             </section>
           ) : null}
-
-          <NextActions orgId={orgId} shell={shell} />
 
           <form
             id="ai-governance-policy"
@@ -661,15 +554,6 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <button className="primary-action" disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save AI governance policy"}
               </button>
-              <a className="app-button secondary" href={chatHref}>
-                Open Chat
-              </a>
-              <a className="app-button secondary" href={budgetsHref}>
-                Open Budgets
-              </a>
-              <a className="app-button secondary" href={memoryHref}>
-                Open Memory
-              </a>
             </div>
           </form>
 

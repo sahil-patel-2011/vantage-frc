@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   ATTENDANCE_KIND_LABELS,
   ATTENDANCE_KINDS,
@@ -21,9 +19,7 @@ import {
 } from "../../lib/attendance";
 import {
   ATTENDANCE_LIST_FILTERS,
-  ATTENDANCE_TEAM_RELATED_INCLUDE,
   attendanceCalendarHref,
-  attendanceNextActions,
   attendancePracticeHref,
   filterAttendanceEvents,
   formatEventEvidence,
@@ -39,53 +35,6 @@ function fmtDate(ymd: string): string {
   const date = new Date(`${ymd}T12:00:00`);
   if (Number.isNaN(date.getTime())) return ymd;
   return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
-
-function NextActions({
-  orgId,
-  eventCount,
-  emptyRollCount,
-  canManage,
-  selectedEventId,
-  selectedOccurredOn,
-}: {
-  orgId?: string | null;
-  eventCount: number;
-  emptyRollCount: number;
-  canManage: boolean;
-  selectedEventId?: string | null;
-  selectedOccurredOn?: string | null;
-}) {
-  const actions = attendanceNextActions({
-    orgId,
-    eventCount,
-    emptyRollCount,
-    canManage,
-    selectedEventId,
-    selectedOccurredOn,
-  });
-  if (actions.length === 0) return null;
-  return (
-    <section className="att-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>From real attendance events only — never DEMO presence rates.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 function CreateEventForm({
@@ -425,16 +374,7 @@ function SessionDetail({
           soft
           title="No attendees marked yet"
           description="Add people who showed up — totals stay empty until you mark them. No DEMO presence rates."
-        >
-          <div className="att-empty-actions">
-            <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
-              Practice
-            </a>
-            <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
-              Calendar
-            </a>
-          </div>
-        </EmptyState>
+        />
       ) : (
         <ul className="att-entries">
           {event.entries.map((entry) => (
@@ -574,7 +514,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         {!embedded ? (
           <>
             <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
-            <TeamOpsNav active="attendance" />
           </>
         ) : null}
         <EmptyState
@@ -602,9 +541,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               </a>
             </div>
           ) : null}
-          {fetchFailed ? (
-            <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />
-          ) : null}
         </EmptyState>
       </main>
     );
@@ -620,7 +556,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               title="Attendance"
               description="Log who showed up to practice and meetings — real marks only, never DEMO rates."
             />
-            <TeamOpsNav active="attendance" />
           </>
         ) : null}
         <EmptyState soft title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup">
@@ -628,7 +563,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             Choose workspace
           </a>
         </EmptyState>
-        <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />
       </main>
     );
   }
@@ -639,7 +573,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const summary = summarizeAttendance(events);
   const board = personAttendanceBoard(events);
   const busy = busyKey != null;
-  const emptyRollCount = events.filter((event) => event.entries.length === 0).length;
   const filtered = filterAttendanceEvents(events, listFilter, { members, query });
   const selected =
     filtered.find((event) => event.id === selectedId) ??
@@ -668,16 +601,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           ))}
         </select>
       </label>
-      {!embedded ? (
-        <>
-          <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
-            Practice
-          </a>
-          <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
-            Calendar
-          </a>
-        </>
-      ) : null}
       {canManage ? (
         <button type="button" className="app-button" onClick={() => setShowCreate((v) => !v)}>
           {showCreate ? "Cancel" : "New"}
@@ -705,17 +628,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       ) : (
         headerActions
       )}
-      {!embedded ? (
-        <>
-          <TeamOpsNav orgId={orgId} active="attendance" />
-          <TeamHubRelated
-            orgId={orgId}
-            active="attendance"
-            include={[...ATTENDANCE_TEAM_RELATED_INCLUDE]}
-            ariaLabel="Related team ops for attendance"
-          />
-        </>
-      ) : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -742,17 +654,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         </div>
       </section>
 
-      {events.length === 0 || emptyRollCount > 0 ? (
-        <NextActions
-          orgId={orgId}
-          eventCount={events.length}
-          emptyRollCount={emptyRollCount}
-          canManage={canManage}
-          selectedEventId={selected?.id}
-          selectedOccurredOn={selected?.occurredOn}
-        />
-      ) : null}
-
       {showCreate && canManage ? (
         <CreateEventForm orgId={orgId} seasonYear={seasonYear} busy={busy} run={run} />
       ) : null}
@@ -767,23 +668,11 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               : "An owner or admin will create the first roll-call event."
           }
         >
-          <div className="att-empty-actions">
-            {canManage ? (
-              <button type="button" className="app-button" onClick={() => setShowCreate(true)}>
-                New
-              </button>
-            ) : (
-              <a className="app-button secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
-                Ask in Messages
-              </a>
-            )}
-            <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
-              Schedule on Calendar
-            </a>
-            <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
-              Open Practice
-            </a>
-          </div>
+          {canManage ? (
+            <button type="button" className="app-button" onClick={() => setShowCreate(true)}>
+              New
+            </button>
+          ) : null}
         </EmptyState>
       ) : (
         <>

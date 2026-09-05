@@ -19,6 +19,24 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await expect(page.getByText("DEMO DATA")).toHaveCount(0);
 });
 
+/*
+ * The hero is a drawn recreation of the product chrome, which is exactly how it
+ * drifted into advertising a seven-pillar drawer the app had already replaced.
+ * These are the four names a visitor will go looking for after they sign in.
+ */
+test("the hero mock shows the workspaces the product actually ships", async ({ page }) => {
+  await page.goto("/");
+  const drawer = page.locator(".hero-soft-drawer nav span");
+  await expect(drawer).toHaveText(["Home", "Scout", "Compete", "Build", "Run season"]);
+  await expect(page.locator(".hero-soft-island span")).toHaveText([
+    "Scout",
+    "Compete",
+    "Build",
+    "Run season",
+  ]);
+  await expect(page.locator(".hero-soft-shell").getByText("Logistics")).toHaveCount(0);
+});
+
 test("marketing header keeps mobile navigation and footer routes discoverable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

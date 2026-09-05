@@ -14,7 +14,7 @@ const faqs = [
   },
   {
     q: "What do we open first?",
-    a: "Competition: Event day, Scouting, Strategy, and Pit. Team for calendar, chat, and playbook. Build for CAD and Code. AI for Assistant. Media, Logistics, and the rest live in the menu or search.",
+    a: "The menu is four workspaces. Scout is offline forms and coverage. Compete is event day, strategy, and the pick desk. Build is kickoff, CAD, code, and the robot. Run season is calendar, chat, money, sponsors, media, and AI. Search (Cmd+K) jumps straight to any tool.",
   },
   {
     q: "Does scouting work offline?",

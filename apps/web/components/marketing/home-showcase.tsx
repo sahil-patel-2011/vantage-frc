@@ -4,10 +4,11 @@
 
 import {
   MARKETING_HUBS,
-  MARKETING_JOBS,
   MARKETING_PROBLEMS,
   MARKETING_SEASON,
   MARKETING_TRUST,
+  MARKETING_WORKSPACE_SENTENCE,
+  MARKETING_WORKSPACES,
 } from "../../lib/marketing/product-story";
 import { MIcon } from "./marketing-icons";
 
@@ -43,18 +44,18 @@ export function HomeShowcase() {
             <p className="lux-eyebrow">What it is</p>
             <h2 id="lux-define-title">One workspace for the FRC season.</h2>
             <p>
-              Mentors invite exact emails. Students open Competition, Team, Business, Build, AI, and Media. The same
-              event context follows every desk. There is no public directory and no DEMO workspace.
+              Mentors invite exact emails. After sign-in the menu is four workspaces — {MARKETING_WORKSPACE_SENTENCE} — and the
+              same event context follows every desk. There is no public directory and no DEMO workspace.
             </p>
           </header>
           <ul className="lux-feature-grid lux-feature-grid-4">
-            {MARKETING_JOBS.map((job) => (
-              <li key={job.title}>
+            {MARKETING_WORKSPACES.map((workspace) => (
+              <li key={workspace.id}>
                 <span className="lux-card-icon">
-                  <MIcon name={job.icon} />
+                  <MIcon name={workspace.icon} />
                 </span>
-                <strong>{job.title}</strong>
-                <span>{job.copy}</span>
+                <strong>{workspace.title}</strong>
+                <span>{workspace.copy}</span>
               </li>
             ))}
           </ul>
@@ -107,9 +108,9 @@ export function HomeShowcase() {
       <section className="lux-runs" aria-labelledby="lux-runs-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">One workspace</p>
-            <h2 id="lux-runs-title">What you open after sign-in.</h2>
-            <p>Six hubs. Related tools live as tabs — not a dump of fake dashboards.</p>
+            <p className="lux-eyebrow">Inside the workspaces</p>
+            <h2 id="lux-runs-title">The desks a workspace opens.</h2>
+            <p>Each hub is a handful of workbenches with related tools as tabs — not a dump of fake dashboards.</p>
           </header>
           <ul className="mk-pillars" data-reveal>
             {MARKETING_HUBS.map((hub) => (

@@ -196,14 +196,36 @@ describe("home view layout", () => {
     expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
   });
 
-  it("hides the widget board while the first-run banner is showing", () => {
+  it("hides the widget board when no workspace can supply data", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
         { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 20, w: 12, h: 4 },
       ],
-      { editing: false, shell: "setup", widgets: {} },
+      { editing: false, shell: "no_org", widgets: {} },
     );
+    expect(viewed).toEqual([]);
+  });
+
+  it("keeps widgets that already have data while setup is still outstanding", () => {
+    const viewed = homeViewLayout(DEFAULT_DASHBOARD_LAYOUT, {
+      editing: false,
+      shell: "setup",
+      widgets: {
+        alerts: { status: "live" },
+        scouting_coverage: { status: "empty" },
+        next_match: { status: "setup_required" },
+      },
+    });
+    expect(viewed.map((item) => item.type)).toEqual(["alerts", "scouting_coverage"]);
+  });
+
+  it("shows only the banner during setup when every widget needs setup too", () => {
+    const viewed = homeViewLayout(DEFAULT_DASHBOARD_LAYOUT, {
+      editing: false,
+      shell: "setup",
+      widgets: { next_match: { status: "setup_required" } },
+    });
     expect(viewed).toEqual([]);
   });
 

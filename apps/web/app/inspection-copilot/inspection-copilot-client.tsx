@@ -1,22 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { inspectionFlagSeverityLabel, stale120PerimeterCue, stale16ExtensionCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
-  INSPECTION_COPILOT_RELATED_INCLUDE,
   classifyInspectionCopilotShell,
   formatInspectionCopilotMetric,
   formatInspectionRiskPct,
-  inspectionCopilotNextActions,
-  inspectionCopilotRelatedLinks,
   inspectionCopilotShellCopy,
-  type InspectionCopilotNextAction,
   type InspectionCopilotShellKind,
 } from "../../lib/inspection-copilot/inspection-copilot-related";
 import type { InspectionFlagSeverity } from "../../lib/inspection-copilot/types";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./inspection-copilot.css";
 
@@ -32,87 +27,28 @@ type WeightItemDraft = { name: string; weightLbs: string };
 
 const emptyWeightRow = (): WeightItemDraft => ({ name: "", weightLbs: "" });
 
-function InspectionRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = inspectionCopilotRelatedLinks(orgId, {
-    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related inspection-copilot-related" aria-label="Related build tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function InspectionNextActionsPanel({ actions }: { actions: InspectionCopilotNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions inspection-copilot-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Batteries, FMEA, and Subsystems — never DEMO risk scores.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function InspectionShell({
   description,
   orgId,
   shell,
   error,
   onRetry,
-  children,
 }: {
   description: string;
   orgId?: string | null;
   shell: InspectionCopilotShellKind;
   error?: string;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
-  const actions = inspectionCopilotNextActions({ orgId, shell });
   const copy = inspectionCopilotShellCopy(shell);
-  const buildHref = hubHref("/build", "fmea", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   return (
     <main className="module-page inspection-copilot-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
-          </>
-        }
+        breadcrumbs="Build / Inspection Copilot"
         title="Inspection-Readiness Copilot"
         description={description}
-      >
-        <InspectionRelatedStrip orgId={orgId} />
-      </PageHeader>
-      {children}
+      />
       <EmptyState
         soft
         badge={
@@ -140,23 +76,11 @@ function InspectionShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href="#inspection-copilot-form">
-              Run a check
-            </a>
-            <a className="app-button secondary" href={batteriesHref}>
-              Open Batteries
-            </a>
-            <a className="app-button secondary" href={fmeaHref}>
-              Open FMEA
-            </a>
-            <a className="app-button secondary" href={subsystemsHref}>
-              Open Subsystems
-            </a>
-          </>
+          <a className="app-button" href="#inspection-copilot-form">
+            Run a check
+          </a>
         ) : null}
       </EmptyState>
-      <InspectionNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -216,20 +140,6 @@ export default function InspectionCopilotClient() {
     checkCount,
   });
   const shellCopy = inspectionCopilotShellCopy(shell);
-  const nextActions = inspectionCopilotNextActions({
-    orgId,
-    shell,
-    checkCount,
-    flaggedCount,
-    criticalCount,
-  });
-  const relatedLinks = inspectionCopilotRelatedLinks(orgId, {
-    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
-  });
-  const buildHref = hubHref("/build", "fmea", orgId);
-  const batteriesHref = hubHref("/team", "batteries", orgId);
-  const fmeaHref = hubHref("/build", "fmea", orgId);
-  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -295,12 +205,7 @@ export default function InspectionCopilotClient() {
   return (
     <main className="module-page inspection-copilot-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Inspection Copilot"}
-          </>
-        }
+        breadcrumbs="Build / Inspection Copilot"
         title="Inspection-Readiness Copilot"
         description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores."
       >
@@ -324,11 +229,6 @@ export default function InspectionCopilotClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
         </div>
       </PageHeader>
 
@@ -337,8 +237,6 @@ export default function InspectionCopilotClient() {
           {error}
         </p>
       ) : null}
-
-      <InspectionNextActionsPanel actions={nextActions} />
 
       <SummaryTiles
         checkCount={checkCount}
@@ -359,15 +257,6 @@ export default function InspectionCopilotClient() {
           <a className="app-button" href="#inspection-copilot-form">
             Run a check
           </a>
-          <a className="app-button secondary" href={batteriesHref}>
-            Open Batteries
-          </a>
-          <a className="app-button secondary" href={fmeaHref}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
         </EmptyState>
       ) : null}
 
@@ -376,15 +265,6 @@ export default function InspectionCopilotClient() {
         {shell === "ready" ? (
           <>
             <ChecksList view={view} busy={busy} mutate={mutate} />
-            <Panel className="inspection-copilot-tip" aria-label="Readiness tip">
-              <span className="eyebrow">Before travel</span>
-              <p className="app-muted" style={{ marginTop: 8 }}>
-                Resolve critical flags from logged measurements first. Keep{" "}
-                <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>FMEA</a>, and{" "}
-                <a href={subsystemsHref}>Subsystems</a> aligned with weigh-in rows — never invent DEMO
-                risk scores.
-              </p>
-            </Panel>
           </>
         ) : null}
       </div>

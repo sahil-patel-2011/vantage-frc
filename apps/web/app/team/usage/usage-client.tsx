@@ -1,21 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
-  AI_USAGE_RELATED_INCLUDE,
-  aiBudgetsRelatedLinks,
-  aiUsageNextActions,
   aiUsageShellCopy,
   classifyAiUsageShell,
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
-  type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import "../budgets/ai-budgets.css";
 
 type UsageData = {
@@ -141,52 +135,6 @@ function denialReasonLabel(reason: string): string {
   return reason;
 }
 
-function UsageRelatedStrip({ orgId }: { orgId: string }) {
-  const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_USAGE_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
-      <a className="app-button secondary" href={budgetsHref}>
-        Budgets
-      </a>
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKind }) {
-  const actions = aiUsageNextActions({ orgId, shell });
-  if (!actions.length) return null;
-  return (
-    <section
-      className="ai-budgets-next-actions app-card soft-panel edc-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p>From real Neon metered calls only — never DEMO activity.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 export default function UsageClient({ orgId }: { orgId: string }) {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [activity, setActivity] = useState<ActivityData | null>(null);
@@ -196,11 +144,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const chatHref = hubHref("/ai", "chat", orgId);
   const budgetsHref = hubHref("/ai", "budgets", orgId);
-  const pricingHref = withOrgHref("/pricing", orgId);
-  const accountHref = withOrgHref("/account", orgId);
-  const promptCachingHref = `${budgetsHref}#prompt-caching`;
 
   useEffect(() => {
     let active = true;
@@ -332,25 +276,9 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           <h1>Where the team&apos;s AI spend goes</h1>
           <p className="app-muted">
             A transparent record of every metered AI call — the model, the feature, the member, and which key funded it.
-            Set hard limits on{" "}
-            <a href={budgetsHref}>API budgets</a>. Resume cut-offs via{" "}
-            <a href={pricingHref}>Pricing</a> or <a href={accountHref}>Account</a>.
           </p>
         </div>
-        <nav className="intel-actions" aria-label="Governance links">
-          <a href={chatHref}>Chat</a>
-          <a href={budgetsHref}>Budgets</a>
-          <a href={promptCachingHref}>Prompt caching</a>
-          <a href={pricingHref}>Pricing</a>
-          <a href={accountHref}>Account</a>
-          <a href={hubHref("/ai", "governance", orgId)}>Governance</a>
-          <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-          <a href={hubHref("/ai", "memory", orgId)}>Memory</a>
-        </nav>
       </header>
-
-      <AiHubRelated orgId={orgId} />
-      <UsageRelatedStrip orgId={orgId} />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -370,7 +298,6 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
           <h2>{shellCopy.title}</h2>
           <p className="app-muted">{shellCopy.description}</p>
-          <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
             <button type="button" className="app-button secondary" onClick={() => retry()}>
               Retry
@@ -386,7 +313,6 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
               <h2>{shellCopy.title}</h2>
               <p className="app-muted">{shellCopy.description}</p>
-              <NextActions orgId={orgId} shell={shell} />
             </section>
           ) : null}
 

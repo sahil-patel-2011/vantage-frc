@@ -1,7 +1,15 @@
 /**
  * Public marketing copy for hubs and tools that actually ship in apps/web.
  * No invented scores, ranks, EPA, or DEMO metrics.
+ *
+ * Two layers, both real: members navigate the four workspaces in the product
+ * chrome, and each workspace opens hub workbenches. Workspace names, order, and
+ * hub membership are read from the product nav rather than retyped, so the site
+ * cannot describe a drawer the app no longer has (see product-story.test.ts).
  */
+
+import { PRODUCT_WORKSPACES, type ProductWorkspaceId } from "../nav/hubs";
+import type { MIconName } from "../../components/marketing/marketing-icons";
 
 export const MARKETING_DEFINITION = {
   kicker: "FIRST Robotics Competition · Invite-only",
@@ -10,28 +18,37 @@ export const MARKETING_DEFINITION = {
     "Vantage is operations software for an FRC season: offline scouting, event day, alliance selection, CAD, robot code, calendar, money, and metered AI. One invite-only login. Screens stay empty until TBA, scouting, or a connector has real data.",
 } as const;
 
-export const MARKETING_JOBS = [
-  {
-    icon: "clipboard" as const,
-    title: "Scout",
+const WORKSPACE_COPY: Record<ProductWorkspaceId, { icon: MIconName; copy: string }> = {
+  scout: {
+    icon: "clipboard",
     copy: "Match and pit forms stay on the tablet. QR handoff and pit mesh. Sync when the venue network returns.",
   },
-  {
-    icon: "flag" as const,
-    title: "Compete",
+  compete: {
+    icon: "flag",
     copy: "Event day, alliance desk, pick clock, and pit repair share one TBA event — or stay empty.",
   },
-  {
-    icon: "wrench" as const,
-    title: "Build",
+  build: {
+    icon: "wrench",
     copy: "Kickoff, Onshape or Fusion CAD, Code Coach, and inspection. Mutations stay human-gated.",
   },
-  {
-    icon: "calendar" as const,
-    title: "Run the season",
+  "run-season": {
+    icon: "calendar",
     copy: "Calendar, chat, hours, budget, sponsors, and grants between the six competition weekends.",
   },
-] as const;
+};
+
+/**
+ * The four workspaces a member actually sees in the drawer and the bottom
+ * island, in shipped order. `hubIds` is what each one opens.
+ */
+export const MARKETING_WORKSPACES = PRODUCT_WORKSPACES.map((workspace) => ({
+  id: workspace.id,
+  // The product's own label — never a marketing paraphrase of the nav.
+  title: workspace.label,
+  icon: WORKSPACE_COPY[workspace.id].icon,
+  copy: WORKSPACE_COPY[workspace.id].copy,
+  hubIds: workspace.hubs.map((hub) => hub.hubId),
+}));
 
 export const MARKETING_HUBS = [
   {
@@ -127,6 +144,22 @@ export const MARKETING_HUBS = [
   },
 ] as const;
 
+/** "Scout, Compete, Build, and Run season" — for prose that lists the menu. */
+export const MARKETING_WORKSPACE_SENTENCE = MARKETING_WORKSPACES.map((workspace, index) =>
+  index === MARKETING_WORKSPACES.length - 1 ? `and ${workspace.title}` : workspace.title,
+).join(", ");
+
+/**
+ * Which workspaces open a hub. Competition answers with two (Scout reaches its
+ * scouting workbench, Compete the rest), which is exactly the thing a mentor
+ * needs to know before they go looking for it in the menu.
+ */
+export function marketingWorkspacesForHub(hubId: (typeof MARKETING_HUBS)[number]["id"]): string[] {
+  return MARKETING_WORKSPACES.filter((workspace) => workspace.hubIds.includes(hubId)).map(
+    (workspace) => workspace.title,
+  );
+}
+
 export const MARKETING_PROBLEMS = [
   {
     icon: "chat" as const,
@@ -166,7 +199,7 @@ export const MARKETING_TRUST = [
 export const MARKETING_MENU = [
   {
     title: "Logistics",
-    copy: "Its own drawer pillar: hotels, travel legs, packing lists, on-duty mentors, and shop-tour invites — empty until you add them.",
+    copy: "Hotels, travel legs, packing lists, on-duty mentors, and shop-tour invites. Reached from search rather than a menu row, and empty until you add them.",
   },
   {
     title: "Exports",

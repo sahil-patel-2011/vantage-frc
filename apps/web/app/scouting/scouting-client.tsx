@@ -62,16 +62,11 @@ import { resolveScoutMediaPreview } from "../../lib/scouting/scout-media-preview
 import { nextMatchKey, scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
 import { StudioField, isStudioField } from "./studio-fields";
 import {
-  SCOUTING_RELATED_INCLUDE,
   classifyScoutingShell,
   formatScoutingMetric,
-  scoutingNextActions,
   scoutingOfflineBannerDetail,
-  scoutingRelatedLinks,
-  scoutingSetupSteps,
   scoutingShellCopy,
   shouldShowScoutingRecentEntries,
-  type ScoutingNextAction,
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -168,50 +163,6 @@ type OfficialFlag = {
   soft?: boolean;
 };
 
-function ScoutingRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = scoutingRelatedLinks(orgId, {
-    include: [...SCOUTING_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related scout-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ScoutingNextActionsPanel({ actions }: { actions: ScoutingNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions scout-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Forms, coverage, and strategy stay empty until you scout.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function ScoutingShell({
   orgId,
   shell,
@@ -230,9 +181,7 @@ function ScoutingShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const actions = scoutingNextActions({ orgId, shell });
   const copy = scoutingShellCopy(shell);
-  const steps = shell === "setup" ? scoutingSetupSteps(orgId) : [];
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -252,11 +201,6 @@ function ScoutingShell({
       : null;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
-  const formsHref = hubHref("/competition", "forms", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const offlineHref = withOrgHref("/offline", orgId);
-
   return (
     <main className={`module-page scout-page soft-gate${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
@@ -264,9 +208,7 @@ function ScoutingShell({
         breadcrumbs="Competition / Scouting"
         title="Scouting"
         description="Match and pit forms stay on this device until you sync."
-      >
-        <ScoutingRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       )}
       {children}
       <EmptyState
@@ -301,37 +243,7 @@ function ScoutingShell({
             {orgId ? "Set active event" : "Select workspace"}
           </a>
         ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={formsHref}>
-              Open Form builder
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={offlineHref}>
-              Open Offline
-            </a>
-          </>
-        ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="scout-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <ScoutingNextActionsPanel actions={actions} />}
     </main>
   );
 }
@@ -897,17 +809,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     pendingMedia: counts.media,
   });
 
-  const formEmptyActions =
-    shell === "empty"
-      ? scoutingNextActions({
-          orgId,
-          shell: "empty",
-          eventKey: data?.eventKey,
-          canManageSchemas: data?.canManageSchemas,
-          entryType: type,
-        })
-      : [];
-
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
       <ScoutingShell
@@ -947,7 +848,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         description="Match and pit forms stay on this device until you sync."
       >
         <div className="scout-header-meta">
-          <ScoutingRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
           <button type="button" className="app-button secondary" onClick={() => window.print()}>
             Print
@@ -993,30 +893,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
             }
           >
             {data?.canManageSchemas ? (
-              <div className="scout-empty-actions">
-                <button className="app-button" type="button" onClick={() => void createStarterForms()}>
-                  Create starter forms
-                </button>
-                <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
-                  Custom form builder
-                </a>
-              </div>
+              <button className="app-button" type="button" onClick={() => void createStarterForms()}>
+                Create starter forms
+              </button>
             ) : (
               <a className="app-button" href={hubHref("/competition", "forms", orgId)}>
                 Open Form builder
               </a>
             )}
-            <a className="app-button secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-              Open Coverage
-            </a>
-            <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/offline", orgId)}>
-              Open Offline
-            </a>
           </EmptyState>
-          <ScoutingNextActionsPanel actions={formEmptyActions} />
         </>
       ) : null}
 

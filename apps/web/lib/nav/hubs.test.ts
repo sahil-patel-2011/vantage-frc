@@ -11,6 +11,8 @@ import {
   hubWorkbenchId,
   isHubTab,
   PRODUCT_HUBS,
+  PRODUCT_WORKSPACES,
+  workspaceForHubTab,
 } from "./hubs";
 
 describe("product hubs", () => {
@@ -18,6 +20,21 @@ describe("product hubs", () => {
     expect(PRODUCT_HUBS.map((hub) => hub.id)).toEqual([
       "competition", "team", "business", "build", "ai", "media",
     ]);
+  });
+
+  it("presents legacy hubs through four top-level workspaces", () => {
+    expect(PRODUCT_WORKSPACES.map((workspace) => workspace.label)).toEqual([
+      "Scout",
+      "Compete",
+      "Build",
+      "Run season",
+    ]);
+    expect(workspaceForHubTab("competition", "scouting")?.id).toBe("scout");
+    expect(workspaceForHubTab("competition", "strategy")?.id).toBe("compete");
+    expect(workspaceForHubTab("build", "cad")?.id).toBe("build");
+    for (const hubId of ["team", "business", "media", "ai"] as const) {
+      expect(workspaceForHubTab(hubId, hubById(hubId).defaultTab)?.id).toBe("run-season");
+    }
   });
 
   it("validates tabs and builds deep links", () => {

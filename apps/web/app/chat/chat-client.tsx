@@ -130,7 +130,17 @@ export default function ChatClient({
   const [providerSetup, setProviderSetup] = useState<{
     message: string;
     steps: Array<{ id: string; label: string; detail: string; href: string }>;
-  } | null>(null);
+    } | null>(null);
+
+  useEffect(() => {
+    if (!contextOpen) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setContextOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [contextOpen]);
 
   async function load(threadId?: string) {
     if (!threadId) {
@@ -335,7 +345,6 @@ export default function ChatClient({
     if (response.ok) await load(thread?.id);
   }
 
-  const budgetsHref = hubHref("/ai", "budgets", orgId);
   const memoryHref = hubHref("/ai", "memory", orgId);
 
   const shell = classifyAiChatShell({

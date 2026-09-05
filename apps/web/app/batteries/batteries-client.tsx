@@ -145,6 +145,7 @@ function BatteriesRelated({ orgId }: { orgId: string }) {
 export default function BatteriesClient({ embedded = false }: { embedded?: boolean } = {}) {
   const pathEmbed = useHubEmbed();
   const embed = pathEmbed ?? (embedded ? "team" : null);
+  const isEmbedded = embedded || pathEmbed !== null;
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
   const [okMessage, setOkMessage] = useState("");
@@ -258,8 +259,8 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       : null;
     return (
       <main className="module-page batt-page">
-        <PageHeader breadcrumbs={crumbs} title="Batteries" />
-        {!embed ? <TeamOpsNav active="batteries" /> : null}
+        {!isEmbedded ? <PageHeader breadcrumbs={crumbs} title="Batteries" /> : null}
+        {!isEmbedded ? <TeamOpsNav active="batteries" /> : null}
         <EmptyState
           title={failure ? failure.title : "Loading batteries…"}
           description={failure ? failure.description : undefined}
@@ -285,33 +286,37 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
     const setupActions = batteryNextActions({ packs: [], logCount: 0 });
     return (
       <main className="module-page batt-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Batteries"
-          description="Track charge cycles, assignment, and competition readiness for every pack — from real logs only."
-        />
-        {!embed ? <TeamOpsNav active="batteries" /> : null}
+        {!isEmbedded ? (
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Batteries"
+            description="Track charge cycles, assignment, and competition readiness for every pack — from real logs only."
+          />
+        ) : null}
+        {!isEmbedded ? <TeamOpsNav active="batteries" /> : null}
         <EmptyState title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup" soft>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
         </EmptyState>
-        <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
-          <h2>Next actions</h2>
-          <ol>
-            {setupActions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className="app-button secondary" href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
+        {!isEmbedded ? (
+          <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
+            <h2>Next actions</h2>
+            <ol>
+              {setupActions.map((action) => (
+                <li key={action.id} className={action.primary ? "primary" : undefined}>
+                  <div>
+                    <strong>{action.label}</strong>
+                    <span>{action.detail}</span>
+                  </div>
+                  <a className="app-button secondary" href={action.href}>
+                    Open
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
       </main>
     );
   }
@@ -332,34 +337,36 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
 
   return (
     <main className="module-page batt-page">
-      <PageHeader
-        breadcrumbs={crumbs}
-        title="Batteries"
-        description={
-          <>
-            Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. IR and cycles only from logged
-            events — never demo metrics.
-          </>
-        }
-      >
-        <div className="batt-header-actions">
-          <a className="app-button secondary" href={withOrgHref("/pit", orgId)}>
-            Pit Command
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/battery-rotation", orgId)}>
-            Rotation
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
-            Health forecast
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
-            Inventory
-          </a>
-        </div>
-      </PageHeader>
-      {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
-      {!embed ? <BatteriesRelated orgId={orgId} /> : null}
+      {!isEmbedded ? (
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Batteries"
+          description={
+            <>
+              Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
+              {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. IR and cycles only from logged
+              events — never demo metrics.
+            </>
+          }
+        >
+          <div className="batt-header-actions">
+            <a className="app-button secondary" href={withOrgHref("/pit", orgId)}>
+              Pit Command
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/battery-rotation", orgId)}>
+              Rotation
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
+              Health forecast
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
+              Inventory
+            </a>
+          </div>
+        </PageHeader>
+      ) : null}
+      {!isEmbedded ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
+      {!isEmbedded ? <BatteriesRelated orgId={orgId} /> : null}
 
       {error ? (
         <p className="batt-alert" role="alert">
@@ -372,25 +379,27 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         </p>
       ) : null}
 
-      <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
-        <header>
-          <h2>Next actions</h2>
-          <p>Prioritized from your fleet — empty until packs and measurements exist.</p>
-        </header>
-        <ol>
-          {nextActions.map((action) => (
-            <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <a className="app-button secondary" href={action.href}>
-                Open
-              </a>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {!isEmbedded ? (
+        <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
+          <header>
+            <h2>Next actions</h2>
+            <p>Prioritized from your fleet — empty until packs and measurements exist.</p>
+          </header>
+          <ol>
+            {nextActions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <section className="batt-summary" aria-label="Fleet summary">
         <article className="batt-summary-tile">
@@ -421,7 +430,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them — nothing is invented."
           soft
         >
-          <BatteriesRelated orgId={orgId} />
+          {!isEmbedded ? <BatteriesRelated orgId={orgId} /> : null}
         </EmptyState>
       ) : null}
 

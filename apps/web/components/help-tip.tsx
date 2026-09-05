@@ -73,7 +73,15 @@ function HelpTipPopover({ entry, className }: { entry: SectionHelpEntry; classNa
 
       {open ? (
         <>
-          <span className="help-tip-scrim" aria-hidden="true" />
+          <button
+            type="button"
+            className="help-tip-scrim"
+            aria-label="Dismiss help"
+            onClick={() => {
+              setOpen(false);
+              triggerRef.current?.focus();
+            }}
+          />
           <div
             ref={panelRef}
             className="help-tip-panel"

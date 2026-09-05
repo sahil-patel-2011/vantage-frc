@@ -998,8 +998,9 @@ function RulesSection({
   );
 }
 
-export default function KickoffClient(_props: { embedded?: boolean } = {}) {
+export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
+  const isEmbedded = embedded || embed !== null;
   const [view, setView] = useState<KickoffView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -1087,7 +1088,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       : null;
     return (
       <main className="module-page kick-page">
-        <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
+        {!isEmbedded ? <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" /> : null}
         <EmptyState
           soft
           title={failure ? failure.title : "Loading kickoff analysis…"}
@@ -1112,24 +1113,30 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   if (view.status === "setup_required") {
     return (
       <main className="module-page kick-page">
-        <PageHeader
-          breadcrumbs={crumbs}
-          title="Kickoff & Game Analysis"
-          description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
-        />
-        <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+        {!isEmbedded ? (
+          <>
+            <PageHeader
+              breadcrumbs={crumbs}
+              title="Kickoff & Game Analysis"
+              description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
+            />
+            <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+          </>
+        ) : null}
         <EmptyState badge="Setup required" badgeTone="setup" soft title="Select a team workspace" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
         </EmptyState>
-        <NextActionsPanel
-          seasonYear={new Date().getUTCFullYear()}
-          hasIntelligence={false}
-          actionCount={0}
-          priorityCount={0}
-          openRuleCount={0}
-        />
+        {!isEmbedded ? (
+          <NextActionsPanel
+            seasonYear={new Date().getUTCFullYear()}
+            hasIntelligence={false}
+            actionCount={0}
+            priorityCount={0}
+            openRuleCount={0}
+          />
+        ) : null}
       </main>
     );
   }
@@ -1149,17 +1156,34 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
 
   return (
     <main className="module-page kick-page">
-      <PageHeader
-        breadcrumbs={crumbs}
-        title="Kickoff & Game Analysis"
-        description={
-          <>
-            Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
-            priorities, and hand a CAD brief to Onshape/Fusion paths. Never DEMO game rules.
-          </>
-        }
-      >
+      {!isEmbedded ? (
+        <>
+          <PageHeader
+            breadcrumbs={crumbs}
+            title="Kickoff & Game Analysis"
+            description={
+              <>
+                Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
+                {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
+                priorities, and hand a CAD brief to Onshape/Fusion paths. Never DEMO game rules.
+              </>
+            }
+          >
+            <label className="kick-year">
+              Season
+              <select value={year} disabled={busyKey != null} onChange={(event) => setSelectedYear(Number(event.target.value))}>
+                {years.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </PageHeader>
+          <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+        </>
+      ) : null}
+      {isEmbedded ? (
         <label className="kick-year">
           Season
           <select value={year} disabled={busyKey != null} onChange={(event) => setSelectedYear(Number(event.target.value))}>
@@ -1170,9 +1194,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
             ))}
           </select>
         </label>
-      </PageHeader>
-
-      <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+      ) : null}
       {(() => {
         const pack = packForYear(year);
         return (
@@ -1191,16 +1213,18 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
         </p>
       ) : null}
 
-      <NextActionsPanel
-        orgId={orgId}
-        seasonYear={year}
-        hasIntelligence={hasIntelligence}
-        actionCount={actions.length}
-        priorityCount={priorities.length}
-        openRuleCount={summary.openQuestions}
-        cadJobId={cadJobId}
-        teamNumber={view.context.teamNumber}
-      />
+      {!isEmbedded ? (
+        <NextActionsPanel
+          orgId={orgId}
+          seasonYear={year}
+          hasIntelligence={hasIntelligence}
+          actionCount={actions.length}
+          priorityCount={priorities.length}
+          openRuleCount={summary.openQuestions}
+          cadJobId={cadJobId}
+          teamNumber={view.context.teamNumber}
+        />
+      ) : null}
 
       {showTiles ? (
         <section className="kick-tiles">

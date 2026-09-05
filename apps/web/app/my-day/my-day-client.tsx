@@ -1,17 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader } from "../../components/ui";
 import type { MyDayMatch, MyDayView } from "../../lib/my-day";
 import {
-  MY_DAY_RELATED_INCLUDE,
   classifyMyDayShell,
   formatMyDayMatchCount,
-  myDayNextActions,
-  myDayRelatedLinks,
-  myDaySetupSteps,
   myDayShellCopy,
-  type MyDayNextAction,
   type MyDayShellKind,
 } from "../../lib/my-day-related";
 import { hubHref } from "../../lib/nav/hubs";
@@ -19,47 +14,6 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import { MY_DAY_POLL_MS, mergeMyDayView, shouldPollMyDay } from "../../lib/my-day/poll";
-
-function MyDayRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = myDayRelatedLinks(orgId, {
-    include: [...MY_DAY_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related myday-related" aria-label="Related live ops tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function MyDayNextActionsPanel({ actions }: { actions: MyDayNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <Panel className="myday-next-actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Event Day, Schedule, and Strategy stay empty until a match is synced.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
 
 function ScoutChips({
   label,
@@ -85,10 +39,7 @@ function ScoutChips({
   );
 }
 
-function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null }) {
-  const commandHref = hubHref("/competition", "command", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
+function MatchHero({ match }: { match: MyDayMatch }) {
   return (
     <section className={`myday-hero alliance-${match.alliance}`} aria-live="polite">
       <p className="myday-hero-kicker">Next match</p>
@@ -97,23 +48,6 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
       <p className={`myday-bumper alliance-${match.alliance}`}>{match.bumperCue}</p>
       <ScoutChips label="With" chips={match.links.scoutPartners} />
       <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
-      <nav className="myday-hero-links" aria-label="Match links">
-        <a className="myday-link primary" href={commandHref}>
-          Event Day
-        </a>
-        <a className="myday-link" href={scheduleHref}>
-          Schedule
-        </a>
-        <a className="myday-link" href={strategyHref}>
-          Strategy
-        </a>
-        <a className="myday-link" href={match.links.briefing}>
-          Briefing
-        </a>
-        <a className="myday-link" href={match.links.checklist}>
-          Checklist
-        </a>
-      </nav>
     </section>
   );
 }
@@ -141,7 +75,7 @@ function MyDayShell({
   orgId,
   shell,
   emptyReason,
-  hasActiveEvent,
+  hasActiveEvent: _hasActiveEvent,
   error,
   errorStatus,
   onRetry,
@@ -158,14 +92,7 @@ function MyDayShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const actions = myDayNextActions({
-    orgId,
-    shell,
-    emptyReason,
-    hasActiveEvent,
-  });
   const copy = myDayShellCopy(shell, { emptyReason });
-  const steps = shell === "setup" ? myDaySetupSteps(orgId) : [];
   // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
   const failure =
     shell === "error"
@@ -188,7 +115,6 @@ function MyDayShell({
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
     <main className={`module-page myday-page soft-gate${embedded ? " is-embedded" : ""}`}>
@@ -197,9 +123,7 @@ function MyDayShell({
         breadcrumbs="Competition / Live ops"
         title="My Day"
         description="Your next match, bumper color, partners, and opponents from The Blue Alliance."
-      >
-        <MyDayRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       )}
       {children}
       <EmptyState
@@ -235,39 +159,11 @@ function MyDayShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a
-              className="app-button"
-              href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}
-            >
-              {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
-            </a>
-            <a
-              className="app-button secondary"
-              href={emptyReason === "no_upcoming" ? commandHref : scheduleHref}
-            >
-              {emptyReason === "no_upcoming" ? "Open Event Day" : "Open Schedule"}
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-          </>
-        ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          <a className="app-button" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
+            {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
+          </a>
         ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <MyDayNextActionsPanel actions={actions} />}
     </main>
   );
 }
@@ -387,11 +283,6 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
     );
   }
 
-  const commandHref = hubHref("/competition", "command", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
-  const nextActions = myDayNextActions({ orgId, shell: "ready" });
-
   return (
     <main className={`module-page myday-page${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
@@ -403,9 +294,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
             ? `${view.context.eventName}${view.context.teamNumber != null ? ` · Team ${view.context.teamNumber}` : ""}`
             : "Your matches at the active event."
         }
-      >
-        <MyDayRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       )}
 
       <p className="myday-freshness" role="status">
@@ -421,7 +310,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         </p>
       ) : null}
 
-      {view.next ? <MatchHero match={view.next} orgId={orgId} /> : null}
+      {view.next ? <MatchHero match={view.next} /> : null}
 
       {view.matches.length > 0 ? (
         <section className="myday-list-section">
@@ -434,21 +323,6 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         </section>
       ) : null}
 
-      {!view.next && view.matches.length > 0 ? (
-        <nav className="myday-hero-links" aria-label="Live ops links">
-          <a className="myday-link primary" href={commandHref}>
-            Event Day
-          </a>
-          <a className="myday-link" href={scheduleHref}>
-            Schedule
-          </a>
-          <a className="myday-link" href={strategyHref}>
-            Strategy
-          </a>
-        </nav>
-      ) : null}
-
-      {embedded ? null : <MyDayNextActionsPanel actions={nextActions} />}
     </main>
   );
 }

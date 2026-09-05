@@ -278,9 +278,33 @@
   font: 650 14px var(--font-source-sans), ui-sans-serif;
 }
 
+.account-advanced {
+  border-top: 1px solid var(--soft-line, var(--app-line));
+  padding-top: 12px;
+}
+
+.account-advanced summary {
+  cursor: pointer;
+  color: var(--soft-accent, var(--app-accent));
+  font-weight: 700;
+}
+
+.account-advanced-body {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.account-sign-out {
+  justify-self: start;
+}
+
 /* The Appearance tab now carries the island editor grid — give it room. */
 .appearance-panel{max-width:920px}
 .appearance-panel .theme-setting legend{font-size:16px}
 .appearance-check{display:flex;align-items:flex-start;gap:10px;margin:8px 0;font-size:14px;line-height:1.4}
 .appearance-check input{margin-top:3px}
 .appearance-group textarea{width:100%;min-height:72px;resize:vertical}
+.appearance-advanced { margin-top: 4px; }
+.appearance-advanced > summary { cursor: pointer; font-weight: 700; }
+.appearance-advanced-body { display: grid; gap: 14px; padding-top: 14px; }

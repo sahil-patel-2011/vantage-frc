@@ -29,8 +29,9 @@ Kickoff, CAD, Code, Robot. Bugbot is a Code tab; FMEA, batteries, and inspection
 ### AI (signed-in /ai)
 Ask, Library, Settings. Write and Agent are modes inside Ask. API keys, memory, and usage live under Settings.
 
-## Island navigation
-Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build, AI.
+## Navigation
+Members navigate four workspaces: Scout, Compete, Build, and Run season. Each opens the hubs above — Scout and Compete open Competition, Build opens Build, Run season opens Team, Business, Media, and AI.
+Drawer: Home plus those four workspaces, with Search (Cmd+K) for everything else. Bottom island: the same four by default, customizable to any four of Scout, Compete, Build, Run season, Home, My Day, Forms, Checklist, and Team chat.
 
 ## Data and honesty rules
 - Reference caches: The Blue Alliance and Statbotics with freshness stamps (setup may be required).

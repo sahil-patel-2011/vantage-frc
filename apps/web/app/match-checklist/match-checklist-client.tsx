@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { checklistItemLabel, formatElapsed } from "../../lib/match-checklist";
 import type { MatchChecklistView } from "../../lib/match-checklist/compute-match-checklist";
 import {
-  MATCH_CHECKLIST_RELATED_INCLUDE,
   formatItemProgress,
-  matchChecklistNextActions,
   shouldShowSummaryTiles,
   summaryHasTimingEvidence,
 } from "../../lib/match-checklist/match-checklist-related";
@@ -86,13 +83,6 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     [orgId, busy],
   );
 
-  const relatedOrg = orgId ?? undefined;
-  const nextActions = matchChecklistNextActions({
-    orgId,
-    runs: view?.status === "live" ? view.runs : [],
-    upcomingMatches: view?.status === "live" ? view.upcomingMatches : [],
-  });
-
   return (
     <main className="module-page mcl-page">
       <PageHeader
@@ -107,16 +97,6 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         title="Pre-match checklist"
         description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
       />
-
-      {orgId ? (
-        <div className="mcl-related">
-          <CompetitionHubRelated
-            orgId={relatedOrg}
-            active="match-checklist"
-            include={[...MATCH_CHECKLIST_RELATED_INCLUDE]}
-          />
-        </div>
-      ) : null}
 
       {error ? (
         <p className="mcl-alert" role="alert">
@@ -159,24 +139,14 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
       ) : view.status === "setup_required" ? (
         <div className="mcl-stack">
           <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
+            <a className="app-button" href={view.steps[0]?.href ?? "/workspace"}>
+              {view.steps[0]?.label ?? "Open Workspace"}
+            </a>
           </EmptyState>
-          <NextActionsPanel actions={nextActions} />
         </div>
       ) : (
         <div className="mcl-stack">
           {shouldShowSummaryTiles(view.summary) ? <SummaryTiles view={view} /> : null}
-          <NextActionsPanel actions={nextActions} />
           <StartRunForm
             busy={busy}
             mutate={mutate}
@@ -188,35 +158,6 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         </div>
       )}
     </main>
-  );
-}
-
-function NextActionsPanel({
-  actions,
-}: {
-  actions: ReturnType<typeof matchChecklistNextActions>;
-}) {
-  if (actions.length === 0) return null;
-  return (
-    <Panel className="mcl-next-actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Real event paths only — checklist progress stays blank until you check items.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
   );
 }
 

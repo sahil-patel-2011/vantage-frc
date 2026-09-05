@@ -18,7 +18,7 @@ const HUBS = [
   { path: "/team", tab: "Calendar" },
   { path: "/business", tab: "Overview" },
   { path: "/build", tab: "Kickoff" },
-  { path: "/ai", tab: "Chat" },
+  { path: "/ai", tab: "Ask" },
   { path: "/media", heading: /^Media$/i },
   { path: "/logistics", heading: /Logistics|Travel/i },
 ] as const;
@@ -44,9 +44,9 @@ test("Media library hub tab opens the library page instead of Calendar", async (
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("AI Notes stays on the AI hub instead of bouncing to /decisions", async ({ page }) => {
+test("AI Library stays on the AI hub instead of bouncing to /decisions", async ({ page }) => {
   await page.goto("/ai?tab=decisions", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/ai(\?|$)/, { timeout: 15_000 });
-  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Library" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Taking you to the full page");
 });

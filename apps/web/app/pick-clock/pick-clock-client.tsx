@@ -1,18 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { EmptyState, PageHeader } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
-  PICK_CLOCK_RELATED_INCLUDE,
   classifyPickClockShell,
   formatPickClockMetric,
-  pickClockNextActions,
-  pickClockRelatedLinks,
-  pickClockSetupSteps,
   pickClockShellCopy,
   shouldShowPickClockSummaryTiles,
-  type PickClockNextAction,
   type PickClockShellKind,
 } from "../../lib/strategy/pick-clock-related";
 import {
@@ -83,50 +78,6 @@ function ReasonList({ reasons }: { reasons: PickClockRecommendation["reasons"] }
   );
 }
 
-function PickClockRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = pickClockRelatedLinks(orgId, {
-    include: [...PICK_CLOCK_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related pck-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function PickClockNextActionsPanel({ actions }: { actions: PickClockNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions pck-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function PickClockShell({
   orgId,
   shell,
@@ -143,7 +94,6 @@ function PickClockShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = pickClockNextActions({ orgId, shell });
   const copy = pickClockShellCopy(shell);
   // A failed load names its own recovery — Retry cannot fix an expired session.
   const failure =
@@ -163,10 +113,6 @@ function PickClockShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? pickClockSetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const chemistryHref = hubHref("/competition", "chemistry", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
@@ -176,9 +122,7 @@ function PickClockShell({
         breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
         description="Next best pick + why — built for the 45-second alliance selection timer. Never invents DEMO picks or EPA."
-      >
-        <PickClockRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {children}
       <EmptyState
         soft
@@ -212,45 +156,8 @@ function PickClockShell({
             {orgId ? "Set active event" : "Select workspace"}
           </a>
         ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync event metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={chemistryHref}>
-              Open Chemistry
-            </a>
-          </>
-        ) : null}
+        {shell === "empty" ? <a className="app-button" href={teamDataHref}>Sync event metrics</a> : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="pck-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
-          </header>
-          <ul className="pck-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <PickClockNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -435,18 +342,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
 
   const resolvedOrgId =
     view?.status === "ready" ? view.orgId : view?.orgId ?? (orgId || null);
-  const strategyHref = hubHref("/competition", "strategy", resolvedOrgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", resolvedOrgId);
-  const chemistryHref = hubHref("/competition", "chemistry", resolvedOrgId);
   const showTiles = shouldShowPickClockSummaryTiles(availableCount);
-  const readyActions = pickClockNextActions({
-    orgId: resolvedOrgId,
-    shell: hasRecommendation && availableCount > 0 ? "ready" : "empty",
-    eventKey: view?.status === "ready" ? view.eventKey : view?.eventKey,
-    hasRecommendation,
-    availableCount,
-    excludedCount,
-  });
 
   const readyView = view?.status === "ready" ? view : null;
   // A full board still has to undo from this page — leaving for the desk is the bug this clock closes.
@@ -483,7 +379,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         }
       >
         <div className="pck-heading">
-          <PickClockRelatedStrip orgId={resolvedOrgId} />
           <div className="pck-header-actions">
             <button
               type="button"
@@ -494,15 +389,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
             >
               Refresh
             </button>
-            <a className="app-button secondary" href={strategyHref}>
-              Strategy
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Pick desk
-            </a>
-            <a className="app-button secondary" href={chemistryHref}>
-              Chemistry
-            </a>
           </div>
         </div>
       </PageHeader>
@@ -617,15 +503,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
                 ? `Undo ${readyView.lastPick.teamNumber ?? readyView.lastPick.teamKey?.replace(/^frc/i, "")}`
                 : "Nothing to undo"}
             </button>
-            <a className="app-button" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={chemistryHref}>
-              Open Chemistry
-            </a>
           </div>
         </EmptyState>
       ) : (
@@ -686,28 +563,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
             >
               Show alternate
             </button>
-            <a
-              className="app-button secondary"
-              href={withOrgHref(
-                `/dossier?team=${encodeURIComponent(
-                  active.teamNumber != null
-                    ? String(active.teamNumber)
-                    : active.teamKey.replace(/^frc/i, ""),
-                )}`,
-                resolvedOrgId,
-              )}
-            >
-              Dossier
-            </a>
-            <a
-              className="app-button secondary"
-              href={withOrgHref(
-                `/chemistry?teams=${encodeURIComponent(teamDisplay(active))}`,
-                resolvedOrgId,
-              )}
-            >
-              Chemistry
-            </a>
           </div>
         </section>
       )}
@@ -732,8 +587,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           </ul>
         </section>
       ) : null}
-
-      <PickClockNextActionsPanel actions={readyActions} />
 
       {readyView.sources.length ? (
         <p className="pck-sources app-muted">

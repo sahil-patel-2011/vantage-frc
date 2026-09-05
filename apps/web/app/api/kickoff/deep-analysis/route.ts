@@ -181,7 +181,7 @@ export async function GET(request: Request) {
       try {
         return await loadView(client, org.orgId, seasonYear, canUseDeepGameAnalysis(org.teamNumber));
       } catch (error) {
-        if (error instanceof Error && /deep_game_analysis|column \"model\"/.test(error.message)) {
+        if (error instanceof Error && /deep_game_analysis|column "model"/.test(error.message)) {
           return {
             allowed: canUseDeepGameAnalysis(org.teamNumber),
             reason: "Apply migrations 0521_deep_game_analysis and 0522_deep_analysis_continuous_models before this panel can load runs.",

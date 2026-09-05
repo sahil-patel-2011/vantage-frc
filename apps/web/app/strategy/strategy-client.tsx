@@ -9,60 +9,14 @@ import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venu
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
-  STRATEGY_RELATED_INCLUDE,
   classifyStrategyShell,
-  strategyNextActions,
-  strategyRelatedLinks,
   strategyShellCopy,
-  strategyShellSetupSteps,
   type StrategyShellKind,
-  type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 import "./strategy.css";
-
-function StrategyRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = strategyRelatedLinks(orgId, {
-    include: [...STRATEGY_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related strategy-related" aria-label="Related strategy tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <Panel className="strategy-next-actions-panel">
-      <header>
-        <h2>Next actions</h2>
-        <p>Connect The Blue Alliance, then scout. This list stays empty until then.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
 
 function TeamChip({
   teamKey,
@@ -714,13 +668,9 @@ function StrategyShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const actions = strategyNextActions({ orgId, shell });
   const copy = strategyShellCopy(shell);
-  const steps = shell === "setup" ? strategyShellSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
   const Root = embedded ? "div" : "main";
@@ -732,11 +682,7 @@ function StrategyShell({
         breadcrumbs="Competition / Strategy"
         title="Strategy"
         description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
-      >
-        <div className="strategy-header-actions">
-          <StrategyRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
+      />
       )}
       {children}
       <EmptyState
@@ -767,36 +713,11 @@ function StrategyShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync Team Data
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={commandHref}>
-              Open Event Day
-            </a>
-          </>
-        ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          <a className="app-button" href={teamDataHref}>
+            Sync Team Data
+          </a>
         ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <StrategyNextActionsPanel actions={actions} />}
     </Root>
   );
 }
@@ -838,12 +759,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           setView({
             status: "setup_required",
             message: "Select a team workspace before running win/loss strategy.",
-            steps: strategyShellSetupSteps(null).map((step) => ({
-              id: step.id,
-              label: step.label,
-              detail: step.detail,
-              href: step.href,
-            })),
+            steps: [],
             orgId: null,
             eventKey: null,
             eventName: null,
@@ -917,23 +833,6 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     );
   }
 
-  const nextActions =
-    view && view.status === "live"
-      ? strategyNextActions({
-          orgId: view.orgId,
-          shell: "ready",
-          eventKey: view.eventKey,
-          tbaConfigured: view.tbaConfigured ?? view.tbaAccess?.tbaConfigured,
-          hasMetrics: view.referenceAccess?.statbotics.cacheHasMetrics,
-        })
-      : strategyNextActions({
-          orgId,
-          shell: shell === "ready" ? "ready" : shell,
-          eventKey: view && "eventKey" in view ? view.eventKey : null,
-          tbaConfigured: view?.tbaConfigured ?? view?.tbaAccess?.tbaConfigured,
-          hasMetrics: view?.referenceAccess?.statbotics.cacheHasMetrics,
-        });
-
   return (
     <main className={`module-page strategy-page${embedded ? " is-embedded" : ""}`}>
       {embedded ? null : (
@@ -943,7 +842,6 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
       >
         <div className="strategy-header-actions">
-          <StrategyRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
           <button type="button" className="app-button secondary" onClick={() => window.print()}>
             Print
@@ -956,22 +854,6 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           >
             {recomputing ? "Recomputing…" : "Recompute prediction"}
           </button>
-          {orgId ? (
-            <>
-              <a className="app-button secondary" href={withOrgHref("/strategy/draft", orgId)}>
-                Draft board
-              </a>
-              <a
-                className="app-button secondary"
-                href={withOrgHref("/exports?domains=pick-lists,reference-metrics,research", orgId)}
-              >
-                Export
-              </a>
-              <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
-                Team data
-              </a>
-            </>
-          ) : null}
           {view?.status === "live" ? (
             <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
               {view.dataSourceHealth?.usingLastGoodCache ? "Last-good cache" : "Live inputs"}
@@ -1005,10 +887,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       {tab === "picks" ? (
         <PickListWorkbench orgId={orgId} embedded />
       ) : view?.status === "live" ? (
-        <>
-          <LivePanel view={view} />
-          {embedded ? null : <StrategyNextActionsPanel actions={nextActions} />}
-        </>
+        <LivePanel view={view} />
       ) : null}
     </main>
   );

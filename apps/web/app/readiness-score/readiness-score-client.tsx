@@ -23,16 +23,10 @@ import {
 } from "../../lib/readiness-score";
 import type { ReadinessScoreView } from "../../lib/readiness-score/compute-readiness-score";
 import {
-  READINESS_SCORE_RELATED_INCLUDE,
   classifyReadinessScoreShell,
   formatReadinessScoreMetric,
   formatReadinessScorePercent,
-  readinessScoreNextActions,
-  readinessScoreRelatedLinks,
-  readinessScoreSetupSteps,
   readinessScoreShellCopy,
-  shouldShowReadinessScoreSummaryTiles,
-  type ReadinessScoreNextAction,
   type ReadinessScoreShellKind,
 } from "../../lib/readiness-score/readiness-score-related";
 import type {
@@ -41,7 +35,6 @@ import type {
   ReadinessTier,
   WiringStatus,
 } from "../../lib/readiness-score/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./readiness-score.css";
 
@@ -75,50 +68,6 @@ function pct(value: number): string {
 
 type LiveView = Extract<ReadinessScoreView, { status: "live" }>;
 
-function ReadinessRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = readinessScoreRelatedLinks(orgId, {
-    include: [...READINESS_SCORE_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related readiness-score-related" aria-label="Related build tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ReadinessNextActionsPanel({ actions }: { actions: ReadinessScoreNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions readiness-score-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">FMEA, Inspection Copilot, and Code — never DEMO readiness metrics.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function ReadinessShell({
   description,
   orgId,
@@ -132,25 +81,15 @@ function ReadinessShell({
   error?: string;
   onRetry?: () => void;
 }) {
-  const actions = readinessScoreNextActions({ orgId, shell });
   const copy = readinessScoreShellCopy(shell);
-  const buildHref = hubWorkbenchHref("build", "readiness-score", orgId);
-  const steps = shell === "setup" ? readinessScoreSetupSteps(orgId) : [];
 
   return (
     <main className="module-page readiness-score-page soft-gate">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
-          </>
-        }
+        breadcrumbs="Build / Readiness Score"
         title="Robot readiness score"
         description={description}
-      >
-        <ReadinessRelatedStrip orgId={orgId} />
-      </PageHeader>
+      />
       {shell === "loading" ? (
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading readiness score">
           <StatRowSkeleton count={4} />
@@ -172,42 +111,12 @@ function ReadinessShell({
             </a>
           ) : null}
           {shell === "empty" ? (
-            <>
-              <a className="app-button" href="#readiness-score-subsystem">
-                Log a subsystem
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-                Open FMEA
-              </a>
-              <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-                Open Inspection Copilot
-              </a>
-            </>
+            <a className="app-button" href="#readiness-score-subsystem">
+              Log a subsystem
+            </a>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="readiness-score-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">FMEA and Inspection — never DEMO readiness metrics.</p>
-          </header>
-          <ul className="readiness-score-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted readiness-score-tip">{step.detail}</p>
-                </div>
-                <a className="app-button secondary" href={step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <ReadinessNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -248,7 +157,6 @@ export default function ReadinessScoreClient() {
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const subsystemCount = view?.status === "live" ? view.subsystems.length : 0;
-  const fixCount = view?.status === "live" ? view.index.fixList.length : 0;
 
   const shell = classifyReadinessScoreShell({
     loading: view == null && !fetchFailed,
@@ -258,17 +166,6 @@ export default function ReadinessScoreClient() {
     subsystemCount,
   });
   const shellCopy = readinessScoreShellCopy(shell);
-  const nextActions = readinessScoreNextActions({
-    orgId,
-    shell,
-    subsystemCount,
-    fixCount,
-  });
-  const relatedLinks = readinessScoreRelatedLinks(orgId, {
-    include: [...READINESS_SCORE_RELATED_INCLUDE],
-  });
-  const buildHref = hubWorkbenchHref("build", "readiness-score", orgId);
-  const showTiles = shouldShowReadinessScoreSummaryTiles(subsystemCount);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -337,12 +234,7 @@ export default function ReadinessScoreClient() {
   return (
     <main className="module-page readiness-score-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={buildHref}>Build</a>
-            {" / Readiness Score"}
-          </>
-        }
+        breadcrumbs="Build / Readiness Score"
         title="Robot readiness score"
         description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code — never DEMO readiness metrics."
       >
@@ -366,11 +258,6 @@ export default function ReadinessScoreClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
         </div>
       </PageHeader>
 
@@ -382,9 +269,7 @@ export default function ReadinessScoreClient() {
         </p>
       ) : null}
 
-      <ReadinessNextActionsPanel actions={nextActions} />
-
-      {showTiles ? (
+      {subsystemCount > 0 ? (
         <Panel className="readiness-score-panel" aria-label="Readiness counts">
           <div className="readiness-score-stats">
             <StatTile
@@ -418,12 +303,6 @@ export default function ReadinessScoreClient() {
         >
           <a className="app-button" href="#readiness-score-subsystem">
             Log a subsystem
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
-            Open Inspection Copilot
           </a>
         </EmptyState>
       ) : null}

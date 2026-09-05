@@ -373,15 +373,6 @@ export default function AccountClient() {
     }
   }, []);
 
-  function selectTab(next: Tab) {
-    setTab(next);
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (next === "profile") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", next);
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-  }
-
   async function load() {
     setLoading(true);
     setFetchFailed(false);
@@ -561,14 +552,6 @@ export default function AccountClient() {
 
   const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "?").toUpperCase();
   const orgId = org.orgId;
-  const onshapeStatus: ConnectionConnectorStatus =
-    account?.integrations?.onshape?.status ?? (orgId ? "empty" : "setup_required");
-  const discordStatus: ConnectionConnectorStatus =
-    account?.integrations?.discord?.status ?? (orgId ? "empty" : "setup_required");
-  const githubStatus: ConnectionConnectorStatus =
-    account?.integrations?.github?.status ?? (orgId ? "empty" : "setup_required");
-  const slackStatus: ConnectionConnectorStatus =
-    account?.integrations?.slack?.status ?? (orgId ? "empty" : "setup_required");
   const connectionCards = buildConnectionConnectors({
     orgId,
     google: account?.integrations?.google,
@@ -714,113 +697,53 @@ export default function AccountClient() {
                     autoComplete="family-name"
                   />
                 </label>
-                <fieldset className="account-role-picks">
-                  <legend>Roles</legend>
-                  <p className="app-muted">Pick every role that fits. Freebuff uses this to set your island.</p>
-                  <div className="account-role-grid">
-                    {ACCOUNT_ROLES.map((option) => (
-                      <label key={option.value}>
-                        <input
-                          type="checkbox"
-                          checked={teamRoles.includes(option.value)}
-                          onChange={() =>
-                            setTeamRoles((current) =>
-                              current.includes(option.value)
-                                ? current.filter((role) => role !== option.value)
-                                : [...current, option.value],
-                            )
-                          }
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <fieldset className="account-role-picks">
-                  <legend>Jobs on the team</legend>
-                  <div className="account-role-grid">
-                    {ACCOUNT_CREWS.map((option) => (
-                      <label key={option.value}>
-                        <input
-                          type="checkbox"
-                          checked={crewRoles.includes(option.value)}
-                          onChange={() =>
-                            setCrewRoles((current) =>
-                              current.includes(option.value)
-                                ? current.filter((crew) => crew !== option.value)
-                                : [...current, option.value],
-                            )
-                          }
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <label>
-                  Date of birth
-                  <input
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(event) => setDateOfBirth(event.target.value)}
-                    autoComplete="bday"
-                  />
-                </label>
                 <label>
                   Sign-in email
                   <input value={account.email ?? ""} readOnly disabled />
                 </label>
-                <label>
-                  Recovery email
-                  <input
-                    type="email"
-                    value={recoveryEmail}
-                    onChange={(event) => setRecoveryEmail(event.target.value)}
-                    autoComplete="email"
-                    placeholder="A second inbox for account recovery"
-                  />
-                </label>
-                <label>
-                  Phone number for OTP
-                  <input
-                    type="tel"
-                    value={phoneE164}
-                    onChange={(event) => setPhoneE164(event.target.value)}
-                    autoComplete="tel"
-                    placeholder="+15551234567"
-                  />
-                </label>
-                <p className="app-muted">
-                  {account.phoneVerified
-                    ? "Phone is verified for OTP."
-                    : account.phoneOtp?.configured
-                      ? "Save the number, then send a code to verify it."
-                      : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}
-                </p>
-                <div className="account-actions">
-                  <button className="app-button secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>
-                    Send phone code
-                  </button>
-                  <input
-                    value={otpCode}
-                    onChange={(event) => setOtpCode(event.target.value)}
-                    maxLength={6}
-                    inputMode="numeric"
-                    placeholder="6-digit code"
-                    aria-label="Phone OTP code"
-                  />
-                  <button className="app-button secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>
-                    Verify phone
-                  </button>
-                </div>
                 <div className="account-actions">
                   <button className="primary-action" type="submit" disabled={busy}>
                     Save profile
                   </button>
-                  <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>
-                    Sign out
-                  </button>
                 </div>
+                <details className="account-advanced">
+                  <summary>More profile and security options</summary>
+                  <div className="account-advanced-body">
+                    <fieldset className="account-role-picks">
+                      <legend>Roles</legend>
+                      <p className="app-muted">Pick every role that fits. Freebuff uses this to set your island.</p>
+                      <div className="account-role-grid">
+                        {ACCOUNT_ROLES.map((option) => (
+                          <label key={option.value}>
+                            <input type="checkbox" checked={teamRoles.includes(option.value)} onChange={() => setTeamRoles((current) => current.includes(option.value) ? current.filter((role) => role !== option.value) : [...current, option.value])} />
+                            {option.label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <fieldset className="account-role-picks">
+                      <legend>Jobs on the team</legend>
+                      <div className="account-role-grid">
+                        {ACCOUNT_CREWS.map((option) => (
+                          <label key={option.value}>
+                            <input type="checkbox" checked={crewRoles.includes(option.value)} onChange={() => setCrewRoles((current) => current.includes(option.value) ? current.filter((crew) => crew !== option.value) : [...current, option.value])} />
+                            {option.label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <label>Date of birth<input type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} autoComplete="bday" /></label>
+                    <label>Recovery email<input type="email" value={recoveryEmail} onChange={(event) => setRecoveryEmail(event.target.value)} autoComplete="email" placeholder="A second inbox for account recovery" /></label>
+                    <label>Phone number for OTP<input type="tel" value={phoneE164} onChange={(event) => setPhoneE164(event.target.value)} autoComplete="tel" placeholder="+15551234567" /></label>
+                    <p className="app-muted">{account.phoneVerified ? "Phone is verified for OTP." : account.phoneOtp?.configured ? "Save the number, then send a code to verify it." : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}</p>
+                    <div className="account-actions">
+                      <button className="app-button secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>Send phone code</button>
+                      <input value={otpCode} onChange={(event) => setOtpCode(event.target.value)} maxLength={6} inputMode="numeric" placeholder="6-digit code" aria-label="Phone OTP code" />
+                      <button className="app-button secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>Verify phone</button>
+                    </div>
+                    <button className="danger-action account-sign-out" type="button" disabled={busy} onClick={() => void signOut()}>Sign out</button>
+                  </div>
+                </details>
               </form>
             </Panel>
           ) : null}

@@ -48,7 +48,7 @@ const graph = {
         "Offline-first match and pit scouting with trust signals",
         "Custom scouting form builder with versioned schemas",
         "Opt-in scout voice notes",
-        "Soft-UI product hubs for Competition, Team, Business, Build, and AI",
+        "Four workspaces — Scout, Compete, Build, and Run season — over Competition, Team, Business, Build, Media, and AI hubs",
         "Soft-UI strategy tools and pick desk",
         "Business hub for sponsors, grants, and orders",
         "Hard managed-AI usage cutoffs after included allowance",

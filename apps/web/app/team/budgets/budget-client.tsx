@@ -1,20 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AiHubRelated } from "../../../components/ai-hub-related";
 import { PageHeader } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
-  AI_BUDGETS_RELATED_INCLUDE,
-  AI_BUDGETS_SCOPE_CARDS,
-  aiBudgetsNextActions,
-  aiBudgetsRelatedLinks,
   aiBudgetsShellCopy,
   classifyAiBudgetsShell,
   formatAiBudgetsCount,
   formatAiBudgetsMoney,
   policySnapshotFromBudgetForm,
-  type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
@@ -48,48 +42,6 @@ type CutoffPayload = {
   warningThresholds?: number[];
 };
 
-function BudgetsRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_BUDGETS_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ai-budgets-related" aria-label="Related AI budget tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKind }) {
-  const actions = aiBudgetsNextActions({ orgId, shell });
-  if (!actions.length) return null;
-  return (
-    <section
-      className="ai-budgets-next-actions app-card soft-panel edc-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p>From real org policy and Neon spend only — never DEMO $.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 export default function BudgetClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState({
     ...blank,
@@ -121,9 +73,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const usageHref = hubHref("/ai", "usage", orgId);
   const pricingHref = withOrgHref("/pricing", orgId);
   const accountHref = withOrgHref("/account", orgId);
-  const adminHref = withOrgHref("/team/admin", orgId);
-  const headerLinks = aiBudgetsRelatedLinks(orgId);
-
   async function load() {
     setLoading(true);
     setLoadError(null);
@@ -245,23 +194,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         breadcrumbs="AI / API budgets"
         title="API budgets"
         description="Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG — no silent overage."
-      >
-        <nav className="settings-inline-links" aria-label="Related settings">
-          {headerLinks
-            .filter((link) =>
-              ["chat", "usage", "pricing", "account", "governance", "admin"].includes(link.id),
-            )
-            .map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-          <a href={`${adminHref}#custom-providers`}>API keys</a>
-        </nav>
-      </PageHeader>
-
-      <AiHubRelated orgId={orgId} active="budgets" />
-      <BudgetsRelatedStrip orgId={orgId} />
+      />
 
       {message ? <p className="telemetry-status">{message}</p> : null}
 
@@ -277,7 +210,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
           <h2>{shellCopy.title}</h2>
           <p className="app-muted">{shellCopy.description}</p>
-          <NextActions orgId={orgId} shell={shell} />
           {shell === "error" ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
@@ -288,50 +220,11 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
       {!loading && !blocked ? (
         <>
-          <section className="ai-budgets-scope" aria-label="What budgets owns">
-            {AI_BUDGETS_SCOPE_CARDS.map((card) => (
-              <article key={card.id} className="app-card soft-panel ai-budgets-scope-card">
-                <span className="eyebrow">
-                  {card.id === "limits"
-                    ? "LIMITS"
-                    : card.id === "usage"
-                      ? "USAGE"
-                      : card.id === "chat"
-                        ? "CHAT"
-                        : "PRICING"}
-                </span>
-                <h2>{card.title}</h2>
-                <p className="app-muted">{card.body}</p>
-                {card.id === "limits" ? (
-                  <a className="app-button secondary" href="#org-hard-limits">
-                    Edit hard limits
-                  </a>
-                ) : null}
-                {card.id === "usage" ? (
-                  <a className="app-button secondary" href={usageHref}>
-                    Open AI usage
-                  </a>
-                ) : null}
-                {card.id === "chat" ? (
-                  <a className="app-button secondary" href={chatHref}>
-                    Open Chat
-                  </a>
-                ) : null}
-                {card.id === "pricing" ? (
-                  <a className="app-button secondary" href={pricingHref}>
-                    View pricing
-                  </a>
-                ) : null}
-              </article>
-            ))}
-          </section>
-
           {showEmptyBanner ? (
             <section className="app-card soft-panel product-hub-setup" role="status">
               {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
               <h2>{shellCopy.title}</h2>
               <p className="app-muted">{shellCopy.description}</p>
-              <NextActions orgId={orgId} shell={shell} />
             </section>
           ) : null}
 

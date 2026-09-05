@@ -2,14 +2,19 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
- * Drawer IA is almost flat: one hub link per pillar. Deep tools live as
- * hub tabs / More tools; Cmd+K searches the full catalog.
+ * Drawer IA is almost flat: Home plus one link per workspace. Deep tools live
+ * as hub tabs / More tools; Cmd+K searches the full catalog.
  *
- * Pillars: Competition · Team · Logistics · Business · Media · Build · AI
- * (+ Home). Settings live in the drawer footer only.
+ * Workspaces come from PRODUCT_WORKSPACES (Scout · Compete · Build · Run
+ * season). Settings live in the drawer footer only.
  */
 
-import { PRODUCT_HUBS } from "./hubs";
+import {
+  PRODUCT_HUBS,
+  PRODUCT_WORKSPACES,
+  workspaceForHubTab,
+  type ProductWorkspaceId,
+} from "./hubs";
 
 export type NavItemState = "setup" | "planned";
 
@@ -70,59 +75,32 @@ export const ORG_EXEMPT_HREFS = new Set([
 ]);
 
 /**
- * Drawer IA — one link per pillar. Deep tools are hub tabs + Cmd+K.
+ * Drawer IA — one link per product workspace. Deep tools are hub tabs + Cmd+K.
  * Settings / Account / App manual live in the drawer footer, not here.
  */
-export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
-  {
-    label: "Home",
+const WORKSPACE_ICONS: Record<ProductWorkspaceId, ProductNavIcon> = {
+  scout: "scout",
+  compete: "swords",
+  build: "cube",
+  "run-season": "calendar",
+};
+
+export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = PRODUCT_WORKSPACES.map((workspace) => {
+  const icon = WORKSPACE_ICONS[workspace.id];
+  return {
+    label: workspace.label,
     ...TONE,
-    icon: "home",
-    items: [{ href: "/dashboard", label: "Home", icon: "home" }],
-  },
-  {
-    label: "Competition",
-    ...TONE,
-    icon: "swords",
-    items: [{ href: "/competition", label: "Competition", icon: "swords" }],
-  },
-  {
-    label: "Team",
-    ...TONE,
-    icon: "users",
-    items: [{ href: "/team", label: "Team", icon: "users" }],
-  },
-  {
-    label: "Logistics",
-    ...TONE,
-    icon: "pin",
-    items: [{ href: "/logistics", label: "Logistics", icon: "pin" }],
-  },
-  {
-    label: "Business",
-    ...TONE,
-    icon: "clipboard",
-    items: [{ href: "/business", label: "Business", icon: "clipboard" }],
-  },
-  {
-    label: "Media",
-    ...TONE,
-    icon: "camera",
-    items: [{ href: "/media", label: "Media", icon: "camera" }],
-  },
-  {
-    label: "Build",
-    ...TONE,
-    icon: "cube",
-    items: [{ href: "/build", label: "Build", icon: "cube" }],
-  },
-  {
-    label: "AI",
-    ...TONE,
-    icon: "bolt",
-    items: [{ href: "/ai", label: "AI", icon: "bolt" }],
-  },
-];
+    icon,
+    items: [{ href: workspace.href, label: workspace.label, icon }],
+  };
+});
+
+function groupForHubTab(hubId: Parameters<typeof workspaceForHubTab>[0], tabId: string) {
+  const workspace = workspaceForHubTab(hubId, tabId);
+  return workspace
+    ? PRODUCT_NAV_GROUPS.find((group) => group.label === workspace.label)
+    : undefined;
+}
 
 /** Standalone logistics tools — Cmd+K / breadcrumbs only (not drawer leaves). */
 export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
@@ -146,39 +124,22 @@ export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/inventory", label: "Inventory", icon: "grid" },
 ];
 
-/** Four customizable bottom-island app slots. AppShell adds a fixed All button for the full IA. */
+/** Four customizable bottom-island workspace slots. */
 export type IslandTabDefinition = { href: string; label: string; icon: ProductNavIcon };
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
-  { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/competition", label: "Compete", icon: "swords" },
-  { href: "/team", label: "Team", icon: "users" },
-  { href: "/business", label: "Business", icon: "clipboard" },
-];
-
-/** Allowlisted destinations for the four personal island slots. */
-export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
-  ...PRIMARY_TABS,
-  { href: "/build", label: "Build", icon: "cube" },
-  { href: "/ai", label: "AI", icon: "bolt" },
-  { href: "/media", label: "Media", icon: "camera" },
-  { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
-  { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
-  { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
+  ...PRODUCT_WORKSPACES.map((workspace) => ({
+    href: workspace.href,
+    label: workspace.label,
+    icon: WORKSPACE_ICONS[workspace.id],
+  })),
 ];
 
 /**
- * Soft-UI pillars for Search (⌘K) shortcuts — hub roots only.
+ * Product workspaces for Search (⌘K) shortcuts.
  */
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  { href: "/competition", label: "Competition", icon: "swords" },
-  { href: "/team", label: "Team", icon: "users" },
-  { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/media", label: "Media", icon: "camera" },
-  { href: "/build", label: "Build", icon: "cube" },
-  { href: "/ai", label: "AI", icon: "bolt" },
+  ...PRIMARY_TABS,
 ];
 
 /**
@@ -189,6 +150,18 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
   { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
   { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
   { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
+];
+
+/**
+ * Allowlisted destinations for the four personal island slots. The stock four
+ * are the workspaces; the rest are places a member can live in all weekend, so
+ * a scout can trade Build for Forms. Without them "customize" could only ever
+ * reorder the same four apps.
+ */
+export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
+  ...PRIMARY_TABS,
+  { href: "/dashboard", label: "Home", icon: "home" },
+  ...MORE_SHEET_LINKS,
 ];
 
 /** @deprecated Prefer hub tabs + Cmd+K — kept for residual imports. */
@@ -253,9 +226,9 @@ export function cmdkNavCatalog(): ProductNavItem[] {
     items.push(...group.items.filter((item) => item.state !== "planned"));
   }
   for (const hub of PRODUCT_HUBS) {
-    const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
-    const icon = group?.icon ?? "grid";
     for (const tab of hub.tabs) {
+      const group = groupForHubTab(hub.id, tab.id);
+      const icon = group?.icon ?? "grid";
       items.push({
         href: `${hub.href}?tab=${tab.id}`,
         label: tab.label,
@@ -281,6 +254,7 @@ export function findNavMatch(
   for (const group of PRODUCT_NAV_GROUPS) {
     for (const item of group.items) {
       if (item.state === "planned") continue;
+      if (item.href.includes("?")) continue;
       const hrefPath = navPathOnly(item.href);
       const exact = path === hrefPath;
       const nested = hrefPath !== "/" && path.startsWith(`${hrefPath}/`);
@@ -300,9 +274,17 @@ export function findNavMatch(
   if (!best || best.score < 1_000) {
     let hubBest: { group: ProductNavGroup; item: ProductNavItem; score: number } | null = null;
     for (const hub of PRODUCT_HUBS) {
-      const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
-      if (!group) continue;
+      const rootGroup = groupForHubTab(hub.id, hub.defaultTab);
+      if (rootGroup && path === hub.href) {
+        const item = rootGroup.items[0];
+        if (item) {
+          const score = hub.href.length + 1_000;
+          if (!hubBest || score > hubBest.score) hubBest = { group: rootGroup, item, score };
+        }
+      }
       for (const tab of hub.tabs) {
+        const group = groupForHubTab(hub.id, tab.id);
+        if (!group) continue;
         const legacy = tab.legacyHref;
         if (!legacy) continue;
         const exact = path === legacy;
@@ -327,16 +309,19 @@ export function findNavMatch(
 
   // Logistics / settings deep links for breadcrumbs when not in the flat drawer.
   if (!best || best.score < 1_000) {
-    const logisticsGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Logistics");
-    if (logisticsGroup) {
+    const runSeasonGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Run season");
+    if (runSeasonGroup) {
+      if (path === "/logistics") {
+        const item: ProductNavItem = { href: "/logistics", label: "Logistics", icon: "pin" };
+        return { group: runSeasonGroup, item };
+      }
       for (const item of LOGISTICS_DEEP_LINKS) {
         const hrefPath = navPathOnly(item.href);
         if (path === hrefPath || path.startsWith(`${hrefPath}/`)) {
-          return { group: logisticsGroup, item };
+          return { group: runSeasonGroup, item };
         }
       }
     }
-    const homeGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Home");
     const settingsPseudo: ProductNavGroup = {
       label: "Settings",
       ...TONE,
@@ -347,19 +332,18 @@ export function findNavMatch(
       const hrefPath = navPathOnly(item.href);
       if (path === hrefPath || (hrefPath !== "/" && path.startsWith(`${hrefPath}/`))) {
         if (item.href === "/notifications" || item.href === "/workspace") {
-          return { group: homeGroup ?? settingsPseudo, item };
+          return { group: settingsPseudo, item };
         }
         if (item.href.startsWith("/team/")) {
-          const teamGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Team");
-          if (teamGroup) return { group: teamGroup, item };
+          if (runSeasonGroup) return { group: runSeasonGroup, item };
         }
         if (item.href === "/inventory") {
           const buildGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Build");
           if (buildGroup) return { group: buildGroup, item };
         }
         if (item.href === "/schedule") {
-          const competitionGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Competition");
-          if (competitionGroup) return { group: competitionGroup, item };
+          const competeGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Compete");
+          if (competeGroup) return { group: competeGroup, item };
         }
         return { group: settingsPseudo, item };
       }

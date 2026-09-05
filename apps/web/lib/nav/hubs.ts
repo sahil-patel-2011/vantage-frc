@@ -33,6 +33,52 @@ export type ProductHubDef = {
   tabs: HubTabDef[];
 };
 
+/**
+ * The four member-facing workspaces. Hubs and their routes remain the
+ * implementation model; this layer only presents them in the product chrome.
+ */
+export type ProductWorkspaceId = "scout" | "compete" | "build" | "run-season";
+
+export type ProductWorkspaceHubRef = {
+  hubId: ProductHubDef["id"];
+  /** Limit this workspace to these hub workbenches; omit for the entire hub. */
+  workbenchIds?: string[];
+};
+
+export type ProductWorkspaceDef = {
+  id: ProductWorkspaceId;
+  label: string;
+  href: string;
+  hubs: ProductWorkspaceHubRef[];
+};
+
+export const PRODUCT_WORKSPACES: ProductWorkspaceDef[] = [
+  {
+    id: "scout",
+    label: "Scout",
+    href: "/competition?tab=scouting",
+    hubs: [{ hubId: "competition", workbenchIds: ["scouting"] }],
+  },
+  {
+    id: "compete",
+    label: "Compete",
+    href: "/competition",
+    hubs: [{ hubId: "competition", workbenchIds: ["command", "strategy", "match-checklist"] }],
+  },
+  {
+    id: "build",
+    label: "Build",
+    href: "/build",
+    hubs: [{ hubId: "build" }],
+  },
+  {
+    id: "run-season",
+    label: "Run season",
+    href: "/team",
+    hubs: [{ hubId: "team" }, { hubId: "business" }, { hubId: "media" }, { hubId: "ai" }],
+  },
+];
+
 function nest(group: string, tabs: Array<Omit<HubTabDef, "group">>): HubTabDef[] {
   return tabs.map((tab) => ({ ...tab, group, primary: false }));
 }
@@ -373,6 +419,28 @@ export function hubById(id: ProductHubDef["id"]): ProductHubDef {
   const hub = PRODUCT_HUBS.find((entry) => entry.id === id);
   if (!hub) throw new Error(`Unknown hub: ${id}`);
   return hub;
+}
+
+export function workspaceById(id: ProductWorkspaceId): ProductWorkspaceDef {
+  const workspace = PRODUCT_WORKSPACES.find((entry) => entry.id === id);
+  if (!workspace) throw new Error(`Unknown product workspace: ${id}`);
+  return workspace;
+}
+
+/** The product workspace that presents a hub tab, including its legacy route. */
+export function workspaceForHubTab(
+  hubId: ProductHubDef["id"],
+  tabId: string,
+): ProductWorkspaceDef | undefined {
+  const hub = hubById(hubId);
+  const workbenchId = hubWorkbenchId(hub, tabId);
+  return PRODUCT_WORKSPACES.find((workspace) =>
+    workspace.hubs.some(
+      (entry) =>
+        entry.hubId === hubId &&
+        (!entry.workbenchIds || entry.workbenchIds.includes(workbenchId)),
+    ),
+  );
 }
 
 export function navHubByLabel(label: string): ProductHubDef | undefined {

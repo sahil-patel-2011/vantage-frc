@@ -14,9 +14,16 @@
 // Bump both on any release that changes the shell or its assets: `activate` deletes
 // every cache whose key is not one of these two, so a version bump is what forces a
 // returning installed client off the previous release's cached UI.
-const ASSET_CACHE = "vantage-assets-v5";
-const SHELL_CACHE = "vantage-shell-v5";
+const ASSET_CACHE = "vantage-assets-v6";
+const SHELL_CACHE = "vantage-shell-v6";
 const SHELL_URL = "/offline";
+
+// `next dev` (Turbopack) serves chunks under stable, un-hashed names, so the
+// cache-first rule below would pin a developer's browser to a stale UI until they
+// cleared site data by hand. Production filenames are content-hashed, so the
+// cache-first rule is only safe there.
+const IS_LOCAL_DEV =
+  self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 
 const PRECACHE = ["/manifest.webmanifest", "/icon.svg", SHELL_URL];
 
@@ -264,6 +271,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (!isStaticAssetPath(url.pathname)) return;
+  if (IS_LOCAL_DEV) return;
 
   event.respondWith(
     caches.open(ASSET_CACHE).then(async (cache) => {

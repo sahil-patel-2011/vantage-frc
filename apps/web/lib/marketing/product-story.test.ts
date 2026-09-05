@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PRODUCT_HUBS, hubPrimaryTabs } from "../nav/hubs";
-import { MARKETING_DEFINITION, MARKETING_HUBS, MARKETING_JOBS } from "./product-story";
+import { PRODUCT_HUBS, PRODUCT_WORKSPACES, hubPrimaryTabs } from "../nav/hubs";
+import {
+  MARKETING_DEFINITION,
+  MARKETING_HUBS,
+  MARKETING_WORKSPACES,
+  marketingWorkspacesForHub,
+} from "./product-story";
 
 describe("MARKETING_DEFINITION", () => {
   it("names FRC and refuses invented metrics", () => {
@@ -13,16 +18,35 @@ describe("MARKETING_DEFINITION", () => {
   });
 });
 
-describe("MARKETING_JOBS", () => {
-  it("covers scout, compete, build, and season ops without fabricated scores", () => {
-    expect(MARKETING_JOBS.map((job) => job.title)).toEqual([
-      "Scout",
-      "Compete",
-      "Build",
-      "Run the season",
-    ]);
-    const blob = MARKETING_JOBS.map((job) => job.copy).join(" ");
+describe("MARKETING_WORKSPACES", () => {
+  /*
+   * The site used to retype the nav, and drifted into advertising a drawer the
+   * app had already replaced. These names are the ones a visitor will look for
+   * after they sign in, so they have to be the product's own.
+   */
+  it("names the shipped workspaces, in shipped order", () => {
+    expect(MARKETING_WORKSPACES.map((workspace) => workspace.title)).toEqual(
+      PRODUCT_WORKSPACES.map((workspace) => workspace.label),
+    );
+    expect(MARKETING_WORKSPACES.map((workspace) => workspace.id)).toEqual(
+      PRODUCT_WORKSPACES.map((workspace) => workspace.id),
+    );
+  });
+
+  it("describes each workspace without fabricated scores", () => {
+    const blob = MARKETING_WORKSPACES.map((workspace) => workspace.copy).join(" ");
     expect(blob).not.toMatch(/\bDEMO\b|win rate|invented EPA/i);
+    expect(MARKETING_WORKSPACES.every((workspace) => workspace.copy.length > 0)).toBe(true);
+  });
+
+  it("routes every hub to at least one workspace so /features can say where it lives", () => {
+    for (const hub of MARKETING_HUBS) {
+      const opensFrom = marketingWorkspacesForHub(hub.id);
+      expect(opensFrom.length, `no workspace opens ${hub.id}`).toBeGreaterThan(0);
+      expect(opensFrom.every((name) => PRODUCT_WORKSPACES.some((w) => w.label === name))).toBe(true);
+    }
+    // Competition is reachable from two, which is the one case the copy must not flatten.
+    expect(marketingWorkspacesForHub("competition")).toEqual(["Scout", "Compete"]);
   });
 });
 

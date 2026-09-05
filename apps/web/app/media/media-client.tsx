@@ -21,13 +21,9 @@ import {
 } from "../../lib/media";
 import type { MediaView } from "../../lib/media/compute-media";
 import {
-  MEDIA_RELATED_INCLUDE,
   classifyMediaShell,
-  mediaNextActions,
-  mediaRelatedLinks,
   mediaSetupSteps,
   mediaShellCopy,
-  type MediaNextAction,
   type MediaShellKind,
 } from "../../lib/media/media-related";
 import {
@@ -38,6 +34,7 @@ import { hubById, hubLegacyHref, hubNestedTabs, hubPrimaryTabs, isHubTab } from 
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import "../product-hub.css";
 import "./media.css";
 
 const MEDIA_HUB = hubById("media");
@@ -90,68 +87,19 @@ function fromLocalInputValue(value: string): string | null {
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
 
-function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = mediaRelatedLinks(orgId, {
-    include: [...MEDIA_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related media-related" aria-label="Related media tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions media-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Calendar, drafts, kit, and impact — never DEMO media metrics.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function MediaShell({
-  description,
   orgId,
   shell,
   error,
   errorStatus,
   onRetry,
-  children,
 }: {
-  description: string;
   orgId?: string | null;
   shell: MediaShellKind;
   error?: string;
   errorStatus?: number | null;
   onRetry?: () => void;
-  children?: ReactNode;
 }) {
-  const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
   const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
   // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
@@ -174,14 +122,12 @@ function MediaShell({
       : null;
 
   return (
-    <main className="module-page media-page soft-gate">
-      <PageHeader breadcrumbs="Media / Media hub" title="Media" description={description}>
-        <div className="media-header-actions">
-          <MediaRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
-      {children}
-      <EmptyState
+    <main className="module-page product-hub product-hub--media media-page soft-gate">
+      {/* Setup/empty/error states still own the page, so keep its h1 — the loaded
+          hub gets one from ProductHubShell and this branch never reaches it. */}
+      <PageHeader breadcrumbs="Media" title="Media" />
+      <div className="product-hub-panel">
+        <EmptyState
         soft
         badge={
           shell === "setup"
@@ -222,21 +168,21 @@ function MediaShell({
             </button>
           </>
         ) : null}
-      </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-      <MediaNextActionsPanel actions={actions} />
+        </EmptyState>
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </div>
     </main>
   );
 }
@@ -794,17 +740,7 @@ function LiveMediaWorkspace({
   );
 
   return (
-    <main className="module-page media-page">
-      <PageHeader
-        breadcrumbs="Media / Media hub"
-        title="Media"
-        description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
-      >
-        <div className="media-header-actions">
-          <MediaRelatedStrip orgId={orgId} />
-        </div>
-      </PageHeader>
-
+    <main className="module-page product-hub product-hub--media media-page">
       <TabBar
         aria-label="Media sections"
         value={tab}
@@ -828,47 +764,49 @@ function LiveMediaWorkspace({
         />
       ) : null}
 
-      {error ? <p className="app-error">{error}</p> : null}
-      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+      <div className="product-hub-panel" data-hub-tab={tab}>
+        {error ? <p className="app-error">{error}</p> : null}
+        {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
-      {showTiles ? (
-        <Panel>
-          <div className="media-stats" aria-label="Media summary">
-            <div>
-              <strong>{formatMediaMetric(view.items.length, true)}</strong>
-              <span className="app-muted"> Content items</span>
+        {showTiles ? (
+          <Panel>
+            <div className="media-stats" aria-label="Media summary">
+              <div>
+                <strong>{formatMediaMetric(view.items.length, true)}</strong>
+                <span className="app-muted"> Content items</span>
+              </div>
+              <div>
+                <strong>{mediaReadinessPct(view.kit.readinessScore)}</strong>
+                <span className="app-muted"> Kit readiness</span>
+              </div>
+              <div>
+                <strong>{formatMediaMetric(view.impact.mediaActivityCount, true)}</strong>
+                <span className="app-muted"> Media impact logs</span>
+              </div>
             </div>
-            <div>
-              <strong>{mediaReadinessPct(view.kit.readinessScore)}</strong>
-              <span className="app-muted"> Kit readiness</span>
-            </div>
-            <div>
-              <strong>{formatMediaMetric(view.impact.mediaActivityCount, true)}</strong>
-              <span className="app-muted"> Media impact logs</span>
-            </div>
-          </div>
-        </Panel>
-      ) : null}
+          </Panel>
+        ) : null}
 
-      {tab === "calendar" ? (
-        <CalendarPanel view={view} busy={busy} onCreate={create} onMarkPosted={markPosted} />
-      ) : null}
-      {tab === "drafts" ? (
-        <DraftsPanel
-          view={view}
-          busy={busy}
-          cutoffCode={cutoffCode}
-          draftMeta={draftMeta}
-          onCreate={create}
-          onAiDraft={aiDraft}
-          onMarkPosted={markPosted}
-        />
-      ) : null}
-      {tab === "reminders" ? (
-        <RemindersPanel view={view} busy={busy} onDismiss={dismiss} />
-      ) : null}
-      {tab === "kit" ? <KitPanel view={view} /> : null}
-      {tab === "impact" ? <ImpactPanel view={view} /> : null}
+        {tab === "calendar" ? (
+          <CalendarPanel view={view} busy={busy} onCreate={create} onMarkPosted={markPosted} />
+        ) : null}
+        {tab === "drafts" ? (
+          <DraftsPanel
+            view={view}
+            busy={busy}
+            cutoffCode={cutoffCode}
+            draftMeta={draftMeta}
+            onCreate={create}
+            onAiDraft={aiDraft}
+            onMarkPosted={markPosted}
+          />
+        ) : null}
+        {tab === "reminders" ? (
+          <RemindersPanel view={view} busy={busy} onDismiss={dismiss} />
+        ) : null}
+        {tab === "kit" ? <KitPanel view={view} /> : null}
+        {tab === "impact" ? <ImpactPanel view={view} /> : null}
+      </div>
     </main>
   );
 }
@@ -1086,7 +1024,6 @@ export default function MediaClient() {
 
   return (
     <MediaShell
-      description="Content calendar, drafts, reminders, Media Kit, and impact — never DEMO metrics."
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}

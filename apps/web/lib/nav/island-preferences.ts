@@ -20,7 +20,17 @@ export function defaultIslandHrefs(): string[] {
   return PRIMARY_TABS.map((item) => item.href);
 }
 
-/** True when this member is still on the stock Home / Compete / Team / Business four. */
+/**
+ * "Scout, Compete, Build, and Run season" — every bit of copy that names the
+ * stock four reads it from here, so renaming a workspace renames the sentence.
+ */
+export function defaultIslandSentence(): string {
+  const labels = PRIMARY_TABS.map((item) => item.label);
+  if (labels.length < 2) return labels.join("");
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
+/** True when this member is still on the stock four workspaces, in shipped order. */
 export function isDefaultIslandSelection(value: unknown): boolean {
   const defaults = defaultIslandHrefs();
   if (!isValidIslandSelection(value)) return true;

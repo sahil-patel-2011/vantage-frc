@@ -1,4 +1,4 @@
-import { FREEBUFF_SELECTABLE_MODELS, resolveSelectableFreebuffModel } from "../../agent/src/freebuff-models.ts";
+import { FREEBUFF_SELECTABLE_MODELS, resolveSelectableFreebuffModel } from "@vantage/agent";
 
 /**
  * The Pi layer Vantage actually talks to.

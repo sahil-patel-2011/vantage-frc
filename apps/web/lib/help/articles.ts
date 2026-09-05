@@ -16,6 +16,12 @@ import {
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
 } from "@vantage/billing/catalog";
+import { defaultIslandSentence } from "../nav/island-preferences";
+import { ISLAND_TAB_CATALOG } from "../nav/product-nav";
+
+/** Island copy is composed from the nav so the manual cannot name a stale app. */
+const ISLAND_DEFAULTS = defaultIslandSentence();
+const ISLAND_CHOICES = ISLAND_TAB_CATALOG.map((tab) => tab.label).join(", ");
 
 export type HelpCategoryId =
   | "getting-started"
@@ -243,8 +249,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "bottom-island",
     slug: "bottom-island",
     title: "Customize the bottom island",
-    summary:
-      "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Business by default.",
+    summary: `Four apps sit in a floating island at the bottom — ${ISLAND_DEFAULTS} by default.`,
     category: "getting-started",
     keywords: [
       "island",
@@ -269,14 +274,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Long-press or right-click the island, or open the menu and tap Customize island.",
           "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
-          "Allowlisted destinations include Home, Compete, Team, Business, Media, Build, AI, Scout, My Day, Logistics, and Messages.",
+          `Allowlisted destinations: ${ISLAND_CHOICES}.`,
         ],
       },
       {
         heading: "Save or reset",
         body: [
           "Save 4/4 writes your preference for this account.",
-          "Reset restores Home, Compete, Team, and Business.",
+          `Reset restores ${ISLAND_DEFAULTS}.`,
         ],
       },
     ],
