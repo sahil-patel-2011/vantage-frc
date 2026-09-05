@@ -8,6 +8,10 @@ import { hubHref } from "../../lib/nav/hubs";
 import IntelClient from "./intel-client";
 import "./intel.css";
 
+export const metadata = {
+  title: "Team Intel",
+};
+
 export default async function IntelPage({
   searchParams,
 }: {

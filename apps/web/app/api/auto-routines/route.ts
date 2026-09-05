@@ -31,8 +31,10 @@ type RoutineRow = {
   estimatedPoints: number | null; description: string; pathNotes: string; byName: string | null;
 };
 
-const SELECT_COLS = `id, name, start_position AS "startPosition", status, priority,
-  estimated_points AS "estimatedPoints", description, path_notes AS "pathNotes"`;
+// Qualified with the `r` alias: the query joins `users`, which also has `id`
+// and `name`, so bare column names are ambiguous.
+const SELECT_COLS = `r.id, r.name, r.start_position AS "startPosition", r.status, r.priority,
+  r.estimated_points AS "estimatedPoints", r.description, r.path_notes AS "pathNotes"`;
 
 export async function GET(request: Request) {
   try {

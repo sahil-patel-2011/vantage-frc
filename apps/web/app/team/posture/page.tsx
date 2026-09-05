@@ -1,5 +1,9 @@
 import PostureClient from "./posture-client";
 
+export const metadata = {
+  title: "Posture · Team",
+};
+
 export default async function TeamPosturePage({
   searchParams,
 }: {

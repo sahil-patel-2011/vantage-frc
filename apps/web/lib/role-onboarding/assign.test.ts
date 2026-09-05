@@ -79,4 +79,25 @@ describe("assignOnboardingTracks", () => {
       ]),
     );
   });
+
+  it("gives every crew role a specialty track, not just the build/scout ones", () => {
+    const crewToTrack: Array<[string, string]> = [
+      ["design", "cad"],
+      ["strategy", "scouting"],
+      ["media", "media"],
+      ["awards", "business"],
+      ["outreach", "business"],
+      ["safety", "safety"],
+      ["academics", "academics"],
+    ];
+    for (const [crewRole, expected] of crewToTrack) {
+      const keys = assignOnboardingTracks({
+        teamRole: "student",
+        primaryFocus: null,
+        subteamNames: [],
+        crewRole,
+      }).map((t) => t.trackKey);
+      expect(keys, `crew "${crewRole}" should reach the ${expected} track`).toContain(expected);
+    }
+  });
 });

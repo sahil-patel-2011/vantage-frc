@@ -58,10 +58,12 @@ type DebriefRow = {
   whatWorked: string; whatBroke: string; actionItems: string; byName: string | null; createdAt: string;
 };
 
-const SELECT_COLS = `id, season_year AS "seasonYear", event_key AS "eventKey", match_label AS "matchLabel", alliance, result,
-  points_scored AS "pointsScored", cycle_count AS "cycleCount", drivetrain_ok AS "drivetrainOk",
-  mechanisms_ok AS "mechanismsOk", auto_ok AS "autoOk", what_worked AS "whatWorked", what_broke AS "whatBroke",
-  action_items AS "actionItems"`;
+// Qualified with the `d` alias: one of the two queries below joins `users`,
+// which also has an `id`, so bare column names are ambiguous.
+const SELECT_COLS = `d.id, d.season_year AS "seasonYear", d.event_key AS "eventKey", d.match_label AS "matchLabel", d.alliance, d.result,
+  d.points_scored AS "pointsScored", d.cycle_count AS "cycleCount", d.drivetrain_ok AS "drivetrainOk",
+  d.mechanisms_ok AS "mechanismsOk", d.auto_ok AS "autoOk", d.what_worked AS "whatWorked", d.what_broke AS "whatBroke",
+  d.action_items AS "actionItems"`;
 
 export async function GET(request: Request) {
   try {

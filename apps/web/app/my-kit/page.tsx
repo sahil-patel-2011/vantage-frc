@@ -4,7 +4,7 @@ import MyKitClient from "./my-kit-client";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Kit · Vantage",
+  title: "My Kit",
   description:
     "Everything assigned to you personally — tasks, meetings, duties, scouting, hours, skills, tools, and money — composed from the surfaces that own each record.",
 };

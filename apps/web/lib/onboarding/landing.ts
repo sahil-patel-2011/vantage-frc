@@ -53,6 +53,8 @@ const SPECIALTY_TRACKS = new Set([
   "drive_team",
   "scouting",
   "business",
+  "media",
+  "academics",
   "safety",
 ]);
 

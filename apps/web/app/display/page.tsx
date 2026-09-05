@@ -2,7 +2,7 @@ import DisplaySetup from "./setup-client";
 import "./display.css";
 
 export const metadata = {
-  title: "Display Mode · Vantage",
+  title: "Display Mode",
   description:
     "Build a single pit-TV board from TBA schedule and Strategy predictions. No demo filler.",
 };

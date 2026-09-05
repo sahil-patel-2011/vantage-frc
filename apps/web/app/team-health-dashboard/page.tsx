@@ -1,5 +1,9 @@
 import TeamHealthDashboardClient from "./team-health-dashboard-client";
 
+export const metadata = {
+  title: "Team Health Dashboard",
+};
+
 export default function TeamHealthDashboardPage() {
   return <TeamHealthDashboardClient />;
 }

@@ -4,6 +4,10 @@ import { withOrgHref } from "../../../lib/nav/product-nav";
 import PitPhotosClient from "./pit-photos-client";
 import "./pit-photos.css";
 
+export const metadata = {
+  title: "Pit photos",
+};
+
 export default async function PitPhotosPage({
   searchParams,
 }: {

@@ -2,7 +2,7 @@ import DutiesClient from "./duties-client";
 import "./duties.css";
 
 export const metadata = {
-  title: "Duty roster · Vantage",
+  title: "Duty roster",
   description: "Who still needs a scouting, pit, drive-team, or outreach assignment.",
 };
 

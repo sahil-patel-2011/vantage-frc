@@ -110,6 +110,30 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     ]),
   },
   {
+    key: "media",
+    title: "Media path",
+    summary: "Photo, video, social, and the press kit sponsors and judges see.",
+    source: "subteam",
+    checks: checks([
+      ["media_hub", "Open the Media workspace", "Calendar, drafts, reminders, and kit in one place.", "/media"],
+      ["media_library", "Add to the media library", "Match and shop photos the whole team can reuse.", "/media-library"],
+      ["media_kit", "Review the press kit", "Logos and boilerplate that go out to sponsors.", "/media-kit"],
+      ["outreach_calendar", "Check the outreach calendar", "Know which events need coverage.", "/outreach-calendar"],
+    ]),
+  },
+  {
+    key: "academics",
+    title: "Academics path",
+    summary: "Training new members and keeping what the team learns written down.",
+    source: "subteam",
+    checks: checks([
+      ["training", "Open the training matrix", "Who is signed off on what.", "/training"],
+      ["safety_training", "Check safety training status", "Shop access depends on it.", "/safety-training"],
+      ["skills_graph", "Review the skills graph", "Where the team is thin and who to train next.", "/skills-graph"],
+      ["knowledge_academics", "Write one Playbook page", "Turn something you learned into a page others can read.", "/team/knowledge"],
+    ]),
+  },
+  {
     key: "safety",
     title: "Safety path",
     summary: "Shop rules, incidents, and competition safety culture.",

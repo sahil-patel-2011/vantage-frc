@@ -28,7 +28,17 @@ export const SUBTEAM_KEYWORD_MAP: Array<{ trackKey: string; keywords: string[] }
   },
   {
     trackKey: "business",
-    keywords: ["business", "sponsor", "outreach", "media", "award", "fundraising", "finance"],
+    keywords: ["business", "sponsor", "outreach", "award", "fundraising", "finance"],
+  },
+  {
+    // Media is its own pillar in the product, so it gets its own path rather
+    // than folding photo/video people into the sponsorship checklist.
+    trackKey: "media",
+    keywords: ["media", "photo", "video", "social", "press", "marketing", "publicity"],
+  },
+  {
+    trackKey: "academics",
+    keywords: ["academic", "education", "training", "curriculum", "teaching", "stem", "onboarding"],
   },
   {
     trackKey: "safety",

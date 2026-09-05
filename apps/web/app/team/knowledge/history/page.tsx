@@ -1,5 +1,9 @@
 import KnowledgeHistoryClient from "./history-client";
 
+export const metadata = {
+  title: "History · Knowledge",
+};
+
 export default async function TeamKnowledgeHistoryPage({
   searchParams,
 }: {

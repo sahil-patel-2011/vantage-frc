@@ -2,7 +2,7 @@ import BusinessHub from "./business-hub";
 import "./business.css";
 
 export const metadata = {
-  title: "Business · Vantage",
+  title: "Business",
   description: "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth.",
 };
 

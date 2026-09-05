@@ -189,7 +189,7 @@ export async function computeSponsorRenewalRoiView(
       status: "setup_required",
       message: "Add sponsors in the sponsors CRM before scoring renewal risk.",
       steps: [
-        { id: "sponsors", label: "Add a sponsor", detail: "Record sponsors under Business → Sponsors", href: "/sponsors" },
+        { id: "sponsors", label: "Add a sponsor", detail: "Record sponsors under Business → Sponsors", href: "/business?tab=sponsors" },
       ],
       orgId: org.orgId,
       seasonYear,

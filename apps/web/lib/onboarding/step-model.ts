@@ -36,6 +36,13 @@ export type OnboardingCrew =
   | "cad"
   | "pit"
   | "business"
+  | "design"
+  | "media"
+  | "awards"
+  | "outreach"
+  | "strategy"
+  | "safety"
+  | "academics"
   | "other";
 export type OnboardingFocus = "competition" | "build" | "business" | "leadership";
 export type OnboardingGender = "female" | "male" | "non_binary" | "prefer_not_to_say" | "other";
@@ -124,9 +131,18 @@ export function defaultFocusForRole(
     case "electrical":
     case "programming":
     case "cad":
+    case "design":
       return "build";
+    case "strategy":
+      return "competition";
     case "business":
+    case "media":
+    case "awards":
+    case "outreach":
       return "business";
+    case "safety":
+    case "academics":
+      return "leadership";
     default:
       break;
   }

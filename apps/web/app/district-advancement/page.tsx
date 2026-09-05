@@ -1,7 +1,7 @@
 import DistrictAdvancementClient from "./district-advancement-client";
 
 export const metadata = {
-  title: "District advancement · Vantage",
+  title: "District advancement",
   description: "District point trajectory from cached EPA — never DEMO qualification odds.",
 };
 

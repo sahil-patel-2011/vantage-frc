@@ -99,7 +99,14 @@ const CREW_ROLES: Array<{ value: OnboardingCrew; label: string; detail: string }
   { value: "programming", label: "Programming", detail: "Robot code" },
   { value: "cad", label: "CAD", detail: "Design the robot" },
   { value: "pit", label: "Pit crew", detail: "Repairs at events" },
-  { value: "business", label: "Business", detail: "Sponsors and awards" },
+  { value: "design", label: "Design", detail: "Industrial and graphic design" },
+  { value: "strategy", label: "Strategy", detail: "Match plans and picks" },
+  { value: "business", label: "Business", detail: "Sponsors and budget" },
+  { value: "outreach", label: "Outreach", detail: "Community and demos" },
+  { value: "media", label: "Media", detail: "Photo, video, and social" },
+  { value: "awards", label: "Awards", detail: "Submissions and Impact" },
+  { value: "safety", label: "Safety", detail: "Shop rules and incidents" },
+  { value: "academics", label: "Academics", detail: "Training and onboarding" },
   { value: "other", label: "Not sure yet", detail: "Decide later" },
 ];
 

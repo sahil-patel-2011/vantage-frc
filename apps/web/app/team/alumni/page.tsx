@@ -1,5 +1,9 @@
 import AlumniClient from "./alumni-client";
 
+export const metadata = {
+  title: "Alumni · Team",
+};
+
 export default async function TeamAlumniPage({
   searchParams,
 }: {
