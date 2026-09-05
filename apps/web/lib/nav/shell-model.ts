@@ -136,6 +136,28 @@ export function shellQuickActions(input: QuickActionInput): ShellQuickAction[] {
 }
 
 /**
+ * The sidebar (unlike the drawer) keeps every hub's chips on screen, so a quick
+ * action pointing at a chip that is already visible renders the same
+ * destination twice in one panel — "Calendar" and "My work" sat a few
+ * centimetres above the Team chips of the same name.
+ *
+ * Drop those. An action that can carry a badge stays either way: an unread
+ * count is information the chip cannot show, and keying off the declared field
+ * rather than its value keeps the row from appearing and disappearing as
+ * messages arrive.
+ */
+export function dedupeSidebarQuickActions(
+  actions: readonly ShellQuickAction[],
+  hubs: readonly ShellHub[],
+): ShellQuickAction[] {
+  const chipHrefs = new Set<string>();
+  for (const hub of hubs) {
+    for (const tab of hub.tabs) chipHrefs.add(tab.href);
+  }
+  return actions.filter((action) => "badge" in action || !chipHrefs.has(action.href));
+}
+
+/**
  * Recent destinations resolved to labels through the command catalog, so the
  * drawer can show "Alliance desk · Competition › Strategy" instead of a URL.
  * Unknown hrefs are dropped rather than rendered raw.

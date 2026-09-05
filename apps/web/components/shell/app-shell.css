@@ -202,6 +202,16 @@ body.has-app-shell .soft-topbar-title{
    * the only way in, so it stays.
    */
   body.has-app-shell .soft-search-btn{display:none}
+  /*
+   * The island is the compact-width app bar. From here the persistent sidebar
+   * already lists Home / Competition / Team / Business as its own rows, with
+   * their workbench chips underneath, so the island repeats four destinations
+   * that are permanently on screen — and floats over the content while doing
+   * it. Hidden here, kept below this width where it is the primary nav.
+   * "Customize apps" in the sidebar footer still edits it.
+   */
+  body.has-app-shell .soft-island{display:none}
+  body.has-app-shell .soft-island-editor{place-items:center}
   .shell-sidebar{
     display:block;position:fixed;z-index:60;top:52px;bottom:0;left:0;width:var(--shell-sidebar-w);
     padding:14px 12px 16px;overflow:auto;overscroll-behavior:contain;

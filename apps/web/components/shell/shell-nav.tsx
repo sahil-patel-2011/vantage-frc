@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Icon } from "./icon";
-import type { ShellHub, ShellQuickAction, ShellRecent } from "../../lib/nav/shell-model";
+import {
+  dedupeSidebarQuickActions,
+  type ShellHub,
+  type ShellQuickAction,
+  type ShellRecent,
+} from "../../lib/nav/shell-model";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 export type ShellMembership = {
@@ -81,6 +86,10 @@ export function ShellNav(props: ShellNavProps) {
   } = props;
   const rail = variant === "sidebar" && collapsed;
   const pickerId = `shell-workspace-picker-${variant}`;
+  // Only the sidebar shows every hub's chips at once, so only it can duplicate
+  // a quick action. The drawer peeks one hub at a time and keeps the full set.
+  const actions =
+    variant === "sidebar" ? dedupeSidebarQuickActions(quickActions, hubs) : quickActions;
   // Drawer only: a collapsed hub can be peeked open without leaving the page.
   const [peekHubId, setPeekHubId] = useState<string | null>(null);
 
@@ -176,9 +185,9 @@ export function ShellNav(props: ShellNavProps) {
         ) : null}
       </button>
 
-      {quickActions.length > 0 ? (
+      {actions.length > 0 ? (
         <nav className="shell-quick" aria-label="Quick actions">
-          {quickActions.map((action) => (
+          {actions.map((action) => (
             <a
               key={action.id}
               className={`shell-quick-item${action.tone === "primary" ? " is-primary" : ""}`}
@@ -303,8 +312,10 @@ export function ShellNav(props: ShellNavProps) {
             <a href="/docs" onClick={onNavigate}>
               Manual
             </a>
+            {/* Named for what it edits, not where it sits — the bar itself is
+                hidden on laptops, but you can still pick its four apps here. */}
             <button type="button" onClick={onOpenIslandEditor}>
-              Customize island
+              Customize apps
             </button>
             <button type="button" className="shell-signout" disabled={signingOut} onClick={onSignOut}>
               {signingOut ? "Signing out…" : "Sign out"}

@@ -3,6 +3,7 @@ import { PRODUCT_HUBS, hubPrimaryTabs } from "./hubs";
 import {
   buildShellHubs,
   resolveShellRecents,
+  dedupeSidebarQuickActions,
   shellQuickActions,
   stripOrg,
 } from "./shell-model";
@@ -75,5 +76,42 @@ describe("shell model", () => {
   it("strips orgId but keeps the tab and hash", () => {
     expect(stripOrg("/team?orgId=x&tab=messages#thread")).toBe("/team?tab=messages#thread");
     expect(stripOrg("/hours")).toBe("/hours");
+  });
+});
+
+describe("sidebar quick actions", () => {
+  const hubs = buildShellHubs({
+    pathname: "/dashboard",
+    search: "",
+    activeGroupLabel: "Home",
+    isAllowed: allow,
+  });
+
+  it("drops the ones whose destination is already a visible hub chip", () => {
+    const actions = shellQuickActions({ eventLive: false, isAllowed: allow });
+    const kept = dedupeSidebarQuickActions(actions, hubs);
+    const keptHrefs = kept.map((row) => row.href);
+
+    // Calendar and My work point at the same place as the Team chips of the
+    // same name, a few rows below them in the same panel.
+    expect(keptHrefs).not.toContain("/team?tab=calendar");
+    expect(keptHrefs).not.toContain("/team?tab=todos");
+    // My Day and Clock in are not workbench chips, so they stay.
+    expect(keptHrefs).toContain("/competition?tab=my-day");
+    expect(keptHrefs).toContain("/hours");
+  });
+
+  it("keeps a badged action even when its destination is on screen", () => {
+    const actions = shellQuickActions({ eventLive: false, unreadMessages: 0, isAllowed: allow });
+    const kept = dedupeSidebarQuickActions(actions, hubs).map((row) => row.href);
+    // Chat duplicates the Team chip, but carries an unread count the chip
+    // cannot show — and it must not appear/disappear as that count changes.
+    expect(kept).toContain("/team?tab=messages");
+  });
+
+  it("leaves the drawer's full set alone", () => {
+    const actions = shellQuickActions({ eventLive: false, isAllowed: allow });
+    // The drawer peeks one hub at a time, so nothing is duplicated there.
+    expect(dedupeSidebarQuickActions(actions, []).length).toBe(actions.length);
   });
 });

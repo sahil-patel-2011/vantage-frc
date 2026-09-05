@@ -79,7 +79,7 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps a four-app island on phone and desktop", async ({ page }) => {
+test("product shell gives the island to phones and the sidebar to laptops", async ({ page }) => {
   const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
@@ -109,12 +109,17 @@ test("product shell keeps a four-app island on phone and desktop", async ({ page
   await drawer.getByRole("button", { name: "Close navigation" }).click();
 
   await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(island).toBeVisible();
-  await expect(island.getByRole("link")).toHaveCount(4);
+  // The sidebar already lists these four as rows with their chips underneath,
+  // so the island stands down rather than repeating them over the content.
+  await expect(island).toBeHidden();
   // Laptops get the persistent sidebar; the hamburger collapses it to a rail.
   const sidebar = page.getByRole("navigation", { name: "Product navigation sidebar" });
   await expect(sidebar).toBeVisible();
-  await expect(sidebar.getByRole("link", { name: "Competition", exact: true })).toBeVisible();
+  for (const app of ["Home", "Competition", "Team", "Business"]) {
+    await expect(sidebar.getByRole("link", { name: app, exact: true })).toBeVisible();
+  }
+  // One search affordance per width: the sidebar's, not the topbar's.
+  await expect(page.getByRole("button", { name: "Search and jump to anything" })).toBeHidden();
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(sidebar).toHaveClass(/is-collapsed/);
   await page.getByRole("button", { name: "Open navigation" }).click();
