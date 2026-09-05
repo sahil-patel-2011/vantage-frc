@@ -194,6 +194,14 @@ body.has-app-shell .soft-topbar-title{
 .shell-sidebar{display:none}
 @media (min-width:1180px){
   :root{--shell-sidebar-w:264px;--shell-rail-w:72px}
+  /*
+   * One search affordance per screen, never two. From here the persistent
+   * sidebar carries "Search or jump to…" with its own ⌘K hint, and both
+   * buttons only open the same command palette — so the topbar copy is
+   * redundant. Below this width there is no sidebar and the topbar button is
+   * the only way in, so it stays.
+   */
+  body.has-app-shell .soft-search-btn{display:none}
   .shell-sidebar{
     display:block;position:fixed;z-index:60;top:52px;bottom:0;left:0;width:var(--shell-sidebar-w);
     padding:14px 12px 16px;overflow:auto;overscroll-behavior:contain;
