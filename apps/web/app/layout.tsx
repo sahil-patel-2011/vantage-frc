@@ -3,6 +3,9 @@ import { IBM_Plex_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "./marketing.css";
 import "./marketing-v3.css";
+// Section shapes for the home page — must load after v3, which owns the shared
+// card recipe these blocks deliberately step out of.
+import "./marketing-rhythm.css";
 import "./soft-ui.css";
 import "./styles.css";
 import PwaRegister from "./pwa-register";

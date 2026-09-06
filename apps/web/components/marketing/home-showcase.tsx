@@ -1,5 +1,11 @@
 /**
  * Homepage product story. Real hubs and tools. Never invented scores.
+ *
+ * Each section deliberately takes a different shape — an editorial list, a
+ * pipeline rail, the hub map, a season timeline, then an inverted promise band.
+ * They used to be six consecutive card grids of the same size, which left the
+ * page with no hierarchy: nothing could stand out because everything was
+ * weighted the same.
  */
 
 import {
@@ -43,18 +49,25 @@ export function HomeShowcase() {
             <h2 id="lux-problem-title">Your season lives in three places that forget.</h2>
             <p>Said plainly, because every mentor already knows it.</p>
           </header>
-          <ul className="lux-feature-grid" data-reveal>
-            {MARKETING_PROBLEMS.map((item) => (
+          {/* An ordered list of three plain facts reads better as an editorial
+              run of rows than as three equal boxes. */}
+          <ol className="mk-problem-list" data-reveal>
+            {MARKETING_PROBLEMS.map((item, index) => (
               <li key={item.title}>
-                <span className="lux-card-icon">
+                <span className="mk-problem-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="mk-problem-icon">
                   <MIcon name={item.icon} />
                 </span>
-                <strong>{item.title}</strong>
-                <span>{item.copy}</span>
+                <div className="mk-problem-copy">
+                  <strong>{item.title}</strong>
+                  <p>{item.copy}</p>
+                </div>
               </li>
             ))}
-          </ul>
-          <p className="lux-closer" data-reveal>
+          </ol>
+          <p className="mk-pullquote" data-reveal>
             None of that is fixed by trying harder. It is what happens when the record of a season has no home.
           </p>
         </div>
@@ -67,7 +80,9 @@ export function HomeShowcase() {
             <h2 id="lux-loop-title">Scout. Check. Decide. Run the day.</h2>
             <p>One event context. Each stage feeds the next from real data only.</p>
           </header>
-          <ol className="lux-loop-steps lux-loop-steps-4" data-reveal>
+          {/* A pipeline, drawn as one: the numbers sit on a single rail so the
+              stages read as a sequence rather than four unrelated cards. */}
+          <ol className="mk-pipeline" data-reveal>
             {PIPELINE.map((item) => (
               <li key={item.step}>
                 <b aria-hidden="true">{item.step}</b>
@@ -117,17 +132,19 @@ export function HomeShowcase() {
         </div>
       </section>
 
-      <section className="lux-loop" aria-labelledby="lux-season-title">
+      <section className="lux-season" aria-labelledby="lux-season-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">The season</p>
             <h2 id="lux-season-title">The other forty weeks, too.</h2>
             <p>Competition is six weekends. Vantage covers shop, travel, money, and the robot between them.</p>
           </header>
-          <ol className="lux-loop-steps lux-loop-steps-4" data-reveal>
-            {MARKETING_SEASON.map((item, index) => (
+          {/* The season is an arc, so it is drawn as one — markers on a rail
+              rather than the same four-card grid as the pipeline above. */}
+          <ol className="mk-timeline" data-reveal>
+            {MARKETING_SEASON.map((item) => (
               <li key={item.title}>
-                <b aria-hidden="true">{String(index + 1)}</b>
+                <span className="mk-timeline-marker" aria-hidden="true" />
                 <strong>{item.title}</strong>
                 <span>{item.copy}</span>
               </li>
@@ -136,17 +153,19 @@ export function HomeShowcase() {
         </div>
       </section>
 
-      <section className="lux-fit" aria-labelledby="lux-trust-title">
+      <section className="lux-fit mk-band" aria-labelledby="lux-trust-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">Trust</p>
             <h2 id="lux-trust-title">What we will not invent.</h2>
             <p>If TBA, scouting, or a connector is not connected, the screen says so.</p>
           </header>
-          <ul className="lux-feature-grid" data-reveal>
+          {/* The loudest claim on the page gets the loudest treatment: an
+              inverted band, three promises at heading size, no card chrome. */}
+          <ul className="mk-promises" data-reveal>
             {MARKETING_TRUST.map((item) => (
               <li key={item.title}>
-                <span className="lux-card-icon">
+                <span className="mk-promise-icon">
                   <MIcon name={item.icon} />
                 </span>
                 <strong>{item.title}</strong>

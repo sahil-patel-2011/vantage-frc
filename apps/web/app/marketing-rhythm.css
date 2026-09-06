@@ -1,0 +1,230 @@
+/*
+ * Section rhythm for the marketing home page. Layers over marketing-v3.css.
+ *
+ * The page used to run six card grids of the same size back to back, so it had
+ * no hierarchy — the loudest claim on the page looked exactly like the quietest.
+ * Each block below takes a different shape on purpose. The shared card recipe
+ * in marketing-v3.css stays for the two places that really are a grid of peers:
+ * the hub map and the price ladder.
+ */
+
+/* ── Problem: an editorial run of rows, not three boxes ─────────────────── */
+.marketing-lux .mk-problem-list{
+  display:grid;gap:0;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .mk-problem-list li{
+  display:grid;
+  grid-template-columns:auto auto minmax(0,1fr);
+  align-items:start;gap:0 22px;
+  padding:26px 0 28px;
+  border-bottom:1px solid var(--m-line);
+}
+.marketing-lux .mk-problem-index{
+  color:var(--m-warm);
+  font:600 12.5px/1.9 var(--m-mono);letter-spacing:.1em;
+}
+.marketing-lux .mk-problem-icon{
+  display:grid;place-items:center;flex:none;
+  width:37px;height:37px;border-radius:11px;
+  color:var(--m-warm);background:var(--m-warm-soft);
+  border:1px solid var(--m-warm-line);
+}
+.marketing-lux .mk-problem-copy strong{
+  display:block;margin:0 0 6px;
+  font:600 var(--m-step-1)/1.25 var(--m-sans);letter-spacing:-.022em;
+}
+.marketing-lux .mk-problem-copy p{
+  margin:0;max-width:64ch;color:var(--m-muted);
+  font-size:var(--m-step-0);line-height:1.6;
+}
+
+/* The line the section builds to — sized like a statement, not a caption. */
+.marketing-lux .mk-pullquote{
+  max-width:60ch;margin:clamp(30px,4vw,42px) 0 0;
+  padding-left:clamp(18px,2.2vw,26px);
+  border-left:2px solid var(--m-warm);
+  color:var(--m-ink);
+  font:500 var(--m-step-2)/1.4 var(--m-sans);letter-spacing:-.024em;
+  text-wrap:balance;
+}
+
+/* ── How it works: one rail, four stages ───────────────────────────────── */
+.marketing-lux .mk-pipeline{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0 26px;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .mk-pipeline li{position:relative;padding:52px 0 0}
+/* The rail runs behind every marker and stops at the last stage. It sits on the
+   blueprint grid, so --m-line (9% black) disappears into it — the rail has to
+   be the stronger line or the stages stop reading as a sequence. */
+.marketing-lux .mk-pipeline li::before{
+  content:"";position:absolute;top:15px;left:0;right:-26px;
+  height:1px;background:var(--m-line-strong);
+}
+.marketing-lux .mk-pipeline li:last-child::before{right:0}
+.marketing-lux .mk-pipeline>li>b{
+  position:absolute;top:0;left:0;z-index:1;
+  display:grid;place-items:center;
+  width:31px;height:31px;border-radius:50%;
+  color:var(--m-warm);background:var(--m-canvas);
+  border:1px solid var(--m-warm-line);
+  font:600 12.5px/1 var(--m-mono);
+}
+.marketing-lux .mk-pipeline strong{
+  display:block;margin:0 0 7px;
+  font:600 var(--m-step-1)/1.25 var(--m-sans);letter-spacing:-.022em;
+}
+.marketing-lux .mk-pipeline span{
+  display:block;color:var(--m-muted);
+  font-size:var(--m-step--1);line-height:1.6;
+}
+
+/* ── The season: the same four beats, drawn as an arc ──────────────────── */
+.marketing-lux .lux-season{padding:var(--m-section-pad) var(--m-pad-x)}
+.marketing-lux .mk-timeline{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0 26px;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .mk-timeline li{position:relative;padding:34px 0 0}
+.marketing-lux .mk-timeline li::before{
+  content:"";position:absolute;top:6px;left:0;right:-26px;
+  height:2px;
+  background:linear-gradient(to right,var(--m-warm-line),var(--m-line));
+}
+.marketing-lux .mk-timeline li:last-child::before{
+  right:0;
+  background:linear-gradient(to right,var(--m-warm-line),transparent);
+}
+.marketing-lux .mk-timeline-marker{
+  position:absolute;top:0;left:0;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--m-canvas);border:2px solid var(--m-warm);
+}
+.marketing-lux .mk-timeline strong{
+  display:block;margin:0 0 7px;
+  font:600 var(--m-step-1)/1.25 var(--m-sans);letter-spacing:-.022em;
+}
+.marketing-lux .mk-timeline span{
+  display:block;max-width:38ch;color:var(--m-muted);
+  font-size:var(--m-step--1);line-height:1.6;
+}
+
+/* ── Trust: the page's loudest claim, inverted ─────────────────────────── */
+.marketing-lux .mk-band{
+  /* Fixed values rather than --m-ink: that token flips to near-white in dark
+     mode and would take this band's own background with it. */
+  --mk-band-ink:#f4f6fa;
+  --mk-band-muted:rgba(233,238,246,.74);
+  --mk-band-line:rgba(233,238,246,.18);
+  --mk-band-warm:#f0a35c;
+  background-color:#14243a;
+  background-image:
+    linear-gradient(to right,rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:28px 28px,28px 28px;
+  color:var(--mk-band-ink);
+}
+html[data-theme="dark"] .marketing-lux .mk-band{background-color:#0d1726}
+.marketing-lux .mk-band .lux-section-head h2{color:var(--mk-band-ink)}
+.marketing-lux .mk-band .lux-section-head>p:not(.lux-eyebrow){color:var(--mk-band-muted)}
+.marketing-lux .mk-band .lux-eyebrow{color:var(--mk-band-warm)}
+.marketing-lux .mk-band .lux-eyebrow::before{background:var(--mk-band-warm)}
+
+.marketing-lux .mk-promises{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(24px,3vw,40px);margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .mk-promises li{
+  display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+  padding-top:22px;border-top:1px solid var(--mk-band-line);
+}
+.marketing-lux .mk-promise-icon{
+  display:grid;place-items:center;flex:none;
+  width:37px;height:37px;border-radius:11px;
+  color:var(--mk-band-warm);
+  background:rgba(240,163,92,.13);
+  border:1px solid rgba(240,163,92,.3);
+}
+.marketing-lux .mk-promises strong{
+  font:600 var(--m-step-2)/1.2 var(--m-sans);letter-spacing:-.026em;
+  color:var(--mk-band-ink);
+}
+.marketing-lux .mk-promises li>span:not(.mk-promise-icon){
+  max-width:34ch;color:var(--mk-band-muted);
+  font-size:var(--m-step-0);line-height:1.6;
+}
+/* The base footnote is a white card; inside the band it has to lose that
+   surface and border or the light text lands on white and disappears. */
+.marketing-lux .mk-band .mk-footnote{
+  margin-top:clamp(30px,4vw,44px);
+  border:1px solid var(--mk-band-line);
+  border-left:2px solid var(--mk-band-warm);
+  background:rgba(255,255,255,.045);
+  color:var(--mk-band-muted);
+}
+.marketing-lux .mk-band .mk-footnote b{color:var(--mk-band-ink)}
+.marketing-lux .mk-band .mk-footnote a{color:var(--mk-band-warm)}
+
+/* ── Narrow widths: rails turn vertical, grids collapse ────────────────── */
+@media(max-width:900px){
+  .marketing-lux .mk-pipeline,
+  .marketing-lux .mk-timeline{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 24px}
+  .marketing-lux .mk-pipeline li::before,
+  .marketing-lux .mk-timeline li::before{right:-24px}
+  .marketing-lux .mk-pipeline li:nth-child(2n)::before,
+  .marketing-lux .mk-timeline li:nth-child(2n)::before{right:0}
+  .marketing-lux .mk-promises{grid-template-columns:1fr;gap:26px}
+}
+@media(max-width:600px){
+  .marketing-lux .mk-problem-list li{
+    grid-template-columns:auto minmax(0,1fr);gap:0 16px;padding:22px 0 24px;
+  }
+  /* The index would need a third column the width cannot afford. */
+  .marketing-lux .mk-problem-index{display:none}
+  .marketing-lux .mk-pipeline,
+  .marketing-lux .mk-timeline{grid-template-columns:1fr;gap:0}
+  .marketing-lux .mk-pipeline li,
+  .marketing-lux .mk-timeline li{padding:0 0 26px 34px}
+  /* A vertical rail down the left instead of a horizontal one across the top. */
+  .marketing-lux .mk-pipeline li::before,
+  .marketing-lux .mk-timeline li::before{
+    top:8px;bottom:-8px;left:15px;right:auto;
+    width:1px;height:auto;
+    background:var(--m-line);
+  }
+  .marketing-lux .mk-timeline li::before{left:6px;width:2px;background:var(--m-warm-line)}
+  .marketing-lux .mk-pipeline li:last-child::before,
+  .marketing-lux .mk-timeline li:last-child::before{bottom:auto;height:0}
+  .marketing-lux .mk-pipeline>li>b{top:0;left:0}
+  .marketing-lux .mk-timeline span{max-width:none}
+}
+
+/* -- Pricing: the strongest claim on the page had the faintest treatment -- */
+.marketing-lux .mk-price-grid{gap:16px}
+.marketing-lux .mk-price-grid li{
+  gap:10px;
+  padding:26px 22px 28px;
+}
+.marketing-lux .mk-price-figure{
+  font-size:var(--m-step-3);
+  line-height:1;
+}
+.marketing-lux .mk-price-figure small{
+  margin-left:4px;
+  font-size:13px;
+}
+.marketing-lux .mk-price-label{
+  padding-bottom:12px;
+  border-bottom:1px solid var(--m-line);
+  color:var(--m-warm);
+}
+.marketing-lux .mk-price-blurb{
+  margin-top:2px;
+  font-size:var(--m-step--1);
+  line-height:1.55;
+}
