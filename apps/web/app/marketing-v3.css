@@ -304,6 +304,9 @@ html[data-theme="dark"] .marketing-lux{
 .marketing-lux .route-hero h1,
 .marketing-lux .pricing-hero h1{
   font-weight:650;font-size:var(--m-step-4);line-height:1.08;font-family:var(--m-sans);letter-spacing:-.038em;
+  /* Display type keeps its own measure now that the container is full width —
+     otherwise these headlines would run the whole 1120px as one thin line. */
+  max-width:17ch;
 }
 .marketing-lux .lux-route-hero>p:not(.lux-wordmark),
 .marketing-lux .route-hero>p:not(.lux-wordmark),
@@ -685,10 +688,19 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   font:600 11px/1.2 var(--m-sans);
 }
 
+/*
+ * Route heroes sit in the same column as everything under them.
+ *
+ * At 760px and no auto margin the hero box started at x=0 while every section
+ * below it started at x=160, so the eyebrow and headline hung ~80px left of the
+ * body copy and the page read with a ragged left edge. The measure that keeps
+ * the copy readable belongs on the copy (h1 and p below), not on the container.
+ */
 .marketing-lux .lux-route-hero,
 .marketing-lux .route-hero,
 .marketing-lux .pricing-hero{
-  max-width:760px;
+  max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
+  margin-inline:auto;
   padding:clamp(40px,6vw,72px) var(--m-pad-x) clamp(28px,4vw,44px);
 }
 

@@ -83,7 +83,13 @@
 }
 
 /* ── The season: the same four beats, drawn as an arc ──────────────────── */
-.marketing-lux .lux-season{padding:var(--m-section-pad) var(--m-pad-x)}
+/* Matches what `.lux-season` gives /workflow and /for-teams — a paper band off
+   the canvas — without overriding that shared class from here. */
+.marketing-lux .mk-season{
+  padding:var(--m-section-pad) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:var(--m-paper);
+}
 .marketing-lux .mk-timeline{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   gap:0 26px;margin:0;padding:0;list-style:none;

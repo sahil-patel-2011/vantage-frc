@@ -132,7 +132,9 @@ export function HomeShowcase() {
         </div>
       </section>
 
-      <section className="lux-season" aria-labelledby="lux-season-title">
+      {/* Its own class, not `lux-season`: /workflow and /for-teams already use
+          that one, and styling it for this timeline changed their padding too. */}
+      <section className="mk-season" aria-labelledby="lux-season-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">The season</p>
