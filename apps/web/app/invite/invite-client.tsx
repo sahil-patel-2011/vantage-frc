@@ -58,9 +58,7 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="signin-link" href={action.href}>
-              Open
-            </a>
+            <a className="signin-link" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
           </li>
         ))}
       </ol>

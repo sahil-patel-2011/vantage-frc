@@ -175,7 +175,7 @@ export default function AutonPathLibraryClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a href={step.href} aria-label={`Open ${step.label}`}>Open</a>
               </li>
             ))}
           </ol>

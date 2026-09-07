@@ -74,7 +74,7 @@ function NextActions({
                 Mark all as read
               </button>
             ) : (
-              <a className="app-button secondary" href={action.href}>
+              <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>
                 Open
               </a>
             )}
@@ -334,7 +334,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                     {item.body ? <p>{item.body}</p> : null}
                     <footer>
                       {item.href ? (
-                        <a className="app-button" href={item.href}>
+                        <a className="app-button" href={item.href} aria-label={`Open ${item.title}`}>
                           Open
                         </a>
                       ) : null}

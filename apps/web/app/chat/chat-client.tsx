@@ -96,9 +96,7 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
+            <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
           </li>
         ))}
       </ol>
@@ -437,7 +435,7 @@ export default function ChatClient({
                     <strong>{step.label}</strong>
                     <span>{step.detail}</span>
                   </div>
-                  <a href={withOrgHref(step.href, orgId)}>Open</a>
+                  <a href={withOrgHref(step.href, orgId)} aria-label={`Open ${step.label}`}>Open</a>
                 </li>
               ))}
             </ol>

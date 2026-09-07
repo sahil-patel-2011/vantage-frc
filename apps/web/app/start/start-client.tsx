@@ -296,7 +296,7 @@ function TrackCard({
               <strong>{check.label}</strong>
               <span>{check.detail}</span>
             </div>
-            {check.href ? <a href={check.href}>Open</a> : <span />}
+            {check.href ? <a href={check.href} aria-label={`Open ${check.label}`}>Open</a> : <span />}
           </li>
         ))}
       </ul>

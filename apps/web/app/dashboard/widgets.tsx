@@ -838,7 +838,7 @@ export function DashboardWidgetView({
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                {!step.done ? <a href={withOrg(step.href)}>Open</a> : <em>Done</em>}
+                {!step.done ? <a href={withOrg(step.href)} aria-label={`Open ${step.label}`}>Open</a> : <em>Done</em>}
               </li>
             ))}
           </ol>

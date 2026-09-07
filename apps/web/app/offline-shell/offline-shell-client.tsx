@@ -77,9 +77,7 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
+            <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
           </li>
         ))}
       </ol>
@@ -197,7 +195,7 @@ export default function OfflineShellClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a href={step.href} aria-label={`Open ${step.label}`}>Open</a>
               </li>
             ))}
           </ol>

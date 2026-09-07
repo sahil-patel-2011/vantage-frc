@@ -60,9 +60,7 @@ function MatchNotesNextActionsPanel({ actions }: { actions: MatchNotesTimelineNe
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
+            <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
           </li>
         ))}
       </ol>
