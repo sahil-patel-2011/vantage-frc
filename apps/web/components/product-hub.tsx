@@ -246,6 +246,8 @@ export function ProductHubShell({
             label: entry.label,
             // The workbench root and its pinned tools stay on screen.
             featured: entry.featured || !entry.group,
+            // Heading this tool sits under once the strip is expanded.
+            family: entry.family,
             href:
               embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
                 ? hubLegacyHref(entry, orgId)

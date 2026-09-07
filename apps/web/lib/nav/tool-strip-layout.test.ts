@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layoutToolStrip, type ToolStripEntry } from "./tool-strip-layout";
+import { groupToolStripEntries, layoutToolStrip, type ToolStripEntry } from "./tool-strip-layout";
 
 const entry = (id: string, extra: Partial<ToolStripEntry> = {}): ToolStripEntry => ({
   id,
@@ -50,10 +50,20 @@ describe("layoutToolStrip", () => {
     expect(first).toEqual(second);
   });
 
-  it("expands to the full list without dropping anything", () => {
-    const layout = layoutToolStrip(many(22), "tool-0", 6, true);
-    expect(layout.visible).toHaveLength(22);
-    expect(layout.hiddenCount).toBe(0);
+  it("expands into groups holding the whole list, not just the tail", () => {
+    const items = many(22);
+    const layout = layoutToolStrip(items, "tool-0", 6, true);
+    // The row stands down so a family is never split between it and a heading.
+    expect(layout.visible).toEqual([]);
+    const grouped = layout.groups.flatMap((group) => group.items.map((item) => item.id));
+    expect(grouped.sort()).toEqual(items.map((item) => item.id).sort());
+  });
+
+  it("keeps the count on the more chip stable when it opens", () => {
+    const items = many(22);
+    const closed = layoutToolStrip(items, "tool-9", 6, false);
+    const open = layoutToolStrip(items, "tool-9", 6, true);
+    expect(open.hiddenCount).toBe(closed.hiddenCount);
   });
 
   it("loses no item across visible and hidden", () => {
@@ -71,7 +81,7 @@ describe("layoutToolStrip", () => {
 
   it("handles an empty list", () => {
     const layout = layoutToolStrip([], "none", 6);
-    expect(layout).toEqual({ visible: [], hidden: [], hiddenCount: 0 });
+    expect(layout).toEqual({ visible: [], hidden: [], hiddenCount: 0, groups: [] });
   });
 
   it("handles an active id that is not in the list", () => {
@@ -83,5 +93,35 @@ describe("layoutToolStrip", () => {
     const items = [entry("inline"), entry("standalone", { href: "/standalone" })];
     const layout = layoutToolStrip(items, "inline", 6);
     expect(layout.visible.find((item) => item.id === "standalone")?.href).toBe("/standalone");
+  });
+});
+
+describe("groupToolStripEntries", () => {
+  it("buckets by family and keeps catalog order inside each", () => {
+    const groups = groupToolStripEntries([
+      entry("a", { family: "Design" }),
+      entry("b", { family: "Reliability" }),
+      entry("c", { family: "Design" }),
+    ]);
+    expect(groups.map((group) => group.family)).toEqual(["Design", "Reliability"]);
+    expect(groups[0]?.items.map((item) => item.id)).toEqual(["a", "c"]);
+  });
+
+  it("leads with the unnamed bucket however far down its first tool sat", () => {
+    const groups = groupToolStripEntries([
+      entry("a", { family: "Design" }),
+      entry("loose"),
+      entry("b", { family: "Design" }),
+    ]);
+    expect(groups[0]?.family).toBeNull();
+    expect(groups[0]?.items.map((item) => item.id)).toEqual(["loose"]);
+  });
+
+  it("returns one untitled group when nothing sets a family", () => {
+    // A workbench that never grouped its tools must render as it always did.
+    const groups = groupToolStripEntries(many(5));
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.family).toBeNull();
+    expect(groups[0]?.items).toHaveLength(5);
   });
 });

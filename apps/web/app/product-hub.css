@@ -64,6 +64,34 @@
 .hub-tool-more {
   border-style: dashed;
 }
+/* Expanded overflow. A workbench can carry 27 tools; as one continuous run
+   that is a wall you cannot read, so the rest open as titled groups under the
+   leading row. A workbench whose tools set no family gets one untitled group,
+   which looks exactly like the old flat list. */
+.hub-tool-groups {
+  display: grid;
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 14px 0 2px;
+  border-top: 1px solid var(--soft-line, var(--app-line));
+}
+.hub-tool-group h3 {
+  margin: 0 0 8px;
+  color: var(--soft-muted, var(--app-muted));
+  font: 700 11px/1.2 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hub-tool-group-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (pointer: coarse) {
+  .hub-tool-group-row {
+    gap: 8px;
+  }
+}
 /* Touch devices get the 44px minimum target; a mouse does not need it, and the
    compact row keeps more tools on screen on a shop laptop. */
 @media (pointer: coarse) {
