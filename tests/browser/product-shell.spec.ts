@@ -18,7 +18,15 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
   await expect(page.getByTestId("dash-customize")).toBeVisible();
   await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
+  const setup = page.getByRole("region", { name: "First-run setup" });
+  await expect(setup).toBeVisible();
+  // The first-run card owns the primary action. The header used to render the
+  // same one from its own conditions, so a team with no TBA connection met
+  // "Connect TBA" twice on one screen.
+  const setupCta = setup.getByRole("link", { name: /Connect TBA|Set event|Open invite|Continue/ });
+  if (await setupCta.count()) {
+    await expect(page.getByRole("link", { name: await setupCta.first().innerText() })).toHaveCount(1);
+  }
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {

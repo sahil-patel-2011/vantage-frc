@@ -866,6 +866,20 @@ export default function DashboardClient() {
     role,
   });
 
+  /**
+   * The first-run card already carries the primary action, sitting next to the
+   * checklist that explains why it matters. The header rendered the same button
+   * from its own conditions, so a team with no TBA connection met "Connect TBA"
+   * twice on the one screen. The header stands down whenever that card is
+   * showing an action — but not when there is no workspace yet, because then
+   * there is no card and its "Select workspace" link is the only way forward.
+   */
+  const setupCardShowing = meLoaded && (!orgId || updatedAt) && dashShell !== "ready";
+  const setupCardHasPrimary = Boolean(
+    nextActions.find((action) => action.primary) ?? setupSteps.find((step) => step.state === "current"),
+  );
+  const headerCtaWouldRepeatCard = Boolean(orgId) && setupCardShowing && setupCardHasPrimary;
+
   const viewLayout = homeViewLayout(layout, { editing, shell: dashShell, widgets });
   const grid = resolveGrid(mounted ? width : 1280);
   const gap = grid.margin[0];
@@ -1331,7 +1345,7 @@ export default function DashboardClient() {
             <a className="app-button" href="/workspace">
               Select workspace
             </a>
-          ) : setupRequired || tbaConfigured === false ? (
+          ) : (setupRequired || tbaConfigured === false) && !headerCtaWouldRepeatCard ? (
             <a
               className="app-button"
               href={
