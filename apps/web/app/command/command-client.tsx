@@ -548,7 +548,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
                   <strong>{action.label}</strong>
                   <span>{action.detail}</span>
                 </div>
-                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href} aria-label={`Open ${action.label}`}>Open</a>
+                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href} aria-label={action.label}>Open</a>
               </li>
             ))}
           </ol>

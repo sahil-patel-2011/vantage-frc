@@ -177,7 +177,7 @@ export default function MentorHoursClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href} aria-label={`Open ${step.label}`}>Open</a>
+                <a href={step.href} aria-label={step.label}>Open</a>
               </li>
             ))}
           </ol>

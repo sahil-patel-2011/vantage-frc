@@ -145,7 +145,7 @@ export default function DegradedModeClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href} aria-label={`Open ${step.label}`}>Open</a>
+                <a href={step.href} aria-label={step.label}>Open</a>
               </li>
             ))}
           </ol>
@@ -266,7 +266,7 @@ function FallbacksPanel({ view }: { view: LiveView }) {
                 {fallback.detail}
               </small>
             </div>
-            <a className="app-button secondary" href={fallback.href} aria-label={`Open ${fallback.label}`}>Open</a>
+            <a className="app-button secondary" href={fallback.href} aria-label={fallback.label}>Open</a>
           </li>
         ))}
       </ul>

@@ -79,7 +79,7 @@ function DeskNextActionsPanel({ actions }: { actions: AllianceSelectionDeskNextA
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
+            <a className="app-button secondary" href={action.href} aria-label={action.label}>Open</a>
           </li>
         ))}
       </ol>
@@ -156,7 +156,7 @@ function DeskShell({
                   <strong>{step.label}</strong>
                   <p className="app-muted alliance-desk-tip">{step.detail}</p>
                 </div>
-                <a className="app-button secondary" href={step.href} aria-label={`Open ${step.label}`}>Open</a>
+                <a className="app-button secondary" href={step.href} aria-label={step.label}>Open</a>
               </li>
             ))}
           </ul>
@@ -422,7 +422,7 @@ export default function AllianceSelectionDeskClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href} aria-label={`Open ${step.label}`}>Open</a>
+                <a href={step.href} aria-label={step.label}>Open</a>
               </li>
             ))}
           </ol>

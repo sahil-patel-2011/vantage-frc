@@ -61,7 +61,7 @@ function PracticeNextActions({ actions }: { actions: ReturnType<typeof practiceN
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            <a className="app-button secondary" href={action.href} aria-label={`Open ${action.label}`}>Open</a>
+            <a className="app-button secondary" href={action.href} aria-label={action.label}>Open</a>
           </li>
         ))}
       </ol>
