@@ -25,7 +25,14 @@ describe("commandCatalog", () => {
   it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
     const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
     expect(coverage?.label).toBe("Coverage");
-    expect(coverage?.context).toBe("Competition › Scouting");
+    // A tool that its workbench files under a family names that family too, so
+    // the palette row reads the way the hub does.
+    expect(coverage?.context).toBe("Competition › Scouting › Run the crew");
+  });
+
+  it("stops at the workbench for a tool with no family", () => {
+    const forms = catalog.find((entry) => entry.href === "/competition?tab=forms");
+    expect(forms?.context).toBe("Competition › Scouting");
   });
 
   it("keeps every entry pointing at a real in-app path", () => {

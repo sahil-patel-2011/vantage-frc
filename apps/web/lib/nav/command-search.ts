@@ -355,7 +355,13 @@ const ACTIONS: Array<Omit<CommandEntry, "kind">> = [
 function tabContext(hub: ProductHubDef, tab: HubTabDef): string {
   if (!tab.group) return hub.label;
   const parent = hub.tabs.find((entry) => entry.id === tab.group && !entry.group);
-  return parent ? `${hub.label} › ${parent.label}` : hub.label;
+  if (!parent) return hub.label;
+  // Carry the family the workbench files this tool under, so a palette row and
+  // the hub it lands in describe the tool the same way — "Coverage" is easier
+  // to place as "Scouting › Run the crew" than as "Scouting" alone.
+  return tab.family
+    ? `${hub.label} › ${parent.label} › ${tab.family}`
+    : `${hub.label} › ${parent.label}`;
 }
 
 /**
