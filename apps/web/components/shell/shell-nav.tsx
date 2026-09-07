@@ -229,7 +229,8 @@ export function ShellNav(props: ShellNavProps) {
                 </i>
                 {!rail ? <span>{hub.label}</span> : null}
               </a>
-              {variant === "drawer" && !hub.active && hub.tabs.length > 0 ? (
+              {/* Both chromes peek the same way. The rail has no room for it. */}
+              {!rail && !hub.active && hub.tabs.length > 0 ? (
                 <button
                   type="button"
                   className="shell-hub-peek"

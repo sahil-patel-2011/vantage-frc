@@ -149,7 +149,9 @@ body.has-app-shell .soft-topbar-title{
 .shell-hub-peek[aria-expanded="true"] svg{transform:rotate(-90deg)}
 .shell-hub-peek:hover{background:var(--soft-bg);color:var(--soft-ink)}
 /* Drawer: the active hub keeps its chips open; any other hub peeks open from its chevron. */
-.shell-nav--drawer .shell-hub:not(.is-active):not(.is-open) .shell-hub-tabs{display:none}
+/* Only the hub you are in shows its chips; the rest peek open in place.
+   Both chromes behave the same way. */
+.shell-hub:not(.is-active):not(.is-open) .shell-hub-tabs{display:none}
 
 .shell-section-head{
   margin:0 0 4px;padding:0 8px;color:var(--soft-muted);font:700 11px/1 var(--font-source-sans),ui-sans-serif;
@@ -174,7 +176,12 @@ body.has-app-shell .soft-topbar-title{
 .shell-account-copy{display:grid;gap:1px;min-width:0}
 .shell-account-copy strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shell-account-copy small{color:var(--soft-muted);font-size:11px;font-weight:600}
-.shell-foot-links{display:flex;flex-wrap:wrap;gap:2px 10px;padding:0 4px 2px}
+/* Two even columns rather than a wrapping flex run: the labels differ enough in
+   length ("Manual" vs "Customize apps") that wrapping left a ragged block. */
+.shell-foot-links{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 10px;padding:0 4px 2px;justify-items:start;
+}
 .shell-foot-links a,.shell-foot-links button{
   min-height:32px;padding:0;border:0;background:transparent;color:var(--soft-muted);
   font:600 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;cursor:pointer;
@@ -229,8 +236,6 @@ body.has-app-shell .soft-topbar-title{
   .shell-nav--sidebar.is-rail .shell-hub-link{justify-content:center;padding:6px}
   .shell-nav--sidebar.is-rail .shell-foot.soft-drawer-foot{width:100%;justify-items:center}
   .shell-nav--sidebar.is-rail .shell-badge{position:absolute;top:2px;right:2px;margin:0}
-  /* Sidebar keeps every hub's chips visible — no accordion on a laptop. */
-  .shell-nav--sidebar .shell-hub:not(.is-active) .shell-hub-tabs{display:flex}
 
   /* The drawer and its hamburger give way to the rail. */
   .soft-drawer.shell-drawer,.soft-scrim{display:none!important}
