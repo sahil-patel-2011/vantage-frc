@@ -95,13 +95,63 @@ export function numberOrNull(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** A failed optional read degrades one section to empty; it never fails the page. */
-async function safely<T>(run: () => Promise<T[]>): Promise<T[]> {
-  try {
-    return await run();
-  } catch {
-    return [];
-  }
+/**
+ * Callers fan the section reads out with Promise.all, but they all share one
+ * PoolClient, so the statements are serialized by the driver anyway. Savepoints
+ * are not: interleaved `SAVEPOINT a … SAVEPOINT b … RELEASE a` destroys b, so
+ * each protected read takes its turn on a per-client queue.
+ */
+const optionalReadQueues = new WeakMap<PoolClient, Promise<unknown>>();
+
+function queued<T>(client: PoolClient, run: () => Promise<T>): Promise<T> {
+  const previous = optionalReadQueues.get(client) ?? Promise.resolve();
+  const next = previous.then(run, run);
+  optionalReadQueues.set(
+    client,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return next;
+}
+
+/**
+ * A failed optional read degrades one section to empty; it never fails the page.
+ *
+ * The try/catch alone was not enough: withRls runs the whole request inside one
+ * transaction, so a rejected statement puts Postgres in the aborted state and
+ * every *later* section fails with "current transaction is aborted" — a single
+ * bad column blanked most of My Kit rather than one card. Each optional read now
+ * runs inside its own savepoint, so only that statement rolls back.
+ */
+async function safely<T>(client: PoolClient, run: () => Promise<T[]>): Promise<T[]> {
+  return queued(client, async () => {
+    const name = `my_kit_optional`;
+    try {
+      await client.query(`SAVEPOINT ${name}`);
+    } catch {
+      // No transaction to protect (or already unusable) — fall back to a plain try.
+      try {
+        return await run();
+      } catch {
+        return [];
+      }
+    }
+    try {
+      const rows = await run();
+      await client.query(`RELEASE SAVEPOINT ${name}`);
+      return rows;
+    } catch {
+      try {
+        await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
+        await client.query(`RELEASE SAVEPOINT ${name}`);
+      } catch {
+        // Connection is gone; the caller's withRls will roll the request back.
+      }
+      return [];
+    }
+  });
 }
 
 type OrgRow = {
@@ -183,7 +233,7 @@ async function loadSubteams(
   userId: string,
 ): Promise<Array<{ id: string; name: string }>> {
   if (!present.has("team_subteams") || !present.has("team_subteam_members")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<{ id: string; name: string }>(
       `SELECT s.id::text AS id, s.name
        FROM team_subteam_members m
@@ -206,7 +256,7 @@ async function loadTasks(
   const out: MyKitTaskRecord[] = [];
 
   if (present.has("build_tasks") && displayName) {
-    const rows = await safely(async () => {
+    const rows = await safely(client, async () => {
       const result = await client.query<{
         id: string;
         title: string;
@@ -240,7 +290,7 @@ async function loadTasks(
     }
 
     if (present.has("build_task_assignees")) {
-      const extra = await safely(async () => {
+      const extra = await safely(client, async () => {
         const result = await client.query<{
           id: string;
           title: string;
@@ -278,7 +328,7 @@ async function loadTasks(
   }
 
   if (present.has("team_todos")) {
-    const rows = await safely(async () => {
+    const rows = await safely(client, async () => {
       const result = await client.query<{
         id: string;
         title: string;
@@ -326,7 +376,7 @@ async function loadEvents(
   if (!present.has("subteam_calendar_events")) return [];
   const withRsvp = present.has("subteam_calendar_rsvps");
   const withNames = present.has("team_subteams");
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<{
       id: string;
       title: string;
@@ -368,7 +418,7 @@ async function loadDuties(
   userId: string,
 ): Promise<MyKitDutyRecord[]> {
   if (!present.has("duty_assignments")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<{
       id: string;
       title: string;
@@ -396,7 +446,7 @@ async function loadScoutAssignments(
   userId: string,
 ): Promise<MyKitScoutAssignmentRecord[]> {
   if (!present.has("scout_assignments")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitScoutAssignmentRecord>(
       `SELECT id::text AS id, event_key AS "eventKey", match_key AS "matchKey",
               team_key AS "teamKey", role, starts_at::text AS "startsAt"
@@ -417,7 +467,7 @@ async function loadScoutAccuracy(
   userId: string,
 ): Promise<MyKitScoutAccuracyRecord | null> {
   if (!present.has("scout_accuracy_snapshots")) return null;
-  const rows = await safely(async () => {
+  const rows = await safely(client, async () => {
     const result = await client.query<{
       eventKey: string;
       scoutsScored: number;
@@ -463,7 +513,7 @@ async function loadMedia(
   userId: string,
 ): Promise<MyKitMediaRecord[]> {
   if (!present.has("media_content_items")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitMediaRecord>(
       `SELECT id::text AS id, title, platform, status, due_at::text AS "dueAt"
        FROM media_content_items
@@ -485,7 +535,7 @@ async function loadHourLogs(
   userId: string,
 ): Promise<MyKitHourLogRecord[]> {
   if (!present.has("hour_logs")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitHourLogRecord>(
       `SELECT id::text AS id, kind, clock_in::text AS "clockIn", clock_out::text AS "clockOut"
        FROM hour_logs
@@ -505,7 +555,7 @@ async function loadLearning(
   userId: string,
 ): Promise<MyKitLearningRecord | null> {
   if (!present.has("learning_predictions")) return null;
-  const rows = await safely(async () => {
+  const rows = await safely(client, async () => {
     const result = await client.query<{
       total: number;
       spotOn: number;
@@ -538,7 +588,7 @@ async function loadSkills(
   userId: string,
 ): Promise<MyKitSkillRecord[]> {
   if (!present.has("skills_graph_entries")) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitSkillRecord>(
       `SELECT id::text AS id,
               COALESCE(NULLIF(btrim(custom_label), ''), skill_category) AS label,
@@ -560,7 +610,7 @@ async function loadCertifications(
   displayName: string,
 ): Promise<MyKitCertificationRecord[]> {
   if (!present.has("safety_certifications") || !displayName) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitCertificationRecord>(
       `SELECT id::text AS id, cert_type AS "certType",
               completed_on::text AS "completedOn", expires_on::text AS "expiresOn"
@@ -583,7 +633,7 @@ async function loadTools(
 ): Promise<MyKitToolLoanRecord[]> {
   if (!present.has("tool_checkout_loans") || !present.has("tool_checkout_tools")) return [];
   if (!displayName) return [];
-  return safely(async () => {
+  return safely(client, async () => {
     const result = await client.query<MyKitToolLoanRecord>(
       `SELECT l.id::text AS id, t.name AS "toolName",
               l.checked_out_at::text AS "checkedOutAt", l.due_at::text AS "dueAt"
@@ -609,7 +659,7 @@ async function loadMoney(
   const out: MyKitMoneyRecord[] = [];
 
   if (present.has("purchase_requests")) {
-    const rows = await safely(async () => {
+    const rows = await safely(client, async () => {
       const result = await client.query<{
         id: string;
         title: string;
@@ -645,7 +695,7 @@ async function loadMoney(
   // read only the columns every plausible shape has; anything else stays out rather
   // than being guessed at. A shape we cannot read yields an empty — never a placeholder.
   if (present.has("reimbursement_requests")) {
-    const rows = await safely(async () => {
+    const rows = await safely(client, async () => {
       const result = await client.query<{
         id: string;
         status: string;
@@ -653,7 +703,7 @@ async function loadMoney(
       }>(
         `SELECT id::text AS id, status::text AS status, created_at::text AS "createdAt"
          FROM reimbursement_requests
-         WHERE org_id = $1::uuid AND requested_by = $2::uuid
+         WHERE org_id = $1::uuid AND member_user_id = $2::uuid
          ORDER BY created_at DESC
          LIMIT 8`,
         [orgId, userId],
@@ -683,7 +733,7 @@ async function loadOnboarding(
 ): Promise<MyKitOnboardingRecord[]> {
   if (!present.has("member_onboarding_tracks")) return [];
   const withChecks = present.has("member_onboarding_checks");
-  const rows = await safely(async () => {
+  const rows = await safely(client, async () => {
     const result = await client.query<{ trackKey: string; done: number }>(
       `SELECT t.track_key AS "trackKey",
               ${
@@ -740,7 +790,7 @@ async function loadPacking(
   const seenItem = new Set<string>();
 
   if (present.has("packing_requests")) {
-    const requests = await safely(async () => {
+    const requests = await safely(client, async () => {
       const result = await client.query<{
         id: string;
         listId: string;
@@ -786,7 +836,7 @@ async function loadPacking(
     }
   }
 
-  const assignedToMe = await safely(async () => {
+  const assignedToMe = await safely(client, async () => {
     const result = await client.query<{
       id: string;
       listId: string;
@@ -827,7 +877,7 @@ async function loadPacking(
     });
   }
 
-  const packedByMe = await safely(async () => {
+  const packedByMe = await safely(client, async () => {
     const result = await client.query<{
       id: string;
       listId: string;

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
           computedAt: string;
         }>(
           `SELECT team_key AS "teamKey", public_epa::float AS "publicEpa", pepa::float AS pepa,
-                  scout_component_epa::float AS "scoutComponentEpa", scout_sample AS "scoutSample",
+                  scout_component_epa::float AS "scoutComponentEpa", scout_sample::float AS "scoutSample",
                   components, computed_at::text AS "computedAt"
            FROM private_epa_snapshots
            WHERE org_id = $1 AND event_key = $2

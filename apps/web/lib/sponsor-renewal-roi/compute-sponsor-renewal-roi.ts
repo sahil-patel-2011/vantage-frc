@@ -64,7 +64,7 @@ type ContributionAggRow = {
   contributionCount: string | number;
   totalUsd: string | number;
 };
-type MentionAggRow = { sponsorId: string; mentionCount: string | number; evidenceCount: string | number };
+type MentionAggRow = { sponsorId: string; mentionCount: string | number };
 type ReportRow = {
   id: string;
   sponsorId: string;
@@ -114,14 +114,17 @@ async function loadSponsorSignals(client: PoolClient, orgId: string) {
       [orgId],
     ),
     client.query<MentionAggRow>(
+      // The evidence count this used to select came from `outreach_evidence_vault_items`,
+      // a table the referenced migration (0348) never shipped — so this query threw
+      // `relation "outreach_evidence_vault_items" does not exist` and the whole ROI
+      // desk 400'd. Nothing in the schema attaches evidence to an impact activity, so
+      // the count is reported as "not tracked" (null) rather than a fabricated 0.
       `SELECT s.id AS "sponsorId",
-              COUNT(DISTINCT ia.id) AS "mentionCount",
-              COUNT(DISTINCT oev.id) AS "evidenceCount"
+              COUNT(DISTINCT ia.id) AS "mentionCount"
        FROM sponsors s
        LEFT JOIN impact_activities ia ON ia.org_id = s.org_id
          AND ia.occurred_on >= (now() - interval '365 days')::date
          AND (ia.title ILIKE '%' || s.name || '%' OR ia.description ILIKE '%' || s.name || '%')
-       LEFT JOIN outreach_evidence_vault_items oev ON oev.activity_id = ia.id
        WHERE s.org_id = $1
        GROUP BY s.id`,
       [orgId],
@@ -150,7 +153,7 @@ function scoreForSponsor(
     interactionCount12mo: Number(interaction?.count12mo ?? 0) || 0,
     lastContributionAt: contribution?.lastContributionAt ? new Date(contribution.lastContributionAt) : null,
     impactMentionCount12mo: Number(mention?.mentionCount ?? 0) || 0,
-    evidenceItemCount: Number(mention?.evidenceCount ?? 0) || 0,
+    evidenceItemCount: null,
   });
 }
 
@@ -295,7 +298,7 @@ export async function generateSponsorRoiReport(
         contributionCount: Number(contribution?.contributionCount ?? 0) || 0,
         interactionCount12mo: Number(interaction?.count12mo ?? 0) || 0,
         impactMentionCount12mo: Number(mention?.mentionCount ?? 0) || 0,
-        evidenceItemCount: Number(mention?.evidenceCount ?? 0) || 0,
+        evidenceItemCount: null,
       });
       const htmlContent = renderSponsorRoiHtml({ sponsorName: sponsor.name, seasonYear: input.seasonYear, sections });
       return {
