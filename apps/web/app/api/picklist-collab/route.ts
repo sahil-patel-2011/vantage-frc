@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { failDbWrite } from "../../../lib/db-error";
 import { PICKLIST_COLLAB_TIERS, clampWeight } from "../../../lib/picklist-collab";
 import {
   addEntry,
@@ -177,11 +178,10 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pick list request failed";
-    const status = message === "forbidden" ? 403 : 400;
-    return Response.json(
-      { error: message === "forbidden" ? "Organization access denied" : message },
-      { status },
-    );
+    // Rows here are keyed to an event/match that references events_ref, so an
+    // event not yet ingested from TBA raised a 23503 whose raw constraint text
+    // went straight to the user. failDbWrite names the fix, and keeps the
+    // previous behaviour for every other error.
+    return failDbWrite(error, "Pick list request failed");
   }
 }

@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { emitPreferredNotification } from "@vantage/core";
+import { withSavepoint } from "@vantage/db";
 import {
   formatDiscordAnnouncement,
   isValidDiscordWebhook,
@@ -232,23 +233,39 @@ async function maybeAnnounceMyDay(
     discordPosted = false;
   }
 
-  try {
-    await client.query(
-      `INSERT INTO team_announcements (org_id, title, body, priority, pinned, require_ack, posted_to_discord, created_by)
-       VALUES ($1, $2, $3, 'important', false, false, $4, $5)`,
-      [input.orgId, title, body, discordPosted, input.actorUserId],
-    );
-  } catch {
-    try {
+  // The wide insert is tried first, with the narrow one as a fallback for a
+  // database that predates the priority/pinned/require_ack columns. Both attempts
+  // ran bare inside the caller's withRls transaction, so the first failure
+  // aborted it and the fallback could only ever raise "current transaction is
+  // aborted" — a fallback that was structurally dead, and which also poisoned
+  // every statement the caller ran afterwards. A savepoint gives the second
+  // attempt a live transaction to run in.
+  const announced = await withSavepoint(
+    client,
+    async () => {
+      await client.query(
+        `INSERT INTO team_announcements (org_id, title, body, priority, pinned, require_ack, posted_to_discord, created_by)
+         VALUES ($1, $2, $3, 'important', false, false, $4, $5)`,
+        [input.orgId, title, body, discordPosted, input.actorUserId],
+      );
+      return true;
+    },
+    false,
+  );
+  if (announced) return { announced: true, discordPosted };
+
+  const announcedNarrow = await withSavepoint(
+    client,
+    async () => {
       await client.query(
         `INSERT INTO team_announcements (org_id, title, body, posted_to_discord, created_by)
          VALUES ($1, $2, $3, $4, $5)`,
         [input.orgId, title, body, discordPosted, input.actorUserId],
       );
-    } catch {
-      return { announced: false, discordPosted };
-    }
-  }
+      return true;
+    },
+    false,
+  );
 
-  return { announced: true, discordPosted };
+  return { announced: announcedNarrow, discordPosted };
 }

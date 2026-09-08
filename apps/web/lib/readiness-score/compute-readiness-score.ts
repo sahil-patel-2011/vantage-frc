@@ -1,6 +1,4 @@
-import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
 import { CODE_VERSION_STATUSES, WIRING_STATUSES, computeReadinessIndex, subsystemHealthScore } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
@@ -14,6 +12,30 @@ import type {
 } from "./types";
 
 export { CODE_VERSION_STATUSES, WIRING_STATUSES };
+
+/**
+ * Readiness Score is a read model, not a place a team enters data.
+ *
+ * It used to own `readiness_score_subsystems`: a fourth copy of the subsystem
+ * list carrying its own weight, power, wiring and code-version columns. Nothing
+ * kept that copy in step with the tools that actually hold those numbers, so a
+ * team that used the rest of the build season correctly — spec sheet, weight
+ * budget, power budget, sign-off gates — got `weight 0/115, power 0/120,
+ * subsystems 0` here, and a score computed from an FMEA row alone. Worse, the
+ * missing data read as *good news*: with nothing recorded, weight and power
+ * headroom both scored a perfect 1.0, so the index went up the less the team
+ * had entered.
+ *
+ * Every number below is now read from the one place the team maintains it:
+ *   roster          robot_subsystems (0104), plus any subsystem tracked only in
+ *                   subsystem_signoff_subsystems (0267)
+ *   weight          weight_components (0110), quantity-weighted
+ *   weight budget   weight_settings.limit_lbs — the team's real configured limit
+ *   power           power_loads.typical_amps (0107)
+ *   wiring / code   the latest subsystem_signoff_records gate decision (0267)
+ *   open failures   fmea_failures (0153)
+ * The bring-up checklist stays owned here — it is genuinely readiness's own.
+ */
 
 export type ReadinessScoreSetupStep = {
   id: string;
@@ -30,6 +52,12 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
       label: "Select workspace",
       detail: "Choose your team organization — Readiness Score is org-scoped.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "subsystems",
+      label: "Open Subsystems",
+      detail: "The subsystem spec sheet is the roster this score reads — nothing is retyped here.",
+      href: hubHref("/build", "subsystems", orgId),
     },
     {
       id: "fmea",
@@ -64,6 +92,8 @@ export type ReadinessScoreView =
       checklistItems: ReadinessChecklistItem[];
       openFmeaFailures: ReadinessFmeaRef[];
       index: ReadinessIndex;
+      /** Where each column of the roster is actually maintained. */
+      sources: { id: string; label: string; href: string }[];
       computedAt: string;
     };
 
@@ -79,30 +109,26 @@ export function isCodeVersionStatus(value: unknown): value is CodeVersionStatus 
   return typeof value === "string" && (CODE_VERSION_STATUSES as string[]).includes(value);
 }
 
-type SubsystemRow = {
-  id: string;
-  name: string;
-  weightLbs: string;
-  powerDrawAmps: string;
-  wiringStatus: string;
-  codeVersionStatus: string;
-  healthScore: string;
-  notes: string | null;
-  updatedAt: string;
-};
+/** Free-text subsystem labels are matched case-insensitively across the build tools. */
+function key(name: string): string {
+  return name.trim().toLowerCase();
+}
 
-function mapSubsystem(row: SubsystemRow): ReadinessSubsystem {
-  return {
-    id: row.id,
-    name: row.name,
-    weightLbs: Number(row.weightLbs) || 0,
-    powerDrawAmps: Number(row.powerDrawAmps) || 0,
-    wiringStatus: isWiringStatus(row.wiringStatus) ? row.wiringStatus : "not_started",
-    codeVersionStatus: isCodeVersionStatus(row.codeVersionStatus) ? row.codeVersionStatus : "stale",
-    healthScore: Number(row.healthScore) || 0,
-    notes: row.notes,
-    updatedAt: row.updatedAt,
-  };
+/**
+ * A signed-off wiring gate is verified wiring. A rejected gate means it was
+ * reviewed and sent back — work is under way, not untouched. No record at all
+ * means nobody has reviewed it, which is where every subsystem starts.
+ */
+function wiringFromGate(decision: string | null): WiringStatus {
+  if (decision === "approved") return "verified";
+  if (decision === "rejected") return "in_progress";
+  return "not_started";
+}
+
+function codeFromGate(decision: string | null): CodeVersionStatus {
+  if (decision === "approved") return "deployed_tested";
+  if (decision === "rejected") return "building";
+  return "stale";
 }
 
 type ChecklistRow = {
@@ -165,6 +191,17 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+type RosterRow = {
+  id: string;
+  name: string;
+  notes: string | null;
+  updatedAt: string;
+};
+
+type NumericBySubsystem = { subsystem: string; total: string };
+
+type GateRow = { name: string; gate: string; decision: string };
+
 export async function computeReadinessScoreView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
@@ -182,45 +219,154 @@ export async function computeReadinessScoreView(
     };
   }
 
-  const [subsystemResult, checklistResult, fmeaResult, seasonResult] = await Promise.all([
-    client.query<SubsystemRow>(
-      `SELECT id, name, weight_lbs::text AS "weightLbs", power_draw_amps::text AS "powerDrawAmps",
-              wiring_status AS "wiringStatus", code_version_status AS "codeVersionStatus",
-              health_score::text AS "healthScore", notes, updated_at::text AS "updatedAt"
-       FROM readiness_score_subsystems
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY name`,
+  const [
+    rosterResult,
+    weightResult,
+    weightLimitResult,
+    powerResult,
+    gateResult,
+    checklistResult,
+    fmeaResult,
+    seasonResult,
+  ] = await Promise.all([
+    // The spec sheet is the roster. A subsystem that exists only as a sign-off
+    // record still belongs on the list — it is being gated, so it is being built.
+    client.query<RosterRow>(
+      `SELECT id, name, NULLIF(notes, '') AS notes, updated_at::text AS "updatedAt"
+         FROM robot_subsystems
+        WHERE org_id = $1::uuid AND season_year = $2::int
+        UNION ALL
+       SELECT s.id, s.name, s.notes, s.created_at::text AS "updatedAt"
+         FROM subsystem_signoff_subsystems s
+        WHERE s.org_id = $1::uuid AND s.season_year = $2::int
+          AND NOT EXISTS (
+                SELECT 1 FROM robot_subsystems r
+                 WHERE r.org_id = s.org_id AND r.season_year = s.season_year
+                   AND lower(btrim(r.name)) = lower(btrim(s.name))
+              )`,
       [org.orgId, seasonYear],
+    ),
+    client.query<NumericBySubsystem>(
+      `SELECT btrim(subsystem) AS subsystem, SUM(weight_lbs * quantity)::text AS total
+         FROM weight_components
+        WHERE org_id = $1::uuid AND season_year = $2::int
+        GROUP BY btrim(subsystem)`,
+      [org.orgId, seasonYear],
+    ),
+    client.query<{ limitLbs: string }>(
+      `SELECT limit_lbs::text AS "limitLbs" FROM weight_settings
+        WHERE org_id = $1::uuid AND season_year = $2::int`,
+      [org.orgId, seasonYear],
+    ),
+    client.query<NumericBySubsystem>(
+      `SELECT btrim(subsystem) AS subsystem, SUM(COALESCE(typical_amps, 0))::text AS total
+         FROM power_loads
+        WHERE org_id = $1::uuid AND season_year = $2::int
+        GROUP BY btrim(subsystem)`,
+      [org.orgId, seasonYear],
+    ),
+    // Latest decision per subsystem per gate — DISTINCT ON keyed by the same
+    // name the roster uses, so a re-review supersedes the earlier record.
+    client.query<GateRow>(
+      `SELECT DISTINCT ON (lower(btrim(s.name)), r.gate)
+              s.name, r.gate, r.decision
+         FROM subsystem_signoff_records r
+         JOIN subsystem_signoff_subsystems s ON s.id = r.subsystem_id
+        WHERE r.org_id = $1::uuid AND s.season_year = $2::int
+          AND r.gate = ANY($3::text[])
+        ORDER BY lower(btrim(s.name)), r.gate, r.signed_on DESC, r.created_at DESC`,
+      [org.orgId, seasonYear, ["wiring", "programming"]],
     ),
     client.query<ChecklistRow>(
       `SELECT id, subsystem_name AS "subsystemName", label, is_complete AS "isComplete",
               sequence, created_at::text AS "createdAt"
        FROM readiness_score_checklist_items
-       WHERE org_id = $1 AND season_year = $2
+       WHERE org_id = $1::uuid AND season_year = $2::int
        ORDER BY sequence, created_at`,
       [org.orgId, seasonYear],
     ),
     client.query<FmeaRow>(
       `SELECT id, title, subsystem_name AS "subsystemName", severity, occurrence, detection, status
        FROM fmea_failures
-       WHERE org_id = $1 AND season_year = $2 AND status IN ('open', 'fixing')
+       WHERE org_id = $1::uuid AND season_year = $2::int AND status IN ('open', 'fixing')
        ORDER BY (occurrence * severity * detection) DESC
        LIMIT 50`,
       [org.orgId, seasonYear],
     ),
+    // Seasons the team has any build data for, so the season switcher is real.
     client.query<{ seasonYear: number }>(
-      `SELECT DISTINCT season_year AS "seasonYear" FROM readiness_score_subsystems WHERE org_id = $1 ORDER BY season_year DESC`,
+      `SELECT DISTINCT season_year AS "seasonYear" FROM (
+         SELECT season_year FROM robot_subsystems WHERE org_id = $1::uuid
+         UNION ALL SELECT season_year FROM weight_components WHERE org_id = $1::uuid
+         UNION ALL SELECT season_year FROM power_loads WHERE org_id = $1::uuid
+         UNION ALL SELECT season_year FROM subsystem_signoff_subsystems WHERE org_id = $1::uuid
+         UNION ALL SELECT season_year FROM readiness_score_checklist_items WHERE org_id = $1::uuid
+       ) seasons ORDER BY 1 DESC`,
       [org.orgId],
     ),
   ]);
 
-  const subsystems = subsystemResult.rows.map(mapSubsystem);
+  const weightBySubsystem = new Map<string, number>();
+  let weightUsedLbs = 0;
+  for (const row of weightResult.rows) {
+    const value = Number(row.total) || 0;
+    weightUsedLbs += value;
+    if (row.subsystem) weightBySubsystem.set(key(row.subsystem), value);
+  }
+
+  const powerBySubsystem = new Map<string, number>();
+  let powerUsedAmps = 0;
+  for (const row of powerResult.rows) {
+    const value = Number(row.total) || 0;
+    powerUsedAmps += value;
+    if (row.subsystem) powerBySubsystem.set(key(row.subsystem), value);
+  }
+
+  const wiringGates = new Map<string, string>();
+  const codeGates = new Map<string, string>();
+  for (const row of gateResult.rows) {
+    const target = row.gate === "wiring" ? wiringGates : codeGates;
+    target.set(key(row.name), row.decision);
+  }
+
+  const subsystems: ReadinessSubsystem[] = rosterResult.rows.map((row) => {
+    const k = key(row.name);
+    const wiringStatus = wiringFromGate(wiringGates.get(k) ?? null);
+    const codeVersionStatus = codeFromGate(codeGates.get(k) ?? null);
+    return {
+      id: row.id,
+      name: row.name,
+      weightLbs: weightBySubsystem.get(k) ?? 0,
+      powerDrawAmps: powerBySubsystem.get(k) ?? 0,
+      wiringStatus,
+      codeVersionStatus,
+      healthScore: subsystemHealthScore({ wiringStatus, codeVersionStatus }),
+      notes: row.notes,
+      updatedAt: row.updatedAt,
+    };
+  });
+  subsystems.sort((a, b) => a.name.localeCompare(b.name));
+
   const checklistItems = checklistResult.rows.map(mapChecklistItem);
   const openFmeaFailures = fmeaResult.rows.map(mapFmea);
-  const seasons = seasonResult.rows.map((r) => r.seasonYear);
+  const seasons = seasonResult.rows.map((r) => Number(r.seasonYear));
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
-  const index = computeReadinessIndex({ subsystems, checklistItems, openFmeaFailures });
+  // The team's own configured limit when they have set one. The FRC default is
+  // only the fallback, and computeReadinessIndex names which one it used.
+  const configuredLimit = Number(weightLimitResult.rows[0]?.limitLbs);
+
+  const index = computeReadinessIndex({
+    subsystems,
+    checklistItems,
+    openFmeaFailures,
+    weightBudgetLbs: Number.isFinite(configuredLimit) && configuredLimit > 0 ? configuredLimit : undefined,
+    // Totals cover every recorded line, including ones (bumpers, battery, wiring
+    // harness) that carry no subsystem label — attributing only matched rows
+    // would quietly understate the budget.
+    weightUsedLbs,
+    powerUsedAmps,
+  });
 
   return {
     status: "live",
@@ -232,90 +378,26 @@ export async function computeReadinessScoreView(
     checklistItems,
     openFmeaFailures,
     index,
+    sources: [
+      { id: "subsystems", label: "Subsystem roster & notes", href: hubHref("/build", "subsystems", org.orgId) },
+      { id: "weight-budget", label: "Weight per subsystem", href: hubHref("/build", "weight-budget", org.orgId) },
+      { id: "power-budget", label: "Current draw per subsystem", href: hubHref("/build", "power-budget", org.orgId) },
+      {
+        id: "subsystem-signoff",
+        label: "Wiring & programming gates",
+        href: hubHref("/build", "subsystem-signoff", org.orgId),
+      },
+      { id: "fmea", label: "Open failure modes", href: hubHref("/build", "fmea", org.orgId) },
+    ],
     computedAt: new Date().toISOString(),
   };
 }
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
-
-export async function saveSubsystem(
-  client: PoolClient,
-  input: {
-    orgId: string;
-    userId: string;
-    seasonYear: number;
-    name: string;
-    weightLbs: number;
-    powerDrawAmps: number;
-    wiringStatus: WiringStatus;
-    codeVersionStatus: CodeVersionStatus;
-    notes: string | null;
-  },
-): Promise<void> {
-  const scored = await meteredAI({
-    client,
-    orgId: input.orgId,
-    userId: input.userId,
-    feature: "readiness_score",
-    requestId: `readiness-score-${randomUUID()}`,
-    estimatedCostUsd: 0,
-    keySource: "local_cli",
-    metadata: {
-      subsystemName: input.name,
-      seasonYear: input.seasonYear,
-      note: "Deterministic wiring/code-version health scoring — no external model call",
-    },
-    invoke: async () => ({
-      value: subsystemHealthScore({
-        wiringStatus: input.wiringStatus,
-        codeVersionStatus: input.codeVersionStatus,
-      }),
-      promptTokens: 0,
-      completionTokens: 0,
-      costUsd: 0,
-      model: "vantage-readiness-score-v1",
-      provider: "vantage-local",
-    }),
-  });
-
-  await client.query(
-    `INSERT INTO readiness_score_subsystems (
-       org_id, season_year, name, weight_lbs, power_draw_amps, wiring_status,
-       code_version_status, health_score, notes, updated_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-     ON CONFLICT (org_id, season_year, name) DO UPDATE SET
-       weight_lbs = EXCLUDED.weight_lbs,
-       power_draw_amps = EXCLUDED.power_draw_amps,
-       wiring_status = EXCLUDED.wiring_status,
-       code_version_status = EXCLUDED.code_version_status,
-       health_score = EXCLUDED.health_score,
-       notes = EXCLUDED.notes,
-       updated_by = EXCLUDED.updated_by,
-       updated_at = now()`,
-    [
-      input.orgId,
-      input.seasonYear,
-      input.name,
-      input.weightLbs,
-      input.powerDrawAmps,
-      input.wiringStatus,
-      input.codeVersionStatus,
-      scored,
-      input.notes,
-      input.userId,
-    ],
-  );
-}
-
-export async function deleteSubsystem(
-  client: PoolClient,
-  input: { orgId: string; subsystemId: string },
-): Promise<void> {
-  await client.query(`DELETE FROM readiness_score_subsystems WHERE id = $1 AND org_id = $2`, [
-    input.subsystemId,
-    input.orgId,
-  ]);
-}
+//
+// Only the bring-up checklist is written here. Subsystems, weight, power and the
+// wiring/programming gates are edited in the tools that own them; see `sources`
+// on the live view for where each one lives.
 
 export async function addChecklistItem(
   client: PoolClient,
@@ -331,7 +413,7 @@ export async function addChecklistItem(
   await client.query(
     `INSERT INTO readiness_score_checklist_items (
        org_id, season_year, subsystem_name, label, sequence, created_by
-     ) VALUES ($1,$2,$3,$4,$5,$6)`,
+     ) VALUES ($1::uuid,$2::int,$3,$4,$5::int,$6::uuid)`,
     [input.orgId, input.seasonYear, input.subsystemName, input.label, input.sequence, input.userId],
   );
 }
@@ -343,7 +425,7 @@ export async function toggleChecklistItem(
   await client.query(
     `UPDATE readiness_score_checklist_items
      SET is_complete = $1, completed_at = CASE WHEN $1 THEN now() ELSE NULL END
-     WHERE id = $2 AND org_id = $3`,
+     WHERE id = $2::uuid AND org_id = $3::uuid`,
     [input.isComplete, input.itemId, input.orgId],
   );
 }
@@ -352,7 +434,7 @@ export async function deleteChecklistItem(
   client: PoolClient,
   input: { orgId: string; itemId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM readiness_score_checklist_items WHERE id = $1 AND org_id = $2`, [
+  await client.query(`DELETE FROM readiness_score_checklist_items WHERE id = $1::uuid AND org_id = $2::uuid`, [
     input.itemId,
     input.orgId,
   ]);
