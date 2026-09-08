@@ -83,11 +83,41 @@ function mapEntry(row: EntryRow): RobotWeighInEntry {
     weighedOn: row.weighedOn,
     weightLbs: Number(row.weightLbs) || 0,
     weightLimitLbs: Number(row.weightLimitLbs) || DEFAULT_WEIGHT_LIMIT_LBS,
+    source: "weigh_in",
     station: row.station,
     bumpersOn: row.bumpersOn,
     batteryOn: row.batteryOn,
+    configLabel: null,
     seasonYear: row.seasonYear,
     notes: row.notes,
+  };
+}
+
+/** A weigh-in logged from Inspection (`robot_weights`, migration 0054). */
+type InspectionWeightRow = {
+  id: string;
+  weighedOn: string;
+  totalLbs: string | number;
+  config: string | null;
+  note: string | null;
+};
+
+function mapInspectionEntry(row: InspectionWeightRow, limitLbs: number): RobotWeighInEntry {
+  const config = row.config?.trim() ? row.config.trim() : null;
+  return {
+    id: row.id,
+    weighedOn: row.weighedOn,
+    weightLbs: Number(row.totalLbs) || 0,
+    weightLimitLbs: limitLbs,
+    source: "inspection",
+    // robot_weights stores a free-text config, not a station or bumper/battery flags.
+    // Reporting them would be guessing, so they stay null and the UI says so.
+    station: null,
+    bumpersOn: null,
+    batteryOn: null,
+    configLabel: config,
+    seasonYear: Number(row.weighedOn.slice(0, 4)) || 0,
+    notes: row.note?.trim() ? row.note.trim() : null,
   };
 }
 
@@ -153,7 +183,7 @@ export async function computeRobotWeighInView(
     };
   }
 
-  const [entryResult, seasonResult, limitResult, bomResult] = await Promise.all([
+  const [entryResult, seasonResult, limitResult, bomResult, inspectionResult, inspectionLimitResult] = await Promise.all([
     client.query<EntryRow>(
       `SELECT id, weighed_on::text AS "weighedOn", weight_lbs AS "weightLbs",
               weight_limit_lbs AS "weightLimitLbs", station, bumpers_on AS "bumpersOn",
@@ -177,9 +207,40 @@ export async function computeRobotWeighInView(
        FROM weight_components WHERE org_id = $1 AND season_year = $2`,
       [org.orgId, seasonYear],
     ),
+    // Weights logged from Inspection land in robot_weights (0054). They are the same
+    // robot on the same scale, so the desk shows them instead of reporting "no entries"
+    // while Inspection holds a reading. robot_weights has no season column — the
+    // weigh date carries the season.
+    client.query<InspectionWeightRow>(
+      `SELECT id::text AS id, weighed_at::text AS "weighedOn", total_lbs AS "totalLbs",
+              config, note
+       FROM robot_weights
+       WHERE org_id = $1::uuid
+         AND EXTRACT(YEAR FROM weighed_at) = $2
+       ORDER BY weighed_at DESC`,
+      [org.orgId, seasonYear],
+    ),
+    client.query<{ limitLbs: string | number | null }>(
+      `SELECT weight_limit_lbs AS "limitLbs" FROM inspection_settings WHERE org_id = $1::uuid`,
+      [org.orgId],
+    ),
   ]);
 
-  const entries = entryResult.rows.map(mapEntry);
+  const inspectionLimitRaw = inspectionLimitResult.rows[0]
+    ? Number(inspectionLimitResult.rows[0].limitLbs)
+    : NaN;
+  const budgetLimitRaw = limitResult.rows[0] ? Number(limitResult.rows[0].limitLbs) : NaN;
+  // The mirrored log stores no limit of its own; use the org's configured one
+  // (Inspection first, then the weight budget) before the FRC default.
+  const mirroredLimitLbs =
+    (Number.isFinite(inspectionLimitRaw) && inspectionLimitRaw > 0 ? inspectionLimitRaw : null) ??
+    (Number.isFinite(budgetLimitRaw) && budgetLimitRaw > 0 ? budgetLimitRaw : null) ??
+    DEFAULT_WEIGHT_LIMIT_LBS;
+
+  const entries = [
+    ...entryResult.rows.map(mapEntry),
+    ...inspectionResult.rows.map((row) => mapInspectionEntry(row, mirroredLimitLbs)),
+  ].sort((a, b) => b.weighedOn.localeCompare(a.weighedOn));
   const summary = summarizeRobotWeighIn(entries);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);

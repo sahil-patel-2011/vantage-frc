@@ -396,10 +396,24 @@ export async function applyKnowledgeWikiAction(
       if (!updated.rowCount) throw new Error("Wiki page not found");
       return;
     }
+    // A caller-supplied slug that already exists used to surface the raw
+    // "duplicate key value violates constraint knowledge_pages_org_slug_unique"
+    // — so writing the same playbook page twice (a re-run import, or the same
+    // handoff page saved again) failed instead of updating. (org_id, slug) is
+    // the page's identity, so upsert on it, which is what the action name says.
     await client.query(
       `INSERT INTO knowledge_pages
          (org_id, slug, title, body, template_kind, season_year, tags, pinned, created_by, updated_by)
-       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::text[], $8, $9::uuid, $9::uuid)`,
+       VALUES ($1::uuid, $2, $3, $4, $5, $6, $7::text[], $8, $9::uuid, $9::uuid)
+       ON CONFLICT ON CONSTRAINT knowledge_pages_org_slug_unique DO UPDATE SET
+         title = EXCLUDED.title,
+         body = EXCLUDED.body,
+         template_kind = EXCLUDED.template_kind,
+         season_year = EXCLUDED.season_year,
+         tags = EXCLUDED.tags,
+         pinned = EXCLUDED.pinned,
+         updated_by = EXCLUDED.updated_by,
+         updated_at = now()`,
       [
         action.orgId,
         action.slug,

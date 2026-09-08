@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   blendPrivateEpa,
   buildPrivateEdgeView,
@@ -384,7 +385,10 @@ export async function computePrivateEdgeView(
     evidence,
   });
 
-  try {
+  // Best-effort persistence in savepoints: a failure here must not abort the
+  // strategy request's transaction (a fractional scout_sample against an integer
+  // column once did exactly that, silently emptying every write after it).
+  await withSavepoint(client, async () => {
     for (const row of view.pepa) {
       await client.query(
         `INSERT INTO private_epa_snapshots (
@@ -406,11 +410,9 @@ export async function computePrivateEdgeView(
         ],
       );
     }
-  } catch {
-    // snapshots table may not be migrated yet
-  }
+  }, undefined);
 
-  try {
+  await withSavepoint(client, async () => {
     for (const signal of view.pitSignals.slice(0, 40)) {
       if (!signal.entryId) continue;
       await client.query(
@@ -449,9 +451,7 @@ export async function computePrivateEdgeView(
         );
       }
     }
-  } catch {
-    // pit signal / live alert insert is best-effort
-  }
+  }, undefined);
 
   return view;
 }

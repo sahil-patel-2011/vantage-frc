@@ -139,6 +139,14 @@ function requiredText(value: unknown, label: string, max: number) {
   return text;
 }
 
+function optionalText(value: unknown, max: number): string | null {
+  if (value == null) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  if (text.length > max) throw new Error(`Name must be ${max} characters or fewer`);
+  return text;
+}
+
 function optionalHours(value: unknown, label: string): number | null {
   if (value == null || value === "") return null;
   const n = Number(value);
@@ -244,16 +252,23 @@ export function parseAttendanceAction(input: unknown): AttendanceAction {
     case "delete_event":
       return { action, orgId, id: uuid(body.id, "Event") };
 
-    case "add_entry":
+    case "add_entry": {
+      const memberId = body.userId == null || body.userId === "" ? null : uuid(body.userId, "Member");
       return {
         action,
         orgId,
         eventId: uuid(body.eventId, "Event"),
-        userId: body.userId == null || body.userId === "" ? null : uuid(body.userId, "Member"),
-        personName: requiredText(body.personName, "Name", 160),
+        userId: memberId,
+        // A named guest still needs a name typed in. When the entry points at a
+        // member, the route resolves the name from `users`, so requiring the
+        // caller to repeat it just made the API refuse a well-formed request.
+        personName: memberId
+          ? optionalText(body.personName, 160) ?? ""
+          : requiredText(body.personName, "Name", 160),
         role: roleValue(body.role),
         hours: optionalHours(body.hours, "Hours"),
       };
+    }
 
     case "delete_entry":
       return { action, orgId, id: uuid(body.id, "Entry") };

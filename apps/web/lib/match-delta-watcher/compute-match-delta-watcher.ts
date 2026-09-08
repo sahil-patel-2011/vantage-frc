@@ -179,11 +179,15 @@ export async function computeMatchDeltaWatcherView(
       [org.orgId],
     ),
     client.query<AlertRow>(
-      `SELECT id, match_key AS "matchKey", event_key AS "eventKey", m.comp_level AS "compLevel",
-              m.match_number AS "matchNumber", alert_type AS "alertType", severity,
-              predicted_winner AS "predictedWinner", actual_winner AS "actualWinner",
-              predicted_probability AS "predictedProbability", summary,
-              teams_involved AS "teamsInvolved", acknowledged, a.created_at::text AS "createdAt"
+      // Every alert column stays qualified with `a`: matches_ref also has
+      // match_key/event_key, so the unqualified names raised
+      // `column reference "match_key" is ambiguous` and the alert list never loaded
+      // once a team actually had alerts to show.
+      `SELECT a.id, a.match_key AS "matchKey", a.event_key AS "eventKey", m.comp_level AS "compLevel",
+              m.match_number AS "matchNumber", a.alert_type AS "alertType", a.severity,
+              a.predicted_winner AS "predictedWinner", a.actual_winner AS "actualWinner",
+              a.predicted_probability AS "predictedProbability", a.summary,
+              a.teams_involved AS "teamsInvolved", a.acknowledged, a.created_at::text AS "createdAt"
        FROM match_delta_watcher_alerts a
        JOIN matches_ref m ON m.match_key = a.match_key
        WHERE a.org_id = $1 AND a.event_key = $2
