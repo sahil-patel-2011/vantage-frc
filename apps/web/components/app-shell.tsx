@@ -700,6 +700,33 @@ export default function AppShell() {
     });
   }
 
+  /**
+   * The panel sits over a scrim, so the page behind it cannot be clicked — but
+   * Tab still walked straight into it, handing a keyboard user controls their
+   * mouse is not allowed to reach. Wrap at the panel's own boundary instead.
+   */
+  function keepTabInsidePanel(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Tab") return;
+    const root = event.currentTarget;
+    const focusable = [
+      ...root.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])',
+      ),
+    ].filter((node) => node.offsetParent !== null || node === document.activeElement);
+    if (focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    }
+  }
+
   async function saveIsland() {
     if (islandDraft.length !== 4 || islandSaving) return;
     setIslandSaving(true);
@@ -838,14 +865,11 @@ export default function AppShell() {
                     ))}
                   </div>
                 ) : null}
+                {/* Settings owns the canonical list (SETTINGS_NAV): profile,
+                    appearance, notifications, security, keys. Repeating two of
+                    its rows here meant this menu had two ways to /account. */}
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Settings
-                </a>
-                <a role="menuitem" href="/account?tab=appearance" onClick={() => setAccountMenuOpen(false)}>
-                  Appearance
-                </a>
-                <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
-                  Security
                 </a>
                 <a role="menuitem" href="/docs" onClick={() => setAccountMenuOpen(false)}>
                   App manual
@@ -921,7 +945,11 @@ export default function AppShell() {
       {navOpen ? (
         <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
       ) : null}
-      <aside className={`soft-drawer ${navOpen ? "open" : ""}`} aria-label="Product navigation">
+      <aside
+        className={`soft-drawer ${navOpen ? "open" : ""}`}
+        aria-label="Product navigation"
+        onKeyDown={navOpen ? keepTabInsidePanel : undefined}
+      >
         <div className="soft-drawer-head">
           <div className="soft-drawer-brand">
             <span className="mark">v</span>
@@ -950,7 +978,9 @@ export default function AppShell() {
             </span>
             <div>
               <strong>{accountLabel ?? "Account"}</strong>
-              <span>{orgLabel}</span>
+              {/* Who you are. The workspace chip directly below says which team
+                  — printing the org on both lines said it twice. */}
+              <span>{me.email ?? "Your account"}</span>
             </div>
           </a>
           <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
