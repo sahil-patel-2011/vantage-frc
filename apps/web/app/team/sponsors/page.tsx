@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: "Sponsors · Team",
+};
+
 /** Legacy sponsors CRM — unified under Business Portal. */
 export default async function SponsorsPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId } = await searchParams;

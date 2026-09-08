@@ -10,6 +10,10 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutDisagreementsClient from "./scout-disagreements-client";
 import "./scout-disagreements.css";
 
+export const metadata = {
+  title: "Scout Disagreements",
+};
+
 export default async function ScoutDisagreementsPage({
   searchParams,
 }: {

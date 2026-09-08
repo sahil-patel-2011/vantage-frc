@@ -1,5 +1,9 @@
 import AuditLogClient from "./audit-client";
 
+export const metadata = {
+  title: "Audit · Team",
+};
+
 export default async function TeamAuditPage({
   searchParams,
 }: {

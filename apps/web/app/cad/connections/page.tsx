@@ -2,7 +2,7 @@ import CadConnections from "./connections-client";
 import "../cad-setup.css";
 
 export const metadata = {
-  title: "CAD Connections · Vantage",
+  title: "CAD Connections",
   description: "Connect Onshape OAuth or pair a Fusion desktop relay — password never enters the terminal.",
 };
 

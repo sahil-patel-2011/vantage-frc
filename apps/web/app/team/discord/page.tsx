@@ -2,6 +2,10 @@ import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamDiscordClient from "./discord-client";
 
+export const metadata = {
+  title: "Discord",
+};
+
 export default async function TeamDiscordPage({
   searchParams,
 }: {

@@ -2,7 +2,7 @@ import ScheduleClient from "./schedule-client";
 import "./schedule.css";
 
 export const metadata = {
-  title: "Match Schedule · Vantage",
+  title: "Match Schedule",
   description: "Every match at the active event — your matches highlighted, results, and scout coverage.",
 };
 
