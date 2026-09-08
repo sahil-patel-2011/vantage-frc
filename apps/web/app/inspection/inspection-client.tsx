@@ -11,6 +11,7 @@ import {
   type InspectionStatus,
   type InspectionView,
 } from "../../lib/inspection";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -266,6 +267,17 @@ export default function InspectionClient() {
             ))}
           </select>
           {progress.ready ? <span className="app-badge good">Ready for inspection</span> : null}
+          {/* This checklist is one step of a three-step job: check the robot,
+              weigh it, then work the copilot's flags. It used to end here with
+              no way forward. */}
+          <nav className="product-hub-related" aria-label="Related inspection tools">
+            <a className="app-button secondary" href={withOrgHref("/robot-weigh-in", orgId || null)}>
+              Weigh-in
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/inspection-copilot", orgId || null)}>
+              Inspection copilot
+            </a>
+          </nav>
         </div>
       </header>
 

@@ -201,7 +201,7 @@ function ScoutDisagreementsShell({
           </ul>
         </Panel>
       ) : null}
-      <ScoutDisagreementsNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScoutDisagreementsNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

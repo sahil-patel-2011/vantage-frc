@@ -163,7 +163,7 @@ function LocatorShell({
           </ul>
         </Panel>
       ) : null}
-      <NextActionsPanel actions={actions} />
+      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

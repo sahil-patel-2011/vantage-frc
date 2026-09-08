@@ -42,6 +42,8 @@ import "./media.css";
 
 const MEDIA_HUB = hubById("media");
 const PRIMARY_TABS = hubPrimaryTabs(MEDIA_HUB);
+/** Tools nested under Kit — the Kit root itself stays in the tab bar above. */
+const kitTools = hubNestedTabs(MEDIA_HUB, "kit").filter((entry) => entry.group === "kit");
 
 type Tab = MediaHubTab;
 
@@ -90,10 +92,22 @@ function fromLocalInputValue(value: string): string | null {
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
 
+/**
+ * Cross-*hub* destinations only.
+ *
+ * The strip used to carry Media Kit and Community Impact as well, both of which
+ * this page already owns: Kit and Impact are tabs one row down, and the Impact
+ * panel has its own "Open Community Impact" button that points at `/impact`
+ * rather than the Business tab — so the header offered a second control with the
+ * same name and a different destination. What is left is the two surfaces that
+ * genuinely live in another hub.
+ */
+const MEDIA_CROSS_HUB_LINKS = MEDIA_RELATED_INCLUDE.filter(
+  (id) => id === "outreach-calendar" || id === "sponsor-wall",
+);
+
 function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = mediaRelatedLinks(orgId, {
-    include: [...MEDIA_RELATED_INCLUDE],
-  });
+  const links = mediaRelatedLinks(orgId, { include: MEDIA_CROSS_HUB_LINKS });
   if (!links.length) return null;
   return (
     <nav className="product-hub-related media-related" aria-label="Related media tools">
@@ -679,12 +693,12 @@ function KitPanel({ view }: { view: LiveView }) {
       ) : (
         <p className="app-muted">Asset library is empty until you add real URLs.</p>
       )}
+      {/* One primary action out of the panel. Media library is a tool *inside*
+          this workbench, so it belongs in the tool strip above — it was listed
+          in both places. */}
       <div className="media-kit-actions">
         <a className="app-button" href={kitHref}>
           Open Media Kit
-        </a>
-        <a className="app-button secondary" href={withOrgHref("/media-library", view.orgId)}>
-          Open Media library
         </a>
       </div>
     </Panel>
@@ -812,18 +826,21 @@ function LiveMediaWorkspace({
         tabs={tabs}
         className="product-hub-tabs"
       />
-      {tab === "kit" ? (
+      {/* Tools *inside* the open workbench only. "Kit" is already the selected
+          tab one row up, so listing its root here rendered the same workbench
+          twice — the strip is how you reach what is nested under it. */}
+      {kitTools.length > 0 && tab === "kit" ? (
         <ToolStrip
-          aria-label="Media kit tools"
+          aria-label="Tools in Kit"
           value="kit"
           onChange={(id) => {
             if (id === "kit") onTab("kit");
           }}
-          items={hubNestedTabs(MEDIA_HUB, "kit").map((entry) => ({
+          items={kitTools.map((entry) => ({
             id: entry.id,
             label: entry.label,
-            featured: entry.featured || !entry.group,
-            href: entry.group && entry.legacyHref ? hubLegacyHref(entry, orgId) : undefined,
+            featured: entry.featured === true,
+            href: entry.legacyHref ? hubLegacyHref(entry, orgId) : undefined,
           }))}
         />
       ) : null}

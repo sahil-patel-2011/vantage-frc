@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, TabBar, ToolStrip } from "../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../components/ui/action-menu";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import SustainabilityPanel from "./sustainability-panel";
@@ -194,9 +194,17 @@ export default function BusinessClient() {
     [access.hubAccess, sponsorsAllowed],
   );
   const workbenchId = hubWorkbenchId(BUSINESS_HUB, tab);
+  /**
+   * Tools *inside* the open workbench. `hubNestedTabs` leads with the workbench
+   * root, which is already the selected chip in the row above — keeping it here
+   * printed "Money"/"Sponsors" twice on the same screen. Drop it; the tab bar is
+   * how you get back to the workbench's own view.
+   */
   const visibleNested = useMemo(() => {
-    const nested = hubNestedTabs(BUSINESS_HUB, workbenchId);
-    if (nested.length <= 1) return [];
+    const nested = hubNestedTabs(BUSINESS_HUB, workbenchId).filter(
+      (entry) => entry.group === workbenchId,
+    );
+    if (nested.length === 0) return [];
     return filterTabsByHubAccess(
       filterSponsorTabs(nested, sponsorsAllowed),
       access.hubAccess,
@@ -387,9 +395,9 @@ export default function BusinessClient() {
         tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
       />
-      {visibleNested.length > 1 ? (
-        <TabBar
-          aria-label="Business tools"
+      {visibleNested.length > 0 ? (
+        <ToolStrip
+          aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
           value={tab}
           onChange={(id) => {
             if (isTab(id)) {
@@ -401,9 +409,17 @@ export default function BusinessClient() {
               window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
             }
           }}
-          tabs={visibleNested.map((entry) => ({ id: entry.id, label: entry.label }))}
-          className="product-hub-subtabs"
-          variant="toolbar"
+          items={visibleNested.map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            featured: entry.featured === true,
+            // Tools this hub does not render inline are real links, so they go
+            // straight to the page instead of bouncing off a redirect card.
+            href:
+              !isTab(entry.id) && entry.legacyHref
+                ? hubLegacyHref(entry, orgId ?? live?.orgId ?? null)
+                : undefined,
+          }))}
         />
       ) : null}
 
@@ -738,13 +754,18 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
   const grantsAiHref = `/ai?tab=writer&orgId=${encodeURIComponent(view.orgId)}`;
-  const grantsRelated = useMemo(() => {
-    const include = [...BUSINESS_GRANTS_RELATED_INCLUDE];
-    if (view.sponsorsAllowed === false) {
-      return include.filter((id) => id !== "sponsors" && id !== "sponsorship" && id !== "placements");
-    }
-    return include;
-  }, [view.sponsorsAllowed]);
+  /**
+   * One row of related destinations, not three.
+   *
+   * Sponsor CRM is a workbench in the tab bar directly above this panel, so the
+   * strip was repeating a tab; the sentence underneath then repeated the strip's
+   * own workbench and writer links with different wording, and the empty state
+   * repeated all of it a third time. Keep only what the tab bar does not carry.
+   */
+  const grantsRelated = useMemo(
+    () => BUSINESS_GRANTS_RELATED_INCLUDE.filter((id) => id !== "sponsors"),
+    [],
+  );
   return (
     <div className="biz-stack">
       <BusinessRelated
@@ -754,10 +775,10 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
         ariaLabel="Related grant writing tools"
       />
       <div className="biz-detail-link">
-        <span>Need guided need · impact · budget · timeline essays with metered AI assist?</span>
-        <a href={grantsAiHref}>Grants AI →</a>
-        <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the grant writing workbench →</a>
-        <a href={`/writer?orgId=${encodeURIComponent(view.orgId)}`}>Writer →</a>
+        <span>
+          Guided need · impact · budget · timeline essays live in the grant writing workbench
+          above. Reporting on an award you already won:
+        </span>
         <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>
       </div>
       {!view.grants.length ? (
@@ -766,14 +787,8 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           badge={view.canManageFinance ? "Get started" : "Setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
-          description="Add opportunities below or compose narratives in the writing workbench. Award $ appears only after you record a real award — never DEMO totals."
-        >
-          <BusinessRelated
-            orgId={view.orgId}
-            include={["grant-workbench", "sponsors", "fundraisers", "writer"]}
-            ariaLabel="Empty grants next links"
-          />
-        </EmptyState>
+          description="Add an opportunity in the form below, or compose narratives in the writing workbench linked above. Award $ appears only after you record a real award — never DEMO totals."
+        />
       ) : null}
       <section className="biz-grid two">
         <article className="app-card">

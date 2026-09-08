@@ -189,7 +189,7 @@ function ChemistryShell({
           </ul>
         </Panel>
       ) : null}
-      <ChemistryNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ChemistryNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

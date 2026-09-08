@@ -251,7 +251,7 @@ function IntelShell({
           </ul>
         </Panel>
       ) : null}
-      <IntelNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <IntelNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

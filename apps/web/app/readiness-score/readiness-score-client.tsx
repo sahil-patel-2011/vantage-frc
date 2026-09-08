@@ -207,7 +207,7 @@ function ReadinessShell({
           </ul>
         </Panel>
       ) : null}
-      <ReadinessNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ReadinessNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
