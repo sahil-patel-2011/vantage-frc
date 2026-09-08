@@ -2,7 +2,7 @@ import BatteriesClient from "./batteries-client";
 import "./batteries.css";
 
 export const metadata = {
-  title: "Batteries · Vantage",
+  title: "Batteries",
   description: "Track FRC battery charge cycles, assignment, and competition readiness.",
 };
 

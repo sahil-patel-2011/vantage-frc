@@ -1,7 +1,7 @@
 import RankingProjectionClient from "./ranking-projection-client";
 
 export const metadata = {
-  title: "Ranking projection · Vantage",
+  title: "Ranking projection",
   description: "Remaining qualification matches against your cached TBA rank — never DEMO ranks.",
 };
 

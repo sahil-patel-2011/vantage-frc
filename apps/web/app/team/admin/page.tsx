@@ -12,7 +12,7 @@ import TeamAdminClient from "../team-admin-client";
 import "../team-admin.css";
 
 export const metadata = {
-  title: "Team admin · Vantage",
+  title: "Team admin",
   description:
     "Membership, invites, GitHub robot-code context, and provider settings — never DEMO members or repositories.",
 };

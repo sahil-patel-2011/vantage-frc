@@ -2,7 +2,7 @@ import MigrateClient from "./migrate-client";
 import "./migrate.css";
 
 export const metadata = {
-  title: "Bring your season · Vantage",
+  title: "Bring your season",
   description: "Import ICS, scouting CSV, and Notion into Vantage — never invent events.",
 };
 

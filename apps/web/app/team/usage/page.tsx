@@ -3,6 +3,10 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import UsageClient from "./usage-client";
 
+export const metadata = {
+  title: "Usage",
+};
+
 export default async function TeamUsagePage({
   searchParams,
 }: {

@@ -2,7 +2,7 @@ import InspectionClient from "./inspection-client";
 import "./inspection.css";
 
 export const metadata = {
-  title: "Robot Inspection · Vantage",
+  title: "Robot Inspection",
   description: "Self-inspect against the FRC checklist and track robot weigh-ins before the real inspector.",
 };
 

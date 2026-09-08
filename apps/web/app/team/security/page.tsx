@@ -3,6 +3,10 @@ import CapabilitiesClient from "./capabilities-client";
 import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
 
+export const metadata = {
+  title: "Team security",
+};
+
 export default async function TeamSecurityPage({
   searchParams,
 }: {

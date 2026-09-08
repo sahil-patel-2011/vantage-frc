@@ -8,7 +8,7 @@ import PairClient, { type PairDevice, type PairOrganization } from "./pair-clien
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Pair VS Code · Vantage",
+  title: "Pair VS Code",
   description:
     "Approve a Vantage VS Code editor pairing code for your team workspace — real devices only, never DEMO pairing metrics.",
 };

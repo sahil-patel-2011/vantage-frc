@@ -2,6 +2,10 @@ import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamSlackClient from "./slack-client";
 
+export const metadata = {
+  title: "Slack",
+};
+
 export default async function TeamSlackPage({
   searchParams,
 }: {

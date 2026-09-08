@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: "Sign In",
+};
+
 export default async function LegacySignInPage({
   searchParams,
 }: {

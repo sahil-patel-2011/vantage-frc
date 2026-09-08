@@ -1,5 +1,9 @@
 import AiRunsClient from "./ai-runs-client";
 
+export const metadata = {
+  title: "AI Runs · Team",
+};
+
 export default async function TeamAiRunsPage({
   searchParams,
 }: {

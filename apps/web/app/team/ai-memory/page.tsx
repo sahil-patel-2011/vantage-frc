@@ -1,5 +1,9 @@
 import AiMemoryClient from "./ai-memory-client";
 
+export const metadata = {
+  title: "Memory",
+};
+
 export default async function TeamAiMemoryPage({
   searchParams,
 }: {

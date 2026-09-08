@@ -1,6 +1,10 @@
 import GrantsClient from "./grants-client";
 import { EmptyState } from "../../../components/ui";
 
+export const metadata = {
+  title: "Grants",
+};
+
 export default async function GrantsPage({
   searchParams,
 }: {

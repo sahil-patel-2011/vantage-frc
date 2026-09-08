@@ -2,6 +2,10 @@ import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamBackgroundClient from "./background-client";
 
+export const metadata = {
+  title: "Background · Team",
+};
+
 export default async function TeamBackgroundPage({
   searchParams,
 }: {

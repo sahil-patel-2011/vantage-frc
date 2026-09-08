@@ -1,4 +1,8 @@
-﻿import WaitlistAdminClient from "./waitlist-client";
+import WaitlistAdminClient from "./waitlist-client";
+
+export const metadata = {
+  title: "Waitlist",
+};
 
 export const dynamic = "force-dynamic";
 
