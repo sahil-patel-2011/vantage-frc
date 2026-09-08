@@ -27,6 +27,21 @@
   pointer-events: none;
 }
 
+/*
+ * Inside the product shell, clear the bottom app island.
+ *
+ * The island's "All" is the only way to open navigation, and it is
+ * bottom-centred like this card — so the card landed straight on top of it and
+ * swallowed the clicks (elementFromPoint at the button's centre returned
+ * .consent-banner-card at 390, 768, 1180 and 1440). That left a first-time
+ * visitor unable to navigate at all until they answered the banner. Being
+ * above the island in z-order is still right so the question stays readable;
+ * it just must not cover it.
+ */
+body.has-app-shell .consent-banner {
+  padding-bottom: calc(12px + var(--soft-safe-bottom, 0px) + var(--soft-island-clearance, 88px));
+}
+
 .consent-banner-card {
   pointer-events: auto;
   width: min(680px, 100%);

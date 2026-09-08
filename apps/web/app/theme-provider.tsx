@@ -180,10 +180,15 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   return (
     <>
-      <div id="main-content">{children}</div>
       {/* Team accent + personal density/motion, applied on <html> next to the theme. */}
       {productRoute && <AppearanceRuntime />}
+      {/* Before the content, because AppShell renders the "Skip to main content"
+          link. After the content it was the last thing in the tab order — you
+          had to tab through the whole page to reach the link that skips it. The
+          shell is fixed-position with explicit z-index, so source order does not
+          change what paints on top. */}
       {productRoute && <AppShell />}
+      <div id="main-content">{children}</div>
       {productRoute && <PaidSessionSplash />}
     </>
   );

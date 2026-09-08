@@ -66,6 +66,25 @@
 .hub-tool-more {
   border-style: dashed;
 }
+/* The overflow is a named block with its own scroll, not twenty more chips
+   shoved into the row above the page's content. */
+.hub-tool-overflow {
+  max-height: min(38vh, 320px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin: 8px 0 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--soft-card, var(--app-surface)) 60%, transparent);
+}
+.hub-tool-overflow-head {
+  margin: 0 0 8px;
+  color: var(--soft-muted, var(--app-muted));
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 /* Touch devices get the 44px minimum target; a mouse does not need it, and the
    compact row keeps more tools on screen on a shop laptop. */
 @media (pointer: coarse) {
