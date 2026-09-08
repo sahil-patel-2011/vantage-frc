@@ -9,7 +9,7 @@ import "../cad-setup.css";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Pair CAD desktop · Vantage",
+  title: "Pair CAD desktop",
   description: "Approve a vantage-cad pairing code for Onshape or Fusion — password never enters the terminal.",
 };
 

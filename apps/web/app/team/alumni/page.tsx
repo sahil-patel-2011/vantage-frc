@@ -2,6 +2,10 @@ import { EmptyState } from "../../../components/ui";
 import { alumniShellCopy } from "../../../lib/alumni";
 import AlumniClient from "./alumni-client";
 
+export const metadata = {
+  title: "Alumni · Team",
+};
+
 export default async function TeamAlumniPage({
   searchParams,
 }: {

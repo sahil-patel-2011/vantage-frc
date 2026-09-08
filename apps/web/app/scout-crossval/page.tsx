@@ -10,6 +10,10 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutCrossvalClient from "./scout-crossval-client";
 import "./scout-crossval.css";
 
+export const metadata = {
+  title: "Scout Cross-Validation",
+};
+
 export default async function ScoutCrossvalPage({
   searchParams,
 }: {

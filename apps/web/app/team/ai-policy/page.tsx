@@ -1,5 +1,9 @@
 import AiPolicyClient from "./ai-policy-client";
 
+export const metadata = {
+  title: "Governance",
+};
+
 export default async function TeamAiPolicyPage({
   searchParams,
 }: {

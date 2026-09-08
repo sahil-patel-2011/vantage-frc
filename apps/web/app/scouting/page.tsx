@@ -9,6 +9,10 @@ import {
 import ScoutingClient from "./scouting-client";
 import "./scouting.css";
 
+export const metadata = {
+  title: "Scouting",
+};
+
 export default async function ScoutingPage({
   searchParams,
 }: {

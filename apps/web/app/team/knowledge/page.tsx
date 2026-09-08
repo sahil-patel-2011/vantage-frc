@@ -1,7 +1,7 @@
 import KnowledgeClient from "./knowledge-client";
 
 export const metadata = {
-  title: "Knowledge Base · Vantage",
+  title: "Knowledge Base",
   description:
     "Team wiki with structured handoff templates — preserve institutional knowledge across seasons.",
 };

@@ -17,6 +17,10 @@ import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
 import "../invite/invite-flow.css";
 
+export const metadata = {
+  title: "Workspace",
+};
+
 // Session-gated server page: never prerendered, so a credential-free build works.
 export const dynamic = "force-dynamic";
 

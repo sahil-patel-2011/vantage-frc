@@ -2,7 +2,7 @@ import KioskClient from "../kiosk/kiosk-client";
 import "../display.css";
 
 export const metadata = {
-  title: "Pit display · Vantage",
+  title: "Pit display",
   description: "Fullscreen 16:9 pit TV for a Raspberry Pi or kiosk stick — live snapshots only.",
 };
 

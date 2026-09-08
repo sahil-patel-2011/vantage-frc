@@ -3,7 +3,7 @@ import SponsorshipClient from "./sponsorship-client";
 import "./sponsorship.css";
 
 export const metadata = {
-  title: "Sponsorship one-pagers · Vantage",
+  title: "Sponsorship one-pagers",
   description:
     "Compose org-isolated sponsorship value props — who we are, what we do, what we ask, and what sponsors get — then export PDF.",
 };

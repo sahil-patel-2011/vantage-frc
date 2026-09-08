@@ -3,7 +3,7 @@ import "../display.css";
 import "./stage.css";
 
 export const metadata = {
-  title: "Event display · Vantage",
+  title: "Event display",
   description:
     "Phase-aware pit TV: schedule, queue countdown, rankings, bracket, and sponsor thanks — synced rows only.",
 };

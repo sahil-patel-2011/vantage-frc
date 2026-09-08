@@ -3,6 +3,10 @@ import { MEDIA_HUB_TABS } from "../../lib/media";
 import { hubById, hubLegacyHref } from "../../lib/nav/hubs";
 import MediaClient from "./media-client";
 
+export const metadata = {
+  title: "Media",
+};
+
 export default async function MediaPage({
   searchParams,
 }: {
