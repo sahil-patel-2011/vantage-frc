@@ -32,6 +32,10 @@ describe("postgres host detection", () => {
         shouldUseNodePostgres("postgresql://postgres.abc:p@aws-0-us-east-1.pooler.supabase.com:6543/postgres"),
       ).toBe(true);
       expect(shouldUseNodePostgres("postgresql://u:p@ep-x.us-east-1.aws.neon.tech/neondb")).toBe(false);
+      // A plain local Postgres must not get the Neon websocket driver: it would fail
+      // every query before the server sees it, so nothing lands in the Postgres log.
+      expect(shouldUseNodePostgres("postgresql://vantage:local@127.0.0.1:3412/vantage")).toBe(true);
+      expect(shouldUseNodePostgres("postgresql://vantage:local@localhost:5432/vantage")).toBe(true);
       expect(sslOptionForUrl("postgresql://vantage:local@127.0.0.1:5432/vantage")).toBe(false);
     } finally {
       if (previous == null) delete process.env.DATABASE_DRIVER;

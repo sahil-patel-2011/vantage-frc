@@ -27,10 +27,63 @@ export type ContextSource=ContextItem&{classification:ClaimClassification|"priva
 export type ToolExecutionContext={client:PoolClient;orgId:string;userId:string;activeEventKey:string|null};
 export type ToolDefinition<I,O>={name:string;description:string;inputSchema?:Record<string,unknown>;parseInput(value:unknown):I;parseOutput(value:unknown):O;execute(context:ToolExecutionContext,input:I):Promise<O>};
 
+let toolSavepointSeq=0;
+
+/**
+ * Run one tool inside its own savepoint.
+ *
+ * Every tool in a turn shares the request's single `withRls` PoolClient, so they
+ * all run in one transaction. A tool that swallows its own SQL error — and
+ * `tools.ts` does exactly that in dozens of places, returning
+ * `{setup_required:true}` — leaves the transaction ABORTED, and every later tool
+ * then fails with "current transaction is aborted" and reports setup_required
+ * too. One broken query silently empties the rest of the agent's answer, and the
+ * HTTP status stays 200 throughout. (This is the failure mode migration 0518
+ * describes killing the private pEPA computation for months.)
+ *
+ * A savepoint bounds the damage to the tool that caused it. Crucially the repair
+ * runs whether or not the tool rethrew: a tool that catches its own error still
+ * leaves the transaction aborted, and that is the common case here. RELEASE is
+ * rejected in an aborted transaction, so a failed RELEASE is the signal to roll
+ * back to the savepoint — after which the tool's own graceful result is returned
+ * unchanged and later tools still see a usable transaction.
+ */
+async function runInToolSavepoint<T>(client:PoolClient|undefined,work:()=>Promise<T>):Promise<T>{
+  if(!client||typeof client.query!=="function")return work();
+  toolSavepointSeq+=1;
+  const name=`vantage_tool_sp_${toolSavepointSeq%1_000_000}`;
+  try{await client.query(`SAVEPOINT ${name}`);}catch{
+    // Not inside a usable transaction (a unit-test stub, or an autocommit
+    // client); nothing to protect, so run the tool directly.
+    return work();
+  }
+  let result:T|undefined;
+  let thrown:unknown;
+  let threw=false;
+  try{
+    result=await work();
+  }catch(error){
+    threw=true;
+    thrown=error;
+  }
+  try{
+    await client.query(`RELEASE SAVEPOINT ${name}`);
+  }catch{
+    try{
+      await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
+      await client.query(`RELEASE SAVEPOINT ${name}`);
+    }catch{
+      // Connection is unusable; withRls will roll the whole request back.
+    }
+  }
+  if(threw)throw thrown;
+  return result as T;
+}
+
 export class AIToolRegistry{
   private readonly tools=new Map<string,ToolDefinition<unknown,unknown>>();
   register<I,O>(tool:ToolDefinition<I,O>){if(this.tools.has(tool.name))throw new Error(`AI tool already registered: ${tool.name}`);this.tools.set(tool.name,tool as ToolDefinition<unknown,unknown>);return this;}
-  async invoke(name:string,context:ToolExecutionContext,input:unknown){const tool=this.tools.get(name);if(!tool)throw new Error(`AI tool is not authorized: ${name}`);const parsed=tool.parseInput(input);return tool.parseOutput(await tool.execute(context,parsed));}
+  async invoke(name:string,context:ToolExecutionContext,input:unknown){const tool=this.tools.get(name);if(!tool)throw new Error(`AI tool is not authorized: ${name}`);const parsed=tool.parseInput(input);return tool.parseOutput(await runInToolSavepoint(context?.client,()=>tool.execute(context,parsed)));}
   list(){return[...this.tools.values()].map(({name,description,inputSchema})=>({name,description,inputSchema}));}
 }
 

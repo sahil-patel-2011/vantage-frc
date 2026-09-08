@@ -17,6 +17,9 @@ import {
   enforceOrgAiGovernance,
 } from "./ai-governance";
 
+export { readOrgAllowance } from "./allowance";
+export type { AllowanceFeatureSpend, OrgAllowance } from "./allowance";
+
 export {
   ApprovalRequiredError,
   AiPolicyDeniedError,

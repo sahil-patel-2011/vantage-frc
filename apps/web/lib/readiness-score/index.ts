@@ -98,12 +98,23 @@ export function computeReadinessIndex(input: {
   openFmeaFailures: ReadinessFmeaRef[];
   weightBudgetLbs?: number;
   powerBudgetAmps?: number;
+  /**
+   * Recorded totals from the weight and power budgets. They cover lines with no
+   * subsystem label (bumpers, battery, the wiring harness), so summing only the
+   * per-subsystem attribution would understate the budget. Omitted, the totals
+   * fall back to the roster — which is all a caller holding subsystems alone can
+   * honestly claim.
+   */
+  weightUsedLbs?: number;
+  powerUsedAmps?: number;
 }): ReadinessIndex {
   const weightBudgetLbs = input.weightBudgetLbs ?? DEFAULT_WEIGHT_BUDGET_LBS;
   const powerBudgetAmps = input.powerBudgetAmps ?? DEFAULT_POWER_BUDGET_AMPS;
 
-  const weightUsedLbs = input.subsystems.reduce((sum, s) => sum + s.weightLbs, 0);
-  const powerUsedAmps = input.subsystems.reduce((sum, s) => sum + s.powerDrawAmps, 0);
+  const weightUsedLbs =
+    input.weightUsedLbs ?? input.subsystems.reduce((sum, s) => sum + s.weightLbs, 0);
+  const powerUsedAmps =
+    input.powerUsedAmps ?? input.subsystems.reduce((sum, s) => sum + s.powerDrawAmps, 0);
   const weightHeadroom = weightBudgetLbs > 0 ? clamp01(1 - weightUsedLbs / weightBudgetLbs) : 0;
   const powerHeadroom = powerBudgetAmps > 0 ? clamp01(1 - powerUsedAmps / powerBudgetAmps) : 0;
 

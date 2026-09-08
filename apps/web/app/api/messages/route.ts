@@ -84,21 +84,64 @@ let pinsSupportedCache: boolean | null = null;
 let mentionsSupportedCache: boolean | null = null;
 let objectLinksSupportedCache: boolean | null = null;
 
+/**
+ * Ask the catalog whether an optional table/column exists, without letting the
+ * answer poison anything.
+ *
+ * These probes are process-lifetime caches. They used to be a bare
+ * `try { … } catch { cache = false }`, which had two teeth:
+ *
+ *  1. The request runs in one `withRls` transaction. If an earlier statement had
+ *     already aborted it, the probe failed with 25P02 and the catch cached
+ *     `false` — permanently disabling mentions, pins or object links for the
+ *     whole server process, for every org, until a restart. A transient failure
+ *     in one request turned into a fleet-wide feature outage.
+ *  2. Swallowing inside the transaction leaves it aborted for everything after.
+ *
+ * A savepoint contains the failure, and a failed probe is answered `false` for
+ * this request only — never cached. Only a definitive answer is remembered.
+ */
+async function probeSchemaSupport(client: PoolClient, sql: string): Promise<boolean | null> {
+  const savepoint = "messages_schema_probe";
+  try {
+    await client.query(`SAVEPOINT ${savepoint}`);
+  } catch {
+    // Not inside a usable transaction; probe directly and still refuse to cache
+    // a failure.
+    try {
+      return Boolean((await client.query(sql)).rowCount);
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const row = await client.query(sql);
+    await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+    return Boolean(row.rowCount);
+  } catch {
+    try {
+      await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+      await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+    } catch {
+      // Connection is unusable; withRls will roll the request back.
+    }
+    return null;
+  }
+}
+
 async function supportsObjectLinks(client: PoolClient): Promise<boolean> {
   if (objectLinksSupportedCache != null) return objectLinksSupportedCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  const supported = await probeSchemaSupport(
+    client,
+    `SELECT 1
        FROM information_schema.tables
        WHERE table_schema = 'public'
          AND table_name = 'org_message_object_links'
        LIMIT 1`,
-    );
-    objectLinksSupportedCache = Boolean(row.rowCount);
-  } catch {
-    objectLinksSupportedCache = false;
-  }
-  return objectLinksSupportedCache;
+  );
+  if (supported == null) return false;
+  objectLinksSupportedCache = supported;
+  return supported;
 }
 
 async function attachObjectLinks(client: PoolClient, orgId: string, messages: MessageRow[]) {
@@ -403,37 +446,33 @@ async function listLinkTargets(
 
 async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
   if (mentionsSupportedCache != null) return mentionsSupportedCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  const supported = await probeSchemaSupport(
+    client,
+    `SELECT 1
        FROM information_schema.tables
        WHERE table_schema = 'public'
          AND table_name = 'org_message_mentions'
        LIMIT 1`,
-    );
-    mentionsSupportedCache = Boolean(row.rowCount);
-  } catch {
-    mentionsSupportedCache = false;
-  }
-  return mentionsSupportedCache;
+  );
+  if (supported == null) return false;
+  mentionsSupportedCache = supported;
+  return supported;
 }
 
 async function supportsMessagePins(client: PoolClient): Promise<boolean> {
   if (pinsSupportedCache != null) return pinsSupportedCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  const supported = await probeSchemaSupport(
+    client,
+    `SELECT 1
        FROM information_schema.columns
        WHERE table_schema = 'public'
          AND table_name = 'org_messages'
          AND column_name = 'pinned_at'
        LIMIT 1`,
-    );
-    pinsSupportedCache = Boolean(row.rowCount);
-  } catch {
-    pinsSupportedCache = false;
-  }
-  return pinsSupportedCache;
+  );
+  if (supported == null) return false;
+  pinsSupportedCache = supported;
+  return supported;
 }
 
 async function requireSession() {
