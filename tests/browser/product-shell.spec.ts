@@ -88,23 +88,66 @@ test("product shell keeps four favorite apps plus an explicit all-apps button", 
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
   await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
+  // The topbar hamburger used to open this same panel. One opener now.
+  await expect(page.getByRole("button", { name: /Open navigation/ })).toHaveCount(0);
   await island.getByRole("button", { name: "Open all apps" }).click();
   const drawer = page.getByRole("complementary", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole("button", { name: /Find any page or action/ })).toBeVisible();
-  await drawer.getByRole("button", { name: "Competition" }).click();
-  await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
-  await expect(drawer.locator(".soft-drawer-foot a").first()).toHaveText("Account");
+  // Search is a field in the panel, not a button that opened a second overlay.
+  await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
+  // The island lists four of these same apps, so it steps aside while the panel is up.
+  await expect(island).toBeHidden();
+  // One row per workspace. The hub's own tab bar lists its sections; repeating
+  // them here put "Event day / Scouting / Strategy / Pit" on screen twice.
+  await expect(drawer.getByRole("link", { name: "Competition" })).toHaveCount(1);
+  await expect(drawer.getByRole("link", { name: "Event day" })).toHaveCount(0);
+  await expect(drawer.getByRole("button", { name: /Competition pages/ })).toHaveCount(0);
+  // Logistics has no in-page tab bar, so the panel still carries its pages.
+  await expect(drawer.getByRole("link", { name: "Packing" })).toBeVisible();
+  // Account lives on the profile row at the top; the footer no longer repeats it.
+  await expect(drawer.locator(".soft-drawer-foot a")).toHaveCount(0);
+  await expect(drawer.getByRole("link", { name: /Account/ })).toHaveCount(1);
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
   await drawer.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(island).toBeVisible();
 
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeVisible();
   await expect(island.getByRole("link")).toHaveCount(4);
   await expect(island.getByRole("button", { name: "Open all apps" })).toBeVisible();
+});
+
+test("search is one affordance per width and shares the navigation panel", async ({ page }) => {
+  const searchButton = page.getByRole("button", { name: "Search Vantage" });
+  const field = page.getByRole("combobox", { name: /Search pages, tools/ });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard");
+  // Under 900px the bar has no room for a field, so the panel carries the only one.
+  await expect(searchButton).toBeHidden();
+  await page.getByRole("button", { name: "Open all apps" }).click();
+  await expect(field).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await expect(searchButton).toBeVisible();
+  await searchButton.click();
+  // The bar's control steps aside so its field and the panel's are never both up.
+  await expect(searchButton).toHaveCount(0);
+  await expect(field).toBeFocused();
+  await field.fill("pick list");
+  await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/picklist|competition/);
+});
+
+test("the hub tab bar owns the workbench name and the tool strip does not repeat it", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto("/competition");
+  await expect(page.getByRole("tab", { name: "Event day" })).toBeVisible();
+  // "Event day" was both the selected tab and the first chip under it.
+  await expect(page.locator(".hub-tool-strip").getByText("Event day", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".hub-tool-strip")).toContainText("Pre-match briefing");
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {

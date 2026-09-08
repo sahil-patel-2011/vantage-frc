@@ -34,7 +34,7 @@ export function ToolStrip({
 }: ToolStripProps) {
   const [expanded, setExpanded] = useState(false);
 
-  if (items.length <= 1) return null;
+  if (items.length < 1) return null;
 
   const { visible, hiddenCount } = layoutToolStrip(items, value, visibleCount, expanded);
   const collapsible = items.length > visibleCount;
