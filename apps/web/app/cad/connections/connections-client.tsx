@@ -11,7 +11,7 @@ import {
   onshapeHostedBadge,
   onshapeOauthCtaEnabled,
   withLocalPlaywrightHint,
-} from "../../../lib/cad/onshape-setup-copy";
+} from "../../../lib/cad/onshape-setup-strings";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 

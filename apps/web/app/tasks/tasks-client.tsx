@@ -13,8 +13,10 @@ import {
   SUBSYSTEM_SUGGESTIONS,
   TASK_PRIORITIES,
   TASK_STATUSES,
-  type TasksView,
-} from "../../lib/tasks/compute-tasks";
+} from "../../lib/tasks/task-constants";
+// Type-only, so it is erased before bundling and never pulls compute-tasks'
+// server imports into the browser.
+import type { TasksView } from "../../lib/tasks/compute-tasks";
 import type { TaskPriority, TaskWithFlags } from "../../lib/tasks/types";
 
 type LiveView = Extract<TasksView, { status: "live" }>;
