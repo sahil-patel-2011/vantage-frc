@@ -9,6 +9,8 @@ import {
   type IncidentsView,
 } from "../../lib/incidents/compute-incidents";
 import type { IncidentCategory, IncidentEvaluation, IncidentSeverity, IncidentStatus } from "../../lib/incidents/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type LiveView = Extract<IncidentsView, { status: "live" }>;
@@ -95,6 +97,17 @@ export default function IncidentsClient() {
             Log injuries, near-misses, and shop hazards, assign a corrective action, and track it to closure. A near-miss
             recorded today is an injury prevented tomorrow — and it&apos;s exactly what safety judges want to see.
           </p>
+          {/* An incident that stops at this log is an incident nobody designed
+              out. The two places the corrective action actually lands: the daily
+              safety log, and the FMEA row for the mechanism that hurt someone. */}
+          <nav className="product-hub-related" aria-label="Related safety tools">
+            <a className="app-button secondary" href={withOrgHref("/safety", orgId)}>
+              Safety log
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+              FMEA
+            </a>
+          </nav>
         </div>
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

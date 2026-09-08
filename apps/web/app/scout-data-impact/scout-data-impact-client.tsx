@@ -204,7 +204,7 @@ function ScoutDataImpactShell({
           </ul>
         </Panel>
       ) : null}
-      <ScoutDataImpactNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScoutDataImpactNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

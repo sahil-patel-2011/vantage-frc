@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { consumableCategoryLabel, evaluateConsumable, statusLabel } from "../../lib/spares";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CONSUMABLE_CATEGORIES, type SparesView } from "../../lib/spares/compute-spares";
@@ -103,6 +104,17 @@ export default function SparesClient() {
             Track shop consumables — fasteners, wire, tape, rivets, PPE — with on-hand counts and reorder points, so you
             never discover you&apos;re out of #10-32s the night before ship.
           </p>
+          {/* A reorder point that fires has exactly two destinations: a purchase
+              request, and the competition load-out that will run this bin dry.
+              Neither was reachable from here. */}
+          <nav className="product-hub-related" aria-label="Related consumables tools">
+            <a className="app-button secondary" href={withOrgHref("/orders", orgId)}>
+              Orders
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/packing", orgId)}>
+              Packing list
+            </a>
+          </nav>
         </div>
       </header>
 

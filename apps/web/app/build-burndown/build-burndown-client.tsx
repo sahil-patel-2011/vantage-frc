@@ -172,7 +172,7 @@ function BurndownShell({
           </ul>
         </Panel>
       ) : null}
-      <BurndownNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <BurndownNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
