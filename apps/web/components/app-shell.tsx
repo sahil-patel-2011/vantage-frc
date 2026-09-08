@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
-import ReportBugButton from "./report-bug-button";
 import {
   ISLAND_TAB_CATALOG,
   LOGISTICS_DEEP_LINKS,
@@ -16,7 +15,7 @@ import {
   withSelectedOrgHref,
   type ProductNavGroup,
 } from "../lib/nav/product-nav";
-import { hubHref, hubPrimaryTabs, navHubByLabel } from "../lib/nav/hubs";
+import { navHubByLabel } from "../lib/nav/hubs";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
@@ -71,20 +70,21 @@ type Me = {
 
 const groups = PRODUCT_NAV_GROUPS;
 
-function drawerNestedItems(group: ProductNavGroup): Array<{ href: string; label: string }> {
-  if (group.label === "Home") return [];
-  if (group.label === "Logistics") {
-    return [
-      { href: "/logistics", label: "Travel & hotels" },
-      ...LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label })),
-    ];
-  }
-  const hub = navHubByLabel(group.label);
-  if (!hub) return [];
-  return hubPrimaryTabs(hub).map((tab) => ({
-    href: hubHref(hub.href, tab.id),
-    label: tab.label,
-  }));
+/**
+ * Sub-links the panel has to carry itself.
+ *
+ * Every hub with a `ProductHubDef` renders its own section tab bar on the page,
+ * so repeating those sections here put the same four labels on screen twice
+ * (drawer "Event day / Scouting / Strategy / Pit" beside the page's own tab bar
+ * saying the same thing). The panel now defers to the page for those.
+ *
+ * Logistics is the one pillar with no in-page tab bar, so Packing / Duties /
+ * Visit invites would have no browsable home at all — they stay here.
+ */
+function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
+  if (navHubByLabel(group.label)) return [];
+  if (group.label !== "Logistics") return [];
+  return LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label }));
 }
 
 function formatMembershipLabel(row: MembershipOption): string {
@@ -141,9 +141,13 @@ export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
   const [orgId, setOrgId] = useState("");
-  const [open, setOpen] = useState(false);
-  const [expandedHub, setExpandedHub] = useState<string | null>(null);
-  const [commandOpen, setCommandOpen] = useState(false);
+  /**
+   * One overlay for navigation *and* search. There used to be two — a drawer of
+   * destinations behind the hamburger and a command dialog of the same
+   * destinations behind ⌘K — which is why the same page could be reached from
+   * four controls at once.
+   */
+  const [navOpen, setNavOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -161,26 +165,37 @@ export default function AppShell() {
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
-  const [commandQuery, setCommandQuery] = useState("");
+  const [navQuery, setNavQuery] = useState("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [commandCursor, setCommandCursor] = useState(0);
+  const [resultCursor, setResultCursor] = useState(0);
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
   // Rendered after mount so the server and client markup agree.
   const [shortcutHint, setShortcutHint] = useState("");
-  const commandInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const panelCloseRef = useRef<HTMLButtonElement>(null);
   const searchRequestId = useRef(0);
   const islandQueryOpened = useRef(false);
   const islandPressTimer = useRef<number | null>(null);
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
+  /** Set by the search entry points so opening from "All" never pops a keyboard. */
+  const focusSearchOnOpen = useRef(false);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
 
-  useEffect(() => {
-    if (open) setExpandedHub(activeGroupLabel ?? "Home");
-  }, [open, activeGroupLabel]);
+  const openNav = useCallback((options?: { focusSearch?: boolean }) => {
+    focusSearchOnOpen.current = Boolean(options?.focusSearch);
+    setAccountMenuOpen(false);
+    setIslandEditorOpen(false);
+    setNavOpen(true);
+  }, []);
+
+  const closeNav = useCallback(() => {
+    setNavOpen(false);
+    setWorkspaceOpen(false);
+  }, []);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -192,18 +207,23 @@ export default function AppShell() {
   useEffect(() => {
     document.body.classList.toggle(
       "soft-nav-open",
-      open || commandOpen || accountMenuOpen || islandEditorOpen || workspaceOpen,
+      navOpen || accountMenuOpen || islandEditorOpen,
     );
-    return () => document.body.classList.remove("soft-nav-open");
-  }, [open, commandOpen, accountMenuOpen, islandEditorOpen, workspaceOpen]);
+    // The island lists four of the same apps the panel lists. Only one of the
+    // two is on screen at a time.
+    document.body.classList.toggle("soft-nav-panel-open", navOpen);
+    return () => {
+      document.body.classList.remove("soft-nav-open");
+      document.body.classList.remove("soft-nav-panel-open");
+    };
+  }, [navOpen, accountMenuOpen, islandEditorOpen]);
 
   useEffect(() => {
     setPathSearch(window.location.search);
   }, [pathname]);
 
   useEffect(() => {
-    setOpen(false);
-    setCommandOpen(false);
+    setNavOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
     setWorkspaceOpen(false);
@@ -216,21 +236,26 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (!commandOpen) {
-      setCommandQuery("");
+    if (!navOpen) {
+      setNavQuery("");
       setSearchHits([]);
       setSearchLoading(false);
-      setCommandCursor(0);
+      setResultCursor(0);
       return;
     }
     setRecentCommands(listRecentCommands());
-    const focusTimer = window.setTimeout(() => commandInputRef.current?.focus(), 30);
+    const wantsSearch = focusSearchOnOpen.current;
+    focusSearchOnOpen.current = false;
+    const focusTimer = window.setTimeout(() => {
+      if (wantsSearch) searchInputRef.current?.focus();
+      else panelCloseRef.current?.focus();
+    }, 40);
     return () => window.clearTimeout(focusTimer);
-  }, [commandOpen]);
+  }, [navOpen]);
 
   useEffect(() => {
-    if (!commandOpen) return;
-    const q = commandQuery.trim();
+    if (!navOpen) return;
+    const q = navQuery.trim();
     if (q.length < 2) {
       setSearchHits([]);
       setSearchLoading(false);
@@ -268,7 +293,7 @@ export default function AppShell() {
         });
     }, 220);
     return () => window.clearTimeout(timer);
-  }, [commandOpen, commandQuery, orgId]);
+  }, [navOpen, navQuery, orgId]);
 
   useEffect(() => {
     void fetchProductSession(orgId || null)
@@ -314,7 +339,7 @@ export default function AppShell() {
   function openIslandEditor() {
     setIslandDraft(islandHrefs);
     setIslandMessage("");
-    setOpen(false);
+    setNavOpen(false);
     setIslandEditorOpen(true);
   }
 
@@ -398,11 +423,10 @@ export default function AppShell() {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setCommandOpen(true);
+        openNav({ focusSearch: true });
       }
       if (event.key === "Escape") {
-        setCommandOpen(false);
-        setOpen(false);
+        setNavOpen(false);
         setAccountMenuOpen(false);
         setIslandEditorOpen(false);
         setWorkspaceOpen(false);
@@ -410,7 +434,7 @@ export default function AppShell() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [openNav]);
 
   const accountLabel =
     me.displayName?.trim() ||
@@ -479,36 +503,40 @@ export default function AppShell() {
     ];
   }, [me.platformAdmin]);
 
+  const queryActive = navQuery.trim().length > 0;
+
   const commandHits = useMemo(
     () =>
-      searchCommands(commandQuery, paletteCatalog, {
-        // Past ~8 rows a member is scanning rather than selecting.
-        limit: 8,
-        isAllowed: navHrefAllowed,
-        recentHrefs: recentCommands,
-      }),
-    [commandQuery, navHrefAllowed, paletteCatalog, recentCommands],
+      queryActive
+        ? searchCommands(navQuery, paletteCatalog, {
+            // Past ~8 rows a member is scanning rather than selecting.
+            limit: 8,
+            isAllowed: navHrefAllowed,
+            recentHrefs: recentCommands,
+          })
+        : [],
+    [navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
   );
 
   const goToCommand = useCallback(
     (hit: CommandHit) => {
-      setCommandOpen(false);
+      closeNav();
       setRecentCommands(rememberRecentCommand(hit.href));
       router.push(withOrgHref(hit.href, orgId || null));
     },
-    [orgId, router],
+    [closeNav, orgId, router],
   );
 
   useEffect(() => {
-    setCommandCursor(0);
-  }, [commandQuery]);
+    setResultCursor(0);
+  }, [navQuery]);
 
   const orderedMemberships = useMemo(
     () => sortMembershipsByRecent(memberships, recentOrgIds),
     [memberships, recentOrgIds],
   );
 
-  /** Hub roots keep the hamburger — Back replaces Menu and strands mobile users. */
+  /** Hub roots own the page title, so Back would strand a member on them. */
   const isHubRoot =
     pathname === "/" ||
     pathname === "/dashboard" ||
@@ -587,8 +615,7 @@ export default function AppShell() {
   }, [eventFocus, focusCollapsed]);
 
   const closeOverlays = useCallback(() => {
-    setOpen(false);
-    setCommandOpen(false);
+    setNavOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
     setWorkspaceOpen(false);
@@ -611,18 +638,18 @@ export default function AppShell() {
   }, []);
 
   const openFullSearch = useCallback(() => {
-    const q = commandQuery.trim();
+    const q = navQuery.trim();
     const href = withOrgHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", orgId || null);
-    setCommandOpen(false);
+    closeNav();
     router.push(href);
-  }, [commandQuery, orgId, router]);
+  }, [closeNav, navQuery, orgId, router]);
 
   /**
    * One ordered list so ↑/↓ crosses both groups. Destinations resolve locally
    * and stay put; async data hits append underneath rather than reshuffling
    * the row under the cursor mid-keystroke.
    */
-  const paletteRows = useMemo(
+  const resultRows = useMemo(
     () => [
       ...commandHits.map((hit) => ({ kind: "command" as const, href: hit.href, hit })),
       ...searchHits.map((hit) => ({ kind: "data" as const, href: hit.href, hit })),
@@ -630,13 +657,11 @@ export default function AppShell() {
     [commandHits, searchHits],
   );
 
-  const activeRowIndex = paletteRows.length
-    ? Math.min(commandCursor, paletteRows.length - 1)
-    : -1;
+  const activeRowIndex = resultRows.length ? Math.min(resultCursor, resultRows.length - 1) : -1;
 
-  const openPaletteRow = useCallback(
+  const openResultRow = useCallback(
     (index: number) => {
-      const row = paletteRows[index];
+      const row = resultRows[index];
       if (!row) {
         openFullSearch();
         return;
@@ -645,20 +670,20 @@ export default function AppShell() {
         goToCommand(row.hit);
         return;
       }
-      setCommandOpen(false);
+      closeNav();
       setRecentCommands(rememberRecentCommand(row.href));
       router.push(row.href);
     },
-    [goToCommand, openFullSearch, paletteRows, router],
+    [closeNav, goToCommand, openFullSearch, resultRows, router],
   );
 
-  const jumpCommandTopResult = useCallback(() => {
+  const jumpTopResult = useCallback(() => {
     if (activeRowIndex < 0) {
       openFullSearch();
       return;
     }
-    openPaletteRow(activeRowIndex);
-  }, [activeRowIndex, openFullSearch, openPaletteRow]);
+    openResultRow(activeRowIndex);
+  }, [activeRowIndex, openFullSearch, openResultRow]);
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -708,21 +733,6 @@ export default function AppShell() {
       </a>
       <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
         <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
-          <button
-            className={`soft-icon-btn soft-menu-btn${open ? " is-open" : ""}`}
-            type="button"
-            aria-label={open ? "Close navigation" : "Open navigation"}
-            aria-expanded={open}
-            onClick={() => {
-              setOpen((value) => !value);
-            }}
-          >
-            <span className="soft-burger" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-          </button>
           <div className="soft-page-head">
             {showBack ? (
               <button
@@ -735,31 +745,40 @@ export default function AppShell() {
               </button>
             ) : null}
             <div className="soft-page-head-copy">
-              <p className="soft-topbar-title">{title ?? "Vantage"}</p>
-              <small className="soft-org-crumb">{showBack ? crumbHint : orgLabel}</small>
+              {isHubRoot ? (
+                /* A hub root already names itself in its own H1, and its island
+                   tab is lit — a third copy in the bar is noise. Show the one
+                   thing the page cannot: whose workspace this is. */
+                <p className="soft-topbar-title soft-topbar-org">{orgLabel}</p>
+              ) : (
+                <>
+                  <p className="soft-topbar-title">{title ?? "Vantage"}</p>
+                  <small className="soft-org-crumb">{showBack ? crumbHint : orgLabel}</small>
+                </>
+              )}
             </div>
           </div>
         </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
-          {/* Inline (not floating) so it never overlays the four-app island on mobile. */}
-          <ReportBugButton variant="inline" />
-          <button
-            className="soft-icon-btn soft-search-btn"
-            type="button"
-            aria-label="Search and jump to anything"
-            aria-keyshortcuts="Control+K Meta+K"
-            onClick={() => {
-              setCommandOpen(true);
-            }}
-          >
-            <Icon name="search" />
-            <span className="soft-search-label">Search</span>
-            {/* Nobody discovers ⌘K unless it is on screen. */}
-            <kbd className="soft-search-kbd" aria-hidden="true">
-              {shortcutHint}
-            </kbd>
-          </button>
+          {/* Wide screens get search in the bar; narrow ones reach the same field
+              inside the panel, so there is exactly one search box per width. */}
+          {navOpen ? null : (
+            <button
+              className="soft-icon-btn soft-search-btn"
+              type="button"
+              aria-label="Search Vantage"
+              aria-keyshortcuts="Control+K Meta+K"
+              onClick={() => openNav({ focusSearch: true })}
+            >
+              <Icon name="search" />
+              <span className="soft-search-label">Search</span>
+              {/* Nobody discovers ⌘K unless it is on screen. */}
+              <kbd className="soft-search-kbd" aria-hidden="true">
+                {shortcutHint}
+              </kbd>
+            </button>
+          )}
           <a
             className="soft-icon-btn soft-notif"
             href="/notifications"
@@ -899,8 +918,10 @@ export default function AppShell() {
         />
       ) : null}
 
-      {open ? <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={() => setOpen(false)} /> : null}
-      <aside className={`soft-drawer ${open ? "open" : ""}`} aria-label="Product navigation">
+      {navOpen ? (
+        <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
+      ) : null}
+      <aside className={`soft-drawer ${navOpen ? "open" : ""}`} aria-label="Product navigation">
         <div className="soft-drawer-head">
           <div className="soft-drawer-brand">
             <span className="mark">v</span>
@@ -908,12 +929,18 @@ export default function AppShell() {
               <strong>Vantage</strong>
             </div>
           </div>
-          <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setOpen(false)}>
+          <button
+            className="soft-icon-btn"
+            type="button"
+            aria-label="Close"
+            ref={panelCloseRef}
+            onClick={closeNav}
+          >
             <Icon name="x" />
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
+          <a className="soft-profile-link" href="/account" onClick={closeNav}>
             <span className="soft-avatar">
               {me.image ? (
                 <img src={me.image} alt="" />
@@ -957,8 +984,7 @@ export default function AppShell() {
                       href={switchWorkspaceHref(row.orgId)}
                       onClick={() => {
                         onWorkspaceSwitch(row.orgId);
-                        setWorkspaceOpen(false);
-                        setOpen(false);
+                        closeNav();
                       }}
                     >
                       <strong>{formatMembershipLabel(row)}</strong>
@@ -970,10 +996,10 @@ export default function AppShell() {
                   ))
                 )}
                 <div className="soft-workspace-links">
-                  <a href={withOrgHref("/workspace", orgId)} onClick={() => setOpen(false)}>
-                    Workspace
+                  <a href={withOrgHref("/workspace", orgId)} onClick={closeNav}>
+                    Manage teams
                   </a>
-                  <a href="/invite" onClick={() => setOpen(false)}>
+                  <a href="/invite" onClick={closeNav}>
                     Invite
                   </a>
                 </div>
@@ -981,128 +1007,189 @@ export default function AppShell() {
             ) : null}
           </div>
         </div>
-        <button
-          type="button"
-          className="soft-drawer-search"
-          onClick={() => {
-            setOpen(false);
-            setCommandOpen(true);
-          }}
-        >
+
+        {/* The one search box. It used to be a button here that opened a second
+            overlay listing the same destinations this panel already lists. */}
+        <div className="soft-panel-search">
           <Icon name="search" />
-          <span>
-            <strong>Find any page or action</strong>
-            <small>Search tools, tasks, inventory, and team knowledge</small>
-          </span>
-          {shortcutHint ? <kbd aria-hidden="true">{shortcutHint}</kbd> : null}
-        </button>
-        <nav className="soft-drawer-flat" aria-label="Hubs">
-          {visibleNavGroups.map((group) => {
-            const item = group.items[0];
-            if (!item || item.state === "planned") return null;
-            const isActive = activeGroupLabel === group.label;
-            const nested = drawerNestedItems(group).filter((entry) => navHrefAllowed(entry.href));
-            const expanded = expandedHub === group.label;
-            const toneStyle = { ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg };
-            if (nested.length === 0) {
-              return (
-                <a
-                  key={group.label}
-                  className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
-                  aria-current={
-                    activeNav?.item.href === item.href && activeNav.group.label === group.label
-                      ? "page"
-                      : undefined
-                  }
-                  href={withOrgHref(item.href, orgId)}
-                  onClick={() => setOpen(false)}
-                  style={toneStyle}
-                >
-                  <i>
-                    <Icon name={group.icon} />
-                  </i>
-                  <span>{item.label}</span>
-                </a>
-              );
-            }
-            const hub = navHubByLabel(group.label);
-            const liveTab = new URLSearchParams(pathSearch.replace(/^\?/, "")).get("tab");
-            const panelId = `soft-nav-items-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-            return (
-              <div
-                key={group.label}
-                className={`soft-nav-group${isActive ? " is-active" : ""}`}
-                style={toneStyle}
-              >
-                {/* Destination and disclosure are separate controls: hubs with a
-                    single child (Build, AI) must open in one tap, not two. */}
-                <div className="soft-nav-heading soft-nav-heading-row">
-                  <span className="soft-nav-hub-lead">
-                    <a
-                      className="soft-nav-hub-link"
-                      href={withOrgHref(item.href, orgId)}
-                      onClick={() => setOpen(false)}
-                    >
-                      <i>
-                        <Icon name={group.icon} />
-                      </i>
-                      <span>{group.label}</span>
-                    </a>
-                  </span>
-                  <em className="soft-nav-count">{nested.length}</em>
-                  <button
-                    type="button"
-                    className="soft-icon-btn soft-nav-heading-toggle"
-                    aria-expanded={expanded}
-                    aria-controls={panelId}
-                    aria-label={`${expanded ? "Hide" : "Show"} ${group.label} pages`}
-                    onClick={() => setExpandedHub(expanded ? null : group.label)}
+          <input
+            id="soft-nav-search"
+            ref={searchInputRef}
+            type="search"
+            role="combobox"
+            aria-label="Search pages, tools, and your team's data"
+            aria-expanded={resultRows.length > 0}
+            aria-controls={queryActive ? "soft-nav-results" : undefined}
+            aria-activedescendant={activeRowIndex >= 0 ? `soft-nav-row-${activeRowIndex}` : undefined}
+            value={navQuery}
+            placeholder="Search Vantage"
+            autoComplete="off"
+            onChange={(event) => setNavQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                if (resultRows.length) {
+                  setResultCursor((current) => (current + 1) % resultRows.length);
+                }
+                return;
+              }
+              if (event.key === "ArrowUp") {
+                event.preventDefault();
+                if (resultRows.length) {
+                  setResultCursor((current) => (current - 1 + resultRows.length) % resultRows.length);
+                }
+                return;
+              }
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (event.metaKey || event.ctrlKey) {
+                  openFullSearch();
+                  return;
+                }
+                jumpTopResult();
+              }
+            }}
+          />
+          {navQuery ? (
+            <button
+              type="button"
+              className="soft-panel-search-clear"
+              aria-label="Clear search"
+              onClick={() => {
+                setNavQuery("");
+                searchInputRef.current?.focus();
+              }}
+            >
+              <Icon name="x" />
+            </button>
+          ) : shortcutHint ? (
+            <kbd aria-hidden="true">{shortcutHint}</kbd>
+          ) : null}
+        </div>
+
+        {queryActive ? (
+          <div id="soft-nav-results" className="soft-nav-results" role="listbox" aria-label="Search results">
+            {commandHits.length > 0 ? (
+              <nav className="command-group" aria-label="Go to">
+                <p className="command-group-head">Go to</p>
+                {commandHits.map((hit, index) => (
+                  <a
+                    id={`soft-nav-row-${index}`}
+                    role="option"
+                    aria-selected={index === activeRowIndex}
+                    className={index === activeRowIndex ? "is-active" : undefined}
+                    href={withOrgHref(hit.href, orgId)}
+                    key={hit.id}
+                    onMouseEnter={() => setResultCursor(index)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToCommand(hit);
+                    }}
                   >
-                    <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
-                      <Icon name="chevron" />
+                    <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
+                    <span>
+                      {hit.label}
+                      <small>{hit.context}</small>
                     </span>
-                  </button>
-                </div>
-                {expanded ? (
-                  <div className="soft-nav-items" id={panelId}>
-                    {nested.map((entry) => {
-                      const hrefTab = new URLSearchParams(entry.href.split("?")[1] ?? "").get("tab");
-                      const pathOnly = entry.href.split("?")[0] ?? entry.href;
-                      const onThisHub = pathname === pathOnly || pathname === item.href;
-                      const isCurrent =
-                        onThisHub &&
-                        (liveTab === hrefTab ||
-                          (!liveTab && hrefTab === hub?.defaultTab) ||
-                          (group.label === "Logistics" && pathname === pathOnly));
-                      return (
+                    {index === activeRowIndex ? <small aria-hidden="true">↵</small> : null}
+                  </a>
+                ))}
+              </nav>
+            ) : null}
+
+            {searchHits.length > 0 || searchLoading ? (
+              <section className="command-search-hits" aria-label="Your data">
+                <header>
+                  <strong>In your team&apos;s data</strong>
+                  {searchLoading ? <small>Searching…</small> : null}
+                </header>
+                <nav>
+                  {searchHits.map((hit, offset) => {
+                    const index = commandHits.length + offset;
+                    return (
+                      <a
+                        id={`soft-nav-row-${index}`}
+                        role="option"
+                        aria-selected={index === activeRowIndex}
+                        className={index === activeRowIndex ? "is-active" : undefined}
+                        href={hit.href}
+                        key={`${hit.href}-${hit.title}`}
+                        onMouseEnter={() => setResultCursor(index)}
+                        onClick={closeNav}
+                      >
+                        <Icon name="search" />
+                        <span>
+                          {hit.title}
+                          {hit.subtitle ? <small>{hit.subtitle}</small> : null}
+                        </span>
+                        {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
+                      </a>
+                    );
+                  })}
+                </nav>
+                <button type="button" className="command-open-full" onClick={openFullSearch}>
+                  Open full search for “{navQuery.trim()}”
+                </button>
+              </section>
+            ) : null}
+
+            {resultRows.length === 0 && !searchLoading ? (
+              <p className="command-empty">
+                Nothing matches “{navQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <nav className="soft-drawer-flat" aria-label="Workspaces">
+            {visibleNavGroups.map((group) => {
+              const item = group.items[0];
+              if (!item || item.state === "planned") return null;
+              const isActive = activeGroupLabel === group.label;
+              const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
+              const toneStyle = { ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg };
+              return (
+                <div key={group.label} className="soft-nav-group" style={toneStyle}>
+                  {/* One row, one destination. The hub's own tab bar lists its
+                      sections once the member is there. */}
+                  <a
+                    className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                    href={withOrgHref(item.href, orgId)}
+                    onClick={closeNav}
+                  >
+                    <i>
+                      <Icon name={group.icon} />
+                    </i>
+                    <span>{item.label}</span>
+                  </a>
+                  {sub.length > 0 ? (
+                    <div className="soft-nav-items">
+                      {sub.map((entry) => (
                         <a
                           key={entry.href}
                           href={withOrgHref(entry.href, orgId)}
-                          aria-current={isCurrent ? "page" : undefined}
-                          onClick={() => setOpen(false)}
+                          aria-current={pathname === (entry.href.split("?")[0] ?? entry.href) ? "page" : undefined}
+                          onClick={closeNav}
                         >
                           {entry.label}
                         </a>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </nav>
-        {me.platformAdmin ? (
-          <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={() => setOpen(false)}>
-            <i>
-              <Icon name="grid" />
-            </i>
-            <span>Team manager</span>
-          </a>
-        ) : null}
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+            {me.platformAdmin ? (
+              <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={closeNav}>
+                <i>
+                  <Icon name="grid" />
+                </i>
+                <span>Team manager</span>
+              </a>
+            ) : null}
+          </nav>
+        )}
         <footer className="soft-drawer-foot">
-          <a href="/account" onClick={() => setOpen(false)}>
-            Account
-          </a>
           <button type="button" onClick={() => openIslandEditor()}>
             Customize island
           </button>
@@ -1149,12 +1236,13 @@ export default function AppShell() {
             ) : null}
           </a>
         ))}
+        {/* The only control that opens the navigation panel. */}
         <button
           type="button"
           className="soft-island-more"
           aria-label="Open all apps"
-          aria-expanded={open}
-          onClick={() => setOpen(true)}
+          aria-expanded={navOpen}
+          onClick={() => openNav()}
         >
           <Icon name="grid" />
           <span>All</span>
@@ -1208,144 +1296,6 @@ export default function AppShell() {
               </button>
             </footer>
           </section>
-        </div>
-      ) : null}
-
-      {commandOpen ? (
-        <div
-          className="command-dialog"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="command-title"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setCommandOpen(false);
-          }}
-        >
-          <div onClick={(event) => event.stopPropagation()}>
-            <header>
-              <h2 id="command-title">Search &amp; jump</h2>
-              <button type="button" aria-label="Close" onClick={() => setCommandOpen(false)}>
-                ×
-              </button>
-            </header>
-            <label htmlFor="soft-command-input">
-              Go to any tool, or search your tasks, inventory, impact, and knowledge
-              <input
-                id="soft-command-input"
-                ref={commandInputRef}
-                type="search"
-                role="combobox"
-                aria-expanded={paletteRows.length > 0}
-                aria-controls="soft-command-results"
-                aria-activedescendant={
-                  activeRowIndex >= 0 ? `soft-command-row-${activeRowIndex}` : undefined
-                }
-                value={commandQuery}
-                placeholder="Search for anything — try “bumpers”, “clock in”, “pick list”"
-                autoComplete="off"
-                onChange={(event) => setCommandQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    if (paletteRows.length) {
-                      setCommandCursor((current) => (current + 1) % paletteRows.length);
-                    }
-                    return;
-                  }
-                  if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    if (paletteRows.length) {
-                      setCommandCursor(
-                        (current) => (current - 1 + paletteRows.length) % paletteRows.length,
-                      );
-                    }
-                    return;
-                  }
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    if (event.metaKey || event.ctrlKey) {
-                      openFullSearch();
-                      return;
-                    }
-                    jumpCommandTopResult();
-                  }
-                }}
-              />
-            </label>
-            <div id="soft-command-results" role="listbox" aria-label="Results">
-              {commandHits.length > 0 ? (
-                <nav className="command-group" aria-label="Go to">
-                  <p className="command-group-head">
-                    {commandQuery.trim() ? "Go to" : recentCommands.length ? "Recent" : "Jump to"}
-                  </p>
-                  {commandHits.map((hit, index) => (
-                    <a
-                      id={`soft-command-row-${index}`}
-                      role="option"
-                      aria-selected={index === activeRowIndex}
-                      className={index === activeRowIndex ? "is-active" : undefined}
-                      href={withOrgHref(hit.href, orgId)}
-                      key={hit.id}
-                      onMouseEnter={() => setCommandCursor(index)}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        goToCommand(hit);
-                      }}
-                    >
-                      <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
-                      <span>
-                        {hit.label}
-                        <small>{hit.context}</small>
-                      </span>
-                      {index === activeRowIndex ? <small aria-hidden="true">↵</small> : null}
-                    </a>
-                  ))}
-                </nav>
-              ) : null}
-
-              {searchHits.length > 0 || searchLoading ? (
-                <section className="command-search-hits" aria-label="Your data">
-                  <header>
-                    <strong>In your team&apos;s data</strong>
-                    {searchLoading ? <small>Searching…</small> : null}
-                  </header>
-                  <nav>
-                    {searchHits.map((hit, offset) => {
-                      const index = commandHits.length + offset;
-                      return (
-                        <a
-                          id={`soft-command-row-${index}`}
-                          role="option"
-                          aria-selected={index === activeRowIndex}
-                          className={index === activeRowIndex ? "is-active" : undefined}
-                          href={hit.href}
-                          key={`${hit.href}-${hit.title}`}
-                          onMouseEnter={() => setCommandCursor(index)}
-                          onClick={() => setCommandOpen(false)}
-                        >
-                          <Icon name="search" />
-                          <span>
-                            {hit.title}
-                            {hit.subtitle ? <small>{hit.subtitle}</small> : null}
-                          </span>
-                          {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
-                        </a>
-                      );
-                    })}
-                  </nav>
-                  <button type="button" className="command-open-full" onClick={openFullSearch}>
-                    Open full search{commandQuery.trim() ? ` for “${commandQuery.trim()}”` : ""}
-                  </button>
-                </section>
-              ) : null}
-
-              {paletteRows.length === 0 && !searchLoading ? (
-                <p className="command-empty">
-                  Nothing matches “{commandQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
-                </p>
-              ) : null}
-            </div>
-          </div>
         </div>
       ) : null}
     </>

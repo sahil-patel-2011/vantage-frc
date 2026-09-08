@@ -16,7 +16,11 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
+  // Was getByRole("button", {name: "Customize"}), which only ever matched the
+  // closed navigation panel's "Customize island" — that panel sat off-canvas but
+  // still in the accessible tree. It is properly hidden now, so assert the
+  // dashboard's own control, which is what this test was trying to check.
+  await expect(page.getByTestId("dash-customize")).toBeVisible();
 });
 
 test("protected routes preserve their requested destination", async ({ page }) => {
