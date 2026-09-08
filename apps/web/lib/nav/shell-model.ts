@@ -23,6 +23,13 @@ export type ShellHub = {
   href: string;
   active: boolean;
   tabs: ShellTab[];
+  /**
+   * True when the hub's own page renders these same tabs in its workbench bar.
+   * The sidebar then leaves them to the page rather than printing the identical
+   * row a few centimetres away — the six ProductHubShell hubs all do. Logistics
+   * does not: `/logistics` is a plain page, so its deep links only exist here.
+   */
+  tabsShownOnPage: boolean;
 };
 
 export type ShellQuickAction = {
@@ -65,6 +72,9 @@ export function buildShellHubs(input: BuildHubsInput): ShellHub[] {
     if (!item || item.state === "planned") continue;
     if (!input.isAllowed(item.href)) continue;
     let tabs: Array<{ id: string; label: string; href: string }> = [];
+    // Logistics builds its own list because /logistics is not a hub shell; the
+    // six real hubs render this same row themselves, so the sidebar defers.
+    let tabsShownOnPage = false;
     if (group.label === "Logistics") {
       tabs = [
         { id: "logistics", label: "Travel & hotels", href: "/logistics" },
@@ -78,6 +88,7 @@ export function buildShellHubs(input: BuildHubsInput): ShellHub[] {
           label: tab.label,
           href: hubHref(hub.href, tab.id),
         }));
+        tabsShownOnPage = true;
       }
     }
     const hub = navHubByLabel(group.label);
@@ -89,6 +100,7 @@ export function buildShellHubs(input: BuildHubsInput): ShellHub[] {
       icon: group.icon,
       href: item.href,
       active,
+      tabsShownOnPage,
       tabs: tabs
         .filter((tab) => input.isAllowed(tab.href))
         .map((tab) => {

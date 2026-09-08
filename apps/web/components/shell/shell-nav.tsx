@@ -242,7 +242,16 @@ export function ShellNav(props: ShellNavProps) {
                 </button>
               ) : null}
             </div>
-            {!rail && hub.tabs.length > 0 ? (
+            {/* The sidebar sits beside the content, so for the hub you are in
+                it printed the same row as that page's own workbench bar —
+                "Event day · Scouting · Strategy · Pit" twice, a few centimetres
+                apart. Leave it to the page there. The drawer is a modal over
+                the content: while it is open that bar is not on screen, so its
+                chips are the only way through and they stay. Logistics keeps
+                its links in both, having no workbench bar at all. */}
+            {!rail &&
+            hub.tabs.length > 0 &&
+            !(variant === "sidebar" && hub.active && hub.tabsShownOnPage) ? (
               <div className="shell-hub-tabs">
                 {hub.tabs.map((tab) => (
                   <a

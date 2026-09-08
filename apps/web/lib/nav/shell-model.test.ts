@@ -115,3 +115,40 @@ describe("sidebar quick actions", () => {
     expect(dedupeSidebarQuickActions(actions, []).length).toBe(actions.length);
   });
 });
+
+describe("hubs whose page already shows their tabs", () => {
+  const hubs = buildShellHubs({
+    pathname: "/competition",
+    search: "",
+    activeGroupLabel: "Competition",
+    isAllowed: allow,
+  });
+
+  it("marks the six workbench hubs, whose pages render the same row", () => {
+    for (const label of ["Competition", "Team", "Business", "Build", "AI", "Media"]) {
+      const hub = hubs.find((entry) => entry.label === label);
+      expect(hub?.tabsShownOnPage, label).toBe(true);
+    }
+  });
+
+  it("does not mark Logistics, whose page has no workbench bar", () => {
+    // /logistics is a plain page, so the sidebar is the only place these four
+    // deep links appear — dropping them there would strand them.
+    const logistics = hubs.find((entry) => entry.label === "Logistics");
+    expect(logistics?.tabsShownOnPage).toBe(false);
+    expect(logistics?.tabs.length).toBeGreaterThan(1);
+  });
+
+  it("still carries the tabs, so the drawer and peek can render them", () => {
+    // The flag says "the page shows these too", not "throw them away" — a
+    // non-active hub still peeks its chips open in the sidebar.
+    const competition = hubs.find((entry) => entry.label === "Competition");
+    expect(competition?.active).toBe(true);
+    expect(competition?.tabs.map((tab) => tab.label)).toEqual([
+      "Event day",
+      "Scouting",
+      "Strategy",
+      "Pit",
+    ]);
+  });
+});

@@ -129,12 +129,17 @@ test("product shell gives the island to phones and the sidebar to laptops", asyn
   // One search affordance per width: the sidebar's, not the topbar's.
   await expect(page.getByRole("button", { name: "Search and jump to anything" })).toBeHidden();
 
-  // Only the hub you are in spends rows on its chips; the rest peek open in
-  // place, so the whole map fits without scrolling past it.
+  // The sidebar sits beside the content, so it leaves the active hub's chips to
+  // that page's own workbench bar and shows none of its own; other hubs peek.
+  // (The drawer, asserted above, is a modal over the content and keeps them.)
+  await page.goto("/competition");
+  await expect(sidebar.locator(".shell-hub.is-active .shell-hub-tabs a")).toHaveCount(0);
+  // The workbench bar switches tabs in place, so these are buttons, not links.
+  await expect(page.locator("main").getByText("Scouting", { exact: true }).first()).toBeVisible();
   const openChips = sidebar.locator(".shell-hub-tabs a:visible");
-  const settled = await openChips.count();
+  await expect(openChips).toHaveCount(0);
   await sidebar.locator(".shell-hub-peek").first().click();
-  await expect(openChips).not.toHaveCount(settled);
+  await expect(openChips).not.toHaveCount(0);
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(sidebar).toHaveClass(/is-collapsed/);
   await page.getByRole("button", { name: "Open navigation" }).click();
