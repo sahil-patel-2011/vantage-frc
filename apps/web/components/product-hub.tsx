@@ -136,11 +136,12 @@ export function ProductHubShell({
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgReady, setOrgReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
-  const nestedTabs = useMemo(() => {
-    const all = hubNestedTabs(hub, workbenchId);
-    if (all.length <= 1) return [];
-    if (primaryTabs.some((entry) => entry.id === workbenchId)) return all;
-    return filterTabsByHubAccess(all, access.hubAccess, accessHubId);
+  /** Tools inside the open workbench — the workbench root itself is the tab above. */
+  const toolTabs = useMemo(() => {
+    const inner = hubNestedTabs(hub, workbenchId).filter((entry) => entry.group === workbenchId);
+    if (!inner.length) return [];
+    if (primaryTabs.some((entry) => entry.id === workbenchId)) return inner;
+    return filterTabsByHubAccess(inner, access.hubAccess, accessHubId);
   }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
 
   useEffect(() => {
@@ -229,16 +230,19 @@ export function ProductHubShell({
             and falls back to its workbench; renders nothing when neither has one. */}
         <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
       </TabBar>
-      {nestedTabs.length > 1 ? (
+      {/* The workbench root is the tab that is already selected one row up, so
+          repeating it here put the same label ("Event day", "Kickoff") on the
+          page twice. The strip lists only the tools inside the open workbench;
+          the tab above is how you get back to its own screen. */}
+      {toolTabs.length > 0 ? (
         <ToolStrip
-          aria-label={`${hub.label} tools`}
+          aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
           value={tab}
           onChange={selectTab}
-          items={nestedTabs.map((entry) => ({
+          items={toolTabs.map((entry) => ({
             id: entry.id,
             label: entry.label,
-            // The workbench root and its pinned tools stay on screen.
-            featured: entry.featured || !entry.group,
+            featured: entry.featured === true,
             href:
               embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
                 ? hubLegacyHref(entry, orgId)
