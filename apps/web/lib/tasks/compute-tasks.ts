@@ -5,23 +5,10 @@ import { resolveOwnerNames, workItemHref } from "../work-items/canonical";
 import { loadRoster } from "../work-items/service";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 
-export const TASK_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked", "done", "archived"];
-export const TASK_PRIORITIES: TaskPriority[] = ["low", "normal", "high", "critical"];
-export const SUBSYSTEM_SUGGESTIONS = [
-  "drivetrain",
-  "intake",
-  "shooter",
-  "elevator",
-  "arm",
-  "climber",
-  "electrical",
-  "pneumatics",
-  "controls",
-  "software",
-  "vision",
-  "fabrication",
-  "general",
-];
+// Client components take these from ./task-constants directly: this module
+// imports @vantage/core, which reaches the Node pg driver and cannot be bundled
+// for the browser. Re-exported so server callers keep one import.
+export { SUBSYSTEM_SUGGESTIONS, TASK_PRIORITIES, TASK_STATUSES } from "./task-constants";
 
 export type TasksSetupStep = { id: string; label: string; detail: string; href: string };
 

@@ -7,7 +7,7 @@ import {
   ONSHAPE_PLATFORM_HINT_UNCONFIGURED,
   onshapeOauthCtaEnabled,
   withLocalPlaywrightHint,
-} from "../../../lib/cad/onshape-setup-copy";
+} from "../../../lib/cad/onshape-setup-strings";
 
 const install = `# Windows (recommended one-shot):
 # powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
