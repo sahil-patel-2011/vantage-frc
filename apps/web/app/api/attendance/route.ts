@@ -264,6 +264,7 @@ export async function POST(request: Request) {
             throw new HttpError(400, "Member is not part of this workspace");
           }
           const personName = linkedMember?.rows[0]?.name?.trim() || action.personName;
+          if (!personName) throw new HttpError(400, "Name is required");
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO attendance_entries (org_id, event_id, user_id, person_name, role, hours)
              VALUES ($1, $2, $3, $4, $5, $6)
