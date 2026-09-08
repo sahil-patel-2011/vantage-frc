@@ -54,9 +54,12 @@ export function computeSponsorRenewalRiskScore(inputs: SponsorRenewalRiskInputs)
     contributionRecency: daysSinceLastContribution === null ? null : clamp01(daysSinceLastContribution / 365),
     // A count of zero mentions is itself a real, logged signal (not fabricated) — always computed.
     impactMentions: clamp01(1 - inputs.impactMentionCount12mo / 3),
-    // No mentions exist to attach evidence to, so the coverage ratio is undefined.
+    // Undefined when no mentions exist to attach evidence to, and also when the
+    // deployment tracks no evidence at all (evidenceItemCount === null).
     evidenceCoverage:
-      inputs.impactMentionCount12mo > 0 ? clamp01(1 - inputs.evidenceItemCount / inputs.impactMentionCount12mo) : null,
+      inputs.impactMentionCount12mo > 0 && inputs.evidenceItemCount !== null
+        ? clamp01(1 - inputs.evidenceItemCount / inputs.impactMentionCount12mo)
+        : null,
     showcaseViews: null,
   };
 
@@ -64,7 +67,7 @@ export function computeSponsorRenewalRiskScore(inputs: SponsorRenewalRiskInputs)
     inputs.lastInteractionAt === null &&
     inputs.lastContributionAt === null &&
     inputs.impactMentionCount12mo === 0 &&
-    inputs.evidenceItemCount === 0;
+    (inputs.evidenceItemCount ?? 0) === 0;
 
   let weightedSum = 0;
   let totalWeight = 0;
@@ -100,7 +103,8 @@ export function buildSponsorRoiSections(input: {
   contributionCount: number;
   interactionCount12mo: number;
   impactMentionCount12mo: number;
-  evidenceItemCount: number;
+  /** `null` when this deployment has nowhere to attach outreach evidence. */
+  evidenceItemCount: number | null;
 }): SponsorRenewalRoiSection[] {
   const { risk } = input;
   const sections: SponsorRenewalRoiSection[] = [];
@@ -124,7 +128,11 @@ export function buildSponsorRoiSections(input: {
     heading: "Community visibility",
     body:
       input.impactMentionCount12mo > 0
-        ? `${input.sponsorName} was named in ${input.impactMentionCount12mo} logged community-impact activity/activities in the trailing 12 months, with ${input.evidenceItemCount} evidence item(s) attached.`
+        ? `${input.sponsorName} was named in ${input.impactMentionCount12mo} logged community-impact activity/activities in the trailing 12 months${
+            input.evidenceItemCount === null
+              ? ""
+              : `, with ${input.evidenceItemCount} evidence item(s) attached`
+          }.`
         : `No logged community-impact activity has named ${input.sponsorName} in the trailing 12 months — consider crediting them in the next outreach log entry.`,
   });
 
