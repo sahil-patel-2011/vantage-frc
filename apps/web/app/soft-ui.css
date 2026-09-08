@@ -154,12 +154,19 @@ body.has-app-shell .app-topbar{display:none}
   position:fixed;z-index:100;inset:0 auto 0 0;width:min(340px,90vw);padding:16px 14px calc(28px + env(safe-area-inset-bottom,0px));
   padding-top:calc(16px + env(safe-area-inset-top,0px));
   background:var(--soft-bg);overflow:auto;transform:translateX(-104%);
-  transition:transform .32s cubic-bezier(.22,1,.36,1);
+  /* Off-canvas but still in the tab order is a trap: eight hub links and a
+     search box sat between the avatar and the page. Hidden visibility takes the
+     panel out of the sequence, delayed so the slide-out still animates. */
+  visibility:hidden;
+  transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s linear .32s;
   box-shadow:none;will-change:transform;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
 }
-.soft-drawer.open{transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14)}
+.soft-drawer.open{
+  transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14);
+  visibility:visible;transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s;
+}
 .soft-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .soft-drawer-brand{display:flex;align-items:center;gap:10px}
 .soft-drawer-brand .mark{
@@ -257,26 +264,49 @@ body.has-app-shell .app-topbar{display:none}
   color:var(--soft-ink);font:600 11px var(--font-source-sans),ui-sans-serif;text-decoration:none;
 }
 .soft-workspace-links a:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line))}
-.soft-drawer-search{
-  display:flex;align-items:center;gap:10px;width:calc(100% - 4px);min-height:52px;margin:0 2px 8px;
-  padding:8px 10px;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-card);
-  color:var(--soft-ink);text-align:left;cursor:pointer;box-shadow:var(--soft-shadow);
+/* The panel's search field — the only search box below 900px, and the only one
+   on screen at any width, because the topbar control is dropped while the panel
+   is open. It used to be a button here that opened a second overlay listing the
+   same destinations this panel already lists. */
+.soft-panel-search{
+  display:flex;align-items:center;gap:8px;width:calc(100% - 4px);min-height:48px;margin:0 2px 10px;
+  padding:0 8px 0 12px;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-card);
+  color:var(--soft-ink);box-shadow:var(--soft-shadow);
 }
-.soft-drawer-search:hover{border-color:color-mix(in srgb,var(--soft-accent) 42%,var(--soft-line));background:var(--soft-accent-soft)}
-.soft-drawer-search>svg{width:19px;height:19px;flex:none;color:var(--soft-accent)}
-.soft-drawer-search>span{display:grid;gap:2px;min-width:0;flex:1}
-.soft-drawer-search strong{font:700 12px/1.2 var(--font-source-sans),ui-sans-serif}
-.soft-drawer-search small{overflow:hidden;color:var(--soft-muted);font:600 10px/1.25 var(--font-source-sans),ui-sans-serif;text-overflow:ellipsis;white-space:nowrap}
-.soft-drawer-search kbd{padding:2px 5px;border:1px solid var(--soft-line);border-radius:6px;background:var(--soft-bg);color:var(--soft-muted);font:700 9px/1.3 var(--font-source-sans),ui-sans-serif}
-.soft-drawer-pillars{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 10px;padding:0 2px;
+.soft-panel-search:focus-within{border-color:var(--soft-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--soft-accent) 16%,transparent)}
+.soft-panel-search>svg{width:18px;height:18px;flex:none;color:var(--soft-accent)}
+.soft-panel-search input{
+  flex:1;min-width:0;height:46px;border:0;background:transparent;color:var(--soft-ink);
+  /* 16px keeps iOS Safari from zooming the page on focus. */
+  font:600 16px var(--font-source-sans),ui-sans-serif;
 }
-.soft-drawer-pillars a{
-  display:grid;justify-items:center;gap:3px;min-height:48px;padding:6px 4px;border-radius:10px;
-  border:1px solid color-mix(in srgb,var(--soft-line) 70%,transparent);background:transparent;color:var(--soft-ink);
-  text-decoration:none;font:650 10px/1.1 var(--font-source-sans),ui-sans-serif;box-shadow:none;
+.soft-panel-search input:focus{outline:none}
+.soft-panel-search input::-webkit-search-cancel-button{display:none}
+.soft-panel-search kbd{
+  flex:none;padding:3px 6px;border:1px solid var(--soft-line);border-radius:6px;background:var(--soft-bg);
+  color:var(--soft-muted);font:700 10px/1.3 var(--font-source-sans),ui-sans-serif;
 }
-.soft-drawer-pillars a svg{width:16px;height:16px;color:var(--soft-accent)}
+.soft-panel-search-clear{
+  display:grid;place-items:center;width:32px;height:32px;flex:none;border:0;border-radius:9px;
+  background:transparent;color:var(--soft-muted);cursor:pointer;
+}
+.soft-panel-search-clear:hover{background:var(--soft-bg);color:var(--soft-ink)}
+.soft-panel-search-clear svg{width:15px;height:15px}
+/* Results replace the workspace list in place — no second overlay. */
+.soft-nav-results{display:block;padding:0 2px 12px}
+.soft-nav-results nav{display:grid}
+.soft-nav-results nav a{
+  display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;min-height:46px;
+  margin:2px 0;padding:8px 10px;border-radius:10px;color:var(--soft-ink);text-decoration:none;
+}
+.soft-nav-results nav a:hover{background:var(--soft-accent-soft)}
+.soft-nav-results nav a svg{width:18px;height:18px;color:var(--soft-muted)}
+.soft-nav-results nav a small{color:var(--soft-muted)}
+.soft-nav-results [role="option"].is-active{
+  background:var(--soft-accent-soft);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--soft-accent) 35%,transparent);
+}
+.soft-nav-results [role="option"].is-active svg{color:var(--soft-accent)}
 /* Title + org crumb are one two-row block, so both baselines stay left-aligned
    and the pair centres as a unit inside the 44px topbar row. */
 .soft-page-head-copy{display:grid;gap:2px;align-content:center;min-width:0;overflow:hidden}
@@ -284,6 +314,8 @@ body.has-app-shell .app-topbar{display:none}
 .soft-org-crumb{display:block;color:var(--soft-muted);font:600 11px/1.2 var(--font-source-sans),ui-sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* No org yet — drop the row rather than leaving the title off-centre by a gap. */
 .soft-org-crumb:empty{display:none}
+/* On a hub root the bar carries the workspace, not a second copy of the H1. */
+.soft-topbar-org{color:var(--soft-muted);font-weight:600}
 .soft-account-org{display:block;margin-top:4px;color:var(--soft-muted);font-size:11px}
 .soft-account-teams{display:grid;gap:2px;padding:6px 8px 8px;border-bottom:1px solid var(--soft-line)}
 .soft-account-teams-label{
@@ -295,9 +327,8 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-account-teams a small{color:var(--soft-muted);font-size:10px;font-weight:600;text-transform:capitalize}
 .soft-account-teams a[aria-current="true"]{background:var(--soft-accent-soft);color:var(--soft-accent)}
-.soft-drawer-hint{margin:0 4px 10px;color:var(--soft-muted);font-size:12px}
 .soft-drawer-flat{
-  display:grid;gap:4px;padding:4px 2px 12px;
+  display:grid;gap:2px;padding:0 2px 12px;
 }
 .soft-drawer-hub{
   display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:14px;
@@ -315,37 +346,22 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-drawer-hub i svg{width:17px;height:17px}
 .soft-drawer-hub.soft-drawer-platform{margin:4px 2px 8px;color:var(--soft-muted);font-weight:600}
-.soft-nav-group{
-  margin-bottom:10px;padding:4px;border-radius:var(--soft-radius);background:var(--soft-card);
-  box-shadow:var(--soft-shadow);border:1px solid transparent;
-  transition:border-color .2s ease,box-shadow .2s ease;
-}
-.soft-nav-group.is-active{border-color:color-mix(in srgb,var(--soft-accent) 28%,var(--soft-line))}
-.soft-nav-heading{
-  display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;margin:0;
-  color:var(--soft-ink);font:700 13px var(--font-source-sans),ui-sans-serif;
-  background:transparent;border:0;border-radius:12px;cursor:pointer;text-align:left;
-}
-.soft-nav-heading:hover{background:color-mix(in srgb,var(--soft-bg) 70%,transparent)}
-.soft-nav-heading.static{cursor:default}
-.soft-nav-heading.static:hover{background:transparent}
-.soft-nav-heading>span{flex:1;min-width:0}
-.soft-nav-heading i{
-  display:grid;place-items:center;width:30px;height:30px;border-radius:10px;flex:none;
-  background:var(--tone-bg,var(--soft-accent-soft));color:var(--tone,var(--soft-accent));
-}
-.soft-nav-heading i svg{width:16px;height:16px}
-.soft-nav-count{
-  min-width:18px;padding:0 6px;border-radius:999px;background:var(--soft-bg);border:1px solid var(--soft-line);
-  color:var(--soft-muted);font:700 10px/18px var(--font-source-sans),ui-sans-serif;font-style:normal;
-}
+/* One row per workspace. The card-per-hub treatment (plus a count badge and a
+   disclosure caret each) made eight destinations cost twenty-three controls and
+   640px of scroll; the hub's own tab bar lists its sections once you are there. */
+.soft-nav-group{margin:0}
 .soft-nav-caret{
   display:grid;place-items:center;width:18px;height:18px;color:var(--soft-muted);
   transform:rotate(0deg);transition:transform .22s cubic-bezier(.22,1,.36,1);
 }
 .soft-nav-caret svg{width:14px;height:14px}
 .soft-nav-caret.open{transform:rotate(90deg)}
-.soft-nav-items{display:grid;padding:0 2px 4px}
+/* Logistics is the one pillar with no in-page tab bar, so the panel carries its
+   pages. They are indented under the hub row so they never read as an eighth
+   and ninth workspace. */
+.soft-nav-items{display:grid;padding:0 2px 4px;margin-left:44px}
+.soft-nav-items>a{min-height:36px!important;padding:5px 12px!important;font-size:13px!important;font-weight:600;color:var(--soft-muted)}
+.soft-nav-items>a:hover{color:var(--soft-ink);background:color-mix(in srgb,var(--soft-bg) 72%,transparent)}
 .soft-nav-group a,.soft-nav-group span.planned{
   display:flex;align-items:center;gap:10px;min-height:42px;padding:7px 12px;margin:1px 0;border-radius:12px;
   color:var(--soft-ink);text-decoration:none;font-size:13.5px;font-weight:600;
@@ -366,6 +382,18 @@ body.has-app-shell .app-topbar{display:none}
 .soft-nav-group span.planned{opacity:.55}
 
 /* Island + FAB */
+/* The island's four apps are four of the same rows the panel lists, and its
+   "All" button is the control that opened the panel — leaving both up put Home,
+   Team and Business on screen twice. Only one of the two is visible at a time. */
+body.soft-nav-panel-open .soft-island{
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .18s ease,visibility 0s linear .18s;
+}
+/* How much bottom-anchored chrome must clear the island: its own height plus
+   the 12px it sits off the bottom, plus a gap. The consent banner reads this,
+   because the island's "All" is now the only way to open navigation and the
+   banner would otherwise sit on top of it. */
+:root{--soft-island-clearance:88px}
 .soft-island{
   position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--soft-safe-bottom));transform:translateX(-50%);
   display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
@@ -1712,9 +1740,7 @@ body.has-app-shell{
 /* Denser drawer + island */
 .soft-drawer{width:min(320px,92vw);padding:12px 12px 24px}
 .soft-drawer-brand strong{font-size:16px}
-.soft-nav-group{margin-bottom:10px;padding:4px}
 .soft-nav-group a,.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
-.soft-nav-heading{padding:6px 8px 4px;font-size:12px}
 .soft-island{
   gap:2px;padding:6px;max-width:calc(100vw - 24px);
   box-shadow:var(--soft-shadow-pop);
@@ -2460,12 +2486,19 @@ body.has-app-shell .command-open-full{
   background:var(--soft-accent-soft);color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
 }
 body.has-app-shell .command-empty{margin:8px 0;color:var(--soft-muted);font:600 13px var(--font-source-sans),ui-sans-serif}
-/* Search reads as a field on desktop with its shortcut on show; stays an icon on phones. */
-body.has-app-shell .soft-search-label,
-body.has-app-shell .soft-search-kbd{display:none}
+/* One search affordance per width.
+   Under 900px there is no room for a field beside the title, so search lives in
+   the nav panel only — putting an icon here too gave phones two controls that
+   opened the same thing. From 900px up the topbar carries the field and the
+   panel's own box is never on screen at the same time (AppShell drops this
+   button while the panel is open). */
+body.has-app-shell .soft-search-btn{display:none}
 @media (min-width:900px){
   body.has-app-shell .soft-search-btn{
-    width:auto;gap:8px;padding:0 10px;justify-content:flex-start;min-width:200px;
+    /* Was `display:grid` from .soft-icon-btn, which stacked the icon, label and
+       shortcut in three rows and spilled the kbd out of the 56px bar. */
+    display:flex;align-items:center;
+    width:auto;height:40px;gap:8px;padding:0 10px;justify-content:flex-start;min-width:200px;
     border-radius:10px;background:var(--soft-card);border:1px solid var(--soft-line);
   }
   body.has-app-shell .soft-search-label{
@@ -2547,7 +2580,7 @@ body.has-app-shell .command-dialog [role="option"].is-active>small{color:var(--s
 
 @media print{
   .soft-topbar,.soft-drawer,.soft-fab,.soft-island,.soft-more-sheet,.soft-focus-rail,.soft-focus-reopen,
-  .soft-skip-link,.soft-outbox-status,.command-dialog,.venue-shortcut-dialog,.soft-account-pop,.soft-scrim{display:none!important}
+  .soft-skip-link,.soft-outbox-status,.venue-shortcut-dialog,.soft-account-pop,.soft-scrim{display:none!important}
   body.has-app-shell{padding:0!important}
   #main-content{padding:0!important}
 }
