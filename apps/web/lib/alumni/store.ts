@@ -8,7 +8,9 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { directoryFromRows, parseAlumniWrite } from "./rows";
 import type { AlumniDirectory, AlumniRow, AlumniWrite } from "./types";
 
-const LIST_SQL = `SELECT id, full_name AS "fullName", grad_year AS "gradYear", current_role AS "currentRole",
+// `current_role` is a reserved SQL keyword: unquoted it resolves to the session role
+// (silently returning "vantage_app" for every alumnus), so it stays quoted here.
+const LIST_SQL = `SELECT id, full_name AS "fullName", grad_year AS "gradYear", "current_role" AS "currentRole",
                 email, discord_handle AS "discordHandle", linkedin_url AS "linkedinUrl", note,
                 is_mentor AS "isMentor", mentor_topic AS "mentorTopic",
                 added_by AS "addedBy", created_at AS "createdAt"
@@ -40,7 +42,7 @@ export async function insertAlumni(
   input: { orgId: string; userId: string; write: AlumniWrite },
 ): Promise<string> {
   const result = await client.query<{ id: string }>(
-    `INSERT INTO team_alumni(org_id, full_name, grad_year, current_role, email, discord_handle, linkedin_url, note, is_mentor, mentor_topic, added_by)
+    `INSERT INTO team_alumni(org_id, full_name, grad_year, "current_role", email, discord_handle, linkedin_url, note, is_mentor, mentor_topic, added_by)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
     [
       input.orgId,
