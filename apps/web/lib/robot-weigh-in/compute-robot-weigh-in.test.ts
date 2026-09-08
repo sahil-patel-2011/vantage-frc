@@ -121,6 +121,47 @@ describe("computeRobotWeighInView", () => {
     if (view.status !== "live") throw new Error("expected live view");
     expect(view.playoffReweighCue).toBe(PLAYOFF_REWEIGH_CUE);
   });
+
+  it("mirrors a weigh-in logged from Inspection without guessing its station or config", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 5892 }] };
+      }
+      if (sql.includes("FROM robot_weights")) {
+        return {
+          rows: [
+            {
+              id: "insp-1",
+              weighedOn: "2026-02-14 10:02:00-05",
+              totalLbs: "118.40",
+              config: "with bumpers and battery",
+              note: "Practice scale in the shop.",
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM inspection_settings")) return { rows: [{ limitLbs: "135.00" }] };
+      return { rows: [] };
+    });
+
+    const view = await computeRobotWeighInView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.entries).toHaveLength(1);
+    const mirrored = view.entries[0]!;
+    expect(mirrored.source).toBe("inspection");
+    expect(mirrored.weightLbs).toBe(118.4);
+    // robot_weights stores a free-text config, so these stay unknown rather than
+    // being inferred from the words in it.
+    expect(mirrored.station).toBeNull();
+    expect(mirrored.bumpersOn).toBeNull();
+    expect(mirrored.batteryOn).toBeNull();
+    expect(mirrored.configLabel).toBe("with bumpers and battery");
+    // The limit is the org's configured one, never a fabricated default.
+    expect(mirrored.weightLimitLbs).toBe(135);
+    expect(view.summary.latestWeightLbs).toBe(118.4);
+  });
 });
 
 let seq = 0;
