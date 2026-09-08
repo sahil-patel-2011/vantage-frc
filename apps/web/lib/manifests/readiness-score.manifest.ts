@@ -5,8 +5,21 @@ export const manifest = {
   apiRoute: "/api/readiness-score",
   hub: "Build",
   navGroup: "Build",
-  metered: true,
-  tables: ["readiness_score_subsystems", "readiness_score_checklist_items"],
+  // Not metered: the readiness index is deterministic arithmetic over tables the
+  // team already maintains — no model call, so it never touches the AI ledger.
+  metered: false,
+  // Owns only its bring-up checklist; every other column is read from the build
+  // tool that owns it (see migration 0519).
+  tables: ["readiness_score_checklist_items"],
+  readsTables: [
+    "robot_subsystems",
+    "weight_components",
+    "weight_settings",
+    "power_loads",
+    "subsystem_signoff_subsystems",
+    "subsystem_signoff_records",
+    "fmea_failures",
+  ],
   aiTools: [
     {
       name: "readiness_score.index",

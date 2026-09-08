@@ -6,6 +6,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { failDbWrite } from "../../../lib/db-error";
 import {
   DRAFT_PICK_SLOTS,
   boardState,
@@ -347,8 +348,10 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Pick-list request failed";
-    if (message === "forbidden") return Response.json({ error: "Organization access denied" }, { status: 403 });
-    return Response.json({ error: message }, { status: 400 });
+    // A pick list is keyed to an event, and `pick_lists.event_key` references
+    // events_ref. Before an event is ingested from TBA that insert raises a
+    // 23503 whose raw text ("violates foreign key constraint
+    // pick_lists_event_key_fkey") used to be handed straight to the pit.
+    return failDbWrite(error, "Pick-list request failed");
   }
 }
