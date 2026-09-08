@@ -493,7 +493,6 @@ export function createOnshapeApiTransport(input: {
   let lastAssembly: OnshapeAssemblyRef | null = null;
   let lastPartStudio: OnshapeDocumentRef | null = null;
   const { http, document } = input;
-  const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
 
   function jobSketchName(idempotencyKey: string): string {
     const jobKey = idempotencyKey.split(":")[0] || idempotencyKey;

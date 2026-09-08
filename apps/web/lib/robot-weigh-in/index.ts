@@ -4,7 +4,7 @@ import type { RobotWeighInEntry, RobotWeighInStation, RobotWeighInSummary, Robot
 
 export * from "./types";
 
-export function robotWeighInStationLabel(station: RobotWeighInStation): string {
+export function robotWeighInStationLabel(station: RobotWeighInStation | null): string {
   switch (station) {
     case "shop":
       return "Shop scale";
@@ -12,8 +12,11 @@ export function robotWeighInStationLabel(station: RobotWeighInStation): string {
       return "Event inspection";
     case "practice_field":
       return "Practice field";
-    default:
+    case "other":
       return "Other";
+    default:
+      // Mirrored from the inspection scale log, which records no station.
+      return "Inspection scale log";
   }
 }
 
