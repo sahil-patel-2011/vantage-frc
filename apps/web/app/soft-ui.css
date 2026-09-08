@@ -389,6 +389,11 @@ body.soft-nav-panel-open .soft-island{
   opacity:0;pointer-events:none;visibility:hidden;
   transition:opacity .18s ease,visibility 0s linear .18s;
 }
+/* How much bottom-anchored chrome must clear the island: its own height plus
+   the 12px it sits off the bottom, plus a gap. The consent banner reads this,
+   because the island's "All" is now the only way to open navigation and the
+   banner would otherwise sit on top of it. */
+:root{--soft-island-clearance:88px}
 .soft-island{
   position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--soft-safe-bottom));transform:translateX(-50%);
   display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
