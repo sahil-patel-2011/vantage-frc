@@ -39,7 +39,14 @@ $$;
 REVOKE ALL ON FUNCTION app_reference_cursor_summary() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app_reference_cursor_summary() TO vantage_app, vantage_worker;
 
-CREATE OR REPLACE VIEW tba_cache_freshness AS
+-- 0034 already shipped this view with `observed_at` in sixth position. CREATE OR
+-- REPLACE VIEW can only append columns, so replacing it in place fails with
+-- `cannot change name of view column "observed_at"`. Drop and recreate instead;
+-- nothing in the database depends on the view (only apps/web/lib/reference-health.ts
+-- selects from it).
+DROP VIEW IF EXISTS tba_cache_freshness;
+
+CREATE VIEW tba_cache_freshness AS
 SELECT
   'tba'::text AS source,
   (
