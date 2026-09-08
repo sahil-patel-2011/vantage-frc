@@ -2,6 +2,10 @@
 import InviteClient from "./invite-client";
 import "./invite-flow.css";
 
+export const metadata = {
+  title: "Invite",
+};
+
 export default function InvitePage() {
   return (
     <Suspense

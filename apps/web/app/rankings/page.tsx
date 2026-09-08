@@ -2,7 +2,7 @@ import RankingsClient from "./rankings-client";
 import "./rankings.css";
 
 export const metadata = {
-  title: "Rankings & Playoffs · Vantage",
+  title: "Rankings & Playoffs",
   description: "Event rankings with records and EPA, plus the elimination bracket — your team highlighted.",
 };
 

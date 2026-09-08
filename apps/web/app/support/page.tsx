@@ -2,7 +2,7 @@ import SupportTicketsClient from "./support-tickets-client";
 import "./support-tickets.css";
 
 export const metadata = {
-  title: "Support · Vantage",
+  title: "Support",
   description: "Submit a ticket to the Vantage platform owner when something breaks.",
 };
 

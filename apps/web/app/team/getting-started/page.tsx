@@ -1,6 +1,10 @@
 import GettingStartedClient from "./getting-started-client";
 import "../../start/start.css";
 
+export const metadata = {
+  title: "Getting Started · Team",
+};
+
 export default async function TeamGettingStartedPage({
   searchParams,
 }: {

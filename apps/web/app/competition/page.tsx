@@ -1,7 +1,7 @@
 import CompetitionHub from "./competition-hub";
 
 export const metadata = {
-  title: "Competition · Vantage",
+  title: "Competition",
   description: "Event day command, My Day, strategy, scouting, pick clock, and alliance chemistry.",
 };
 

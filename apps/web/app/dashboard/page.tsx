@@ -1,5 +1,9 @@
 import DashboardClient from "./dashboard-client";
 
+export const metadata = {
+  title: "Home",
+};
+
 export default async function DashboardPage({
   searchParams,
 }: {

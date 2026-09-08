@@ -2,7 +2,7 @@ import StartClient from "./start-client";
 import "./start.css";
 
 export const metadata = {
-  title: "Your path · Vantage",
+  title: "Your path",
   description: "Role and subteam onboarding checklists for your first weeks on the team.",
 };
 

@@ -8,7 +8,7 @@ import TeamDataClient from "./team-data-client";
 import "./team-data.css";
 
 export const metadata = {
-  title: "Team data · Vantage",
+  title: "Team data",
   description:
     "Soft-UI TBA sync, Neon cache health, and workspace inventory — never DEMO team metrics. Links to Schedule, Event Day, and Strategy.",
 };

@@ -10,6 +10,10 @@ import { withOrgHref } from "../../../lib/nav/product-nav";
 import LineupClient from "./lineup-client";
 import "./lineup.css";
 
+export const metadata = {
+  title: "Lineup & coverage",
+};
+
 export default async function ScoutingLineupPage({
   searchParams,
 }: {
