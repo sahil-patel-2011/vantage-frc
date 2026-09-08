@@ -428,7 +428,20 @@ function RecentEntries({
       <h2>Recent weigh-ins</h2>
       <ul className="rwi-list">
         {view.entries.slice(0, 20).map((item) => {
-          const limitCue = weighIn2026LimitCue(item);
+          // Mirrored inspection rows record a config string, not bumper/battery flags,
+          // so the 2026 limit cue (which reads those flags) does not apply to them.
+          const limitCue =
+            item.bumpersOn === null || item.batteryOn === null
+              ? null
+              : weighIn2026LimitCue({
+                  bumpersOn: item.bumpersOn,
+                  batteryOn: item.batteryOn,
+                  weightLimitLbs: item.weightLimitLbs,
+                });
+          const config =
+            item.bumpersOn === null || item.batteryOn === null
+              ? item.configLabel
+              : `${item.bumpersOn ? "Bumpers on" : "No bumpers"} · ${item.batteryOn ? "Battery on" : "No battery"}`;
           return (
           <li key={item.id} className="rwi-row">
             <div>
@@ -438,7 +451,7 @@ function RecentEntries({
                 lbs
               </small>
               <small className="app-muted">
-                {item.bumpersOn ? "Bumpers on" : "No bumpers"} · {item.batteryOn ? "Battery on" : "No battery"}
+                {config ?? "Config not recorded"}
                 {item.notes ? ` · ${item.notes}` : ""}
               </small>
               {limitCue ? (
@@ -447,6 +460,11 @@ function RecentEntries({
                 </small>
               ) : null}
             </div>
+            {item.source === "inspection" ? (
+              <a className="text-button" href="/inspection">
+                Edit in Inspection
+              </a>
+            ) : (
             <button
               type="button"
               className="text-button"
@@ -459,6 +477,7 @@ function RecentEntries({
             >
               Delete
             </button>
+            )}
           </li>
           );
         })}
