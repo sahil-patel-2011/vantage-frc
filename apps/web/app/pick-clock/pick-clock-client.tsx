@@ -250,7 +250,7 @@ function PickClockShell({
           </ul>
         </Panel>
       ) : null}
-      <PickClockNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <PickClockNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

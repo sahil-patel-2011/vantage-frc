@@ -201,7 +201,7 @@ function VideoRescoutShell({
           </ul>
         </Panel>
       ) : null}
-      <VideoRescoutNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <VideoRescoutNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

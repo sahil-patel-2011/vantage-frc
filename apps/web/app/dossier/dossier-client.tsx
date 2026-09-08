@@ -200,7 +200,7 @@ function DossierShell({
           </ul>
         </Panel>
       ) : null}
-      <DossierNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <DossierNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

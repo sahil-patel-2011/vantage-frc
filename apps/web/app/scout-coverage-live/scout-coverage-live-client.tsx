@@ -196,7 +196,7 @@ function ScoutCoverageLiveShell({
           </ul>
         </Panel>
       ) : null}
-      <ScoutCoverageLiveNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScoutCoverageLiveNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
