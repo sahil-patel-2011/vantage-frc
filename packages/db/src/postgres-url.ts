@@ -29,15 +29,22 @@ export function postgresHostKind(connectionString: string): PostgresHostKind {
 }
 
 /**
- * Use node-postgres for Supabase / generic Postgres. Keep the Neon serverless
- * driver for neon.tech hosts unless DATABASE_DRIVER=pg.
+ * Use node-postgres for every host except neon.tech, which keeps the Neon
+ * serverless driver unless DATABASE_DRIVER=pg.
+ *
+ * `local` belongs on node-postgres for the same reason `supabase` and `generic`
+ * do: the Neon driver talks WebSocket to a Neon endpoint, so pointing it at a
+ * plain Postgres (a self-hosted instance, or the local one the RLS integration
+ * tests and a from-zero migration replay run against) fails every query before
+ * it reaches the server — the connection error surfaces as an opaque
+ * `ErrorEvent` cause, never as SQL in the Postgres log. `sslOptionForUrl`
+ * already special-cases `local`; this is the other half of that support.
  */
 export function shouldUseNodePostgres(connectionString: string): boolean {
   const forced = (process.env.DATABASE_DRIVER ?? "").trim().toLowerCase();
   if (forced === "pg" || forced === "node-postgres") return true;
   if (forced === "neon") return false;
-  const kind = postgresHostKind(connectionString);
-  return kind === "supabase" || kind === "generic";
+  return postgresHostKind(connectionString) !== "neon";
 }
 
 export function sslOptionForUrl(connectionString: string): boolean | { rejectUnauthorized: boolean } {

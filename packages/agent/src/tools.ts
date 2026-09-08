@@ -2418,14 +2418,46 @@ export function createVantageToolRegistry(): AIToolRegistry {
         async execute({ client, orgId, activeEventKey }, input) {
           const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           try {
+            // Readiness reads the build tools that own each number (see migration
+            // 0519): roster from robot_subsystems, weight from weight_components,
+            // current draw from power_loads, wiring/code from the sign-off gates.
             const subsystems = await client.query(
-              `SELECT id, name, weight_lbs::text AS "weightLbs", power_draw_amps::text AS "powerDrawAmps",
-                      wiring_status AS "wiringStatus", code_version_status AS "codeVersionStatus",
-                      health_score::text AS "healthScore", updated_at AS "updatedAt"
-               FROM readiness_score_subsystems
-               WHERE org_id=$1 AND season_year=$2
-               ORDER BY health_score ASC, name ASC
-               LIMIT 60`,
+              `SELECT s.id,
+                      s.name,
+                      COALESCE(w.total, 0)::text AS "weightLbs",
+                      COALESCE(p.total, 0)::text AS "powerDrawAmps",
+                      CASE g.wiring WHEN 'approved' THEN 'verified'
+                                    WHEN 'rejected' THEN 'in_progress'
+                                    ELSE 'not_started' END AS "wiringStatus",
+                      CASE g.programming WHEN 'approved' THEN 'deployed_tested'
+                                         WHEN 'rejected' THEN 'building'
+                                         ELSE 'stale' END AS "codeVersionStatus",
+                      s.updated_at AS "updatedAt"
+                 FROM robot_subsystems s
+                 LEFT JOIN (
+                        SELECT lower(btrim(subsystem)) AS k, SUM(weight_lbs * quantity) AS total
+                          FROM weight_components
+                         WHERE org_id=$1::uuid AND season_year=$2::int
+                         GROUP BY 1
+                      ) w ON w.k = lower(btrim(s.name))
+                 LEFT JOIN (
+                        SELECT lower(btrim(subsystem)) AS k, SUM(COALESCE(typical_amps, 0)) AS total
+                          FROM power_loads
+                         WHERE org_id=$1::uuid AND season_year=$2::int
+                         GROUP BY 1
+                      ) p ON p.k = lower(btrim(s.name))
+                 LEFT JOIN (
+                        SELECT lower(btrim(sg.name)) AS k,
+                               MAX(r.decision) FILTER (WHERE r.gate='wiring') AS wiring,
+                               MAX(r.decision) FILTER (WHERE r.gate='programming') AS programming
+                          FROM subsystem_signoff_records r
+                          JOIN subsystem_signoff_subsystems sg ON sg.id = r.subsystem_id
+                         WHERE r.org_id=$1::uuid AND sg.season_year=$2::int
+                         GROUP BY 1
+                      ) g ON g.k = lower(btrim(s.name))
+                WHERE s.org_id=$1::uuid AND s.season_year=$2::int
+                ORDER BY s.name ASC
+                LIMIT 60`,
               [orgId, seasonYear],
             );
             const checklist = await client.query<{ total: string; done: string }>(

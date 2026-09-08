@@ -1,8 +1,16 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    // Node16 emits CommonJS for this package (no "type": "module" in its
+    // package.json), which is what the VS Code extension host loads, and it
+    // replaces the classic "node" resolver that TypeScript 6 removed.
+    "module": "Node16",
     "target": "ES2022",
-    "lib": ["ES2022"],
+    // The extension calls fetch/Response and Node builtins (node:os, node:path,
+    // process, setTimeout). Neither was declared; the resolver deprecation error
+    // had been aborting the compile before it could report the ten resulting
+    // "Cannot find name" errors.
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "vscode"],
     "outDir": "out",
     "rootDir": "src",
     "sourceMap": true,
@@ -10,7 +18,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node"
+    "moduleResolution": "Node16"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "out"]

@@ -7,10 +7,6 @@ import {
   computeReadinessScoreView,
   currentSeasonYear,
   deleteChecklistItem,
-  deleteSubsystem,
-  isCodeVersionStatus,
-  isWiringStatus,
-  saveSubsystem,
   toggleChecklistItem,
   type ReadinessScoreView,
 } from "../../../lib/readiness-score/compute-readiness-score";
@@ -21,11 +17,6 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : null;
-}
-
-function nonNegativeNumber(value: unknown): number {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
 function seasonFrom(value: unknown): number {
@@ -90,32 +81,14 @@ export async function POST(request: Request) {
       if (!member.rowCount) throw new Error("forbidden");
 
       switch (action) {
-        case "save-subsystem": {
-          const name = trimmedOrNull(body.name, 120);
-          if (!name) throw new Error("name is required");
-          const wiringStatus = isWiringStatus(body.wiringStatus) ? body.wiringStatus : "not_started";
-          const codeVersionStatus = isCodeVersionStatus(body.codeVersionStatus)
-            ? body.codeVersionStatus
-            : "stale";
-          await saveSubsystem(client, {
-            orgId,
-            userId,
-            seasonYear,
-            name,
-            weightLbs: nonNegativeNumber(body.weightLbs),
-            powerDrawAmps: nonNegativeNumber(body.powerDrawAmps),
-            wiringStatus,
-            codeVersionStatus,
-            notes: trimmedOrNull(body.notes, 2000),
-          });
-          break;
-        }
-        case "delete-subsystem": {
-          const subsystemId = trimmedOrNull(body.subsystemId, 64);
-          if (!subsystemId) throw new Error("subsystemId is required");
-          await deleteSubsystem(client, { orgId, subsystemId });
-          break;
-        }
+        // Subsystems, weight, power and the wiring/programming gates are no longer
+        // retyped here — Readiness Score reads them from the tools that own them.
+        // The live view carries `sources` with the href for each.
+        case "save-subsystem":
+        case "delete-subsystem":
+          throw new Error(
+            "Readiness Score reads subsystems from the build tools. Edit the roster in Subsystems, weight in Weight Budget, current draw in Power Budget, and wiring/programming state in Subsystem Sign-off.",
+          );
         case "add-checklist-item": {
           const label = trimmedOrNull(body.label, 300);
           if (!label) throw new Error("label is required");
