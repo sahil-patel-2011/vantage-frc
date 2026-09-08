@@ -2,7 +2,7 @@ import KioskClient from "./kiosk-client";
 import "../display.css";
 
 export const metadata = {
-  title: "Pit TV · Vantage",
+  title: "Pit TV",
   description: "Fullscreen competition display board for the pit TV.",
 };
 

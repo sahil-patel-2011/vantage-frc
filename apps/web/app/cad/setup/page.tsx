@@ -2,7 +2,7 @@ import CadSetupWizard from "./setup-client";
 import "../cad-setup.css";
 
 export const metadata = {
-  title: "CAD Setup · Vantage",
+  title: "CAD Setup",
   description: "Connect CAD platforms and AI execution modes — allowlisted, approval-gated geometry.",
 };
 

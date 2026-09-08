@@ -5,7 +5,7 @@ import ChatClient from "./chat-client";
 import "./chat.css";
 
 export const metadata = {
-  title: "FRC Assistant · Vantage",
+  title: "FRC Assistant",
   description: "Ask about teams, matchups, and scout evidence with authorized tools — nothing invented.",
 };
 

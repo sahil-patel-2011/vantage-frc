@@ -9,7 +9,7 @@ import "./ai-bridge.css";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "AI subscription bridge · Vantage",
+  title: "AI subscription bridge",
   description:
     "Run team AI chat through a member's own Claude Pro/Max or ChatGPT subscription on their machine — $0 API cost, their plan's usage windows apply.",
 };

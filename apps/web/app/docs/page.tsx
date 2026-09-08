@@ -1,6 +1,10 @@
 import HelpClient from "../help/help-client";
 import SectionGuide from "./section-guide";
 
+export const metadata = {
+  title: "App manual",
+};
+
 export const dynamic = "force-dynamic";
 
 /**

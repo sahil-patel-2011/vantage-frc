@@ -10,6 +10,10 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutDataImpactClient from "./scout-data-impact-client";
 import "./scout-data-impact.css";
 
+export const metadata = {
+  title: "Scout Data Impact",
+};
+
 export default async function ScoutDataImpactPage({
   searchParams,
 }: {

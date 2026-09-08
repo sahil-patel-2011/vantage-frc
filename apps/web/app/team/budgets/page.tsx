@@ -2,6 +2,10 @@ import { EmptyState } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import BudgetClient from "./budget-client";
 
+export const metadata = {
+  title: "API budgets",
+};
+
 export default async function BudgetPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId } = await searchParams;
   if (!orgId) {

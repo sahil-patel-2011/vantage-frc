@@ -4,7 +4,7 @@ import OfflineClient from "./offline-client";
 import "./offline.css";
 
 export const metadata: Metadata = {
-  title: "Offline · Vantage",
+  title: "Offline",
   description: "Vantage offline shell — reopen scouting and team tools from a prior visit.",
   robots: { index: false, follow: false },
 };

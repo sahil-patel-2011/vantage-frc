@@ -2,6 +2,10 @@
 import OnboardingClient from "./onboarding-client";
 import "./onboarding-flow.css";
 
+export const metadata = {
+  title: "Onboarding",
+};
+
 export default function OnboardingPage() {
   return (
     <Suspense

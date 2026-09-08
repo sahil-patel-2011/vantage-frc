@@ -10,6 +10,10 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutCoverageLiveClient from "./scout-coverage-live-client";
 import "./scout-coverage-live.css";
 
+export const metadata = {
+  title: "Scout Coverage Live",
+};
+
 export default async function ScoutCoverageLivePage({
   searchParams,
 }: {

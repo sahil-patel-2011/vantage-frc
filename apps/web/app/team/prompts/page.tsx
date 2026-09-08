@@ -1,5 +1,9 @@
 import PromptsClient from "./prompts-client";
 
+export const metadata = {
+  title: "Prompts · Team",
+};
+
 export default async function TeamPromptsPage({
   searchParams,
 }: {

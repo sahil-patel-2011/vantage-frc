@@ -2,6 +2,10 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import { parseComposerLinkFromSearch } from "../../lib/messages/object-links";
 import MessagesClient from "./messages-client";
 
+export const metadata = {
+  title: "Chat",
+};
+
 export default async function MessagesPage({
   searchParams,
 }: {

@@ -10,7 +10,7 @@ import FormsClient from "./forms-client";
 import "./forms.css";
 
 export const metadata = {
-  title: "Scouting form builder · Vantage",
+  title: "Scouting form builder",
   description:
     "Build and publish custom match and pit scouting forms — never DEMO fields.",
 };

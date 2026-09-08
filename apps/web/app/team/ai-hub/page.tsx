@@ -1,5 +1,9 @@
 import AiHubClient from "./ai-hub-client";
 
+export const metadata = {
+  title: "AI Hub · Team",
+};
+
 export default async function TeamAiHubPage({
   searchParams,
 }: {

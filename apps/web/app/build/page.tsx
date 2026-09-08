@@ -1,7 +1,7 @@
 import BuildHub from "./build-hub";
 
 export const metadata = {
-  title: "Build · Vantage",
+  title: "Build",
   description: "Kickoff, CAD, code coach, FMEA, prototypes, and batteries in one Soft-UI build hub.",
 };
 

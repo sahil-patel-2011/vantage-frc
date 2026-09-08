@@ -2,6 +2,10 @@ import { cadToolSupportMatrix } from "@vantage/cad";
 import CadWorkspace from "./cad-client";
 import "./cad-setup.css";
 
+export const metadata = {
+  title: "CAD",
+};
+
 export default async function CadPage({
   searchParams,
 }: {
