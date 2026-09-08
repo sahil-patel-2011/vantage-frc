@@ -31,8 +31,11 @@ type SubsystemRow = {
   gearReduction: number | null; wheelDiameterIn: number | null; notes: string; byName: string | null;
 };
 
-const SELECT_COLS = `id, name, category, motor_type AS "motorType", motor_count AS "motorCount",
-  gear_reduction::float8 AS "gearReduction", wheel_diameter_in::float8 AS "wheelDiameterIn", notes`;
+// Qualified with the `robot_subsystems s` alias: the list query joins `users u`,
+// which also has id/name, so unqualified columns raised
+// `column reference "id" is ambiguous` and the subsystem list never loaded.
+const SELECT_COLS = `s.id, s.name, s.category, s.motor_type AS "motorType", s.motor_count AS "motorCount",
+  s.gear_reduction::float8 AS "gearReduction", s.wheel_diameter_in::float8 AS "wheelDiameterIn", s.notes`;
 
 export async function GET(request: Request) {
   try {

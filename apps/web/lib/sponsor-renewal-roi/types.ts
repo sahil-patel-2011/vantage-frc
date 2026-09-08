@@ -32,8 +32,13 @@ export type SponsorRenewalRiskInputs = {
   /** Count of impact_activities whose title/description mentions the sponsor by name,
    *  in the trailing 12 months. */
   impactMentionCount12mo: number;
-  /** Count of outreach_evidence_vault_items attached to those mentioned activities. */
-  evidenceItemCount: number;
+  /**
+   * Evidence items attached to those mentioned activities, or `null` when the
+   * deployment has nowhere to attach outreach evidence. The table this once read
+   * (`outreach_evidence_vault_items`) was never created, so a zero here would be a
+   * fabricated measurement of an unimplemented feature rather than "none attached".
+   */
+  evidenceItemCount: number | null;
 };
 
 export type SponsorRenewalRiskScore = {
