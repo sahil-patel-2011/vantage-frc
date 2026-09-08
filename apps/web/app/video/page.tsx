@@ -2,7 +2,7 @@
 import "./video-rescout.css";
 
 export const metadata = {
-  title: "Match Video Review · Vantage",
+  title: "Match Video Review",
   description: "Post-match video re-scout: pause, rewind, 2x playback, and stamp scores on the YouTube timeline.",
 };
 

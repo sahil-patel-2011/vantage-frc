@@ -2,7 +2,7 @@ import ExportCenter from "./export-client";
 import "./exports.css";
 
 export const metadata = {
-  title: "Exports · Vantage",
+  title: "Exports",
   description: "Audited CSV, PDF inventory, and ZIP archives of team data with clear provenance.",
 };
 

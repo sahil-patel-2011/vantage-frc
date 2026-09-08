@@ -1,5 +1,9 @@
 import ExportAuditClient from "./export-audit-client";
 
+export const metadata = {
+  title: "Exports · Security",
+};
+
 export default async function TeamExportAuditPage({
   searchParams,
 }: {

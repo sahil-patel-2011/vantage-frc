@@ -1,5 +1,9 @@
 import UnsubscribeClient from "./unsubscribe-client";
 
+export const metadata = {
+  title: "Email preferences",
+};
+
 export default async function UnsubscribePage({
   searchParams,
 }: {

@@ -1,5 +1,9 @@
 import NotificationsClient from "./notifications-client";
 
+export const metadata = {
+  title: "Notifications",
+};
+
 export default async function NotificationsPage({
   searchParams,
 }: {

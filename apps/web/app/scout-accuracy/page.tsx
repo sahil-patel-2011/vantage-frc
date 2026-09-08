@@ -10,6 +10,10 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutAccuracyClient from "./scout-accuracy-client";
 import "./scout-accuracy.css";
 
+export const metadata = {
+  title: "Scout Accuracy",
+};
+
 export default async function ScoutAccuracyPage({
   searchParams,
 }: {
