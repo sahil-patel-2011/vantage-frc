@@ -183,7 +183,11 @@ export async function computeOpponentWatchlistView(
       [teamKeys],
     ),
     client.query<MatchRow>(
-      `SELECT DISTINCT ON (m.team_key) m.team_key AS "teamKey", m.match_key AS "matchKey",
+      // team_key belongs to the `teams` derived table, not the lateral `m`, which
+      // selects only match columns. Qualifying it as m.team_key threw
+      // `column m.team_key does not exist` and took the whole watchlist read (and
+      // the add-entry write that refreshes it) down with it.
+      `SELECT DISTINCT ON (teams.team_key) teams.team_key AS "teamKey", m.match_key AS "matchKey",
               m.event_key AS "eventKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
               COALESCE(m.predicted_time, m.event_time)::text AS "scheduledTime"
        FROM (
@@ -197,7 +201,7 @@ export async function computeOpponentWatchlistView(
          ORDER BY COALESCE(predicted_time, event_time) ASC NULLS LAST
          LIMIT 1
        ) m
-       ORDER BY m.team_key`,
+       ORDER BY teams.team_key`,
       [teamKeys],
     ),
     client.query<SnapshotRow>(
