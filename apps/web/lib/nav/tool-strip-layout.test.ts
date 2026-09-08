@@ -50,11 +50,10 @@ describe("layoutToolStrip", () => {
     expect(first).toEqual(second);
   });
 
-  it("expands to the full list without dropping anything", () => {
-    const layout = layoutToolStrip(many(22), "tool-0", 6, true);
-    expect(layout.visible).toHaveLength(22);
-    expect(layout.hiddenCount).toBe(0);
-  });
+  // The strip no longer re-lays itself on expand — the overflow block renders
+  // `hidden` underneath the same front row — so the split has no open/closed
+  // variant to test. What matters is that the two halves still cover the list,
+  // which "loses no item across visible and hidden" below asserts.
 
   it("loses no item across visible and hidden", () => {
     const items = many(17);

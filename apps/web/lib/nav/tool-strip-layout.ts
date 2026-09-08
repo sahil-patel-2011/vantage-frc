@@ -24,13 +24,14 @@ export type ToolStripLayout<T extends ToolStripEntry> = {
 /**
  * Order by pinned-ness, keeping the active tool visible no matter how far down
  * the list it sits, then split at `visibleCount`. Ordering is stable so chips
- * do not reshuffle as a member moves between tools in the same workbench.
+ * do not reshuffle as a member moves between tools in the same workbench — and
+ * the split is the same whether or not the overflow block is open, so opening
+ * it does not move the row you just tapped.
  */
 export function layoutToolStrip<T extends ToolStripEntry>(
   items: T[],
   activeId: string,
   visibleCount = 6,
-  expanded = false,
 ): ToolStripLayout<T> {
   const rank = (item: T): number => {
     if (item.id === activeId) return 0;
@@ -43,7 +44,7 @@ export function layoutToolStrip<T extends ToolStripEntry>(
     .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
     .map((entry) => entry.item);
 
-  if (expanded || ordered.length <= visibleCount) {
+  if (ordered.length <= visibleCount) {
     return { visible: ordered, hidden: [], hiddenCount: 0 };
   }
 
