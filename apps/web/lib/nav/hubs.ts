@@ -291,6 +291,10 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // The document vault (STL/STEP/DXF uploads, versions, subsystem links) — the
         // "where is the printable file" question, distinct from the live CAD model.
         { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault" },
+        // The build book generated from an Onshape assembly — steps, renders,
+        // cut list, PDF. Featured because it is the surface that turns CAD into
+        // something the person holding the wrench can use.
+        { id: "assembly-manual", label: "Assembly manual", legacyHref: "/assembly-manual", featured: true },
         { id: "cad-change-radar", label: "Change radar", legacyHref: "/cad-change-radar" },
         { id: "sketch-to-brief", label: "Sketch to brief", legacyHref: "/sketch-to-brief" },
         // The learning track for new mechanical/design members — Onshape from
