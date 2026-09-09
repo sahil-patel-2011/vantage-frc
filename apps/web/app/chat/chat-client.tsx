@@ -355,6 +355,7 @@ export default function ChatClient({
   const knowledgeHref = withOrgHref("/team?tab=knowledge", orgId);
   const usageHref = hubHref("/ai", "usage", orgId);
   const runsHref = withOrgHref("/team/ai-runs", orgId);
+  const promptsHref = withOrgHref("/team/prompts", orgId);
   const relatedExtra = aiChatRelatedLinks(orgId, {
     include: ["usage", "scouting", "knowledge", "governance", "code"],
   });
@@ -413,6 +414,11 @@ export default function ChatClient({
         <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
         <a href={budgetsHref}>Budgets</a>
         <a href={memoryHref}>Memory</a>
+        {/* Saved prompts had exactly one way in — the /team/ai-hub launcher,
+            which LEGACY_HUB_REDIRECTS made unreachable and which is now
+            deleted. The assistant is where you reach for a saved ask, so the
+            link belongs beside Memory rather than on a grid nobody could open. */}
+        <a href={promptsHref}>Prompts</a>
         <a href={strategyHref}>Strategy</a>
         <a href={usageHref}>Usage</a>
         <a href={runsHref}>AI runs</a>
