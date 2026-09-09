@@ -51,7 +51,7 @@ import {
 } from "../../../lib/bugbot/model-context";
 import { bugbotQualityNotice } from "../../../lib/bugbot/quality-notice";
 import { buildRepoOverview } from "../../../lib/bugbot/repo-overview";
-import { loadCockpitPrefs } from "../../../lib/cockpit/prefs";
+import { loadCockpitPrefs } from "../../../lib/cockpit/load-prefs";
 import {
   dismissBugbotFinding,
   labelBugbotFindings,

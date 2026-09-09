@@ -16,7 +16,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { setupActionsFrom } from "./setup-actions";
 
 const LIB = dirname(fileURLToPath(import.meta.url));
@@ -47,6 +47,18 @@ function discover() {
 
 const MODULES = discover();
 
+/**
+ * Import every feature lib once. Both assertions below need the same ~160
+ * modules, and doing it per-test made this file heavy enough to starve
+ * neighbouring suites in a full parallel run.
+ */
+const LOADED = new Map<string, Record<string, unknown>>();
+beforeAll(async () => {
+  for (const { file } of MODULES) {
+    LOADED.set(file, (await import(/* @vite-ignore */ file)) as Record<string, unknown>);
+  }
+}, 180_000);
+
 /** Every shell kind any feature classifies into. */
 const SHELLS = ["loading", "error", "setup", "empty", "ready", "select", "none"] as const;
 
@@ -72,10 +84,10 @@ describe("next-action lists", () => {
     expect(MODULES.length).toBeGreaterThan(100);
   });
 
-  it("never repeats an id inside one list", async () => {
+  it("never repeats an id inside one list", () => {
     const offenders: string[] = [];
     for (const { file, nextFns } of MODULES) {
-      const mod = (await import(/* @vite-ignore */ file)) as Record<string, unknown>;
+      const mod = LOADED.get(file)!;
       for (const name of nextFns) {
         for (const orgId of [null, "org-1"]) {
           for (const shell of SHELLS) {
@@ -93,8 +105,7 @@ describe("next-action lists", () => {
       }
     }
     expect(offenders).toEqual([]);
-    // Importing ~160 feature modules is slow under a cold transform cache.
-  }, 120_000);
+  }, 30_000);
 
   /**
    * The load-bearing one. If a feature's setup-shell actions carry the same ids
@@ -102,12 +113,12 @@ describe("next-action lists", () => {
    * the same objects, produced by `setupActionsFrom`. Anything else is a second
    * copy that will drift, and a screen showing both shows it twice.
    */
-  it("derives the setup shell from the setup steps rather than restating them", async () => {
+  it("derives the setup shell from the setup steps rather than restating them", () => {
     const offenders: string[] = [];
     let derived = 0;
     for (const { file, setupFns, nextFns } of MODULES) {
       if (!setupFns.length) continue;
-      const mod = (await import(/* @vite-ignore */ file)) as Record<string, unknown>;
+      const mod = LOADED.get(file)!;
       for (const stepName of setupFns) {
         for (const nextName of nextFns) {
           for (const orgId of [null, "org-1"]) {
@@ -138,5 +149,5 @@ describe("next-action lists", () => {
     expect(offenders).toEqual([]);
     // Guards against the discovery regex silently matching nothing.
     expect(derived).toBeGreaterThan(40);
-  }, 120_000);
+  }, 30_000);
 });
