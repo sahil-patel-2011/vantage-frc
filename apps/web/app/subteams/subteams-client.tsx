@@ -110,8 +110,8 @@ export default function SubteamsClient() {
   if (error && !view) {
     return (
       <main className="module-page subteams-page">
-        <PageHeader breadcrumbs="Team / Subteams" title="Subteams" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Subteams need a team workspace" description={error}>
+        <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Subteam progress needs a team workspace" description={error}>
           <a className="app-button" href="/workspace">Choose team</a>
         </EmptyState>
       </main>
@@ -121,7 +121,7 @@ export default function SubteamsClient() {
   if (!view) {
     return (
       <main className="module-page subteams-page">
-        <PageHeader breadcrumbs="Team / Subteams" title="Subteams" />
+        <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
         <Panel><p className="app-muted">Loading…</p></Panel>
       </main>
     );
@@ -130,7 +130,7 @@ export default function SubteamsClient() {
   if (!view.canManage || !view.progress) {
     return (
       <main className="module-page subteams-page">
-        <PageHeader breadcrumbs="Team / Subteams" title="Subteams" />
+        <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
         <EmptyState
           soft
           badge="Leads only"
@@ -150,8 +150,8 @@ export default function SubteamsClient() {
   return (
     <main className="module-page subteams-page">
       <PageHeader
-        breadcrumbs="Team / Subteams"
-        title="Subteams"
+        breadcrumbs="Team / Subteam progress"
+        title="Subteam progress"
         description={`Who is on each subteam in ${view.orgName}, and what each of them still owes.`}
       />
 
