@@ -1,7 +1,7 @@
 /* Match Video Review — co-located so styling survives independently of the
    shared global stylesheet. All selectors are .vid-* prefixed and theme-aware. */
-.vid-page input,.vid-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
-.vid-page textarea{padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit;resize:vertical}
+.vid-page input,.vid-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.vid-page textarea{padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit;resize:vertical}
 .vid-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .vid-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .vid-link.danger{color:var(--app-critical)}
@@ -14,23 +14,23 @@
 .vid-nav-item.active{border-color:var(--app-accent);box-shadow:0 0 0 1px var(--app-accent)}
 .vid-nav-item strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vid-nav-sub{display:flex;align-items:center;gap:8px;color:var(--app-muted);font-size:11px}
-.vid-chip{padding:1px 7px;color:var(--app-accent);background:var(--app-soft);border-radius:999px;font-size:10px;font-style:normal;font-weight:700}
+.vid-chip{padding:1px 7px;color:var(--app-accent);background:var(--app-soft);border-radius:var(--soft-radius-pill);font-size:10px;font-style:normal;font-weight:700}
 .vid-detail{display:grid;gap:14px;min-width:0}
 .vid-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.vid-detail-head h2{margin:0 0 4px;font-size:19px}
+.vid-detail-head h2{margin:0 0 4px;font-size:var(--soft-title-2)}
 .vid-detail-head p{margin:0;font-size:12px}
 .vid-frame{aspect-ratio:16/9;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--app-radius);overflow:hidden}
 .vid-frame iframe{display:block;width:100%;height:100%;border:0}
 .vid-filters{display:flex;gap:6px;flex-wrap:wrap}
-.vid-filter{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;color:var(--app-muted);background:var(--app-bg);border:1px solid var(--app-line);border-radius:999px;font-size:12px;font-weight:600;cursor:pointer}
+.vid-filter{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;color:var(--app-muted);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill);font-size:12px;font-weight:600;cursor:pointer}
 .vid-filter b{font-variant-numeric:tabular-nums;font-weight:700}
 .vid-filter.active{color:var(--app-accent-ink);background:var(--app-accent);border-color:var(--app-accent)}
 .vid-empty-notes{margin:0;font-size:13px}
 .vid-notes{margin:0;padding:0;list-style:none;display:grid;gap:4px}
-.vid-note{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
-.vid-time{flex:none;min-width:52px;padding:3px 8px;color:var(--app-accent);background:var(--app-soft);border:0;border-radius:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
+.vid-note{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs)}
+.vid-time{flex:none;min-width:52px;padding:3px 8px;color:var(--app-accent);background:var(--app-soft);border:0;border-radius:var(--soft-radius-xs);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer}
 .vid-time:hover{color:var(--app-accent-ink);background:var(--app-accent)}
-.vid-tag{flex:none;padding:2px 8px;color:var(--app-muted);border:1px solid var(--app-line);border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.vid-tag{flex:none;padding:2px 8px;color:var(--app-muted);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .vid-note-body{flex:1;min-width:0;font-size:13px;overflow-wrap:anywhere}
 .vid-note .vid-link{margin-left:auto;flex:none}
 .vid-add{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
@@ -44,9 +44,9 @@
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:15px}
+.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:10px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}

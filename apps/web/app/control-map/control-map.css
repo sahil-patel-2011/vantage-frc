@@ -10,7 +10,7 @@
 .control-map-list{display:grid;gap:12px;list-style:none;padding:0;margin:0}
 .control-map-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .control-map-card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
-.control-map-card h3{margin:0;font-size:1.05rem}
+.control-map-card h3{margin:0;font-size:var(--soft-title-3)}
 .control-map-card-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .control-map-controller{display:grid;gap:10px}
 .control-map-tip{margin:0}

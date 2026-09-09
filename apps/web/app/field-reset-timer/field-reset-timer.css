@@ -13,7 +13,7 @@
 .frt-readiness-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .frt-score{font-size:2rem}
 .frt-recs{margin:4px 0 0;padding-left:18px}
-.frt-session{padding:8px;border-radius:8px}
+.frt-session{padding:8px;border-radius:var(--soft-radius-xs)}
 .frt-session.selected{background:rgba(120,120,255,.08)}
 .frt-session-btn{text-align:left}
 .frt-cycle-form{display:grid;gap:10px;margin-bottom:16px}

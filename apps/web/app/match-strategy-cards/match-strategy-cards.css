@@ -9,9 +9,9 @@
 .msc-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .msc-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .msc-tip{margin:0}
-.msc-auto-cue{margin:0;padding:10px 12px;border-radius:10px;border:1px solid #e0c48a;background:#fff7e4;color:#805a17;font-size:12px;font-weight:600;line-height:1.4}
+.msc-auto-cue{margin:0;padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid #e0c48a;background:#fff7e4;color:#805a17;font-size:12px;font-weight:600;line-height:1.4}
 .msc-card{display:grid;gap:12px}
-.msc-card-next{box-shadow:inset 0 0 0 2px #1457d9}
+.msc-card-next{box-shadow:inset 0 0 0 2px var(--soft-accent)}
 .msc-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .msc-card-badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .msc-alliances{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}

@@ -12,7 +12,7 @@
 
 .admin-analytics-page h3 {
   margin: 8px 0 0;
-  font-size: 14px;
+  font-size:var(--soft-title-4);
   letter-spacing: -0.01em;
 }
 
@@ -26,12 +26,12 @@
   width: 100%;
   height: 120px;
   display: block;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--soft-accent, #2563eb) 5%, var(--soft-bg, #f8fafc));
+  border-radius:var(--soft-radius-xs);
+  background: color-mix(in srgb, var(--soft-accent) 5%, var(--soft-bg));
 }
 
 .admin-analytics-chart rect {
-  fill: var(--soft-accent, #2563eb);
+  fill: var(--soft-accent);
   opacity: 0.85;
 }
 
@@ -39,7 +39,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font: 11px/1.4 ui-monospace, monospace;
 }
 
@@ -54,10 +54,10 @@
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
-  color: var(--soft-ink, #1f2937);
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
   font-size: 12px;
 }
 
@@ -74,22 +74,22 @@
 }
 
 .admin-analytics-histogram-row small {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
 }
 
 .admin-analytics-histogram-bar {
   display: block;
   height: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--soft-line, #d5dde8) 60%, transparent);
+  border-radius:var(--soft-radius-pill);
+  background: color-mix(in srgb, var(--soft-line) 60%, transparent);
   overflow: hidden;
 }
 
 .admin-analytics-histogram-bar i {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: var(--soft-accent, #2563eb);
+  border-radius:var(--soft-radius-pill);
+  background: var(--soft-accent);
 }
 
 .admin-analytics-columns {
@@ -118,13 +118,13 @@
 .admin-analytics-table td {
   padding: 10px 12px;
   text-align: left;
-  border-top: 1px solid var(--soft-line, #d5dde8);
+  border-top: 1px solid var(--soft-line);
   white-space: nowrap;
 }
 
 .admin-analytics-table thead th {
   border-top: 0;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -136,7 +136,7 @@
 }
 
 .admin-analytics-drilldown {
-  border-left: 3px solid var(--soft-accent, #2563eb);
+  border-left: 3px solid var(--soft-accent);
 }
 
 .admin-analytics-drilldown-head {
@@ -148,8 +148,8 @@
 
 .admin-analytics-drilldown-head h2 {
   margin: 4px 0;
-  font-size: 20px;
-  letter-spacing: -0.02em;
+  font-size:var(--soft-title-2);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .admin-analytics-drilldown-head .app-button {

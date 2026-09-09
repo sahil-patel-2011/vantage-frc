@@ -224,7 +224,7 @@
   font:12px/1.65 var(--m-mono);white-space:pre-wrap;overflow:visible
 }
 .code-product-demo .code-findings header>strong{font-size:22px}
-.code-finding-focus{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-line,#e4e8ec)}
+.code-finding-focus{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--app-line)}
 .code-finding-focus>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .code-finding-focus p{margin:0;color:var(--m-muted);font-size:13px;line-height:1.5}
 .code-finding-focus code{display:block;padding:8px 10px;color:#5a3a38;background:#fff5f4;border-radius:4px;font:11px/1.45 var(--m-mono);overflow-wrap:anywhere}
@@ -2092,6 +2092,11 @@ html[data-theme="dark"] .marketing-lux{
   --m-accent-dark:#ffffff;
   --m-on-accent:#0e1013;
   --m-blue:#7fb2ff;
+  /* The light copper (#a34a07) is 3.6:1 on this paper. Lift it for dark so the
+     warm accent keeps carrying text, not just decoration. */
+  --m-warm:#f0a05a;
+  --m-warm-soft:rgba(240,160,90,.12);
+  --m-warm-line:rgba(240,160,90,.32);
   color-scheme:dark;
 }
 html[data-theme="dark"] .marketing-lux .nav nav a,
@@ -2178,9 +2183,9 @@ html[data-theme="dark"] .marketing-lux .field input:focus{
   --m-step-4:clamp(32px,1.6rem + 2.4vw,52px);
   --m-step-5:clamp(38px,2rem + 2.9vw,64px);
   /* Warm technical accent (copper) */
-  --m-warm:#b4540a;
-  --m-warm-soft:rgba(180,84,10,.09);
-  --m-warm-line:rgba(180,84,10,.28);
+  --m-warm:#a34a07;
+  --m-warm-soft:rgba(163,74,7,.09);
+  --m-warm-line:rgba(163,74,7,.28);
   /* Blueprint grid lines */
   --m-grid-line:rgba(20,36,58,.05);
   --m-grid-line-strong:rgba(20,36,58,.085);

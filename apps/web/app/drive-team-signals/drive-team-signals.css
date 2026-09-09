@@ -9,7 +9,7 @@
 .dts-setup-steps li,.dts-row,.dts-sheet-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .dts-tip,.dts-block{margin:0;display:block}
 .dts-code{margin-left:8px}
-.dts-add-signal{display:grid;gap:8px;margin-top:12px;border-top:1px solid var(--app-border,#33415522);padding-top:12px}
+.dts-add-signal{display:grid;gap:8px;margin-top:12px;border-top:1px solid var(--app-border);padding-top:12px}
 @media(max-width:900px){
   .dts-next-actions li,.dts-setup-steps li,.dts-row,.dts-sheet-header{flex-direction:column;align-items:stretch}
 }

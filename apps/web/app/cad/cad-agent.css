@@ -27,7 +27,7 @@
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--app-line);
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   background: var(--app-bg);
   color: var(--app-ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
@@ -43,14 +43,14 @@
   color: var(--app-muted);
 }
 .cad-agent-leds span.on {
-  color: var(--app-positive, #0a7a4a);
+  color: var(--app-positive);
 }
 /* Deep link to the bound Part Studio, next to the binding it names. */
 .cad-agent-leds .cad-agent-open {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent, var(--app-ink));
+  color: var(--app-accent);
   font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
   text-decoration: underline;
 }
@@ -65,7 +65,7 @@
   min-height: 0;
   flex: 1;
   border: 1px solid var(--app-line);
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   overflow: hidden;
   background: var(--app-bg);
 }
@@ -152,8 +152,8 @@
   min-height: 72px;
   padding: 10px 12px;
   border: 1px solid var(--app-line);
-  border-radius: 10px;
-  background: var(--app-soft, var(--app-bg));
+  border-radius:var(--soft-radius-xs);
+  background: var(--app-soft);
   color: var(--app-ink);
   font: 400 14px/1.4 var(--font-source-sans), ui-sans-serif;
 }
@@ -171,7 +171,7 @@
   height: 100%;
   min-height: 460px;
   border: 0;
-  background: var(--app-soft, #0b1115);
+  background: var(--app-soft);
 }
 .cad-agent-empty-view {
   display: grid;
@@ -189,12 +189,12 @@
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--app-line);
-  border-radius: 999px;
-  background: var(--app-soft, var(--app-bg));
+  border-radius:var(--soft-radius-pill);
+  background: var(--app-soft);
 }
 .cad-mode-btn {
   border: 0;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   padding: 4px 10px;
   background: transparent;
   color: var(--app-muted);
@@ -219,9 +219,9 @@
   gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-left: 3px solid var(--app-accent, #16d9e8);
-  border-radius: 12px;
-  background: var(--app-soft, var(--app-bg));
+  border-left: 3px solid var(--app-accent);
+  border-radius:var(--soft-radius-sm);
+  background: var(--app-soft);
 }
 .cad-proposal-card b {
   font-size: 13px;
@@ -247,8 +247,8 @@
   gap: 10px;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-radius: 12px;
-  background: var(--app-soft, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  background: var(--app-soft);
 }
 .cad-plan-panel > b,
 .cad-plan-questions > b,
@@ -274,7 +274,7 @@
   min-height: 34px;
   padding: 6px 10px;
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   background: var(--app-bg);
   color: var(--app-ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
@@ -307,8 +307,8 @@
   gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-radius: 12px;
-  background: var(--app-soft, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  background: var(--app-soft);
 }
 .cad-task-list ul {
   margin: 0;
@@ -329,12 +329,12 @@
   text-transform: uppercase;
   color: var(--app-muted);
   border: 1px solid var(--app-line);
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   padding: 2px 8px;
   white-space: nowrap;
 }
 .cad-task--done .cad-task-status {
-  color: var(--app-positive, #0a7a4a);
+  color: var(--app-positive);
   border-color: currentColor;
 }
 .cad-task--failed .cad-task-status {

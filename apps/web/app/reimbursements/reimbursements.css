@@ -10,10 +10,10 @@
   width: 100%;
   min-height: 44px;
   padding: 11px 12px;
-  color: var(--soft-ink, var(--app-ink));
-  background: var(--soft-bg, var(--app-bg));
-  border: 1px solid var(--soft-line, var(--app-line));
-  border-radius: 12px;
+  color: var(--soft-ink);
+  background: var(--soft-bg);
+  border: 1px solid var(--soft-line);
+  border-radius:var(--soft-radius-sm);
   font: inherit;
 }
 .rb-page textarea { min-height: 66px; resize: vertical; line-height: 1.5; }
@@ -22,7 +22,7 @@
 .rb-note {
   margin: 0;
   padding: 11px 12px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -40,18 +40,18 @@
   gap: 4px;
   padding: 14px;
   border-radius: var(--soft-radius, 18px);
-  background: var(--soft-card, var(--app-surface));
-  border: 1px solid color-mix(in srgb, var(--soft-line, var(--app-line)) 80%, transparent);
+  background: var(--soft-card);
+  border: 1px solid color-mix(in srgb, var(--soft-line) 80%, transparent);
 }
-.rb-total dt { margin: 0; color: var(--soft-muted, var(--app-muted)); font-size: 12px; font-weight: 600; }
+.rb-total dt { margin: 0; color: var(--soft-muted); font-size: 12px; font-weight: 600; }
 .rb-total dd { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-.rb-total small { color: var(--soft-muted, var(--app-muted)); font-size: 11.5px; }
+.rb-total small { color: var(--soft-muted); font-size: 11.5px; }
 
 /* ---- file a claim ---- */
 .rb-form { display: grid; gap: 12px; }
 .rb-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .rb-field { display: grid; gap: 6px; }
-.rb-field > span { font-size: 12.5px; font-weight: 650; color: var(--soft-muted, var(--app-muted)); }
+.rb-field > span { font-size: 12.5px; font-weight: 650; color: var(--soft-muted); }
 .rb-form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 .rb-receipt-pick {
@@ -60,14 +60,14 @@
   gap: 8px;
   min-height: 44px;
   padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px dashed var(--soft-line, var(--app-line));
-  background: var(--soft-bg, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px dashed var(--soft-line);
+  background: var(--soft-bg);
   color: inherit;
   font: 650 13px inherit;
   cursor: pointer;
 }
-.rb-receipt-pick:hover { border-color: var(--soft-accent, var(--app-accent)); }
+.rb-receipt-pick:hover { border-color: var(--soft-accent); }
 .rb-receipt-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* ---- claim list ---- */
@@ -76,22 +76,22 @@
   display: grid;
   gap: 10px;
   padding: 14px;
-  border-radius: 14px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  background: var(--soft-bg, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
 }
 .rb-claim-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; justify-content: space-between; }
 .rb-claim-head strong { font-size: 15px; }
 .rb-amount { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
-.rb-meta { margin: 0; color: var(--soft-muted, var(--app-muted)); font-size: 12.5px; line-height: 1.5; }
+.rb-meta { margin: 0; color: var(--soft-muted); font-size: 12.5px; line-height: 1.5; }
 .rb-claim-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .rb-claim-actions button,
 .rb-claim-actions a {
   min-height: 44px;
   padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  background: var(--soft-card, var(--app-surface));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
   color: inherit;
   font: 650 13px inherit;
   cursor: pointer;
@@ -101,7 +101,7 @@
 }
 .rb-claim-actions button.primary {
   border-color: transparent;
-  background: var(--soft-accent, var(--app-accent));
+  background: var(--soft-accent);
   color: #fff;
 }
 .rb-claim-actions button:disabled { opacity: 0.55; cursor: default; }
@@ -111,20 +111,20 @@
   align-items: center;
   min-height: 24px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   font: 700 11px/1 inherit;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--soft-muted, var(--app-muted));
-  background: color-mix(in srgb, var(--soft-muted, var(--app-muted)) 14%, transparent);
+  color: var(--soft-muted);
+  background: color-mix(in srgb, var(--soft-muted) 14%, transparent);
   width: fit-content;
 }
 .rb-chip.submitted { color: var(--app-accent); background: color-mix(in srgb, var(--app-accent) 14%, transparent); }
-.rb-chip.approved { color: var(--app-warning, #92400e); background: color-mix(in srgb, var(--app-warning, #f59e0b) 18%, transparent); }
+.rb-chip.approved { color: var(--app-warning); background: color-mix(in srgb, var(--app-warning) 18%, transparent); }
 .rb-chip.paid { color: var(--app-positive); background: color-mix(in srgb, var(--app-positive) 14%, transparent); }
 .rb-chip.denied { color: var(--app-critical); background: color-mix(in srgb, var(--app-critical) 12%, transparent); }
 
-.rb-receipt-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--soft-accent, var(--app-accent)); font: 650 13px inherit; }
+.rb-receipt-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--soft-accent); font: 650 13px inherit; }
 .rb-no-receipt { color: var(--app-critical); font-weight: 650; }
 
 /* ---- budget vs actual ---- */
@@ -135,17 +135,17 @@
 .rb-budget-track {
   position: relative;
   height: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--soft-muted, var(--app-muted)) 18%, transparent);
+  border-radius:var(--soft-radius-pill);
+  background: color-mix(in srgb, var(--soft-muted) 18%, transparent);
   overflow: hidden;
 }
-.rb-budget-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--app-accent); }
+.rb-budget-fill { position: absolute; inset: 0 auto 0 0; border-radius:var(--soft-radius-pill); background: var(--app-accent); }
 .rb-budget-line[data-state="over"] .rb-budget-fill { background: var(--app-critical); }
-.rb-budget-line[data-state="close"] .rb-budget-fill { background: var(--app-warning, #f59e0b); }
+.rb-budget-line[data-state="close"] .rb-budget-fill { background: var(--app-warning); }
 .rb-budget-line[data-state="on_track"] .rb-budget-fill { background: var(--app-positive); }
 .rb-budget-line[data-state="no_budget"] .rb-budget-track { background: repeating-linear-gradient(
   135deg,
-  color-mix(in srgb, var(--soft-muted, var(--app-muted)) 22%, transparent) 0 6px,
+  color-mix(in srgb, var(--soft-muted) 22%, transparent) 0 6px,
   transparent 6px 12px
 ); }
 
@@ -155,14 +155,14 @@
   align-items: center;
   min-height: 44px;
   padding: 11px 16px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid transparent;
-  background: var(--soft-accent, var(--app-accent));
+  background: var(--soft-accent);
   color: #fff;
   font: 700 13px inherit;
   text-decoration: none;
 }
-.rb-export p { margin: 0; color: var(--soft-muted, var(--app-muted)); font-size: 12.5px; max-width: 46ch; line-height: 1.5; }
+.rb-export p { margin: 0; color: var(--soft-muted); font-size: 12.5px; max-width: 46ch; line-height: 1.5; }
 
 @media (max-width: 560px) {
   .rb-claim-head { align-items: flex-start; }

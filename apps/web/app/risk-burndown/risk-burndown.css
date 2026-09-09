@@ -7,7 +7,7 @@
 .risk-burndown-stats strong{font-size:1.5rem}
 .risk-burndown-layout{display:grid;gap:16px}
 .risk-burndown-series{display:flex;align-items:flex-end;gap:3px;height:80px}
-.risk-burndown-series-bar{display:inline-block;flex:1 0 auto;min-width:3px;border-radius:2px;background:var(--app-accent,#0f766e)}
+.risk-burndown-series-bar{display:inline-block;flex:1 0 auto;min-width:3px;border-radius:2px;background:var(--app-accent)}
 .risk-burndown-breakdowns{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
 .risk-burndown-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .risk-burndown-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}

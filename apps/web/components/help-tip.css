@@ -27,7 +27,7 @@
   color: var(--app-muted);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   font: 700 15px/1 var(--font-source-sans, ui-sans-serif), system-ui;
   cursor: pointer;
 }
@@ -109,7 +109,7 @@
   color: var(--app-muted);
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -161,7 +161,7 @@
 .help-tip-block h3 {
   margin: 0 0 6px;
   color: var(--app-muted);
-  font-size: 10px;
+  font-size:var(--soft-text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -197,7 +197,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -259,8 +259,8 @@
     position: sticky;
     right: 0;
     margin-left: 4px;
-    background: var(--soft-bg, var(--app-soft));
-    border-radius: 999px;
+    background: var(--soft-bg);
+    border-radius:var(--soft-radius-pill);
   }
 }
 

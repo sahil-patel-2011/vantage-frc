@@ -19,8 +19,8 @@
 
 .ai-memory-scope-card h2 {
   margin: 0;
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .ai-memory-scope-card .app-button {
@@ -77,8 +77,8 @@
 
 .dream-journal-header h2 {
   margin: 0;
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .dream-journal-header p {
@@ -140,8 +140,8 @@
 
 .dream-entry h3 {
   margin: 0;
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
   color: var(--app-ink, inherit);
 }
 
@@ -156,7 +156,7 @@
 
 .dream-chips li {
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
   background: var(--app-surface, transparent);
   color: var(--app-muted, inherit);
@@ -183,8 +183,8 @@
 
 .dream-error-streak h3 {
   margin: 0;
-  font-size: 0.95rem;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .dream-error-streak p {

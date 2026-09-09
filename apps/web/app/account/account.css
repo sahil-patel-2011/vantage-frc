@@ -32,13 +32,13 @@
 
 .account-org-context h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .account-org-context p {
   margin: 4px 0 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -69,13 +69,13 @@
 
 .account-next-actions h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .account-next-actions > header p {
   margin: 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -94,14 +94,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  background: var(--soft-bg, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
 }
 
 .account-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--soft-accent, var(--app-accent)) 35%, var(--soft-line, var(--app-line)));
-  background: color-mix(in srgb, var(--soft-accent, var(--app-accent)) 8%, var(--soft-bg, var(--app-bg)));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent) 8%, var(--soft-bg));
 }
 
 .account-next-actions li div {
@@ -115,7 +115,7 @@
 }
 
 .account-next-actions li span {
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -141,13 +141,13 @@
 
 .account-ai-keys h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .account-ai-keys p {
   margin: 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.4;
   max-width: 52ch;
@@ -175,7 +175,7 @@
 .account-identity-scope {
   display: block;
   margin-top: 4px;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -209,8 +209,8 @@
 
 .settings-connection-card-top h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .settings-connection-card .app-badge {
@@ -220,13 +220,13 @@
 
 .settings-connection-card p {
   margin: 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .settings-connection-card a {
-  color: var(--soft-accent, var(--app-accent));
+  color: var(--soft-accent);
   font-weight: 700;
   text-decoration: none;
   font-size: 13px;
@@ -239,12 +239,12 @@
 
 .settings-connection-footer h2 {
   margin: 0;
-  font-size: 15px;
+  font-size:var(--soft-title-3);
 }
 
 .settings-connection-footer p {
   margin: 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.4;
 }
