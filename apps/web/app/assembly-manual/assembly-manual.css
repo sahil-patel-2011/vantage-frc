@@ -1,0 +1,399 @@
+/*
+ * Assembly manual — a reading surface with one form on it.
+ *
+ * Tokens only (--soft-*), so both themes come from soft-ui.css. Every rule is
+ * scoped to .am-page: the app shell sets `.module-page label { display: grid }`
+ * and `input { width: 100% }`, which is right for the dense forms elsewhere and
+ * wrong for the two fields here, so the specificity has to be won explicitly —
+ * the same fight /cad-learn documents.
+ */
+
+.am-page {
+  display: block;
+  max-width: 1080px;
+}
+
+/* ---------- hero ---------- */
+
+.am-hero {
+  margin-bottom: 24px;
+}
+
+.am-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.am-page h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.am-lead {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--soft-ink);
+  line-height: 1.55;
+}
+
+/* ---------- cards ---------- */
+
+.am-card,
+.am-setup-card {
+  margin: 0 0 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--soft-line);
+  border-radius: 12px;
+  background: var(--soft-surface);
+}
+
+.am-card h2,
+.am-setup-card h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.am-setup {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.am-setup-card {
+  margin: 0;
+  border-left: 3px solid var(--soft-accent, #b98900);
+}
+
+.am-setup-card p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+/* ---------- form ---------- */
+
+.am-page .am-field {
+  display: block;
+  margin: 0 0 12px;
+  max-width: 560px;
+}
+
+.am-page .am-field > span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--soft-muted);
+}
+
+.am-page .am-field input,
+.am-page .am-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  font: inherit;
+}
+
+.am-page .am-primary,
+.am-page .am-primary-link {
+  display: inline-block;
+  padding: 9px 16px;
+  border: 1px solid var(--soft-line-strong, var(--soft-line));
+  border-radius: 8px;
+  background: var(--soft-ink);
+  color: var(--soft-surface);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.am-page .am-primary[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.am-choices {
+  margin-top: 14px;
+}
+
+.am-choices ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.am-note {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--soft-bg);
+  line-height: 1.5;
+}
+
+.am-fineprint {
+  margin-top: 14px;
+  max-width: 68ch;
+  line-height: 1.5;
+}
+
+/* ---------- table ---------- */
+
+.am-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.am-table th,
+.am-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--soft-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.am-table th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.am-row-open {
+  background: var(--soft-bg);
+}
+
+.am-status {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line);
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.am-status-completed {
+  border-color: #2f7a3f;
+  color: #2f7a3f;
+}
+
+.am-status-failed {
+  border-color: #a33;
+  color: #a33;
+}
+
+.am-status-running,
+.am-status-queued,
+.am-status-paused {
+  border-color: #b98900;
+  color: #8a6800;
+}
+
+/* ---------- step viewer ---------- */
+
+.am-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.am-detail-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.am-stepbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.am-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .am-step {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.am-step-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  background: var(--soft-bg);
+}
+
+/*
+ * The placeholder. Deliberately flat and empty rather than an illustration:
+ * a render that could not be produced must not look like one that was.
+ */
+.am-noshot {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  min-height: 220px;
+  padding: 20px;
+  border: 1px dashed var(--soft-line);
+  border-radius: 10px;
+  background: var(--soft-bg);
+  text-align: center;
+  color: var(--soft-muted);
+}
+
+.am-noshot p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.am-step-body h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.am-step-body h4 {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.am-sentence {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.am-parts,
+.am-fab {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+.am-qty {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/*
+ * An unconfirmed line is dimmed but never hidden, and it carries its own
+ * "confirm — not specified in CAD" text from the engine, so a style change
+ * cannot silently promote it to a fact.
+ */
+.am-unconfirmed,
+.am-unconfirmed-row td {
+  color: var(--soft-muted);
+  font-style: italic;
+}
+
+.am-warn {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #b98900;
+  border-radius: 0 8px 8px 0;
+  background: var(--soft-bg);
+}
+
+.am-warn h4 {
+  margin: 0 0 6px;
+  color: #8a6800;
+}
+
+.am-warn ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
+/* ---------- report ---------- */
+
+.am-report {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.am-report h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.am-report-facts {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.am-details {
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+.am-details summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.am-details ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+/* ---------- misc ---------- */
+
+.am-muted {
+  color: var(--soft-muted);
+}
+
+.am-small {
+  font-size: 12px;
+}
+
+.am-link {
+  color: var(--soft-ink);
+  text-decoration: underline;
+}
+
+.am-error {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #a33;
+  border-radius: 0 8px 8px 0;
+  background: var(--soft-bg);
+  color: #a33;
+}
+
+.am-error-text {
+  color: #a33;
+}
