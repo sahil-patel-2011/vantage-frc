@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { browserCommand, fusionAddinPaths, validatePluginEndpoint } from "../src/platform";
 import { providerPolicy } from "../src/provider";
@@ -108,11 +110,30 @@ describe("doctor / OS matrix", () => {
 });
 
 describe("local update repo discovery", () => {
+  /**
+   * The old assertion matched the checkout's *directory name*, so it failed in
+   * any git worktree or CI clone that used a different folder. What the resolver
+   * actually promises is "the directory holding the `vantage` workspace root
+   * package.json, at or above cwd" — assert that instead, so the test travels.
+   */
   it("resolves the monorepo root from cwd", async () => {
-    const root = await findVantageRepoRoot(process.env, process.cwd());
+    const cwd = process.cwd();
+    const root = await findVantageRepoRoot(process.env, cwd);
     expect(root).toBeTruthy();
-    expect(String(root).replace(/\\/g, "/")).toMatch(
-      /\/(Vantage|vantage-frc|Vantage FRC Robotics AIO APP)$/i,
-    );
+
+    const pkg = JSON.parse(
+      await readFile(join(String(root), "package.json"), "utf8"),
+    ) as { name?: string; workspaces?: unknown };
+    expect(pkg.name).toBe("vantage");
+    expect(pkg.workspaces).toBeTruthy();
+
+    // …and it is an ancestor of (or equal to) where we started.
+    const normalized = (value: string) => resolve(value).replace(/\\/g, "/");
+    expect(normalized(cwd).startsWith(normalized(String(root)))).toBe(true);
+  });
+
+  it("honors an explicit VANTAGE_REPO override", async () => {
+    const root = String(await findVantageRepoRoot(process.env, process.cwd()));
+    expect(await findVantageRepoRoot({ VANTAGE_REPO: root }, "/")).toBe(resolve(root));
   });
 });
