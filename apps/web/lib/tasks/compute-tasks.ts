@@ -220,7 +220,10 @@ export async function createTask(
  * todo assignee gets, so the two trackers behave the same way.
  */
 export async function replaceTaskAssignees(client:PoolClient,input:{orgId:string;taskId:string;userId:string;assignees:string[]}) {
-  const roster = await loadRoster(client, input.orgId).catch(() => []);
+  // memberships JOIN users is not an optional table; a failure here means the
+  // transaction is already aborted, and swallowing it silently stored the
+  // un-canonicalized spelling this function exists to prevent.
+  const roster = await loadRoster(client, input.orgId);
   const owners = resolveOwnerNames(
     input.assignees.map((name) => name.trim().slice(0, 120)).filter(Boolean),
     roster,
@@ -300,7 +303,7 @@ export async function updateTaskFields(
   // two write different spellings of the same person onto the same row.
   let assignee = input.assignee;
   if (assignee) {
-    const roster = await loadRoster(client, input.orgId).catch(() => []);
+    const roster = await loadRoster(client, input.orgId);
     assignee = resolveOwnerNames([assignee], roster)[0]?.name ?? assignee;
   }
   await client.query(

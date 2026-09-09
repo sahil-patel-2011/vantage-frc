@@ -19,6 +19,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { cachedSchemaSupport } from "../schema-probe";
 
 /**
  * The channel every workspace gets for free. `ensureTeamChannel` in the route finds it by
@@ -159,21 +160,21 @@ export function resetChannelCapabilityCache(): void {
 }
 
 export async function supportsChannelArchive(client: PoolClient): Promise<boolean> {
-  if (archiveSupportedCache != null) return archiveSupportedCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  return cachedSchemaSupport(
+    client,
+    {
+      read: () => archiveSupportedCache,
+      write: (value) => {
+        archiveSupportedCache = value;
+      },
+    },
+    `SELECT 1
        FROM information_schema.columns
        WHERE table_schema = 'public'
          AND table_name = 'org_conversations'
          AND column_name = 'archived_at'
        LIMIT 1`,
-    );
-    archiveSupportedCache = Boolean(row.rowCount);
-  } catch {
-    archiveSupportedCache = false;
-  }
-  return archiveSupportedCache;
+  );
 }
 
 export async function memberRole(

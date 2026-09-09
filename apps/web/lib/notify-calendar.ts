@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { emitPreferredNotification } from "@vantage/core";
+import { withSavepoint } from "@vantage/db";
 
 function calendarHref(orgId: string, eventId: string): string {
   return `/team/calendar?orgId=${encodeURIComponent(orgId)}&eventId=${encodeURIComponent(eventId)}`;
@@ -8,8 +9,30 @@ function calendarHref(orgId: string, eventId: string): string {
 /**
  * Notify subteam members (or whole-team members when subteamId is null) about a
  * new/updated calendar event. Skips the actor and respects in-app prefs.
+ *
+ * Self-protecting: every caller runs this after its own INSERT/UPDATE on the
+ * shared `withRls` client, and every one of them had wrapped it in a bare
+ * `try { … } catch {}` labelled "best-effort". It was not — a failure inside the
+ * notify fan-out aborted the transaction, so the calendar event or visit invite
+ * that had just been written was discarded at COMMIT while the route answered
+ * 200 with an id. The savepoint lives here so no caller has to remember it;
+ * a failed fan-out returns 0 notified and the write survives.
  */
 export async function notifyCalendarEvent(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    actorUserId: string;
+    eventId: string;
+    title: string;
+    subteamId: string | null;
+    mode?: "created" | "updated";
+  },
+): Promise<number> {
+  return withSavepoint(client, () => fanOutCalendarEvent(client, input), 0);
+}
+
+async function fanOutCalendarEvent(
   client: PoolClient,
   input: {
     orgId: string;

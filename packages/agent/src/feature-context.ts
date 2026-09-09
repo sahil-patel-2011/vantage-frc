@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 
 /** Durable link kinds stored in `feature_context_links` (migration 0184). */
 export type FeatureContextKind =
@@ -181,7 +182,11 @@ export async function linkFeatureContext(
   const sourceId = String(input.sourceId ?? "").trim();
   const targetId = String(input.targetId ?? "").trim();
   if (!sourceId || !targetId) return;
-  try {
+  // Migration may not be applied yet — engines must degrade, not crash. cad-brief
+  // calls this six times after writing the job and its artifacts, so a plain catch
+  // meant a missing feature_context_links table aborted the transaction and threw
+  // the brief away at COMMIT. Savepointed: the link is lost, the brief is not.
+  await withSavepoint(client, async () => {
     await client.query(
       `INSERT INTO feature_context_links(
          org_id,source_kind,source_id,target_kind,target_id,relation,metadata,created_by
@@ -198,7 +203,5 @@ export async function linkFeatureContext(
         input.userId,
       ],
     );
-  } catch {
-    // Migration may not be applied yet — engines must degrade, not crash.
-  }
+  }, undefined);
 }

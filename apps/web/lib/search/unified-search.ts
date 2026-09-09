@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { searchHelpArticles } from "../help";
 
 // ---------------------------------------------------------------------------
@@ -319,15 +320,18 @@ export async function computeUnifiedSearch(
   }
 
   const pattern = likePattern(query);
+  // A single missing/failing source must not sink the whole search — which the
+  // plain try/catch here could not deliver, because all the sources share one
+  // transaction and the first failure aborted it for every source after it.
+  // Unified search then returned nothing at all, from a 200, for any query.
   const settled = await Promise.all(
-    SEARCH_SOURCES.map(async (source) => {
-      try {
-        return await source.run(client, orgId, pattern, PER_SOURCE_LIMIT);
-      } catch {
-        // A single missing/failing source must not sink the whole search.
-        return [] as SearchResult[];
-      }
-    }),
+    SEARCH_SOURCES.map((source) =>
+      withSavepoint(
+        client,
+        () => source.run(client, orgId, pattern, PER_SOURCE_LIMIT),
+        [] as SearchResult[],
+      ),
+    ),
   );
 
   const dataHits = settled

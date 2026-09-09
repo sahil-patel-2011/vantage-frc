@@ -1417,18 +1417,16 @@ export async function POST(request: Request) {
               throw error;
             }
           }
-          try {
-            await notifyCalendarEvent(client, {
-              orgId: action.orgId,
-              actorUserId: userId,
-              eventId,
-              title: action.title,
-              subteamId: action.subteamId,
-              mode: "created",
-            });
-          } catch {
-            // Inbox notify is best-effort; event creation still succeeds.
-          }
+          // notifyCalendarEvent takes its own savepoint, so a failed fan-out
+          // costs the notifications and not the event that was just written.
+          await notifyCalendarEvent(client, {
+            orgId: action.orgId,
+            actorUserId: userId,
+            eventId,
+            title: action.title,
+            subteamId: action.subteamId,
+            mode: "created",
+          });
           return { id: eventId, attendanceEventId };
         }
 
@@ -1465,18 +1463,14 @@ export async function POST(request: Request) {
           );
           if (!updated.rowCount) throw new HttpError(404, "Event not found");
           const row = updated.rows[0]!;
-          try {
-            await notifyCalendarEvent(client, {
-              orgId: action.orgId,
-              actorUserId: userId,
-              eventId: action.id,
-              title: row.title,
-              subteamId: row.subteamId,
-              mode: "updated",
-            });
-          } catch {
-            // Inbox notify is best-effort; event update still succeeds.
-          }
+          await notifyCalendarEvent(client, {
+            orgId: action.orgId,
+            actorUserId: userId,
+            eventId: action.id,
+            title: row.title,
+            subteamId: row.subteamId,
+            mode: "updated",
+          });
           return { ok: true };
         }
 

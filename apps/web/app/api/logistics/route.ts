@@ -1,6 +1,6 @@
 ﻿import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   DEFAULT_MENTOR_CHECKLIST,
@@ -420,11 +420,13 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
         legId = inserted.rows[0]?.id ?? null;
       }
       if (!legId) throw new HttpError(500, "Travel leg was not saved");
-      try {
-        await syncTravelLegCalendar(client, action.orgId, userId, legId, action);
-      } catch {
-        /* calendar optional */
-      }
+      // Calendar mirroring is optional; the savepoint is what keeps the travel leg
+      // itself from being rolled back with it at COMMIT.
+      await withSavepoint(
+        client,
+        () => syncTravelLegCalendar(client, action.orgId, userId, legId!, action),
+        undefined,
+      );
       return;
     }
     case "delete_travel_leg": {
@@ -435,11 +437,13 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       const calendarEventId = row.rows[0]?.calendarEventId;
       await client.query(`DELETE FROM logistics_travel_legs WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       if (calendarEventId) {
-        try {
-          await client.query(`DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`, [calendarEventId, action.orgId]);
-        } catch {
-          /* optional */
-        }
+        // The leg is already deleted above; a missing calendar row must not undo it.
+        await withSavepoint(
+          client,
+          () =>
+            client.query(`DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`, [calendarEventId, action.orgId]),
+          null,
+        );
       }
       return;
     }

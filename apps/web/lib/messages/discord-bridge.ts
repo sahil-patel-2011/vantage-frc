@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   formatDiscordBridgeMessage,
   isValidDiscordWebhook,
@@ -6,7 +7,15 @@ import {
 } from "../discord";
 import type { MessageObjectLink } from "./object-links";
 
-/** Mirror an object-linked team message to Discord when the org bridge is on. Never throws. */
+/**
+ * Mirror an object-linked team message to Discord when the org bridge is on. Never throws.
+ *
+ * The information_schema probes below exist because these tables are genuinely
+ * optional — which is exactly why the old bare catch was dangerous. This runs on
+ * the shared `withRls` client immediately after the message INSERT; one failing
+ * statement aborted the transaction and the COMMIT dropped the message with it,
+ * behind a 200. The savepoint confines a bridge failure to the bridge.
+ */
 export async function maybeBridgeObjectLinkedMessage(
   client: PoolClient,
   input: {
@@ -18,7 +27,7 @@ export async function maybeBridgeObjectLinkedMessage(
     objectLink: MessageObjectLink;
   },
 ): Promise<void> {
-  try {
+  await withSavepoint(client, async () => {
     const bridgeTable = await client.query(
       `SELECT 1 FROM information_schema.tables
        WHERE table_schema = 'public' AND table_name = 'discord_bridge_posts' LIMIT 1`,
@@ -75,7 +84,5 @@ export async function maybeBridgeObjectLinkedMessage(
         post.ok ? null : (post.error ?? "Discord rejected the message"),
       ],
     );
-  } catch {
-    /* bridge must never block in-app send */
-  }
+  }, undefined);
 }

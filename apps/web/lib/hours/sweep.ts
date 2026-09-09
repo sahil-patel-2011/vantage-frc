@@ -13,6 +13,8 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
+import { cachedSchemaSupport } from "../schema-probe";
 import {
   describeAutoClosePlan,
   normalizeAutoClosePolicy,
@@ -29,39 +31,44 @@ export function resetSweepCapabilityCache(): void {
 }
 
 export async function supportsAutoCloseFlags(client: PoolClient): Promise<boolean> {
-  if (flagColumnsCache != null) return flagColumnsCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  return cachedSchemaSupport(
+    client,
+    {
+      read: () => flagColumnsCache,
+      write: (value) => {
+        flagColumnsCache = value;
+      },
+    },
+    `SELECT 1
        FROM information_schema.columns
        WHERE table_schema = 'public'
          AND table_name = 'hour_logs'
          AND column_name = 'auto_closed'
        LIMIT 1`,
-    );
-    flagColumnsCache = Boolean(row.rowCount);
-  } catch {
-    flagColumnsCache = false;
-  }
-  return flagColumnsCache;
+  );
 }
 
 async function readPolicy(client: PoolClient, orgId: string) {
-  try {
-    const row = await client.query<{ afterHours: number | null; creditHours: number | null }>(
-      `SELECT auto_close_after_hours::float8 AS "afterHours",
-              auto_close_credit_hours::float8 AS "creditHours"
-       FROM hour_policies WHERE org_id = $1::uuid`,
-      [orgId],
-    );
-    return normalizeAutoClosePolicy({
-      afterHours: row.rows[0]?.afterHours ?? null,
-      creditHours: row.rows[0]?.creditHours ?? null,
-    });
-  } catch {
-    // No policy columns yet: the documented defaults, not a credit-nothing sweep.
-    return normalizeAutoClosePolicy({});
-  }
+  // No policy columns yet: the documented defaults, not a credit-nothing sweep.
+  // The savepoint is what makes that promise true — the plain catch that used to
+  // be here aborted the shared transaction, so every UPDATE the sweep went on to
+  // issue failed and nothing was closed at all.
+  return withSavepoint(
+    client,
+    async () => {
+      const row = await client.query<{ afterHours: number | null; creditHours: number | null }>(
+        `SELECT auto_close_after_hours::float8 AS "afterHours",
+                auto_close_credit_hours::float8 AS "creditHours"
+         FROM hour_policies WHERE org_id = $1::uuid`,
+        [orgId],
+      );
+      return normalizeAutoClosePolicy({
+        afterHours: row.rows[0]?.afterHours ?? null,
+        creditHours: row.rows[0]?.creditHours ?? null,
+      });
+    },
+    normalizeAutoClosePolicy({}),
+  );
 }
 
 export type SweepResult = {
