@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Bus-Factor & Burnout Watch (never DEMO risk metrics). */
@@ -80,19 +81,19 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Presence stays blank until real check-ins exist — never DEMO headcount.",
+      detail: "Presence stays blank until real check-ins exist — no sample headcount.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Clocked hours stay blank until members log shop time — never DEMO hours.",
+      detail: "Clocked hours stay blank until members log shop time — no sample hours.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
     {
       id: "task-board",
       label: "Open Task board",
-      detail: "Ownership stays empty without real task rows — never DEMO progress.",
+      detail: "Ownership stays empty without real task rows — no sample progress.",
       href: hubHref("/team", "task-board", orgId),
     },
   ];
@@ -198,56 +199,10 @@ export function busFactorNextActions(input: {
   const flagCount = input.flagCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Bus-factor risk is org-scoped — pick a team before logging workload.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "attendance",
-          label: "Open Attendance",
-          detail: "Presence stays blank until real check-ins exist — never DEMO headcount.",
-          href: hubHref("/team", "attendance", null),
-        },
-        {
-          id: "hours-self-view",
-          label: "Open My Hours",
-          detail: "Clocked hours stay blank until members log shop time — never DEMO hours.",
-          href: hubHref("/team", "hours-self-view", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Bus-Factor can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "attendance",
-        label: "Open Attendance",
-        detail: "Confirm who is active before logging weekly workload.",
-        href: hubHref("/team", "attendance", orgId),
-      },
-      {
-        id: "hours-self-view",
-        label: "Open My Hours",
-        detail: "Corroborate self-reported hours with real clocked shop time.",
-        href: hubHref("/team", "hours-self-view", orgId),
-      },
-      {
-        id: "task-board",
-        label: "Open Task board",
-        detail: "Ownership concentration pairs with sole-knowledge flags.",
-        href: hubHref("/team", "task-board", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of busFactorSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(busFactorSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

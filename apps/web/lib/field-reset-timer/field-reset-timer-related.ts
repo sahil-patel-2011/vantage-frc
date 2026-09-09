@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Field Reset Timer (never DEMO drill times). */
@@ -163,50 +164,10 @@ export function fieldResetTimerNextActions(input: {
   const cycleCount = input.cycleCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Reset drills are org-scoped — pick a team before logging cycles.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "practice",
-          label: "Open Practice",
-          detail: "Practice stays blank until your team schedules real sessions.",
-          href: hubHref("/team", "practice", null),
-        },
-        {
-          id: "signals",
-          label: "Open Drive-Team Signals",
-          detail: "Signal sheets stay empty until your drive crew defines them.",
-          href: hubHref("/competition", "drive-team-signals", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Field Reset Timer can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "practice",
-        label: "Open Practice",
-        detail: "Schedule the sessions that feed reset timing.",
-        href: hubHref("/team", "practice", orgId),
-      },
-      {
-        id: "signals",
-        label: "Open Drive-Team Signals",
-        detail: "Align reset callouts with drive-crew language.",
-        href: hubHref("/competition", "drive-team-signals", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of fieldResetTimerSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(fieldResetTimerSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
