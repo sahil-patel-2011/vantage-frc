@@ -1,7 +1,6 @@
 import { EmptyState, PageHeader } from "../../components/ui";
 import {
   SCOUT_ACCURACY_RELATED_INCLUDE,
-  scoutAccuracyNextActions,
   scoutAccuracyRelatedLinks,
   scoutAccuracySetupSteps,
   scoutAccuracyShellCopy,
@@ -22,7 +21,6 @@ export default async function ScoutAccuracyPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = scoutAccuracyShellCopy("setup");
-    const actions = scoutAccuracyNextActions({ orgId: null, shell: "setup" });
     const related = scoutAccuracyRelatedLinks(null, {
       include: [...SCOUT_ACCURACY_RELATED_INCLUDE],
     });
@@ -74,28 +72,6 @@ export default async function ScoutAccuracyPage({
               </li>
             ))}
           </ul>
-        </section>
-        <section
-          className="app-card soft-panel edc-next-actions scout-accuracy-next-actions"
-          aria-label="Next actions"
-        >
-          <header>
-            <h2>Next actions</h2>
-            <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
-          </header>
-          <ol>
-            {actions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className="app-button secondary" href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
         </section>
         <p className="app-muted scout-accuracy-footer-links">
           Also see <a href={withOrgHref("/scouting/lineup", null)}>Coverage</a>
