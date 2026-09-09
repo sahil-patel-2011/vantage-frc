@@ -5,7 +5,6 @@
 .tl-page{display:grid;gap:16px}
 
 .tl-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
-.tl-toolbar .app-button{min-height:44px}
 .tl-upload-visibility{display:grid;gap:4px;font-size:.85rem}
 .tl-upload-visibility select{min-height:44px;padding:6px 10px;border-radius:var(--soft-radius-xs);border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit}
 .tl-hidden-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
@@ -15,7 +14,6 @@
 
 .tl-uploads ul{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
 .tl-uploads li{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;font-size:.9rem}
-.tl-uploads .app-button{min-height:44px}
 .tl-upload-error span{color:#c2372f}
 @media (prefers-color-scheme: dark){.tl-upload-error span{color:#ff8a80}}
 
@@ -25,7 +23,6 @@
 .tl-form input,.tl-form select,.tl-form textarea{min-height:44px;padding:8px 10px;border-radius:var(--soft-radius-xs);border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
 .tl-form textarea{resize:vertical}
 .tl-form-actions{display:flex;flex-wrap:wrap;gap:8px}
-.tl-form-actions .app-button{min-height:44px}
 
 .tl-filters{display:flex;flex-wrap:wrap;gap:10px}
 .tl-filters label{display:grid;gap:4px;font-size:.85rem;min-width:120px}
@@ -61,15 +58,12 @@
 .tl-detail{display:grid;gap:12px;width:min(720px,100%);max-height:90vh;overflow:auto;padding:16px}
 .tl-detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .tl-detail-head h2{margin:0;font-size:var(--soft-title-3);overflow:hidden;text-overflow:ellipsis}
-.tl-detail-head .app-button{min-height:44px}
 .tl-detail-media{display:grid;gap:8px;justify-items:start}
 .tl-detail-media img{width:100%;max-height:52vh;object-fit:contain;border-radius:var(--soft-radius-sm);background:rgba(0,0,0,.2)}
-.tl-detail-media .app-button{min-height:44px}
 .tl-download-card{display:flex;gap:12px;align-items:center;padding:12px;border-radius:var(--soft-radius-sm);background:color-mix(in srgb, currentColor 6%, transparent)}
 .tl-download-card .tl-thumb-fallback{flex:0 0 72px;height:72px;border-radius:var(--soft-radius-xs);background:color-mix(in srgb, currentColor 8%, transparent)}
 .tl-download-card>div{min-width:0}
 .tl-download-name{margin:0 0 8px;font-size:.9rem;overflow-wrap:anywhere}
-.tl-download-card .app-button{min-height:44px}
 .tl-detail-meta{margin:0;font-size:.85rem}
 .tl-detail-notes{margin:0;font-size:.9rem;white-space:pre-wrap}
 
@@ -80,7 +74,6 @@
 .tl-link-remove{min-height:44px;margin-left:8px;border:0;background:none;color:inherit;cursor:pointer;text-decoration:underline;font-size:.8rem}
 .tl-link-add{display:flex;flex-wrap:wrap;gap:8px}
 .tl-link-add input{flex:1 1 180px;min-height:44px;padding:8px 10px;border-radius:var(--soft-radius-xs);border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
-.tl-link-add .app-button{min-height:44px}
 
 .tl-detail-form{display:grid;gap:10px}
 .tl-detail-form h3{margin:0;font-size:var(--soft-title-3)}
@@ -89,7 +82,6 @@
 .tl-detail-form textarea{resize:vertical}
 .tl-detail-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .tl-detail-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.tl-detail-actions .app-button{min-height:44px}
 .tl-detail-actions .app-button.danger{color:#c2372f;border-color:currentColor}
 @media (prefers-color-scheme: dark){.tl-detail-actions .app-button.danger{color:#ff8a80}}
 

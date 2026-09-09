@@ -16,8 +16,8 @@ function pathEndsWith(url: URL, fileName: string): boolean {
   return path === `/${fileName}` || path.endsWith(`/${fileName}`);
 }
 
-/** Local shell pages (offline / sign-in gate) bundled next to dist/. */
-const LOCAL_SHELL_PAGES = ["offline.html", "gate.html"] as const;
+/** Local shell pages (offline / sign-in gate / update) bundled next to dist/. */
+const LOCAL_SHELL_PAGES = ["offline.html", "gate.html", "update.html"] as const;
 
 export function isLocalShellPage(url: URL): boolean {
   return LOCAL_SHELL_PAGES.some((page) => pathEndsWith(url, page));
