@@ -35,6 +35,7 @@ import {
   type CalendarEvent,
   type DutyOnCalendar,
   type GitHubCalendarOverlay,
+  type TaskOnCalendar,
   type LinkableAttendance,
   type LinkablePractice,
   type RsvpResponse,
@@ -543,6 +544,41 @@ async function loadView(
   const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
   const tbaMatches = await loadTbaMatchCalendar(client, orgId, orgRow.teamNumber);
 
+  // Open team tasks that have a due date, so "what is due" and "what is
+  // happening" stop being two different pages. `due_on` is a DATE, so ::text
+  // gives the YYYY-MM-DD day key directly — no zone conversion, and none of the
+  // timestamptz ::text trap where the output is not ISO 8601.
+  //
+  // Done rows are excluded in SQL as well as in tasksByDay(): a team that has
+  // ticked off a season's work should not pay to ship it over the wire. Soonest
+  // first, so if a team ever did cross the 400 cap the rows that fall off are
+  // the furthest out, never this week's.
+  const tasks = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<TaskOnCalendar>(
+          `SELECT t.id, t.title, t.status,
+                  t.due_on::text AS "dueOn",
+                  t.assignee_user_id AS "assigneeUserId",
+                  au.name AS "assigneeName",
+                  t.subteam_id AS "subteamId",
+                  st.name AS "subteamName",
+                  st.color AS "subteamColor"
+             FROM team_todos t
+             LEFT JOIN users au ON au.id = t.assignee_user_id
+             LEFT JOIN team_subteams st ON st.id = t.subteam_id
+            WHERE t.org_id = $1::uuid
+              AND t.due_on IS NOT NULL
+              AND t.status <> 'done'
+            ORDER BY t.due_on, t.title
+            LIMIT 400`,
+          [orgId],
+        )
+      ).rows,
+    [] as TaskOnCalendar[],
+  );
+
   return {
     status: "ready",
     context: {
@@ -564,6 +600,7 @@ async function loadView(
     calendarFeed,
     githubCalendar,
     tbaMatches,
+    tasks,
   };
 }
 

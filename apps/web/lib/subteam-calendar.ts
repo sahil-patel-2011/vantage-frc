@@ -2,6 +2,8 @@
 // events. Framework-free domain logic for the API, client, and unit tests.
 // No demo defaults: empty orgs show empty states until leads create subteams.
 
+import type { TaskOnCalendar } from "./calendar/tasks-on-calendar";
+
 export const SUBTEAM_EVENT_KINDS = [
   "practice",
   "build",
@@ -198,6 +200,8 @@ export type DutyOnCalendar = {
   mine: boolean;
 };
 
+export type { TaskOnCalendar } from "./calendar/tasks-on-calendar";
+
 export type SubteamCalendarView =
   | {
       status: "ready";
@@ -217,6 +221,8 @@ export type SubteamCalendarView =
       githubCalendar?: GitHubCalendarOverlay;
       /** This team's matches at the active event — empty until TBA cache has a real time. */
       tbaMatches?: CalendarEvent[];
+      /** Open team tasks that have a due date — empty until someone sets one. */
+      tasks?: TaskOnCalendar[];
     }
   | { status: "setup_required"; context: SubteamCalendarContext; message: string };
 

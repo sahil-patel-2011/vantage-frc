@@ -55,6 +55,31 @@ export function monthEventCountLabel(count: number): string | null {
 }
 
 /**
+ * What a screen reader hears on a month cell.
+ *
+ * Events and tasks are counted separately because they are different things to
+ * a person planning a week: three events is a busy day, three tasks due is a
+ * deadline. Rolling them into one "6 items" hides which one it is. A day with
+ * neither says so plainly rather than reading as a bare date.
+ */
+export function monthCellLabel(dayLabel: string, eventCount: number, taskCount: number): string {
+  const counts = dayCountParts(eventCount, taskCount);
+  return counts ? `${dayLabel}, ${counts}` : `${dayLabel}, nothing scheduled`;
+}
+
+/** The same counts as a heading suffix: " · 2 events, 1 task due". */
+export function dayCountLabel(eventCount: number, taskCount: number): string {
+  return ` · ${dayCountParts(eventCount, taskCount) ?? "none scheduled"}`;
+}
+
+function dayCountParts(eventCount: number, taskCount: number): string | null {
+  const parts: string[] = [];
+  if (eventCount > 0) parts.push(`${eventCount} event${eventCount === 1 ? "" : "s"}`);
+  if (taskCount > 0) parts.push(`${taskCount} task${taskCount === 1 ? "" : "s"} due`);
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+/**
  * Readable Soft-UI next actions for Team Calendar / subteams.
  * Driven only by real subteam + event counts — never DEMO events.
  */
