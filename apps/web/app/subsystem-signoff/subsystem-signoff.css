@@ -22,7 +22,7 @@
 .signoff-next-actions li div{display:grid;gap:2px;min-width:0}
 .signoff-next-actions li strong{font-size:14px}
 .signoff-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.signoff-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.signoff-next-actions li .app-button{flex:none}
 
 .signoff-readiness{display:grid;gap:12px;margin:0 0 16px;padding:16px 18px}
 .signoff-readiness>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}

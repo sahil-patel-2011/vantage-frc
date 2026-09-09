@@ -61,15 +61,24 @@ export function ErrorState({
   const body =
     message != null && message !== "" && kind === "unknown" ? message : copy.description;
 
+  // A session that expired, a network that dropped, a page this member may not
+  // open: all recoverable, none of them a failure of the product. Painting them
+  // in the danger colour — a red hairline and a red plate — told a team their
+  // data was broken when the only thing wrong was that they were signed out.
+  const severity = kind === "auth" || kind === "forbidden" || kind === "offline" ? "notice" : "error";
+
   return (
     <section
       role="alert"
+      data-severity={severity}
       className={["app-card", "soft-panel", styles.errorState, className].filter(Boolean).join(" ")}
     >
       <span className={styles.errorGlyph}>
         <WarnGlyph />
       </span>
-      <Badge tone={kind === "auth" || kind === "forbidden" ? "setup" : "error"}>
+      {/* icon={null}: the glyph above is already this state's warning mark, and
+          the badge's own glyph made two of them, stacked, saying one thing. */}
+      <Badge tone={severity === "notice" ? "setup" : "error"} icon={null}>
         {kind === "auth" ? "Signed out" : kind === "forbidden" ? "No access" : kind === "offline" ? "Offline" : "Error"}
       </Badge>
       <h2 style={{ margin: 0 }}>{heading}</h2>

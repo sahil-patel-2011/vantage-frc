@@ -50,7 +50,7 @@
 .practice-next-actions li div{display:grid;gap:2px;min-width:0}
 .practice-next-actions li strong{font-size:14px}
 .practice-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.practice-next-actions li .app-button{flex:none;min-height:44px;padding:0 14px;font-size:12px;color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);text-decoration:none;display:inline-flex;align-items:center}
+.practice-next-actions li .app-button{flex:none;color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);text-decoration:none;display:inline-flex;align-items:center}
 .practice-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
 .practice-kpis article{display:grid;gap:6px;min-height:100px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--soft-radius-sm);box-shadow:var(--app-shadow)}
 .practice-kpis span{color:var(--app-muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
