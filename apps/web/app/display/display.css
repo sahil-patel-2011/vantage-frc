@@ -113,9 +113,6 @@
 
 .disp-next-actions li .app-button {
   flex: none;
-  min-height: 36px;
-  padding: 0 12px;
-  font-size: 12px;
 }
 
 .disp-section-head {

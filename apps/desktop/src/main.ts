@@ -32,11 +32,14 @@ import {
   serializeWindowState,
   type WindowState,
 } from "./window-state";
+import { UpdateService, type UpdateStatus } from "./update-service";
 
 const PARTITION = "persist:vantage";
 const DEEP_LINK_SCHEME = "vantage-frc";
 const startOrigin = sanitizeAppOrigin(process.env.VANTAGE_URL);
 const appHost = new URL(startOrigin).hostname;
+
+const updates = new UpdateService(startOrigin);
 
 /** Cached session state; refreshed from the cookie jar on every change event. */
 let signedIn = false;
@@ -66,7 +69,11 @@ async function hasSessionCookie(): Promise<boolean> {
   }
 }
 
-function loadShellPage(window: BrowserWindow, page: "gate.html" | "offline.html", extra?: Record<string, string>) {
+function loadShellPage(
+  window: BrowserWindow,
+  page: "gate.html" | "offline.html" | "update.html",
+  extra?: Record<string, string>,
+) {
   void window.loadFile(join(__dirname, "..", page), {
     query: { origin: startOrigin, ...extra },
   });
@@ -78,8 +85,21 @@ function loadApp(window: BrowserWindow, path = "/") {
   void window.loadURL(url.href);
 }
 
-/** Account gate: signed out → local sign-in screen; signed in → the app (plus any pending deep link). */
+/**
+ * Account gate: signed out → local sign-in screen; signed in → the app (plus any
+ * pending deep link).
+ *
+ * The update gate sits in front of it, but only for a `required` update — one
+ * where the web app has declared this shell version unsupported. In that state
+ * the product genuinely does not work in this window, so taking the window is
+ * telling the truth rather than interrupting. An *overdue* update never gets
+ * here: it waits for an idle moment or for quit (see update.ts).
+ */
 function applyGate(window: BrowserWindow) {
+  if (updates.plan().kind === "required") {
+    loadShellPage(window, "update.html");
+    return;
+  }
   if (signedIn) {
     const path = pendingDeepLinkPath ?? "/";
     pendingDeepLinkPath = null;
@@ -236,6 +256,53 @@ function installLinkIpc() {
 }
 
 // ---------------------------------------------------------------------------
+// Update IPC (update.html ⇄ main)
+// ---------------------------------------------------------------------------
+
+/**
+ * Same rule as the sign-in bridge: only the bundled file:// pages may drive
+ * this. The hosted web app shares the preload, and a page that could ask the
+ * shell to run an installer would be a remote-code-execution hole.
+ */
+function installUpdateIpc() {
+  ipcMain.handle("desktop-update:status", (event) => {
+    if (!senderIsShellPage(event)) return null;
+    return updates.status();
+  });
+  ipcMain.handle("desktop-update:check", async (event) => {
+    if (!senderIsShellPage(event)) return null;
+    await updates.check();
+    return updates.status();
+  });
+  ipcMain.handle("desktop-update:install", async (event) => {
+    if (!senderIsShellPage(event)) return false;
+    return updates.maybeInstall(true);
+  });
+  ipcMain.handle("desktop-update:open-download", (event) => {
+    if (!senderIsShellPage(event)) return;
+    void updates.openDownloadPage();
+  });
+  ipcMain.handle("desktop-update:defer", async (event) => {
+    if (!senderIsShellPage(event)) return null;
+    await updates.defer();
+    return updates.status();
+  });
+}
+
+function broadcastUpdateStatus(status: UpdateStatus) {
+  const window = mainWindow();
+  if (!window || window.isDestroyed()) return;
+  window.webContents.send("desktop-update:state", status);
+  // A newly-discovered *required* update takes the window — but not out from
+  // under a focused match-day screen. When it cannot, the gate simply applies at
+  // the next navigation or the next launch.
+  const onShellPage = window.webContents.getURL().startsWith("file:");
+  if (status.plan.kind === "required" && !onShellPage && updates.canInterruptNow()) {
+    applyGate(window);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Window state persistence
 // ---------------------------------------------------------------------------
 
@@ -326,11 +393,19 @@ async function createWindow() {
     );
   });
 
-  window.webContents.on("did-fail-load", (_event, errorCode, _errorDescription, _validatedURL, isMainFrame) => {
+  window.webContents.on("did-fail-load", (_event, errorCode, _errorDescription, validatedURL, isMainFrame) => {
     if (!isMainFrame || errorCode === -3) return;
+    // A main-frame failure on the app origin while we are online is the shape a
+    // deploy-under-us takes: the document the window held no longer resolves.
+    // Let the updater try one hard reload before falling back to the offline
+    // screen, so a stale page heals itself instead of looking like no network.
+    if (typeof validatedURL === "string" && validatedURL.startsWith(startOrigin)) {
+      if (updates.noteBrokenPage()) return;
+    }
     loadShellPage(window, "offline.html");
   });
 
+  updates.trackWindow(window);
   signedIn = await hasSessionCookie();
   applyGate(window);
   return window;
@@ -516,6 +591,9 @@ if (!gotLock) {
 
     installMenu();
     installLinkIpc();
+    installUpdateIpc();
+    updates.watchSession(ses);
+    void updates.start(broadcastUpdateStatus);
 
     const link = deepLinkFromArgv(process.argv);
     if (link) {
@@ -527,6 +605,19 @@ if (!gotLock) {
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) void createWindow();
     });
+  });
+
+  /**
+   * The safe install moment. The user has already decided the session is over,
+   * so replacing the binary now interrupts nothing — this is the path that
+   * actually delivers "updated within two days" for a team that shuts the
+   * laptop at the end of a build night, without ever risking a restart during
+   * a match. The installer is detached, so it outlives this process and
+   * relaunches Vantage itself.
+   */
+  app.on("before-quit", () => {
+    updates.stop();
+    updates.installOnQuit();
   });
 
   app.on("window-all-closed", () => {
