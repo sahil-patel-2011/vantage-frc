@@ -9,37 +9,50 @@
 #
 # Git-triggered deploys are unaffected (they never upload local files); this
 # only governs `vercel deploy` from a workstation.
+#
+# ANCHOR ANYTHING THAT EXISTS ONLY AT THE ROOT. These are .gitignore patterns:
+# a bare name with no slash matches a path *segment at any depth*, so `coverage`
+# silently dropped apps/web/app/api/scouting/coverage/route.ts out of every CLI
+# deploy — a route that exists precisely because /scouting/lineup used to 404
+# without it (see apps/web/lib/scouting/coverage.ts). A leading `/` scopes the
+# pattern to this directory. Only patterns that genuinely recur per workspace
+# (node_modules, .next, dist, …) may stay unanchored; before adding an
+# unanchored one, check `git ls-files | grep -E "(^|/)<name>/"` is empty.
 
-# Installed and built on Vercel, never uploaded
+# Installed and built on Vercel, never uploaded. Unanchored on purpose: these
+# appear under every workspace (apps/*/.next, packages/*/dist).
 node_modules
 .next
-out
 dist
-release
 *.tsbuildinfo
 
+# Build output that only ever exists where it is written
+/out
+/apps/desktop/release
+/apps/*/out
+
 # Version control and local tooling
-.git
-.github
-.vercel
+/.git
+/.github
+/.vercel
 
 # Agent worktrees — each is a full duplicate checkout. Ten of these once put
 # 452,390 files in this directory and broke `vercel deploy` outright with
 # "files should NOT have more than 15000 items, received 50400".
-.claude/worktrees
-.freebuff
+/.claude/worktrees
+/.freebuff
 
 # Test and coverage artifacts
-coverage
-playwright-report
-test-results
-blob-report
-.playwright
+/coverage
+/playwright-report
+/test-results
+/blob-report
+/.playwright
 
 # Local environment and scratch files
 .env
 .env.*
 !.env.example
 *.log
-scratchpad
-pgdata
+/scratchpad
+/pgdata
