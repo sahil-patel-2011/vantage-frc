@@ -58,7 +58,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "Vantage is software for FIRST Robotics Competition teams. Teams use it to run scouting, match strategy, build hours, tasks, documents, chat, CAD work, and team finances in one place.",
         "Every team gets its own workspace. That workspace is controlled by the team's owners and admins — usually the head coach or lead mentors. They decide who is invited, what roles people have, and how the team's settings are configured. We host the software and keep it running; the team decides how it is used and who is in it.",
-        "Each workspace is separated in the database itself. Every row belongs to one team, and the database refuses to return another team's rows to a signed-in member — this is Postgres row-level security, not just a check in our application code. A separate background worker account handles scheduled jobs. No security measure is perfect, and we do not claim otherwise, but workspace separation is enforced at the lowest layer we can put it.",
+        "Each workspace is separated in the database itself. Every row belongs to one team, and the database refuses to return another team's rows to a signed-in member — this is Postgres row-level security, enforced by the database rather than by a check in application code. A separate background worker account handles scheduled jobs.",
       ],
     },
     {
@@ -159,11 +159,11 @@ export const PRIVACY_POLICY: LegalDocument = {
     },
     {
       id: "analytics",
-      heading: "Product analytics, and the choice that is yours to make",
+      heading: "Product analytics",
       paragraphs: [
-        "We cannot see which parts of Vantage teams actually use, and guessing is how software ends up with six half-built features and no finished one. So Vantage can record which pages and features your account opens. It is off until you say yes.",
-        "We ask once, in plain language, with the decline button the same size as the accept button. Choosing \"only necessary cookies\" leaves every part of Vantage working exactly as it did — nothing is locked, slowed, or nagged about afterwards. Most of the people using this product are under eighteen, and a question worded to get a particular answer out of a fifteen-year-old would not be a real question.",
-        "This is not anonymous, and we are not going to call it that. Each event is stored against your account id and your team id, in your team's own rows in our database, behind the same row-level security as the rest of your team's data. Your team's owners and admins can read your team's events; other members of your team cannot. No advertising network, analytics vendor, data broker, or other third party receives them, and no third-party tracking script is embedded in the signed-in product. The separate Plausible analytics on our public marketing pages, described above, is a different thing, and it also carries no advertising cookies and builds no cross-site profile.",
+        "Vantage can record which pages and features your account opens, so we can see what teams actually use and invest accordingly. It is off until you turn it on.",
+        "We ask once, and the decline button is the same size as the accept button. Choosing \"only necessary cookies\" leaves every part of Vantage working exactly as it did — nothing is locked, slowed, or nagged about afterwards.",
+        "These events are linked to your account, not anonymous. Each one is stored against your account id and your team id, in your team's own rows, behind the same row-level security as the rest of your team's data. Your team's owners and admins can read your team's events; other members of your team cannot. No advertising network, analytics vendor, data broker, or other third party receives them, and no third-party tracking script is embedded in the signed-in product. The separate Plausible analytics on our public marketing pages, described above, is a different thing, and it also carries no advertising cookies and builds no cross-site profile.",
         "How long we keep them. Raw events are deleted 180 days after they are recorded, by a scheduled purge. A team's owners and admins can clear their team's history sooner than that.",
         "Changing your mind. Your answer is stored in a cookie on the device and browser you answered it on, so a different browser or a different computer will ask you again. To change it, come back to this section of this page — opening it reopens the chooser — and pick the other answer. Turning analytics off stops collection immediately; ask us at " +
           CONTACT +
@@ -206,7 +206,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         "You can see and change your own profile in the product at any time, and you can change or turn off every email category from your notification preferences.",
         "You can ask for a copy of what we hold about you, ask us to correct it, or ask us to delete it. Write to " + CONTACT + ". We will ask you to confirm you are who you say you are before acting, because doing otherwise would itself be a privacy failure.",
-        "Two honest limits on deletion. First, some of what you did is also the team's record — hours you logged, scouting data you collected, a decision you wrote down. Removing your account does not silently rewrite the team's history; where we can, we detach your name from those records rather than destroying the team's work. Second, we keep what the law requires us to keep, such as billing records, for as long as it requires.",
+        "Two limits apply. First, some of what you did is also the team's record — hours you logged, scouting data you collected, a decision you wrote down. Removing your account does not silently rewrite the team's history; where we can, we detach your name from those records rather than destroying the team's work. Second, we keep what the law requires us to keep, such as billing records, for as long as it requires.",
         "If your team stops using Vantage, its owners can export the team's data and ask us to delete the workspace.",
       ],
       list: [
@@ -241,7 +241,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "If something goes wrong",
       paragraphs: [
         "If we find that personal information has been exposed to someone who should not have seen it — a data breach — we will investigate, fix it, and tell the affected teams' owners and admins without unreasonable delay, along with any breach notification the law requires. We will say what happened, what was affected, and what we are doing — not a vague reassurance.",
-        "We would rather hear about a problem than not. If you think you have found a security issue, write to " + CONTACT + ". We will not pursue you for reporting something you found in good faith and did not exploit.",
+        "If you think you have found a security issue, write to " + CONTACT + ". We will not pursue you for reporting something you found in good faith and did not exploit.",
       ],
     },
     {
@@ -257,7 +257,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "School-affiliated teams",
       paragraphs: [
         "Many FRC teams are run by a school. Where a school directs a team's use of Vantage, the school is the one deciding what is collected and why, and we process that information on the school's instruction under this policy and our terms.",
-        "If your school needs a written agreement covering student data before your team can use Vantage, write to " + CONTACT + " and we will work through it with you. We would rather have that conversation before your team starts than after.",
+        "If your school needs a written agreement covering student data, write to " + CONTACT + " and we will put one in place.",
       ],
     },
     {
