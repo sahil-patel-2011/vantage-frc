@@ -120,6 +120,9 @@ describe("knowledge wiki helpers", () => {
           rowCount: 1,
         };
       }
+      // Doc editing is a granted role (0621). This caller holds it, so the test
+      // still exercises the ownership check rather than the capability gate.
+      if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
       // UPDATE/DELETE with org_id clause finds nothing for a foreign page id.
       if (sql.includes("UPDATE knowledge_pages") || sql.includes("DELETE FROM knowledge_pages")) {
         return { rows: [], rowCount: 0 };
@@ -170,6 +173,7 @@ describe("knowledge wiki helpers", () => {
           rowCount: 1,
         };
       }
+      if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
       if (sql.includes("FROM knowledge_pages")) return { rows: [], rowCount: 0 };
       return { rows: [], rowCount: 0 };
     });

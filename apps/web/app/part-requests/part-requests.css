@@ -1,0 +1,131 @@
+/* Part requests. Tokens only, so both themes come from soft-ui.css. */
+
+.part-requests-page {
+  display: grid;
+  gap: 16px;
+}
+
+.pr-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-width: 520px;
+}
+
+.pr-field > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pr-row .pr-field {
+  min-width: 180px;
+  max-width: 260px;
+}
+
+/* A request costs money, so sending or deciding one takes a second step. */
+.pr-confirm {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.pr-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pr-item {
+  padding: 14px 16px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+
+.pr-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pr-item-head h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+
+.pr-body {
+  margin: 10px 0 0;
+  line-height: 1.55;
+  /* Justifications are user-authored and may carry a long part number or URL. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.pr-review {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-line);
+  background: var(--soft-bg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* What approving actually costs, shown next to the button that does it. */
+.pr-impact {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pr-budget {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pr-decide {
+  margin-top: 12px;
+}
+
+.pr-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--soft-danger, #b42318);
+}
+
+.pr-notice {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+@media (max-width: 640px) {
+  .pr-item-head {
+    flex-direction: column;
+  }
+
+  .pr-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
