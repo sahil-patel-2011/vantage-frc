@@ -94,31 +94,46 @@
 /* --- Type scale ------------------------------------------------------------
    Defaults for headings inside product surfaces. Before this, an <h2> with no
    sheet of its own fell back to the UA's 1.5em/2em, which is how one screen
-   ended up carrying four different heading sizes. */
-:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget) h2 {
+   ended up carrying four different heading sizes.
+
+   `body.has-app-shell` joins the container list because it sets
+   `line-height:1.45; letter-spacing:-.005em` for prose, and every heading that
+   did not declare its own INHERITED that: the same 22px/700 title measured 1.25
+   inside a card and 1.45 outside one, and the consent banner's 15px title
+   carried -0.075px of tracking on a product route and none on the marketing
+   home — one component, two treatments, decided by which body it landed in.
+   Written with :where(), so every leaf rule still wins by a mile. */
+:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget, body.has-app-shell) h2 {
   font-size: var(--soft-title-1);
   font-weight: 700;
   letter-spacing: var(--soft-tracking-tight);
   line-height: 1.25;
 }
-:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget) h3 {
+:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget, body.has-app-shell) h3 {
   font-size: var(--soft-title-2);
   font-weight: 700;
   letter-spacing: var(--soft-tracking-tight);
   line-height: 1.3;
 }
-:where(.module-page, .app-card, .soft-panel, .dash-widget) h4 {
+:where(.module-page, .app-card, .soft-panel, .dash-widget, body.has-app-shell) h4 {
   font-size: var(--soft-title-3);
   font-weight: 700;
+  letter-spacing: var(--soft-tracking-tight);
   line-height: 1.35;
 }
-:where(.module-page, .app-card, .soft-panel, .dash-widget) h5,
-:where(.module-page, .app-card, .soft-panel, .dash-widget) h6 {
+:where(.module-page, .app-card, .soft-panel, .dash-widget, body.has-app-shell) h5,
+:where(.module-page, .app-card, .soft-panel, .dash-widget, body.has-app-shell) h6 {
   font-size: var(--soft-text-xs);
   font-weight: 700;
   letter-spacing: var(--soft-tracking-kicker);
   text-transform: uppercase;
   color: var(--soft-muted);
+}
+/* h1 keeps whatever size the page gives it — only the leading and tracking are
+   pinned, so a display heading never inherits body prose leading. */
+:where(body.has-app-shell) h1 {
+  letter-spacing: var(--soft-tracking-display);
+  line-height: 1.12;
 }
 
 /* --- Buttons ---------------------------------------------------------------
@@ -129,11 +144,20 @@
 :where(button, [type="button"], [type="submit"], [type="reset"]) {
   border-radius: var(--soft-radius-sm);
   font-family: var(--soft-font);
+  /* Size and weight too, not just the family. A control that set neither kept
+     the UA's 13.333px/400 — a size and a weight that appear nowhere in this
+     product's scale, and that no one chose. The topbar's icon and search
+     buttons were both landing there. */
+  font-size: var(--soft-text-sm);
+  font-weight: 600;
 }
 :where(input, select, textarea) {
   border-radius: var(--soft-radius-sm);
   font-family: var(--soft-font);
 }
+/* Deliberately no font-size default for text fields: below 16px iOS Safari
+   zooms the viewport on focus, and the fields that matter already set 16px. A
+   14px blanket here would have been a house style that broke a phone. */
 .app-button:disabled,
 .app-button[aria-disabled="true"] {
   opacity: 0.55;
@@ -167,13 +191,16 @@
 }
 
 /* --- Chips -----------------------------------------------------------------
-   Three components independently grew a "row of links to elsewhere": the hub
-   tool strip, the settings bar, and the cross-link strip. They are one control
-   with one shape and one density rule — compact for a mouse, 44px for a thumb. */
+   Five components independently grew a "row of links to elsewhere": the hub
+   tool strip, the settings bar, the help category filter, the dashboard hub
+   rail, the cross-link strip, and the TeamOps strip. They are one control with
+   one shape and one density rule — compact for a mouse, 44px for a thumb. */
 .hub-tool-chip,
 .settings-bar-chip,
 .help-cat-chip,
 .dash-hub-rail a,
+.team-ops-nav a,
+.team-ops-nav span,
 .product-hub-related .app-button {
   display: inline-flex;
   align-items: center;
@@ -191,7 +218,9 @@
 .hub-tool-chip.is-active,
 .settings-bar-chip.is-active,
 .help-cat-chip[aria-pressed="true"],
-.dash-hub-rail a[aria-current="page"] {
+.dash-hub-rail a[aria-current="page"],
+.team-ops-nav :where(a, span).active,
+.team-ops-nav :where(a, span)[aria-current="page"] {
   font-weight: 700;
 }
 @media (pointer: coarse) {
@@ -199,32 +228,53 @@
   .settings-bar-chip,
   .help-cat-chip,
   .dash-hub-rail a,
+  .team-ops-nav a,
+  .team-ops-nav span,
   .product-hub-related .app-button {
     min-height: var(--soft-control-h);
     padding: 0 16px;
   }
 }
 
-/* --- Per-hub tone plates in dark mode --------------------------------------
-   `--tone` / `--tone-bg` are written as INLINE styles from a light-only pair
-   (lib/nav/product-nav.ts, app/dashboard/widgets.tsx, the Event Day icons), so
-   the drawer's hub icons, dashboard widget icons and Event Day glyphs painted
-   #e8eefc chips on a #0c1118 panel. An inline custom property cannot be
-   overridden, so the CONSUMERS resolve it differently in dark: keep the hue,
-   swap the plate. */
-html[data-theme="dark"] :where(.soft-drawer-hub i, .soft-row i.icon, .dash-widget-icon, .edc-icon) {
-  background: color-mix(in srgb, var(--tone, var(--soft-accent)) 24%, var(--soft-card));
-  color: color-mix(in srgb, var(--tone, var(--soft-accent)) 42%, #ffffff);
-}
-html[data-theme="dark"] :where(.soft-drawer-hub.is-active, .soft-drawer-hub[aria-current="page"]) {
-  background: color-mix(in srgb, var(--tone, var(--soft-accent)) 18%, var(--soft-card));
-  color: color-mix(in srgb, var(--tone, var(--soft-accent)) 42%, #ffffff);
-}
-html[data-theme="dark"] .dash-widget.hero {
-  background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--tone, var(--soft-accent)) 16%, var(--soft-card)),
-    var(--soft-card) 62%
+/* --- Tones: one hue in, a theme-aware pair out -----------------------------
+   A tone used to travel as TWO inline custom properties — `--tone` (the hue)
+   and `--tone-bg` (a light-only plate). An inline custom property outranks every
+   stylesheet, so `--tone-bg: #e8eefc` painted a pale chip on the #0c1118 drawer
+   and no sheet could say otherwise. Last round patched the CONSUMERS in dark,
+   which fixed the symptom and left the cause: a hardcoded light value in a .ts
+   file deciding what a dark panel looks like.
+
+   The cause is gone now. Only the hue crosses the boundary; the plate and the
+   ink are derived HERE, per theme, from --tone-plate-mix / --tone-ink-mix
+   (soft-ui.css). Both themes get an explicit treatment, neither needs
+   !important, and a page that still writes a raw light hex into `--tone` — the
+   Event Day and Chemistry glyphs do — lands correctly anyway, because its hex
+   is read as a hue and re-plated, never painted straight onto the panel.
+
+   Declared on the tone consumers themselves, not on :root: a custom property
+   whose value contains var(--tone) resolves where it is DECLARED, so on :root
+   it would freeze to the root's fallback and inherit down as one dead colour. */
+:where(
+    .soft-nav-group,
+    .soft-drawer-hub,
+    .soft-drawer-hub i,
+    .soft-row,
+    .soft-row i.icon,
+    .dash-widget,
+    .dash-widget-icon,
+    .edc-icon,
+    .readiness-track i,
+    .mini-probability i
+  ) {
+  --tone-hue: var(--tone, var(--soft-accent));
+  --tone-plate: color-mix(in srgb, var(--tone-hue) var(--tone-plate-mix), var(--soft-card));
+  --tone-ink: color-mix(in srgb, var(--tone-hue) var(--tone-ink-mix), #ffffff);
+  /* A quieter plate for a whole row/card, where the tone tints a large area
+     rather than a 32px chip. */
+  --tone-wash: color-mix(
+    in srgb,
+    var(--tone-hue) calc(var(--tone-plate-mix) * 0.7),
+    var(--soft-card)
   );
 }
 
@@ -251,7 +301,7 @@ html[data-theme="dark"] .dash-widget.hero {
 }
 :where(.soft-empty, .app-empty) > p {
   margin: 0;
-  max-width: 52ch;
+  max-width: var(--soft-measure-prose);
   color: var(--soft-muted);
   font-size: var(--soft-text);
   line-height: 1.55;
@@ -282,13 +332,22 @@ html[data-theme="dark"] .dash-widget.hero {
   50% { opacity: 0.86; }
 }
 
-/* Error surfaces read as errors — a warm hairline and a tinted plate, so a
-   failure is never mistaken for an empty result. */
+/* Error surfaces read as errors — a tinted hairline and plate, so a failure is
+   never mistaken for an empty result. The accent is a variable rather than a
+   fixed danger red, because not every alert is a fault: an expired session, a
+   dropped connection or a page this member may not open are all recoverable,
+   and a red card told a team their data broke when it had not. ErrorState
+   classifies the failure and stamps `data-severity`; anything that does not
+   classify itself keeps the danger treatment. */
 [role="alert"]:where(.app-card, .soft-panel) {
-  border-color: color-mix(in srgb, var(--soft-danger) 38%, var(--soft-line));
+  --alert-accent: var(--soft-danger);
+  border-color: color-mix(in srgb, var(--alert-accent) 38%, var(--soft-line));
   background:
-    linear-gradient(color-mix(in srgb, var(--soft-danger) 5%, transparent), transparent 96px),
+    linear-gradient(color-mix(in srgb, var(--alert-accent) 6%, transparent), transparent 96px),
     var(--soft-card);
+}
+[role="alert"][data-severity="notice"] {
+  --alert-accent: var(--soft-warning);
 }
 
 /* Thirteen routes fall back to `<main class="content"><h1>Select an
@@ -330,7 +389,7 @@ main.content:has(> h1:only-child) > h1 {
 }
 :where(.product-hub-setup) > p {
   margin: 0;
-  max-width: 60ch;
+  max-width: var(--soft-measure-prose);
 }
 
 /* --- Cards -----------------------------------------------------------------
