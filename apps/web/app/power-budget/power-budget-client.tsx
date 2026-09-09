@@ -10,7 +10,7 @@ type Load = {
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; loads: Load[]; summary: { count: number; totalTypicalAmps: number; totalPeakAmps: number; tripRisks: string[]; brownoutRisk: boolean; sustainedCeiling: number; breakerSizeCues: string[]; mpmMotorCues: string[]; currentLimitCue: string | null; staggerCue: string | null } };
+  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; loads: Load[]; summary: { count: number; totalTypicalAmps: number; totalPeakAmps: number; tripRisks: string[]; brownoutRisk: boolean | null; measuredCount: number; unmeasuredCount: number; sustainedCeiling: number; breakerSizeCues: string[]; mpmMotorCues: string[]; currentLimitCue: string | null; staggerCue: string | null } };
 
 const EMPTY = { name: "", subsystem: "", motorCount: "", typicalAmps: "", peakAmps: "", breakerAmps: "", notes: "" };
 
@@ -133,14 +133,24 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
           <article><span>Loads</span><strong>{s.count}</strong></article>
           <article><span>Total typical draw</span><strong>{s.totalTypicalAmps} A</strong></article>
           <article><span>Total peak draw</span><strong>{s.totalPeakAmps} A</strong></article>
-          <article><span>Brownout risk</span><strong>{s.brownoutRisk ? "YES" : "no"}</strong></article>
+          <article>
+            <span>Brownout risk</span>
+            {/* null is not "no". It means loads are still unmeasured, so the
+                total is an undercount and no verdict is honest yet. */}
+            <strong>{s.brownoutRisk === true ? "YES" : s.brownoutRisk === false ? "no" : "not enough data"}</strong>
+            {s.unmeasuredCount > 0 ? (
+              <small className="app-muted">
+                {s.measuredCount} of {s.count} loads measured
+              </small>
+            ) : null}
+          </article>
         </section>
         {/* The warnings quote the totals verbatim, so they reveal with them — one
             tap away either way, and "Just show me" is always on screen. */}
-        {(s.brownoutRisk || s.tripRisks.length > 0 || breakerCues.length > 0 || mpmCues.length > 0 || Boolean(s.currentLimitCue) || Boolean(s.staggerCue)) && (
+        {(s.brownoutRisk === true || s.unmeasuredCount > 0 || s.tripRisks.length > 0 || breakerCues.length > 0 || mpmCues.length > 0 || Boolean(s.currentLimitCue) || Boolean(s.staggerCue)) && (
           <section className="intel-panel" style={{ borderColor: "#b91c1c" }}>
             <span className="eyebrow">⚠ POWER WARNINGS</span>
-            {s.brownoutRisk && <article><div><strong>Brownout risk: {s.totalTypicalAmps} A typical draw exceeds the {s.sustainedCeiling} A sustained ceiling. Expect voltage sag under load.</strong></div></article>}
+            {s.brownoutRisk === true && <article><div><strong>Brownout risk: {s.totalTypicalAmps} A typical draw exceeds the {s.sustainedCeiling} A sustained ceiling. Expect voltage sag under load.</strong></div></article>}
             {s.currentLimitCue ? <article><div><strong>{s.currentLimitCue}</strong></div></article> : null}
             {s.staggerCue ? <article><div><strong>{s.staggerCue}</strong></div></article> : null}
             {s.tripRisks.map((name) => <article key={name}><div><strong>{name}: peak current exceeds its branch breaker — it will trip.</strong></div></article>)}
