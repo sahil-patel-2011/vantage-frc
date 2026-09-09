@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { canEditDocs } from "../capabilities/org-capabilities";
 import { knowledgeHitHref, snippetFrom } from "./helpers";
 import type {
   KnowledgeLink,
@@ -344,7 +345,10 @@ export async function loadKnowledgeWikiView(
       orgName: member.orgName,
       teamNumber: member.teamNumber,
       role: member.role,
-      canEdit: true,
+      // Editing is a granted role since 0621: owners and admins implicitly,
+      // everyone else only with an `edit_docs` capability the team OWNER issued
+      // (/doc-roles). Reading stays open to the whole team.
+      canEdit: await canEditDocs(client, input.orgId),
       pages,
       selected,
       searchHits,
@@ -371,6 +375,14 @@ export async function applyKnowledgeWikiAction(
   action: KnowledgeWikiAction,
 ): Promise<void> {
   await requireMember(client, action.orgId, userId);
+
+  // RLS refuses these writes anyway (knowledge_pages_editor_* in 0621); this
+  // turns "new row violates row-level security policy" into a sentence.
+  if (!(await canEditDocs(client, action.orgId))) {
+    throw new Error(
+      "Editing docs is a role on this team. Ask the team owner to grant it on the Document roles page.",
+    );
+  }
 
   if (action.action === "upsert_page") {
     if (action.id) {

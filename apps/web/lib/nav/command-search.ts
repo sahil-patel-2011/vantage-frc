@@ -140,6 +140,10 @@ const KEYWORDS: Record<string, string[]> = {
     "qrscout", "purple standard", "scoutradioz", "trello", "stims", "roster", "google sheets",
   ],
   "team:knowledge-gap": ["knowledge gap", "missing docs", "undocumented"],
+  "team:doc-roles": [
+    "document roles", "doc editing", "who can edit", "wiki permissions",
+    "playbook access", "editor role", "grant editing",
+  ],
   "team:offline-shell": ["offline", "no wifi", "airplane", "sync", "cache"],
   "team:degraded-mode": ["degraded", "outage", "fallback", "backup plan"],
   "team:object-chat-bridge": ["object chat", "bridge"],
@@ -153,6 +157,16 @@ const KEYWORDS: Record<string, string[]> = {
   "business:overview": ["business", "overview", "money", "finance summary"],
   "business:finance": ["money", "finance", "cash", "funds", "accounting"],
   "business:budget": ["budget", "spend", "allocation", "how much left"],
+  // The words a mentor types when they mean the one season total, not the
+  // per-category panel: "can we afford this", "what is left".
+  "business:season-budget": [
+    "season budget", "mentor budget", "budget access", "can we afford",
+    "what is left", "money left", "registration fee", "event fee",
+  ],
+  "business:part-requests": [
+    "part request", "request a part", "ask for a part", "i need", "buy me",
+    "order request", "purchase request", "needs approval",
+  ],
   "business:orders": ["orders", "purchase", "buy", "po", "shipping", "vendors"],
   "business:costs": ["costs", "season costs", "expenses", "spending"],
   "business:vendor-lead-times": ["lead time", "shipping time", "when will it arrive", "vendors"],

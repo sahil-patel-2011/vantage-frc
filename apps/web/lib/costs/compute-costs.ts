@@ -46,6 +46,14 @@ export type CostsView =
       seasonYear: number;
       seasons: number[];
       budget: SeasonBudget;
+      /**
+       * False for everyone below mentor level. Since 0621 `season_budgets` is
+       * `manage_budget`-capability-only in RLS, so `budget.totalBudgetUsd` comes back
+       * null for a student whether or not one is set. Without this flag the page
+       * would tell them "no budget set", which is a different claim and may be
+       * untrue. Costs themselves stay visible to the whole team.
+       */
+      canManageBudget: boolean;
       costs: SeasonCost[];
       summary: CostSummary;
       subscriptions: SubscriptionsSummary;
@@ -151,7 +159,11 @@ export async function computeCostsView(
     };
   }
 
-  const [budgetResult, costResult, subscriptionResult, apiUsageResult, seasonResult] = await Promise.all([
+  const [budgetAccessResult, budgetResult, costResult, subscriptionResult, apiUsageResult, seasonResult] = await Promise.all([
+    client.query<{ allowed: boolean }>(
+      `SELECT has_org_capability($1::uuid, 'manage_budget'::org_capability) AS allowed`,
+      [org.orgId],
+    ),
     client.query<BudgetRow>(
       `SELECT total_budget_usd AS "totalBudgetUsd", ai_assist_enabled AS "aiAssistEnabled", notes
        FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
@@ -220,6 +232,7 @@ export async function computeCostsView(
     seasonYear,
     seasons,
     budget,
+    canManageBudget: budgetAccessResult.rows[0]?.allowed === true,
     costs,
     summary,
     subscriptions,

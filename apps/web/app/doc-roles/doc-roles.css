@@ -1,0 +1,84 @@
+/* Document roles. Tokens only, so both themes come from soft-ui.css. */
+
+.doc-roles-page {
+  display: grid;
+  gap: 16px;
+}
+
+.doc-roles-page p {
+  line-height: 1.55;
+}
+
+.dr-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-width: 460px;
+}
+
+.dr-field > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dr-list {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.dr-grant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+}
+
+.dr-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-line);
+  background: var(--soft-bg);
+  font-size: 13px;
+}
+
+.dr-note-inline {
+  color: var(--soft-muted);
+}
+
+/* Handing someone write access to the team record takes a second step. */
+.dr-confirm {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.dr-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--soft-danger, #b42318);
+}
+
+.dr-notice {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+@media (max-width: 640px) {
+  .dr-grant {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
