@@ -24,6 +24,23 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules/**", ".next/**", "dist/**"]
+    // Every pattern here has to start with `**/`. Vitest REPLACES its default
+    // exclude list when you set this key, and a bare `node_modules/**` is
+    // anchored at the repo root — so `apps/web/node_modules`, and every agent
+    // worktree under `.claude/worktrees/*/node_modules`, were all being
+    // scanned. That is where "27 failed" in a clean checkout came from: they
+    // are pg-protocol, tsconfig-paths and zod's own test suites, which have
+    // nothing to do with this repo and cannot pass under our config. It also
+    // pulled ~45,000 foreign tests into `npm test`.
+    exclude: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/dist/**",
+      // Agent worktrees are whole duplicate checkouts of this repo. Running
+      // their copy of our tests would double every run and report failures
+      // against code that is not what is committed here.
+      "**/.claude/worktrees/**",
+      "**/.freebuff/**",
+    ],
   }
 });
