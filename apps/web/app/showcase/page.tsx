@@ -18,7 +18,10 @@ export default async function ShowcasePage({
     return (
       <main className="module-page">
         <PageHeader
-          navPath="/showcase"
+          // navPath resolved to a bare "Vantage": /showcase is reachable from My
+          // Kit but has no product-nav entry, so breadcrumbForPath finds nothing
+          // to name. Spelled out, like every other org-gated screen.
+          breadcrumbs="Media / Showcase"
           title="Showcase"
           description="A shareable season showcase for one team — pick the workspace first."
         />

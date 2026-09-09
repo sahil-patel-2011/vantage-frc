@@ -272,12 +272,12 @@ export default function WhatsNewClient() {
         title="What’s new"
         description="Published product releases for your team’s plan. No demo history — the feed stays empty until a real note ships."
       >
+        {/* Inbox lived here as well as in the related strip one line below.
+            Prefs stays because the strip does not carry it — and it is labelled
+            the same here as everywhere else, so one name means one place. */}
         <div className="whats-new-header-actions">
-          <a className="app-button secondary" href="/notifications">
-            Inbox
-          </a>
           <a className="app-button secondary" href="/notifications/preferences">
-            Preferences
+            Notification prefs
           </a>
         </div>
       </PageHeader>
@@ -309,9 +309,6 @@ export default function WhatsNewClient() {
                   Retry
                 </button>
               ) : null}
-              <a className="app-button secondary" href="/support">
-                Help & Support
-              </a>
             </div>
           </EmptyState>
           <NextActions releaseCount={0} unreadCount={0} />
@@ -323,19 +320,10 @@ export default function WhatsNewClient() {
             title="No releases for your plan yet"
             description="When Vantage publishes a release that targets your entitlement, it shows up here and in your inbox. Nothing is fabricated while the list is empty."
             badge="Empty"
-          >
-            <div className="whats-new-empty-actions">
-              <a className="app-button secondary" href="/pricing">
-                Pricing
-              </a>
-              <a className="app-button secondary" href="/support">
-                Help & Support
-              </a>
-              <a className="app-button secondary" href="/notifications/preferences">
-                Notification prefs
-              </a>
-            </div>
-          </EmptyState>
+          />
+          {/* Pricing, Support, and prefs were all one row above this, in the
+              related strip and the header — and again below, in Next actions,
+              with the reason for each. */}
           <NextActions releaseCount={0} unreadCount={0} />
         </>
       ) : (
