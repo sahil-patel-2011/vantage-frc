@@ -44,21 +44,15 @@
   color: var(--soft-muted);
 }
 /* Same chip as .hub-tool-chip (product-hub.css) — one shape for every strip. */
+/* Shape, height, padding and type come from the shared chip rule in
+   system.css. Restating them here made the settings bar a 44px/16px chip
+   sitting one row above the hub strip's 36px/14px chip — same control, same
+   page, two sizes. `flex: none` and the border/colour are genuinely local. */
 .settings-bar-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   flex: none;
-  min-height: var(--soft-control-h);
-  padding: 0 16px;
   border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-pill);
   background: var(--soft-card);
   color: var(--soft-muted);
-  font: 600 var(--soft-text-sm) / 1 var(--soft-font);
-  text-decoration: none;
-  white-space: nowrap;
 }
 .settings-bar-chip svg {
   width: 16px;

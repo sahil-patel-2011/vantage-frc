@@ -22,7 +22,18 @@ export type ProductNavItem = {
 
 export type ProductNavGroup = {
   label: string;
+  /**
+   * The pillar's accent HUE, as a CSS value. Always a token reference, never a
+   * literal: a hex written here becomes an inline custom property in the
+   * drawer, which no stylesheet can override, so a light-only literal decides
+   * what the dark drawer looks like. The plate the hue sits on and the ink it
+   * paints are derived per theme in system.css (--tone-plate / --tone-ink).
+   */
   tone: string;
+  /**
+   * @deprecated Retained so existing readers keep compiling; nothing paints it.
+   * A tone's plate is derived from `tone` per theme now — see soft-ui.css.
+   */
   toneBg: string;
   icon: ProductNavIcon;
   items: ProductNavItem[];
@@ -53,7 +64,12 @@ export type ProductNavIcon =
   | "pin"
   | "back";
 
-const TONE = { tone: "#1457d9", toneBg: "#e8eefc" } as const;
+/**
+ * Every pillar currently reads as the house blue — one palette was a deliberate
+ * call. Kept as a token rather than folded away so giving a pillar its own hue
+ * is a one-word change here and stays correct in both themes.
+ */
+const TONE = { tone: "var(--tone-blue)", toneBg: "" } as const;
 
 /** Routes that never append ?orgId= (account / platform chrome). */
 export const ORG_EXEMPT_HREFS = new Set([

@@ -1176,7 +1176,9 @@ export default function AppShell() {
               if (!item || item.state === "planned") return null;
               const isActive = activeGroupLabel === group.label;
               const sub = panelSubLinks(group).filter((entry) => navHrefAllowed(entry.href));
-              const toneStyle = { ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg };
+              // Hue only. The plate and the ink are derived per theme in
+              // system.css, so nothing light-only crosses into an inline style.
+              const toneStyle = { ["--tone" as string]: group.tone };
               return (
                 <div key={group.label} className="soft-nav-group" style={toneStyle}>
                   {/* One row, one destination. The hub's own tab bar lists its
