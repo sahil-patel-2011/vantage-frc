@@ -14,15 +14,15 @@ import {
 
 describe("product-nav", () => {
   it("exposes flat pillar groups (no Settings accordion)", () => {
+    // Media is a tool set under Business › Outreach; AI is the "Ask AI" control.
+    // Neither is a place you go, so neither is a row in the panel.
     expect(PRODUCT_NAV_GROUPS.map((group) => group.label)).toEqual([
       "Home",
       "Competition",
       "Team",
       "Logistics",
       "Business",
-      "Media",
       "Build",
-      "AI",
     ]);
   });
 
@@ -31,7 +31,7 @@ describe("product-nav", () => {
       "/dashboard",
       "/competition",
       "/team",
-      "/business",
+      "/build",
     ]);
   });
 
@@ -41,11 +41,10 @@ describe("product-nav", () => {
       "Team",
       "Logistics",
       "Business",
-      "Media",
       "Build",
-      "AI",
+      "Ask AI",
     ]);
-    expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Media")?.icon).toBe("camera");
+    expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Ask AI")?.href).toBe("/ai?tab=chat");
     expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
       "My Day",
       "Forms",

@@ -5,8 +5,10 @@
  * Drawer IA is almost flat: one hub link per pillar. Deep tools live as
  * hub tabs / More tools; Cmd+K searches the full catalog.
  *
- * Pillars: Competition · Team · Logistics · Business · Media · Build · AI
- * (+ Home). Settings live in the drawer footer only.
+ * Pillars: Competition · Team · Logistics · Business · Build (+ Home).
+ * Media folded into Business › Outreach; AI is the persistent "Ask AI"
+ * control and its settings live under Settings. Settings live in the drawer
+ * footer only.
  */
 
 import { PRODUCT_HUBS } from "./hubs";
@@ -121,22 +123,10 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     items: [{ href: "/business", label: "Business", icon: "clipboard" }],
   },
   {
-    label: "Media",
-    ...TONE,
-    icon: "camera",
-    items: [{ href: "/media", label: "Media", icon: "camera" }],
-  },
-  {
     label: "Build",
     ...TONE,
     icon: "cube",
     items: [{ href: "/build", label: "Build", icon: "cube" }],
-  },
-  {
-    label: "AI",
-    ...TONE,
-    icon: "bolt",
-    items: [{ href: "/ai", label: "AI", icon: "bolt" }],
   },
 ];
 
@@ -169,15 +159,17 @@ export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
   { href: "/competition", label: "Compete", icon: "swords" },
   { href: "/team", label: "Team", icon: "users" },
-  { href: "/business", label: "Business", icon: "clipboard" },
+  // Build over Business by default: most people on a team are students, and a
+  // student's week is CAD, code and the shop. Mentors put Business back in one tap.
+  { href: "/build", label: "Build", icon: "cube" },
 ];
 
 /** Allowlisted destinations for the four personal island slots. */
 export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   ...PRIMARY_TABS,
-  { href: "/build", label: "Build", icon: "cube" },
-  { href: "/ai", label: "AI", icon: "bolt" },
-  { href: "/media", label: "Media", icon: "camera" },
+  { href: "/business", label: "Business", icon: "clipboard" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
+  { href: "/files", label: "Files", icon: "grid" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
@@ -192,9 +184,8 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
   { href: "/team", label: "Team", icon: "users" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/media", label: "Media", icon: "camera" },
   { href: "/build", label: "Build", icon: "cube" },
-  { href: "/ai", label: "AI", icon: "bolt" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
 ];
 
 /**
@@ -316,8 +307,20 @@ export function findNavMatch(
   if (!best || best.score < 1_000) {
     let hubBest: { group: ProductNavGroup; item: ProductNavItem; score: number } | null = null;
     for (const hub of PRODUCT_HUBS) {
-      const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
-      if (!group) continue;
+      // A hidden hub (AI, Media) has no panel row, but its pages still exist
+      // and still deserve a truthful crumb — "AI / API keys", not a guess from
+      // whichever settings link happens to share the path prefix.
+      const listed = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
+      const group: ProductNavGroup =
+        listed ?? { label: hub.label, ...TONE, icon: hub.id === "media" ? "camera" : "bolt", items: [] };
+      // The hub root of a hidden hub is its own crumb ("Media"), as the panel
+      // row used to provide before the hub left the panel.
+      if (!listed && path === hub.href) {
+        const score = hub.href.length + 1_000;
+        if (!hubBest || score > hubBest.score) {
+          hubBest = { group, item: { href: hub.href, label: hub.label, icon: group.icon }, score };
+        }
+      }
       for (const tab of hub.tabs) {
         const legacy = tab.legacyHref;
         if (!legacy) continue;

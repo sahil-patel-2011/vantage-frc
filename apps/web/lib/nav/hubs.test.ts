@@ -10,14 +10,35 @@ import {
   hubWorkbenchHref,
   hubWorkbenchId,
   isHubTab,
+  NAV_HUBS,
   PRODUCT_HUBS,
 } from "./hubs";
 
 describe("product hubs", () => {
-  it("defines the six shipping hubs", () => {
+  it("defines six hub pages but only four primary workspaces", () => {
+    // Every hub page still exists and every /hub?tab= URL still resolves.
     expect(PRODUCT_HUBS.map((hub) => hub.id)).toEqual([
       "competition", "team", "business", "build", "ai", "media",
     ]);
+    // The island, the All panel and the marketing page list only these.
+    // Four plus Home is the whole top level (UI_DESIGN_RULES R1).
+    expect(NAV_HUBS.map((hub) => hub.id)).toEqual(["competition", "team", "business", "build"]);
+  });
+
+  it("keeps every tool of a hidden hub reachable from a visible one or from Settings", () => {
+    // Media → Business › Outreach. Each former Media workbench has a tool entry
+    // under a visible hub pointing at the same route.
+    const business = hubById("business");
+    const outreach = hubNestedTabs(business, "evidence").map((tab) => tab.legacyHref);
+    expect(outreach).toEqual(
+      expect.arrayContaining(["/media?tab=calendar", "/media?tab=drafts", "/media?tab=reminders", "/media?tab=kit", "/media-library", "/impact"]),
+    );
+    // AI → Ask AI (top bar, /ai?tab=chat) for chat; written work under Team › Playbook;
+    // code tools already under Build › Code; controls under Settings (settings-nav.ts).
+    const playbook = hubNestedTabs(hubById("team"), "knowledge").map((tab) => tab.legacyHref);
+    expect(playbook).toEqual(expect.arrayContaining(["/writer", "/decisions", "/season-report"]));
+    const code = hubNestedTabs(hubById("build"), "code").map((tab) => tab.legacyHref);
+    expect(code).toEqual(expect.arrayContaining(["/bugbot"]));
   });
 
   it("validates tabs and builds deep links", () => {

@@ -31,6 +31,15 @@ export type ProductHubDef = {
   description: string;
   defaultTab: string;
   tabs: HubTabDef[];
+  /**
+   * A hub whose page still exists and whose URLs still work, but which is no
+   * longer one of the primary workspaces. Its tools are reached from another
+   * workspace's tool strip (Media → Business › Outreach), from Settings (AI
+   * controls), or from a persistent control (Ask AI). Hidden hubs stay in
+   * PRODUCT_HUBS so the palette, help, and access settings still know them;
+   * they are simply absent from NAV_HUBS, which the island and panel use.
+   */
+  hidden?: boolean;
 };
 
 function nest(group: string, tabs: Array<Omit<HubTabDef, "group">>): HubTabDef[] {
@@ -201,6 +210,11 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // prioritize" a blocker for rookie coaches, so it is pinned to the front of
         // the Playbook workbench rather than buried in the tail.
         { id: "roadmap", label: "Season roadmap", legacyHref: "/roadmap", featured: true },
+        // From the former AI hub: written material belongs with the team's
+        // other written material, not behind an "AI" pillar.
+        { id: "writer", label: "Writer", legacyHref: "/writer" },
+        { id: "decisions", label: "Decision notes", legacyHref: "/decisions" },
+        { id: "season-report", label: "Season report", legacyHref: "/season-report" },
         // Vantage Drive. It sits under Playbook because that workbench is
         // already "the team's own written material", and a file space is the
         // same idea with the bytes attached. Featured, because it is the
@@ -287,6 +301,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "judge-sim", label: "Judge pitch", legacyHref: "/judge-sim" },
         { id: "media-kit", label: "Media kit", legacyHref: "/media?tab=kit" },
         { id: "outreach-calendar", label: "Outreach calendar", legacyHref: "/outreach-calendar" },
+        // The former Media hub, now tools of Outreach. Same pages, one fewer
+        // pillar to remember.
+        { id: "content-calendar", label: "Content calendar", legacyHref: "/media?tab=calendar" },
+        { id: "content-drafts", label: "Post drafts", legacyHref: "/media?tab=drafts" },
+        { id: "content-reminders", label: "Posting reminders", legacyHref: "/media?tab=reminders" },
+        { id: "media-library", label: "Photos & video", legacyHref: "/media-library" },
       ]),
     ],
   },
@@ -371,6 +391,11 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/ai",
     label: "AI",
     title: "AI",
+    // Not a workspace any more: "Ask AI" in the top bar opens the chat from
+    // any page, and the controls (keys, budgets, governance, memory, usage)
+    // live under Settings where configuration belongs. The hub page and every
+    // /ai?tab= URL keep working.
+    hidden: true,
     description: "Chat, writer, agent, and controls — usage and memory live as tabs inside Controls.",
     defaultTab: "chat",
     tabs: [
@@ -401,6 +426,10 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/media",
     label: "Media",
     title: "Media",
+    // Folded into Business › Outreach: the content calendar, drafts,
+    // reminders, kit and library are outreach work, and a sixth top-level
+    // pillar for them was one more place to look. The page and its URLs stay.
+    hidden: true,
     description: "Calendar, drafts, reminders, kit, and impact.",
     defaultTab: "calendar",
     tabs: [
@@ -415,6 +444,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     ],
   },
 ];
+
+/**
+ * The primary workspaces: what the island, the All panel and the marketing
+ * page list. Four plus Home is the whole top level; everything else is a tool
+ * inside one of them.
+ */
+export const NAV_HUBS: ProductHubDef[] = PRODUCT_HUBS.filter((hub) => !hub.hidden);
 
 export function hubById(id: ProductHubDef["id"]): ProductHubDef {
   const hub = PRODUCT_HUBS.find((entry) => entry.id === id);
