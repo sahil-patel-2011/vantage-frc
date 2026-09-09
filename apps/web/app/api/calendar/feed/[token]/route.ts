@@ -58,6 +58,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
       },
     });
   } catch {
-    return notFound();
+    // A database failure is NOT a bad token, and saying so cost this feature
+    // years: get_calendar_feed threw on every call (it was STABLE while doing
+    // an UPDATE — fixed in migration 0640), and this catch reported it as
+    // "Calendar feed not found", so every report read as "my link is broken"
+    // rather than "the server is broken". Distinguish them, the way
+    // /api/public-forms/[token] and /api/parent-view/[token] already do:
+    // an unknown token is 404, an outage is 503 and asks them to retry.
+    return new Response(
+      "We could not build this calendar right now. Your subscription link is fine — try again shortly.",
+      {
+        status: 503,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+          // Calendar clients back off on Retry-After instead of disabling the
+          // subscription outright, which is what we want during an outage.
+          "retry-after": "600",
+        },
+      },
+    );
   }
 }

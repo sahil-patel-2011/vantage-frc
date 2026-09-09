@@ -1,12 +1,16 @@
 import type { PoolClient } from "@neondatabase/serverless";
 
-// Bumped 2026-08-24.2: the documents now disclose that AI-feature activity
-// (prompts, context, responses, tool traces) may be used to train in-house
-// models — a reversal of the earlier no-training language, so every member
-// must re-accept. A new version string is what forces that re-acceptance;
-// leaving it stale would silently hold people to terms they never saw.
-export const LEGAL_DOC_VERSION = "2026-08-24.2";
-export const LEGAL_EFFECTIVE_DATE = "August 24, 2026";
+// Bumped 2026-09-09.1: the Privacy Policy gained sections on students under 13
+// and parental consent, parents and guardians, seeing/exporting/deleting your
+// information, the companies that process data on our behalf, security
+// incidents, legal requests, school-affiliated teams, and where data is held;
+// the Terms gained who-owns-what and members-under-18. Those change what a
+// member is agreeing to, so every member must re-accept.
+//
+// A new version string is what forces that re-acceptance; leaving it stale
+// would silently hold people to terms they never saw.
+export const LEGAL_DOC_VERSION = "2026-09-09.1";
+export const LEGAL_EFFECTIVE_DATE = "September 9, 2026";
 
 export const TERMS_MISSING_MESSAGE = "You must agree to the Terms of Service to continue.";
 export const PRIVACY_MISSING_MESSAGE = "You must agree to the Privacy Policy to continue.";
