@@ -29,7 +29,6 @@ type SharePayload = {
   canDownload: boolean;
   expiresAt: string | null;
   note: string | null;
-  sharedWith: string | null;
   orgName: string;
   teamNumber: number | null;
   folderName: string | null;
