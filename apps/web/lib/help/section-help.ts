@@ -1298,7 +1298,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["Every call is metered against the org budget before it runs — there is no silent overage."],
     related: [
       { label: "Controls", href: "/team/budgets" },
-      { label: "Memory", href: "/team/ai-memory" },
+      { label: "Memory", href: "/ai?tab=memory" },
       { label: "API keys", href: "/team/ai-keys" },
     ],
   },
@@ -1341,7 +1341,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["A missing reason is shown as missing rather than filled in — treat those steps as unverified."],
     related: [
       { label: "Controls", href: "/team/budgets" },
-      { label: "Governance", href: "/team/ai-policy" },
+      { label: "Governance", href: "/ai?tab=governance" },
       { label: "Past runs", href: "/team/ai-runs" },
     ],
   },
@@ -1363,7 +1363,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: ["Budgets are org-scoped — open a team workspace first or the page has nothing to write to."],
     related: [
       { label: "API keys", href: "/team/ai-keys" },
-      { label: "Governance", href: "/team/ai-policy" },
+      { label: "Governance", href: "/ai?tab=governance" },
       { label: "Usage", href: "/team/usage" },
     ],
   },

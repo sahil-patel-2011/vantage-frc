@@ -61,6 +61,17 @@ type View = {
 
 type Mode = "build" | "answer" | "results";
 
+/**
+ * The workspace the shell sent us to. Without it the API resolves the caller's
+ * first membership by org name, so a member of two teams could open a form
+ * belonging to the workspace they are not currently in.
+ */
+function orgParam(): string {
+  if (typeof window === "undefined") return "";
+  const orgId = new URLSearchParams(window.location.search).get("orgId");
+  return orgId ? `&orgId=${encodeURIComponent(orgId)}` : "";
+}
+
 /** A dependency-free bar. Widths are percentages of the largest bucket. */
 function Bar({ label, count, share, max }: { label: string; count: number; share: number; max: number }) {
   const width = max > 0 ? Math.round((count / max) * 100) : 0;
@@ -349,7 +360,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="This form could not be opened" description={error}>
-          <a className="app-button" href="/forms">Back to forms</a>
+          <a className="app-button" href={`/forms${orgParam().replace("&", "?")}`}>Back to forms</a>
         </EmptyState>
       </main>
     );

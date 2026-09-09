@@ -76,6 +76,10 @@ function ItemRow({
           <strong>{item.name}</strong>
           <span className="inventory-item-tags">
             <em>{categoryLabel(item.category)}</em>
+            {/* Migration 0520 made "held as a spare" its own fact, orthogonal to
+                category — Spare Forecast counts these rows, so the list has to
+                show which ones they are. */}
+            {item.isSpare ? <em>Spare</em> : null}
             {item.locationName ? <em className="loc">{item.locationName}</em> : null}
             {item.subsystem ? <em>{item.subsystem}</em> : null}
             {low ? <em className="low-tag">Low</em> : null}
@@ -214,6 +218,7 @@ function ItemEditForm({
   const [unitCost, setUnitCost] = useState(item.unitCost == null ? "" : String(item.unitCost));
   const [locationId, setLocationId] = useState(item.locationId ?? "");
   const [subsystem, setSubsystem] = useState(item.subsystem ?? "");
+  const [isSpare, setIsSpare] = useState(Boolean(item.isSpare));
 
   return (
     <form
@@ -229,6 +234,7 @@ function ItemEditForm({
             unitCost: unitCost === "" ? null : Number(unitCost),
             locationId: locationId || null,
             subsystem: subsystem.trim() || null,
+            isSpare,
           },
           `item:${item.id}`,
         ).then(onDone);
@@ -256,6 +262,10 @@ function ItemEditForm({
       <label className="inventory-field">
         <span>Subsystem</span>
         <input value={subsystem} disabled={busy} placeholder="e.g. Drivetrain" onChange={(e) => setSubsystem(e.target.value)} />
+      </label>
+      <label className="inventory-check">
+        <input type="checkbox" checked={isSpare} disabled={busy} onChange={(e) => setIsSpare(e.target.checked)} />
+        <span>Held as a spare</span>
       </label>
       {/* Archive + Delete moved into this item's overflow menu (see ItemRow) so the edit
           form has exactly one action: save what you just typed. */}
@@ -292,6 +302,7 @@ function AddItemForm({
   const [unitCost, setUnitCost] = useState("");
   const [locationId, setLocationId] = useState("");
   const [subsystem, setSubsystem] = useState("");
+  const [isSpare, setIsSpare] = useState(false);
 
   return (
     <form
@@ -311,6 +322,7 @@ function AddItemForm({
           unitCost: unitCost === "" ? null : Number(unitCost),
           locationId: locationId || null,
           subsystem: subsystem.trim() || null,
+          isSpare,
         });
       }}
     >
@@ -368,6 +380,13 @@ function AddItemForm({
         <label className="inventory-field">
           <span>Subsystem</span>
           <input value={subsystem} disabled={busy} placeholder="e.g. Drivetrain" onChange={(e) => setSubsystem(e.target.value)} />
+        </label>
+        {/* The spare flag crosses category and kind (0520): a spare gearbox is
+            still category 'gearbox'. Without this checkbox nothing in the
+            product could ever write the column Spare Forecast reads. */}
+        <label className="inventory-check">
+          <input type="checkbox" checked={isSpare} disabled={busy} onChange={(e) => setIsSpare(e.target.checked)} />
+          <span>Held as a spare</span>
         </label>
       </div>
       <button type="submit" className="app-button" disabled={busy || !name.trim()}>
@@ -514,10 +533,17 @@ function BomPanel({ view, orgId, busyKey, run }: { view: ReadyView; orgId: strin
 // Soft-UI shells + root
 // ---------------------------------------------------------------------------
 
-function InventoryRelatedStrip({ orgId }: { orgId?: string | null }) {
+/**
+ * Vendors, Orders and Spare Forecast are the header strip AND the Next actions
+ * list. On the shells (loading, setup, error) both render, so every one of the
+ * three had two buttons on screen — the lower one carrying the reason, the
+ * upper one carrying nothing. `skip` hands this strip the set the panel below
+ * is already offering.
+ */
+function InventoryRelatedStrip({ orgId, skip }: { orgId?: string | null; skip?: Set<string> }) {
   const links = inventoryRelatedLinks(orgId, {
     include: [...INVENTORY_RELATED_INCLUDE],
-  });
+  }).filter((link) => !skip?.has(link.href));
   if (!links.length) return null;
   return (
     <nav className="product-hub-related inventory-related" aria-label="Related inventory tools">
@@ -609,7 +635,7 @@ function InventoryShell({
         title="Inventory & BOM"
         description={description}
       >
-        <InventoryRelatedStrip orgId={orgId} />
+        <InventoryRelatedStrip orgId={orgId} skip={new Set(actions.map((action) => action.href))} />
       </PageHeader>
       {children}
       <EmptyState
@@ -643,19 +669,19 @@ function InventoryShell({
             Open Workspace
           </a>
         ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={vendorsHref}>
-              Open Vendors
-            </a>
-            <a className="app-button secondary" href={ordersHref}>
-              Open Orders
-            </a>
-            <a className="app-button secondary" href={spareForecastHref}>
-              Open Spare Forecast
-            </a>
-          </>
-        ) : null}
+        {shell === "empty"
+          ? [
+              { href: vendorsHref, label: "Open Vendors" },
+              { href: ordersHref, label: "Open Orders" },
+              { href: spareForecastHref, label: "Open Spare Forecast" },
+            ]
+              .filter((button) => !actions.some((action) => action.href === button.href))
+              .map((button, index) => (
+                <a key={button.href} className={index === 0 ? "app-button" : "app-button secondary"} href={button.href}>
+                  {button.label}
+                </a>
+              ))
+          : null}
       </EmptyState>
       <InventoryNextActionsPanel actions={actions} />
     </main>
@@ -704,6 +730,7 @@ export default function InventoryClient() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [lowOnly, setLowOnly] = useState(false);
+  const [sparesOnly, setSparesOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
@@ -784,9 +811,12 @@ export default function InventoryClient() {
     lowStockCount: summary?.lowStock ?? 0,
     outOfStockCount: summary?.outOfStock ?? 0,
   });
+  // Same rule as the shells: the overflow menu does not repeat a destination
+  // the Next actions panel is already offering with a reason attached.
+  const nextActionHrefs = new Set(nextActions.map((action) => action.href));
   const relatedLinks = inventoryRelatedLinks(orgId, {
     include: [...INVENTORY_RELATED_INCLUDE],
-  });
+  }).filter((link) => !nextActionHrefs.has(link.href));
   const buildHref = withOrgHref("/build", orgId);
   const vendorsHref = withOrgHref("/vendors", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
@@ -846,6 +876,7 @@ export default function InventoryClient() {
   const visibleItems = items.filter((item) => {
     if (!showArchived && item.archived) return false;
     if (lowOnly && !isLowStock(item)) return false;
+    if (sparesOnly && !item.isSpare) return false;
     if (category !== "all" && item.category !== category) return false;
     if (query) {
       const hay = `${item.name} ${item.partNumber ?? ""} ${item.vendor ?? ""} ${item.subsystem ?? ""} ${item.locationName ?? ""}`.toLowerCase();
@@ -938,9 +969,14 @@ export default function InventoryClient() {
                 intent: "primary",
                 onClick: () => setShowAdd(true),
               },
-              { id: "vendors", label: "Open Vendors", href: vendorsHref },
-              { id: "orders", label: "Open Orders", href: ordersHref },
-              { id: "spare-forecast", label: "Open Spare Forecast", href: spareForecastHref },
+              // Third copy of the same three destinations, after the header
+              // strip and the Next actions panel — kept only when the panel
+              // above is not already offering it.
+              ...[
+                { id: "vendors", label: "Open Vendors", href: vendorsHref },
+                { id: "orders", label: "Open Orders", href: ordersHref },
+                { id: "spare-forecast", label: "Open Spare Forecast", href: spareForecastHref },
+              ].filter((action) => !nextActionHrefs.has(action.href)),
             ]}
           />
         </EmptyState>
@@ -1005,6 +1041,10 @@ export default function InventoryClient() {
               <span>Low only</span>
             </label>
             <label className="inventory-check">
+              <input type="checkbox" checked={sparesOnly} onChange={(event) => setSparesOnly(event.target.checked)} />
+              <span>Spares only</span>
+            </label>
+            <label className="inventory-check">
               <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
               <span>Show archived</span>
             </label>
@@ -1025,10 +1065,13 @@ export default function InventoryClient() {
 
       <Panel className="inventory-tip" aria-label="Inventory tip">
         <span className="eyebrow">Procurement path</span>
+        {/* Prose, not a third set of buttons. Orders, Vendors and Spare Forecast
+            each had a link here *and* a row in Next actions above — two controls
+            for the same destination, the lower one with no reason attached. The
+            panel keeps the sentence and gives up the links. */}
         <p className="app-muted" style={{ marginTop: 8 }}>
-          Restock through <a href={ordersHref}>Orders</a>, keep suppliers in <a href={vendorsHref}>Vendors</a>, and
-          project spare exhaustion in <a href={spareForecastHref}>Spare Forecast</a> — never invent DEMO stock,
-          costs, or reorder totals.
+          Restock through Orders, keep suppliers in Vendors, and project spare exhaustion in Spare
+          Forecast — never invent DEMO stock, costs, or reorder totals.
         </p>
       </Panel>
 
