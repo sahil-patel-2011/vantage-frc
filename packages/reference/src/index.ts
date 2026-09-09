@@ -10,6 +10,7 @@ export * from "./nexus-client";
 export * from "./platform-key";
 export * from "./types";
 export * from "./match-cross-validation";
+export * from "./team-dossier";
 export {
   createGlobalReferenceJobs,
   syncGlobalReferenceSeason,

@@ -128,6 +128,10 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "messages", label: "Chat", legacyHref: "/messages" },
       { id: "attendance", label: "People", legacyHref: "/attendance" },
       ...nest("attendance", [
+        // What the public record says about this team (TBA + Statbotics), built
+        // on first visit and refreshed weekly. Under People because the one thing
+        // it cannot know — who is on the team — is answered right next to it.
+        { id: "profile", label: "Team profile", legacyHref: "/team/profile", featured: true },
         { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
         // Subteams and Forms are people operations, so they live under People
         // rather than as their own drawer pillar — the drawer keeps one link

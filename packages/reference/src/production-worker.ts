@@ -12,6 +12,7 @@ import {
   type GlobalReferenceWorkerOptions,
   type TbaGetter,
 } from "./worker";
+import { buildTeamDossier, type TeamDossierPayload } from "./team-dossier";
 import type { EventDaySyncInput, SyncSummary } from "./types";
 
 class CoordinatedTbaGetter implements TbaGetter {
@@ -64,6 +65,17 @@ export function createProductionReferenceJobs(config: { preferOrgIds?: string[] 
   const jobs = createGlobalReferenceJobs(workerOptions);
 
   return {
+    /**
+     * One team's public dossier (TBA + Statbotics), through the same
+     * coordinated, credential-rotating TBA path as the season sync — never a
+     * bare fetch. Bounded to a handful of calls; see team-dossier.ts.
+     */
+    teamDossier: {
+      async run(teamNumber: number): Promise<TeamDossierPayload> {
+        await assertTbaConfigured(credentials, preferOrgIds);
+        return buildTeamDossier({ teamNumber, tba, statbotics: workerOptions.statbotics });
+      },
+    },
     syncSeason: {
       id: jobs.syncSeason.id,
       async run(input: { year: number }): Promise<SyncSummary> {

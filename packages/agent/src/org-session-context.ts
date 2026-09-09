@@ -16,6 +16,22 @@ export type OrgSessionFacts = {
   sponsorsAllowed: boolean | null;
   privacyScope?: "private" | "team";
   capability?: string;
+  /**
+   * The team's public dossier (TBA + Statbotics), when one has been built.
+   * Only fields a source actually returned; a missing source is absent here,
+   * not zero-filled.
+   */
+  dossier?: {
+    nickname: string | null;
+    location: string | null;
+    rookieYear: number | null;
+    seasonsCompeted: number;
+    awards: Array<{ year: number; name: string }>;
+    recentEvents: Array<{ year: number; name: string | null; rank: number | null; teams: number | null; record: string | null }>;
+    normEpa: number | null;
+    latestYear: { year: number; epa: number | null; rankWorld: number | null; teamsWorld: number | null } | null;
+    computedAt: string;
+  } | null;
 };
 
 export type OrgSessionContextItem = ContextItem & {
@@ -46,6 +62,33 @@ export function formatOrgSessionContext(facts: OrgSessionFacts): string | null {
   }
   if (facts.privacyScope) parts.push(`Chat privacy scope: ${facts.privacyScope}`);
   if (facts.capability?.trim()) parts.push(`Capability: ${facts.capability.trim()}`);
+
+  const d = facts.dossier;
+  if (d) {
+    if (d.nickname) parts.push(`Team nickname: ${d.nickname}`);
+    if (d.location) parts.push(`Location: ${d.location}`);
+    if (d.rookieYear !== null) {
+      parts.push(`Rookie year: ${d.rookieYear} (${d.seasonsCompeted} season${d.seasonsCompeted === 1 ? "" : "s"} competed per TBA)`);
+    }
+    if (d.normEpa !== null) parts.push(`Statbotics normalised EPA: ${d.normEpa}`);
+    if (d.latestYear) {
+      const y = d.latestYear;
+      const rank = y.rankWorld !== null && y.teamsWorld !== null ? `, world rank ${y.rankWorld} of ${y.teamsWorld}` : "";
+      parts.push(`Latest season ${y.year}: EPA ${y.epa ?? "not on record"}${rank}`);
+    }
+    if (d.recentEvents.length > 0) {
+      parts.push(
+        `Recent events: ${d.recentEvents
+          .slice(0, 4)
+          .map((e) => `${e.year} ${e.name ?? "event"}${e.rank !== null && e.teams !== null ? ` (rank ${e.rank}/${e.teams}${e.record ? `, ${e.record}` : ""})` : ""}`)
+          .join("; ")}`,
+      );
+    }
+    if (d.awards.length > 0) {
+      parts.push(`Awards on record: ${d.awards.slice(0, 8).map((a) => `${a.year} ${a.name}`).join("; ")}${d.awards.length > 8 ? ` (+${d.awards.length - 8} more)` : ""}`);
+    }
+    parts.push(`Dossier from The Blue Alliance and Statbotics, as of ${d.computedAt.slice(0, 10)}`);
+  }
 
   if (parts.length === 0) return null;
   return [
@@ -80,6 +123,12 @@ export async function loadOrgSessionFacts(
     sponsorsAllowed: boolean | null;
     activeEventKey: string | null;
     seasonYear: number | null;
+    dossierProfile: Record<string, unknown> | null;
+    dossierYears: number[] | null;
+    dossierAwards: Array<Record<string, unknown>> | null;
+    dossierEvents: Array<Record<string, unknown>> | null;
+    dossierStats: Record<string, unknown> | null;
+    dossierAt: string | null;
   }>(
     `SELECT o.name AS "orgName",
             o.team_number AS "teamNumber",
@@ -87,10 +136,19 @@ export async function loadOrgSessionFacts(
             o.school_funded AS "schoolFunded",
             o.sponsors_allowed AS "sponsorsAllowed",
             c.active_event_key AS "activeEventKey",
-            e.year AS "seasonYear"
+            e.year AS "seasonYear",
+            d.profile AS "dossierProfile",
+            d.years_participated AS "dossierYears",
+            d.awards AS "dossierAwards",
+            d.events AS "dossierEvents",
+            d.stats AS "dossierStats",
+            to_char(d.computed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "dossierAt"
        FROM organizations o
        LEFT JOIN org_active_context c ON c.org_id = o.id
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+       -- Public team dossier (0644). LEFT JOIN so a team that has not built one
+       -- gets the same facts it always did, with dossier = null.
+       LEFT JOIN team_dossiers d ON d.org_id = o.id AND d.status = 'ready'
       WHERE o.id = $1::uuid`,
     [orgId],
   );
@@ -118,5 +176,56 @@ export async function loadOrgSessionFacts(
     teamAffiliation: row.teamAffiliation?.trim() || null,
     schoolFunded: row.schoolFunded ?? null,
     sponsorsAllowed: row.sponsorsAllowed ?? null,
+    dossier: dossierFacts(row),
+  };
+}
+
+const n = (v: unknown): number | null => {
+  const x = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(x) ? x : null;
+};
+const s = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+/** Compact the stored dossier to the handful of facts a prompt can use. */
+function dossierFacts(row: {
+  dossierProfile: Record<string, unknown> | null;
+  dossierYears: number[] | null;
+  dossierAwards: Array<Record<string, unknown>> | null;
+  dossierEvents: Array<Record<string, unknown>> | null;
+  dossierStats: Record<string, unknown> | null;
+  dossierAt: string | null;
+}): OrgSessionFacts["dossier"] {
+  if (!row.dossierAt) return null;
+  const p = row.dossierProfile ?? {};
+  const location = [s(p.city), s(p.stateProv), s(p.country)].filter(Boolean).join(", ") || null;
+  const years = Array.isArray(row.dossierYears) ? row.dossierYears.map(n).filter((y): y is number => y !== null) : [];
+  const stats = row.dossierStats ?? {};
+  const statYears = Array.isArray(stats.years) ? (stats.years as Array<Record<string, unknown>>) : [];
+  const latest = statYears[0];
+  return {
+    nickname: s(p.nickname),
+    location,
+    rookieYear: n(p.rookieYear),
+    seasonsCompeted: new Set(years).size,
+    awards: (row.dossierAwards ?? [])
+      .map((a) => ({ year: n(a.year) ?? 0, name: s(a.name) ?? "" }))
+      .filter((a) => a.year > 0 && a.name),
+    recentEvents: (row.dossierEvents ?? []).slice(0, 6).map((e) => {
+      const w = n(e.wins);
+      const l = n(e.losses);
+      const t = n(e.ties);
+      return {
+        year: n(e.year) ?? 0,
+        name: s(e.name),
+        rank: n(e.rank),
+        teams: n(e.teams),
+        record: w !== null && l !== null ? `${w}-${l}-${t ?? 0}` : null,
+      };
+    }),
+    normEpa: n(stats.normEpa),
+    latestYear: latest
+      ? { year: n(latest.year) ?? 0, epa: n(latest.epa), rankWorld: n(latest.rankWorld), teamsWorld: n(latest.teamsWorld) }
+      : null,
+    computedAt: row.dossierAt,
   };
 }
