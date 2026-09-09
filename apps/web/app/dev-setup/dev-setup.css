@@ -1,0 +1,491 @@
+/*
+ * Programming onboarding — a documentation surface, not a dashboard.
+ *
+ * Tokens only (--soft-*), so both themes come from soft-ui.css. Scoped to
+ * .ds-page throughout: the shell sets `.module-page label { display: grid }`
+ * and `input { width: 100% }`, which turn an unscoped checkbox row into a
+ * full-width box with the label stacked under it.
+ */
+
+.ds-page {
+  display: block;
+}
+
+.ds-shell {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+/* ---------- left rail ---------- */
+
+.ds-side {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding-right: 8px;
+  font-size: 13px;
+}
+
+.ds-side-title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+.ds-side-group {
+  margin-bottom: 14px;
+}
+
+.ds-side-group > a {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 650;
+  color: var(--soft-ink);
+  text-decoration: none;
+}
+
+.ds-side-group ul {
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: none;
+  border-left: 1px solid var(--soft-line);
+}
+
+.ds-side-group li a {
+  display: block;
+  padding: 3px 0 3px 8px;
+  color: var(--soft-muted);
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.ds-side-group li a:hover {
+  color: var(--soft-accent);
+}
+
+.ds-side-done {
+  opacity: 0.65;
+}
+
+/* ---------- main column ---------- */
+
+.ds-main {
+  min-width: 0;
+  /* Prose measure. Long install instructions become unreadable full-bleed. */
+  max-width: 74ch;
+}
+
+.ds-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft-accent);
+}
+
+.ds-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.ds-lead {
+  margin: 0 0 18px;
+  color: var(--soft-muted);
+  line-height: 1.6;
+}
+
+.ds-os {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  background: var(--soft-bg);
+}
+
+.ds-os-tab {
+  min-height: 36px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--soft-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ds-os-tab.active {
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  box-shadow: var(--soft-shadow, 0 1px 3px rgba(19, 32, 51, 0.12));
+}
+
+.ds-progress {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-muted {
+  color: var(--soft-muted);
+  font-weight: 400;
+}
+
+/* ---------- stages and steps ---------- */
+
+.ds-stage {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.ds-stage h2 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+
+.ds-blurb {
+  margin: 0 0 8px;
+  color: var(--soft-muted);
+  line-height: 1.6;
+}
+
+/* The anchor only appears on hover, so headings stay clean but every step
+   stays linkable — this page is meant to be shared step by step. */
+.ds-anchor {
+  margin-right: 6px;
+  color: var(--soft-line);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.ds-stage h2:hover .ds-anchor,
+.ds-step h3:hover .ds-anchor,
+.ds-anchor:focus-visible {
+  opacity: 1;
+  color: var(--soft-accent);
+}
+
+.ds-step {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card);
+  /* Anchored jumps otherwise land under the sticky app chrome. */
+  scroll-margin-top: 24px;
+}
+
+.ds-step-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ds-step-head h3 {
+  margin: 0 0 2px;
+  font-size: 17px;
+}
+
+.ds-page .ds-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.ds-page .ds-done input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+
+.ds-why {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--soft-accent);
+  background: var(--soft-bg);
+  line-height: 1.55;
+}
+
+.ds-install {
+  margin: 12px 0;
+  padding-left: 20px;
+  line-height: 1.65;
+}
+
+.ds-install li {
+  margin-bottom: 5px;
+}
+
+.ds-verify {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ---------- commands ---------- */
+
+.ds-code {
+  position: relative;
+  margin: 12px 0;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+}
+
+.ds-code pre {
+  margin: 0;
+  padding: 12px 76px 12px 14px;
+  overflow-x: auto;
+  font-family: var(--soft-font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ds-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- callouts ---------- */
+
+.ds-callout {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ds-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ds-callout p {
+  margin: 0;
+}
+
+.ds-tip {
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+}
+
+.ds-tip strong {
+  color: var(--soft-accent);
+}
+
+/* A warning here means "painful to undo" — signing up with a school email, or
+   re-submitting a student application. Distinct from a tip, not alarming. */
+.ds-warn {
+  border: 1px solid var(--soft-warning-line, #e4d9c5);
+  background: var(--soft-warning-bg, #faf6ef);
+  color: var(--soft-warning-ink, #6b5a3a);
+}
+
+.ds-warn strong {
+  color: var(--soft-warning-ink, #6b5a3a);
+}
+
+html[data-theme="dark"] .ds-warn {
+  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
+  color: var(--soft-ink);
+}
+
+html[data-theme="dark"] .ds-warn strong {
+  color: var(--soft-warning, #c8922a);
+}
+
+/* ---------- links ---------- */
+
+.ds-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  color: var(--soft-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ds-link:hover {
+  border-color: var(--soft-accent);
+  color: var(--soft-accent);
+}
+
+/* The actual download is the one control that should read as the action. */
+.ds-link-primary {
+  border-color: var(--soft-accent);
+  background: var(--soft-accent);
+  color: var(--soft-brand-ink, #fff);
+}
+
+.ds-link-primary:hover {
+  color: var(--soft-brand-ink, #fff);
+  filter: brightness(0.96);
+}
+
+@media (max-width: 900px) {
+  .ds-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The rail becomes a collapsed index above the content rather than a second
+     sticky column competing with the page. */
+  .ds-side {
+    position: static;
+    max-height: none;
+    padding: 12px 14px;
+    border: 1px solid var(--soft-line);
+    border-radius: var(--soft-radius, 16px);
+  }
+
+  .ds-side-group ul {
+    display: none;
+  }
+}
+
+/* ---------- team material and the in-guide assistant ---------- */
+
+.ds-extras {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--soft-line);
+}
+
+/* A team's own note outranks the generic instructions above it — it is the one
+   thing on the page written by someone who knows this specific robot. */
+.ds-team {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--soft-accent);
+  background: var(--soft-bg);
+  border-radius: 0 var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px) 0;
+}
+
+.ds-team > strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--soft-accent);
+}
+
+.ds-team ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ds-fold {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.ds-fold > summary {
+  padding: 6px 0;
+  color: var(--soft-muted);
+  cursor: pointer;
+  list-style: revert;
+}
+
+.ds-fold > summary:hover {
+  color: var(--soft-accent);
+}
+
+.ds-fold-body {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 4px;
+}
+
+.ds-page .ds-fold-body input,
+.ds-page .ds-fold-body textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.ds-page .ds-fold-body button {
+  justify-self: start;
+  cursor: pointer;
+}
+
+.ds-page .ds-fold-body button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* The answer is model output. It is deliberately styled as a quotation rather
+   than as page content, so a student can see where the guide stops and the
+   assistant starts — and knows which one to trust less. */
+.ds-answer {
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ds-ask-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--soft-danger, #b42318);
+}
