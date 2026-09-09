@@ -22,6 +22,20 @@ const PRIORITY_LABEL: Record<AnnouncementPriority, string> = {
   urgent: "Urgent",
 };
 
+/**
+ * The workspace the shell sent us to.
+ *
+ * The shell builds every product link with `withOrgHref`, so a member of two
+ * teams arrives as `/announcements?orgId=…`. Calling `/api/announcements` bare
+ * let the API fall back to the caller's first membership ordered by org name —
+ * so an owner of two teams could post to the wrong one and not know.
+ */
+function orgParam(): string {
+  if (typeof window === "undefined") return "";
+  const orgId = new URLSearchParams(window.location.search).get("orgId");
+  return orgId ? `orgId=${encodeURIComponent(orgId)}` : "";
+}
+
 function priorityTone(priority: AnnouncementPriority): BadgeTone {
   if (priority === "urgent") return "danger";
   if (priority === "important") return "info";
@@ -45,7 +59,8 @@ export default function AnnouncementsClient() {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/announcements");
+      const query = orgParam();
+      const response = await fetch(`/api/announcements${query ? `?${query}` : ""}`);
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok) {
         setError(data.error ?? "Could not load announcements.");
@@ -65,7 +80,8 @@ export default function AnnouncementsClient() {
   async function act(payload: Record<string, unknown>) {
     setBusy(true);
     try {
-      const response = await fetch("/api/announcements", {
+      const query = orgParam();
+      const response = await fetch(`/api/announcements${query ? `?${query}` : ""}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -85,7 +101,10 @@ export default function AnnouncementsClient() {
   }
 
   async function showOutstanding(id: string) {
-    const response = await fetch(`/api/announcements?outstandingFor=${encodeURIComponent(id)}`);
+    const query = orgParam();
+    const response = await fetch(
+      `/api/announcements?outstandingFor=${encodeURIComponent(id)}${query ? `&${query}` : ""}`,
+    );
     const data = (await response.json()) as { outstanding?: string[] };
     setOutstanding({ id, names: data.outstanding ?? [] });
   }

@@ -14,9 +14,10 @@ test.beforeEach(async ({ context }) => {
 
 /**
  * Reachable org-gated routes. /cad, /team/ai-hub, /team/ai-memory and
- * /team/ai-policy are deliberately absent: LEGACY_HUB_REDIRECTS sends all four
- * to a hub tab before the page ever runs, so asserting on their bodies would
- * assert on markup no user can reach.
+ * /team/ai-policy used to be here and are gone for good: LEGACY_HUB_REDIRECTS
+ * sends all four to a hub tab before the page can run, so their page.tsx files
+ * were unreachable markup and have been deleted. The clients three of them
+ * mounted are still alive — the /ai and /build hubs import them directly.
  */
 const NO_ORG_ROUTES = [
   { path: "/showcase", crumb: "Media / Showcase", heading: "Showcase" },

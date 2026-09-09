@@ -42,6 +42,21 @@ const START_OPTIONS: Array<{ purpose: FormPurpose; blurb: string }> = [
   { purpose: "general", blurb: "Start from a blank form." },
 ];
 
+/**
+ * The workspace the shell sent us to.
+ *
+ * Every product link the shell renders goes through `withOrgHref`, so a member
+ * of two teams arrives here as `/forms?orgId=…`. This client used to call
+ * `/api/forms` bare, and the API falls back to the caller's first membership
+ * ordered by org name — so switching workspaces and opening Forms showed the
+ * other team's forms, with no way to tell.
+ */
+function orgParam(): string {
+  if (typeof window === "undefined") return "";
+  const orgId = new URLSearchParams(window.location.search).get("orgId");
+  return orgId ? `orgId=${encodeURIComponent(orgId)}` : "";
+}
+
 function statusTone(status: FormSummary["status"]): BadgeTone {
   if (status === "open") return "good";
   if (status === "closed") return "neutral";
@@ -53,10 +68,10 @@ export default function FormsClient() {
   const [error, setError] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState("");
-
   const load = useCallback(async () => {
     try {
-      const response = await fetch("/api/forms");
+      const query = orgParam();
+      const response = await fetch(`/api/forms${query ? `?${query}` : ""}`);
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok) {
         setError(data.error ?? "Could not load forms.");
@@ -77,8 +92,9 @@ export default function FormsClient() {
     const trimmed = title.trim();
     if (!trimmed) return;
     setBusy(true);
+    const query = orgParam();
     try {
-      const response = await fetch("/api/forms", {
+      const response = await fetch(`/api/forms${query ? `?${query}` : ""}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
