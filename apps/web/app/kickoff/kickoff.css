@@ -17,7 +17,7 @@
 .kick-next-actions li div{display:grid;gap:2px;min-width:0}
 .kick-next-actions li strong{font-size:14px}
 .kick-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.kick-next-actions li .app-button{flex:none;min-height:44px;padding:0 12px;font-size:12px}
+.kick-next-actions li .app-button{flex:none}
 
 .kick-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .kick-tile{display:grid;gap:4px;align-content:start;padding:16px}

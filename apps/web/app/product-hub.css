@@ -47,19 +47,14 @@
    route (<a>). Without the flex box and `text-decoration:none` the link chips
    rendered underlined and sat a few pixels higher than the button chips, so a
    single row read as two different controls. */
+/* Shape, height, padding and type come from the shared chip rule in system.css
+   — the same rule the settings bar, the help filter, the dashboard rail, the
+   cross-link strip and the TeamOps strip use. Only the border, the surface and
+   the cursor are local. */
 .hub-tool-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--soft-control-h-sm);
-  padding: 0 14px;
   border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-pill);
   background: var(--soft-card);
   color: var(--soft-muted);
-  font: 600 var(--soft-text-sm)/1 var(--soft-font);
-  text-decoration: none;
-  white-space: nowrap;
   cursor: pointer;
 }
 .hub-tool-chip:hover {
@@ -100,10 +95,7 @@
 /* Touch devices get the 44px minimum target; a mouse does not need it, and the
    compact row keeps more tools on screen on a shop laptop. */
 @media (pointer: coarse) {
-  .hub-tool-chip {
-    min-height: var(--soft-control-h);
-    padding: 0 16px;
-  }
+  /* min-height / padding for coarse pointers: system.css, same chip rule. */
   .hub-tool-strip-row {
     gap: 8px;
   }
