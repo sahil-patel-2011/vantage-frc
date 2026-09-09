@@ -753,7 +753,6 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
-  const grantsAiHref = `/ai?tab=writer&orgId=${encodeURIComponent(view.orgId)}`;
   /**
    * One row of related destinations, not three.
    *
