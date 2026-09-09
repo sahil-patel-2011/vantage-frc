@@ -26,13 +26,15 @@ type FormDetail = {
 type View = {
   canManage: boolean;
   form: FormDetail;
+  // Null for a non-manager: RLS shows them only their own response, so the API
+  // deliberately withholds a figure that would read as team-wide.
   results: {
     totalResponses: number;
     assignedCount: number;
     summaries: QuestionSummary[];
     responses: Array<{ id: string; label: string; submittedAt: string }>;
-  };
-  insight: FormInsight;
+  } | null;
+  insight: FormInsight | null;
 };
 
 type Mode = "build" | "answer" | "results";
@@ -139,7 +141,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     if (!view) return "build";
     if (!view.canManage) return "answer";
     if (view.form.status === "draft") return "build";
-    return view.results.totalResponses > 0 ? "results" : "build";
+    return (view.results?.totalResponses ?? 0) > 0 ? "results" : "build";
   }, [view]);
 
   const active = mode ?? defaultMode;
@@ -207,7 +209,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
               aria-pressed={active === option}
               onClick={() => setMode(option)}
             >
-              {option === "build" ? "Questions" : option === "answer" ? "Preview & answer" : `Responses (${results.totalResponses})`}
+              {option === "build" ? "Questions" : option === "answer" ? "Preview & answer" : `Responses (${results?.totalResponses ?? 0})`}
             </button>
           ))}
         </nav>
@@ -284,6 +286,22 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 }}
               >
                 {copied ? "Copied" : "Copy link"}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Make a new link? Anyone still holding the old one will not be able to answer.",
+                    )
+                  ) {
+                    void act({ action: "rotate_link", formId: form.id });
+                  }
+                }}
+              >
+                New link
               </button>
             </p>
           ) : null}
@@ -479,7 +497,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
         </Panel>
       ) : null}
 
-      {active === "results" && canManage ? (
+      {active === "results" && canManage && results && insight ? (
         <>
           <Panel className="forms-insight-panel">
             <h2>{insight.headline}</h2>

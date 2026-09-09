@@ -28,7 +28,6 @@ export type FormDetail = {
   audience: FormAudience;
   shareToken: string | null;
   closesAt: string | null;
-  oneResponsePerMember: boolean;
   createdAt: string;
   questions: FormQuestion[];
 };
@@ -78,7 +77,7 @@ export async function getForm(
   const form = await client.query<Omit<FormDetail, "questions">>(
     `SELECT id, title, description, purpose, status, audience,
             share_token AS "shareToken", closes_at::text AS "closesAt",
-            one_response_per_member AS "oneResponsePerMember", created_at::text AS "createdAt"
+            created_at::text AS "createdAt"
        FROM forms WHERE id = $1::uuid AND org_id = $2::uuid`,
     [formId, orgId],
   );
@@ -132,19 +131,20 @@ export async function addQuestion(
     config?: FormQuestion["config"];
   },
 ): Promise<string> {
-  const next = await client.query<{ position: number }>(
-    `SELECT COALESCE(max(position) + 1, 0) AS position
-       FROM form_questions WHERE form_id = $1::uuid AND org_id = $2::uuid`,
-    [input.formId, input.orgId],
-  );
+  // The position is computed inside the INSERT rather than by a separate SELECT.
+  // Read-then-insert let two concurrent adds pick the same position and trip the
+  // deferred UNIQUE (form_id, position) at COMMIT, failing one request with an
+  // opaque 400 that a retry would have fixed.
   const result = await client.query<{ id: string }>(
     `INSERT INTO form_questions (org_id, form_id, position, kind, label, help, required, config)
-     VALUES ($1::uuid, $2::uuid, $3::int, $4, $5, $6, $7, $8::jsonb)
+     SELECT $1::uuid, $2::uuid,
+            COALESCE((SELECT max(q.position) + 1 FROM form_questions q
+                       WHERE q.form_id = $2::uuid AND q.org_id = $1::uuid), 0),
+            $3, $4, $5, $6, $7::jsonb
      RETURNING id`,
     [
       input.orgId,
       input.formId,
-      next.rows[0]?.position ?? 0,
       input.kind,
       input.label.trim() || "Untitled question",
       (input.help ?? "").trim(),
@@ -248,14 +248,43 @@ export async function setFormStatus(
   );
 }
 
+/**
+ * Mint a fresh share token, invalidating every URL already handed out.
+ *
+ * Without this a leaked intake link — one carrying guardian names and phone
+ * numbers — could not be revoked: switching audience to `members` disabled it,
+ * but switching back restored the SAME token and the leaked URL worked again.
+ */
+export async function rotateShareToken(
+  client: PoolClient,
+  orgId: string,
+  formId: string,
+): Promise<string | null> {
+  const result = await client.query<{ shareToken: string | null }>(
+    `UPDATE forms
+        SET share_token = encode(gen_random_bytes(16), 'hex'), updated_at = now()
+      WHERE id = $2::uuid AND org_id = $1::uuid
+      RETURNING share_token AS "shareToken"`,
+    [orgId, formId],
+  );
+  return result.rows[0]?.shareToken ?? null;
+}
+
 export async function assignForm(
   client: PoolClient,
   input: { orgId: string; formId: string; userIds: string[]; assignedBy: string },
 ): Promise<number> {
   if (input.userIds.length === 0) return 0;
+  // Join memberships rather than inserting the ids as given. The RLS policy
+  // only checks the CALLER's role, not that the assignee belongs to the org, so
+  // without this an admin could create an assignment for any uuid in the system
+  // — inflating assignedCount (which the results insight reports as "N of M
+  // assigned") and telling an outsider the form exists.
   const result = await client.query(
     `INSERT INTO form_assignments (org_id, form_id, user_id, assigned_by)
-     SELECT $1::uuid, $2::uuid, u, $3::uuid FROM unnest($4::uuid[]) AS u
+     SELECT $1::uuid, $2::uuid, m.user_id, $3::uuid
+       FROM unnest($4::uuid[]) AS requested(user_id)
+       JOIN memberships m ON m.user_id = requested.user_id AND m.org_id = $1::uuid
      ON CONFLICT (form_id, user_id) DO NOTHING`,
     [input.orgId, input.formId, input.assignedBy, input.userIds],
   );

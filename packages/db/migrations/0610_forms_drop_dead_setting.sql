@@ -1,0 +1,24 @@
+-- Remove a setting that never did anything.
+--
+-- 0600 gave `forms` a `one_response_per_member` column AND a partial unique
+-- index (`form_responses_one_per_member_uq`) that enforces one response per
+-- member unconditionally. Nothing ever read the column, so a team could set it
+-- false and still be told "You have already answered this form".
+--
+-- Between honouring the flag and deleting it, deleting is the right call:
+--   * The index is the safe half. Enforcing "one per member" in application
+--     code instead would leave a double-submit race that a unique index closes
+--     for free, and a partial index cannot consult a column on another table,
+--     so the flag cannot be pushed down into it.
+--   * One response per member is the correct behaviour for what these forms
+--     are actually for — intake, dues, travel, safety sign-off, tryouts. Each
+--     of those wants one answer per person and a way to see who is missing.
+--   * A form that genuinely wants repeat answers (a weekly retro) is a new
+--     form each week, which is what teams do with Google Forms anyway, and it
+--     keeps each week's results separable instead of piling them together.
+--
+-- If repeat submissions are wanted later, they should arrive as a real feature
+-- with its own index change and its own results grouping, not as a boolean that
+-- silently disagrees with the database.
+
+ALTER TABLE forms DROP COLUMN IF EXISTS one_response_per_member;
