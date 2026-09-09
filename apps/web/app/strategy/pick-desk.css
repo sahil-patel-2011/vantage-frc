@@ -39,7 +39,7 @@
 .pick-desk-empty{
   margin:0;
   padding:14px;
-  border-radius:14px;
+  border-radius:var(--soft-radius-sm);
   border:1px dashed var(--soft-line);
 }
 .pick-desk-kpis{
@@ -78,9 +78,9 @@
   width: 100%;
   margin-top: 8px;
   padding: 10px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  border-radius: 10px;
-  background: var(--soft-bg, var(--app-bg));
+  border: 1px solid var(--soft-line);
+  border-radius:var(--soft-radius-xs);
+  background: var(--soft-bg);
 }
 .pick-heat-figure {
   margin: 0;
@@ -99,5 +99,5 @@
   aspect-ratio: 1;
   min-width: 14px;
   border-radius: 3px;
-  border: 1px solid var(--soft-line, var(--app-line));
+  border: 1px solid var(--soft-line);
 }

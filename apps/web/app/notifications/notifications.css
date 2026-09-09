@@ -31,13 +31,13 @@
 
 .notif-next-actions h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .notif-next-actions > header p {
   margin: 0;
-  color: var(--app-muted, var(--soft-muted));
+  color: var(--app-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -56,14 +56,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--app-line, var(--soft-line));
-  background: var(--app-bg, var(--soft-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
 }
 
 .notif-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--app-line, var(--soft-line)));
-  background: color-mix(in srgb, var(--soft-accent) 8%, var(--app-bg, var(--soft-bg)));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--soft-accent) 8%, var(--app-bg));
 }
 
 .notif-next-actions li div {
@@ -77,7 +77,7 @@
 }
 
 .notif-next-actions li span {
-  color: var(--app-muted, var(--soft-muted));
+  color: var(--app-muted);
   font-size: 12px;
   line-height: 1.35;
 }

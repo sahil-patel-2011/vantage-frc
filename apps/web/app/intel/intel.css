@@ -28,14 +28,14 @@
   justify-content:space-between;
   gap:10px;
   padding:10px 0;
-  border-bottom:1px solid var(--soft-line,#d7dde3);
+  border-bottom:1px solid var(--soft-line);
 }
 .intel-setup-steps li:last-child{border-bottom:0}
 .intel-setup-steps p{margin:4px 0 0}
 .intel-empty{
   margin:0;
   padding:14px;
-  border-radius:14px;
-  border:1px dashed var(--soft-line,#d7dde3);
+  border-radius:var(--soft-radius-sm);
+  border:1px dashed var(--soft-line);
 }
 .intel-panel{min-height:auto}

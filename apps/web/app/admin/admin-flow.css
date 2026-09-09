@@ -11,10 +11,10 @@
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
-  color: var(--soft-muted, #6b7280);
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-muted);
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -23,21 +23,21 @@
 .admin-next-actions {
   margin: 18px 0 0;
   padding: 18px;
-  border-radius: 16px;
-  background: var(--soft-card, #fff);
-  border: 1px solid color-mix(in srgb, var(--soft-line, #d5dde8) 85%, transparent);
+  border-radius:var(--soft-radius);
+  background: var(--soft-card);
+  border: 1px solid color-mix(in srgb, var(--soft-line) 85%, transparent);
   box-shadow: var(--soft-shadow, 0 8px 24px rgba(21, 32, 51, 0.05));
 }
 
 .admin-next-actions > header h2 {
   margin: 0 0 4px;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .admin-next-actions > header p {
   margin: 0 0 12px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -56,14 +56,14 @@
   justify-content: space-between;
   gap: 14px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
 }
 
 .admin-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 35%, var(--soft-line, #d5dde8));
-  background: color-mix(in srgb, var(--soft-accent, #2563eb) 6%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent) 6%, var(--soft-card));
 }
 
 .admin-next-actions li div {
@@ -77,7 +77,7 @@
 }
 
 .admin-next-actions li span {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -98,13 +98,13 @@
   display: grid;
   gap: 12px;
   margin-top: 24px;
-  border-left: 3px solid var(--soft-accent, #2563eb);
+  border-left: 3px solid var(--soft-accent);
 }
 
 .admin-provision-confirmation h2 {
   margin: 0;
-  font-size: 20px;
-  letter-spacing: -0.02em;
+  font-size:var(--soft-title-2);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .admin-provision-confirmation ul {
@@ -112,7 +112,7 @@
   padding-left: 18px;
   display: grid;
   gap: 6px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -126,7 +126,7 @@
   display: grid;
   gap: 6px;
   font-size: 12px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
 }
 
 .admin-invite-link input {

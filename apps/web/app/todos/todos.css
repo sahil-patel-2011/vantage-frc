@@ -53,7 +53,7 @@
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--soft-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--soft-bg);
 }
 .todos-cross-tracker-list li > div {
@@ -113,7 +113,7 @@
 }
 .todos-next-actions > header h2 {
   margin: 0 0 4px;
-  font-size: 1.05rem;
+  font-size:var(--soft-title-3);
 }
 .todos-next-actions > header p {
   margin: 0;
@@ -134,7 +134,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: color-mix(in srgb, var(--soft-bg) 72%, transparent);
   border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
 }

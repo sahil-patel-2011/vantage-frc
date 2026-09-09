@@ -220,7 +220,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   color: #9a3412;
   background: color-mix(in srgb, #ffedd5 70%, var(--soft-card));
 }
@@ -248,7 +248,7 @@
 .progressTrack {
   position: relative;
   height: 8px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: var(--app-soft);
   overflow: hidden;
 }
@@ -258,7 +258,7 @@
 }
 .progressFill {
   height: 100%;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: var(--soft-accent);
   transition: width .3s ease;
 }
@@ -267,7 +267,7 @@
   position: absolute;
   inset: 0;
   width: 40%;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: var(--soft-accent);
   animation: progressSlide 1.3s ease-in-out infinite;
 }
@@ -356,7 +356,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
   background: var(--app-soft);
   color: var(--soft-muted);
@@ -369,7 +369,7 @@
 .provDot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   flex: none;
 }
 .provOk { background: #15803d; }
@@ -395,7 +395,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: var(--soft-accent-soft);
   color: var(--soft-accent);
   font-weight: 700;
@@ -408,7 +408,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: color-mix(in srgb, var(--soft-line) 45%, transparent);
   color: var(--soft-muted);
   font-weight: 700;
@@ -443,7 +443,7 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--soft-accent-soft);
   color: var(--soft-accent);
   flex: none;
@@ -467,7 +467,7 @@
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
   background: var(--soft-card);
   color: var(--soft-ink);
@@ -518,7 +518,7 @@
   margin: -4px -4px 0 0;
   color: var(--soft-muted);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   line-height: 0;
 }
 .dialogClose:hover { background: var(--app-soft); }
@@ -540,7 +540,7 @@
 .confirmInput {
   width: 100%;
   padding: 9px 11px;
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   border: 1px solid var(--soft-line);
   background: var(--soft-bg);
   color: var(--soft-ink);
@@ -553,7 +553,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid transparent;
   font: 700 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
@@ -576,12 +576,12 @@
 .btnGhost { background: transparent; color: var(--soft-ink); }
 .btnGhost:hover:not(:disabled) { background: var(--app-soft); }
 .btnDanger { background: #dc2626; color: #fff; }
-.btnDanger:hover:not(:disabled) { background: #b91c1c; }
+.btnDanger:hover:not(:disabled) { background: var(--soft-danger); }
 .btnIcon {
   min-width: 24px;
   min-height: 24px;
   padding: 6px;
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   background: transparent;
   color: var(--soft-ink);
 }
@@ -664,7 +664,7 @@
   width: 12px;
   height: 12px;
   flex: none;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 2px solid color-mix(in srgb, var(--soft-accent) 30%, transparent);
   border-top-color: var(--soft-accent);
   animation: fieldSpin .7s linear infinite;

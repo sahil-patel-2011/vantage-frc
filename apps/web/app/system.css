@@ -1,0 +1,378 @@
+/* =============================================================================
+   Vantage visual system — the last sheet in the cascade.
+
+   Two kinds of rule live here and nowhere else:
+
+   1. DEFAULTS, written with :where() so they carry zero specificity. They set
+      the house style for surfaces that never opted into anything (most of the
+      ~295 pages), and any leaf sheet with a deliberate rule still wins without
+      an !important arms race. This is why the file can be read top to bottom
+      as "what Vantage looks like" instead of "what Vantage argues with".
+
+   2. GUARDS, written normally, that fix a class of bug rather than a taste:
+      horizontal overflow, focus rings, and text that cannot wrap.
+
+   Palette, radius, type and spacing tokens all live in soft-ui.css; nothing
+   here introduces a colour, a radius or a font size that is not a token.
+   ========================================================================== */
+
+/* --- Focus. One ring, every route ------------------------------------------
+   The old ring was scoped to `body.has-app-shell`, so sign-in, the public
+   sponsor wall, kiosk boards and the marketing site fell back to whatever the
+   UA drew — which on a borderless control is nothing. */
+:focus-visible {
+  outline: 2px solid var(--soft-ring);
+  outline-offset: 2px;
+}
+/* Chrome pinned to a screen edge has no room for a 2px halo. */
+:where(.soft-topbar, .soft-island, .soft-drawer-foot) :focus-visible {
+  outline-offset: -2px;
+}
+/* A focused control must never hide under sticky chrome (WCAG 2.4.11). */
+:where(a, button, input, select, textarea, summary, [tabindex]) {
+  scroll-margin-top: calc(var(--toolbar-h, 0px) + 72px);
+  scroll-margin-bottom: calc(var(--soft-island-clearance, 88px) + 8px);
+}
+
+/* --- Overflow guards -------------------------------------------------------
+   No page may scroll the body sideways. Media and long unbroken strings (team
+   URLs, Onshape document ids, API keys) are the two things that do it. */
+:where(img, svg, video, canvas, iframe, table) {
+  max-width: 100%;
+}
+:where(pre, code, kbd, samp) {
+  overflow-wrap: anywhere;
+}
+:where(.module-page, .soft-main, .soft-admin-page, .product-hub-panel) {
+  min-width: 0;
+}
+/* A page root declared `display:grid` with no explicit columns gets one `auto`
+   track, and `auto` tracks are floored by their items' min-content — which for
+   an item that is itself a flex row (a page header with a title block and an
+   action row) is that row's max-content. That is how /account rendered a 629px
+   page inside a 390px phone and scrolled the body sideways. Pinning the track
+   to `minmax(0, 1fr)` lets it shrink; any leaf sheet with real columns still
+   wins, because this carries zero specificity. */
+:where(.module-page, .soft-main, .soft-admin-page, .account-page, .product-hub-panel) {
+  grid-template-columns: minmax(0, 1fr);
+}
+:where(.module-page, .soft-main, .soft-admin-page, .product-hub-panel) > * {
+  min-width: 0;
+}
+
+/* --- Page header -----------------------------------------------------------
+   Actions wrap instead of forcing the header wider than the viewport. */
+.app-page-header {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.app-page-header > div,
+.app-page-header > .app-page-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+.app-page-actions {
+  flex-wrap: wrap;
+}
+:where(.app-page-header) h1 {
+  font-size: var(--soft-display);
+  letter-spacing: var(--soft-tracking-display);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+:where(.app-page-header) p {
+  font-size: var(--soft-text-lg);
+  line-height: 1.5;
+}
+:where(.breadcrumbs) {
+  font-size: var(--soft-text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-kicker);
+  text-transform: uppercase;
+}
+
+/* --- Type scale ------------------------------------------------------------
+   Defaults for headings inside product surfaces. Before this, an <h2> with no
+   sheet of its own fell back to the UA's 1.5em/2em, which is how one screen
+   ended up carrying four different heading sizes. */
+:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget) h2 {
+  font-size: var(--soft-title-1);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-tight);
+  line-height: 1.25;
+}
+:where(.module-page, .app-card, .soft-panel, .soft-empty, .dash-widget) h3 {
+  font-size: var(--soft-title-2);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-tight);
+  line-height: 1.3;
+}
+:where(.module-page, .app-card, .soft-panel, .dash-widget) h4 {
+  font-size: var(--soft-title-3);
+  font-weight: 700;
+  line-height: 1.35;
+}
+:where(.module-page, .app-card, .soft-panel, .dash-widget) h5,
+:where(.module-page, .app-card, .soft-panel, .dash-widget) h6 {
+  font-size: var(--soft-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+
+/* --- Buttons ---------------------------------------------------------------
+   Shape defaults for controls that never joined the Button primitive. The
+   legacy blanket (`.has-app-shell button{border-radius:7px}`) used to give
+   ~790 controls a 7px radius that nothing else in the product used; these are
+   :where() so a leaf sheet's own radius still wins. */
+:where(button, [type="button"], [type="submit"], [type="reset"]) {
+  border-radius: var(--soft-radius-sm);
+  font-family: var(--soft-font);
+}
+:where(input, select, textarea) {
+  border-radius: var(--soft-radius-sm);
+  font-family: var(--soft-font);
+}
+.app-button:disabled,
+.app-button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.app-button.sm {
+  min-height: var(--soft-control-h-sm);
+  padding: var(--soft-control-pad-sm);
+  font-size: var(--soft-text-xs);
+}
+.app-button.danger {
+  color: #fff;
+  background: var(--app-critical-fill);
+  border-color: transparent;
+}
+.app-button.ghost {
+  color: var(--soft-ink);
+  background: transparent;
+  border-color: transparent;
+}
+.app-button.ghost:hover {
+  background: var(--soft-surface-2);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-button {
+    transition: background-color 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+  }
+  .app-button:active {
+    transform: translateY(1px);
+  }
+}
+
+/* --- Chips -----------------------------------------------------------------
+   Three components independently grew a "row of links to elsewhere": the hub
+   tool strip, the settings bar, and the cross-link strip. They are one control
+   with one shape and one density rule — compact for a mouse, 44px for a thumb. */
+.hub-tool-chip,
+.settings-bar-chip,
+.help-cat-chip,
+.dash-hub-rail a,
+.product-hub-related .app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--soft-control-h-sm);
+  padding: 0 14px;
+  border-radius: var(--soft-radius-pill);
+  font-size: var(--soft-text-sm);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.hub-tool-chip.is-active,
+.settings-bar-chip.is-active,
+.help-cat-chip[aria-pressed="true"],
+.dash-hub-rail a[aria-current="page"] {
+  font-weight: 700;
+}
+@media (pointer: coarse) {
+  .hub-tool-chip,
+  .settings-bar-chip,
+  .help-cat-chip,
+  .dash-hub-rail a,
+  .product-hub-related .app-button {
+    min-height: var(--soft-control-h);
+    padding: 0 16px;
+  }
+}
+
+/* --- Per-hub tone plates in dark mode --------------------------------------
+   `--tone` / `--tone-bg` are written as INLINE styles from a light-only pair
+   (lib/nav/product-nav.ts, app/dashboard/widgets.tsx, the Event Day icons), so
+   the drawer's hub icons, dashboard widget icons and Event Day glyphs painted
+   #e8eefc chips on a #0c1118 panel. An inline custom property cannot be
+   overridden, so the CONSUMERS resolve it differently in dark: keep the hue,
+   swap the plate. */
+html[data-theme="dark"] :where(.soft-drawer-hub i, .soft-row i.icon, .dash-widget-icon, .edc-icon) {
+  background: color-mix(in srgb, var(--tone, var(--soft-accent)) 24%, var(--soft-card));
+  color: color-mix(in srgb, var(--tone, var(--soft-accent)) 42%, #ffffff);
+}
+html[data-theme="dark"] :where(.soft-drawer-hub.is-active, .soft-drawer-hub[aria-current="page"]) {
+  background: color-mix(in srgb, var(--tone, var(--soft-accent)) 18%, var(--soft-card));
+  color: color-mix(in srgb, var(--tone, var(--soft-accent)) 42%, #ffffff);
+}
+html[data-theme="dark"] .dash-widget.hero {
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--tone, var(--soft-accent)) 16%, var(--soft-card)),
+    var(--soft-card) 62%
+  );
+}
+
+/* --- Empty, loading, setup and error states --------------------------------
+   These are a PRIMARY surface here, not an edge case: the product refuses to
+   invent numbers, so a team that has not connected TBA, Onshape or Stripe sees
+   them constantly. Give them a real rhythm — badge, title, one measure of
+   prose, then actions — instead of three stacked boxes with default gaps. */
+:where(.soft-empty, .app-empty) {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--soft-space-2);
+  min-height: 0;
+  padding: clamp(24px, 4vw, 40px) clamp(18px, 3vw, 32px);
+  border: 1px dashed var(--soft-line);
+  border-radius: var(--soft-radius);
+  background: color-mix(in srgb, var(--soft-card) 55%, transparent);
+  text-align: center;
+}
+:where(.soft-empty, .app-empty) > h2 {
+  margin: 2px 0 0;
+  font-size: var(--soft-title-1);
+}
+:where(.soft-empty, .app-empty) > p {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--soft-muted);
+  font-size: var(--soft-text);
+  line-height: 1.55;
+}
+/* The action row sits apart from the prose, and every button in it lines up. */
+:where(.soft-empty, .app-empty) > :where(a, button, .app-button) {
+  margin-top: var(--soft-space-2);
+}
+:where(.soft-empty, .app-empty) > :where(div, .soft-btn-row) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--soft-space-2);
+  margin-top: var(--soft-space-2);
+}
+/* A loading shell should read as "working", not as "nothing here". */
+:where(.soft-empty, .app-empty, .app-card)[aria-busy="true"] {
+  border-style: solid;
+  border-color: var(--soft-line-soft);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :where(.soft-empty, .app-empty, .app-card)[aria-busy="true"] {
+    animation: soft-busy-pulse 1.8s ease-in-out infinite;
+  }
+}
+@keyframes soft-busy-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.86; }
+}
+
+/* Error surfaces read as errors — a warm hairline and a tinted plate, so a
+   failure is never mistaken for an empty result. */
+[role="alert"]:where(.app-card, .soft-panel) {
+  border-color: color-mix(in srgb, var(--soft-danger) 38%, var(--soft-line));
+  background:
+    linear-gradient(color-mix(in srgb, var(--soft-danger) 5%, transparent), transparent 96px),
+    var(--soft-card);
+}
+
+/* Thirteen routes fall back to `<main class="content"><h1>Select an
+   organization</h1></main>` when no workspace is in the URL — a bare heading on
+   a blank page. Same empty-state treatment as everything else, without
+   inventing copy the page does not have. (These should grow a real EmptyState
+   with a "Choose team" action; see the report.) */
+main.content:has(> h1:only-child) {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: min(58vh, 520px);
+  max-width: var(--soft-measure);
+  margin-inline: auto;
+  padding: var(--soft-gutter);
+  text-align: center;
+}
+main.content:has(> h1:only-child) > h1 {
+  margin: 0;
+  max-width: 24ch;
+  padding: clamp(28px, 5vw, 48px) clamp(24px, 4vw, 40px);
+  border: 1px dashed var(--soft-line);
+  border-radius: var(--soft-radius);
+  background: color-mix(in srgb, var(--soft-card) 55%, transparent);
+  color: var(--soft-ink);
+  font-size: var(--soft-title-1);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-tight);
+}
+
+/* --- Setup / integration cards --------------------------------------------- */
+:where(.product-hub-setup) {
+  display: grid;
+  gap: var(--soft-space-2);
+  justify-items: start;
+}
+:where(.product-hub-setup) > h2 {
+  margin: 0;
+}
+:where(.product-hub-setup) > p {
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* --- Cards -----------------------------------------------------------------
+   One resting elevation. Leaf sheets that need a flat or inset card override
+   normally; this only catches the ones that set nothing. */
+:where(.app-card, .soft-panel) {
+  min-width: 0;
+}
+:where(.app-card, .soft-panel) > :where(h2, h3):first-child {
+  margin-top: 0;
+}
+
+/* --- Tables ---------------------------------------------------------------- */
+:where(.app-card, .soft-panel, .module-page) table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--soft-text-sm);
+}
+:where(.app-card, .soft-panel, .module-page) :where(th, td) {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--soft-line-soft);
+}
+:where(.app-card, .soft-panel, .module-page) th {
+  color: var(--soft-muted);
+  font-size: var(--soft-text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--soft-tracking-kicker);
+  text-transform: uppercase;
+}
+
+/* --- Marketing pages -------------------------------------------------------
+   The marketing site keeps its own --m-* palette on purpose, but it shares the
+   product's focus ring and overflow guards above. Only the seam is fixed here:
+   <html> must not paint a colour the marketing shell does not expect. */
+:where(.marketing-lux, .marketing-v2) {
+  min-width: 0;
+}
+
+/* --- Reduced motion --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :where(.soft-empty, .app-empty, .app-card)[aria-busy="true"] {
+    animation: none;
+  }
+}

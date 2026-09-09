@@ -7,10 +7,10 @@
 .impact-status {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
-  color: var(--soft-muted, #6b7280);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-muted);
   font-size: 13px;
 }
 
@@ -20,8 +20,8 @@
 .impact-breakdowns h2,
 .impact-next-actions h2 {
   margin: 0;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .impact-readiness-head {
@@ -52,7 +52,7 @@
 
 .impact-component small {
   text-align: right;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
 }
 
@@ -61,7 +61,7 @@
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 13px;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .impact-breakdowns small {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
 }
 
@@ -109,9 +109,9 @@
   gap: 12px;
   align-items: flex-start;
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #f8fafc);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
 }
 
 .impact-activity-list li > div:first-child {
@@ -126,7 +126,7 @@
 
 .impact-activity-list span,
 .impact-activity-list small {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.35;
 }

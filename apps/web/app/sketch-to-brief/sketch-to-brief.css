@@ -12,7 +12,7 @@
 .sketch-to-brief-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .sketch-to-brief-card-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
 .sketch-to-brief-tip{margin:0}
-.sketch-to-brief-brief{padding:12px;border-radius:8px}
+.sketch-to-brief-brief{padding:12px;border-radius:var(--soft-radius-xs)}
 .sketch-to-brief-brief-header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 @media(max-width:900px){
   .sketch-to-brief-header-actions{justify-content:flex-start}

@@ -20,7 +20,7 @@
   align-items: center;
   min-height: 44px;
   padding: 4px 2px;
-  color: var(--soft-ink, #14243a);
+  color: var(--soft-ink);
   font-size: 14px;
   line-height: 1.45;
   text-align: left;
@@ -32,17 +32,17 @@
   width: 22px;
   height: 22px;
   margin: 0;
-  accent-color: var(--soft-accent, #1457d9);
+  accent-color: var(--soft-accent);
   cursor: pointer;
 }
 
 .legal-consent-row input[type="checkbox"]:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--soft-accent, #1457d9) 45%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--soft-accent) 45%, transparent);
   outline-offset: 2px;
 }
 
 .legal-consent-row a {
-  color: var(--soft-accent, #1457d9);
+  color: var(--soft-accent);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -55,7 +55,7 @@
 
 .legal-consent-hint.legal-consent-hint {
   margin: 2px 0 0;
-  color: var(--soft-muted, #5a6578);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.5;
 }

@@ -1,7 +1,7 @@
 /* Recent CAD activity — web agent + terminal sessions in one list. */
 .cad-activity {
   border: 1px solid var(--app-line);
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   background: var(--app-bg);
   display: grid;
 }
@@ -50,13 +50,13 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 4px 7px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid var(--app-line);
   color: var(--app-muted);
   white-space: nowrap;
 }
 .cad-activity-source--terminal {
-  color: var(--app-positive, #0a7a4a);
+  color: var(--app-positive);
   border-color: currentColor;
 }
 .cad-activity-title {
@@ -84,13 +84,13 @@
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--app-line);
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
 }
 .cad-activity-chip {
   min-height: 36px;
   padding: 0 12px;
   border: none;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: transparent;
   color: var(--app-muted);
   font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
@@ -147,7 +147,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: var(--app-accent, var(--app-ink));
+  color: var(--app-accent);
   font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
 }
 
@@ -158,7 +158,7 @@
   margin: 10px 0;
   padding: 12px;
   border: 1px solid var(--app-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--app-bg);
   font: 400 13px/1.4 var(--font-source-sans), ui-sans-serif;
   color: var(--app-ink);
@@ -187,7 +187,7 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid var(--app-line);
   color: var(--app-muted);
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
@@ -238,7 +238,7 @@
 }
 .cad-tools-group h3 {
   margin: 0 0 6px 0;
-  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
+  font:700 var(--soft-text-xs)/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--app-muted);
@@ -272,7 +272,7 @@
 }
 .cad-tool-badge {
   padding: 3px 7px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid currentColor;
   font: 700 10px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
@@ -280,7 +280,7 @@
   white-space: nowrap;
 }
 .cad-tool-badge--onshape {
-  color: var(--app-accent, var(--app-ink));
+  color: var(--app-accent);
 }
 .cad-tool-badge--fusion {
   color: var(--app-muted);
