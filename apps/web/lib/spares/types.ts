@@ -23,6 +23,13 @@ export type Consumable = {
   reorderPoint: number;
   preferredVendor: string | null;
   notes: string | null;
+  /**
+   * Held as a competition spare as well as shop stock (migration 0520).
+   * Marking a consumable here is what puts it in Spare Forecast — before 0520
+   * that forecast read `category = 'spare'`, a *parts* category no consumable
+   * can have, so /spares and /spare-forecast could never share a row.
+   */
+  isSpare: boolean;
 };
 
 export type ConsumableStatus = "ok" | "low" | "out";
