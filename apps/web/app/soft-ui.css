@@ -3033,3 +3033,18 @@ html[data-motion="reduced"] *::after{
 @media(max-width:520px){
   .appearance-island-slots{grid-template-columns:repeat(2,1fr)}
 }
+
+/* Ask AI — the one AI control in the chrome. Icon-only on phones, labelled on
+   a laptop; sits before Search so the two helpers read as a pair. */
+body.has-app-shell .soft-ask-ai{position:relative}
+body.has-app-shell .soft-ask-ai-label{display:none}
+@media (min-width:900px){
+  body.has-app-shell .soft-ask-ai{
+    display:flex;align-items:center;gap:6px;width:auto;height:40px;padding:0 10px;
+    border-radius:var(--soft-radius-xs);background:var(--soft-card);border:1px solid var(--soft-line);
+    color:var(--soft-ink);text-decoration:none;
+  }
+  body.has-app-shell .soft-ask-ai-label{display:inline;font:600 13px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
+  body.has-app-shell .soft-ask-ai:hover{border-color:var(--soft-accent)}
+  body.has-app-shell .soft-ask-ai:hover .soft-ask-ai-label{color:var(--soft-ink)}
+}

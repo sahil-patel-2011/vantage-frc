@@ -788,6 +788,18 @@ export default function AppShell() {
         </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
+          {/* AI is a helper you reach from wherever you are, not a place you go.
+              One control on every page; the chat itself lives at /ai and its
+              settings under Settings, so this is the only AI entry in the chrome. */}
+          <a
+            className="soft-icon-btn soft-ask-ai"
+            href={withOrgHref("/ai?tab=chat", orgId || null)}
+            aria-label="Ask AI"
+            title="Ask AI — strategy, match predictions, design help"
+          >
+            <Icon name="bolt" />
+            <span className="soft-ask-ai-label">Ask AI</span>
+          </a>
           {/* Wide screens get search in the bar; narrow ones reach the same field
               inside the panel, so there is exactly one search box per width. */}
           {navOpen ? null : (

@@ -1,37 +1,16 @@
 /**
- * Homepage product story. Real hubs and tools. Never invented scores.
+ * Homepage product story. Real workspaces and tools that ship today.
  */
 
 import {
+  MARKETING_HELPERS,
   MARKETING_HUBS,
+  MARKETING_LEARN,
   MARKETING_PROBLEMS,
   MARKETING_SEASON,
   MARKETING_TRUST,
 } from "../../lib/marketing/product-story";
 import { MIcon } from "./marketing-icons";
-
-const PIPELINE = [
-  {
-    step: "1",
-    title: "Scout offline",
-    copy: "Match and pit forms stay on the tablet. QR handoff and pit mesh cover other devices. Sync starts when the venue network comes back.",
-  },
-  {
-    step: "2",
-    title: "Check the notes",
-    copy: "Disagreements, coverage, and accuracy come from real entries. Nothing is filled in for you.",
-  },
-  {
-    step: "3",
-    title: "Pick from evidence",
-    copy: "Alliance desk, pick clock, and pairwise ranking use TBA plus scout facts — or stay empty. No DEMO EPA.",
-  },
-  {
-    step: "4",
-    title: "Run the rest of the day",
-    copy: "Command, My Day, match checklist, pit repair, and strategy cards share the same event. No second app.",
-  },
-] as const;
 
 export function HomeShowcase() {
   return (
@@ -40,8 +19,8 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">The problem</p>
-            <h2 id="lux-problem-title">Your season lives in three places that forget.</h2>
-            <p>Said plainly, because every mentor already knows it.</p>
+            <h2 id="lux-problem-title">A team&rsquo;s season lives in ten apps that forget.</h2>
+            <p>Every mentor already knows this. Here it is said plainly.</p>
           </header>
           <ul className="lux-feature-grid" data-reveal>
             {MARKETING_PROBLEMS.map((item) => (
@@ -55,7 +34,8 @@ export function HomeShowcase() {
             ))}
           </ul>
           <p className="lux-closer" data-reveal>
-            None of that is fixed by trying harder. It is what happens when the record of a season has no home.
+            None of that is fixed by trying harder. It is what happens when the team&rsquo;s knowledge has no home
+            and every new member starts from zero.
           </p>
         </div>
       </section>
@@ -64,11 +44,11 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">How it works</p>
-            <h2 id="lux-loop-title">Scout. Check. Decide. Run the day.</h2>
-            <p>One event context. Each stage feeds the next from real data only.</p>
+            <h2 id="lux-loop-title">Learn. Build. Run the team. Compete.</h2>
+            <p>One login for every student and mentor, and it teaches new members on the way in.</p>
           </header>
           <ol className="lux-loop-steps lux-loop-steps-4" data-reveal>
-            {PIPELINE.map((item) => (
+            {MARKETING_LEARN.map((item) => (
               <li key={item.step}>
                 <b aria-hidden="true">{item.step}</b>
                 <strong>{item.title}</strong>
@@ -83,8 +63,8 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">One workspace</p>
-            <h2 id="lux-runs-title">What you open after sign-in.</h2>
-            <p>Six hubs. Related tools live as tabs — not a dump of fake dashboards.</p>
+            <h2 id="lux-runs-title">Four places. Everything is inside one of them.</h2>
+            <p>Team, Build, Competition and Business — plus Home. No sixth app to remember.</p>
           </header>
           <ul className="mk-pillars" data-reveal>
             {MARKETING_HUBS.map((hub) => (
@@ -105,14 +85,22 @@ export function HomeShowcase() {
               </li>
             ))}
           </ul>
+          <ul className="lux-feature-grid mk-helpers" data-reveal>
+            {MARKETING_HELPERS.map((item) => (
+              <li key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.copy}</span>
+              </li>
+            ))}
+          </ul>
           <p className="mk-related-links" data-reveal>
-            Deep dives: <a href="/features">Every hub and tool</a>
+            Deep dives: <a href="/features">Every workspace and tool</a>
             {" · "}
-            <a href="/features/strategy">Strategy</a>
+            <a href="/features/strategy">Strategy and match prediction</a>
             {" · "}
-            <a href="/features/cad">CAD</a>
+            <a href="/features/cad">CAD and the assembly manual</a>
             {" · "}
-            <a href="/features/code">Code Coach</a>
+            <a href="/features/code">Robot code</a>
           </p>
         </div>
       </section>
@@ -121,8 +109,8 @@ export function HomeShowcase() {
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
             <p className="lux-eyebrow">The season</p>
-            <h2 id="lux-season-title">The other forty weeks, too.</h2>
-            <p>Competition is six weekends. Vantage covers shop, travel, money, and the robot between them.</p>
+            <h2 id="lux-season-title">All of it, not just the six weekends.</h2>
+            <p>Competition is a few weekends. The other forty weeks are where a team is actually made.</p>
           </header>
           <ol className="lux-loop-steps lux-loop-steps-4" data-reveal>
             {MARKETING_SEASON.map((item, index) => (
@@ -139,9 +127,9 @@ export function HomeShowcase() {
       <section className="lux-fit" aria-labelledby="lux-trust-title">
         <div className="lux-content">
           <header className="lux-section-head" data-reveal>
-            <p className="lux-eyebrow">Trust</p>
-            <h2 id="lux-trust-title">What we will not invent.</h2>
-            <p>If TBA, scouting, or a connector is not connected, the screen says so.</p>
+            <p className="lux-eyebrow">How we work</p>
+            <h2 id="lux-trust-title">Yours, offline-ready, and honest about what it knows.</h2>
+            <p>Built by an FRC student for FRC teams. Free to start, and we may open the source for other teams.</p>
           </header>
           <ul className="lux-feature-grid" data-reveal>
             {MARKETING_TRUST.map((item) => (
@@ -154,10 +142,6 @@ export function HomeShowcase() {
               </li>
             ))}
           </ul>
-          <p className="mk-footnote" data-reveal>
-            <b>CAD and code stay human-gated.</b> Mutations and Bugbot diffs need approval. Nothing is pushed to a robot
-            or Onshape unreviewed.
-          </p>
         </div>
       </section>
     </>

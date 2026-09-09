@@ -239,6 +239,7 @@ export function ProductHubShell({
           aria-label={`Tools in ${hub.tabs.find((entry) => entry.id === workbenchId)?.label ?? hub.label}`}
           value={tab}
           onChange={selectTab}
+          describe={(id) => sectionHelpFor(hub.id, id)?.what}
           items={toolTabs.map((entry) => ({
             id: entry.id,
             label: entry.label,

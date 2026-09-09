@@ -425,3 +425,52 @@
     justify-content: center;
   }
 }
+
+/* "More tools" is a list you can read, not a second wall of chips: each row
+   is the tool's name and what it is for, so the choice is made from the
+   description rather than from opening five pages to find out. */
+.hub-tool-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hub-tool-list a,
+.hub-tool-list button {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+  align-items: baseline;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--soft-radius-xs);
+  background: none;
+  color: var(--soft-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.hub-tool-list a:hover,
+.hub-tool-list button:hover {
+  background: var(--soft-accent-soft);
+}
+.hub-tool-list .is-active {
+  color: var(--soft-accent);
+  font-weight: 700;
+}
+.hub-tool-list small {
+  color: var(--soft-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+@media (max-width: 640px) {
+  .hub-tool-list a,
+  .hub-tool-list button {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
