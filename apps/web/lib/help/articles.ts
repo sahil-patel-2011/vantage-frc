@@ -244,7 +244,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "bottom-island",
     title: "Customize the bottom island",
     summary:
-      "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Business by default.",
+      "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Build by default.",
     category: "getting-started",
     keywords: [
       "island",
@@ -276,7 +276,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Save or reset",
         body: [
           "Save 4/4 writes your preference for this account.",
-          "Reset restores Home, Compete, Team, and Business.",
+          "Reset restores Home, Compete, Team, and Build.",
         ],
       },
     ],
@@ -517,11 +517,233 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
   // ---------------------------------------------------------------------- Team
   {
+    id: "files",
+    slug: "files",
+    title: "Files — the team drive and your own space",
+    summary:
+      "Every member gets a private space; the team gets a shared one. Upload anything, make folders, share by link or to an email address.",
+    category: "team",
+    keywords: ["files", "drive", "upload", "share", "link", "video", "flyer", "pdf", "personal", "my files", "shared with me"],
+    relatedHref: "/files",
+    sections: [
+      {
+        heading: "Two spaces",
+        body: [
+          "My files is yours. Mentors and owners cannot open it — that is enforced in the database, not just hidden in the page.",
+          "Team files is everyone's. Any member can add to it; the uploader or an owner/admin can remove a file.",
+          "Media Library, CAD Vault and the older Team Library show inside Team files as their own folders, so there is one place to look.",
+        ],
+      },
+      {
+        heading: "Sharing",
+        body: [
+          "Share creates a link anyone can open, or sends the file to specific email addresses with a note. Set an expiry, choose view or download, and revoke any share later.",
+          "A share of a personal file is a deliberate act by its owner; nobody else can create one.",
+          "Shared with me lists what others have sent to your address.",
+        ],
+      },
+      {
+        heading: "Where the bytes go",
+        body: [
+          "Small files are stored in Vantage. Large files go to your team's storage node if one is paired, or to object storage once your deployment has it configured — the upload dialog tells you which.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "team-profile",
+    slug: "team-profile",
+    title: "Team profile — what the public record says about your team",
+    summary:
+      "Built the first time an owner or admin opens it: where you are from, rookie year, seasons competed, awards, recent events, EPA and ranks — from The Blue Alliance and Statbotics.",
+    category: "team",
+    keywords: ["team profile", "dossier", "rookie year", "awards", "epa", "rank", "statbotics", "blue alliance", "history"],
+    relatedHref: "/team/profile",
+    sections: [
+      {
+        heading: "What it knows, and from where",
+        body: [
+          "Profile, seasons and awards come from The Blue Alliance. Career and per-season EPA and world / country / state ranks come from Statbotics.",
+          "Anything a source does not have reads 'not on record'. If one source did not answer, the page says which.",
+          "Nobody scrapes your roster: no public source knows who is on your team. The people counts are your own memberships.",
+        ],
+      },
+      {
+        heading: "Why it matters",
+        body: [
+          "Every Ask AI answer starts from these facts, so 'how did our season go' is answered from the record rather than guessed.",
+          "It refreshes weekly on its own. Rebuild now is on the page for owners and admins.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "calendar-tasks-and-find-a-time",
+    slug: "calendar-tasks",
+    title: "Calendar — tasks on the calendar and Find a time",
+    summary:
+      "Tasks with a due date sit on the calendar and can be ticked off there. Find a time suggests meeting slots from when your team actually turns up.",
+    category: "team",
+    keywords: ["calendar", "tasks", "todo", "due", "find a time", "schedule", "meeting", "build night", "attendance"],
+    relatedHref: "/team?tab=calendar",
+    sections: [
+      {
+        heading: "Tasks on the calendar",
+        body: [
+          "Open tasks with a due date appear in the all-day row, in month cells, and in the list. Tick the box to mark one done; it goes through the same task list as Work.",
+          "Quick add switches between Event and Task, so a deadline can be written down where you noticed it.",
+        ],
+      },
+      {
+        heading: "Find a time",
+        body: [
+          "Describe what you need in a sentence — 'a two hour build session next week for mechanical'. The suggestions come from your own past sessions, RSVPs and attendance, and are checked against the calendar for clashes; each one shows why it was suggested.",
+          "It needs at least three past sessions before it will call something a pattern. With no history it says so instead of guessing.",
+          "Nothing is added to the calendar until you pick a slot and press Add.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "outreach-by-person",
+    slug: "outreach-by-person",
+    title: "Outreach hours by person",
+    summary:
+      "Log an outreach event once and name everyone who helped, each with their own minutes. The By-person table adds it up for awards, grants and the students themselves.",
+    category: "business",
+    keywords: ["outreach", "impact", "hours", "volunteer", "who helped", "community", "award evidence"],
+    relatedHref: "/impact",
+    sections: [
+      {
+        heading: "Logging",
+        body: [
+          "Anyone on the team can log an activity and tick the people who were there. Minutes prefill from the event's length and can be changed per person.",
+          "Leave minutes blank if you do not know — it shows as 'not recorded' rather than counting as zero or as the whole event.",
+          "Team members (count) is the headline number and may be larger than the named list; a parent volunteer without an account still counts.",
+        ],
+      },
+      {
+        heading: "Per-person totals",
+        body: [
+          "Hours are each person's own recorded minutes across the season. Add people to an activity later with Add people on its row.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "parts-catalog",
+    slug: "parts-catalog",
+    title: "Parts catalog — what to order and what it is called",
+    summary:
+      "A curated list of the COTS parts FRC teams buy — motors, control, pneumatics, hardware, stock, drive, bearings, batteries, tools — with the spec that picks one over its neighbour.",
+    category: "business",
+    keywords: ["parts", "catalog", "order", "cots", "neo", "spark max", "bearing", "hex shaft", "box tube", "nyloc", "vendor"],
+    relatedHref: "/parts-catalog",
+    sections: [
+      {
+        heading: "Using it",
+        body: [
+          "Search by the words you would say — 'nyloc', '1x1 tube', 'hex bearing'. Parts already in your inventory are marked.",
+          "Add to inventory creates the stock row with name, vendor, part number, unit and a suggested reorder point, at 0 on hand — set the real count on Inventory.",
+          "Request it opens Part requests with the item and the vendor link filled in; a mentor approves it against the season budget.",
+        ],
+      },
+      {
+        heading: "What it deliberately does not do",
+        body: [
+          "No prices: they change monthly and a stale price looks authoritative. The vendor link is the price.",
+          "Part numbers only where they are certain; otherwise the vendor link searches by name.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "assembly-manual",
+    slug: "assembly-manual",
+    title: "Assembly manual — a build book from your CAD",
+    summary:
+      "Point it at your Onshape assembly and it produces a step-by-step build book: parts per step, cut and drill and tap lines, pictures, a materials list, and a PDF.",
+    category: "build",
+    keywords: ["assembly", "manual", "build book", "instructions", "lego", "onshape", "pdf", "cut list", "bom"],
+    relatedHref: "/assembly-manual",
+    sections: [
+      {
+        heading: "How a run works",
+        body: [
+          "An owner or admin starts a run from a CAD vault document with an Onshape link, or by pasting one. The job runs on your team's relay and checkpoints as it goes, so a long robot can take hours and survive a restart.",
+          "Two different ordering strategies are run and reconciled; every step is checked for feasibility (a part must be reachable, fasteners follow the parts they join). Disagreements are listed in the run report.",
+        ],
+      },
+      {
+        heading: "What it will and will not say",
+        body: [
+          "Every cut, drill and tap line traces to a feature in the CAD. Where the CAD does not specify something — a tube drawn at nominal length, a hole with no thread — the line says 'confirm — not specified in CAD' instead of guessing.",
+          "Per-step pictures come from Onshape renders. If a partial-assembly render is not possible the step shows a per-part picture and says so under it.",
+          "Model with named parts, hole features with callouts, and stock at cut length to get the most complete book. See docs/ASSEMBLY_MANUAL.md for the modelling guide.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "learn-cad-naming",
+    slug: "cad-naming",
+    title: "Naming CAD parts so the next person can find them",
+    summary:
+      "Subsystem · What it is · Which one. 'New Part 1' costs a team hours in March; a name is the cheapest documentation there is.",
+    category: "build",
+    keywords: ["cad", "naming", "onshape", "part names", "new part 1", "learn cad", "convention"],
+    relatedHref: "/cad-learn",
+    sections: [
+      {
+        heading: "The pattern",
+        body: [
+          "DT — Swerve module plate — FL. Intake — Side plate — L. Elevator — Carriage bearing block. Climber — Hook — Rev B.",
+          "Name the part the moment you make it, name Part Studios for the group of parts they hold, and name the sketches that drive other features.",
+          "Never a date, a person's name, or 'new' / 'final'. The version history already knows who and when.",
+        ],
+      },
+      {
+        heading: "Why it matters beyond tidiness",
+        body: [
+          "The assembly manual, the bill of materials and CAD review read names straight from the document. 'Part 1' becomes a manual step that says 'attach Part 1 to Part 2'.",
+          "The full lesson, with practice and a check, is in Learn CAD.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "ask-ai",
+    slug: "ask-ai",
+    title: "Ask AI — what it can answer, and from what",
+    summary:
+      "One button on every page. It answers from your team's data and the public record, cites what it used, and says when it does not know.",
+    category: "ai-models",
+    keywords: ["ask ai", "assistant", "chat", "prediction", "strategy", "design help", "writer"],
+    relatedHref: "/ai?tab=chat",
+    sections: [
+      {
+        heading: "What it is for",
+        body: [
+          "Strategy questions and match predictions from your scouting plus The Blue Alliance and Statbotics; design questions against your CAD and the parts catalog; writing for grants, sponsors and updates; and finding a meeting time from your attendance history.",
+          "It starts from the team profile, so it already knows where you are from, how long you have competed and how your seasons went.",
+        ],
+      },
+      {
+        heading: "What it will not do",
+        body: [
+          "Invent a number. If the data is not there it says so.",
+          "Change CAD or push code on its own. Those always wait for a person.",
+          "Keys, budgets, memory and governance are under Settings — that is where the controls live now, not a separate AI area.",
+        ],
+      },
+    ],
+  },
+  {
     id: "team-library",
     slug: "team-library",
-    title: "Team Library — files, folders, and links",
+    title: "Team Library — links and older uploads (now inside Files)",
     summary:
-      "The team's shared shelf: upload any file (CAD, PDFs, manuals, images), nest folders, add links, and share to everyone or just specific people.",
+      "The older shared shelf. Files (/files) is where the team's files live now; the Library still holds links and earlier uploads and appears inside Files as its own folder.",
     category: "team",
     keywords: [
       "library",
@@ -538,7 +760,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "restricted",
       "resources",
     ],
-    relatedHref: "/library",
+    relatedHref: "/files",
     sections: [
       {
         heading: "Any file, plus links",

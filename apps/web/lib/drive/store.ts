@@ -639,6 +639,48 @@ export async function loadVirtualFolders(
     })),
   });
 
+  // The older Team Library (library_resources: uploads AND links, with its own
+  // per-person visibility grants). It predates Drive and still holds a team's
+  // links and earlier uploads; listing it here means "where is that file" has
+  // one answer. RLS on library_resources already hides rows this member was
+  // not granted, so nothing leaks through the listing.
+  const library = await client.query<{
+    id: string;
+    name: string;
+    byteSize: string | null;
+    contentType: string | null;
+    kind: string;
+    url: string | null;
+    createdAt: string;
+    total: string;
+  }>(
+    `SELECT r.id, r.title AS name, r.byte_size::text AS "byteSize", r.content_type AS "contentType",
+            r.kind, r.url, r.created_at AS "createdAt",
+            count(*) OVER ()::text AS total
+       FROM library_resources r
+      WHERE r.org_id = $1::uuid AND r.status = 'ready'
+      ORDER BY r.created_at DESC
+      LIMIT $2::int`,
+    [input.orgId, limit],
+  );
+  const libraryTotal = Number(library.rows[0]?.total ?? 0);
+  folders.push({
+    id: "team-library",
+    name: "Team Library (links & older uploads)",
+    description:
+      "The shared shelf from before Files existed: links and earlier uploads, with their own sharing. New files belong in Team files above.",
+    href: "/library",
+    itemCount: libraryTotal,
+    items: library.rows.map((row) => ({
+      id: row.id,
+      name: row.kind === "link" && row.url ? `${row.name} — ${row.url}` : row.name,
+      byteSize: Number(row.byteSize ?? 0),
+      contentType: row.contentType ?? (row.kind === "link" ? "text/uri-list" : "application/octet-stream"),
+      createdAt: row.createdAt,
+      href: "/library",
+    })),
+  });
+
   return folders;
 }
 

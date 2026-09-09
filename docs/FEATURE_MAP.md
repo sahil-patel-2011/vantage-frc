@@ -3,10 +3,10 @@
 | Hub | Route | Tabs |
 |---|---|---|
 | Competition | `/competition` | **Event day · Scouting · Strategy · Pit** — related tools are inner tabs, not a More-tools dump (My Day under Event day, Forms under Scouting, Alliance desk under Strategy) |
-| Team | `/team` | **Calendar · Chat · People · Work · Playbook** — hours under People, practice/FMEA/batteries under Work |
+| Team | `/team` | **Calendar · Chat · People · Work · Playbook** — hours, team profile, forms under People; practice/FMEA/batteries under Work; Files, Writer, decision notes under Playbook |
 | Business | `/business` | **Overview · Money · Sponsors · Grants · Outreach** — budget/orders under Money, packages/partners under Sponsors |
 | Build | `/build` | **Kickoff · CAD · Code · Robot** — Bugbot under Code; FMEA, batteries, inspection under Robot |
-| AI | `/ai` | **Chat · Writer · Agent · Controls · Notes** — keys/memory/usage under Controls |
+| Ask AI | top-bar control → `/ai?tab=chat` | Not a workspace any more. One "Ask AI" control on every page opens the chat; keys / budgets / governance / memory / usage live under Settings; Writer, decision notes and the season report under Team › Playbook; Code assist and Bugbot under Build › Code. The `/ai` page and its tabs still resolve (hidden hub in `hubs.ts`) |
 | Logistics | `/logistics` | Travel, packing, duties, and visit invites from the hamburger under Logistics |
 | Event Day Soft-UI | `/command` (also `/competition?tab=command`) | Field-side command; empty/setup + next actions; travel/lodging clarity strip; cross-links to My Day / Schedule / Strategy / Logistics — never DEMO schedule or lodging |
 | My Day Soft-UI | `/my-day` (also `/competition?tab=my-day`) | Live ops / now-next match; empty/setup + next actions; cross-links to Event Day / Schedule / Strategy — never DEMO matches |
@@ -53,7 +53,7 @@
 | Packing lists Soft-UI | `/packing` | VantageFRC competition load-out: SuperPit **Eliminations cart**, **Inspection binder**, **Driver Station field kit**, spare main breaker + **cover**, MAXSwerve/MK4i spares, **intake timing-belt + beater-bar + high-contact shafts**, **separate red/blue bumpers** (not reversible) + **1/2–3/4 in staples**, **non-WCP zip ties**, **ESD kit**, **Kraken power screws**, **controller-button tape**, **battery-box foam**, **Loctite 242/243 + 425**, **microfiber**, ferrules, heat shrink, **CANivore USB hot glue + shielded stock USB-C + endurance SD**, **Wago 221 11 mm strip gauge**, **NEO encoder/hall JST**; request inbox — never DEMO packed counts |
 | Visit Invites Soft-UI | `/visit-invites` | Shop tours / demo days, hosts, RSVPs; empty/setup + next actions; cross-links to Logistics / Event Day / Calendar — never DEMO invites |
 | Business | `/business` | Overview · **Finance** · Budget · Orders · Sponsors · Sponsorship · Grants · … — sponsor tabs hide when org `sponsors_allowed=false` |
-| Media | `/media` | Calendar · Drafts · Reminders · Kit · Impact |
+| Media (folded) | `/media` (tools under Business › Outreach) | Content calendar, drafts, reminders, kit and the photo/video library are Outreach tools now — one fewer pillar. The `/media` page and its tabs still resolve (hidden hub in `hubs.ts`) |
 | Section access | `/team/security` | Owner/admin hub+tab allowlists per scout/viewer (`membership_hub_access`); Hub access panel above capabilities; Help `/help/hub-access`; unrestricted when no rows |
 | Onboarding | `/onboarding` · `/start` · `/team/background` | Per-person role + crew + short “how you help” description; team number is optional; entering a number for a team that already has Vantage only requests **that team’s** approval — never auto-join. Team heads set affiliation + school funds / grants / sponsors_allowed; owners/admins can edit post-onboarding on Team Background (`/api/organizations/funding-profile`) |
 | Exports Soft-UI | `/exports` | Audited CSV/ZIP takeout; team AI chats/memory/artifacts are org-scoped; private AI is member-only; keys never included |

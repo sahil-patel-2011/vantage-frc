@@ -66,7 +66,7 @@ export type DriveLinkedItem = {
   href: string;
 };
 
-export type DriveVirtualFolderId = "media-library" | "cad-vault";
+export type DriveVirtualFolderId = "media-library" | "cad-vault" | "team-library";
 
 export type DriveVirtualFolder = {
   id: DriveVirtualFolderId;
