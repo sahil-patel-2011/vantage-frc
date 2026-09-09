@@ -3,7 +3,7 @@ import SeasonReportClient from "./season-report-client";
 export const metadata = {
   title: "Season Report",
   description:
-    "Soft-UI season retrospective from logged build, results, budget, and outreach notes. Metered snapshots; links to Strategy and Impact.",
+    "Season retrospective from logged build, results, budget, and outreach notes. Metered snapshots; links to Strategy and Impact.",
 };
 
 export default function SeasonReportPage() {

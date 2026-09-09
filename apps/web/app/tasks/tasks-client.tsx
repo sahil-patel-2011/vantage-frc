@@ -120,8 +120,7 @@ export default function TasksClient() {
         title="Build-season task board"
         description={
           <>
-            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Soft-UI
-            Team Todos; this board only shows tasks your org adds.
+            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Team Todos; this board only shows tasks your team adds.
           </>
         }
       >

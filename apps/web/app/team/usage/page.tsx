@@ -21,7 +21,7 @@ export default async function TeamUsagePage({
           badge="Setup"
           badgeTone="setup"
           title="Select a team workspace"
-          description="AI usage ledgers are org-scoped. Open Workspace or Account, then return from the AI hub."
+          description="Each team has its own AI usage log. Open Workspace or Account, then return from the AI hub."
         >
           <a className="app-button secondary" href="/workspace">
             Open Workspace

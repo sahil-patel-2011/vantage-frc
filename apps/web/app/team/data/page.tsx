@@ -10,7 +10,7 @@ import "./team-data.css";
 export const metadata = {
   title: "Team data",
   description:
-    "Soft-UI TBA sync, Neon cache health, and workspace inventory. Links to Schedule, Event Day, and Strategy.",
+    "Match-data sync, cache health, and workspace inventory. Links to Schedule, Event Day, and Strategy.",
 };
 
 export default async function TeamDataPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {

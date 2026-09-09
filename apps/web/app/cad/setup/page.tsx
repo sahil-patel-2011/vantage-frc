@@ -19,7 +19,7 @@ export default async function CadSetupPage({
           <div>
             <span className="breadcrumbs">CAD / Setup</span>
             <h1>Select a workspace</h1>
-            <p className="app-muted">Open the setup wizard from a team workspace so connections stay org-scoped.</p>
+            <p className="app-muted">Connections belong to a team. Choose a workspace to run the setup wizard.</p>
           </div>
           <a className="primary-action" href="/workspace">
             Choose workspace →

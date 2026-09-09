@@ -378,7 +378,7 @@ export function DisplayPreview() {
 export function TeamOpsPreview() {
   return (
     <div className="product-demo compact ops-demo" aria-label="Demo team invites and usage controls">
-      <DemoChrome title="Team · Invites &amp; usage" meta="Org-scoped" />
+      <DemoChrome title="Team · Invites &amp; usage" meta="Per team" />
       <div className="ops-demo-body team-ops">
         <ul>
           <li>

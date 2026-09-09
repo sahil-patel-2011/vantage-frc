@@ -47,7 +47,7 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
       return {
         badge: "Sign in",
         title: "Sign in to manage Finance-in-AI",
-        description: "Consent is org-scoped. Sign in, then reopen Finance from the AI hub.",
+        description: "Each team gives consent separately. Sign in, then reopen Finance from the AI hub.",
       };
     case "forbidden":
       return {

@@ -570,7 +570,7 @@ export default function AllianceSelectionDeskClient() {
               <p className="app-muted">Exported {new Date(exportSnap.exportedAt).toLocaleString()}</p>
               <pre className="alliance-desk-export-pre">{JSON.stringify(exportSnap, null, 2)}</pre>
               <Button type="button" variant="secondary" size="sm" onClick={() => window.print()}>
-                Print Soft-UI pack
+                Print this pack
               </Button>
             </Panel>
           ) : null}

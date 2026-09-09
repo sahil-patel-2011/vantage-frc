@@ -114,7 +114,7 @@ function PlacementsNextActions({
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Packages, payment, then recognition</h2>
-        <p>Package IDs stay org-scoped. Placement totals only reflect packages you configured.</p>
+        <p>Totals cover the packages you set up here — nothing from another team.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -305,7 +305,7 @@ export function PartnerPlacementsPanel({
           <h2>Recognition packages and live storefront</h2>
           <p className="app-muted">
             Sell only the placements you choose, accept payment directly to the team, then approve every sponsor and every
-            image before it appears anywhere. Package IDs are org-scoped — never pulled from another team.
+            image before it appears anywhere. Your packages stay yours.
           </p>
         </div>
         {program.settings?.publicId ? (

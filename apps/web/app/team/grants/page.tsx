@@ -25,7 +25,7 @@ export default async function GrantsPage({
           badge="Setup required"
           badgeTone="setup"
           title="Select a workspace"
-          description="Grant narratives are org-scoped. Choose a team workspace to open the writing workbench — award amounts stay blank until you record them."
+          description="Grant narratives belong to one team. Choose a workspace to open the writing workbench — award amounts stay blank until you record them."
         >
           <a className="app-button" href="/workspace">
             Select workspace

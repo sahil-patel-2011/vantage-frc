@@ -234,7 +234,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
       {shell === "auth_required" ? (
         <section className="app-card soft-panel aa-empty">
           <h2>Sign in required</h2>
-          <p>Autonomous agent runs are org-scoped. Sign in, then reopen this tab.</p>
+          <p>Agent runs belong to your team. Sign in, then reopen this tab.</p>
         </section>
       ) : null}
 

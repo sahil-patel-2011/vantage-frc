@@ -125,7 +125,7 @@ export default function AdminPartnersClient() {
   }
 
   async function remove(id: string, name: string) {
-    if (!confirm(`Remove ${name}? Active Soft-UI branding will drop immediately.`)) return;
+    if (!confirm(`Remove ${name}? Their logo disappears from AI surfaces immediately.`)) return;
     setBusy(true);
     try {
       const response = await fetch("/api/admin/partners", {
@@ -152,7 +152,7 @@ export default function AdminPartnersClient() {
       <PageHeader
         breadcrumbs="Platform / Partners"
         title="App sponsors & AI partners"
-        description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Soft-UI branding appears on AI surfaces only when status is active. API keys stay in env or BYOK — never here."
+        description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Partner logos appear on AI surfaces only when status is active. API keys stay in env or BYOK — never here."
       >
         <nav className="admin-related" aria-label="Related admin">
           {related.map((link) => (
@@ -170,7 +170,7 @@ export default function AdminPartnersClient() {
         <header>
           <h2>AI tools for platform admin</h2>
           <p className="app-muted">
-            Smoke paths into working Soft-UI AI and key vaults.
+            Check that routing and key vaults still work.
           </p>
         </header>
         <div className="admin-ai-smoke-links">
@@ -181,7 +181,7 @@ export default function AdminPartnersClient() {
             Sponsored AI policy
           </a>
           <a className="app-button secondary" href="/ai">
-            Open Soft-UI AI hub
+            Open AI hub
           </a>
           <a className="app-button secondary" href="/ai?tab=chat">
             Test AI chat
@@ -246,7 +246,7 @@ export default function AdminPartnersClient() {
               onChange={(e) => setForm({ ...form, status: e.target.value as Sponsor["status"] })}
             >
               <option value="prospect">Prospect</option>
-              <option value="active">Active (shows in Soft-UI)</option>
+              <option value="active">Active (logo shown)</option>
               <option value="paused">Paused</option>
               <option value="ended">Ended</option>
             </select>
@@ -335,7 +335,7 @@ export default function AdminPartnersClient() {
               badge="Empty"
               badgeTone="setup"
               title="No partners tracked yet"
-              description="Add Azure, Anthropic, OpenAI, or other prospects. Soft-UI branding stays off until status is active."
+              description="Add Azure, Anthropic, OpenAI, or other prospects. Their logo stays hidden until status is active."
             />
           ) : (
             <>

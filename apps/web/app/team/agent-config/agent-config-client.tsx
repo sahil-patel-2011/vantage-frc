@@ -561,8 +561,7 @@ vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
         <pre>{`GET ${bundleUrl}
 GET ${bundleUrl}&format=cursor # same content materialized as Cursor-native files`}</pre>
         <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
-          Session-authenticated and org-scoped; the shape is documented in <code>docs/AGENT_CONFIG.md</code>.
-          Every export is also scoped to the requesting member: team-wide items plus items shared with them.
+          The export is signed in as you: team-wide items, plus the items shared with you.
         </p>
         <h3>Vantage in-app agent</h3>
         <p style={{ fontSize: 12, color: "var(--app-muted)" }}>

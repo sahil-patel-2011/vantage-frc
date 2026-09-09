@@ -79,7 +79,7 @@ export function SponsorsFundingForbidden({ breadcrumbs = "Business / Sponsors" }
       title="Sponsors"
       badge="Not enabled"
       heading="Sponsor tools are off for this team"
-      description="Your funding profile turns off sponsor CRM and related Soft-UI tools. An owner can re-enable sponsors under Team → Background."
+      description="Your funding profile turns off sponsor CRM and the tools that depend on it. An owner can re-enable sponsors under Team → Background."
       actions={
         <>
           <a className="app-button" href="/business">

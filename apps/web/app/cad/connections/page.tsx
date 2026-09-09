@@ -19,7 +19,7 @@ export default async function CadConnectionsPage({
           <div>
             <span className="breadcrumbs">CAD / Connections</span>
             <h1>Select a workspace</h1>
-            <p className="app-muted">Open Connections from a team workspace so OAuth and devices stay org-scoped.</p>
+            <p className="app-muted">Connections belong to a team. Choose a workspace to link CAD accounts and devices.</p>
           </div>
           <a className="primary-action" href="/workspace">
             Choose workspace →

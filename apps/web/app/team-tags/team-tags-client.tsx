@@ -192,8 +192,8 @@ function LiveTags({
 
       <Panel>
         <p className="app-muted">
-          Pairwise 2.0’s tag board, org-scoped. Event {view.eventKey ?? "not set"} — teams in the picker come from the TBA
-          cache only.
+          Pairwise 2.0’s tag board. Event {view.eventKey ?? "not set"} — teams in the picker come from the synced event
+          schedule.
         </p>
         <form className="team-tags-form" onSubmit={onSubmit}>
           <label>

@@ -35,7 +35,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Membership, invites, and GitHub context are org-scoped. Choose a team workspace to continue."
+          description="Membership, invites, and GitHub context belong to one team. Choose a workspace to continue."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (

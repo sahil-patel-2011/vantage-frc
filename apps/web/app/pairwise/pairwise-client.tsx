@@ -279,8 +279,8 @@ function LivePairwise({
 
       <Panel>
         <p className="app-muted">
-          Inspired by Pairwise / Maneuver qualitative scouting, but org-scoped and ranked with Bradley-Terry so a few
-          honest taps beat a fake 1–10 scale. Event {view.eventKey ?? "not set"}.
+          Inspired by Pairwise / Maneuver qualitative scouting, ranked with Bradley-Terry so a few honest taps beat a
+          guessed 1–10 scale. Event {view.eventKey ?? "not set"}.
         </p>
         <div className="pairwise-bout">
           <label>
