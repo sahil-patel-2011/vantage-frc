@@ -14,7 +14,6 @@
 .evr-remaining-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .evr-remaining-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .evr-remaining-row-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.evr-remaining-row-meta .app-button{min-height:44px;display:inline-flex;align-items:center}
 .evr-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
 .evr-group-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .evr-item-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
@@ -23,7 +22,6 @@
 .evr-item-badges{display:flex;gap:6px;flex-wrap:wrap}
 .evr-item-title{overflow-wrap:anywhere}
 .evr-item-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-.evr-item-actions .app-button{min-height:44px;display:inline-flex;align-items:center}
 .evr-status-select{min-height:44px}
 .evr-item.flag-done .evr-item-title{text-decoration:line-through;opacity:.7}
 @media(max-width:640px){

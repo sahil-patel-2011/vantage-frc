@@ -2,7 +2,8 @@
 .inventory-page{display:grid;gap:16px}
 .inventory-page input,.inventory-page select,.inventory-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
 .inventory-header-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:flex-end}
-.app-button.sm{min-height:32px;padding:5px 10px;font-size:11px}
+/* Scoped: dense BOM tables want a 32px control; the shared `.sm` stays 36px. */
+.inventory-page .app-button.sm{min-height:32px;padding:5px 10px;font-size:11px}
 .inventory-related{display:flex;flex-wrap:wrap;gap:8px}
 .inventory-next-actions{margin:0}
 .inventory-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}

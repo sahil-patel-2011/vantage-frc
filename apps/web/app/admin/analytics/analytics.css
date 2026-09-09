@@ -131,7 +131,6 @@
 }
 
 .admin-analytics-table .app-button {
-  min-height: 44px;
   min-width: 44px;
 }
 
@@ -153,7 +152,6 @@
 }
 
 .admin-analytics-drilldown-head .app-button {
-  min-height: 44px;
   flex: none;
 }
 

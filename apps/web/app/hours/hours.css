@@ -3,7 +3,8 @@
    classes) and use theme-aware CSS variables. */
 .hours-page input,.hours-page select,.hours-page textarea{min-height:44px;padding:10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
 .hours-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
+/* Scoped: page density, not a redefinition of the shared `.sm` size. */
+.hours-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
 .hours-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .hours-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .hours-link.danger{color:var(--app-critical)}
