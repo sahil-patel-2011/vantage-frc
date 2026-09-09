@@ -44,12 +44,20 @@ type NotificationPrefs = {
   teamChat: boolean;
 };
 
+// Mirrors UserEmailPreferences in @vantage/core. Both this tab and
+// /notifications/preferences write through `/api/account`, which merges the
+// patch, so a key missing here is not lost — it is simply invisible, and the
+// two pages then disagree about how many switches the reader has.
 type EmailPrefs = {
   productUpdates: boolean;
   coachAssignments: boolean;
   coachTodos: boolean;
   coachPracticeReminders: boolean;
   sponsorReminders: boolean;
+  performanceDigest: boolean;
+  announcements: boolean;
+  duesReminders: boolean;
+  memberOnboarding: boolean;
 };
 
 type Integration = { status: "available" | "setup_required"; detail: string };
@@ -159,6 +167,30 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
     key: "sponsorReminders",
     title: "Sponsor reminders",
     detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
+  },
+  {
+    key: "performanceDigest",
+    title: "Daily performance digest",
+    detail:
+      "One email on days your team has real data — match results and tomorrow's schedule. On by default; sends nothing on quiet days.",
+  },
+  {
+    key: "announcements",
+    title: "Urgent team announcements",
+    detail:
+      "Email only for announcements marked urgent or needing acknowledgement. Every announcement still reaches your inbox. On by default.",
+  },
+  {
+    key: "duesReminders",
+    title: "Dues reminders",
+    detail:
+      "Email when your treasurer sends a reminder and your own answer says dues are outstanding. Never sent if you asked for financial assistance. On by default.",
+  },
+  {
+    key: "memberOnboarding",
+    title: "New member onboarding",
+    detail:
+      "A short sequence after you join a team, sent only when you have something outstanding. On by default.",
   },
 ];
 
@@ -460,6 +492,10 @@ export default function AccountClient() {
     coachTodos: false,
     coachPracticeReminders: false,
     sponsorReminders: false,
+    performanceDigest: true,
+    announcements: true,
+    duesReminders: true,
+    memberOnboarding: true,
   });
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);

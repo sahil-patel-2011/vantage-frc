@@ -423,6 +423,59 @@
   font-size: 13px;
 }
 
+/* Dues reminders: the exclusions have to read as loudly as the send button. */
+.forms-dues-groups {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.forms-dues-groups li {
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-line);
+  background: var(--soft-bg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forms-dues-groups li strong {
+  font-size: 15px;
+  margin-right: 6px;
+}
+
+.forms-dues-groups li small {
+  display: block;
+  margin-top: 2px;
+  color: var(--soft-muted);
+}
+
+/* The people this feature exists to leave alone. */
+.forms-dues-protected {
+  border-left-style: dashed;
+}
+
+.forms-dues-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.forms-dues-result {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forms-offplatform-panel p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 @media (max-width: 720px) {
   .forms-add {
     grid-template-columns: 1fr;

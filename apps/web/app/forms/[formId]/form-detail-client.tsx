@@ -23,7 +23,23 @@ type FormDetail = {
   questions: FormQuestion[];
 };
 
+type DuesRecipient = { userId: string; name: string; reason: "owing" | "no_response" };
+
+type DuesPlan = {
+  ready: boolean;
+  blockedReason?: string;
+  questionLabel?: string;
+  owing: DuesRecipient[];
+  noResponse: DuesRecipient[];
+  assistance: number;
+  paid: number;
+  unreadable: number;
+  offPlatform: number;
+  remindedToday: number;
+};
+
 type View = {
+  orgName: string;
   canManage: boolean;
   form: FormDetail;
   // Null for a non-manager: RLS shows them only their own response, so the API
@@ -31,10 +47,16 @@ type View = {
   results: {
     totalResponses: number;
     assignedCount: number;
+    respondedAssignees: number;
     summaries: QuestionSummary[];
-    responses: Array<{ id: string; label: string; submittedAt: string }>;
+    responses: Array<{ id: string; label: string; submittedAt: string; hasAccount: boolean }>;
+    linkResponses: number;
+    // Null for a non-manager. RLS shows them only their own response, so the
+    // API withholds the team-wide figures rather than sending a number that
+    // would read as the team's and is really just theirs.
   } | null;
   insight: FormInsight | null;
+  duesPlan: DuesPlan | null;
 };
 
 type Mode = "build" | "answer" | "results";
@@ -105,6 +127,147 @@ function QuestionResult({ summary }: { summary: QuestionSummary }) {
   );
 }
 
+/**
+ * The dues send, shown as a decision rather than a button.
+ *
+ * Everything about who is excluded is on screen before the treasurer can act,
+ * and the assistance line is deliberately a count with no names: the point is
+ * that those people are not being chased, not to put a list of families who
+ * cannot pay in front of whoever is looking at the screen.
+ */
+function DuesReminderPanel({
+  plan,
+  busy,
+  onSend,
+  result,
+}: {
+  plan: DuesPlan;
+  busy: boolean;
+  onSend: (includeNoResponse: boolean) => void;
+  result: string;
+}) {
+  const [includeNoResponse, setIncludeNoResponse] = useState(true);
+
+  if (!plan.ready) {
+    return (
+      <Panel className="forms-dues-panel">
+        <h2>Dues reminders</h2>
+        <p className="app-muted">{plan.blockedReason}</p>
+      </Panel>
+    );
+  }
+
+  const willEmail = plan.owing.length + (includeNoResponse ? plan.noResponse.length : 0);
+
+  return (
+    <Panel className="forms-dues-panel">
+      <h2>Dues reminders</h2>
+      <p className="app-muted">
+        Read from “{plan.questionLabel}”. Nothing here sends on a schedule — a reminder goes out only when
+        you send it, and never more than once a day per person.
+      </p>
+
+      <ul className="forms-dues-groups">
+        <li>
+          <strong>{plan.owing.length}</strong> answered that dues are outstanding
+          {plan.owing.length > 0 ? <small>{plan.owing.map((row) => row.name).join(", ")}</small> : null}
+        </li>
+        <li>
+          <strong>{plan.noResponse.length}</strong>{" "}
+          {plan.noResponse.length === 1 ? "was" : "were"} assigned this form and{" "}
+          {plan.noResponse.length === 1 ? "has" : "have"} not answered
+          {plan.noResponse.length > 0 ? (
+            <small>{plan.noResponse.map((row) => row.name).join(", ")}</small>
+          ) : null}
+        </li>
+        <li className="forms-dues-protected">
+          <strong>{plan.assistance}</strong> asked for financial assistance
+          <small>
+            Never emailed, by design. Follow up privately — the names are in the responses below.
+          </small>
+        </li>
+        <li>
+          <strong>{plan.paid}</strong> answered that they are paid up
+        </li>
+        {plan.offPlatform > 0 ? (
+          <li>
+            <strong>{plan.offPlatform}</strong> owe but answered through the share link
+            <small>No Vantage account, so no address we are allowed to email. Reach them another way.</small>
+          </li>
+        ) : null}
+        {plan.unreadable > 0 ? (
+          <li>
+            <strong>{plan.unreadable}</strong> gave an answer this page could not read as paid or unpaid
+            <small>Left out rather than guessed at.</small>
+          </li>
+        ) : null}
+        {plan.remindedToday > 0 ? (
+          <li>
+            <strong>{plan.remindedToday}</strong> were already reminded today
+          </li>
+        ) : null}
+      </ul>
+
+      <label className="forms-dues-check">
+        <input
+          type="checkbox"
+          checked={includeNoResponse}
+          onChange={(event) => setIncludeNoResponse(event.target.checked)}
+        />
+        Also nudge the {plan.noResponse.length}{" "}
+        {plan.noResponse.length === 1 ? "person who has" : "who have"} not returned the form
+      </label>
+
+      <button
+        type="button"
+        className="app-button"
+        disabled={busy || willEmail === 0}
+        onClick={() => onSend(includeNoResponse)}
+      >
+        {willEmail === 0 ? "Nobody to remind" : `Send ${willEmail} reminder${willEmail === 1 ? "" : "s"}`}
+      </button>
+      {result ? (
+        <p role="status" className="app-muted forms-dues-result">
+          {result}
+        </p>
+      ) : null}
+    </Panel>
+  );
+}
+
+/**
+ * What we will not do with an address someone typed into a form.
+ *
+ * A prospective student fills in an intake link and writes their email in a
+ * question. That address belongs to the team's conversation with them, not to
+ * Vantage's mailing list: there is no account, no preferences row, no
+ * unsubscribe token, and no way to know the address is even theirs. So this
+ * says so plainly and points at the one path that does carry consent — an
+ * invite the person accepts.
+ */
+function OffPlatformRespondents({ count }: { count: number }) {
+  return (
+    <Panel className="forms-offplatform-panel">
+      <h2>
+        {count} {count === 1 ? "answer" : "answers"} came from someone with no account
+      </h2>
+      <p className="app-muted">
+        Vantage will not email them. They gave that address to your team, not to us — there is no
+        account behind it, nothing to unsubscribe from, and no way for us to know it is really theirs.
+        Several of them are likely to be minors.
+      </p>
+      <p className="app-muted">
+        Invite the ones you want on the team. When they accept and create an account they get a
+        preferences page, an unsubscribe link, and the short onboarding sequence — all of which start
+        from a decision they made.
+      </p>
+      <a className="app-button secondary" href="/team/admin">
+        Invite someone to the team
+      </a>
+    </Panel>
+  );
+}
+
 export default function FormDetailClient({ formId }: { formId: string }) {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
@@ -114,10 +277,24 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   const [newLabel, setNewLabel] = useState("");
   const [newKind, setNewKind] = useState<QuestionKind>("short_text");
   const [copied, setCopied] = useState(false);
+  const [duesResult, setDuesResult] = useState("");
+
+  // Which workspace this form belongs to. Without it the API falls back to the
+  // caller's alphabetically first membership, so a form in a second team is
+  // unopenable — see formHref in ../forms-client.
+  const { readUrl, writeUrl } = useMemo(() => {
+    const orgId =
+      typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("orgId");
+    const org = orgId ? `orgId=${encodeURIComponent(orgId)}` : "";
+    return {
+      readUrl: `/api/forms?formId=${encodeURIComponent(formId)}${org ? `&${org}` : ""}`,
+      writeUrl: org ? `/api/forms?${org}` : "/api/forms",
+    };
+  }, [formId]);
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch(`/api/forms?formId=${encodeURIComponent(formId)}`);
+      const response = await fetch(readUrl);
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok) {
         setError(data.error ?? "Could not load this form.");
@@ -128,7 +305,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     } catch {
       setError("Could not reach the server.");
     }
-  }, [formId]);
+  }, [readUrl]);
 
   useEffect(() => {
     void load();
@@ -149,7 +326,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   async function act(body: Record<string, unknown>) {
     setBusy(true);
     try {
-      const response = await fetch("/api/forms", {
+      const response = await fetch(writeUrl, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
@@ -187,7 +364,48 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     );
   }
 
-  const { form, results, insight, canManage } = view;
+  async function sendDuesReminders(includeNoResponse: boolean) {
+    setBusy(true);
+    setDuesResult("");
+    try {
+      const response = await fetch(writeUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "send_dues_reminders", formId, includeNoResponse }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        dues?: {
+          sent: number;
+          skippedPref: number;
+          alreadyReminded: number;
+          failed: number;
+          assistanceFlagged: number;
+        };
+      };
+      if (!response.ok || !data.dues) {
+        setDuesResult(data.error ?? "Could not send the reminders.");
+        return;
+      }
+      // Report what happened, including the parts a treasurer would otherwise
+      // never find out: opt-outs, failures, and the people left alone.
+      const parts = [`Sent ${data.dues.sent}`];
+      if (data.dues.skippedPref > 0) parts.push(`${data.dues.skippedPref} have dues email turned off`);
+      if (data.dues.alreadyReminded > 0) parts.push(`${data.dues.alreadyReminded} already reminded today`);
+      if (data.dues.failed > 0) parts.push(`${data.dues.failed} failed`);
+      if (data.dues.assistanceFlagged > 0) {
+        parts.push(
+          `${data.dues.assistanceFlagged} who asked for assistance were not emailed — leadership has an inbox note to follow up`,
+        );
+      }
+      setDuesResult(`${parts.join(" · ")}.`);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const { form, results, insight, canManage, duesPlan } = view;
   // The share URL points at the token route, not this page. /forms/<id> is
   // session-gated, so handing it to a prospective student or a parent sends
   // them to a sign-in screen for an account they will never have.
@@ -508,6 +726,17 @@ export default function FormDetailClient({ formId }: { formId: string }) {
               </p>
             ) : null}
           </Panel>
+
+          {duesPlan ? (
+            <DuesReminderPanel
+              plan={duesPlan}
+              busy={busy}
+              onSend={(includeNoResponse) => void sendDuesReminders(includeNoResponse)}
+              result={duesResult}
+            />
+          ) : null}
+
+          {results.linkResponses > 0 ? <OffPlatformRespondents count={results.linkResponses} /> : null}
 
           {results.totalResponses === 0 ? (
             <EmptyState

@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
+import { auth, resolveAuthBaseURL } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
@@ -17,6 +17,7 @@ import {
   updateQuestion,
 } from "../../../lib/forms/store";
 import { formInsight } from "../../../lib/forms/results";
+import { planDuesReminders, sendDuesReminders } from "../../../lib/forms/dues-reminders";
 import {
   isFormPurpose,
   isQuestionKind,
@@ -25,6 +26,10 @@ import {
   type FormStatus,
   type QuestionConfig,
 } from "../../../lib/forms/types";
+
+// Sending dues reminders to a whole squad is a bounded set of provider round
+// trips, which is more than the default budget allows for.
+export const maxDuration = 60;
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -153,6 +158,13 @@ export async function GET(request: Request) {
       }
 
       const results = await getResults(client, membership.orgId, form);
+      // Only leadership sees who is behind on dues, and only on a dues form.
+      // The non-manager case already returned above, so reaching here is the
+      // leadership check — no second copy of it.
+      const duesPlan =
+        form.purpose === "dues"
+          ? await planDuesReminders(client, { orgId: membership.orgId, form })
+          : null;
       return {
         status: "ready" as const,
         orgId: membership.orgId,
@@ -160,10 +172,12 @@ export async function GET(request: Request) {
         canManage,
         form,
         results,
+        duesPlan,
         insight: formInsight({
           purpose: form.purpose,
           totalResponses: results.totalResponses,
           assignedCount: results.assignedCount,
+          respondedAssignees: results.respondedAssignees,
           summaries: results.summaries,
         }),
       };
@@ -184,7 +198,8 @@ type Action =
   | { action: "set_status"; formId: string; status: FormStatus; audience: FormAudience }
   | { action: "rotate_link"; formId: string }
   | { action: "assign"; formId: string; userIds: string[] }
-  | { action: "submit"; formId: string; answers: Array<{ questionId: string; value: string | string[] }> };
+  | { action: "submit"; formId: string; answers: Array<{ questionId: string; value: string | string[] }> }
+  | { action: "send_dues_reminders"; formId: string; includeNoResponse?: boolean };
 
 export async function POST(request: Request) {
   try {
@@ -322,6 +337,33 @@ export async function POST(request: Request) {
             questions: form.questions,
           });
           return { ok: true, responseId };
+        }
+
+        /**
+         * Dues reminders are sent by a person, on purpose.
+         *
+         * There is no cron behind this. Chasing a teenager about money is a
+         * decision a treasurer should make while looking at who is on the list
+         * and who has been left off it — which is what `planDuesReminders`
+         * returns to the page before this action is ever available.
+         */
+        case "send_dues_reminders": {
+          requireAdmin(membership);
+          const form = await getForm(client, orgId, body.formId);
+          if (!form) throw new HttpError(404, "Form not found");
+          const plan = await planDuesReminders(client, { orgId, form });
+          if (!plan.ready) throw new HttpError(400, plan.blockedReason ?? "This form cannot send dues reminders.");
+          const result = await sendDuesReminders(client, {
+            orgId,
+            orgName: membership.orgName,
+            formId: form.id,
+            formTitle: form.title,
+            plan,
+            sentBy: session.user.id,
+            href: `${resolveAuthBaseURL().replace(/\/$/, "")}/forms/${form.id}`,
+            includeNoResponse: body.includeNoResponse !== false,
+          });
+          return { ok: true, dues: result };
         }
 
         default:

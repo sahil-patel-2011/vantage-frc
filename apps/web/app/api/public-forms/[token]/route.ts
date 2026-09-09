@@ -142,6 +142,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     // between load and submit. The respondent gets one honest sentence either
     // way rather than a hint about which.
     if (!result.rows[0]?.id) return notFound();
+
+    // Tell the team someone answered. Until now a prospective student could
+    // fill in an intake link and nobody would ever know, because this route has
+    // no session and cannot insert a notification for anyone — hence the
+    // SECURITY DEFINER fan-out (0603), which addresses only the form's own
+    // owners and admins.
+    //
+    // In-app only, and no name in the payload. The respondent gave that email
+    // address to a team, not to Vantage: there is no account, no preferences
+    // row and no unsubscribe path, so nothing is emailed to them and nothing
+    // about them is emailed to anyone else. Leadership reads the answers on the
+    // results page, behind org RLS.
+    //
+    // A failure here must not tell the respondent their answers were lost —
+    // they were not; they are committed.
+    try {
+      await requestPool.query("SELECT notify_public_form_response($1)", [token]);
+    } catch {
+      // Intentionally silent: the submission succeeded.
+    }
+
     return noStore({ ok: true });
   } catch {
     return noStore(
