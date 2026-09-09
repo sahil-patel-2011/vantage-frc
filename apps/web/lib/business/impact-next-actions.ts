@@ -66,7 +66,7 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
     actions.push({
       id: "broaden",
       label: "Broaden audiences and cadence",
-      detail: "Add K-12 reach and activities across more months from real events — readiness is not a DEMO scoreboard.",
+      detail: "Add K-12 reach and activities across more months as you run events.",
       href: withSeason(impactHref),
       primary: true,
     });

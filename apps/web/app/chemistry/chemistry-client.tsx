@@ -48,7 +48,7 @@ function ChemistryNextActionsPanel({ actions }: { actions: ChemistryNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -114,7 +114,7 @@ function ChemistryShell({
       <PageHeader
         breadcrumbs="Competition / Chemistry"
         title="Alliance chemistry"
-        description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats — never DEMO chemistry scores."
+        description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats."
       >
         <ChemistryRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -172,7 +172,7 @@ function ChemistryShell({
         <Panel className="chem-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="chem-setup-steps">
             {steps.map((step) => (
@@ -354,7 +354,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
           shell === "error"
             ? error || "Could not load alliance chemistry."
             : shell === "setup" && view?.message
-              ? `${view.message} Scores stay blank until real event metrics exist — never DEMO chemistry scores.`
+              ? `${view.message} Scores stay blank until real event metrics exist.`
               : undefined
         }
         onRetry={
@@ -388,7 +388,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         title="Alliance chemistry"
         description={
           view?.eventName
-            ? `${view.eventName} · MODEL fit from synced EPA and scout reliability — never DEMO chemistry scores.`
+            ? `${view.eventName} · MODEL fit from synced EPA and scout reliability.`
             : "Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability. Labeled MODEL, never a TBA pick fact."
         }
       >
@@ -524,8 +524,8 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
             </div>
             <p className="edc-caveat">{chemistry.caveats[0] ?? chemistry.caveat}</p>
             <p className="edc-muted">
-              Promote writes these seats onto the same pick_lists row the pick desk, Pick Clock,
-              and Draft board read — MODEL partner fit only, never DEMO scores.
+              Promote writes these seats onto the same pick list the pick desk, Pick Clock, and
+              Draft board read.
             </p>
             <div className="edc-header-actions">
               <button
@@ -620,7 +620,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
           title={view?.message ?? emptyCopy.title}
           description={
             view?.status === "empty"
-              ? `${view.message} Cross-check Strategy, Pick desk, and Draft — never DEMO chemistry scores.`
+              ? `${view.message} Cross-check Strategy, Pick desk, and Draft.`
               : emptyCopy.description
           }
         >
@@ -673,7 +673,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
           <h2>Try high-EPA seats</h2>
           <p className="edc-muted">
             Event metrics you can add to the scorer, or promote straight onto the pick_lists spine
-            the pick desk and Draft board read. Never DEMO seats.
+            the pick desk and Draft board read.
           </p>
           <ul className="edc-queue">
             {view.suggestions.map((s) => (

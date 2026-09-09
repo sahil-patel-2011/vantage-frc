@@ -110,7 +110,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         kind,
         title: "Loading spare forecast…",
         description:
-          "Checking workspace membership and real spare-category inventory — never DEMO spare counts.",
+          "Checking workspace membership and real spare-category inventory.",
       };
     case "error":
       return {
@@ -118,7 +118,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         badge: "Unavailable",
         title: "Could not load spare-parts forecast",
         description:
-          "A network or server issue blocked the forecast. Retry, or open Batteries / Orders / Subsystems while it reloads — never invent DEMO spare counts.",
+          "A network or server issue blocked the forecast. Retry, or open Batteries / Orders / Subsystems while it reloads.",
       };
     case "setup":
       return {
@@ -134,7 +134,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         badge: "No spare bins yet",
         title: "Stock spare-category inventory first",
         description:
-          "The forecast stays blank until you add spare-category inventory items matched to subsystems. Cross-check Batteries, Orders, and Subsystems — never DEMO spare counts.",
+          "The forecast stays blank until you add spare-category inventory items matched to subsystems. Cross-check Batteries, Orders, and Subsystems.",
       };
     case "no_risk":
       return {
@@ -149,7 +149,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         kind: "ready",
         title: "Spare-parts exhaustion forecast",
         description:
-          "Projections use only real spare-category bins × logged FMEA cadence. Draft purchase requests from shortfalls — never DEMO spare counts.",
+          "Projections use only real spare-category bins × logged FMEA cadence. Draft purchase requests from shortfalls.",
       };
   }
 }
@@ -186,19 +186,19 @@ export function spareForecastNextActions(input: {
         {
           id: "batteries",
           label: "Open Batteries",
-          detail: "Pack health stays blank until logged — never DEMO IR or cycles.",
+          detail: "Pack health stays blank until logged.",
           href: hubHref("/team", "batteries", null),
         },
         {
           id: "orders",
           label: "Open Orders",
-          detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+          detail: "Purchase orders stay empty until drafted.",
           href: hubHref("/business", "orders", null),
         },
         {
           id: "subsystems",
           label: "Open Subsystems",
-          detail: "Subsystem names stay empty until you author them — never DEMO systems.",
+          detail: "Subsystem names stay empty until you author them.",
           href: withOrgHref("/subsystems", null),
         },
       ];
@@ -280,7 +280,7 @@ export function spareForecastNextActions(input: {
       {
         id: "batteries",
         label: "Open Batteries",
-        detail: "Log pack health separately — battery Soft-UI never invents DEMO cycles.",
+        detail: "Log pack health separately in Batteries.",
         href: hubHref("/team", "batteries", orgId),
       },
       {
@@ -316,7 +316,7 @@ export function spareForecastNextActions(input: {
       {
         id: "orders",
         label: "Open Orders",
-        detail: "When a shortfall appears later, draft a PO from the forecast — never DEMO counts.",
+        detail: "When a shortfall appears later, draft a PO from the forecast.",
         href: hubHref("/business", "orders", orgId),
       },
     ].slice(0, 4);
@@ -348,7 +348,7 @@ export function spareForecastNextActions(input: {
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Promote approved restock drafts into season purchase orders — never DEMO PO totals.",
+      detail: "Promote approved restock drafts into season purchase orders.",
       href: hubHref("/business", "orders", orgId),
       primary: !actions.some((a) => a.primary),
     },

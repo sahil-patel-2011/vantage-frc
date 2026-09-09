@@ -23,7 +23,7 @@ export default async function ChatPage({
           badge="Setup"
           badgeTone="setup"
           title="Select a team workspace"
-          description="Chat channels and memory are org-scoped. Open Workspace or Account, then return from the AI hub — never invent DEMO replies."
+          description="Chat channels and memory are org-scoped. Open Workspace or Account, then return from the AI hub."
         >
           <a className="app-button secondary" href="/workspace">
             Open Workspace

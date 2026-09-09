@@ -100,7 +100,7 @@ function LineupNextActionsPanel({ actions }: { actions: LineupNextAction[] }) {
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Strategy, and Form builder — never DEMO %.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -230,7 +230,7 @@ function LineupShell({
         <Panel className="lineup-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Strategy, and Form builder — never DEMO %.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="lineup-setup-steps">
             {steps.map((step) => (
@@ -434,7 +434,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           </>
         }
         title="Lineup & coverage"
-        description="Double-scouted vs unscouted robots for the live quals window. Attribution uses membership IDs — never typed scout names. Rates never invent DEMO %."
+        description="Double-scouted vs unscouted robots for the live quals window. Attribution uses membership IDs — never typed scout names."
       >
         <div className="lineup-header-meta">
           <span className="lineup-live-pill" aria-live="polite">

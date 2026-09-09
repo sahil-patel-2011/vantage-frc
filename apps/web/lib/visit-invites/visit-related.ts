@@ -91,7 +91,7 @@ export function visitNextActions(input: {
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Outreach nights live on Team Calendar once a workspace is selected — never seeded DEMO invites.",
+          detail: "Outreach nights live on Team Calendar once a workspace is selected.",
           href: hubHref("/team", "calendar", null),
         },
       ];
@@ -149,7 +149,7 @@ export function visitNextActions(input: {
         {
           id: "create",
           label: "Create the first visit",
-          detail: "Use the form on this page — Draft stays planner-only; Scheduled opens RSVPs. Never invent DEMO invites.",
+          detail: "Use the form on this page — Draft stays planner-only; Scheduled opens RSVPs.",
           href: visitInvitesShareHref(orgId) + "#visit-create",
           primary: true,
         },
@@ -177,7 +177,7 @@ export function visitNextActions(input: {
       {
         id: "calendar",
         label: "Open Calendar",
-        detail: "Mentors publish shop tours here — empty means none are scheduled yet, not DEMO filler.",
+        detail: "Mentors publish shop tours here — empty means none are scheduled yet.",
         href: hubHref("/team", "calendar", orgId),
         primary: true,
       },
@@ -211,7 +211,7 @@ export function visitNextActions(input: {
     id: "share",
     label: canManage ? "Share the visits board" : "Open visits board",
     detail: canManage
-      ? "Copy the org link, sync to Calendar, or point guests at a Scheduled visit — no DEMO invite URLs."
+      ? "Copy the org link, sync to Calendar, or point guests at a Scheduled visit."
       : "RSVP on real scheduled visits when mentors publish them.",
     href: visitInvitesShareHref(orgId),
     primary: actions.length === 0,
@@ -284,7 +284,7 @@ export function visitSetupSteps(orgId?: string | null): VisitSetupStep[] {
     {
       id: "create",
       label: "Schedule a visit",
-      detail: "Draft stays planner-only; Scheduled opens RSVPs — never invent DEMO guests.",
+      detail: "Draft stays planner-only; Scheduled opens RSVPs.",
       href: visitInvitesShareHref(orgId) + "#visit-create",
     },
     {
@@ -309,7 +309,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
       return {
         kind,
         title: "Loading visit invites…",
-        description: "Checking workspace membership and scheduled shop tours — never DEMO invite rows.",
+        description: "Checking workspace membership and scheduled shop tours.",
       };
     case "error":
       return {
@@ -317,7 +317,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load visit invites",
         description:
-          "A network or server issue blocked the board. Retry, or open Logistics / Event Day / Calendar while it reloads — never invent DEMO invites.",
+          "A network or server issue blocked the board. Retry, or open Logistics / Event Day / Calendar while it reloads.",
       };
     case "setup":
       return {
@@ -333,13 +333,13 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "No visits yet",
         title: "No shop tours or demo days yet",
         description:
-          "Mentors schedule real outreach visits here. Empty means none are published — never DEMO invite placeholders.",
+          "Mentors schedule real outreach visits here. Empty means none are published.",
       };
     default:
       return {
         kind,
         title: "Visit Invites",
-        description: "Shop tours, demo days, mentor hosts, and guest RSVPs from real visit rows — never DEMO invites.",
+        description: "Shop tours, demo days, mentor hosts, and guest RSVPs from real visit rows.",
       };
   }
 }

@@ -99,7 +99,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
         kind,
         title: "Loading Alliance-Partner Brief…",
         description:
-          "Checking workspace membership and alliance boards — never DEMO partner metrics.",
+          "Checking workspace membership and alliance boards.",
       };
     case "error":
       return {
@@ -107,7 +107,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
         badge: "Unavailable",
         title: "Could not load Alliance-Partner Brief",
         description:
-          "A network or server issue blocked the brief. Retry, or open Strategy / Alliance board / Scouting while it reloads — never invent DEMO partner metrics.",
+          "A network or server issue blocked the brief. Retry, or open Strategy / Alliance board / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -123,14 +123,14 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
         badge: "No alliances yet",
         title: "Finalize alliance picks first",
         description:
-          "Partner briefs stay blank until captains and picks land on a real alliance board. Cross-check Strategy, Alliance board, and Scouting — never DEMO partner metrics.",
+          "Partner briefs stay blank until captains and picks land on a real alliance board. Cross-check Strategy, Alliance board, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Alliance partner roles & strengths",
         description:
-          "Briefs cite only event metrics and your own scouting for finalized partners — never DEMO partner metrics.",
+          "Briefs cite only event metrics and your own scouting for finalized partners.",
       };
   }
 }
@@ -164,19 +164,19 @@ export function alliancePartnerBriefNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "alliance-board",
           label: "Open Alliance board",
-          detail: "Alliance slots stay blank until your team runs selection — never DEMO picks.",
+          detail: "Alliance slots stay blank until your team runs selection.",
           href: withOrgHref("/strategy/draft", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -252,7 +252,7 @@ export function alliancePartnerBriefNextActions(input: {
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Pick lists use scouted and reference metrics only — never DEMO rankings.",
+        detail: "Pick lists use scouted and reference metrics only.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -270,7 +270,7 @@ export function alliancePartnerBriefNextActions(input: {
     actions.push({
       id: "review-partners",
       label: "Review partner brief",
-      detail: `${partnerCount} partner${partnerCount === 1 ? "" : "s"} cited from event metrics and your scouting — never DEMO roles.`,
+      detail: `${partnerCount} partner${partnerCount === 1 ? "" : "s"} cited from event metrics and your scouting.`,
       href: "#alliance-partner-brief-panel",
       primary: true,
     });
@@ -288,7 +288,7 @@ export function alliancePartnerBriefNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground alliance plans in scouted data and reference metrics — never DEMO rankings.",
+      detail: "Ground alliance plans in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
       primary: !actions.some((a) => a.primary),
     },

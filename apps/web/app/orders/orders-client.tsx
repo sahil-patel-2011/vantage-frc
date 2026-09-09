@@ -82,7 +82,7 @@ function OrdersNextActions({
       <header>
         <span className="biz-overline">Next</span>
         <h2>Keep the buy sheet moving</h2>
-        <p>Approve, then pay on the vendor site. Lines come from real purchases only — never DEMO items.</p>
+        <p>Approve, then pay on the vendor site. Lines come from real purchases only.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -109,7 +109,7 @@ function ApprovalFlowStrip() {
       <ol className="orders-flow-steps">
         <li>
           <strong>What</strong>
-          <span>The part or item — a real line only, never a DEMO item.</span>
+          <span>The part or item you need to buy.</span>
         </li>
         <li>
           <strong>Why</strong>
@@ -284,7 +284,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             badge="Setup required"
             badgeTone="setup"
             title={view.message}
-            description="Choose a workspace, then log what, why, when, and cost. The sheet stays empty until someone adds a real line — never DEMO items."
+            description="Choose a workspace, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
           >
             <ol className="strategy-setup-steps">
               {view.steps.map((step) => (
@@ -329,7 +329,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             <EmptyState
               soft
               title="Buy sheet is empty"
-              description="Add what the team bought or needs: what, why, when, and the cost. Totals stay blank until someone logs a real estimate — never DEMO line items."
+              description="Add what the team bought or needs: what, why, when, and the cost. Totals stay blank until someone logs a real estimate."
             >
               <BusinessRelated
                 orgId={live!.orgId}
@@ -374,7 +374,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
       <PageHeader
         navPath="/orders"
         title="Buy sheet"
-        description="What we bought, why, when, and what it cost. Mentors approve, then pay on the vendor site — never card details or DEMO line items."
+        description="What we bought, why, when, and what it cost. Mentors approve, then pay on the vendor site. Vantage never stores card details."
       />
       {body}
     </main>
@@ -394,7 +394,7 @@ function MetricsPanel({ view }: { view: LiveView }) {
     <section className="soft-panel">
       <span className="biz-overline">This season</span>
       <h2>Real purchases</h2>
-      <p className="orders-metrics-note">Counts and open $ come from submitted lines only — never DEMO items.</p>
+      <p className="orders-metrics-note">Counts and open $ come from submitted lines only.</p>
       <div className="orders-metrics">
         {tiles.map((tile) => (
           <div key={tile.label} className="orders-metric">

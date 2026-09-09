@@ -89,7 +89,7 @@ function OutreachNextActionsPanel({ actions }: { actions: OutreachCalendarNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Community Impact and Media Kit — never DEMO reach metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -317,7 +317,7 @@ export default function OutreachCalendarClient() {
           </>
         }
         title="Outreach Calendar"
-        description="Plan outreach events with projected hours and reach. Completing an event writes it to Community Impact; planned events stay empty until then — never DEMO hours."
+        description="Plan outreach events with projected hours and reach. Completing an event writes it to Community Impact; planned events stay empty until then."
       >
         <div className="outreach-calendar-header-actions">
           {view.seasons.length > 0 ? (
@@ -499,7 +499,7 @@ function AllEvents({
         badge="No events yet"
         badgeTone="setup"
         title="Schedule your first outreach event"
-        description="Plan STEM demos, mentoring sessions, and community events with projected hours and reach — never invent DEMO metrics."
+        description="Plan STEM demos, mentoring sessions, and community events with projected hours and reach."
       />
     );
   }

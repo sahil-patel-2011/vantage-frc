@@ -149,7 +149,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
         badge: "Setup",
         title: "Team injection is on — nothing shared yet",
         description:
-          "Policy is enabled, but there are no active team memories. Promote useful private Chat replies, or leave the list empty — never DEMO facts.",
+          "Policy is enabled, but there are no active team memories. Promote useful private Chat replies, or leave the list empty.",
       };
     case "error":
       return {

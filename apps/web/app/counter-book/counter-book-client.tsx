@@ -51,7 +51,7 @@ function CounterNextActionsPanel({ actions }: { actions: CounterBookNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy and Scouting — never DEMO opponent metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -279,7 +279,7 @@ export default function CounterBookClient() {
           </>
         }
         title="Opponent Counter-book"
-        description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches. Never DEMO opponent metrics. Cross-check Strategy and Scouting."
+        description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches. Cross-check Strategy and Scouting."
       >
         <div className="counter-book-header-actions">
           {relatedLinks.map((link) => (
@@ -336,8 +336,7 @@ export default function CounterBookClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep <a href={strategyHref}>Strategy</a> picks grounded in scouted metrics, and deepen{" "}
-            <a href={scoutingHref}>Scouting</a> samples before generating — never invent DEMO opponent
-            tendencies.
+            <a href={scoutingHref}>Scouting</a> samples before generating.
           </p>
         </Panel>
       </div>
@@ -370,7 +369,7 @@ function GenerateReportForm({
     >
       <h2 style={{ margin: 0 }}>Generate counter-book</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Reports use only your scouted numeric fields for the opponent — never DEMO tendencies.
+        Reports use only your scouted numeric fields for the opponent.
       </p>
       <FormGrid min={180}>
         <FormRow label="Opponent team key" hint="e.g. frc254">

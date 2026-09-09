@@ -47,7 +47,7 @@ function DecisionSearchNextActionsPanel({ actions }: { actions: DecisionSearchNe
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Season Report, Knowledge, and Strategy — never DEMO decisions.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -329,7 +329,7 @@ export default function DecisionSearchClient() {
           </>
         }
         title="Decision Search"
-        description="Semantic search over decisions, design reviews, and notebook entries you indexed — grounded only in real text. Never DEMO decisions."
+        description="Semantic search over decisions, design reviews, and notebook entries you indexed — grounded only in real text."
       >
         <div className="decision-search-header-actions">
           {relatedLinks.map((link) => (
@@ -415,7 +415,7 @@ function IndexStatsPanel({ view, loaded }: { view: LiveView; loaded: boolean }) 
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Search corpus</h2>
           <small className="app-muted">
-            Real indexed documents only — never DEMO decisions
+            Real indexed documents only.
           </small>
         </div>
         <div>
@@ -494,7 +494,7 @@ function ResultsPanel({ view, loaded }: { view: LiveView; loaded: boolean }) {
         title="Run your first search"
         description={
           view.documents.length === 0
-            ? "Index a decision, design review, or notebook entry below, then search over it — never DEMO matches."
+            ? "Index a decision, design review, or notebook entry below, then search over it."
             : "Ask about a tradeoff or reliability note. Results appear only when query terms overlap indexed text."
         }
       >
@@ -522,7 +522,7 @@ function ResultsPanel({ view, loaded }: { view: LiveView; loaded: boolean }) {
         <EmptyState
           soft
           title="No matches"
-          description="No indexed documents matched this query. Try different terms, or index more real decisions — never DEMO results."
+          description="No indexed documents matched this query. Try different terms, or index more real decisions."
         />
       ) : (
         <ul className="decision-search-match-list">
@@ -668,7 +668,7 @@ function IndexDocumentForm({
         </div>
       </div>
       <p className="app-muted" style={{ margin: 0 }}>
-        Paste real decision text only. Import uses Decision Log context/decision/rationale — never DEMO placeholders.
+        Paste real decision text only. Import uses Decision Log context/decision/rationale.
       </p>
       <FormGrid min={160}>
         <FormRow label="Source ID">

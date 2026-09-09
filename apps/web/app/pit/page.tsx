@@ -13,7 +13,7 @@ import PitCommandClient from "./pit-command-client";
 export const metadata: Metadata = {
   title: "Pit Command — Vantage",
   description:
-    "Soft-UI robot release board from logged issues, maintenance, and battery evidence — never DEMO readiness metrics. Links to Batteries, Match checklist, and Event Day.",
+    "Soft-UI robot release board from logged issues, maintenance, and battery evidence. Links to Batteries, Match checklist, and Event Day.",
 };
 
 export default async function PitCommandPage({
@@ -77,9 +77,7 @@ export default async function PitCommandPage({
         <section className="app-card soft-panel edc-next-actions pit-next-actions" aria-label="Next actions">
           <header>
             <h2>Next actions</h2>
-            <p className="app-muted">
-              Batteries, Match checklist, and Event Day — never DEMO release metrics.
-            </p>
+            <p className="app-muted">Each one opens the page where you finish the work.</p>
           </header>
           <ol>
             {actions.map((action) => (

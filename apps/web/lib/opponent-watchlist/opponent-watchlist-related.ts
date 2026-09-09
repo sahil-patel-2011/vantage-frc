@@ -98,7 +98,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         kind,
         title: "Loading Opponent Watchlist…",
         description:
-          "Checking workspace membership and watched opponents — never DEMO opponent metrics.",
+          "Checking workspace membership and watched opponents.",
       };
     case "error":
       return {
@@ -106,7 +106,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         badge: "Unavailable",
         title: "Could not load Opponent Watchlist",
         description:
-          "A network or server issue blocked the watchlist. Retry, or open Strategy / EPA Trend Alerts / Scouting while it reloads — never invent DEMO opponent metrics.",
+          "A network or server issue blocked the watchlist. Retry, or open Strategy / EPA Trend Alerts / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -122,14 +122,14 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         badge: "Empty watchlist",
         title: "Add your first opponent to watch",
         description:
-          "The board stays blank until you watch a real team. Cross-check Strategy, EPA Trend Alerts, and Scouting — never DEMO opponent metrics.",
+          "The board stays blank until you watch a real team. Cross-check Strategy, EPA Trend Alerts, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Personal opponent watchlist",
         description:
-          "Alerts use only reference EPA and scheduled matches for teams you watch — never DEMO opponent metrics.",
+          "Alerts use only reference EPA and scheduled matches for teams you watch.",
       };
   }
 }
@@ -161,19 +161,19 @@ export function opponentWatchlistNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "epa-trend-alerts",
           label: "Open EPA Trend Alerts",
-          detail: "EPA swings stay blank until you watch real teams — never DEMO forecasts.",
+          detail: "EPA swings stay blank until you watch real teams.",
           href: hubHref("/competition", "epa-trend-alerts", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -249,7 +249,7 @@ export function opponentWatchlistNextActions(input: {
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Pick lists use scouted and reference metrics only — never DEMO rankings.",
+        detail: "Pick lists use scouted and reference metrics only.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -273,7 +273,7 @@ export function opponentWatchlistNextActions(input: {
     actions.push({
       id: "review-alerts",
       label: "Review watchlist alerts",
-      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real EPA or schedule changes — never DEMO rankings.`,
+      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real EPA or schedule changes.`,
       href: "#opponent-watchlist-alerts",
       primary: true,
     });
@@ -291,7 +291,7 @@ export function opponentWatchlistNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground picks in scouted data and reference metrics — never DEMO rankings.",
+      detail: "Ground picks in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
       primary: !actions.some((a) => a.primary),
     },

@@ -47,7 +47,7 @@ function SetupInstructions() {
       </p>
       <pre className="stn-code">
         {`node server.mjs --setup --cloud ${typeof window !== "undefined" ? window.location.origin : "https://your-vantage-host"}
-node server.mjs   # after pairing; add --quota-gb to change the 20 GB default`}
+node server.mjs # after pairing; add --quota-gb to change the 20 GB default`}
       </pre>
       <p className="app-muted stn-note">
         The node prints an 8-character code — enter it below. On your shop/pit network the node serves files

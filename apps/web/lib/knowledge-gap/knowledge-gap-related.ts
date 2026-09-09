@@ -117,7 +117,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
       return {
         kind,
         title: "Loading Knowledge-gap detective…",
-        description: "Checking workspace membership and wiki coverage — never DEMO gap lists.",
+        description: "Checking workspace membership and wiki coverage.",
       };
     case "error":
       return {
@@ -125,7 +125,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
         badge: "Unavailable",
         title: "Could not load Knowledge-gap detective",
         description:
-          "A network or server issue blocked the scan. Retry, or open the wiki while it reloads — never invent DEMO gaps.",
+          "A network or server issue blocked the scan. Retry, or open the wiki while it reloads.",
       };
     case "setup":
       return {
@@ -141,13 +141,13 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
         badge: "No scan yet",
         title: "Run your first coverage scan",
         description:
-          "Diffs real work items against real wiki pages — never DEMO gap packs.",
+          "Diffs real work items against real wiki pages.",
       };
     default:
       return {
         kind: "ready",
         title: "Documentation coverage",
-        description: "Gaps from real wiki diffs only — never DEMO coverage counters.",
+        description: "Gaps from real wiki diffs only.",
       };
   }
 }
@@ -220,7 +220,7 @@ export function knowledgeGapNextActions(input: {
       {
         id: "run-scan",
         label: "Run coverage scan",
-        detail: "Gaps stay blank until you scan real work items and wiki pages — never DEMO packs.",
+        detail: "Gaps stay blank until you scan real work items and wiki pages.",
         href: "#knowledge-gap-scan",
         primary: true,
       },
@@ -245,7 +245,7 @@ export function knowledgeGapNextActions(input: {
       label: itemCount > 0 ? "Draft stub pages" : "Re-scan coverage",
       detail:
         itemCount > 0
-          ? `${itemCount} undocumented work item${itemCount === 1 ? "" : "s"} from real wiki diffs — never DEMO gaps.`
+          ? `${itemCount} undocumented work item${itemCount === 1 ? "" : "s"} from real wiki diffs.`
           : "Coverage is complete for this scan — re-run after new work lands.",
       href: itemCount > 0 ? "#knowledge-gap-items" : "#knowledge-gap-scan",
       primary: true,

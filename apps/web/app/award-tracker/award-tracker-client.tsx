@@ -74,7 +74,7 @@ function AwardTrackerNextActionsPanel({ actions }: { actions: AwardTrackerNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Awards and Impact Essay — never DEMO win rates.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -316,7 +316,7 @@ export default function AwardTrackerClient() {
           </>
         }
         title="Award Tracker"
-        description="Track award submissions across events with deadlines — never DEMO win rates. Cross-check Awards and Impact Essay."
+        description="Track award submissions across events with deadlines. Cross-check Awards and Impact Essay."
       >
         <div className="award-tracker-header-actions">
           {view.seasons.length > 0 ? (
@@ -424,7 +424,7 @@ export default function AwardTrackerClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep packets in <a href={evidenceHref}>Awards</a>, review workbench uploads in{" "}
             <a href={awardsHref}>Awards workbench</a>, and draft narratives in{" "}
-            <a href={essayHref}>Impact Essay</a> — never invent DEMO win rates or award dollars.
+            <a href={essayHref}>Impact Essay</a>
           </p>
         </Panel>
       </div>
@@ -472,7 +472,7 @@ function SubmissionsList({
         badge="No submissions yet"
         badgeTone="setup"
         title="Track your first award submission"
-        description="Log an award, event, and deadline to start tracking — never invent DEMO win rates."
+        description="Log an award, event, and deadline to start tracking."
       />
     );
   }
@@ -576,7 +576,7 @@ function CreateSubmissionForm({
     >
       <h2 style={{ margin: 0 }}>Track a new submission</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Counts reflect submissions you start — never DEMO win rates or invented award dollars.
+        Counts reflect submissions you start.
       </p>
       <FormGrid min={160}>
         <FormRow label="Award">

@@ -5,7 +5,7 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Strategy & FRC Assistant — Vantage",
   description:
-    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from TBA and your scouting. No DEMO win rates.",
+    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from TBA and your scouting.",
   path: "/features/strategy",
 });
 
@@ -35,7 +35,7 @@ export default function StrategyFeaturePage() {
           <h1>Strategy you can inspect.</h1>
           <p>
             Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and FRC Assistant — sourced
-            from The Blue Alliance cache and your scout entries. Empty until those exist. No DEMO win rates.
+            from The Blue Alliance cache and your scout entries. Empty until those exist.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">

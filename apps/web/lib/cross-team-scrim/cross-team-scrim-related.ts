@@ -147,7 +147,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         kind,
         title: "Loading Cross-Team Scrims…",
         description:
-          "Checking workspace membership and real scrim invites — never DEMO partners.",
+          "Checking workspace membership and real scrim invites.",
       };
     case "error":
       return {
@@ -155,7 +155,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "Unavailable",
         title: "Could not load scrim scheduling",
         description:
-          "A network or server issue blocked invites. Retry, or open Calendar / Scouting / Team Data while it reloads — never invent DEMO scrim metrics.",
+          "A network or server issue blocked invites. Retry, or open Calendar / Scouting / Team Data while it reloads.",
       };
     case "setup":
       return {
@@ -171,14 +171,14 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         badge: "No invites yet",
         title: "Propose a scrimmage with a nearby team",
         description:
-          "Invites and data-share agreements stay blank until you log a real partner. Cross-check Calendar, Scouting, and Team Data — never DEMO partners.",
+          "Invites and data-share agreements stay blank until you log a real partner. Cross-check Calendar, Scouting, and Team Data.",
       };
     default:
       return {
         kind: "ready",
         title: "Scrim invites",
         description:
-          "Only real partner invites and agreed data-share scopes appear here — counts never invent DEMO metrics.",
+          "Invites you sent and the data you agreed to share appear here.",
       };
   }
 }
@@ -239,7 +239,7 @@ export function crossTeamScrimNextActions(input: {
       {
         id: "propose",
         label: "Propose a scrim",
-        detail: "Log a real partner team below — invites never invent DEMO partners.",
+        detail: "Add a partner team below to send the first invite.",
         href: "#cross-team-scrim-propose",
         primary: true,
       },
@@ -271,7 +271,7 @@ export function crossTeamScrimNextActions(input: {
       detail:
         upcomingCount > 0
           ? `${upcomingCount} upcoming invite${upcomingCount === 1 ? "" : "s"} — real partner rows only.`
-          : "Invites and data-share agreements use logged rows only — never DEMO metrics.",
+          : "Invites and data-share agreements use logged rows only.",
       href: "#cross-team-scrim-upcoming",
       primary: true,
     },
@@ -290,7 +290,7 @@ export function crossTeamScrimNextActions(input: {
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Verify partner team context from TBA — never invent DEMO numbers.",
+      detail: "Verify partner team context from TBA.",
       href: withOrgHref("/team/data", orgId),
     },
   ];

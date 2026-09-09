@@ -103,7 +103,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         kind,
         title: "Loading Judge-Pitch Simulator…",
         description:
-          "Checking workspace membership and logged evidence — never DEMO judge metrics.",
+          "Checking workspace membership and logged evidence.",
       };
     case "error":
       return {
@@ -111,7 +111,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Judge-Pitch Simulator",
         description:
-          "A network or server issue blocked the simulator. Retry, or open Community Impact / Impact Essay / Awards while it reloads — never invent DEMO judge metrics.",
+          "A network or server issue blocked the simulator. Retry, or open Community Impact / Impact Essay / Awards while it reloads.",
       };
     case "setup":
       return {
@@ -127,14 +127,14 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         badge: "No sessions yet",
         title: "Run your first judge Q&A",
         description:
-          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact Essay, and Awards — never DEMO judge metrics.",
+          "Graded sessions stay blank until you log evidence and answer a judging question. Cross-check Community Impact, Impact Essay, and Awards.",
       };
     default:
       return {
         kind: "ready",
         title: "Judge-pitch practice",
         description:
-          "Verdicts cite only claims matched to your logged evidence — never DEMO judge metrics.",
+          "Verdicts cite only claims matched to your logged evidence.",
       };
   }
 }
@@ -166,19 +166,19 @@ export function judgeSimNextActions(input: {
         {
           id: "impact",
           label: "Open Community Impact",
-          detail: "Outreach rows stay blank until your team logs them — never DEMO hours.",
+          detail: "Outreach rows stay blank until your team logs them.",
           href: hubHref("/business", "impact", null),
         },
         {
           id: "impact-essay",
           label: "Open Impact Essay",
-          detail: "Essay drafts stay empty until real activities exist — never DEMO awards.",
+          detail: "Essay drafts stay empty until real activities exist.",
           href: hubHref("/business", "impact-essay", null),
         },
         {
           id: "evidence",
           label: "Open Awards",
-          detail: "Award evidence stays blank until your team uploads it — never DEMO packets.",
+          detail: "Award evidence stays blank until your team uploads it.",
           href: hubHref("/business", "evidence", null),
         },
       ];
@@ -248,7 +248,7 @@ export function judgeSimNextActions(input: {
       actions.push({
         id: "log-evidence",
         label: "Log evidence",
-        detail: "Answers stay unbacked until real facts land in the evidence log — never DEMO.",
+        detail: "Answers stay unbacked until real facts land in the evidence log.",
         href: "#judge-sim-evidence",
         primary: true,
       });
@@ -256,7 +256,7 @@ export function judgeSimNextActions(input: {
       actions.push({
         id: "run-session",
         label: "Grade a judge answer",
-        detail: "Practice against your logged evidence — never invent DEMO verdicts.",
+        detail: "Practice against your logged evidence.",
         href: "#judge-sim-session",
         primary: true,
       });
@@ -265,13 +265,13 @@ export function judgeSimNextActions(input: {
       {
         id: "impact",
         label: "Cross-check Community Impact",
-        detail: "Outreach claims cite only real logged activities — never DEMO hours.",
+        detail: "Outreach claims cite only real logged activities.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "impact-essay",
         label: "Open Impact Essay",
-        detail: "Award language stays grounded in real impact — never DEMO essays.",
+        detail: "Award language stays grounded in real impact.",
         href: hubHref("/business", "impact-essay", orgId),
       },
       {
@@ -288,7 +288,7 @@ export function judgeSimNextActions(input: {
     {
       id: "review-sessions",
       label: "Review graded sessions",
-      detail: `${sessionCount} graded session${sessionCount === 1 ? "" : "s"} from real evidence matches — never DEMO.`,
+      detail: `${sessionCount} graded session${sessionCount === 1 ? "" : "s"} from real evidence matches.`,
       href: "#judge-sim-sessions",
       primary: true,
     },
@@ -298,19 +298,19 @@ export function judgeSimNextActions(input: {
       detail:
         evidenceCount > 0
           ? `${evidenceCount} evidence row${evidenceCount === 1 ? "" : "s"} on record — keep claims judge-ready.`
-          : "Add facts before the next judge Q&A — never invent DEMO evidence.",
+          : "Add facts before the next judge Q&A.",
       href: "#judge-sim-evidence",
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Ground outreach answers in real logged activities — never DEMO hours.",
+      detail: "Ground outreach answers in real logged activities.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "impact-essay",
       label: "Open Impact Essay",
-      detail: "Turn backed claims into award language — never DEMO essays.",
+      detail: "Turn backed claims into award language.",
       href: hubHref("/business", "impact-essay", orgId),
     },
     {

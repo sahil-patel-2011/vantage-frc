@@ -237,7 +237,7 @@ export default function KioskClient({
             <h2>Awaiting a stored prediction</h2>
             <p>
               Open Strategy with a synced match and score a model prediction for this event. Until then this
-              board stays blank — no DEMO odds.
+              board stays blank.
             </p>
           </section>
         ))}
@@ -347,7 +347,7 @@ export default function KioskClient({
             <h2>No scouting rows for this event</h2>
             <p>
               Assignments, reports, and disagreements appear only after Scouting records them at the
-              active event — not as zero DEMO counters.
+              active event.
             </p>
           </section>
         ))}

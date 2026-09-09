@@ -72,7 +72,7 @@ function VideoRescoutNextActionsPanel({ actions }: { actions: VideoRescoutNextAc
     <section className="app-card soft-panel edc-next-actions vid-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Accuracy, and Disagreements — never DEMO jobs.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -184,7 +184,7 @@ function VideoRescoutShell({
         <Panel className="vid-soft-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Accuracy, and Disagreements — never DEMO jobs.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="vid-setup-steps">
             {steps.map((step) => (
@@ -231,7 +231,7 @@ function NewReviewPanel({
     <Panel className="vid-new" id="video-new-review">
       <strong>New review</strong>
       <p className="app-muted vid-tip">
-        Real YouTube match links only — never DEMO jobs. Hosted photos and clips belong in the Media
+        Real YouTube match links only. Hosted photos and clips belong in the Media
         library; this desk does not play uploaded MP4s.
       </p>
       <FormRow label="Title">
@@ -301,7 +301,7 @@ function SummaryTiles({
       <article>
         <span>Source</span>
         <strong>Live</strong>
-        <small>never DEMO jobs</small>
+        <small>Your team&apos;s review jobs</small>
       </article>
     </section>
   );
@@ -712,7 +712,7 @@ export default function VideoRescoutClient() {
           badge="Schema required"
           badgeTone="setup"
           title="Match schema required"
-          description="Configure a real match scouting schema before timeline scoring — never DEMO jobs."
+          description="Configure a real match scouting schema before timeline scoring."
         >
           <a className="app-button" href={hubHref("/competition", "scouting", orgId)}>
             Open Scouting
@@ -773,7 +773,7 @@ export default function VideoRescoutClient() {
       <Panel>
         <strong>Timeline scores</strong>
         {visibleScores.length === 0 ? (
-          <p className="app-muted">No timeline scores yet for this team — never DEMO jobs.</p>
+          <p className="app-muted">No timeline scores yet for this team.</p>
         ) : (
           <ul className="vid-timeline">
             {visibleScores.map((entry) => (
@@ -823,7 +823,7 @@ export default function VideoRescoutClient() {
           </>
         }
         title="Post-Match Video Re-Scout"
-        description={`Re-watch real match footage for ${readyView.context.orgName ?? "your team"} and drop timeline scores into scouting — never DEMO jobs.`}
+        description={`Re-watch real match footage for ${readyView.context.orgName ?? "your team"} and drop timeline scores into scouting.`}
       >
         <div className="vid-header-meta">
           <VideoRescoutRelatedStrip orgId={orgId} />
@@ -912,7 +912,7 @@ export default function VideoRescoutClient() {
             {detailTab === "notes" ? renderNotes(selected) : renderRescout(selected)}
           </Panel>
         ) : (
-          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout — never DEMO jobs." />
+          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout." />
         )}
       </div>
 

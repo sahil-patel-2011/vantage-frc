@@ -97,7 +97,7 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
     {
       id: "pat",
       label: "Save an encrypted PAT",
-      detail: "Fine-grained or classic token with Contents: Read — never invents DEMO repos.",
+      detail: "Fine-grained or classic token with Contents: Read.",
       href: githubConnectionHref(orgId),
     },
     {
@@ -109,7 +109,7 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
     {
       id: "pair",
       label: "Pair VS Code",
-      detail: "Approve a real editor device after linking — never DEMO pairing metrics.",
+      detail: "Approve a real editor device after linking.",
       href: withOrgHref("/editor/pair", orgId),
     },
   ];
@@ -159,7 +159,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         kind,
         title: "Loading GitHub context…",
         description:
-          "Checking workspace membership and real GitHub links — never DEMO repos.",
+          "Checking workspace membership and real GitHub links.",
       };
     case "error":
       return {
@@ -167,7 +167,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Unavailable",
         title: "Could not load GitHub context",
         description:
-          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code Coach / Account Connections while it reloads — never invent DEMO repos.",
+          "A network or server issue blocked the connection panel. Retry, or open Pair VS Code / Code Coach / Account Connections while it reloads.",
       };
     case "setup":
       return {
@@ -183,14 +183,14 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         badge: "Not connected",
         title: "Link GitHub for this workspace",
         description:
-          "Repo context stays blank until an owner/admin connects OAuth or saves an encrypted PAT. Cross-check Pair VS Code, Code Coach, and Account Connections — never DEMO repos.",
+          "Repo context stays blank until an owner/admin connects OAuth or saves an encrypted PAT. Cross-check Pair VS Code, Code Coach, and Account Connections.",
       };
     default:
       return {
         kind: "ready",
         title: "GitHub robot-code context",
         description:
-          "Only repos returned for the linked account appear here — never DEMO repositories.",
+          "Only repos returned for the linked account appear here.",
       };
   }
 }
@@ -224,13 +224,13 @@ export function githubNextActions(input: {
         {
           id: "code",
           label: "Open Code Coach",
-          detail: "Local pattern review stays blank until you paste source — never DEMO findings.",
+          detail: "Local pattern review stays blank until you paste source.",
           href: hubHref("/build", "code", null),
         },
         {
           id: "pair",
           label: "Pair VS Code",
-          detail: "Editor pairing needs a workspace too — never DEMO device counts.",
+          detail: "Editor pairing needs a workspace too.",
           href: withOrgHref("/editor/pair", null),
         },
         {
@@ -258,7 +258,7 @@ export function githubNextActions(input: {
       {
         id: "pair",
         label: "Pair VS Code",
-        detail: "Approve a real editor after linking — never DEMO pairing metrics.",
+        detail: "Approve a real editor after linking.",
         href: withOrgHref("/editor/pair", orgId),
       },
       {
@@ -276,7 +276,7 @@ export function githubNextActions(input: {
         id: "connect",
         label: input.oauthSetupRequired ? "Encrypt and save a PAT" : "Connect GitHub",
         detail: input.oauthSetupRequired
-          ? "OAuth App env is optional on this deployment — PAT encrypt/save is production-ready and never invents DEMO repos."
+          ? "Signing in with GitHub is optional here — saving an encrypted access token works today."
           : "Authorize OAuth or paste a fine-grained PAT with Contents: Read below.",
         href: "#github-connection",
         primary: true,
@@ -284,7 +284,7 @@ export function githubNextActions(input: {
       {
         id: "code",
         label: "Open Code Coach",
-        detail: "Review pasted source locally without a linked repo — never DEMO findings.",
+        detail: "Review pasted source locally without a linked repo.",
         href: hubHref("/build", "code", orgId),
       },
       {
@@ -309,8 +309,8 @@ export function githubNextActions(input: {
         label: repoCount > 0 ? "Choose default robot-code repo" : "Waiting for real repos",
         detail:
           repoCount > 0
-            ? `${repoCount} real repositor${repoCount === 1 ? "y" : "ies"} from the linked account — pick one; nothing is DEMO.`
-            : "No repositories returned for this account yet — the picker stays blank, never DEMO repos.",
+            ? `${repoCount} real repositor${repoCount === 1 ? "y" : "ies"} from the linked account — pick one.`
+            : "No repositories returned for this account yet — the picker stays blank.",
         href: "#github-default-repo",
         primary: true,
       },
@@ -352,7 +352,7 @@ export function githubNextActions(input: {
     {
       id: "connections",
       label: "Account Connections",
-      detail: "GitHub Connected reflects this workspace link — never DEMO status.",
+      detail: "GitHub Connected reflects this workspace link.",
       href: "/account?tab=integrations",
     },
     {

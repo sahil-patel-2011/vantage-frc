@@ -67,7 +67,7 @@ function NextActionsPanel({ actions }: { actions: DriveTeamSignalsNextAction[] }
     <section className="app-card soft-panel edc-next-actions dts-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Match Checklist, Strategy Cards, and Copilot — never DEMO cheat sheets.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -153,7 +153,7 @@ function SignalsShell({
         <Panel className="dts-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Match Checklist and Strategy Cards — never DEMO cheat sheets.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="dts-setup-steps">
             {steps.map((step) => (
@@ -286,7 +286,7 @@ export default function DriveTeamSignalsClient() {
           </>
         }
         title="Drive-Team Signal Board"
-        description="Standardized driver/human-player comms cheat-sheets — never DEMO signal packs."
+        description="Standardized driver/human-player comms cheat-sheets."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -343,7 +343,7 @@ function CreateSheetForm({
       }}
     >
       <h2>New signal sheet</h2>
-      <p className="app-muted dts-tip">Real drive-crew language only — never DEMO cheat sheets.</p>
+      <p className="app-muted dts-tip">Real drive-crew language only.</p>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="2026 Reefscape signals" required />
@@ -383,7 +383,7 @@ function SheetList({
         badge="No sheets yet"
         badgeTone="setup"
         title="Create your first signal sheet"
-        description="Standardize hand signals, callouts, and radio codes your drive team uses — never DEMO cheat sheets."
+        description="Standardize hand signals, callouts, and radio codes your drive team uses."
       />
     );
   }

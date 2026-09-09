@@ -510,7 +510,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
               ? `${money(progress.actualCents)} of ${money(progress.goalCents)}`
               : progress.actualCents > 0
                 ? `${money(progress.actualCents)} recorded · set a goal`
-                : "Set a season goal — no DEMO %"
+                : "Set a season goal."
           }
           tone={progress.goalCents > 0 && progress.percentOfGoal >= 100 ? "good" : "blue"}
         />
@@ -694,7 +694,7 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
         <header className="biz-card-head">
           <div>
             <span className="biz-overline">Budget vs recorded spend</span>
-            <h2>Season plan against the unified ledger — never a DEMO %.</h2>
+            <h2>Season plan against the unified ledger.</h2>
           </div>
         </header>
         <div className="biz-category-grid">
@@ -791,7 +791,7 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           badge={view.canManageFinance ? "Get started" : "Setup"}
           badgeTone={view.canManageFinance ? "" : "setup"}
           title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
-          description="Add an opportunity in the form below, or compose narratives in the writing workbench linked above. Award $ appears only after you record a real award — never DEMO totals."
+          description="Add an opportunity in the form below, or compose narratives in the writing workbench linked above. Award $ appears only after you record a real award."
         />
       ) : null}
       <section className="biz-grid two">

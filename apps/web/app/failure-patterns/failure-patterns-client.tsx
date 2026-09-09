@@ -63,7 +63,7 @@ function NextActionsPanel({ actions }: { actions: FailurePatternsNextAction[] })
     <section className="app-card soft-panel edc-next-actions fp-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">FMEA, Spare Kit, and Incident Heatmap — never DEMO clusters.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -152,7 +152,7 @@ function PatternsShell({
         <Panel className="fp-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">FMEA and Pit Triage — never DEMO clusters.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="fp-setup-steps">
             {steps.map((step) => (
@@ -291,7 +291,7 @@ export default function FailurePatternsClient() {
           </>
         }
         title="Repeat Failure Patterns"
-        description="Clusters FMEA and equipment incidents by subsystem — never DEMO clusters. Cross-check FMEA and Spare Kit."
+        description="Clusters FMEA and equipment incidents by subsystem. Cross-check FMEA and Spare Kit."
       >
         <div className="fp-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -346,7 +346,7 @@ export default function FailurePatternsClient() {
           badge="No failures logged"
           badgeTone="setup"
           title="No FMEA or incident records yet this season"
-          description="Log failures in FMEA or equipment incidents — never DEMO pattern packs."
+          description="Log failures in FMEA or equipment incidents."
         >
           <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
             Open FMEA

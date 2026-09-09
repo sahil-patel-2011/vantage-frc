@@ -53,9 +53,7 @@ function WriterNextActions({
     <section className="writer-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>
-          Grants, Awards, and Knowledge stay org-scoped — Writer never invents essays or DEMO award copy.
-        </p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

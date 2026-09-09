@@ -112,7 +112,7 @@ export function prototypeNextActions(input: {
   actions.push({
     id: "cad",
     label: "Update CAD from the decision",
-    detail: "Adopted geometry belongs in an engineering brief — not as DEMO checkpoints.",
+    detail: "Adopted geometry belongs in an engineering brief.",
     href: hubHref("/build", "cad", orgId),
   });
 

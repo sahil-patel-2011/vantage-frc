@@ -61,7 +61,7 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
         badge: "Off",
         title: "Finance tools are off",
         description:
-          "Assistants will not read season budgets or open orders until an admin enables this and accepts the risk note. Nothing is pre-seeded — never DEMO ledger totals.",
+          "Assistants will not read season budgets or open orders until an admin enables this and accepts the risk note. Nothing is pre-seeded.",
       };
     case "error":
       return {

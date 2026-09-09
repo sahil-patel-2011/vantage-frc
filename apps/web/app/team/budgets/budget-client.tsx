@@ -71,7 +71,7 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
     >
       <header>
         <h2>Next actions</h2>
-        <p>From real org policy and Neon spend only — never DEMO $.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

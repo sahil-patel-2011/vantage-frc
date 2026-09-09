@@ -117,7 +117,7 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
       return {
         kind,
         title: "Loading Match Video Index…",
-        description: "Checking workspace membership and indexed clips — never DEMO video packs.",
+        description: "Checking workspace membership and indexed clips.",
       };
     case "error":
       return {
@@ -125,7 +125,7 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
         badge: "Unavailable",
         title: "Could not load Match Video Index",
         description:
-          "A network or server issue blocked the index. Retry, or open Scouting while it reloads — never invent DEMO clips.",
+          "A network or server issue blocked the index. Retry, or open Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -140,13 +140,13 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
         kind,
         badge: "No videos yet",
         title: "Index your first match video",
-        description: "Add a real video URL with its match key — never DEMO clip packs.",
+        description: "Add a real video URL with its match key.",
       };
     default:
       return {
         kind: "ready",
         title: "Match video library",
-        description: "Indexed from real URLs and match keys only — never DEMO clip counters.",
+        description: "Indexed from real URLs and match keys only.",
       };
   }
 }
@@ -217,7 +217,7 @@ export function matchVideoIndexNextActions(input: {
       {
         id: "add-video",
         label: "Add a match video",
-        detail: "Index stays blank until you paste a real URL and match key — never DEMO clips.",
+        detail: "Index stays blank until you paste a real URL and match key.",
         href: "#match-video-index-add",
         primary: true,
       },
@@ -240,7 +240,7 @@ export function matchVideoIndexNextActions(input: {
     {
       id: "review-clips",
       label: "Review indexed clips",
-      detail: `${videoCount} video${videoCount === 1 ? "" : "s"} from real URLs — never DEMO counters.`,
+      detail: `${videoCount} video${videoCount === 1 ? "" : "s"} from real URLs.`,
       href: "#match-video-index-groups",
       primary: true,
     },

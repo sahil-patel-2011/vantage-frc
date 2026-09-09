@@ -119,7 +119,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
       return {
         kind,
         title: "Loading Drive-Team Signals…",
-        description: "Checking workspace membership and signal sheets — never DEMO cheat sheets.",
+        description: "Checking workspace membership and signal sheets.",
       };
     case "error":
       return {
@@ -127,7 +127,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
         badge: "Unavailable",
         title: "Could not load Drive-Team Signals",
         description:
-          "A network or server issue blocked the signal board. Retry, or open Match Checklist while it reloads — never invent DEMO sheets.",
+          "A network or server issue blocked the signal board. Retry, or open Match Checklist while it reloads.",
       };
     case "setup":
       return {
@@ -143,13 +143,13 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
         badge: "No sheets yet",
         title: "Create your first signal sheet",
         description:
-          "Hand signals, radio codes, and field markers your drive crew actually uses — never DEMO cheat sheets.",
+          "Hand signals, radio codes, and field markers your drive crew actually uses.",
       };
     default:
       return {
         kind: "ready",
         title: "Drive-team signal board",
-        description: "Sheets and signals from your crew only — never DEMO counters.",
+        description: "Sheets and signals from your crew only.",
       };
   }
 }
@@ -200,7 +200,7 @@ export function driveTeamSignalsNextActions(input: {
       {
         id: "create-sheet",
         label: "Create a signal sheet",
-        detail: "Sheets stay blank until you create one — never DEMO cheat sheets.",
+        detail: "Sheets stay blank until you create one.",
         href: "#drive-team-signals-new",
         primary: true,
       },
@@ -225,7 +225,7 @@ export function driveTeamSignalsNextActions(input: {
       label: signalCount > 0 ? "Review signal sheets" : "Add signals to a sheet",
       detail:
         signalCount > 0
-          ? `${sheetCount} sheet${sheetCount === 1 ? "" : "s"} · ${signalCount} signal${signalCount === 1 ? "" : "s"} from your crew — never DEMO sheets.`
+          ? `${sheetCount} sheet${sheetCount === 1 ? "" : "s"} · ${signalCount} signal${signalCount === 1 ? "" : "s"} from your crew.`
           : `${sheetCount} sheet${sheetCount === 1 ? "" : "s"} ready — add codes your drive team actually uses.`,
       href: "#drive-team-signals-sheets",
       primary: true,

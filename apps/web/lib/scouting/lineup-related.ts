@@ -85,7 +85,7 @@ export function lineupSetupSteps(orgId?: string | null): LineupSetupStep[] {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Assignments and entries stay blank until real scout rows exist — never DEMO %.",
+      detail: "Assignments and entries stay blank until real scout rows exist.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -97,7 +97,7 @@ export function lineupSetupSteps(orgId?: string | null): LineupSetupStep[] {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick desk reads the same coverage — never invents DEMO rates.",
+      detail: "Pick desk reads the same coverage.",
       href: hubHref("/competition", "strategy", orgId),
     },
   ];
@@ -284,7 +284,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         kind,
         title: "Loading lineup coverage…",
         description:
-          "Checking workspace membership and live scouting slots — never DEMO %.",
+          "Checking workspace membership and live scouting slots.",
       };
     case "error":
       return {
@@ -292,7 +292,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         badge: "Unavailable",
         title: "Could not load lineup coverage",
         description:
-          "A network or server issue blocked the coverage board. Retry, or open Scouting / Strategy / Form builder while it reloads — never invent DEMO %.",
+          "A network or server issue blocked the coverage board. Retry, or open Scouting / Strategy / Form builder while it reloads.",
       };
     case "setup":
       return {
@@ -308,14 +308,14 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         badge: "No schedule yet",
         title: "Waiting on match slots",
         description:
-          "Coverage stays blank until the event schedule syncs and scouts start entering rows. Cross-check Scouting, Strategy, and Form builder — never DEMO %.",
+          "Coverage stays blank until the event schedule syncs and scouts start entering rows. Cross-check Scouting, Strategy, and Form builder.",
       };
     default:
       return {
         kind: "ready",
         title: "Live coverage gaps",
         description:
-          "Rates use only real assignments and membership-bound entries — never DEMO %.",
+          "Rates use only real assignments and membership-bound entries.",
       };
   }
 }
@@ -349,19 +349,19 @@ export function lineupNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO %.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "forms",
           label: "Open Form builder",
-          detail: "Schemas stay blank until you publish a real form — never DEMO fields.",
+          detail: "Schemas stay blank until you publish a real form.",
           href: hubHref("/competition", "forms", null),
         },
       ];
@@ -377,7 +377,7 @@ export function lineupNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Confirm assignments and entries for the active event — never DEMO %.",
+        detail: "Confirm assignments and entries for the active event.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
@@ -430,7 +430,7 @@ export function lineupNextActions(input: {
       {
         id: "command",
         label: "Sync event schedule",
-        detail: "Match slots stay blank until TBA publishes and syncs the schedule — never DEMO %.",
+        detail: "Match slots stay blank until TBA publishes and syncs the schedule.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },
@@ -449,7 +449,7 @@ export function lineupNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Pick desk waits on the same real schedule — never DEMO rates.",
+        detail: "Pick desk waits on the same real schedule.",
         href: hubHref("/competition", "strategy", orgId),
       },
     ];
@@ -462,7 +462,7 @@ export function lineupNextActions(input: {
       detail:
         gapCount > 0 || unscouted > 0
           ? `${Math.max(gapCount, unscouted)} slot${Math.max(gapCount, unscouted) === 1 ? "" : "s"} still need a scout — jump from Needs coverage.`
-          : "Live window uses real entries only — rates never invent DEMO %.",
+          : "The live window counts only the entries your scouts saved.",
       href: gapCount > 0 || unscouted > 0 ? "#lineup-gaps" : hubHref("/competition", "scouting", orgId),
       primary: true,
     },

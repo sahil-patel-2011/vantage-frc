@@ -72,7 +72,7 @@ function RuleImpactNextActionsPanel({ actions }: { actions: RuleImpactNextAction
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Kickoff, CAD, and Subsystems — never DEMO impact metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -312,7 +312,7 @@ export default function RuleImpactClient() {
           </>
         }
         title="Rule Impact Analyzer"
-        description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only. Cross-check Kickoff, CAD, and Subsystems — never DEMO impact metrics."
+        description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only. Cross-check Kickoff, CAD, and Subsystems."
       >
         <div className="rule-impact-header-actions">
           {view.seasons.length > 0 ? (
@@ -386,7 +386,7 @@ export default function RuleImpactClient() {
             badge="No subsystem history"
             badgeTone="setup"
             title="No prior-season subsystems on file"
-            description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file, not a DEMO library."
+            description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
           >
             <a className="app-button" href={subsystemsHref}>
               Open Subsystems
@@ -406,7 +406,7 @@ export default function RuleImpactClient() {
             Keep{" "}
             <a href={kickoffHref}>Kickoff</a> rule notes aligned with logged deltas, verify geometry in{" "}
             <a href={cadHref}>CAD</a>, and match candidate names to{" "}
-            <a href={subsystemsHref}>Subsystems</a> — never invent DEMO impact metrics.
+            <a href={subsystemsHref}>Subsystems</a>
           </p>
         </Panel>
       </div>
@@ -436,7 +436,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
             {view.ruleChanges.length === 0 ? "EMPTY" : view.candidates.length === 0 ? "NO HISTORY" : "LIVE"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season impact</h2>
-          <small className="app-muted">Logged rules × prior subsystems only — never DEMO impact metrics</small>
+          <small className="app-muted">Logged rules × prior subsystems only.</small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -497,8 +497,7 @@ function RuleChangeForm({
     >
       <h2 style={{ margin: 0 }}>Log a rule change</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Add each new-season game-manual delta you verified — Rule Impact never invents DEMO rule text or
-        confidence scores.
+        Add each game-manual change once you have checked it against the official manual.
       </p>
       <FormGrid min={160}>
         <FormRow label="Rule code">
@@ -567,7 +566,7 @@ function RuleChangeList({
         badge="No rule changes logged"
         badgeTone="setup"
         title="Log this season's rule changes"
-        description="Add each new-season game-manual delta above to start diffing it against your subsystem library — never DEMO impact metrics."
+        description="Add each new-season game-manual delta above to start diffing it against your subsystem library."
       />
     );
   }
@@ -687,7 +686,7 @@ function AssessmentList({
         badge="No assessments yet"
         badgeTone="setup"
         title="Assess a subsystem above"
-        description="Persisted assessments — including status changes as you triage them — appear here from real assess actions only — never DEMO impact metrics."
+        description="Persisted assessments — including status changes as you triage them — appear here from real assess actions only."
       />
     );
   }

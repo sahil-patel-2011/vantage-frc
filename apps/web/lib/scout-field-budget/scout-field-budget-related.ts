@@ -84,7 +84,7 @@ export function scoutFieldBudgetSetupSteps(orgId?: string | null): ScoutFieldBud
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Live match forms stay blank until scouts log real rows — never DEMO fields.",
+      detail: "Live match forms stay blank until scouts log real rows.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -131,7 +131,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
       return {
         kind,
         title: "Loading Field-Count Budget…",
-        description: "Checking workspace membership and schema snapshots — never DEMO field totals.",
+        description: "Checking workspace membership and schema snapshots.",
       };
     case "error":
       return {
@@ -139,7 +139,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
         badge: "Unavailable",
         title: "Could not load Field-Count Budget",
         description:
-          "A network or server issue blocked the linter. Retry, or open Form builder while it reloads — never invent DEMO fields.",
+          "A network or server issue blocked the linter. Retry, or open Form builder while it reloads.",
       };
     case "setup":
       return {
@@ -155,13 +155,13 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
         badge: "No schemas linted yet",
         title: "Log your first schema snapshot",
         description:
-          "Record how many fields each match phase asks for and lint against a realistic per-match budget — never DEMO schema packs.",
+          "Record how many fields each match phase asks for and lint against a realistic per-match budget.",
       };
     default:
       return {
         kind: "ready",
         title: "Schema field-count lint",
-        description: "Budgets from logged schemas only — never DEMO field counters.",
+        description: "Budgets from logged schemas only.",
       };
   }
 }
@@ -256,7 +256,7 @@ export function scoutFieldBudgetNextActions(input: {
       {
         id: "lint-schema",
         label: "Lint the first schema",
-        detail: "Snapshots stay blank until you log real phase field counts — never DEMO schemas.",
+        detail: "Snapshots stay blank until you log real phase field counts.",
         href: "#scout-field-budget-lint",
         primary: true,
       },
@@ -281,8 +281,8 @@ export function scoutFieldBudgetNextActions(input: {
       label: overBudgetCount > 0 ? "Trim over-budget schemas" : "Review linted schemas",
       detail:
         overBudgetCount > 0
-          ? `${overBudgetCount} schema${overBudgetCount === 1 ? "" : "s"} over budget from real field counts — never DEMO flags.`
-          : `${snapshotCount} linted schema${snapshotCount === 1 ? "" : "s"} from logged snapshots — never DEMO counters.`,
+          ? `${overBudgetCount} schema${overBudgetCount === 1 ? "" : "s"} over budget from real field counts.`
+          : `${snapshotCount} linted schema${snapshotCount === 1 ? "" : "s"} from logged snapshots.`,
       href: "#scout-field-budget-list",
       primary: true,
     },

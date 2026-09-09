@@ -86,7 +86,7 @@ export function grantEligibilityMatcherSetupSteps(
     {
       id: "grants",
       label: "Open Grants",
-      detail: "Complete team profile fields used for matching — never DEMO grant dollars.",
+      detail: "Complete team profile fields used for matching.",
       href: hubHref("/business", "grants", orgId),
     },
     {
@@ -146,7 +146,7 @@ export function grantEligibilityMatcherShellCopy(
       return {
         kind,
         title: "Loading Grant Eligibility Matcher…",
-        description: "Checking workspace membership and team profile — never DEMO grant dollars.",
+        description: "Checking workspace membership and team profile.",
       };
     case "error":
       return {
@@ -154,7 +154,7 @@ export function grantEligibilityMatcherShellCopy(
         badge: "Unavailable",
         title: "Could not load Grant Eligibility Matcher",
         description:
-          "A network or server issue blocked matching. Retry, or open Grants while it reloads — never invent DEMO awards.",
+          "A network or server issue blocked matching. Retry, or open Grants while it reloads.",
       };
     case "setup":
       return {
@@ -170,14 +170,14 @@ export function grantEligibilityMatcherShellCopy(
         badge: "No matches yet",
         title: "No grants match your recorded team profile",
         description:
-          "Complete rookie year, region, mentor employers, and demographics to surface grants you qualify for — never DEMO grant dollars.",
+          "Complete rookie year, region, mentor employers, and demographics to surface grants you qualify for.",
       };
     default:
       return {
         kind: "ready",
         title: "Grants your team qualifies for",
         description:
-          "Matches use your recorded profile only — never DEMO eligibility scores.",
+          "Matches use your recorded profile only.",
       };
   }
 }
@@ -272,7 +272,7 @@ export function grantEligibilityMatcherNextActions(input: {
       {
         id: "profile",
         label: "Complete team profile",
-        detail: "Matches stay blank until profile fields exist — never DEMO grant dollars.",
+        detail: "Matches stay blank until profile fields exist.",
         href: "#grant-eligibility-profile",
         primary: true,
       },
@@ -297,8 +297,8 @@ export function grantEligibilityMatcherNextActions(input: {
       label: deadlineCount > 0 ? "Review upcoming deadlines" : "Review eligible grants",
       detail:
         deadlineCount > 0
-          ? `${deadlineCount} eligible grant${deadlineCount === 1 ? "" : "s"} closing soon — never DEMO dollars.`
-          : `${eligibleCount} grant${eligibleCount === 1 ? "" : "s"} match your recorded profile — never DEMO scores.`,
+          ? `${deadlineCount} eligible grant${deadlineCount === 1 ? "" : "s"} closing soon.`
+          : `${eligibleCount} grant${eligibleCount === 1 ? "" : "s"} match your recorded profile.`,
       href: deadlineCount > 0 ? "#grant-eligibility-deadlines" : "#grant-eligibility-list",
       primary: true,
     },

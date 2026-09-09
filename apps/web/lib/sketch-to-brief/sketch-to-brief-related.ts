@@ -89,7 +89,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
         kind,
         title: "Loading Sketch-to-Brief…",
         description:
-          "Checking workspace membership and logged kickoff sketches — never DEMO brief metrics.",
+          "Checking workspace membership and logged kickoff sketches.",
       };
     case "error":
       return {
@@ -97,7 +97,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
         badge: "Unavailable",
         title: "Could not load Sketch-to-Brief",
         description:
-          "A network or server issue blocked sketches. Retry, or open Kickoff / CAD while it reloads — never invent DEMO brief metrics.",
+          "A network or server issue blocked sketches. Retry, or open Kickoff / CAD while it reloads.",
       };
     case "setup":
       return {
@@ -113,14 +113,14 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
         badge: "No sketches yet",
         title: "Log your first kickoff sketch",
         description:
-          "CAD briefs stay blank until you transcribe a real whiteboard sketch. Cross-check Kickoff and CAD — never DEMO brief metrics.",
+          "CAD briefs stay blank until you transcribe a real whiteboard sketch. Cross-check Kickoff and CAD.",
       };
     default:
       return {
         kind: "ready",
         title: "Kickoff sketches & CAD briefs",
         description:
-          "Briefs and rule flags use only transcribed notes plus your team's Kickoff rule notes and design priorities — never DEMO brief metrics.",
+          "Briefs and rule flags use only transcribed notes plus your team's Kickoff rule notes and design priorities.",
       };
   }
 }
@@ -156,13 +156,13 @@ export function sketchToBriefNextActions(input: {
         {
           id: "kickoff",
           label: "Open Kickoff",
-          detail: "Rule notes stay blank until answered — never DEMO rule text.",
+          detail: "Rule notes stay blank until answered.",
           href: hubHref("/build", "kickoff", null),
         },
         {
           id: "cad",
           label: "Open CAD",
-          detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+          detail: "Mechanism geometry stays blank until connected.",
           href: hubHref("/build", "cad", null),
         },
       ];
@@ -226,7 +226,7 @@ export function sketchToBriefNextActions(input: {
       {
         id: "kickoff",
         label: "Cross-check Kickoff",
-        detail: "Answered rule notes and priorities ground the first CAD brief — never DEMO rule text.",
+        detail: "Answered rule notes and priorities ground the first CAD brief.",
         href: hubHref("/build", "kickoff", orgId),
       },
       {
@@ -252,7 +252,7 @@ export function sketchToBriefNextActions(input: {
     actions.push({
       id: "review-flags",
       label: "Review rule-compliance flags",
-      detail: `${ruleFlagCount} flag${ruleFlagCount === 1 ? "" : "s"} grounded in Kickoff notes — never invent DEMO rule text.`,
+      detail: `${ruleFlagCount} flag${ruleFlagCount === 1 ? "" : "s"} grounded in Kickoff notes.`,
       href: "#sketch-to-brief-briefs",
       primary: true,
     });
@@ -260,7 +260,7 @@ export function sketchToBriefNextActions(input: {
     actions.push({
       id: "generate-brief",
       label: "Generate a CAD brief",
-      detail: "Pick a logged sketch and draft a first-pass brief — never DEMO dimensions.",
+      detail: "Pick a logged sketch and draft a first-pass brief.",
       href: "#sketch-to-brief-sketches",
       primary: true,
     });
@@ -270,14 +270,14 @@ export function sketchToBriefNextActions(input: {
     {
       id: "kickoff",
       label: "Open Kickoff",
-      detail: "Keep rule notes and design priorities aligned with brief grounding — never DEMO rule text.",
+      detail: "Keep rule notes and design priorities aligned with brief grounding.",
       href: hubHref("/build", "kickoff", orgId),
       primary: !actions.some((a) => a.primary),
     },
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Turn a drafted brief into real mechanism geometry — never DEMO models.",
+      detail: "Turn a drafted brief into real mechanism geometry.",
       href: hubHref("/build", "cad", orgId),
     },
     {

@@ -371,7 +371,7 @@ function LiveDesk({
           </ul>
           <p className="app-muted" style={{ margin: "10px 0 0", fontSize: 12 }}>
             Use funding lines for school funds, student fees, and deposits that are not already in Sponsors, Grants, or
-            Fundraisers. Totals never invent DEMO dollars.
+            Fundraisers.
           </p>
           <div style={{ marginTop: 16 }}>
             <span className="biz-overline">Per-sponsor recorded contributions</span>

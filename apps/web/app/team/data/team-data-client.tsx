@@ -31,7 +31,7 @@ function TeamDataNextActionsPanel({ actions }: { actions: TeamDataNextAction[] }
     <Panel className="team-data-next-actions edc-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Schedule, Event Day, and Strategy only — never DEMO team metrics.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -111,7 +111,7 @@ function TeamDataShell({
         title={title}
         description={
           shell === "error"
-            ? error || "Check your connection and try again — nothing is filled with DEMO team metrics."
+            ? error || "Check your connection and try again."
             : description
         }
         aria-busy={shell === "loading" || undefined}
@@ -300,7 +300,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     return (
       <TeamDataShell
         title="Loading…"
-        description="Checking workspace event, TBA credentials, and Neon reference cache — never DEMO metrics."
+        description="Checking workspace event, TBA credentials, and Neon reference cache."
         orgId={orgId}
         shell="loading"
       />
@@ -311,7 +311,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     return (
       <TeamDataShell
         title={forbidden ? "Admin access required" : "Team Data unavailable"}
-        description="Live inventory and TBA sync stay blank rather than inventing DEMO team metrics."
+        description="Inventory and event data appear after your first sync."
         orgId={orgId}
         shell="error"
         error={error || message}
@@ -333,7 +333,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           needsEvent
             ? "Team Data syncs only for a real workspace event — Schedule, Event Day, and Strategy stay empty until then."
             : needsTba
-              ? "Save an encrypted TBA fallback key (or ask a platform admin for TBA_AUTH_KEY). Nothing is filled with DEMO ranks or EPA."
+              ? "Save an encrypted TBA fallback key (or ask a platform admin for TBA_AUTH_KEY)."
               : "Finish workspace setup so TBA sync can resolve your organization."
         }
         orgId={orgId}
@@ -382,7 +382,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <h1>Team Data</h1>
           <p>
             Inventory counts for your workspace, shared TBA cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy read this Neon cache — never DEMO metrics.
+            Schedule, Event Day, and Strategy read this Neon cache.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -431,7 +431,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             Active event: <strong>{activeEventKey ?? "Not set"}</strong>
           </p>
           {inventory.length === 0 ? (
-            <p className="app-muted">No workspace inventory rows yet — counts stay blank rather than DEMO placeholders.</p>
+            <p className="app-muted">Nothing in this workspace yet — counts appear once your team adds data.</p>
           ) : (
             <ul className="team-data-inventory">
               {inventory.map((row) => (

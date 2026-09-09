@@ -84,7 +84,7 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
       return {
         kind,
         title: "Loading alumni…",
-        description: "Checking workspace membership and persisted alumni rows — never DEMO classmates.",
+        description: "Checking workspace membership and persisted alumni rows.",
       };
     case "error":
       return {
@@ -108,7 +108,7 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
         badge: "No alumni yet",
         title: "Add your first alumni profile",
         description:
-          "The directory stays blank until someone records a real graduate. Never DEMO classmates.",
+          "The directory stays blank until someone records a real graduate.",
       };
     default:
       return {
@@ -138,7 +138,7 @@ export function alumniNextActions(input: {
       {
         id: "alumni-network",
         label: "Open Alumni network",
-        detail: "Mentor slots stay blank until real alumni exist — never DEMO classmates.",
+        detail: "Mentor slots stay blank until real alumni exist.",
         href: withOrgHref("/alumni-network", orgId),
       },
     ];
@@ -184,7 +184,7 @@ export function alumniNextActions(input: {
     {
       id: "directory",
       label: "Review alumni",
-      detail: `${input.alumniCount} recorded graduate${input.alumniCount === 1 ? "" : "s"} — never DEMO classmates.`,
+      detail: `${input.alumniCount} recorded graduate${input.alumniCount === 1 ? "" : "s"}`,
       href: withOrgHref("/team/alumni", orgId),
       primary: true,
     },

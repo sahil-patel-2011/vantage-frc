@@ -79,7 +79,7 @@ function NextActionsPanel({ actions }: { actions: PitRepairTriageNextAction[] })
     <section className="app-card soft-panel edc-next-actions prt-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Command, FMEA, and Spare Kit — never DEMO triage calls.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -168,7 +168,7 @@ function TriageShell({
         <Panel className="prt-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">FMEA, Inventory, and Command — never DEMO triage calls.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="prt-setup-steps">
             {steps.map((step) => (
@@ -316,7 +316,7 @@ export default function PitRepairTriageClient() {
           </>
         }
         title="Pit repair triage"
-        description="Log a pit failure against real FMEA history and spare stock — never DEMO triage calls. Cross-check Command and Spare Kit."
+        description="Log a pit failure against real FMEA history and spare stock. Cross-check Command and Spare Kit."
       >
         <div className="prt-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -368,7 +368,7 @@ export default function PitRepairTriageClient() {
           badge="No reports yet"
           badgeTone="setup"
           title="Log your first pit failure"
-          description="Fix-vs-swap uses real FMEA history and spare stock — never DEMO triage packs."
+          description="Fix-vs-swap uses real FMEA history and spare stock."
         />
       )}
       <ReferencePanels view={view} />
@@ -603,7 +603,7 @@ function ReferencePanels({ view }: { view: LiveView }) {
       <div>
         <h2>FMEA history</h2>
         {view.fmeaHistory.length === 0 ? (
-          <p className="app-muted">No FMEA failures logged this season yet — never DEMO history.</p>
+          <p className="app-muted">No FMEA failures logged this season yet.</p>
         ) : (
           <ul className="prt-ref-list">
             {view.fmeaHistory.map((entry) => (
@@ -622,7 +622,7 @@ function ReferencePanels({ view }: { view: LiveView }) {
       <div>
         <h2>Spares in stock</h2>
         {view.spareCandidates.length === 0 ? (
-          <p className="app-muted">No spares currently in stock — never DEMO inventory.</p>
+          <p className="app-muted">No spares currently in stock.</p>
         ) : (
           <ul className="prt-ref-list">
             {view.spareCandidates.map((item) => (
@@ -687,7 +687,7 @@ function LogFailureForm({
       }}
     >
       <h2>Log a pit failure</h2>
-      <p className="app-muted">Grounded in real FMEA and spare stock — never DEMO triage calls.</p>
+      <p className="app-muted">Grounded in real FMEA and spare stock.</p>
       <FormGrid min={180}>
         <FormRow label="Subsystem">
           <input value={form.subsystemName} onChange={set("subsystemName")} placeholder="Intake" required />

@@ -58,7 +58,7 @@ function NextActions({
     <section className="ai-memory-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From real team memory policy and Neon counts only — never DEMO memories.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -506,7 +506,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
               <span>
                 <strong>Use team memory in assistant prompts</strong>
                 <small>
-                  When off, no shared team memory is injected. Empty lists stay empty — never DEMO facts.
+                  When off, no shared team memory is injected. Empty lists stay empty.
                 </small>
               </span>
             </label>

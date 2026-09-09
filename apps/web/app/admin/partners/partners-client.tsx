@@ -170,7 +170,7 @@ export default function AdminPartnersClient() {
         <header>
           <h2>AI tools for platform admin</h2>
           <p className="app-muted">
-            Smoke paths into working Soft-UI AI and key vaults. No DEMO usage metrics.
+            Smoke paths into working Soft-UI AI and key vaults.
           </p>
         </header>
         <div className="admin-ai-smoke-links">

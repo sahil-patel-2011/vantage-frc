@@ -97,7 +97,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
       return {
         kind,
         title: "Loading Decision Log…",
-        description: "Checking workspace membership and logged decisions — never DEMO entries.",
+        description: "Checking workspace membership and logged decisions.",
       };
     case "error":
       return {
@@ -121,7 +121,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
         badge: "No decisions yet",
         title: "Record your first call",
         description:
-          "The log stays blank until you capture a real decision with context and rationale. Decision Search, Season Report, and Knowledge stay linked — never DEMO entries.",
+          "The log stays blank until you capture a real decision with context and rationale. Decision Search, Season Report, and Knowledge stay linked.",
       };
     default:
       return {
@@ -160,19 +160,19 @@ export function decisionsNextActions(input: {
         {
           id: "decision-search",
           label: "Open Decision Search",
-          detail: "Search stays empty until you index real decisions — never DEMO text.",
+          detail: "Search stays empty until you index real decisions.",
           href: hubHref("/ai", "decision-search", null),
         },
         {
           id: "season-report",
           label: "Open Season Report",
-          detail: "Season notes stay blank until you log real entries — never DEMO stats.",
+          detail: "Season notes stay blank until you log real entries.",
           href: hubHref("/ai", "season-report", null),
         },
         {
           id: "knowledge",
           label: "Open Knowledge",
-          detail: "Wiki pages stay blank until authored — never DEMO articles.",
+          detail: "Wiki pages stay blank until authored.",
           href: hubHref("/team", "knowledge", null),
         },
       ];
@@ -275,14 +275,14 @@ export function decisionsNextActions(input: {
     {
       id: "decision-search",
       label: "Open Decision Search",
-      detail: "Import grounded Decision Log fields into the searchable index — never DEMO text.",
+      detail: "Import grounded Decision Log fields into the searchable index.",
       href: hubHref("/ai", "decision-search", orgId),
       primary: !actions.some((a) => a.primary),
     },
     {
       id: "season-report",
       label: "Open Season Report",
-      detail: "Cross-check season narrative with logged design choices — never DEMO stats.",
+      detail: "Cross-check season narrative with logged design choices.",
       href: hubHref("/ai", "season-report", orgId),
     },
     {

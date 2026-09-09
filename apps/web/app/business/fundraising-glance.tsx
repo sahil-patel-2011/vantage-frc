@@ -48,7 +48,7 @@ export function FundraisingGlance({
         className="biz-fundraising-glance"
         badge="Get started"
         title="No season fundraising goal yet"
-        description="Set a budget goal, then add sponsors, grants, or fundraiser events. Progress never invents DEMO raised totals."
+        description="Set a budget goal, then add sponsors, grants, or fundraiser events."
       >
         <BusinessRelated
           orgId={view.orgId}
@@ -66,7 +66,7 @@ export function FundraisingGlance({
           <span className="biz-overline">Season fundraising</span>
           <h2>{hasGoal ? "Goal vs actual" : "Recorded inflows"}</h2>
           <p className="app-muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
-            Org-local cash + grants only — never mixed with other teams or DEMO dollars.
+            Org-local cash + grants only.
           </p>
         </div>
         <span className={`biz-badge ${tone}`}>

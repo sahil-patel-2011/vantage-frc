@@ -80,7 +80,7 @@ function NextActions({
     <section className="costs-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From logged season costs and subscriptions only — remaining and % stay blank until a real budget exists. Never DEMO dollars.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -190,7 +190,7 @@ export default function CostsClient() {
         <PageHeader
           breadcrumbs="Business / Season Costs"
           title="Season Costs"
-          description="Real-world spend against a season budget — never DEMO dollars."
+          description="Real-world spend against a season budget."
         />
         <EmptyState
           soft
@@ -261,7 +261,7 @@ export default function CostsClient() {
           </>
         }
         title="Season Costs"
-        description="Real-world spend, subscriptions, and live AI/API usage against one season budget — from logged rows only. Never DEMO dollars. Approved purchase requests live under Orders."
+        description="Real-world spend, subscriptions, and live AI/API usage against one season budget — from logged rows only. Approved purchase requests live under Orders."
       >
         <div className="costs-header-actions">
           {view.seasons.length > 0 ? (
@@ -704,7 +704,7 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       }}
     >
       <h2>Add cost</h2>
-      <p>Amounts come from what you enter — never pre-filled DEMO spend.</p>
+      <p>Amounts come from what you enter.</p>
       <FormGrid min={140}>
         <FormRow label="What was it?" wide>
           <input value={form.label} onChange={set("label")} placeholder="Regional registration, swerve modules…" required />

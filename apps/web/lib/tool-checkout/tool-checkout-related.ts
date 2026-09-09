@@ -120,7 +120,7 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
       return {
         kind,
         title: "Loading Tool Checkout…",
-        description: "Checking workspace membership and tool loans — never DEMO checkout ledgers.",
+        description: "Checking workspace membership and tool loans.",
       };
     case "error":
       return {
@@ -128,7 +128,7 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
         badge: "Unavailable",
         title: "Could not load Tool Checkout",
         description:
-          "A network or server issue blocked the tool registry. Retry, or open Equipment while it reloads — never invent DEMO loans.",
+          "A network or server issue blocked the tool registry. Retry, or open Equipment while it reloads.",
       };
     case "setup":
       return {
@@ -144,13 +144,13 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
         badge: "No tools yet",
         title: "Add your first shop tool",
         description:
-          "Register drills, calipers, and chargers so loans stay real — never DEMO checkout packs.",
+          "Register drills, calipers, and chargers so loans stay real.",
       };
     default:
       return {
         kind: "ready",
         title: "Tool checkout",
-        description: "Tools and loans from your registry only — never DEMO counters.",
+        description: "Tools and loans from your registry only.",
       };
   }
 }
@@ -201,7 +201,7 @@ export function toolCheckoutNextActions(input: {
       {
         id: "add-tool",
         label: "Add a shop tool",
-        detail: "The registry stays blank until you add one — never DEMO loan ledgers.",
+        detail: "The registry stays blank until you add one.",
         href: "#tool-checkout-add",
         primary: true,
       },
@@ -226,8 +226,8 @@ export function toolCheckoutNextActions(input: {
       label: overdueCount > 0 ? "Chase overdue loans" : "Review tool registry",
       detail:
         overdueCount > 0
-          ? `${overdueCount} overdue loan${overdueCount === 1 ? "" : "s"} from real checkouts — never DEMO ledgers.`
-          : `${toolCount} tool${toolCount === 1 ? "" : "s"} tracked — never DEMO counters.`,
+          ? `${overdueCount} overdue loan${overdueCount === 1 ? "" : "s"} from real checkouts.`
+          : `${toolCount} tool${toolCount === 1 ? "" : "s"} tracked.`,
       href: "#tool-checkout-registry",
       primary: true,
     },

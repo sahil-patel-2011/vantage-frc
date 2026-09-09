@@ -53,7 +53,7 @@ function NextActionsPanel({ actions }: { actions: MatchStrategyCardsNextAction[]
     <section className="app-card soft-panel edc-next-actions msc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Checklist, and Command — never DEMO game plans.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -142,7 +142,7 @@ function CardsShell({
         <Panel className="msc-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Command — never DEMO game plans.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="msc-setup-steps">
             {steps.map((step) => (
@@ -330,7 +330,7 @@ export default function MatchStrategyCardsClient() {
           </>
         }
         title="Match Strategy Cards"
-        description="Printable game plan for our next TBA match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only. Never DEMO game plans."
+        description="Printable game plan for our next TBA match — roles, auto, defense, threats. Auto / backup / deploy cues come from written text only."
       >
         <div className="msc-header-actions">
           {relatedLinks.map((link) => (

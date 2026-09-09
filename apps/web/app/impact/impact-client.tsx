@@ -54,7 +54,7 @@ function ImpactNextActions({
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Build award evidence from real outreach</h2>
-        <p>Hours, reach, and readiness use logged activities only — never DEMO community metrics.</p>
+        <p>Hours, reach, and readiness use logged activities only.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -332,7 +332,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
           </div>
         </header>
         <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-          Hours, people reached, and readiness stay blank until you log real outreach — never DEMO community metrics.
+          Hours, people reached, and readiness stay blank until you log real outreach.
         </p>
       </section>
     );

@@ -540,15 +540,15 @@ export default function AgentConfigClient() {
       <section className="agent-config-panel agent-config-howto" style={{ marginTop: 16 }} aria-label="How to use">
         <h2>How every member uses this</h2>
         <h3>Claude Code (one command, run in your robot-code repo)</h3>
-        <pre>{`vantage-cad agent sync            # writes .claude/agents, team rules + CLAUDE.md import, .mcp.json (vantage-* only)
-vantage-cad agent sync --dry-run  # preview without writing`}</pre>
+        <pre>{`vantage-cad agent sync # writes .claude/agents, team rules + CLAUDE.md import, .mcp.json (vantage-* only)
+vantage-cad agent sync --dry-run # preview without writing`}</pre>
         <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
           Requires one-time pairing via <code>vantage-cad setup</code>. Permissions are never auto-applied —
           sync writes <code>.claude/vantage-permissions.suggested.json</code> for a human to review.
         </p>
         <h3>Cursor (same command, Cursor-native formats)</h3>
-        <pre>{`vantage-cad agent sync --agent cursor  # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
-vantage-cad agent sync --agent all     # Claude Code + Cursor together`}</pre>
+        <pre>{`vantage-cad agent sync --agent cursor # rules → .cursor/rules/vantage/*.mdc, skills → .cursor/skills, MCP → .cursor/mcp.json
+vantage-cad agent sync --agent all # Claude Code + Cursor together`}</pre>
         <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
           Without <code>--agent</code>, sync targets whatever the repo already uses (a <code>.cursor/</code>{" "}
           folder enables Cursor). Rules without path scopes become always-on (<code>alwaysApply: true</code>);
@@ -559,7 +559,7 @@ vantage-cad agent sync --agent all     # Claude Code + Cursor together`}</pre>
         </p>
         <h3>Any custom agent (typed JSON export)</h3>
         <pre>{`GET ${bundleUrl}
-GET ${bundleUrl}&format=cursor   # same content materialized as Cursor-native files`}</pre>
+GET ${bundleUrl}&format=cursor # same content materialized as Cursor-native files`}</pre>
         <p style={{ fontSize: 12, color: "var(--app-muted)" }}>
           Session-authenticated and org-scoped; the shape is documented in <code>docs/AGENT_CONFIG.md</code>.
           Every export is also scoped to the requesting member: team-wide items plus items shared with them.

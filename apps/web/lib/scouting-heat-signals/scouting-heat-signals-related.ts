@@ -90,7 +90,7 @@ export function scoutingHeatSignalsSetupSteps(orgId?: string | null): ScoutingHe
     {
       id: "picklist-collab",
       label: "Open Pick List",
-      detail: "Carry rising/falling teams into alliance priorities — never DEMO arrows.",
+      detail: "Carry rising/falling teams into alliance priorities.",
       href: hubHref("/competition", "picklist-collab", orgId),
     },
   ];
@@ -131,7 +131,7 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
       return {
         kind,
         title: "Loading Scouting Heat Signals…",
-        description: "Checking workspace membership and logged observations — never DEMO trend arrows.",
+        description: "Checking workspace membership and logged observations.",
       };
     case "error":
       return {
@@ -139,7 +139,7 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
         badge: "Unavailable",
         title: "Could not load Scouting Heat Signals",
         description:
-          "A network or server issue blocked heat signals. Retry, or open Scouting while it reloads — never invent DEMO trends.",
+          "A network or server issue blocked heat signals. Retry, or open Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -155,13 +155,13 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
         badge: "No observations yet",
         title: "Log your first heat signal",
         description:
-          "Record a team as trending up or down after a real match — never DEMO trend packs.",
+          "Record a team as trending up or down after a real match.",
       };
     default:
       return {
         kind: "ready",
         title: "Scout-observed heat trends",
-        description: "Rising and falling teams from logged observations only — never DEMO arrows.",
+        description: "Rising and falling teams from logged observations only.",
       };
   }
 }
@@ -256,7 +256,7 @@ export function scoutingHeatSignalsNextActions(input: {
       {
         id: "log-signal",
         label: "Log the first heat signal",
-        detail: "Trends stay blank until scouts log real rising/falling notes — never DEMO arrows.",
+        detail: "Trends stay blank until scouts log real rising/falling notes.",
         href: "#scouting-heat-log",
         primary: true,
       },
@@ -281,8 +281,8 @@ export function scoutingHeatSignalsNextActions(input: {
       label: risingCount > 0 ? "Review rising teams" : "Review heat signals",
       detail:
         risingCount > 0
-          ? `${risingCount} team${risingCount === 1 ? "" : "s"} trending up from real observations — never DEMO arrows.`
-          : `${entryCount} observation${entryCount === 1 ? "" : "s"} logged — never DEMO counters.`,
+          ? `${risingCount} team${risingCount === 1 ? "" : "s"} trending up from real observations.`
+          : `${entryCount} observation${entryCount === 1 ? "" : "s"} logged.`,
       href: "#scouting-heat-list",
       primary: true,
     },

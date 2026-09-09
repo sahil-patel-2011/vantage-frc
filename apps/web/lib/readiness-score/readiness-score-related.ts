@@ -148,7 +148,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         kind,
         title: "Loading Robot Readiness…",
         description:
-          "Checking workspace membership and logged subsystems — never DEMO ship scores.",
+          "Checking workspace membership and logged subsystems.",
       };
     case "error":
       return {
@@ -156,7 +156,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "Unavailable",
         title: "Could not load Readiness Score",
         description:
-          "A network or server issue blocked readiness. Retry, or open FMEA / Inspection while it reloads — never invent DEMO readiness metrics.",
+          "A network or server issue blocked readiness. Retry, or open FMEA / Inspection while it reloads.",
       };
     case "setup":
       return {
@@ -172,14 +172,14 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         badge: "No subsystems yet",
         title: "Log your first subsystem",
         description:
-          "Weight, power, wiring, and code-version state ground the index. Cross-check FMEA and Inspection — never DEMO readiness metrics.",
+          "Weight, power, wiring, and code-version state ground the index. Cross-check FMEA and Inspection.",
       };
     default:
       return {
         kind: "ready",
         title: "Ship readiness from logged state",
         description:
-          "The index uses only subsystems, checklist, weight/power, and open FMEA you recorded — never DEMO scores.",
+          "The index uses only subsystems, checklist, weight/power, and open FMEA you recorded.",
       };
   }
 }
@@ -234,7 +234,7 @@ export function readinessScoreNextActions(input: {
       {
         id: "log",
         label: "Log a subsystem",
-        detail: "Weight, power, wiring, and code state stay blank until you log them — never DEMO scores.",
+        detail: "Weight, power, wiring, and code state stay blank until you log them.",
         href: "#readiness-score-subsystem",
         primary: true,
       },
@@ -253,7 +253,7 @@ export function readinessScoreNextActions(input: {
       {
         id: "code",
         label: "Open Code Coach",
-        detail: "Code patterns stay separate from inventing DEMO deploy status.",
+        detail: "Code patterns are tracked separately from deploy status.",
         href: hubHref("/build", "code", orgId),
       },
     ];
@@ -265,7 +265,7 @@ export function readinessScoreNextActions(input: {
       label: fixCount > 0 ? "Work the fix list" : "Ship readiness ready",
       detail:
         fixCount > 0
-          ? `${fixCount} fix item${fixCount === 1 ? "" : "s"} from logged state only — never DEMO severity.`
+          ? `${fixCount} fix item${fixCount === 1 ? "" : "s"} from logged state only.`
           : `${subsystemCount} subsystem${subsystemCount === 1 ? "" : "s"} on file — keep wiring and code honest.`,
       href: fixCount > 0 ? "#readiness-score-fixes" : "#readiness-score-subsystem",
       primary: true,

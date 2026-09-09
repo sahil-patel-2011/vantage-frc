@@ -61,7 +61,7 @@ function MediaKitNextActionsPanel({ actions }: { actions: MediaKitNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Sponsor Suite and Outreach — never DEMO media metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -301,7 +301,7 @@ export default function MediaKitClient() {
           </>
         }
         title="Media Kit"
-        description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded. Never DEMO media metrics."
+        description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded."
       >
         <div className="media-kit-header-actions">
           {view.seasons.length > 0 ? (
@@ -404,7 +404,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           {readiness.missingFields.length > 0 ? (
             <small className="app-muted">Missing: {readiness.missingFields.join(", ")}</small>
           ) : (
-            <small className="app-muted">All core fields recorded — never DEMO claims.</small>
+            <small className="app-muted">All core fields recorded.</small>
           )}
         </div>
         <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
@@ -563,7 +563,7 @@ function AssetsPanel({
           badge="No assets yet"
           badgeTone="setup"
           title="Add your team logo and photos"
-          description="Asset library stays empty until you pick a Media library file or add a real URL — never DEMO logos."
+          description="Asset library stays empty until you pick a Media library file or add a real URL."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
@@ -708,7 +708,7 @@ function DocumentsPanel({
           badge="No one-pagers yet"
           badgeTone="setup"
           title="Generate your first media-kit one-pager"
-          description="Built only from your recorded profile and asset library — never invent DEMO claims."
+          description="Built only from your recorded profile and asset library."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>

@@ -88,7 +88,7 @@ export function qrHandoffSetupSteps(orgId?: string | null): QrHandoffSetupStep[]
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Publish a match or pit form, then save offline entries before sharing a QR — never DEMO rows.",
+      detail: "Publish a match or pit form, then save offline entries before sharing a QR.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -158,7 +158,7 @@ export function qrHandoffQueueCopy(input: {
         tone,
         badge: `${formatQrHandoffMetric(pending, true)} pending`,
         title: "Entries waiting on this device",
-        description: `Show a handoff QR so another tablet can merge these ${formatQrHandoffMetric(pending, true)} outbox row${pending === 1 ? "" : "s"} offline — never DEMO rows.`,
+        description: `Show a handoff QR so another tablet can merge these ${formatQrHandoffMetric(pending, true)} outbox row${pending === 1 ? "" : "s"} offline.`,
       };
     case "synced":
       return {
@@ -173,7 +173,7 @@ export function qrHandoffQueueCopy(input: {
         badge: "Queue clear",
         title: "Nothing pending to hand off",
         description:
-          "This device’s outbox is empty. Save match or pit scout entries offline first, then share a QR — never invent DEMO rows.",
+          "This device’s outbox is empty. Save match or pit scout entries offline first, then share a QR.",
       };
   }
 }
@@ -206,7 +206,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
       return {
         kind,
         title: "Loading QR handoff…",
-        description: "Checking workspace membership and this device’s outbox — never DEMO rows.",
+        description: "Checking workspace membership and this device’s outbox.",
       };
     case "error":
       return {
@@ -214,7 +214,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
         badge: "Unavailable",
         title: "Could not load QR handoff",
         description:
-          "A network or device issue blocked the outbox. Retry, or open Scouting / Offline while it reloads — never invent DEMO rows.",
+          "A network or device issue blocked the outbox. Retry, or open Scouting / Offline while it reloads.",
       };
     case "setup":
       return {
@@ -230,14 +230,14 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
         badge: "Queue clear",
         title: "Waiting on offline scout entries",
         description:
-          "The outbox stays blank until you save match or pit rows on this device. Cross-check Scouting and Offline — never DEMO rows.",
+          "The outbox stays blank until you save match or pit rows on this device. Cross-check Scouting and Offline.",
       };
     default:
       return {
         kind: "ready",
         title: "QR scout handoff",
         description:
-          "Transfer pending IndexedDB outbox rows between devices, then sync when venue Wi-Fi returns — never DEMO rows.",
+          "Transfer pending IndexedDB outbox rows between devices, then sync when venue Wi-Fi returns.",
       };
   }
 }
@@ -269,7 +269,7 @@ export function qrHandoffNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Forms and the outbox stay blank until your team configures them — never DEMO rows.",
+          detail: "Forms and the outbox stay blank until your team configures them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -284,7 +284,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Publish a match or pit form so QR merges have a schema — never DEMO rows.",
+        detail: "Publish a match or pit form so QR merges have a schema.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -297,7 +297,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "offline-shell",
         label: "Open Offline Shell",
-        detail: "Log real precache syncs — never invent DEMO device totals.",
+        detail: "Log real precache syncs.",
         href: withOrgHref("/offline-shell", orgId),
       },
     ];
@@ -332,7 +332,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "scouting",
         label: "Save a scout entry offline",
-        detail: "Queue clear means nothing is pending yet — save a match or pit row first, never DEMO rows.",
+        detail: "Queue clear means nothing is pending yet — save a match or pit row first.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -375,7 +375,7 @@ export function qrHandoffNextActions(input: {
       {
         id: "coverage",
         label: "Open Coverage",
-        detail: "Synced rows feed lineup coverage — never DEMO percentages.",
+        detail: "Synced rows feed lineup coverage.",
         href: withOrgHref("/scouting/lineup", orgId),
       },
     ];
@@ -388,7 +388,7 @@ export function qrHandoffNextActions(input: {
         pending > 0
           ? `Share ${pending} pending entr${pending === 1 ? "y" : "ies"}`
           : "Show handoff QR",
-      detail: "Generate an embedded QR or short code from real outbox rows — never DEMO rows.",
+      detail: "Generate an embedded QR or short code from real outbox rows.",
       href: "#scout-qr-share",
       primary: true,
     },

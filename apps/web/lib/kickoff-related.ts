@@ -60,7 +60,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "upload-materials",
       label: "Paste manual + transcript",
-      detail: `Season ${input.seasonYear} summary stays empty until you paste release materials — nothing invents DEMO game rules.`,
+      detail: `Season ${input.seasonYear} summary stays empty until you paste release materials.`,
       href: kickoffHref,
       primary: true,
     });
@@ -109,7 +109,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "open-cad-brief",
       label: "Open CAD brief",
-      detail: "Continue the kickoff design brief in Onshape/Fusion paths — MODEL-labeled, not DEMO geometry.",
+      detail: "Continue the kickoff design brief in Onshape/Fusion paths — MODEL-labeled.",
       href: cadHref,
     });
   } else if (input.hasIntelligence) {
@@ -125,7 +125,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "rules-qa",
       label: `Answer ${input.openRuleCount} open rule question${input.openRuleCount === 1 ? "" : "s"}`,
-      detail: "Cite the official manual or Q&A only — never invent DEMO rulings.",
+      detail: "Cite the official manual or Q&A only.",
       href: kickoffHref,
     });
   }

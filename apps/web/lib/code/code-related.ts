@@ -14,9 +14,9 @@ export const CODE_COACH_SAMPLE_DIFF = [
   `+++ b/src/main/java/frc/robot/subsystems/DriveSubsystem.java`,
   "@@ -1,4 +1,4 @@",
   " public void periodic() {",
-  "-  Timer.delay(0.02);",
-  "-  driveMotor.set(3);",
-  "+  driveMotor.set(MathUtil.clamp(demand, -1.0, 1.0));",
+  "- Timer.delay(0.02);",
+  "- driveMotor.set(3);",
+  "+ driveMotor.set(MathUtil.clamp(demand, -1.0, 1.0));",
   " }",
 ].join("\n");
 
@@ -126,7 +126,7 @@ export function codeCoachNextActions(input: {
     {
       id: "bugbot",
       label: "Run AI Bugbot",
-      detail: "Subscription uses your plan/BYO key. Bugbot Ultra is $1 scan, $2 fix, $1 recheck — never DEMO bugs, never a GitHub push.",
+      detail: "Subscription uses your plan/BYO key. Bugbot Ultra is $1 scan, $2 fix, $1 recheck.",
       href: withOrgHref("/bugbot", orgId),
     },
   );

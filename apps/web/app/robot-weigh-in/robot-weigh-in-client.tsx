@@ -70,7 +70,7 @@ function NextActionsPanel({ actions }: { actions: RobotWeighInNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions rwi-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Readiness, Inspection, and Spare Kit — never DEMO scale readings.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -156,7 +156,7 @@ function WeighShell({
         <Panel className="rwi-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Readiness and Inspection — never DEMO scale readings.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="rwi-setup-steps">
             {steps.map((step) => (
@@ -295,7 +295,7 @@ export default function RobotWeighInClient() {
           </>
         }
         title="Robot weigh-in log"
-        description="Log robot weigh-ins and track the trend against the competition weight limit — never DEMO scale readings."
+        description="Log robot weigh-ins and track the trend against the competition weight limit."
       >
         <div className="rwi-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -419,7 +419,7 @@ function RecentEntries({
         badge="No weigh-ins yet"
         badgeTone="setup"
         title="Log your first robot weigh-in"
-        description="Track weight readings from the shop scale and event inspections — never DEMO scale packs."
+        description="Track weight readings from the shop scale and event inspections."
       />
     );
   }
@@ -531,7 +531,7 @@ function LogWeighInForm({
       }}
     >
       <h2>Log weigh-in</h2>
-      <p className="app-muted rwi-tip">Real scale readings only — never DEMO weights.</p>
+      <p className="app-muted rwi-tip">Real scale readings only.</p>
       <FormGrid min={160}>
         <FormRow label="Date">
           <input type="date" value={form.weighedOn} onChange={set("weighedOn")} required />

@@ -106,7 +106,7 @@ export function teamDataNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Qual and playoff rows appear after an event is selected and synced — never DEMO matches.",
+          detail: "Qual and playoff rows appear after an event is selected and synced.",
           href: withOrgHref("/schedule", orgId),
         },
       ];
@@ -177,7 +177,7 @@ export function teamDataNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Strategy stays empty rather than invent DEMO win rates when sync is down.",
+        detail: "Strategy stays empty while sync is down.",
         href: withOrgHref("/strategy", orgId),
       },
     ];
@@ -188,7 +188,7 @@ export function teamDataNextActions(input: {
       {
         id: "sync",
         label: "Sync active event",
-        detail: "Pull TBA matches and team metrics into Neon — never fabricate DEMO ranks or EPA.",
+        detail: "Pull TBA matches and team metrics into Neon.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -236,7 +236,7 @@ export function teamDataNextActions(input: {
     {
       id: "exports",
       label: "Open Exports",
-      detail: "Audited CSV/PDF/ZIP of real inventory — never DEMO metric packs.",
+      detail: "Audited CSV/PDF/ZIP of real inventory.",
       href: withOrgHref("/exports", orgId),
     },
   ].slice(0, 4);

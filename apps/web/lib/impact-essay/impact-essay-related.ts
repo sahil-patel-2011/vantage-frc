@@ -106,7 +106,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         kind,
         title: "Loading Impact Essay…",
         description:
-          "Checking workspace membership and logged outreach records — never DEMO essay metrics.",
+          "Checking workspace membership and logged outreach records.",
       };
     case "error":
       return {
@@ -114,7 +114,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         badge: "Unavailable",
         title: "Could not load Impact Essay",
         description:
-          "A network or server issue blocked the essay generator. Retry, or open Community Impact / Awards / Writer while it reloads — never invent DEMO essay metrics.",
+          "A network or server issue blocked the essay generator. Retry, or open Community Impact / Awards / Writer while it reloads.",
       };
     case "setup":
       return {
@@ -130,14 +130,14 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         badge: "No grounded records",
         title: "Log outreach before drafting",
         description:
-          "Essay drafts stay blank until your team logs outreach, hours, sponsors, or events. Cross-check Community Impact, Awards, and Writer — never DEMO essay metrics.",
+          "Essay drafts stay blank until your team logs outreach, hours, sponsors, or events. Cross-check Community Impact, Awards, and Writer.",
       };
     default:
       return {
         kind: "ready",
         title: "Grounded award essay",
         description:
-          "Drafts cite only records your team logged — never DEMO essay metrics.",
+          "Drafts cite only records your team logged.",
       };
   }
 }
@@ -171,19 +171,19 @@ export function impactEssayNextActions(input: {
         {
           id: "impact",
           label: "Open Community Impact",
-          detail: "Outreach rows stay blank until your team logs them — never DEMO hours.",
+          detail: "Outreach rows stay blank until your team logs them.",
           href: hubHref("/business", "impact", null),
         },
         {
           id: "evidence",
           label: "Open Awards",
-          detail: "Award evidence stays blank until your team uploads it — never DEMO packets.",
+          detail: "Award evidence stays blank until your team uploads it.",
           href: hubHref("/business", "evidence", null),
         },
         {
           id: "writer",
           label: "Open Writer",
-          detail: "Grant and sponsor copy stays empty until you draft it — never DEMO awards.",
+          detail: "Grant and sponsor copy stays empty until you draft it.",
           href: hubHref("/ai", "writer", null),
         },
       ];
@@ -252,7 +252,7 @@ export function impactEssayNextActions(input: {
       {
         id: "impact",
         label: "Log Community Impact",
-        detail: "Outreach stays blank until real activities land — never invent DEMO hours.",
+        detail: "Outreach stays blank until real activities land.",
         href: hubHref("/business", "impact", orgId),
         primary: true,
       },
@@ -265,7 +265,7 @@ export function impactEssayNextActions(input: {
       {
         id: "writer",
         label: "Open Writer",
-        detail: "Grant and sponsor copy stays empty until you draft it — never DEMO awards.",
+        detail: "Grant and sponsor copy stays empty until you draft it.",
         href: hubHref("/ai", "writer", orgId),
       },
     ];
@@ -278,14 +278,14 @@ export function impactEssayNextActions(input: {
       detail:
         outreachCount > 0
           ? `${outreachCount} outreach activit${outreachCount === 1 ? "y" : "ies"} on record — cite only real rows.`
-          : "Compose from logged hours, sponsors, or events — never invent DEMO claims.",
+          : "Compose from logged hours, sponsors, or events.",
       href: "#impact-essay-generate",
       primary: true,
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Keep outreach claims grounded in real logged activities — never DEMO hours.",
+      detail: "Keep outreach claims grounded in real logged activities.",
       href: hubHref("/business", "impact", orgId),
     },
     {
@@ -297,7 +297,7 @@ export function impactEssayNextActions(input: {
     {
       id: "writer",
       label: "Open Writer",
-      detail: "Turn grounded facts into grant or sponsor language — never DEMO awards.",
+      detail: "Turn grounded facts into grant or sponsor language.",
       href: hubHref("/ai", "writer", orgId),
     },
   ];
@@ -306,7 +306,7 @@ export function impactEssayNextActions(input: {
     actions.splice(1, 0, {
       id: "review-drafts",
       label: "Review drafts",
-      detail: `${draftCount} draft${draftCount === 1 ? "" : "s"} from real citations — never DEMO.`,
+      detail: `${draftCount} draft${draftCount === 1 ? "" : "s"} from real citations.`,
       href: "#impact-essay-drafts",
     });
   }

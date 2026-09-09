@@ -131,7 +131,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
       return {
         kind,
         title: "Loading Collaborative Pick List…",
-        description: "Checking workspace membership and pick lists — never DEMO ranks or votes.",
+        description: "Checking workspace membership and pick lists.",
       };
     case "error":
       return {
@@ -139,7 +139,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
         badge: "Unavailable",
         title: "Could not load Collaborative Pick List",
         description:
-          "A network or server issue blocked the list. Retry, or open Strategy / Scouting while it reloads — never DEMO ranks.",
+          "A network or server issue blocked the list. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -147,7 +147,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Collaborative Pick List is org-scoped. Pick a workspace before ranking teams — nothing is pre-seeded, never DEMO ranks.",
+          "Collaborative Pick List is org-scoped. Pick a workspace before ranking teams.",
       };
     case "empty":
       return {
@@ -155,14 +155,14 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
         badge: "No lists yet",
         title: "Create your first pick list",
         description:
-          "Name a list for your event key, then add teams and cast weighted votes. Consensus stays blank until real votes exist — never DEMO ranks.",
+          "Name a list for your event key, then add teams and cast weighted votes. Consensus stays blank until real votes exist.",
       };
     default:
       return {
         kind: "ready",
         title: "Collaborative pick consensus",
         description:
-          "Tiers and weighted votes from your team only — never DEMO rankings or invented EPA.",
+          "Tiers and weighted votes from your team only.",
       };
   }
 }
@@ -226,7 +226,7 @@ export function picklistCollabNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Ground ranks in scouted and reference metrics — never DEMO rankings.",
+        detail: "Ground ranks in scouted and reference metrics.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -243,7 +243,7 @@ export function picklistCollabNextActions(input: {
       {
         id: "add",
         label: "Add your first team",
-        detail: "Once teams are added, anyone can cast a weighted vote — never DEMO ranks.",
+        detail: "Once teams are added, anyone can cast a weighted vote.",
         href: "#picklist-collab-add",
         primary: true,
       },

@@ -147,7 +147,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         kind,
         title: "Loading Inventory…",
         description:
-          "Checking workspace membership and real parts stock — never DEMO stock metrics.",
+          "Checking workspace membership and real parts stock.",
       };
     case "error":
       return {
@@ -155,7 +155,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         badge: "Unavailable",
         title: "Could not load Inventory",
         description:
-          "A network or server issue blocked parts stock. Retry, or open Vendors / Orders / Spare Forecast while it reloads — never invent DEMO stock metrics.",
+          "A network or server issue blocked parts stock. Retry, or open Vendors / Orders / Spare Forecast while it reloads.",
       };
     case "setup":
       return {
@@ -171,14 +171,14 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         badge: "No parts yet",
         title: "Add a part before tracking stock",
         description:
-          "Quantities, reorder thresholds, and on-hand value stay blank until you add a real item. Cross-check Vendors, Orders, and Spare Forecast — never DEMO stock metrics.",
+          "Quantities, reorder thresholds, and on-hand value stay blank until you add a real item. Cross-check Vendors, Orders, and Spare Forecast.",
       };
     default:
       return {
         kind: "ready",
         title: "Parts stock & BOM",
         description:
-          "On-hand counts and reorder flags use only logged inventory rows — never DEMO stock metrics.",
+          "On-hand counts and reorder flags use only logged inventory rows.",
       };
   }
 }
@@ -241,20 +241,20 @@ export function inventoryNextActions(input: {
       {
         id: "add-item",
         label: "Add a part",
-        detail: "Name, category, and quantity stay blank until you enter a real item — never DEMO rows.",
+        detail: "Name, category, and quantity stay blank until you enter a real item.",
         href: "#inventory-add-item",
         primary: true,
       },
       {
         id: "vendors",
         label: "Open Vendors",
-        detail: "Log suppliers before you reorder — never DEMO directory rows.",
+        detail: "Log suppliers before you reorder.",
         href: withOrgHref("/vendors", orgId),
       },
       {
         id: "orders",
         label: "Open Orders",
-        detail: "Purchase orders stay blank until you draft them — never DEMO PO totals.",
+        detail: "Purchase orders stay blank until you draft them.",
         href: hubHref("/business", "orders", orgId),
       },
       {
@@ -272,7 +272,7 @@ export function inventoryNextActions(input: {
     actions.push({
       id: "restock",
       label: "Restock out-of-stock parts",
-      detail: `${outOfStockCount} part${outOfStockCount === 1 ? "" : "s"} at zero — draft real Orders, not DEMO counts.`,
+      detail: `${outOfStockCount} part${outOfStockCount === 1 ? "" : "s"} at zero — draft real Orders.`,
       href: "#inventory-stock",
       primary: true,
     });
@@ -298,7 +298,7 @@ export function inventoryNextActions(input: {
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Turn low-stock and BOM shortfalls into season purchase orders — never DEMO PO totals.",
+      detail: "Turn low-stock and BOM shortfalls into season purchase orders.",
       href: hubHref("/business", "orders", orgId),
     },
     {

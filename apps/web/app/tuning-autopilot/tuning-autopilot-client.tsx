@@ -53,7 +53,7 @@ function TuningNextActionsPanel({ actions }: { actions: TuningAutopilotNextActio
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">CAD, FMEA, and Practice — never DEMO gain metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -296,7 +296,7 @@ export default function TuningAutopilotClient() {
           </>
         }
         title="Tuning Autopilot"
-        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend — never DEMO gain metrics. Cross-check CAD, FMEA, and Practice."
+        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend. Cross-check CAD, FMEA, and Practice."
       >
         <div className="tuning-autopilot-header-actions">
           {view.seasons.length > 0 ? (
@@ -378,7 +378,7 @@ export default function TuningAutopilotClient() {
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
                 <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
-                subsystem you’re tuning — never invent DEMO gain metrics.
+                subsystem you’re tuning.
               </p>
             </Panel>
           </>
@@ -389,7 +389,7 @@ export default function TuningAutopilotClient() {
             badge="No sessions yet"
             badgeTone="setup"
             title="Start your first tuning session"
-            description="Pick a subsystem and controller type above, then log the gain sets you try and the observed test result — never DEMO scores."
+            description="Pick a subsystem and controller type above, then log the gain sets you try and the observed test result."
           />
         ) : null}
       </div>
@@ -432,7 +432,7 @@ function SummaryTiles({
             {sessionCount === 0 ? "EMPTY" : hasIterations ? "LOGGING" : "NO ITERATIONS"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season tuning</h2>
-          <small className="app-muted">Logged gain sets only — never DEMO gain metrics</small>
+          <small className="app-muted">Logged gain sets only.</small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -635,7 +635,7 @@ function SuggestionPanel({ view }: { view: LiveView }) {
         </>
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          Log your first iteration below to get a suggested next gain set — never DEMO setpoints.
+          Log your first iteration below to get a suggested next gain set.
         </p>
       )}
     </Panel>
@@ -770,7 +770,7 @@ function IterationHistory({
         badge="No iterations yet"
         badgeTone="setup"
         title="Log your first gain set and test result"
-        description="Each iteration you log sharpens the next-gain suggestion above — never DEMO scores."
+        description="Each iteration you log sharpens the next-gain suggestion above."
       >
         <a className="app-button" href="#tuning-autopilot-log-iteration">
           Log iteration

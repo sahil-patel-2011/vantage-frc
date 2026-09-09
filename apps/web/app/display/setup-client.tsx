@@ -253,7 +253,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               : `${window.location.pathname}${window.location.search}`,
           message:
             loadError ||
-            "A network or server issue prevented loading. Try again — nothing was filled with DEMO layouts.",
+            "A network or server issue prevented loading. Try again.",
         },
       )
     : null;
@@ -268,7 +268,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           </>
         }
         title="Pit TV boards"
-        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data — never DEMO matches or ranks."
+        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data."
       />
 
       <div className="disp-related">

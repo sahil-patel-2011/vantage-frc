@@ -57,7 +57,7 @@ function InspectionNextActionsPanel({ actions }: { actions: InspectionCopilotNex
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Batteries, FMEA, and Subsystems — never DEMO risk scores.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -302,7 +302,7 @@ export default function InspectionCopilotClient() {
           </>
         }
         title="Inspection-Readiness Copilot"
-        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores."
+        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems."
       >
         <div className="inspection-copilot-header-actions">
           {view.seasons.length > 0 ? (
@@ -381,8 +381,7 @@ export default function InspectionCopilotClient() {
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Resolve critical flags from logged measurements first. Keep{" "}
                 <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>FMEA</a>, and{" "}
-                <a href={subsystemsHref}>Subsystems</a> aligned with weigh-in rows — never invent DEMO
-                risk scores.
+                <a href={subsystemsHref}>Subsystems</a> aligned with weigh-in rows.
               </p>
             </Panel>
           </>
@@ -427,7 +426,7 @@ function SummaryTiles({
             {checkCount === 0 ? "EMPTY" : criticalCount > 0 ? "CRITICAL" : flaggedCount > 0 ? "FLAGS" : "CLEAN"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season readiness</h2>
-          <small className="app-muted">Logged measurements only — never DEMO risk scores</small>
+          <small className="app-muted">Logged measurements only.</small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>

@@ -46,7 +46,7 @@ export default async function IntelPage({
           <Panel className="intel-panel" aria-label="Setup steps">
             <header>
               <h2>Setup steps</h2>
-              <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
+              <p className="app-muted">Finish these once and this page fills in.</p>
             </header>
             <ul className="intel-setup-steps">
               {steps.map((step) => (

@@ -78,7 +78,7 @@ function ControlMapNextActionsPanel({ actions }: { actions: ControlMapNextAction
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Subsystems, FMEA, and Practice — never DEMO button maps.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -336,7 +336,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           </>
         }
         title={`Control Map — ${seasonYear}`}
-        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and FMEA — never DEMO bindings."
+        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and FMEA."
       >
         <div className="control-map-header-actions">
           {relatedLinks.map((link) => (
@@ -390,7 +390,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
             Print this for the driver station so the drive team always knows which input does what.
             Cross-check{" "}
             <a href={subsystemsHref}>Subsystems</a> for mechanism names and{" "}
-            <a href={fmeaHref}>FMEA</a> for high-risk actuators — never invent DEMO button maps.
+            <a href={fmeaHref}>FMEA</a> for high-risk actuators.
           </p>
         </Panel>
       </div>
@@ -416,7 +416,7 @@ function SummaryTiles({ view, loaded }: { view: ReadyView; loaded: boolean }) {
             {s.total === 0 ? "EMPTY" : "MAPPED"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season map</h2>
-          <small className="app-muted">Real bindings only — never DEMO counts</small>
+          <small className="app-muted">Real bindings only.</small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -450,7 +450,7 @@ function AddBindingForm({
     >
       <h2 style={{ margin: 0 }}>Add a binding</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Real controller inputs and robot actions only — never DEMO placeholders.
+        Real controller inputs and robot actions only.
       </p>
       <FormGrid>
         <FormRow label="Controller">

@@ -54,7 +54,7 @@ function VendorLeadTimesNextActionsPanel({ actions }: { actions: VendorLeadTimes
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Orders, Spare Forecast, and Vendors — never DEMO reorder metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -294,7 +294,7 @@ export default function VendorLeadTimesClient() {
           </>
         }
         title="Vendor Lead Times"
-        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors — never DEMO reorder metrics."
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors."
       >
         <div className="vendor-lead-times-header-actions">
           {relatedLinks.map((link) => (
@@ -349,7 +349,6 @@ export default function VendorLeadTimesClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Place due reorders through <a href={ordersHref}>Orders</a>, align restock windows with{" "}
             <a href={spareHref}>Spare Forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
-            — never invent DEMO lead times, order-by dates, or urgency counts.
           </p>
         </Panel>
       </div>
@@ -415,7 +414,7 @@ function AddVendorForm({
     >
       <h2 style={{ margin: 0 }}>Add vendor</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Lead time and safety buffer come from real supplier quotes — never DEMO shipping days.
+        Lead time and safety buffer come from real supplier quotes.
       </p>
       <FormGrid min={160}>
         <FormRow label="Vendor name">
@@ -478,7 +477,7 @@ function AddReorderForm({
     >
       <h2 style={{ margin: 0 }}>Log reorder</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Order-by date = needed-by minus lead time and safety buffer — never invent DEMO dates.
+        Order-by date = needed-by minus lead time and safety buffer.
       </p>
       <FormGrid min={160}>
         <FormRow label="Vendor">
@@ -575,7 +574,7 @@ function ReorderList({
           badge="No reorders yet"
           badgeTone="setup"
           title="Log a reorder to see its order-by date"
-          description="Reorder-by date = needed-by date minus vendor lead time and safety buffer — never invent DEMO urgency."
+          description="Reorder-by date = needed-by date minus vendor lead time and safety buffer."
         />
       </div>
     );

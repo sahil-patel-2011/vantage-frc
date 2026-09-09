@@ -93,7 +93,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
         kind,
         title: "Loading Counter-book…",
         description:
-          "Checking workspace membership and generated reports — never DEMO opponent tendencies.",
+          "Checking workspace membership and generated reports.",
       };
     case "error":
       return {
@@ -101,7 +101,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
         badge: "Unavailable",
         title: "Could not load Counter-book",
         description:
-          "A network or server issue blocked the report list. Retry, or open Strategy / Scouting while it reloads — never invent DEMO opponent metrics.",
+          "A network or server issue blocked the report list. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -117,14 +117,14 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
         badge: "No counter-books yet",
         title: "Generate your first opponent counter-book",
         description:
-          "Scout a team's matches, then generate a report below. Tendencies come only from your scout rows — never DEMO opponent metrics. Cross-check Strategy and Scouting.",
+          "Scout a team's matches, then generate a report below. Tendencies come only from your scout rows. Cross-check Strategy and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Opponent counters from your scouting",
         description:
-          "Reports use only scouted numeric tendencies for opponents you generated — never DEMO metrics.",
+          "Reports use only scouted numeric tendencies for opponents you generated.",
       };
   }
 }
@@ -154,13 +154,13 @@ export function counterBookNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -224,13 +224,13 @@ export function counterBookNextActions(input: {
       {
         id: "scouting",
         label: "Log scouting first",
-        detail: "Tendencies need real match scout rows — never DEMO averages.",
+        detail: "Tendencies need real match scout rows.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Ground picks in scouted and reference metrics — never DEMO rankings.",
+        detail: "Ground picks in scouted and reference metrics.",
         href: hubHref("/competition", "strategy", orgId),
       },
     ].slice(0, 4);
@@ -247,7 +247,7 @@ export function counterBookNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground picks in scouted data and reference metrics — never DEMO rankings.",
+      detail: "Ground picks in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {

@@ -65,7 +65,7 @@ export default function DistrictAdvancementClient() {
           </>
         }
         title="District advancement"
-        description="Project remaining district points from cached EPA and the remaining event list — never DEMO qualification odds."
+        description="Project remaining district points from cached EPA and the remaining event list."
       />
       {failure ? (
         <EmptyState title={failure.title} description={failure.description}>

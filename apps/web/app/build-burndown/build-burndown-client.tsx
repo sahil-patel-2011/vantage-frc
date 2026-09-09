@@ -57,7 +57,7 @@ function BurndownNextActionsPanel({ actions }: { actions: BuildBurndownNextActio
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Task board, Kickoff, and FMEA — never DEMO burndown metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -155,7 +155,7 @@ function BurndownShell({
         <Panel className="build-burndown-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Task board, Kickoff, and FMEA — never DEMO burndown metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="build-burndown-setup-steps">
             {steps.map((step) => (
@@ -303,7 +303,7 @@ export default function BuildBurndownClient() {
           </>
         }
         title="Build-Season Burndown"
-        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record. Cross-check Task board, Kickoff, and FMEA — never DEMO burndown metrics."
+        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record. Cross-check Task board, Kickoff, and FMEA."
       >
         <div className="build-burndown-header-actions">
           {view.seasons.length > 0 ? (
@@ -415,7 +415,7 @@ function BurndownChart({ view }: { view: LiveView }) {
         badge="No tasks yet"
         badgeTone="setup"
         title="Add build tasks to see the burndown line"
-        description="Once tasks have planned dates, this chart compares remaining work against the kickoff plan — never DEMO progress."
+        description="Once tasks have planned dates, this chart compares remaining work against the kickoff plan."
       />
     );
   }
@@ -423,7 +423,7 @@ function BurndownChart({ view }: { view: LiveView }) {
   return (
     <Panel className="build-burndown-panel" aria-label="Burndown chart">
       <h2 style={{ marginTop: 0 }}>Remaining tasks vs. plan</h2>
-      <p className="app-muted">Real planned and actual remaining counts only — never DEMO progress.</p>
+      <p className="app-muted">Real planned and actual remaining counts only.</p>
       <div className="build-burndown-chart">
         {view.series
           .filter((_, index) => index % Math.max(1, Math.ceil(view.series.length / 30)) === 0)
@@ -464,7 +464,7 @@ function PlanForm({ busy, mutate }: { busy: boolean; mutate: (payload: Record<st
     >
       <h2 style={{ margin: 0 }}>Set the kickoff plan</h2>
       <p className="app-muted">
-        Enter the real build-season window so the burndown chart can draw the ideal plan line — never DEMO timelines.
+        Enter the real build-season window so the burndown chart can draw the ideal plan line.
       </p>
       <FormGrid min={160}>
         <FormRow label="Kickoff date">
@@ -516,7 +516,7 @@ function TaskForm({ busy, mutate }: { busy: boolean; mutate: (payload: Record<st
       }}
     >
       <h2 style={{ margin: 0 }}>Add build task</h2>
-      <p className="app-muted">Tasks with planned dates drive the burndown — never DEMO progress.</p>
+      <p className="app-muted">Tasks with planned dates drive the burndown.</p>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Machine chassis rails" required />
@@ -562,7 +562,7 @@ function TaskList({
         badge="No tasks yet"
         badgeTone="setup"
         title="Add your first build task"
-        description="Tasks with planned dates from the kickoff plan drive the burndown line — never DEMO progress."
+        description="Tasks with planned dates from the kickoff plan drive the burndown line."
       />
     );
   }
@@ -570,7 +570,7 @@ function TaskList({
   return (
     <Panel className="build-burndown-panel">
       <h2 style={{ marginTop: 0 }}>Build tasks</h2>
-      <p className="app-muted">Logged task rows only — never DEMO readiness.</p>
+      <p className="app-muted">Logged task rows only.</p>
       <ul className="build-burndown-list">
         {view.tasks.map((task) => (
           <li key={task.id} className="build-burndown-row">

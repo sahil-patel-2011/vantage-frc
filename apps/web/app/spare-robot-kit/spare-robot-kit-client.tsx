@@ -65,7 +65,7 @@ function NextActionsPanel({ actions }: { actions: SpareRobotKitNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions srk-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">FMEA, Inventory, and Spare Forecast — never DEMO pack lists.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -154,7 +154,7 @@ function KitShell({
         <Panel className="srk-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">FMEA and Inventory — never DEMO pack lists.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="srk-setup-steps">
             {steps.map((step) => (
@@ -293,7 +293,7 @@ export default function SpareRobotKitClient() {
           </>
         }
         title="Spare Robot Kit Checklist"
-        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against FMEA repeat-failure history — never DEMO pack lists."
+        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against FMEA repeat-failure history."
       >
         <div className="srk-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -359,7 +359,7 @@ function CandidatesPanel({
         badge="No kit candidates yet"
         badgeTone="setup"
         title="No spares are currently matched to FMEA history"
-        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack — never DEMO kits."
+        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack."
       />
     );
   }

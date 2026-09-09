@@ -54,7 +54,7 @@ export default async function ScoutingLineupPage({
         <section className="app-card soft-panel lineup-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Strategy, and Form builder — never DEMO %.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="lineup-setup-steps">
             {steps.map((step) => (
@@ -76,7 +76,7 @@ export default async function ScoutingLineupPage({
         >
           <header>
             <h2>Next actions</h2>
-            <p className="app-muted">Scouting, Strategy, and Form builder — never DEMO %.</p>
+            <p className="app-muted">Each one opens the page where you finish the work.</p>
           </header>
           <ol>
             {actions.map((action) => (

@@ -77,7 +77,7 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real match-scout entries — checks stay blank until then, never DEMO agreement.",
+      detail: "Log real match-scout entries — checks stay blank until then.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -95,7 +95,7 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
     {
       id: "accuracy",
       label: "Open Accuracy",
-      detail: "Post-event ranks use the same TBA-verified totals — never DEMO scores.",
+      detail: "Post-event ranks use the same TBA-verified totals.",
       href: withOrgHref("/scout-accuracy", orgId),
     },
   ];
@@ -161,7 +161,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         kind,
         title: "Loading scout cross-validation…",
         description:
-          "Checking workspace membership and TBA-cached score breakdowns — never DEMO agreement rates.",
+          "Checking workspace membership and TBA-cached score breakdowns.",
       };
     case "error":
       return {
@@ -169,7 +169,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "Unavailable",
         title: "Could not load scout cross-validation",
         description:
-          "A network or server issue blocked TBA field checks. Retry, or open Scouting / Coverage Live / Accuracy while it reloads — never invent DEMO agreement.",
+          "A network or server issue blocked TBA field checks. Retry, or open Scouting / Coverage Live / Accuracy while it reloads.",
       };
     case "setup":
       return {
@@ -185,14 +185,14 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         badge: "No entries yet",
         title: "Waiting on match-scout rows",
         description:
-          "Field checks stay blank until your team logs match entries for an event with cached TBA results. Cross-check Scouting, Coverage Live, and Accuracy — never DEMO agreement.",
+          "Field checks stay blank until your team logs match entries for an event with cached TBA results. Cross-check Scouting, Coverage Live, and Accuracy.",
       };
     default:
       return {
         kind: "ready",
         title: "TBA field checks",
         description:
-          "Agree / conflict / unverifiable badges use only cached official score breakdowns — never DEMO agreement.",
+          "Agree / conflict / unverifiable badges use only cached official score breakdowns.",
       };
   }
 }
@@ -223,7 +223,7 @@ export function scoutCrossvalNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Field checks stay blank until your team enters rows — never DEMO agreement.",
+          detail: "Field checks stay blank until your team enters rows.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -244,7 +244,7 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log match-scout entries so TBA can compare totals — never DEMO agreement.",
+        detail: "Log match-scout entries so TBA can compare totals.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -304,7 +304,7 @@ export function scoutCrossvalNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Cross-validation stays blank until membership-bound match rows exist — never DEMO agreement.",
+        detail: "Cross-validation stays blank until membership-bound match rows exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -339,7 +339,7 @@ export function scoutCrossvalNextActions(input: {
       detail:
         conflictEntries > 0
           ? "Re-check entries that disagree with cached official score breakdowns."
-          : "Agreement uses only verifiable TBA fields — never DEMO rates.",
+          : "Agreement uses only verifiable TBA fields.",
       href: conflictEntries > 0 ? "#crossval-entries" : hubHref("/competition", "scouting", orgId),
       primary: true,
     },

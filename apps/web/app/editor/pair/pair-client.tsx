@@ -52,7 +52,7 @@ function PairNextActionsPanel({ actions }: { actions: PairNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions pair-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Code Coach, GitHub, and AI — never DEMO pairing metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -127,7 +127,7 @@ function PairShell({
         <Panel className="pair-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Workspace, Code Coach, GitHub, and AI — never DEMO pairing metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="pair-setup-steps">
             {steps.map((step) => (
@@ -268,7 +268,7 @@ export default function PairClient({
           </>
         }
         title="Pair VS Code"
-        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor. Cross-check Code Coach, GitHub, and AI — never DEMO pairing metrics."
+        description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor. Cross-check Code Coach, GitHub, and AI."
       >
         <div className="pair-header-actions">
           {relatedLinks.map((link) => (
@@ -355,7 +355,7 @@ export default function PairClient({
         <Panel className="pair-panel" aria-label="Paired editors">
           <header>
             <h2>Paired editors</h2>
-            <p className="app-muted">Real device rows only — never DEMO editors.</p>
+            <p className="app-muted">Real device rows only.</p>
           </header>
           {deviceCount === 0 ? (
             <EmptyState
@@ -363,7 +363,7 @@ export default function PairClient({
               badge="Empty"
               badgeTone="setup"
               title="No paired devices yet"
-              description="Device rows appear only after a real approval — never DEMO editors."
+              description="Device rows appear only after a real approval."
             >
               <a className="app-button secondary" href={hubHref("/ai", "chat", orgId)}>
                 Open AI chat

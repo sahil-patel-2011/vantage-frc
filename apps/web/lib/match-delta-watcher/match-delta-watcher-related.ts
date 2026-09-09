@@ -144,7 +144,7 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
       return {
         kind,
         title: "Loading Match-Delta Watcher…",
-        description: "Checking workspace membership and scored predictions — never DEMO upset alerts.",
+        description: "Checking workspace membership and scored predictions.",
       };
     case "error":
       return {
@@ -152,7 +152,7 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
         badge: "Unavailable",
         title: "Could not load Match-Delta Watcher",
         description:
-          "A network or server issue blocked the watcher. Retry, or open Strategy while it reloads — never invent DEMO deltas.",
+          "A network or server issue blocked the watcher. Retry, or open Strategy while it reloads.",
       };
     case "setup":
       return {
@@ -168,13 +168,13 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
         badge: "No matches watched yet",
         title: "Score predictions, then scan",
         description:
-          "Official results flag divergences only after real predictions exist for this event — never DEMO upset packs.",
+          "Official results flag divergences only after real predictions exist for this event.",
       };
     default:
       return {
         kind: "ready",
         title: "Official results vs predictions",
-        description: "Alerts from scored matches only — never DEMO upset counters.",
+        description: "Alerts from scored matches only.",
       };
   }
 }
@@ -269,7 +269,7 @@ export function matchDeltaWatcherNextActions(input: {
       {
         id: "strategy",
         label: "Score predictions",
-        detail: "Watched matches stay blank until Strategy has real scored rows — never DEMO deltas.",
+        detail: "Watched matches stay blank until Strategy has real scored rows.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },
@@ -294,8 +294,8 @@ export function matchDeltaWatcherNextActions(input: {
       label: unacknowledgedCount > 0 ? "Review unacknowledged alerts" : "Scan for new deltas",
       detail:
         unacknowledgedCount > 0
-          ? `${unacknowledgedCount} unacknowledged alert${unacknowledgedCount === 1 ? "" : "s"} from real results — never DEMO flags.`
-          : `${watchedCount} watched match${watchedCount === 1 ? "" : "es"} from scored predictions — never DEMO counters.`,
+          ? `${unacknowledgedCount} unacknowledged alert${unacknowledgedCount === 1 ? "" : "s"} from real results.`
+          : `${watchedCount} watched match${watchedCount === 1 ? "" : "es"} from scored predictions.`,
       href: unacknowledgedCount > 0 ? "#match-delta-alerts" : "#match-delta-scan",
       primary: true,
     },

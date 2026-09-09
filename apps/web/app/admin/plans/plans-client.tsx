@@ -86,7 +86,7 @@ export default function AdminPlansClient() {
       <PageHeader
         breadcrumbs="Platform / Plans"
         title="Org plans"
-        description="Which teams are on which plan — entitlement status, included API allowance, and Stripe IDs when present. Live ledger only — never DEMO plan metrics."
+        description="Which teams are on which plan — entitlement status, included API allowance, and Stripe IDs when present. Live ledger only."
       >
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({

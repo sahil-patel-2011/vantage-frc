@@ -43,7 +43,7 @@ function NextActions({
     <section className="support-tickets-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From your real tickets only — the list stays empty until you submit. Never DEMO tickets.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -151,7 +151,7 @@ export default function SupportTicketsClient() {
         <PageHeader
           navPath="/support"
           title="Support"
-          description="Tell the Vantage platform owner when something breaks — never DEMO tickets."
+          description="Tell the Vantage platform owner when something breaks."
         />
         <EmptyState
           soft
@@ -217,7 +217,7 @@ export default function SupportTicketsClient() {
       <PageHeader
         navPath="/support"
         title="Support"
-        description="Tell the Vantage platform owner when something breaks. You’ll see your tickets and any reply here — never DEMO tickets. Legacy /help redirects here."
+        description="Tell the Vantage platform owner when something breaks. You’ll see your tickets and any reply here. Legacy /help redirects here."
       >
         <div className="support-tickets-header-actions">
           <a className="app-button secondary" href="/account">
@@ -306,7 +306,7 @@ export default function SupportTicketsClient() {
           <EmptyState
             soft
             title="No tickets yet"
-            description="Submit one above when something needs platform attention. Vantage does not invent DEMO support threads."
+            description="Submit one above when something needs platform attention."
           />
         ) : (
           <ul className="support-tickets-list">

@@ -57,7 +57,7 @@ function ScoutAccuracyNextActionsPanel({ actions }: { actions: ScoutAccuracyNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -183,7 +183,7 @@ function ScoutAccuracyShell({
         <Panel className="scout-accuracy-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-accuracy-setup-steps">
             {steps.map((step) => (
@@ -344,7 +344,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
           </>
         }
         title="Scout Accuracy"
-        description="Post-event, each scout's reported totals are scored against cached TBA results — ranking the roster for pick-desk rotation. Scores never invent DEMO values."
+        description="Post-event, each scout's reported totals are scored against cached TBA results — ranking the roster for pick-desk rotation."
       >
         <div className="scout-accuracy-header-meta">
           <ScoutAccuracyRelatedStrip orgId={orgId} />
@@ -426,7 +426,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
         <strong>
           {formatScoutAccuracyScore(summary.avgAccuracyScore, loaded, { hasVerifiable })}
         </strong>
-        <small>0–100 · never DEMO</small>
+        <small>0–100 scale</small>
       </article>
       <article>
         <span>Suggested promotions</span>
@@ -469,7 +469,7 @@ function Leaderboard({
         badge="No verifiable entries yet"
         badgeTone="setup"
         title="No scout accuracy data yet"
-        description="Scouted totals will be scored once matches have cached official TBA results — never DEMO scores."
+        description="Scouted totals will be scored once matches have cached official TBA results."
       >
         <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
@@ -488,7 +488,7 @@ function Leaderboard({
       <header>
         <h2>Leaderboard &amp; pick-desk rotation</h2>
         <p className="app-muted">
-          Quality before volume — ranks use TBA-verified totals only, never DEMO scores.
+          Quality before volume — ranks use TBA-verified totals only.
         </p>
       </header>
       <ul className="scout-accuracy-list">

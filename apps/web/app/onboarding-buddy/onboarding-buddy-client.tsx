@@ -49,7 +49,7 @@ function BuddyNextActionsPanel({ actions }: { actions: OnboardingBuddyNextAction
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Workspace, Onboarding, and Team Data — never DEMO progress.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -147,7 +147,7 @@ function BuddyShell({
         <Panel className="onboarding-buddy-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Workspace, Onboarding, and Team Data — never DEMO progress.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="onboarding-buddy-setup-steps">
             {steps.map((step) => (
@@ -294,7 +294,7 @@ export default function OnboardingBuddyClient() {
           </>
         }
         title="Onboarding Buddy"
-        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Workspace, Onboarding, and Team Data — never DEMO progress."
+        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Workspace, Onboarding, and Team Data."
       >
         <div className="onboarding-buddy-header-actions">
           {relatedLinks.map((link) => (
@@ -386,7 +386,7 @@ function UnpairedMembers({
           badge="All caught up"
           badgeTone="good"
           title="No unpaired new members"
-          description="Every recently-joined member either has a buddy or has been on the team for a while — never DEMO progress."
+          description="Every recently-joined member either has a buddy or has been on the team for a while."
         />
       </div>
     );
@@ -395,7 +395,7 @@ function UnpairedMembers({
     <Panel className="onboarding-buddy-panel" id="onboarding-buddy-unpaired" aria-label="Unpaired members">
       <header>
         <h2>New members needing a buddy</h2>
-        <p className="app-muted">Suggestions use real tenure and active load — never DEMO progress.</p>
+        <p className="app-muted">Suggestions use real tenure and active load.</p>
       </header>
       <ul className="onboarding-buddy-list">
         {view.unpairedMembers.map((member) => (
@@ -483,7 +483,7 @@ function Pairings({
         badge="No pairings yet"
         badgeTone="setup"
         title="No buddy pairings logged"
-        description="Pair a new member above to generate a first-week plan — never DEMO progress."
+        description="Pair a new member above to generate a first-week plan."
       />
     );
   }
@@ -491,7 +491,7 @@ function Pairings({
     <Panel className="onboarding-buddy-panel" aria-label="Buddy pairings">
       <header>
         <h2>Pairings</h2>
-        <p className="app-muted">Real pairing rows only — plan checkboxes never invent DEMO progress.</p>
+        <p className="app-muted">Progress moves when you tick off a plan step.</p>
       </header>
       <ul className="onboarding-buddy-list">
         {view.pairings.map((pairing) => (

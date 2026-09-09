@@ -111,7 +111,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         kind,
         title: "Loading Overnight Intel…",
         description:
-          "Checking workspace membership and active event — never DEMO overnight digests.",
+          "Checking workspace membership and active event.",
       };
     case "error":
       return {
@@ -119,7 +119,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "Unavailable",
         title: "Could not load Overnight Intel",
         description:
-          "A network or server issue blocked the brief. Retry, or open Command / Strategy while it reloads — never invent DEMO overnight metrics.",
+          "A network or server issue blocked the brief. Retry, or open Command / Strategy while it reloads.",
       };
     case "setup":
       return {
@@ -135,14 +135,14 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "No overnight changes yet",
         title: "Generate tonight's brief when ready",
         description:
-          "Empty sections mean no research, EPA, or scouting changed since the last check-in — never DEMO digests. Cross-check Command, Strategy, and Scouting.",
+          "Empty sections mean no research, EPA, or scouting changed since the last check-in. Cross-check Command, Strategy, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "What changed overnight",
         description:
-          "Briefs summarize only real research findings, EPA movers, and new scout rows — never DEMO overnight metrics.",
+          "Briefs summarize only real research findings, EPA movers, and new scout rows.",
       };
   }
 }
@@ -175,13 +175,13 @@ export function overnightIntelNextActions(input: {
         {
           id: "command",
           label: "Open Command",
-          detail: "Event Day stays blank until real schedule data exists — never DEMO matches.",
+          detail: "Event Day stays blank until real schedule data exists.",
           href: hubHref("/competition", "command", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
       ];
@@ -261,7 +261,7 @@ export function overnightIntelNextActions(input: {
       {
         id: "generate",
         label: "Generate tonight's brief",
-        detail: "Snapshots stay blank until research, EPA, or scouting actually changes — never DEMO digests.",
+        detail: "Snapshots stay blank until research, EPA, or scouting actually changes.",
         href: "#overnight-intel-generate",
         primary: true,
       },
@@ -286,8 +286,8 @@ export function overnightIntelNextActions(input: {
       label: briefCount > 0 ? "Review latest brief" : "Generate tonight's brief",
       detail:
         briefCount > 0
-          ? `${briefCount} saved brief${briefCount === 1 ? "" : "s"} from real overnight signals — never DEMO digests.`
-          : `${signalCount} live signal${signalCount === 1 ? "" : "s"} ready to snapshot — never invent DEMO changes.`,
+          ? `${briefCount} saved brief${briefCount === 1 ? "" : "s"} from real overnight signals.`
+          : `${signalCount} live signal${signalCount === 1 ? "" : "s"} ready to snapshot.`,
       href: briefCount > 0 ? "#overnight-intel-summary" : "#overnight-intel-generate",
       primary: true,
     },

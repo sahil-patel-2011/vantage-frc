@@ -322,7 +322,7 @@ function LivePairwise({
       <section className="app-card">
         <header>
           <h2>Rank from recorded taps</h2>
-          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams. No DEMO ranks."}</p>
+          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams."}</p>
         </header>
         <div className="pairwise-promote">
           <button

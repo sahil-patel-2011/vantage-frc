@@ -82,7 +82,7 @@ export function scoutDisagreementsSetupSteps(orgId?: string | null): ScoutDisagr
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real overlapping match-scout fields — the queue stays blank until then, never DEMO conflicts.",
+      detail: "Log real overlapping match-scout fields — the queue stays blank until then.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -153,7 +153,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
         kind,
         title: "Loading scout disagreements…",
         description:
-          "Checking workspace membership and real conflict rows — never DEMO conflicts.",
+          "Checking workspace membership and real conflict rows.",
       };
     case "error":
       return {
@@ -161,7 +161,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
         badge: "Unavailable",
         title: "Could not load scout disagreements",
         description:
-          "A network or server issue blocked the resolution queue. Retry, or open Scouting / Accuracy / Coverage while it reloads — never invent DEMO conflicts.",
+          "A network or server issue blocked the resolution queue. Retry, or open Scouting / Accuracy / Coverage while it reloads.",
       };
     case "setup":
       return {
@@ -177,14 +177,14 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
         badge: "No disagreements yet",
         title: "Waiting on real conflicting fields",
         description:
-          "The queue stays blank until two scouts submit overlapping values for the same match/team/field. Cross-check Scouting, Accuracy, and Coverage — never DEMO conflicts.",
+          "The queue stays blank until two scouts submit overlapping values for the same match/team/field. Cross-check Scouting, Accuracy, and Coverage.",
       };
     default:
       return {
         kind: "ready",
         title: "Resolution queue",
         description:
-          "Resolve conflicting scouted field values with an immutable audit trail — never DEMO conflicts.",
+          "Resolve conflicting scouted field values with an immutable audit trail.",
       };
   }
 }
@@ -215,7 +215,7 @@ export function scoutDisagreementsNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Conflicts stay blank until your team enters overlapping fields — never DEMO conflicts.",
+          detail: "Conflicts stay blank until your team enters overlapping fields.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -236,7 +236,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log overlapping match-scout fields so real conflicts can surface — never DEMO conflicts.",
+        detail: "Log overlapping match-scout fields so real conflicts can surface.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -296,7 +296,7 @@ export function scoutDisagreementsNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Conflicts appear only when two scouts overlap on a field — never DEMO conflicts.",
+        detail: "Conflicts appear only when two scouts overlap on a field.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -330,7 +330,7 @@ export function scoutDisagreementsNextActions(input: {
           : "Review resolution queue",
       detail:
         openCount > 0
-          ? "Pick the authoritative value from real scout submissions — never DEMO conflicts."
+          ? "Pick the authoritative value from real scout submissions."
           : "All logged conflicts are resolved or dismissed — keep scouting for new overlaps.",
       href: openCount > 0 ? "#disagreement-queue" : hubHref("/competition", "scouting", orgId),
       primary: true,

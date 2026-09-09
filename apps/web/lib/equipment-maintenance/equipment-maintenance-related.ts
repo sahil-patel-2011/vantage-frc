@@ -118,7 +118,7 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
       return {
         kind,
         title: "Loading Equipment Maintenance…",
-        description: "Checking workspace membership and service logs — never DEMO maintenance packs.",
+        description: "Checking workspace membership and service logs.",
       };
     case "error":
       return {
@@ -126,7 +126,7 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
         badge: "Unavailable",
         title: "Could not load Equipment Maintenance",
         description:
-          "A network or server issue blocked equipment logs. Retry, or open Tool Checkout while it reloads — never invent DEMO service history.",
+          "A network or server issue blocked equipment logs. Retry, or open Tool Checkout while it reloads.",
       };
     case "setup":
       return {
@@ -142,13 +142,13 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
         badge: "No equipment yet",
         title: "Add your first piece of shop equipment",
         description:
-          "Mills, printers, saws, and welders you add here get schedules from what you log — never DEMO service packs.",
+          "Mills, printers, saws, and welders you add here get schedules from what you log.",
       };
     default:
       return {
         kind: "ready",
         title: "Equipment maintenance",
-        description: "Assets and logs from your shop only — never DEMO counters.",
+        description: "Assets and logs from your shop only.",
       };
   }
 }
@@ -199,7 +199,7 @@ export function equipmentMaintenanceNextActions(input: {
       {
         id: "add-asset",
         label: "Add shop equipment",
-        detail: "The registry stays blank until you add one — never DEMO service packs.",
+        detail: "The registry stays blank until you add one.",
         href: "#equipment-maintenance-add",
         primary: true,
       },
@@ -224,8 +224,8 @@ export function equipmentMaintenanceNextActions(input: {
       label: overdueCount > 0 ? "Clear overdue service" : "Log maintenance",
       detail:
         overdueCount > 0
-          ? `${overdueCount} overdue asset${overdueCount === 1 ? "" : "s"} from real schedules — never DEMO service packs.`
-          : `${assetCount} asset${assetCount === 1 ? "" : "s"} tracked — never DEMO counters.`,
+          ? `${overdueCount} overdue asset${overdueCount === 1 ? "" : "s"} from real schedules.`
+          : `${assetCount} asset${assetCount === 1 ? "" : "s"} tracked.`,
       href: overdueCount > 0 ? "#equipment-maintenance-assets" : "#equipment-maintenance-log",
       primary: true,
     },

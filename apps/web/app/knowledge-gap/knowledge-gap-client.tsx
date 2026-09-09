@@ -73,7 +73,7 @@ function NextActionsPanel({ actions }: { actions: KnowledgeGapNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions kg-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Knowledge, Work, and Meeting Autopilot — never DEMO wiki gaps.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -162,7 +162,7 @@ function GapShell({
         <Panel className="kg-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Knowledge and Work — never DEMO wiki gaps.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="kg-setup-steps">
             {steps.map((step) => (
@@ -362,7 +362,7 @@ export default function KnowledgeGapClient() {
           badge="No scan yet"
           badgeTone="setup"
           title="Run your first scan"
-          description="Diffs real work items against your knowledge wiki — never DEMO gap packs."
+          description="Diffs real work items against your knowledge wiki."
         />
       ) : view.items.length === 0 ? (
         <EmptyWorkState
@@ -394,7 +394,7 @@ function EmptyWorkState({ tracked }: { tracked: number }) {
       badge="Fully documented"
       badgeTone="good"
       title="No gaps found for this season"
-      description="Every tracked work item has wiki coverage — never DEMO completeness."
+      description="Every tracked work item has wiki coverage."
     />
   );
 }
@@ -422,7 +422,7 @@ function ScanPanel({
               · {scan.pageCount} wiki page(s) · scanned {new Date(scan.createdAt).toLocaleString()}
             </small>
           ) : (
-            <small className="app-muted">No scan has been run for {season} yet — never DEMO coverage.</small>
+            <small className="app-muted">No scan has been run for {season} yet.</small>
           )}
         </div>
         <div className="kg-scan-actions">

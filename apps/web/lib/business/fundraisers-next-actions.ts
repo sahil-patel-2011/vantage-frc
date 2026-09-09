@@ -65,7 +65,7 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
     actions.push({
       id: "record",
       label: ctx.canManageMoney ? "Record real proceeds" : "Ask a lead to record proceeds",
-      detail: "Deposit amounts post to team finance — totals never invent DEMO raised dollars.",
+      detail: "Deposit amounts post straight to team finance.",
       href: withOrgHref("/fundraisers", orgId),
       primary: true,
     });

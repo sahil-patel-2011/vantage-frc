@@ -283,7 +283,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <h1>Grant writing</h1>
             <p className="app-muted">
               Guided need · impact · budget · timeline narratives from THIS organization&apos;s profile and impact log
-              only — never DEMO award dollars.
+              only.
             </p>
           </div>
         </header>
@@ -433,8 +433,7 @@ function GrantWritingWorkspace({
           <h1>Grant writing</h1>
           <p className="app-muted">
             Compose org-isolated grant narratives from guided fields — onboarding location, team description, and
-            Community Impact evidence for {teamLabel}. Asks and awards stay blank until you enter real amounts — never
-            DEMO dollars.
+            Community Impact evidence for {teamLabel}. Asks and awards stay blank until you enter amounts.
           </p>
         </div>
         <div className="gwe-toolbar">

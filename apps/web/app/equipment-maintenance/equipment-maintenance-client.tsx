@@ -75,7 +75,7 @@ function NextActionsPanel({ actions }: { actions: EquipmentMaintenanceNextAction
     <section className="app-card soft-panel edc-next-actions em-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Tool Checkout, Safety, and Checklists — never DEMO service packs.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -161,7 +161,7 @@ function MaintenanceShell({
         <Panel className="em-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Tool Checkout and Safety — never DEMO service packs.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="em-setup-steps">
             {steps.map((step) => (
@@ -295,7 +295,7 @@ export default function EquipmentMaintenanceClient() {
           </>
         }
         title="Equipment Maintenance"
-        description="Track shop equipment and log the maintenance that keeps them running — never DEMO service packs."
+        description="Track shop equipment and log the maintenance that keeps them running."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -353,7 +353,7 @@ function AssetList({
         badge="No equipment yet"
         badgeTone="setup"
         title="Add your first piece of shop equipment"
-        description="Mills, printers, saws, and welders get schedules from what you log — never DEMO service packs."
+        description="Mills, printers, saws, and welders get schedules from what you log."
       />
     );
   }
@@ -424,7 +424,7 @@ function RecentLogs({
         badge="No maintenance logged yet"
         badgeTone="setup"
         title="Log your first maintenance action"
-        description="Routine service, repairs, inspections, and cleaning count toward a healthy shop — never DEMO logs."
+        description="Routine service, repairs, inspections, and cleaning count toward a healthy shop."
       />
     );
   }
@@ -493,7 +493,7 @@ function AddAssetForm({
       }}
     >
       <h2>Add equipment</h2>
-      <p className="app-muted em-tip">Real shop machines only — never DEMO service packs.</p>
+      <p className="app-muted em-tip">Real shop machines only.</p>
       <FormGrid min={160}>
         <FormRow label="Name">
           <input value={form.name} onChange={set("name")} placeholder="CNC Router" required />

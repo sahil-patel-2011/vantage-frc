@@ -122,7 +122,7 @@ function DraftNextActionsPanel({ actions }: { actions: DraftNextAction[] }) {
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick desk, and Scouting — never DEMO boards.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -174,7 +174,7 @@ function DraftShell({
       <PageHeader
         breadcrumbs="Competition / Strategy / Draft"
         title="Alliance board"
-        description="Draft day from synced event teams only — never DEMO boards. Mentor share links stay org-bound."
+        description="Draft day from synced event teams only. Mentor share links stay org-bound."
       >
         <DraftRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -232,7 +232,7 @@ function DraftShell({
         <Panel className="draft-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Pick desk, and Scouting — never DEMO boards.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="draft-setup-steps">
             {steps.map((step) => (
@@ -437,7 +437,7 @@ export default function DraftClient() {
     }
     const absolute = `${window.location.origin}${body.url}`;
     setShareUrl(absolute);
-    setStatus("Mentor link created (read-only, org-bound, 14 days) — never DEMO boards.");
+    setStatus("Mentor link created (read-only, org-bound, 14 days).");
     void navigator.clipboard?.writeText(absolute);
     load();
   }
@@ -470,9 +470,9 @@ export default function DraftClient() {
           failure
             ? failure.description
             : shell === "setup" && setupMessage
-              ? `${setupMessage} Alliance slots stay empty until real event metrics exist — never DEMO boards.`
+              ? `${setupMessage} Alliance slots stay empty until real event metrics exist.`
               : shell === "empty" && data?.message
-                ? `${data.message} Cross-check Strategy, Pick desk, and Scouting — never DEMO boards.`
+                ? `${data.message} Cross-check Strategy, Pick desk, and Scouting.`
                 : undefined
         }
         onRetry={failure?.showRetry ? () => load() : undefined}
@@ -504,7 +504,7 @@ export default function DraftClient() {
       <PageHeader
         breadcrumbs="Competition / Strategy / Draft"
         title="Draft day alliance board"
-        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool — never DEMO boards. Mentor share tokens stay org-bound.`}
+        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool. Mentor share tokens stay org-bound.`}
       >
         <div className="strategy-pick-actions">
           <DraftRelatedStrip orgId={data.orgId} />
@@ -669,8 +669,7 @@ export default function DraftClient() {
           </p>
         ) : null}
         <p className="draft-share-note app-muted">
-          Mentor share tokens resolve only the issuing org&apos;s board — never DEMO boards or
-          cross-org snapshots.
+          A mentor share link only opens the board from the team that created it.
         </p>
         {status ? (
           <p className="telemetry-status success" role="status">
@@ -727,7 +726,7 @@ export default function DraftClient() {
           <small>{formatDraftMetric(available.length, true)} remaining with event metrics</small>
         </header>
         {!available.length ? (
-          <p className="app-muted">Pool empty — sync more event metrics or clear a slot. Never DEMO boards.</p>
+          <p className="app-muted">Pool empty — sync more event metrics or clear a slot.</p>
         ) : (
           <ul>
             {available.map((teamKey) => {
@@ -755,7 +754,7 @@ export default function DraftClient() {
         <section className="app-card">
           <h3>Mentor share history</h3>
           <p className="app-muted draft-share-note">
-            Tokens are hashed and scoped to this org&apos;s board — revoke anytime; never DEMO boards.
+            Tokens are hashed and scoped to this org&apos;s board — revoke anytime.
           </p>
           <ul className="strategy-share-history">
             {data.shareTokens.map((token) => (

@@ -49,7 +49,7 @@ function ImpactEssayNextActionsPanel({ actions }: { actions: ImpactEssayNextActi
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Community Impact, Awards, and Writer — never DEMO essay metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -306,7 +306,7 @@ export default function ImpactEssayClient() {
           </>
         }
         title="FIRST Impact Essay Generator"
-        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Never DEMO essay metrics. Cross-check Community Impact, Awards, and Writer."
+        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Cross-check Community Impact, Awards, and Writer."
       >
         <div className="impact-essay-header-actions">
           {view.seasons.length > 0 ? (
@@ -413,8 +413,7 @@ export default function ImpactEssayClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep outreach facts in <a href={impactHref}>Community Impact</a>, upload packets in{" "}
-            <a href={awardsHref}>Awards</a>, and pair language in <a href={writerHref}>Writer</a> — never invent
-            DEMO essay metrics, people reached, or award claims.
+            <a href={awardsHref}>Awards</a>, and pair language in <a href={writerHref}>Writer</a>.
           </p>
         </Panel>
       </div>
@@ -447,8 +446,7 @@ function GenerateForm({
     >
       <h2 style={{ margin: 0 }}>Generate a draft</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Composition cites only outreach, hours, sponsors, and events your team logged for this season — never DEMO
-        essay metrics.
+        Composition cites only outreach, hours, sponsors, and events your team logged for this season.
       </p>
       <label className="app-muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
         Award
@@ -466,7 +464,7 @@ function GenerateForm({
         </button>
         {!hasData ? (
           <span className="app-muted" style={{ marginLeft: 10 }}>
-            Log at least one real record to enable generation — never DEMO fillers.
+            Log at least one real record to enable generation.
           </span>
         ) : null}
       </div>
@@ -490,7 +488,7 @@ function DraftsList({
         badge="No drafts yet"
         badgeTone="setup"
         title="No essay drafts generated for this season"
-        description="Generate a draft above once you have logged outreach, hours, sponsor, or event records — never invent DEMO essays."
+        description="Generate a draft above once you have logged outreach, hours, sponsor, or event records."
       />
     );
   }

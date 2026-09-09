@@ -89,7 +89,7 @@ export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[]
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO picks or EPA.",
+      detail: "Pull TBA/Statbotics rows into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -107,7 +107,7 @@ export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[]
     {
       id: "chemistry",
       label: "Open Chemistry",
-      detail: "Score alliance fit from synced seats — never DEMO chemistry scores.",
+      detail: "Score alliance fit from synced seats.",
       href: hubHref("/competition", "chemistry", orgId),
     },
   ];
@@ -166,7 +166,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         kind,
         title: "Loading pick clock…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics — never DEMO picks.",
+          "Checking workspace membership and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -174,7 +174,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         badge: "Unavailable",
         title: "Could not load pick clock",
         description:
-          "A network or server issue blocked the clock. Retry, or open Strategy / Pick desk / Chemistry while it reloads — never invent DEMO picks.",
+          "A network or server issue blocked the clock. Retry, or open Strategy / Pick desk / Chemistry while it reloads.",
       };
     case "setup":
       return {
@@ -190,14 +190,14 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         badge: "No teams left to recommend",
         title: "Waiting on a real pick pool",
         description:
-          "Recommendations stay blank until synced event metrics (and free draft slots) exist. Cross-check Strategy, Pick desk, and Chemistry — never DEMO picks.",
+          "Recommendations stay blank until synced event metrics (and free draft slots) exist. Cross-check Strategy, Pick desk, and Chemistry.",
       };
     default:
       return {
         kind: "ready",
         title: "45-second pick clock",
         description:
-          "Next best available team from synced event metrics and membership-bound scout depth — never DEMO picks.",
+          "Next best available team from synced event metrics and membership-bound scout depth.",
       };
   }
 }
@@ -231,19 +231,19 @@ export function pickClockNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and pick lists stay empty until real metrics exist — never DEMO picks.",
+          detail: "Win/loss and pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows — never DEMO picks.",
+          detail: "Pick tiers stay blank until your team syncs event rows.",
           href: withOrgHref("/strategy?tab=picks", null),
         },
         {
           id: "chemistry",
           label: "Open Chemistry",
-          detail: "Chemistry scores stay blank until synced seats exist — never DEMO scores.",
+          detail: "Chemistry scores stay blank until synced seats exist.",
           href: hubHref("/competition", "chemistry", null),
         },
       ];
@@ -271,7 +271,7 @@ export function pickClockNextActions(input: {
       {
         id: "chemistry",
         label: "Open Chemistry",
-        detail: "Score alliance fit once seats exist — never DEMO chemistry scores.",
+        detail: "Score alliance fit once seats exist.",
         href: hubHref("/competition", "chemistry", orgId),
       },
     ];
@@ -320,8 +320,8 @@ export function pickClockNextActions(input: {
         label: "Sync event metrics",
         detail:
           excludedCount > 0
-            ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots — never DEMO picks.`
-            : "Pull TBA/Statbotics team_event_metrics — recommendations stay blank until then, never DEMO picks.",
+            ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`
+            : "Pull TBA/Statbotics team_event_metrics — recommendations stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -340,7 +340,7 @@ export function pickClockNextActions(input: {
       {
         id: "chemistry",
         label: "Open Chemistry",
-        detail: "Score alliance fit from synced seats — never DEMO chemistry scores.",
+        detail: "Score alliance fit from synced seats.",
         href: hubHref("/competition", "chemistry", orgId),
       },
     ];
@@ -350,7 +350,7 @@ export function pickClockNextActions(input: {
     {
       id: "clock",
       label: "Run the 45s clock",
-      detail: `${formatPickClockMetric(availableCount, true)} available team${availableCount === 1 ? "" : "s"} from synced metrics only — never DEMO picks.`,
+      detail: `${formatPickClockMetric(availableCount, true)} available team${availableCount === 1 ? "" : "s"} from synced metrics only.`,
       href: hubHref("/competition", "pick-clock", orgId),
       primary: true,
     },
@@ -369,7 +369,7 @@ export function pickClockNextActions(input: {
     {
       id: "chemistry",
       label: "Open Chemistry",
-      detail: "Score how the next pick fits your alliance seats — never DEMO chemistry scores.",
+      detail: "Score how the next pick fits your alliance seats.",
       href: hubHref("/competition", "chemistry", orgId),
     },
   ];

@@ -125,7 +125,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "COULD NOT LOAD",
       title: "Could not load AI key status",
-      description: detail?.trim() || "Retry when the network or database is available. No DEMO keys are invented.",
+      description: detail?.trim() || "Retry when the network or database is available.",
       badge: "Retry",
     };
   }

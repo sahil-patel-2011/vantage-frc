@@ -115,7 +115,7 @@ export function supportNextActions(input: {
       {
         id: "account",
         label: "Open Account",
-        detail: "Profile and notification prefs live under Account — not DEMO support threads.",
+        detail: "Profile and notification prefs live under Account.",
         href: "/account",
       },
       {
@@ -135,7 +135,7 @@ export function supportNextActions(input: {
     actions.push({
       id: "submit",
       label: "Submit your first ticket",
-      detail: "Describe what broke — the list stays empty until you send something. Never DEMO tickets.",
+      detail: "Describe what broke — the list stays empty until you send something.",
       href: "#support-new-ticket",
       primary: true,
     });

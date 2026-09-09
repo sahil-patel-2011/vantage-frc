@@ -79,7 +79,7 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
     {
       id: "code",
       label: "Open Code Coach",
-      detail: "Review firmware patterns before logging a deploy — never DEMO trails.",
+      detail: "Review firmware patterns before logging a deploy.",
       href: hubHref("/build", "code", orgId),
     },
     {
@@ -132,7 +132,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
       return {
         kind,
         title: "Loading Code Deploy Log…",
-        description: "Checking workspace membership and deploy history — never DEMO firmware trails.",
+        description: "Checking workspace membership and deploy history.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
         badge: "Unavailable",
         title: "Could not load Code Deploy Log",
         description:
-          "A network or server issue blocked the deploy trail. Retry, or open Code Coach while it reloads — never invent DEMO versions.",
+          "A network or server issue blocked the deploy trail. Retry, or open Code Coach while it reloads.",
       };
     case "setup":
       return {
@@ -156,14 +156,14 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
         badge: "No deploys yet",
         title: "Log your first code deploy",
         description:
-          "Record firmware version, commit, and match so you can trace robot behavior — never DEMO deploy packs.",
+          "Record firmware version, commit, and match so you can trace robot behavior.",
       };
     default:
       return {
         kind: "ready",
         title: "Firmware evidence trail",
         description:
-          "Deploys from your team only — never DEMO firmware counters.",
+          "Deploys from your team only.",
       };
   }
 }
@@ -258,7 +258,7 @@ export function codeDeployLogNextActions(input: {
       {
         id: "log-deploy",
         label: "Log the first deploy",
-        detail: "Trails stay blank until your team records a build — never DEMO firmware packs.",
+        detail: "Trails stay blank until your team records a build.",
         href: "#code-deploy-log-form",
         primary: true,
       },
@@ -283,7 +283,7 @@ export function codeDeployLogNextActions(input: {
       label: matchLinkedCount > 0 ? "Review match-linked deploys" : "Review deploy history",
       detail:
         matchLinkedCount > 0
-          ? `${matchLinkedCount} of ${deployCount} deploy${deployCount === 1 ? "" : "s"} linked to matches — never DEMO trails.`
+          ? `${matchLinkedCount} of ${deployCount} deploy${deployCount === 1 ? "" : "s"} linked to matches.`
           : `${deployCount} real deploy${deployCount === 1 ? "" : "s"} logged — add match keys when known.`,
       href: "#code-deploy-log-history",
       primary: true,

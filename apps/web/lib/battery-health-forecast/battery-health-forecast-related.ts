@@ -172,7 +172,7 @@ export function batteryHealthForecastShellCopy(
         kind,
         title: "Loading Battery Health Forecast…",
         description:
-          "Checking workspace membership and real IR / cycle logs — never DEMO end-of-life metrics.",
+          "Checking workspace membership and real IR / cycle logs.",
       };
     case "error":
       return {
@@ -180,7 +180,7 @@ export function batteryHealthForecastShellCopy(
         badge: "Unavailable",
         title: "Could not load Battery Health Forecast",
         description:
-          "A network or server issue blocked the forecast. Retry, or open Battery Rotation / Batteries / Pit while it reloads — never invent DEMO IR or EOL metrics.",
+          "A network or server issue blocked the forecast. Retry, or open Battery Rotation / Batteries / Pit while it reloads.",
       };
     case "setup":
       return {
@@ -196,14 +196,14 @@ export function batteryHealthForecastShellCopy(
         badge: "No batteries yet",
         title: "Add a pack before forecasting end-of-life",
         description:
-          "Retirement dates stay blank until you register a pack and log IR + cycle readings. Cross-check Battery Rotation, Batteries, and Pit — never DEMO IR or EOL metrics.",
+          "Retirement dates stay blank until you register a pack and log IR + cycle readings. Cross-check Battery Rotation, Batteries, and Pit.",
       };
     default:
       return {
         kind: "ready",
         title: "Battery end-of-life forecast",
         description:
-          "Projections use only logged cycle counts and internal-resistance trends — never DEMO IR or EOL metrics.",
+          "Projections use only logged cycle counts and internal-resistance trends.",
       };
   }
 }
@@ -270,20 +270,20 @@ export function batteryHealthForecastNextActions(input: {
       {
         id: "add-battery",
         label: "Add a battery",
-        detail: "Label and serial stay blank until you register a real pack — never DEMO rows.",
+        detail: "Label and serial stay blank until you register a real pack.",
         href: "#bhf-add-battery",
         primary: true,
       },
       {
         id: "battery-rotation",
         label: "Open Battery Rotation",
-        detail: "Match assignments stay blank until packs exist — never DEMO charge plans.",
+        detail: "Match assignments stay blank until packs exist.",
         href: hubHref("/competition", "battery-rotation", orgId),
       },
       {
         id: "batteries",
         label: "Open Batteries",
-        detail: "Log IR and cycles on the Team Batteries board — never DEMO health scores.",
+        detail: "Log IR and cycles on the Team Batteries board.",
         href: hubHref("/team", "batteries", orgId),
       },
       {
@@ -301,7 +301,7 @@ export function batteryHealthForecastNextActions(input: {
     actions.push({
       id: "overdue",
       label: "Review overdue packs",
-      detail: `${overdueCount} pack${overdueCount === 1 ? "" : "s"} past projected retirement — retire from real IR trends, not DEMO dates.`,
+      detail: `${overdueCount} pack${overdueCount === 1 ? "" : "s"} past projected retirement — retire from real IR trends.`,
       href: "#bhf-forecast",
       primary: true,
     });
@@ -343,7 +343,7 @@ export function batteryHealthForecastNextActions(input: {
     {
       id: "battery-rotation",
       label: "Open Battery Rotation",
-      detail: "Schedule which pack runs which match from the same fleet — never DEMO charge plans.",
+      detail: "Schedule which pack runs which match from the same fleet.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
     {

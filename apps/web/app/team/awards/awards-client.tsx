@@ -63,7 +63,7 @@ function AwardsNextActions({
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Draft essays from real submissions</h2>
-        <p>Counts reflect submissions you start — never DEMO win rates or invented award dollars.</p>
+        <p>Counts reflect submissions you start.</p>
       </header>
       <ol>
         {actions.map((action) => (

@@ -54,7 +54,7 @@ export default async function ScoutCrossvalPage({
         <section className="app-card soft-panel scout-crossval-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Coverage Live, and Accuracy — never DEMO agreement.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-crossval-setup-steps">
             {steps.map((step) => (

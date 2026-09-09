@@ -111,7 +111,7 @@ export function ordersNextActions(ctx: OrdersNextActionContext): OrdersNextActio
   actions.push({
     id: "budget",
     label: "Check season budget",
-    detail: "Approved and ordered amounts feed Business budget — no placeholder DEMO totals.",
+    detail: "Approved and ordered amounts feed Business budget.",
     href: hubHref("/business", "budget", orgId),
   });
 

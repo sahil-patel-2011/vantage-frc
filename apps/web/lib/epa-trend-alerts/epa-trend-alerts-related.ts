@@ -96,7 +96,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         kind,
         title: "Loading EPA Trend Alerts…",
         description:
-          "Checking workspace membership and watched teams — never DEMO EPA forecasts.",
+          "Checking workspace membership and watched teams.",
       };
     case "error":
       return {
@@ -104,7 +104,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         badge: "Unavailable",
         title: "Could not load EPA Trend Alerts",
         description:
-          "A network or server issue blocked the watchlist. Retry, or open Strategy / Opponent Watchlist while it reloads — never invent DEMO EPA metrics.",
+          "A network or server issue blocked the watchlist. Retry, or open Strategy / Opponent Watchlist while it reloads.",
       };
     case "setup":
       return {
@@ -120,14 +120,14 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         badge: "No teams watched",
         title: "Add a team to your watchlist",
         description:
-          "Alerts stay blank until you watch a real team with reference EPA history. Cross-check Strategy and Opponent Watchlist — never DEMO EPA forecasts.",
+          "Alerts stay blank until you watch a real team with reference EPA history. Cross-check Strategy and Opponent Watchlist.",
       };
     default:
       return {
         kind: "ready",
         title: "EPA swings on watched teams",
         description:
-          "Alerts use only Neon reference EPA between events for teams you watch — never DEMO EPA forecasts.",
+          "Alerts use only Neon reference EPA between events for teams you watch.",
       };
   }
 }
@@ -159,13 +159,13 @@ export function epaTrendAlertsNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO EPA.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "opponent-watchlist",
           label: "Open Opponent Watchlist",
-          detail: "Manual opponent notes stay blank until logged — never DEMO rankings.",
+          detail: "Manual opponent notes stay blank until logged.",
           href: hubHref("/competition", "opponent-watchlist", null),
         },
       ];
@@ -229,7 +229,7 @@ export function epaTrendAlertsNextActions(input: {
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Pick lists use scouted and reference metrics only — never DEMO EPA.",
+        detail: "Pick lists use scouted and reference metrics only.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -265,7 +265,7 @@ export function epaTrendAlertsNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground picks in scouted data and reference metrics — never DEMO EPA.",
+      detail: "Ground picks in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
       primary: !actions.some((a) => a.primary),
     },

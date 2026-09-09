@@ -118,7 +118,7 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
       return {
         kind,
         title: "Loading Robot Weigh-In…",
-        description: "Checking workspace membership and scale readings — never DEMO weigh-ins.",
+        description: "Checking workspace membership and scale readings.",
       };
     case "error":
       return {
@@ -126,7 +126,7 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
         badge: "Unavailable",
         title: "Could not load Robot Weigh-In",
         description:
-          "A network or server issue blocked weigh-ins. Retry, or open Readiness while it reloads — never invent DEMO weights.",
+          "A network or server issue blocked weigh-ins. Retry, or open Readiness while it reloads.",
       };
     case "setup":
       return {
@@ -142,13 +142,13 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
         badge: "No weigh-ins yet",
         title: "Log your first robot weigh-in",
         description:
-          "Shop and event scale readings surface here — never DEMO weight packs.",
+          "Shop and event scale readings surface here.",
       };
     default:
       return {
         kind: "ready",
         title: "Robot weigh-in log",
-        description: "Weights from your scale logs only — never DEMO counters.",
+        description: "Weights from your scale logs only.",
       };
   }
 }
@@ -201,7 +201,7 @@ export function robotWeighInNextActions(input: {
       {
         id: "log-weigh-in",
         label: "Log a weigh-in",
-        detail: "Scale readings stay blank until you record one — never DEMO weights.",
+        detail: "Scale readings stay blank until you record one.",
         href: "#robot-weigh-in-form",
         primary: true,
       },
@@ -234,8 +234,8 @@ export function robotWeighInNextActions(input: {
         label: overLimitCount > 0 ? "Review over-limit readings" : "Review weight trend",
         detail:
           overLimitCount > 0
-            ? `${overLimitCount} reading${overLimitCount === 1 ? "" : "s"} over the limit from real scale logs — never DEMO weights.`
-            : `${entryCount} weigh-in${entryCount === 1 ? "" : "s"} logged — never DEMO counters.`,
+            ? `${overLimitCount} reading${overLimitCount === 1 ? "" : "s"} over the limit from real scale logs.`
+            : `${entryCount} weigh-in${entryCount === 1 ? "" : "s"} logged.`,
         href: "#robot-weigh-in-entries",
       },
       {
@@ -253,8 +253,8 @@ export function robotWeighInNextActions(input: {
       label: overLimitCount > 0 ? "Review over-limit readings" : "Review weight trend",
       detail:
         overLimitCount > 0
-          ? `${overLimitCount} reading${overLimitCount === 1 ? "" : "s"} over the limit from real scale logs — never DEMO weights.`
-          : `${entryCount} weigh-in${entryCount === 1 ? "" : "s"} logged — never DEMO counters.`,
+          ? `${overLimitCount} reading${overLimitCount === 1 ? "" : "s"} over the limit from real scale logs.`
+          : `${entryCount} weigh-in${entryCount === 1 ? "" : "s"} logged.`,
       href: "#robot-weigh-in-entries",
       primary: true,
     },

@@ -332,9 +332,7 @@ function ConnectionsNextActions({
     <section className="account-next-actions app-card soft-panel" aria-label="Connection next actions">
       <header>
         <h2>Next actions</h2>
-        <p>
-          Connected appears only for real OAuth, webhook, or PAT rows — never a DEMO linked account.
-        </p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -377,9 +375,7 @@ function NextActions({
     <section className="account-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>
-          Profile is personal; billing and usage follow your active workspace — never DEMO plan or ledger figures.
-        </p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (

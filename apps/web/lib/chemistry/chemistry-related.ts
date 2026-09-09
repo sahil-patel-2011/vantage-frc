@@ -89,7 +89,7 @@ export function chemistrySetupSteps(orgId?: string | null): ChemistrySetupStep[]
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO chemistry scores.",
+      detail: "Pull TBA/Statbotics rows into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -107,7 +107,7 @@ export function chemistrySetupSteps(orgId?: string | null): ChemistrySetupStep[]
     {
       id: "draft",
       label: "Open Draft board",
-      detail: "Run draft day on the same real event pool — never DEMO alliance slots.",
+      detail: "Run draft day on the same real event pool.",
       href: withOrgHref("/strategy/draft", orgId),
     },
   ];
@@ -167,7 +167,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         kind,
         title: "Loading alliance chemistry…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics — never DEMO chemistry scores.",
+          "Checking workspace membership and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -175,7 +175,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         badge: "Unavailable",
         title: "Could not load alliance chemistry",
         description:
-          "A network or server issue blocked the scorer. Retry, or open Strategy / Pick desk / Draft while it reloads — never invent DEMO chemistry scores.",
+          "A network or server issue blocked the scorer. Retry, or open Strategy / Pick desk / Draft while it reloads.",
       };
     case "setup":
       return {
@@ -191,14 +191,14 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         badge: "No chemistry score yet",
         title: "Waiting on real alliance seats",
         description:
-          "Enter 2–3 team numbers (or wait for your next alliance on the schedule). Scores stay blank until TBA/Statbotics rows exist — never DEMO chemistry scores. Cross-check Strategy, Pick desk, and Draft.",
+          "Enter 2–3 team numbers (or wait for your next alliance on the schedule). Scores stay blank until TBA/Statbotics rows exist. Cross-check Strategy, Pick desk, and Draft.",
       };
     default:
       return {
         kind: "ready",
         title: "Alliance chemistry",
         description:
-          "MODEL fit from synced event EPA and scout reliability only — never DEMO chemistry scores. Verify with pit notes before locking picks.",
+          "MODEL fit from synced event EPA and scout reliability only. Verify with pit notes before locking picks.",
       };
   }
 }
@@ -231,19 +231,19 @@ export function chemistryNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist — never DEMO chemistry scores.",
+          detail: "Win/loss and draft day stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows — never DEMO picks.",
+          detail: "Pick tiers stay blank until your team syncs event rows.",
           href: withOrgHref("/strategy?tab=picks", null),
         },
         {
           id: "draft",
           label: "Open Draft board",
-          detail: "Alliance slots stay blank until synced — never DEMO boards.",
+          detail: "Alliance slots stay blank until synced.",
           href: withOrgHref("/strategy/draft", null),
         },
       ];
@@ -271,7 +271,7 @@ export function chemistryNextActions(input: {
       {
         id: "draft",
         label: "Open Draft board",
-        detail: "Run draft day on the same real event pool — never DEMO alliance slots.",
+        detail: "Run draft day on the same real event pool.",
         href: withOrgHref("/strategy/draft", orgId),
       },
     ];
@@ -313,7 +313,7 @@ export function chemistryNextActions(input: {
         id: "team-data",
         label: "Sync event metrics",
         detail:
-          "Pull TBA/Statbotics team_event_metrics — chemistry scores stay blank until then, never DEMO chemistry scores.",
+          "Pull TBA/Statbotics team_event_metrics — chemistry scores stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -332,7 +332,7 @@ export function chemistryNextActions(input: {
       {
         id: "draft",
         label: "Open Draft board",
-        detail: "Alliance slots use the same synced event pool — never DEMO boards.",
+        detail: "Alliance slots use the same synced event pool.",
         href: withOrgHref("/strategy/draft", orgId),
       },
     ];
@@ -342,7 +342,7 @@ export function chemistryNextActions(input: {
     {
       id: "chemistry",
       label: "Review chemistry score",
-      detail: `MODEL fit across ${formatChemistryMetric(seatCount, true)} seat${seatCount === 1 ? "" : "s"} from synced EPA only — never DEMO chemistry scores.`,
+      detail: `MODEL fit across ${formatChemistryMetric(seatCount, true)} seat${seatCount === 1 ? "" : "s"} from synced EPA only.`,
       href: hubHref("/competition", "chemistry", orgId),
       primary: true,
     },
@@ -361,7 +361,7 @@ export function chemistryNextActions(input: {
     {
       id: "draft",
       label: "Open Draft board",
-      detail: "Carry the same real seats into draft day — never DEMO alliance slots.",
+      detail: "Carry the same real seats into draft day.",
       href: withOrgHref("/strategy/draft", orgId),
     },
   ];

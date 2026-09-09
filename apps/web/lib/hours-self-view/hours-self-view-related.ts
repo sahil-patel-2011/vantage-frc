@@ -84,7 +84,7 @@ export function hoursSelfViewSetupSteps(orgId?: string | null): HoursSelfViewSet
     {
       id: "consent",
       label: "Open Consent",
-      detail: "Guardian biometric consent stays blank until recorded — never DEMO gates.",
+      detail: "Guardian biometric consent stays blank until recorded.",
       href: withOrgHref("/consent", orgId),
     },
     {
@@ -139,7 +139,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
       return {
         kind,
         title: "Loading My Hours…",
-        description: "Checking workspace membership and your hour logs — never DEMO hour totals.",
+        description: "Checking workspace membership and your hour logs.",
       };
     case "error":
       return {
@@ -147,7 +147,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
         badge: "Unavailable",
         title: "Could not load My Hours",
         description:
-          "A network or server issue blocked your hours. Retry, or open Attendance while it reloads — never invent DEMO sessions.",
+          "A network or server issue blocked your hours. Retry, or open Attendance while it reloads.",
       };
     case "setup":
       return {
@@ -163,13 +163,13 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
         badge: "No hours yet",
         title: "Clock in to start your record",
         description:
-          "Shop, meeting, and outreach sessions appear here after real clock-ins — never DEMO hour packs.",
+          "Shop, meeting, and outreach sessions appear here after real clock-ins.",
       };
     default:
       return {
         kind: "ready",
         title: "Your logged hours",
-        description: "Sessions from your clock-ins only — never DEMO hour counters.",
+        description: "Sessions from your clock-ins only.",
       };
   }
 }
@@ -264,7 +264,7 @@ export function hoursSelfViewNextActions(input: {
       {
         id: "attendance",
         label: "Clock in from Attendance",
-        detail: "Sessions stay blank until you log a real clock-in — never DEMO hours.",
+        detail: "Sessions stay blank until you log a real clock-in.",
         href: hubHref("/team", "attendance", orgId),
         primary: true,
       },
@@ -287,7 +287,7 @@ export function hoursSelfViewNextActions(input: {
     {
       id: "review-sessions",
       label: "Review recent sessions",
-      detail: `${entryCount} session${entryCount === 1 ? "" : "s"} from your clock-ins — never DEMO counters.`,
+      detail: `${entryCount} session${entryCount === 1 ? "" : "s"} from your clock-ins.`,
       href: "#hours-self-entries",
       primary: true,
     },
@@ -302,7 +302,7 @@ export function hoursSelfViewNextActions(input: {
       label: kioskCount > 0 ? "Review kiosk devices" : "Open Team Health",
       detail:
         kioskCount > 0
-          ? `${kioskCount} kiosk device${kioskCount === 1 ? "" : "s"} registered — never DEMO floor units.`
+          ? `${kioskCount} kiosk device${kioskCount === 1 ? "" : "s"} registered.`
           : "Season health sits beside your personal hours.",
       href: kioskCount > 0 ? "#hours-self-kiosks" : hubHref("/team", "team-health-dashboard", orgId),
     },

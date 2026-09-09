@@ -62,7 +62,7 @@ function NextActionsPanel({ actions }: { actions: ScoutFieldBudgetNextAction[] }
     <section className="app-card soft-panel edc-next-actions sfb-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Forms, Scouting, and Schema A/B — never DEMO field totals.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -151,7 +151,7 @@ function BudgetShell({
         <Panel className="sfb-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Forms and Scouting — never DEMO field totals.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="sfb-setup-steps">
             {steps.map((step) => (
@@ -284,7 +284,7 @@ export default function ScoutFieldBudgetClient() {
           </>
         }
         title="Scouting Field-Count Budget"
-        description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget — never DEMO field totals."
+        description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -329,7 +329,7 @@ export default function ScoutFieldBudgetClient() {
           badge="No schemas linted yet"
           badgeTone="setup"
           title="Log your first schema snapshot"
-          description="Record how many fields each match phase asks for — never DEMO schema packs."
+          description="Record how many fields each match phase asks for."
         />
       )}
       <NextActionsPanel actions={nextActions} />

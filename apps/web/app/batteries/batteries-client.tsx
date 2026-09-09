@@ -462,7 +462,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
               <h2>Competition cart</h2>
               <p className="app-muted">
                 Killer Bees cool-down: 15 minutes off the charger before a Beak test, then Ready. Slots stay empty until
-                you log a real charge — never DEMO ready packs.
+                you log a real charge.
               </p>
               <ul className="batt-cart">
                 {view.packs

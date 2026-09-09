@@ -111,7 +111,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "No drafts",
         title: "Draft library is empty",
         description:
-          "Templates and saved drafts stay blank until you compose. Nothing is seeded with DEMO essays.",
+          "Templates and saved drafts stay blank until you compose.",
       };
     default:
       return {

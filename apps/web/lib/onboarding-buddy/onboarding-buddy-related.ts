@@ -81,13 +81,13 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
     {
       id: "onboarding",
       label: "Finish Onboarding",
-      detail: "Complete your profile path before pairing new members — never DEMO progress.",
+      detail: "Complete your profile path before pairing new members.",
       href: withOrgHref("/onboarding", orgId),
     },
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm real TBA/team context for this workspace — never invent DEMO metrics.",
+      detail: "Confirm real TBA/team context for this workspace.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -152,7 +152,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         kind,
         title: "Loading Onboarding Buddy…",
         description:
-          "Checking workspace membership and real buddy pairings — never DEMO progress.",
+          "Checking workspace membership and real buddy pairings.",
       };
     case "error":
       return {
@@ -160,7 +160,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "Unavailable",
         title: "Could not load Onboarding Buddy",
         description:
-          "A network or server issue blocked buddy pairings. Retry, or open Workspace / Onboarding / Team Data while it reloads — never invent DEMO progress.",
+          "A network or server issue blocked buddy pairings. Retry, or open Workspace / Onboarding / Team Data while it reloads.",
       };
     case "setup":
       return {
@@ -176,14 +176,14 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "No pairings yet",
         title: "Pair your first buddy",
         description:
-          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Workspace, Onboarding, and Team Data — never DEMO progress.",
+          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Workspace, Onboarding, and Team Data.",
       };
     default:
       return {
         kind: "ready",
         title: "Buddy pairings",
         description:
-          "Only real memberships and logged pairings appear here — counts never invent DEMO progress.",
+          "Your team's members and the pairings you logged appear here.",
       };
   }
 }
@@ -222,7 +222,7 @@ export function onboardingBuddyNextActions(input: {
         {
           id: "team-data",
           label: "Open Team Data",
-          detail: "Team context stays empty until a workspace and TBA sync exist — never DEMO metrics.",
+          detail: "Team context stays empty until a workspace and TBA sync exist.",
           href: withOrgHref("/team/data", null),
         },
       ];
@@ -238,13 +238,13 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "onboarding",
         label: "Open Onboarding",
-        detail: "Confirm your profile path before pairing new members — never DEMO progress.",
+        detail: "Confirm your profile path before pairing new members.",
         href: withOrgHref("/onboarding", orgId),
       },
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "Confirm real team/event context for this workspace — never invent DEMO metrics.",
+        detail: "Confirm real team/event context for this workspace.",
         href: withOrgHref("/team/data", orgId),
       },
     ];
@@ -268,7 +268,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "onboarding",
         label: "Open Onboarding",
-        detail: "Profile setup stays separate from buddy pairings — never DEMO progress.",
+        detail: "Profile setup stays separate from buddy pairings.",
         href: withOrgHref("/onboarding", orgId),
       },
       {
@@ -288,7 +288,7 @@ export function onboardingBuddyNextActions(input: {
         detail:
           unpairedCount > 0
             ? `${unpairedCount} recent joiner${unpairedCount === 1 ? "" : "s"} need a buddy — pair from the list below.`
-            : "Pairings stay blank until a real recent joiner appears — never DEMO progress.",
+            : "Pairings stay blank until a real recent joiner appears.",
         href: unpairedCount > 0 ? "#onboarding-buddy-unpaired" : withOrgHref("/workspace", orgId),
         primary: true,
       },
@@ -301,7 +301,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "Team context for this workspace — never invent DEMO ranks or EPA.",
+        detail: "Team context for this workspace.",
         href: withOrgHref("/team/data", orgId),
       },
       {
@@ -320,7 +320,7 @@ export function onboardingBuddyNextActions(input: {
       detail:
         unpairedCount > 0
           ? `${unpairedCount} still need a buddy — suggestions use real tenure only.`
-          : "Coverage uses active pairings plus unpaired recent joiners — never DEMO progress.",
+          : "Coverage uses active pairings plus unpaired recent joiners.",
       href: "#onboarding-buddy-unpaired",
       primary: true,
     },

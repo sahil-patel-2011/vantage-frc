@@ -84,7 +84,7 @@ export function scheduleNextActions(input: {
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Practice and shop nights live on Team Calendar — never seeded DEMO matches.",
+          detail: "Practice and shop nights live on Team Calendar.",
           href: hubHref("/team", "calendar", null),
         },
       ];
@@ -158,7 +158,7 @@ export function scheduleNextActions(input: {
       {
         id: "command",
         label: "Check Event Day sync",
-        detail: "Matches appear after TBA reference sync for the active event — never DEMO placeholders.",
+        detail: "Matches appear after TBA reference sync for the active event.",
         href: hubHref("/competition", "command", orgId),
         primary: true,
       },

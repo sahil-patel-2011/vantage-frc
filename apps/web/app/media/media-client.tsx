@@ -129,7 +129,7 @@ function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Calendar, drafts, kit, and impact — never DEMO media metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -319,7 +319,7 @@ function CalendarPanel({
         <header>
           <h2>Content calendar</h2>
           <p className="app-muted">
-            Scheduled and due posts for {view.seasonYear} — never DEMO engagement.
+            Scheduled and due posts for {view.seasonYear}
           </p>
         </header>
         {items.length ? (
@@ -454,7 +454,7 @@ function DraftsPanel({
       <Panel>
         <header>
           <h2>Drafts</h2>
-          <p className="app-muted">Work-in-progress captions — never DEMO reach.</p>
+          <p className="app-muted">Work-in-progress captions.</p>
         </header>
         {view.orgId && cutoffCode ? (
           <UsageCutoffBanner orgId={view.orgId} errorCode={cutoffCode} compact />
@@ -637,7 +637,7 @@ function RemindersPanel({
           badge="No reminders"
           badgeTone="setup"
           title="No upcoming media reminders"
-          description="Set remind_at when scheduling or drafting — never invent DEMO alert counts."
+          description="Set remind_at when scheduling or drafting."
         />
       )}
     </Panel>
@@ -655,7 +655,7 @@ function KitPanel({ view }: { view: LiveView }) {
             ? "Profile and logo recorded — open Media Kit to edit."
             : view.kit.missingFields.length
               ? `Still missing: ${view.kit.missingFields.slice(0, 3).join(", ")}${view.kit.missingFields.length > 3 ? "…" : ""}`
-              : "No kit fields yet — never DEMO bios or logos."}
+              : "No kit fields yet."}
         </p>
       </header>
       <div className="media-stats" aria-label="Kit readiness">
@@ -710,7 +710,7 @@ function ImpactPanel({ view }: { view: LiveView }) {
     <Panel>
       <header>
         <h2>Media impact</h2>
-        <p className="app-muted">Logged activities with category media — never DEMO hours.</p>
+        <p className="app-muted">Logged activities with category media.</p>
       </header>
       <div className="media-stats" aria-label="Media impact">
         <div>
@@ -1103,7 +1103,7 @@ export default function MediaClient() {
 
   return (
     <MediaShell
-      description="Content calendar, drafts, reminders, Media Kit, and impact — never DEMO metrics."
+      description="Content calendar, drafts, reminders, Media Kit, and impact."
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}

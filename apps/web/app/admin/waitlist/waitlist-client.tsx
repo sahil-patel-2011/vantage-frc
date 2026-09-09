@@ -79,7 +79,7 @@ export default function WaitlistAdminClient() {
       <PageHeader
         breadcrumbs="Platform / Waitlist"
         title="Waitlist"
-        description="Review launch interest, mark outreach, and jump to team provisioning when you are ready to invite an owner. Real entries only — never DEMO interest."
+        description="Review launch interest, mark outreach, and jump to team provisioning when you are ready to invite an owner. Real entries only."
       >
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({

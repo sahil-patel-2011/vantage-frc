@@ -57,7 +57,7 @@ export default async function ScoutAccuracyPage({
         <section className="app-card soft-panel scout-accuracy-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-accuracy-setup-steps">
             {steps.map((step) => (

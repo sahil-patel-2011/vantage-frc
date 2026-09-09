@@ -67,7 +67,7 @@ export default function BoardClient() {
           badge="Unavailable"
           badgeTone="setup"
           title={copy.title}
-          description={`${error} Mentor links stay org-bound — never DEMO boards or cross-org snapshots.`}
+          description={`${error} Mentor links stay org-bound.`}
         />
       </main>
     );
@@ -81,7 +81,7 @@ export default function BoardClient() {
           soft
           className="draft-empty"
           title={copy.title}
-          description="Resolving the org-bound mentor token — never DEMO boards."
+          description="Resolving the org-bound mentor token."
           aria-busy
         />
       </main>
@@ -102,8 +102,7 @@ export default function BoardClient() {
             {new Date(snapshot.expiresAt).toLocaleString()}
           </p>
           <p className="app-muted draft-share-note">
-            Org-bound share token — this snapshot belongs only to the issuing workspace. Never DEMO
-            boards.
+            This link only shows the board from the team that created it.
           </p>
         </div>
         <span className="app-badge setup">Read only</span>

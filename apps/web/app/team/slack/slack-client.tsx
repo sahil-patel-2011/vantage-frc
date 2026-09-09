@@ -284,7 +284,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       <section className="team-discord-next-actions app-card soft-panel" aria-label="Next actions">
         <header>
           <h2>Next actions</h2>
-          <p>From this team’s Slack row only — never DEMO sync counts.</p>
+          <p>Each one opens the page where you finish the work.</p>
         </header>
         <ol>
           {actions.map((action) => (

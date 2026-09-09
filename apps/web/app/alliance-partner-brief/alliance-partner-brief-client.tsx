@@ -60,7 +60,7 @@ function BriefNextActionsPanel({ actions }: { actions: AlliancePartnerBriefNextA
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Alliance board, and Scouting — never DEMO partner metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -286,7 +286,7 @@ export default function AlliancePartnerBriefClient() {
           </>
         }
         title="Alliance-Partner Brief"
-        description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting. Never DEMO partner metrics. Cross-check Strategy, Alliance board, and Scouting."
+        description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting. Cross-check Strategy, Alliance board, and Scouting."
       >
         <div className="alliance-partner-brief-header-actions">
           {relatedLinks.map((link) => (
@@ -342,8 +342,7 @@ export default function AlliancePartnerBriefClient() {
             Finalize captains on the{" "}
             <a href={allianceBoardHref}>Alliance board</a>, keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, and
-            confirm field notes in <a href={scoutingHref}>Scouting</a> — never invent DEMO partner
-            roles or strengths.
+            confirm field notes in <a href={scoutingHref}>Scouting</a>.
           </p>
         </Panel>
       </div>
@@ -411,8 +410,7 @@ function LiveBody({
 
         {finalizedAlliances.length === 0 ? (
           <p className="app-muted" style={{ marginTop: 12 }}>
-            No alliances have been picked yet on this board. Finalize alliance selection first — never
-            invent DEMO captains.
+            No alliances have been picked yet on this board. Finalize alliance selection first.
           </p>
         ) : (
           <div className="alliance-partner-brief-seeds">
@@ -470,7 +468,7 @@ function BriefPanel({
           badge="No brief yet"
           badgeTone="setup"
           title="Generate a partner brief for this alliance"
-          description="Roles and strengths appear only from event metrics and your own scouting — never DEMO partner claims."
+          description="Roles and strengths appear only from event metrics and your own scouting."
         />
       ) : (
         <>
@@ -497,7 +495,7 @@ function BriefPanel({
                   </ul>
                 ) : (
                   <p className="app-muted" style={{ margin: "8px 0 0" }}>
-                    No strengths on file yet — never invent DEMO claims.
+                    No strengths on file yet.
                   </p>
                 )}
                 <small className="app-muted" style={{ display: "block", marginTop: 6 }}>

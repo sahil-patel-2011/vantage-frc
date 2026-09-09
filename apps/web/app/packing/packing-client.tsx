@@ -88,7 +88,7 @@ function ListDetail({
         </h3>
         {pending.length === 0 ? (
           <p className="app-muted pack-inbox-empty">
-            Teammates submit what they need packed here — the packing lead accepts onto the master list. Never a DEMO inbox.
+            Teammates submit what they need packed here — the packing lead accepts onto the master list.
           </p>
         ) : (
           <ul>

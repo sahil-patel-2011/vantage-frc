@@ -166,7 +166,7 @@ export default function AdminReleasesClient() {
       <PageHeader
         breadcrumbs="Platform / Releases"
         title="Product releases"
-        description="Stage feature flags and release notes by audience (all, paid, Max, or specific plan codes). Publishing emails users with product-update prefs on (default) and posts to the inbox — never a DEMO changelog."
+        description="Stage feature flags and release notes by audience (all, paid, Max, or specific plan codes). Publishing emails users with product-update prefs on (default) and posts to the inbox."
       >
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({

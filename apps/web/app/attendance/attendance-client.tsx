@@ -69,7 +69,7 @@ function NextActions({
     <section className="att-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From real attendance events only — never DEMO presence rates.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -205,7 +205,7 @@ function MemberOneTap({
     <div className="att-one-tap" aria-label="Team members one-tap roll call">
       <header>
         <h3>One-tap roll</h3>
-        <p>Tap a teammate to mark present — remove with another tap. Never invents DEMO rates.</p>
+        <p>Tap a teammate to mark present — remove with another tap.</p>
       </header>
       <div className="att-one-tap-grid">
         {members.map((member) => {
@@ -424,7 +424,7 @@ function SessionDetail({
         <EmptyState
           soft
           title="No attendees marked yet"
-          description="Add people who showed up — totals stay empty until you mark them. No DEMO presence rates."
+          description="Add people who showed up — totals stay empty until you mark them."
         >
           <div className="att-empty-actions">
             <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
@@ -565,7 +565,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                 ? null
                 : `${window.location.pathname}${window.location.search}`,
             message:
-              error || "Check your connection and try again. Presence is never filled with DEMO rates.",
+              error || "Check your connection and try again.",
           },
         )
       : null;
@@ -618,7 +618,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             <PageHeader
               breadcrumbs="Team / Attendance"
               title="Attendance"
-              description="Log who showed up to practice and meetings — real marks only, never DEMO rates."
+              description="Log who showed up to practice and meetings — real marks only."
             />
             <TeamOpsNav active="attendance" />
           </>
@@ -695,8 +695,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           description={
             <>
               Practice and meeting presence for {context.orgName ?? "your team"}
-              {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Totals use only marks you enter — never DEMO
-              rates.
+              {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Totals use only marks you enter.
             </>
           }
         >
@@ -821,7 +820,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                 </p>
               </header>
               {filtered.length === 0 ? (
-                <EmptyState soft title="No sessions match" description="Clear filters or search — the list never invents DEMO rolls.">
+                <EmptyState soft title="No sessions match" description="Clear the filters or try a different search.">
                   <button type="button" className="app-button secondary" onClick={() => { setListFilter("all"); setQuery(""); }}>
                     Reset filters
                   </button>

@@ -14,7 +14,7 @@ import "../team-admin.css";
 export const metadata = {
   title: "Team admin",
   description:
-    "Membership, invites, GitHub robot-code context, and provider settings — never DEMO members or repositories.",
+    "Membership, invites, GitHub robot-code context, and provider settings.",
 };
 
 export default async function TeamAdminPage({
@@ -35,7 +35,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Membership, invites, and GitHub context are org-scoped. Choose a team workspace to continue — nothing is pre-seeded as DEMO members."
+          description="Membership, invites, and GitHub context are org-scoped. Choose a team workspace to continue."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (
@@ -60,7 +60,7 @@ export default async function TeamAdminPage({
         <Panel className="team-admin-membership" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Workspace first — invite, Discord, and Connections after. Never DEMO members.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="team-admin-setup-steps">
             {steps.map((step) => (
@@ -79,7 +79,7 @@ export default async function TeamAdminPage({
         <section className="app-card soft-panel team-admin-next-actions" aria-label="Next actions">
           <header>
             <h2>Next actions</h2>
-            <p className="app-muted">Account, Discord, and Connections — never DEMO members.</p>
+            <p className="app-muted">Each one opens the page where you finish the work.</p>
           </header>
           <ol>
             {actions.map((action) => (

@@ -95,7 +95,7 @@ function ReadinessNextActionsPanel({ actions }: { actions: ReadinessScoreNextAct
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">FMEA, Inspection Copilot, and Code — never DEMO readiness metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -185,7 +185,7 @@ function ReadinessShell({
         <Panel className="readiness-score-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">FMEA and Inspection — never DEMO readiness metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="readiness-score-setup-steps">
             {steps.map((step) => (
@@ -339,7 +339,7 @@ export default function ReadinessScoreClient() {
           </>
         }
         title="Robot readiness score"
-        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code — never DEMO readiness metrics."
+        description="One grounded ship-readiness index across subsystem wiring/code state, weight & power headroom, the bring-up checklist, and open FMEA. Cross-check FMEA, Inspection, and Code."
       >
         <div className="readiness-score-header-actions">
           {view.seasons.length > 0 ? (
@@ -445,9 +445,8 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           <h2 style={{ margin: "6px 0 0" }}>Ship-readiness index</h2>
           <small className="app-muted">
             {index.weightUsedLbs} / {index.weightBudgetLbs} lbs · {index.powerUsedAmps} / {index.powerBudgetAmps} A ·{" "}
-            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA. Weight/power
-            use a default 115 lb / 120 A yardstick until you record budgets — not a measured weigh-in. Never DEMO
-            scores
+            {index.checklistComplete}/{index.checklistTotal} checklist · {index.openFmeaCount} open FMEA. Weight and power
+            fall back to a 115 lb / 120 A yardstick until you record your own budgets — not a measured weigh-in.
           </small>
         </div>
         <strong style={{ fontSize: "2rem" }}>{formatReadinessScorePercent(index.score, true)}</strong>
@@ -476,14 +475,14 @@ function FixList({ view }: { view: LiveView }) {
         badge="Ship ready"
         badgeTone="good"
         title="No open fix-list items"
-        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open FMEA or budget overrun on record — never DEMO severity."
+        description="Wiring is verified, code is deployed & tested, the bring-up checklist is complete, and there's no open FMEA or budget overrun on record."
       />
     );
   }
   return (
     <Panel id="readiness-score-fixes" className="readiness-score-panel">
       <h2 style={{ marginTop: 0 }}>Fix list — ordered by urgency</h2>
-      <p className="app-muted">From logged subsystems and open FMEA only — never DEMO severity.</p>
+      <p className="app-muted">From logged subsystems and open FMEA only.</p>
       <ul className="readiness-score-list">
         {fixList.map((item) => (
           <li key={item.id} className="readiness-score-row">
@@ -574,7 +573,7 @@ function ChecklistPanel({
     <Panel className="readiness-score-panel">
       <h2 style={{ marginTop: 0 }}>Bring-up checklist</h2>
       {view.checklistItems.length === 0 ? (
-        <p className="app-muted">No checklist items logged yet — never DEMO completion.</p>
+        <p className="app-muted">No checklist items logged yet.</p>
       ) : (
         <ul className="readiness-score-list" style={{ marginBottom: 12 }}>
           {view.checklistItems.map((item) => (

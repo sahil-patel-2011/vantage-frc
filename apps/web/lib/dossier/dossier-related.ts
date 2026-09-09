@@ -83,7 +83,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA identity + Statbotics EPA into Neon — never invent DEMO stats.",
+      detail: "Pull TBA identity + Statbotics EPA into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -101,7 +101,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
     {
       id: "pick-desk",
       label: "Open Pick desk",
-      detail: "Cross-check cited facts against first / second / third tiers — never DEMO picks.",
+      detail: "Cross-check cited facts against first / second / third tiers.",
       href: withOrgHref("/strategy?tab=picks", orgId),
     },
   ];
@@ -155,7 +155,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         kind,
         title: "Loading season dossier…",
         description:
-          "Checking workspace membership and TBA/Statbotics caches — never DEMO stats.",
+          "Checking workspace membership and TBA/Statbotics caches.",
       };
     case "error":
       return {
@@ -163,7 +163,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "Unavailable",
         title: "Could not load team dossier",
         description:
-          "A network or server issue blocked the fact load. Retry, or open Strategy / Scouting / Pick desk while it reloads — never invent DEMO stats.",
+          "A network or server issue blocked the fact load. Retry, or open Strategy / Scouting / Pick desk while it reloads.",
       };
     case "setup":
       return {
@@ -179,14 +179,14 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         badge: "No facts yet",
         title: "Waiting on cited season facts",
         description:
-          "Enter a team number and sync TBA identity + Statbotics EPA. Cards stay blank until real rows exist — never DEMO stats. Cross-check Strategy, Scouting, and Pick desk.",
+          "Enter a team number and sync TBA identity + Statbotics EPA. Cards stay blank until real rows exist. Cross-check Strategy, Scouting, and Pick desk.",
       };
     default:
       return {
         kind: "ready",
         title: "Season team dossier",
         description:
-          "Cited TBA / Statbotics / org-scout facts only — never DEMO stats. Verify before locking picks.",
+          "Cited TBA / Statbotics / org-scout facts only. Verify before locking picks.",
       };
   }
 }
@@ -218,19 +218,19 @@ export function dossierNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist — never DEMO stats.",
+          detail: "Win/loss and draft day stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout notes stay blank until your team syncs entries — never DEMO notes.",
+          detail: "Scout notes stay blank until your team syncs entries.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows — never DEMO picks.",
+          detail: "Pick tiers stay blank until your team syncs event rows.",
           href: withOrgHref("/strategy?tab=picks", null),
         },
       ];
@@ -300,7 +300,7 @@ export function dossierNextActions(input: {
         id: "team-data",
         label: "Sync season metrics",
         detail:
-          "Pull TBA identity + Statbotics EPA — dossier cards stay blank until then, never DEMO stats.",
+          "Pull TBA identity + Statbotics EPA — dossier cards stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -334,7 +334,7 @@ export function dossierNextActions(input: {
     {
       id: "dossier",
       label: "Review cited facts",
-      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from TBA/Statbotics/scout only — never DEMO stats.`,
+      detail: `${formatDossierMetric(cardCount, true)} cited fact card${cardCount === 1 ? "" : "s"} from TBA/Statbotics/scout only.`,
       href: dossierHref,
       primary: true,
     },

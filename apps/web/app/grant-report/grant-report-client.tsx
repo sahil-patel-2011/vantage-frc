@@ -47,7 +47,7 @@ function GrantReportNextActionsPanel({ actions }: { actions: GrantReportNextActi
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Grants and Community Impact — never DEMO grant dollars.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -286,7 +286,7 @@ export default function GrantReportClient() {
           </>
         }
         title="Grant Report"
-        description="Post-grant impact reports generated from your team's own logged outreach and finance records — never DEMO grant dollars. Cross-check Grants and Community Impact."
+        description="Post-grant impact reports generated from your team's own logged outreach and finance records. Cross-check Grants and Community Impact."
       >
         <div className="grant-report-header-actions">
           {view.seasons.length > 0 ? (
@@ -369,7 +369,7 @@ export default function GrantReportClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Mark awards in <a href={grantsHref}>Grants</a>, draft language in{" "}
             <a href={workbenchHref}>Grants workbench</a>, and ground outreach in{" "}
-            <a href={impactHref}>Community Impact</a> — never invent DEMO grant dollars or funder hours.
+            <a href={impactHref}>Community Impact</a>
           </p>
         </Panel>
       </div>
@@ -393,7 +393,7 @@ function EligibleGrants({
         badge="No awarded grants yet"
         badgeTone="setup"
         title="Mark a grant as awarded to generate a report"
-        description="Post-grant reports stay blank until Grants tracks an awarded application — never DEMO grant dollars."
+        description="Post-grant reports stay blank until Grants tracks an awarded application."
       />
     );
   }
@@ -443,7 +443,7 @@ function Reports({
       <EmptyState
         soft
         title="No reports generated yet"
-        description="Generate a report for an awarded grant above — never invent DEMO grant dollars."
+        description="Generate a report for an awarded grant above."
       />
     );
   }

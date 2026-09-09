@@ -10,7 +10,7 @@ import "./team-data.css";
 export const metadata = {
   title: "Team data",
   description:
-    "Soft-UI TBA sync, Neon cache health, and workspace inventory — never DEMO team metrics. Links to Schedule, Event Day, and Strategy.",
+    "Soft-UI TBA sync, Neon cache health, and workspace inventory. Links to Schedule, Event Day, and Strategy.",
 };
 
 export default async function TeamDataPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
@@ -25,7 +25,7 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
             <span className="breadcrumbs">Team / Live data</span>
             <h1>Team Data</h1>
             <p>
-              Select a workspace so TBA sync and inventory stay scoped to the right organization — never DEMO metrics.
+              Select a workspace so TBA sync and inventory stay scoped to the right organization.
             </p>
           </div>
           <nav className="product-hub-related team-data-related" aria-label="Related team data tools">
@@ -39,7 +39,7 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
         <section className="app-card soft-panel edc-next-actions team-data-next-actions" aria-label="Next actions">
           <header>
             <h2>Next actions</h2>
-            <p>Schedule, Event Day, and Strategy only — never DEMO team metrics.</p>
+            <p>Each one opens the page where you finish the work.</p>
           </header>
           <ol>
             {actions.map((action) => (

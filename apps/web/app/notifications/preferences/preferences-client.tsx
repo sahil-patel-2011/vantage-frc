@@ -246,7 +246,7 @@ export default function NotificationPreferencesClient() {
       <PageHeader
         breadcrumbs="Account / Notifications"
         title="Notification preferences"
-        description="Choose which coach→member events land in your inbox, plus optional email opt-ins. Auth codes and security notices are separate — and nothing invents DEMO alerts."
+        description="Choose which coach→member events land in your inbox, plus optional email opt-ins."
       >
         <div className="notif-header-actions">
           <a className="app-button secondary" href="/notifications">

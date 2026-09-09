@@ -79,7 +79,7 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
     {
       id: "command",
       label: "Open Command",
-      detail: "Confirm the active event and match schedule — never DEMO blocks.",
+      detail: "Confirm the active event and match schedule.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -132,7 +132,7 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
       return {
         kind,
         title: "Loading Event-Day Plan…",
-        description: "Checking workspace membership and plan date — never DEMO schedule blocks.",
+        description: "Checking workspace membership and plan date.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
         badge: "Unavailable",
         title: "Could not load Event-Day Plan",
         description:
-          "A network or server issue blocked the planner. Retry, or open Command while it reloads — never invent DEMO blocks.",
+          "A network or server issue blocked the planner. Retry, or open Command while it reloads.",
       };
     case "setup":
       return {
@@ -156,14 +156,14 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
         badge: "No blocks yet",
         title: "Add your first event-day block",
         description:
-          "Qual matches, battery charges, scout shifts, pit-repair windows, and logistics overlay here — never DEMO schedule packs.",
+          "Qual matches, battery charges, scout shifts, pit-repair windows, and logistics overlay here.",
       };
     default:
       return {
         kind: "ready",
         title: "Hourly event-day overlay",
         description:
-          "Blocks and conflicts from your team only — never DEMO schedule counters.",
+          "Blocks and conflicts from your team only.",
       };
   }
 }
@@ -258,7 +258,7 @@ export function eventDayPlanNextActions(input: {
       {
         id: "add-block",
         label: "Add the first block",
-        detail: "Blocks stay blank until your team logs them — never DEMO schedule packs.",
+        detail: "Blocks stay blank until your team logs them.",
         href: "#event-day-plan-add",
         primary: true,
       },
@@ -283,8 +283,8 @@ export function eventDayPlanNextActions(input: {
       label: conflictCount > 0 ? "Resolve schedule conflicts" : "Review hourly overlay",
       detail:
         conflictCount > 0
-          ? `${conflictCount} conflict${conflictCount === 1 ? "" : "s"} from real overlapping blocks — never DEMO alerts.`
-          : `${blockCount} real block${blockCount === 1 ? "" : "s"} on today's plan — never DEMO counters.`,
+          ? `${conflictCount} conflict${conflictCount === 1 ? "" : "s"} from real overlapping blocks.`
+          : `${blockCount} real block${blockCount === 1 ? "" : "s"} on today's plan.`,
       href: conflictCount > 0 ? "#event-day-plan-conflicts" : "#event-day-plan-hourly",
       primary: true,
     },

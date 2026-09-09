@@ -52,7 +52,7 @@ function PracticeNextActions({ actions }: { actions: ReturnType<typeof practiceN
     <section className="practice-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From your real sessions and roll calls — empty until those exist. Never DEMO attendance %.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -554,7 +554,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           {!embedded ? <h1>Practice</h1> : null}
           <p>
             Schedule drive sessions, write the goal for the day, time every cycle, and link roll calls by occurred_on
-            for {context.orgName ?? "your team"} — never DEMO attendance %.
+            for {context.orgName ?? "your team"}
           </p>
           {!embedded ? (
             <div className="practice-hero-links">

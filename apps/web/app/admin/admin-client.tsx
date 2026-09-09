@@ -52,7 +52,7 @@ function AdminNextActions({ kind }: { kind: AdminShellKind }) {
     <section className="admin-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Real platform rows only — never DEMO org counts, plan metrics, or invented tickets.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -193,7 +193,7 @@ function AdminClientInner() {
       <PageHeader
         breadcrumbs="Platform / Global Team Manager"
         title="Global Team Manager"
-        description="Closed membership: provision each real team workspace and seed the first owner by exact verified email. Never DEMO organizations — waitlist interest stays on the waitlist surface."
+        description="Closed membership: provision each real team workspace and seed the first owner by exact verified email."
       >
         <AdminRelated active="teams" />
       </PageHeader>

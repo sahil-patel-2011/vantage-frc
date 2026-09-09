@@ -46,7 +46,7 @@ function JustifierNextActionsPanel({ actions }: { actions: PicklistJustifierNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy and Scouting — never DEMO pick rationales.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -282,7 +282,7 @@ export default function PicklistJustifierClient() {
           </>
         }
         title="Pick-list Auto-Justifier"
-        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with. Never DEMO rationales. Cross-check Strategy, Collaborative Pick List, and Scouting."
+        description="Source-cited rationale for every pick-list slot, and a contradiction guard that flags picks leaning on scouting your own TBA match record disagrees with. Cross-check Strategy, Collaborative Pick List, and Scouting."
       >
         <div className="picklist-justifier-header-actions">
           {view.pickLists.length > 0 ? (
@@ -368,7 +368,7 @@ export default function PicklistJustifierClient() {
             <p className="app-muted" style={{ marginTop: 8 }}>
               Adjust ranks in <a href={strategyHref}>Strategy</a>, deepen{" "}
               <a href={scoutingHref}>Scouting</a>, then carry justified picks to the{" "}
-              <a href={draftHref}>Alliance board</a> — never invent DEMO win rates.
+              <a href={draftHref}>Alliance board</a>
             </p>
           </Panel>
         </div>
@@ -421,7 +421,7 @@ function EntriesList({ view }: { view: LiveView }) {
         badge="No slots yet"
         badgeTone="setup"
         title="This pick list has no ranked teams"
-        description="Add teams to the pick list under Strategy, then come back to generate justifications — never DEMO slots."
+        description="Add teams to the pick list under Strategy, then come back to generate justifications."
       />
     );
   }

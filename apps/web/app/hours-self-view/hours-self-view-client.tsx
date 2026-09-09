@@ -65,7 +65,7 @@ function NextActionsPanel({ actions }: { actions: HoursSelfViewNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions hsv-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Attendance, Consent, and Mentor Hours — never DEMO hour totals.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -154,7 +154,7 @@ function HoursShell({
         <Panel className="hsv-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Attendance and Consent — never DEMO hour totals.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="hsv-setup-steps">
             {steps.map((step) => (
@@ -287,7 +287,7 @@ export default function HoursSelfViewClient() {
           </>
         }
         title="My Hours"
-        description="Your own logged shop, meeting, and outreach time — plus who’s in the shop right now from open clock-ins. Never DEMO hour totals or a public hours leaderboard."
+        description="Your own logged shop, meeting, and outreach time — plus who’s in the shop right now from open clock-ins."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -359,7 +359,7 @@ function BiometricGatePanel({
           {biometricConsent.guardianName ? ` · guardian: ${biometricConsent.guardianName}` : ""}
         </p>
       ) : (
-        <p className="app-muted">No consent record on file yet — never DEMO gates.</p>
+        <p className="app-muted">No consent record on file yet.</p>
       )}
       {!biometricConsent || biometricConsent.status !== "granted" ? (
         <div>
@@ -390,7 +390,7 @@ function PresencePanel({ view }: { view: LiveView }) {
         badge="Shop floor"
         badgeTone="setup"
         title="Nobody clocked in"
-        description="Open hour_logs sessions appear here — never a DEMO occupancy list."
+        description="Open hour_logs sessions appear here."
       />
     );
   }
@@ -422,7 +422,7 @@ function KioskPanel({ view }: { view: LiveView }) {
         badge="No kiosk devices"
         badgeTone="setup"
         title="No locked kiosk devices registered"
-        description="An owner or admin can register a shop-floor kiosk for supervised clock-in/out — never DEMO floor units."
+        description="An owner or admin can register a shop-floor kiosk for supervised clock-in/out."
       />
     );
   }
@@ -452,7 +452,7 @@ function EntriesList({ view }: { view: LiveView }) {
         badge="No hours yet"
         badgeTone="setup"
         title="No logged hours yet"
-        description="Clock in from Attendance to start building your record — never DEMO hour packs."
+        description="Clock in from Attendance to start building your record."
       />
     );
   }

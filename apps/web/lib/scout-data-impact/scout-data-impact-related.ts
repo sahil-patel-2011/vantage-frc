@@ -77,7 +77,7 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real match-scout rows for teams that may be picked — never DEMO credit.",
+      detail: "Log real match-scout rows for teams that may be picked.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -162,7 +162,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         kind,
         title: "Loading scout data impact…",
         description:
-          "Checking workspace membership and logged alliance picks — never DEMO where-your-data-went credit.",
+          "Checking workspace membership and logged alliance picks.",
       };
     case "error":
       return {
@@ -170,7 +170,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "Unavailable",
         title: "Could not load scout data impact",
         description:
-          "A network or server issue blocked the feedback loop. Retry, or open Scouting / Strategy / Accuracy while it reloads — never invent DEMO credit.",
+          "A network or server issue blocked the feedback loop. Retry, or open Scouting / Strategy / Accuracy while it reloads.",
       };
     case "setup":
       return {
@@ -186,14 +186,14 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "No picks yet",
         title: "Waiting on logged alliance picks",
         description:
-          "Credit stays blank until coaches log real picks and matching scout rows exist. Cross-check Scouting, Strategy, and Accuracy — never DEMO where-your-data-went.",
+          "Credit stays blank until coaches log real picks and matching scout rows exist. Cross-check Scouting, Strategy, and Accuracy.",
       };
     default:
       return {
         kind: "ready",
         title: "Where your data went",
         description:
-          "Each pick credits only real match-scout entries for that team — never DEMO influence.",
+          "Each pick credits only real match-scout entries for that team.",
       };
   }
 }
@@ -224,13 +224,13 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Credit stays blank until your team enters match rows — never DEMO influence.",
+          detail: "Credit stays blank until your team enters match rows.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO picks.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
@@ -245,7 +245,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Log alliance picks at the desk so scout credit can attach — never DEMO influence.",
+        detail: "Log alliance picks at the desk so scout credit can attach.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },
@@ -305,7 +305,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "log-pick",
         label: "Log an alliance pick",
-        detail: "Credit appears only after a real pick is logged — never DEMO where-your-data-went.",
+        detail: "Credit appears only after a real pick is logged.",
         href: "#log-alliance-pick",
         primary: true,
       },
@@ -339,7 +339,7 @@ export function scoutDataImpactNextActions(input: {
           : "Review where data went",
       detail:
         uncoveredPicks > 0
-          ? "Some logged picks still have no matching scout entries — never invent DEMO credit."
+          ? "Some logged picks still have no matching scout entries."
           : "Every logged pick has at least one attributable scout entry.",
       href: uncoveredPicks > 0 ? hubHref("/competition", "scouting", orgId) : "#pick-evidence",
       primary: true,

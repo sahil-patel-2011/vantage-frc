@@ -65,7 +65,7 @@ function NextActionsPanel({ actions }: { actions: FieldResetTimerNextAction[] })
     <section className="app-card soft-panel edc-next-actions frt-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Practice, Tryouts, and Drive-Team Signals — never DEMO drill times.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -154,7 +154,7 @@ function TimerShell({
         <Panel className="frt-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Practice and Drive-Team Signals — never DEMO drill times.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="frt-setup-steps">
             {steps.map((step) => (
@@ -300,7 +300,7 @@ export default function FieldResetTimerClient() {
           </>
         }
         title="Field Reset Timer"
-        description="Time field-reset and cycle speed during driver practice — real sessions only, never DEMO drill times."
+        description="Time field-reset and cycle speed during driver practice — real sessions only."
       >
         <div className="frt-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -417,7 +417,7 @@ function NewSessionForm({
       }}
     >
       <h2>Start a practice session</h2>
-      <p className="app-muted frt-tip">Real practice dates only — never DEMO drill packs.</p>
+      <p className="app-muted frt-tip">Real practice dates only.</p>
       <FormGrid min={160}>
         <FormRow label="Label">
           <input value={form.label} onChange={set("label")} placeholder="Tuesday driver practice" required />
@@ -458,7 +458,7 @@ function SessionList({
         badge="No sessions yet"
         badgeTone="setup"
         title="Create your first practice session"
-        description="Start a session, then log reset cycles as your drive team runs them — never DEMO drill times."
+        description="Start a session, then log reset cycles as your drive team runs them."
       />
     );
   }
@@ -567,7 +567,7 @@ function CycleLog({
           badge="No cycles yet"
           badgeTone="setup"
           title="Log your first reset cycle"
-          description="Time each field reset as your drive team runs it — never DEMO timers."
+          description="Time each field reset as your drive team runs it."
         />
       ) : (
         <ul className="frt-list">

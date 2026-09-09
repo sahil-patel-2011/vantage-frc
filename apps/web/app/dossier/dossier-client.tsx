@@ -56,7 +56,7 @@ function DossierNextActionsPanel({ actions }: { actions: DossierNextAction[] }) 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Scouting, and Pick desk — never DEMO stats.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -118,7 +118,7 @@ function DossierShell({
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Never DEMO stats."
+        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes."
       >
         <DossierRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -169,7 +169,7 @@ function DossierShell({
         <Panel className="dossier-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Scouting, and Pick desk — never DEMO stats.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="dossier-setup-steps">
             {steps.map((step) => (
@@ -288,7 +288,7 @@ export default function DossierClient() {
           shell === "error"
             ? error || "Could not load team dossier."
             : shell === "setup" && view?.status === "setup_required"
-              ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist — never DEMO stats.`
+              ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist.`
               : undefined
         }
         errorStatus={errorStatus}
@@ -322,7 +322,7 @@ export default function DossierClient() {
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Every card carries a citation. Never DEMO stats."
+        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Every card carries a citation."
       >
         {/* The strip already is Strategy · Scouting · Pick desk. The row that
             used to sit beside it here was the same three hrefs with the same
@@ -384,7 +384,7 @@ export default function DossierClient() {
             title={view?.status === "empty" ? view.message : emptyCopy.title}
             description={
               view?.status === "empty"
-                ? `${view.message} Cards stay blank until real rows exist — never DEMO stats.`
+                ? `${view.message} Cards stay blank until real rows exist.`
                 : emptyCopy.description
             }
           >
@@ -400,7 +400,7 @@ export default function DossierClient() {
             <Panel className="dossier-panel" aria-label="Setup steps">
               <header>
                 <h2>Setup steps</h2>
-                <p className="app-muted">Strategy, Scouting, and Pick desk — never DEMO stats.</p>
+                <p className="app-muted">Finish these once and this page fills in.</p>
               </header>
               <ol className="dossier-setup-steps">
                 {view.steps.map((step) => (
@@ -423,7 +423,7 @@ export default function DossierClient() {
                 <p className="app-muted">
                   Statbotics cache: empty ({view.referenceAccess.statbotics.eventMetricRows} event /{" "}
                   {view.referenceAccess.statbotics.yearMetricRows} year rows). Public API — no key
-                  required. Never invent DEMO EPA.
+                  required.
                 </p>
               ) : null}
             </Panel>
@@ -478,7 +478,7 @@ function LiveDossier({ view }: { view: Extract<DossierView, { status: "live" }> 
             <h2>{view.nickname ?? view.name ?? view.teamKey}</h2>
             <p className="app-muted">
               {formatDossierMetric(view.cards.length, true)} cited fact cards · updated{" "}
-              {new Date(view.computedAt).toLocaleString()} — never DEMO stats
+              {new Date(view.computedAt).toLocaleString()}
             </p>
           </div>
           <div className="strategy-provenance">

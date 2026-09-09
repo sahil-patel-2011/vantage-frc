@@ -12,7 +12,7 @@ import "./forms.css";
 export const metadata = {
   title: "Scouting form builder",
   description:
-    "Build and publish custom match and pit scouting forms — never DEMO fields.",
+    "Build and publish custom match and pit scouting forms.",
 };
 
 export default async function ScoutingFormsPage({
@@ -33,7 +33,7 @@ export default async function ScoutingFormsPage({
         <PageHeader
           breadcrumbs="Competition / Form builder"
           title="Scouting form builder"
-          description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
+          description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists."
         >
           <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
             {links.map((link) => (
@@ -72,7 +72,7 @@ export default async function ScoutingFormsPage({
         >
           <header>
             <h2>Next actions</h2>
-            <p className="app-muted">Scouting and Coverage — never DEMO fields.</p>
+            <p className="app-muted">Each one opens the page where you finish the work.</p>
           </header>
           <ol>
             {actions.map((action) => (

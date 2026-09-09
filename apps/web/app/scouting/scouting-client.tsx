@@ -1431,8 +1431,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
             <Panel className="scout-activity" style={{ minHeight: "auto" }}>
               <h2 style={{ marginTop: 0 }}>Recent entries</h2>
               <p className="app-muted">
-                Latest timestamp wins per entry. Scout identity, confidence, and source stay visible —
-                never DEMO entries.
+                The newest save wins for each entry. Scout, confidence, and source stay visible.
               </p>
               {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
                 <>

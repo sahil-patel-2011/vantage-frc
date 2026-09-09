@@ -60,7 +60,7 @@ function IntelNextActionsPanel({ actions }: { actions: OvernightIntelNextAction[
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Command, Strategy, and Scouting — never DEMO overnight digests.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -308,7 +308,7 @@ export default function OvernightIntelClient() {
           </>
         }
         title="Overnight Event-Intel Brief"
-        description="A morning what-changed digest for your active event — newest research findings, EPA movement, and new scouting since the last brief. Empty sections mean no change was recorded — never DEMO overnight digests. Cross-check Command, Strategy, and Scouting."
+        description="A morning what-changed digest for your active event — newest research findings, EPA movement, and new scouting since the last brief. Empty sections mean no change was recorded. Cross-check Command, Strategy, and Scouting."
       >
         <div className="overnight-intel-header-actions">
           <button
@@ -387,8 +387,7 @@ export default function OvernightIntelClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Carry overnight moves into <a href={commandHref}>Command</a> and{" "}
-            <a href={strategyHref}>Strategy</a>, and keep logging in <a href={scoutingHref}>Scouting</a> —
-            never invent DEMO digests.
+            <a href={strategyHref}>Strategy</a>, and keep logging in <a href={scoutingHref}>Scouting</a>
           </p>
         </Panel>
       </div>
@@ -416,7 +415,7 @@ function SummaryPanel({ view }: { view: LiveView }) {
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
           No brief has been generated yet. Live signals below reflect what changed since your last
-          check-in — generate a brief to save tonight&apos;s snapshot. Never invent DEMO digests.
+          check-in — generate a brief to save tonight&apos;s snapshot.
         </p>
       )}
     </Panel>
@@ -432,7 +431,7 @@ function ResearchPanel({ view }: { view: LiveView }) {
         badge="No new research"
         badgeTone="setup"
         title="No new research findings"
-        description="Nothing new has surfaced from Intel/Research for teams at this event since the last brief — never DEMO findings."
+        description="Nothing new has surfaced from Intel/Research for teams at this event since the last brief."
       />
     );
   }
@@ -475,7 +474,7 @@ function EpaPanel({ view }: { view: LiveView }) {
         badge="No EPA movement"
         badgeTone="setup"
         title="No material EPA movement"
-        description="No team at this event moved enough on EPA since the last snapshot to report — never DEMO EPA swings."
+        description="No team at this event moved enough on EPA since the last snapshot to report."
       />
     );
   }
@@ -505,7 +504,7 @@ function ScoutingPanel({ view }: { view: LiveView }) {
         badge="No new scouting"
         badgeTone="setup"
         title="No new scouting entries"
-        description="No new match scouting has been logged for this event since the last brief — never DEMO scout counts."
+        description="No new match scouting has been logged for this event since the last brief."
       />
     );
   }

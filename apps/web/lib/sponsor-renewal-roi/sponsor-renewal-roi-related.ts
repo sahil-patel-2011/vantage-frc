@@ -85,7 +85,7 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Impact mentions feed renewal evidence — never DEMO churn scores.",
+      detail: "Impact mentions feed renewal evidence.",
       href: hubHref("/business", "impact", orgId),
     },
     {
@@ -132,7 +132,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
       return {
         kind,
         title: "Loading Sponsor Renewal ROI…",
-        description: "Checking workspace membership and sponsor CRM — never DEMO churn scores.",
+        description: "Checking workspace membership and sponsor CRM.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
         badge: "Unavailable",
         title: "Could not load Sponsor Renewal ROI",
         description:
-          "A network or server issue blocked renewal scoring. Retry, or open Sponsor CRM while it reloads — never invent DEMO risk scores.",
+          "A network or server issue blocked renewal scoring. Retry, or open Sponsor CRM while it reloads.",
       };
     case "setup":
       return {
@@ -156,14 +156,14 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
         badge: "No sponsors yet",
         title: "Log sponsors in the CRM first",
         description:
-          "Risk scores appear only after real sponsors and linked activity exist — never DEMO churn percentages.",
+          "Risk scores appear only after real sponsors and linked activity exist.",
       };
     default:
       return {
         kind: "ready",
         title: "Renewal-risk scores from real activity",
         description:
-          "Scores use logged interactions, contributions, and impact mentions only — never DEMO churn metrics.",
+          "Scores use logged interactions, contributions, and impact mentions only.",
       };
   }
 }
@@ -201,7 +201,7 @@ export function sponsorRenewalRoiNextActions(input: {
         {
           id: "impact",
           label: "Open Community Impact",
-          detail: "Impact mentions feed renewal evidence — never DEMO scores.",
+          detail: "Impact mentions feed renewal evidence.",
           href: hubHref("/business", "impact", null),
         },
       ];
@@ -258,7 +258,7 @@ export function sponsorRenewalRoiNextActions(input: {
       {
         id: "sponsors",
         label: "Add a sponsor",
-        detail: "Scores stay blank until CRM sponsors exist — never DEMO churn percentages.",
+        detail: "Scores stay blank until CRM sponsors exist.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
       },
@@ -283,7 +283,7 @@ export function sponsorRenewalRoiNextActions(input: {
       label: scoredCount > 0 ? "Review renewal-risk scores" : "Link sponsor activity",
       detail:
         scoredCount > 0
-          ? `${scoredCount} of ${sponsorCount} sponsor${sponsorCount === 1 ? "" : "s"} scored from real activity — never DEMO risk.`
+          ? `${scoredCount} of ${sponsorCount} sponsor${sponsorCount === 1 ? "" : "s"} scored from real activity.`
           : `${sponsorCount} sponsor${sponsorCount === 1 ? "" : "s"} need interactions or contributions before scoring.`,
       href: scoredCount > 0 ? "#sponsor-renewal-roi-list" : hubHref("/business", "sponsors", orgId),
       primary: true,

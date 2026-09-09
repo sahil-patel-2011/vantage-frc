@@ -55,7 +55,7 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
     actions.push({
       id: "draft",
       label: `Finish ${incomplete} open essay item${incomplete === 1 ? "" : "s"}`,
-      detail: "Draft responses save on blur. Mark items done as you finish — no DEMO fill scores.",
+      detail: "Draft responses save on blur. Mark items done as you finish.",
       href: awardsHref,
       primary: true,
     });
@@ -80,7 +80,7 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
   actions.push({
     id: "evidence",
     label: "Business · Awards & evidence",
-    detail: "Record wins once for reuse in grant writing — never DEMO award dollars.",
+    detail: "Record wins once for reuse in grant writing.",
     href: hubHref("/business", "evidence", orgId),
   });
 

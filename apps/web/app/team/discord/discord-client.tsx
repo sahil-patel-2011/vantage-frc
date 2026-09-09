@@ -327,7 +327,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             <li>
               <div>
                 <strong>Mirror object-linked Messages</strong>
-                <span>Enable the chat bridge after posting works — only linked objects post, never a DEMO sync %.</span>
+                <span>Enable the chat bridge after posting works — only linked objects post.</span>
               </div>
               <a className="app-button secondary" href={withOrgHref("/team?tab=messages", orgId)}>
                 Messages

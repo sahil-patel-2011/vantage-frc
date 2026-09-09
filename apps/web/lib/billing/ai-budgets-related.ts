@@ -197,7 +197,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
       return {
         kind,
         title: "Loading API budgets…",
-        description: "Checking org-scoped hard limits, allowlists, and included allowance — never DEMO spend.",
+        description: "Checking org-scoped hard limits, allowlists, and included allowance.",
       };
     case "auth_required":
       return {
@@ -220,7 +220,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
         badge: "Defaults",
         title: "No org hard limits yet",
         description:
-          "Platform included allowance still hard-stops at 100%. Set daily/monthly spend or token caps below — ledger totals stay at real Neon zeros, never DEMO $.",
+          "Platform included allowance still hard-stops at 100%. Set daily/monthly spend or token caps below — ledger totals stay at real Neon zeros.",
       };
     case "setup":
       return {
@@ -228,7 +228,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
         badge: "Setup",
         title: "Finish budget setup",
         description:
-          "Finish workspace selection or add a real spend/token hard cap next to any allowlist toggle. Chat, Pricing, and Account stay one hop away — never invent DEMO limits.",
+          "Finish workspace selection or add a real spend/token hard cap next to any allowlist toggle. Chat, Pricing, and Account stay one hop away.",
       };
     case "error":
       return {
@@ -236,7 +236,7 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
         badge: "Unavailable",
         title: "Could not load API budgets",
         description:
-          "A network or server issue blocked budget policy. Retry, or open Chat / Pricing / Account while it reloads — never invent DEMO spend.",
+          "A network or server issue blocked budget policy. Retry, or open Chat / Pricing / Account while it reloads.",
       };
     default:
       return {
@@ -365,7 +365,7 @@ export function aiBudgetsNextActions(input: {
     {
       id: "usage",
       label: "Open AI usage",
-      detail: "See real metered calls and denials — never DEMO activity.",
+      detail: "See real metered calls and denials.",
       href: usageHref,
     },
   );
@@ -408,7 +408,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
       return {
         kind,
         title: "Loading AI usage…",
-        description: "Checking metered calls, funding sources, and denials — never DEMO activity.",
+        description: "Checking metered calls, funding sources, and denials.",
       };
     case "auth_required":
       return {
@@ -431,7 +431,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Empty",
         title: "No metered AI calls yet",
         description:
-          "This ledger stays empty until a real Chat or feature call is metered. Totals stay at Neon zeros — never DEMO activity rows.",
+          "This ledger stays empty until a real Chat or feature call is metered. Totals stay at Neon zeros.",
       };
     case "setup":
       return {
@@ -439,7 +439,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Setup",
         title: "Select a workspace and plan",
         description:
-          "Usage needs an org with entitlements. Open Account or Pricing, then Chat to generate the first real metered call — never invent DEMO spend.",
+          "Usage needs an org with entitlements. Open Account or Pricing, then Chat to generate the first real metered call.",
       };
     case "error":
       return {
@@ -447,7 +447,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Unavailable",
         title: "Could not load AI usage",
         description:
-          "A network or server issue blocked the usage ledger. Retry, or open Chat / Budgets / Pricing — never invent DEMO activity.",
+          "A network or server issue blocked the usage ledger. Retry, or open Chat / Budgets / Pricing.",
       };
     default:
       return {

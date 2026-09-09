@@ -132,7 +132,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
       return {
         kind,
         title: "Loading Spare Robot Kit…",
-        description: "Checking workspace membership, spare bins, and FMEA history — never DEMO pack lists.",
+        description: "Checking workspace membership, spare bins, and FMEA history.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
         badge: "Unavailable",
         title: "Could not load Spare Robot Kit",
         description:
-          "A network or server issue blocked the checklist. Retry, or open FMEA while it reloads — never invent DEMO kits.",
+          "A network or server issue blocked the checklist. Retry, or open FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -156,13 +156,13 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
         badge: "No kit candidates yet",
         title: "Match spares to FMEA history",
         description:
-          "Spare bins tagged to subsystems with logged failures surface here — never DEMO pack lists.",
+          "Spare bins tagged to subsystems with logged failures surface here.",
       };
     default:
       return {
         kind: "ready",
         title: "Competition spare kit",
-        description: "Candidates from inventory × FMEA only — never DEMO pack counters.",
+        description: "Candidates from inventory × FMEA only.",
       };
   }
 }
@@ -257,7 +257,7 @@ export function spareRobotKitNextActions(input: {
       {
         id: "fmea",
         label: "Log FMEA failures",
-        detail: "Kit candidates stay blank until spare bins match real failure history — never DEMO packs.",
+        detail: "Kit candidates stay blank until spare bins match real failure history.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
       },
@@ -282,8 +282,8 @@ export function spareRobotKitNextActions(input: {
       label: checklistCount > 0 ? "Pack the competition checklist" : "Generate a checklist",
       detail:
         checklistCount > 0
-          ? `${checklistCount} checklist${checklistCount === 1 ? "" : "s"} from real FMEA matches — never DEMO packs.`
-          : `${candidateCount} candidate spare${candidateCount === 1 ? "" : "s"} matched to failure history — never DEMO counters.`,
+          ? `${checklistCount} checklist${checklistCount === 1 ? "" : "s"} from real FMEA matches.`
+          : `${candidateCount} candidate spare${candidateCount === 1 ? "" : "s"} matched to failure history.`,
       href: checklistCount > 0 ? "#spare-robot-kit-checklists" : "#spare-robot-kit-candidates",
       primary: true,
     },

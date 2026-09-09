@@ -83,7 +83,7 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real match-scout rows — gaps stay honest until then, never DEMO coverage.",
+      detail: "Log real match-scout rows — gaps stay honest until then.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -161,7 +161,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         kind,
         title: "Loading scout coverage…",
         description:
-          "Checking workspace membership and the real match schedule — never DEMO coverage gaps.",
+          "Checking workspace membership and the real match schedule.",
       };
     case "error":
       return {
@@ -169,7 +169,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "Unavailable",
         title: "Could not load scout coverage",
         description:
-          "A network or server issue blocked the live grid. Retry, or open Scouting / Lineup / Cross-Validation while it reloads — never invent DEMO gaps.",
+          "A network or server issue blocked the live grid. Retry, or open Scouting / Lineup / Cross-Validation while it reloads.",
       };
     case "setup":
       return {
@@ -185,14 +185,14 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "No schedule yet",
         title: "Waiting on a real match schedule",
         description:
-          "The grid stays blank until the active event has synced TBA alliances. Cross-check Event Day, Scouting, and Lineup — never DEMO coverage.",
+          "The grid stays blank until the active event has synced TBA alliances. Cross-check Event Day, Scouting, and Lineup.",
       };
     default:
       return {
         kind: "ready",
         title: "Live coverage gaps",
         description:
-          "Zero and thin cells use real scout-entry counts against the synced schedule — never DEMO coverage.",
+          "Zero and thin cells use real scout-entry counts against the synced schedule.",
       };
   }
 }
@@ -224,7 +224,7 @@ export function scoutCoverageLiveNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO coverage.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -252,7 +252,7 @@ export function scoutCoverageLiveNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log match-scout rows so zero/thin cells can clear — never DEMO coverage.",
+        detail: "Log match-scout rows so zero/thin cells can clear.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
@@ -341,7 +341,7 @@ export function scoutCoverageLiveNextActions(input: {
             : "Review live coverage",
       detail:
         gapCount > 0
-          ? "Nudge the coordinator on zero/thin cells from real entry counts — never DEMO gaps."
+          ? "Nudge the coordinator on zero/thin cells from real entry counts."
           : unackedNudges > 0
             ? "Confirm coordinator nudges once scouts are seated."
             : "Every scheduled team/match meets the thin threshold from real entries.",

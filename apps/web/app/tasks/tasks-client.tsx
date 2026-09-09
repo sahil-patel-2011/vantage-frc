@@ -121,7 +121,7 @@ export default function TasksClient() {
         description={
           <>
             Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Soft-UI
-            Team Todos; this board only shows tasks your org adds (never DEMO lists).
+            Team Todos; this board only shows tasks your org adds.
           </>
         }
       >
@@ -351,7 +351,7 @@ function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: 
         badge="Empty board"
         badgeTone="setup"
         title="No tasks yet"
-        description="Add your first build task above to start the board. Vantage does not invent DEMO task lists."
+        description="Add your first build task above to start the board."
       />
     );
   }

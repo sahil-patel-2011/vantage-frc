@@ -186,8 +186,8 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
             <section className="app-card soft-panel" role="status">
               <h2>No BYOK calls yet</h2>
               <p className="app-muted">
-                This page stays empty until real BYOK or local connector calls are recorded. No DEMO
-                metrics. Add keys at AI API keys, then use Chat, Writer, or CAD.
+                Nothing to show until your own API key or a local connector is used. Add a key under AI API keys,
+                then try Chat, Writer, or CAD.
               </p>
               <a className="app-button primary" href={withOrgHref("/team/ai-keys", orgId)}>
                 Open AI API keys

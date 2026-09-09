@@ -80,7 +80,7 @@ export function logisticsSetupSteps(orgId?: string | null): LogisticsSetupStep[]
     {
       id: "trip",
       label: "Add a trip",
-      detail: "Publish leave, hotel, venue, and return times — never invent DEMO lodging.",
+      detail: "Publish leave, hotel, venue, and return times.",
       href: withOrgHref("/logistics", orgId),
     },
     {
@@ -120,7 +120,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
       return {
         kind,
         title: "Loading Logistics…",
-        description: "Checking workspace membership and published trips — never DEMO lodging.",
+        description: "Checking workspace membership and published trips.",
       };
     case "error":
       return {
@@ -128,7 +128,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Unavailable",
         title: "Could not load Logistics",
         description:
-          "A network or server issue blocked hotels and travel. Retry, or open Event Day / My Day / Calendar while it reloads — never invent DEMO rooms.",
+          "A network or server issue blocked hotels and travel. Retry, or open Event Day / My Day / Calendar while it reloads.",
       };
     case "setup":
       return {
@@ -144,13 +144,13 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "No trips yet",
         title: "Travel plan not published",
         description:
-          "Mentors add a trip with hotels, rooming, and leave/arrive times. Empty means nothing is booked yet — never DEMO lodging.",
+          "Mentors add a trip with hotels, rooming, and leave/arrive times. Empty means nothing is booked yet.",
       };
     default:
       return {
         kind,
         title: "Logistics",
-        description: "Hotels, rooming, travel legs, and day-of checklists from real trip rows — never DEMO lodging.",
+        description: "Hotels, rooming, travel legs, and day-of checklists from real trip rows.",
       };
   }
 }
@@ -183,7 +183,7 @@ export function logisticsShellNextActions(input: {
         {
           id: "command",
           label: "Open Event Day",
-          detail: "Field command stays blank until a workspace and trip exist — never DEMO rooms.",
+          detail: "Field command stays blank until a workspace and trip exist.",
           href: hubHref("/competition", "command", null),
         },
         {
@@ -254,7 +254,7 @@ export function logisticsShellNextActions(input: {
         {
           id: "calendar",
           label: "Open Team calendar",
-          detail: "Trip blocks appear after travel legs sync — never DEMO leave times.",
+          detail: "Trip blocks appear after travel legs sync.",
           href: withOrgHref("/team/calendar?tab=trip", orgId),
         },
         {
@@ -275,7 +275,7 @@ export function logisticsShellNextActions(input: {
       {
         id: "my-day",
         label: "Open My Day",
-        detail: "Personal lodging stays blank until mentors publish a trip — never DEMO rooms.",
+        detail: "Personal lodging stays blank until mentors publish a trip.",
         href: hubHref("/competition", "my-day", orgId),
         primary: true,
       },
@@ -317,7 +317,7 @@ export function logisticsShellNextActions(input: {
     actions.push({
       id: "legs",
       label: "Publish travel times",
-      detail: "Leave home, arrive hotel, leave for venue — never invent DEMO departures.",
+      detail: "Leave home, arrive hotel, leave for venue.",
       href: withOrgHref("/logistics", orgId),
       primary: actions.length === 0,
     });

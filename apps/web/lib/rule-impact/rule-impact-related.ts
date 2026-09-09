@@ -106,7 +106,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
         kind,
         title: "Loading rule impact…",
         description:
-          "Checking workspace membership and logged rule changes — never DEMO impact metrics.",
+          "Checking workspace membership and logged rule changes.",
       };
     case "error":
       return {
@@ -114,7 +114,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
         badge: "Unavailable",
         title: "Could not load the Rule Impact Analyzer",
         description:
-          "A network or server issue blocked rule changes. Retry, or open Kickoff / CAD / Subsystems while it reloads — never invent DEMO impact metrics.",
+          "A network or server issue blocked rule changes. Retry, or open Kickoff / CAD / Subsystems while it reloads.",
       };
     case "setup":
       return {
@@ -130,14 +130,14 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
         badge: "No rule changes yet",
         title: "Log this season's rule changes",
         description:
-          "Impact calls stay blank until you log real game-manual deltas. Cross-check Kickoff, CAD, and Subsystems — never DEMO impact metrics.",
+          "Impact calls stay blank until you log real game-manual deltas. Cross-check Kickoff, CAD, and Subsystems.",
       };
     default:
       return {
         kind: "ready",
         title: "Rule-change impact",
         description:
-          "Still-legal / needs-rework / blocked calls use only logged rule changes × your prior-season subsystem library — never DEMO impact metrics.",
+          "Still-legal / needs-rework / blocked calls use only logged rule changes × your prior-season subsystem library.",
       };
   }
 }
@@ -173,19 +173,19 @@ export function ruleImpactNextActions(input: {
         {
           id: "kickoff",
           label: "Open Kickoff",
-          detail: "Rule notes stay blank until answered — never DEMO rule text.",
+          detail: "Rule notes stay blank until answered.",
           href: hubHref("/build", "kickoff", null),
         },
         {
           id: "cad",
           label: "Open CAD",
-          detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+          detail: "Mechanism geometry stays blank until connected.",
           href: hubHref("/build", "cad", null),
         },
         {
           id: "subsystems",
           label: "Open Subsystems",
-          detail: "Prior-season mechanisms stay empty until you author them — never DEMO systems.",
+          detail: "Prior-season mechanisms stay empty until you author them.",
           href: withOrgHref("/subsystems", null),
         },
       ];
@@ -261,7 +261,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "kickoff",
         label: "Cross-check Kickoff",
-        detail: "Answered rule notes often become the deltas you log here — never DEMO rule text.",
+        detail: "Answered rule notes often become the deltas you log here.",
         href: hubHref("/build", "kickoff", orgId),
       },
       {
@@ -301,7 +301,7 @@ export function ruleImpactNextActions(input: {
     actions.push({
       id: "triage",
       label: "Triage open assessments",
-      detail: "Accept or dismiss open calls after verifying dimensions — never invent DEMO statuses.",
+      detail: "Accept or dismiss open calls after verifying dimensions.",
       href: "#rule-impact-assessments",
       primary: true,
     });
@@ -311,20 +311,20 @@ export function ruleImpactNextActions(input: {
     {
       id: "kickoff",
       label: "Open Kickoff",
-      detail: "Keep rule notes aligned with the deltas you logged — never DEMO rule text.",
+      detail: "Keep rule notes aligned with the deltas you logged.",
       href: hubHref("/build", "kickoff", orgId),
       primary: !actions.some((a) => a.primary),
     },
     {
       id: "cad",
       label: "Open CAD",
-      detail: "When a design needs rework, start from the live CAD model — never DEMO geometry.",
+      detail: "When a design needs rework, start from the live CAD model.",
       href: hubHref("/build", "cad", orgId),
     },
     {
       id: "subsystems",
       label: "Cross-check Subsystems",
-      detail: "Candidate names should match real robot mechanisms — never DEMO systems.",
+      detail: "Candidate names should match real robot mechanisms.",
       href: withOrgHref("/subsystems", orgId),
     },
     {

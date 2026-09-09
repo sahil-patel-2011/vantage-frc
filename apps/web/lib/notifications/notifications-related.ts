@@ -59,7 +59,7 @@ export function notificationNextActions(input: {
     actions.push({
       id: "caught-up",
       label: "You’re caught up",
-      detail: "No unread rows — switch to All to review history, or leave the inbox clear. Never DEMO notifications.",
+      detail: "No unread rows — switch to All to review history, or leave the inbox clear.",
       href: "/notifications",
       primary: true,
     });

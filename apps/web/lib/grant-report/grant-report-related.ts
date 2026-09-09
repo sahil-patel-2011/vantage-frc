@@ -168,7 +168,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         kind,
         title: "Loading Grant Report…",
         description:
-          "Checking workspace membership and awarded grants — never DEMO grant dollars.",
+          "Checking workspace membership and awarded grants.",
       };
     case "error":
       return {
@@ -176,7 +176,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "Unavailable",
         title: "Could not load Grant Report",
         description:
-          "A network or server issue blocked the report board. Retry, or open Grants / Community Impact while it reloads — never invent DEMO grant dollars.",
+          "A network or server issue blocked the report board. Retry, or open Grants / Community Impact while it reloads.",
       };
     case "setup":
       return {
@@ -192,14 +192,14 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         badge: "No awarded grants yet",
         title: "Mark a grant as awarded to generate a report",
         description:
-          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Community Impact — never DEMO grant dollars.",
+          "Post-grant reports stay blank until Grants tracks an awarded application. Cross-check Grants workbench and Community Impact.",
       };
     default:
       return {
         kind: "ready",
         title: "Post-grant impact reports",
         description:
-          "Reports cite only awarded amounts, logged outreach, and recorded spend — never DEMO grant dollars.",
+          "Reports cite only awarded amounts, logged outreach, and recorded spend.",
       };
   }
 }
@@ -254,7 +254,7 @@ export function grantReportNextActions(input: {
       {
         id: "grants",
         label: "Track awarded grants",
-        detail: "Reports stay blank until Grants marks a real award — never DEMO dollars.",
+        detail: "Reports stay blank until Grants marks a real award.",
         href: hubHref("/business", "grants", orgId),
         primary: true,
       },
@@ -267,7 +267,7 @@ export function grantReportNextActions(input: {
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Ground funder narratives in real logged outreach — never DEMO hours.",
+        detail: "Ground funder narratives in real logged outreach.",
         href: hubHref("/business", "impact", orgId),
       },
     ];
@@ -280,26 +280,26 @@ export function grantReportNextActions(input: {
       detail:
         eligibleCount > 0
           ? `${eligibleCount} awarded grant${eligibleCount === 1 ? "" : "s"} on record — cite only real award dollars.`
-          : "Compose from awarded grants and logged outreach — never invent DEMO dollars.",
+          : "Compose from awarded grants and logged outreach.",
       href: "#grant-report-eligible",
       primary: true,
     },
     {
       id: "grants",
       label: "Open Grants",
-      detail: "Keep award status grounded in real grant decisions — never DEMO dollars.",
+      detail: "Keep award status grounded in real grant decisions.",
       href: hubHref("/business", "grants", orgId),
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Keep funder narratives grounded in real outreach — never DEMO hours.",
+      detail: "Keep funder narratives grounded in real outreach.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "writer",
       label: "Open Writer",
-      detail: "Pair report language with grant copy — never invent DEMO awards.",
+      detail: "Pair report language with grant copy.",
       href: hubHref("/ai", "writer", orgId),
     },
   ];
@@ -308,7 +308,7 @@ export function grantReportNextActions(input: {
     actions.splice(1, 0, {
       id: "review-reports",
       label: "Review reports",
-      detail: `${reportCount} report${reportCount === 1 ? "" : "s"} from real awards — never DEMO.`,
+      detail: `${reportCount} report${reportCount === 1 ? "" : "s"} from real awards.`,
       href: "#grant-report-list",
     });
   }

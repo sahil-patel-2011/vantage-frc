@@ -105,7 +105,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         kind,
         title: "Loading inspection copilot…",
         description:
-          "Checking workspace membership and logged readiness checks — never DEMO risk scores.",
+          "Checking workspace membership and logged readiness checks.",
       };
     case "error":
       return {
@@ -113,7 +113,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "Unavailable",
         title: "Could not load the inspection copilot",
         description:
-          "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Subsystems while it reloads — never invent DEMO inspection metrics.",
+          "A network or server issue blocked readiness checks. Retry, or open Batteries / FMEA / Subsystems while it reloads.",
       };
     case "setup":
       return {
@@ -129,14 +129,14 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         badge: "No checks yet",
         title: "Run your first inspection-readiness check",
         description:
-          "Risk and flags stay blank until you enter a real weight budget, frame/bumper measurements, and wiring/power state. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores.",
+          "Risk and flags stay blank until you enter a real weight budget, frame/bumper measurements, and wiring/power state. Cross-check Batteries, FMEA, and Subsystems.",
       };
     default:
       return {
         kind: "ready",
         title: "Inspection-readiness checks",
         description:
-          "Predictions use only the limits and measurements your team logged. Resolve critical flags before travel — never DEMO inspection metrics.",
+          "Predictions use only the limits and measurements your team logged. Resolve critical flags before travel.",
       };
   }
 }
@@ -170,19 +170,19 @@ export function inspectionCopilotNextActions(input: {
         {
           id: "batteries",
           label: "Open Batteries",
-          detail: "Pack health stays blank until logged — never DEMO IR or cycles.",
+          detail: "Pack health stays blank until logged.",
           href: hubHref("/team", "batteries", null),
         },
         {
           id: "fmea",
           label: "Open FMEA",
-          detail: "Failure modes stay blank until scored — never DEMO RPN.",
+          detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
         {
           id: "subsystems",
           label: "Open Subsystems",
-          detail: "Subsystem names stay empty until you author them — never DEMO systems.",
+          detail: "Subsystem names stay empty until you author them.",
           href: withOrgHref("/subsystems", null),
         },
       ];
@@ -270,7 +270,7 @@ export function inspectionCopilotNextActions(input: {
       {
         id: "subsystems",
         label: "Open Subsystems",
-        detail: "Itemized weigh-in names should match real robot systems — never DEMO mass.",
+        detail: "Itemized weigh-in names should match real robot systems.",
         href: withOrgHref("/subsystems", orgId),
       },
     ].slice(0, 4);
@@ -300,7 +300,7 @@ export function inspectionCopilotNextActions(input: {
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "Keep pack secure-state and health logged — never DEMO IR or cycles.",
+      detail: "Keep pack secure-state and health logged.",
       href: hubHref("/team", "batteries", orgId),
       primary: !actions.some((a) => a.primary),
     },
@@ -319,7 +319,7 @@ export function inspectionCopilotNextActions(input: {
     {
       id: "match-checklist",
       label: "Open Match checklist",
-      detail: "Turn resolved readiness into timed pit runs — never DEMO checklist progress.",
+      detail: "Turn resolved readiness into timed pit runs.",
       href: withOrgHref("/match-checklist", orgId),
     },
   );

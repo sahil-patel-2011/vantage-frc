@@ -60,7 +60,7 @@ function NextActionsPanel({ actions }: { actions: MatchDeltaWatcherNextAction[] 
     <section className="app-card soft-panel edc-next-actions mdw-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick List, and Command — never DEMO upset alerts.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -149,7 +149,7 @@ function WatcherShell({
         <Panel className="mdw-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Pick List — never DEMO upset alerts.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="mdw-setup-steps">
             {steps.map((step) => (
@@ -293,7 +293,7 @@ export default function MatchDeltaWatcherClient() {
           </>
         }
         title="Match-Delta Watcher"
-        description="Watches official match results as they land and flags when reality diverges from your prediction model or pick-list priorities — never DEMO upset alerts."
+        description="Watches official match results as they land and flags when reality diverges from your prediction model or pick-list priorities."
       >
         <div className="mdw-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -378,7 +378,7 @@ function ConfigPanel({
         <div>
           <h2>Watch settings — {view.eventKey}</h2>
           <small className="app-muted">
-            {view.config ? "Configured from real scans" : "Not yet configured — using defaults until saved. Never DEMO thresholds."}
+            {view.config ? "Configured from real scans" : "Not yet configured — using defaults until saved."}
           </small>
         </div>
         <Badge tone={enabled ? "good" : "setup"}>{enabled ? "Enabled" : "Disabled"}</Badge>
@@ -430,7 +430,7 @@ function AlertsPanel({
         badge="No deltas yet"
         badgeTone="setup"
         title="No divergence detected"
-        description="Run a scan once official results are posted for this event — never DEMO upset packs."
+        description="Run a scan once official results are posted for this event."
       />
     );
   }

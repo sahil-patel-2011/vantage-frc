@@ -16,7 +16,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
           badge="Setup"
           badgeTone="setup"
           title="Select a team workspace"
-          description="API budgets are org-scoped. Open Workspace or Account, then return from the AI hub — never invent DEMO spend caps."
+          description="API budgets are org-scoped. Open Workspace or Account, then return from the AI hub."
         >
           <a className="app-button secondary" href="/workspace">
             Open Workspace

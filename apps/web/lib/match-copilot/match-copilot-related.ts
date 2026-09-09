@@ -94,7 +94,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         kind,
         title: "Loading Match Copilot…",
         description:
-          "Checking workspace membership and your next match — never DEMO callouts or EPA.",
+          "Checking workspace membership and your next match.",
       };
     case "error":
       return {
@@ -102,7 +102,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         badge: "Unavailable",
         title: "Could not load Match Copilot",
         description:
-          "A network or server issue blocked the brief. Retry, or open Strategy / Command / FMEA while it reloads — never invent DEMO match metrics.",
+          "A network or server issue blocked the brief. Retry, or open Strategy / Command / FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -118,14 +118,14 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         badge: "No callouts yet",
         title: "Generate this match's brief",
         description:
-          "Callouts stay blank until opponent EPA, your strategy plan, open FMEA risks, or battery health land on real rows. Cross-check Strategy, Command, and FMEA — never DEMO match metrics.",
+          "Callouts stay blank until opponent EPA, your strategy plan, open FMEA risks, or battery health land on real rows. Cross-check Strategy, Command, and FMEA.",
       };
     default:
       return {
         kind: "ready",
         title: "Next-match do-this brief",
         description:
-          "Callouts fuse only real opponent EPA, stored strategy, open FMEA risks, and battery health — never DEMO match metrics.",
+          "Callouts fuse only real opponent EPA, stored strategy, open FMEA risks, and battery health.",
       };
   }
 }
@@ -157,19 +157,19 @@ export function matchCopilotNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Match plans stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Match plans stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "command",
           label: "Open Command",
-          detail: "Active event stays blank until your team selects one — never DEMO schedules.",
+          detail: "Active event stays blank until your team selects one.",
           href: hubHref("/competition", "command", null),
         },
         {
           id: "fmea",
           label: "Open FMEA",
-          detail: "Risk rows stay blank until your team logs them — never DEMO RPNs.",
+          detail: "Risk rows stay blank until your team logs them.",
           href: hubHref("/team", "fmea", null),
         },
       ];
@@ -238,14 +238,14 @@ export function matchCopilotNextActions(input: {
       {
         id: "generate",
         label: "Generate match brief",
-        detail: "Fuse opponent EPA, strategy, FMEA, and batteries into real callouts — never DEMO.",
+        detail: "Fuse opponent EPA, strategy, FMEA, and batteries into real callouts.",
         href: "#match-copilot-callouts",
         primary: true,
       },
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Stored plans use scouted and reference metrics only — never DEMO rankings.",
+        detail: "Stored plans use scouted and reference metrics only.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -269,7 +269,7 @@ export function matchCopilotNextActions(input: {
     actions.push({
       id: "review-callouts",
       label: "Review match callouts",
-      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real EPA, strategy, FMEA, and batteries — never DEMO.`,
+      detail: `${calloutCount} callout${calloutCount === 1 ? "" : "s"} from real EPA, strategy, FMEA, and batteries.`,
       href: "#match-copilot-callouts",
       primary: true,
     });
@@ -287,7 +287,7 @@ export function matchCopilotNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground match plans in scouted data and reference metrics — never DEMO rankings.",
+      detail: "Ground match plans in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
       primary: !actions.some((a) => a.primary),
     },

@@ -62,7 +62,7 @@ function RiskBurndownNextActionsPanel({ actions }: { actions: RiskBurndownNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Risks and FMEA — never DEMO burndown metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -300,7 +300,7 @@ export default function RiskBurndownClient() {
           </>
         }
         title="Risk-Register Burndown"
-        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA — never DEMO burndown metrics."
+        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA."
       >
         <div className="risk-burndown-header-actions">
           {view.seasons.length > 0 ? (
@@ -366,8 +366,7 @@ export default function RiskBurndownClient() {
           <span className="eyebrow">Risk path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep season L×I scores in <a href={risksHref}>Risks</a> and failure modes in{" "}
-            <a href={fmeaHref}>FMEA</a> aligned with closures here — never invent DEMO open counts,
-            severity bands, or burndown signal.
+            <a href={fmeaHref}>FMEA</a> aligned with closures here.
           </p>
         </Panel>
       </div>
@@ -597,7 +596,7 @@ function LogRiskForm({
     >
       <h2 style={{ margin: 0 }}>Log risk</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Likelihood × impact come from real season judgment — never DEMO severity scores.
+        Likelihood × impact come from real season judgment.
       </p>
       <FormGrid min={160}>
         <FormRow label="Title">

@@ -71,7 +71,7 @@ function NextActionsPanel({ actions }: { actions: CodeDeployLogNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions cdl-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Code Coach, Code-vs-Match, and CAD — never DEMO firmware trails.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -160,7 +160,7 @@ function DeployShell({
         <Panel className="cdl-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Code and CAD — never DEMO firmware trails.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="cdl-setup-steps">
             {steps.map((step) => (
@@ -320,7 +320,7 @@ export default function CodeDeployLogClient() {
           </>
         }
         title="Code Deploy Log"
-        description="Track which firmware/software build ran during which match or test session — never DEMO firmware trails. Cross-check Code Coach, Code-vs-Match, and CAD."
+        description="Track which firmware/software build ran during which match or test session. Cross-check Code Coach, Code-vs-Match, and CAD."
       >
         <div className="cdl-header-actions">
           {view.seasons.length > 0 ? (
@@ -405,7 +405,7 @@ function RecentDeploys({
         badge="No deploys yet"
         badgeTone="setup"
         title="Log your first code deploy"
-        description="Record the firmware version, commit, and match tied to each deploy so you can trace robot behavior back to code — never DEMO firmware packs."
+        description="Record the firmware version, commit, and match tied to each deploy so you can trace robot behavior back to code."
       >
         <a className="app-button" href="#code-deploy-log-form">
           Log deploy

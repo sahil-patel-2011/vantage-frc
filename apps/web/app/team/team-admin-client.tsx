@@ -100,7 +100,7 @@ function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[
     <section className="app-card soft-panel team-admin-next-actions" aria-label="Membership next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Account, Discord, and Connections — never DEMO members.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -544,7 +544,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite exact emails, manage real members, configure GitHub robot-code context, and BYO model providers (API keys). Rosters and repo lists stay blank until real rows exist — never DEMO members or repositories."
+        description="Invite exact emails, manage real members, configure GitHub robot-code context, and BYO model providers (API keys). Rosters and repo lists stay blank until real rows exist."
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (
@@ -603,7 +603,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href="#github-connection">
           <strong>GitHub</strong>
-          <span>Robot-code context for AI — never DEMO repos</span>
+          <span>Robot-code context for AI.</span>
         </a>
         <a href="/account?tab=notifications">
           <strong>Notification prefs</strong>
@@ -686,7 +686,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <Panel className="team-admin-membership" aria-label="Membership setup steps">
             <header>
               <h2>Setup steps</h2>
-              <p className="app-muted">Workspace, invite, Discord, and Connections — never DEMO members.</p>
+              <p className="app-muted">Finish these once and this page fills in.</p>
             </header>
             <ul className="team-admin-setup-steps">
               {membershipSteps.map((step) => (
