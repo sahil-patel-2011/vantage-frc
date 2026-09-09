@@ -7,19 +7,19 @@
 .scout-qr-related{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .scout-qr-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .scout-qr-figure{
-  margin:0;display:grid;justify-items:center;gap:10px;padding:16px;border-radius:16px;
+  margin:0;display:grid;justify-items:center;gap:10px;padding:16px;border-radius:var(--soft-radius);
   background:var(--soft-bg);border:1px solid var(--soft-line);
 }
 /* The QR bitmap itself must stay light-on-white in both themes or scanners lose contrast. */
-.scout-qr-figure img{width:min(280px,100%);height:auto;border-radius:12px;background:#fff}
+.scout-qr-figure img{width:min(280px,100%);height:auto;border-radius:var(--soft-radius-sm);background:#fff}
 .scout-qr-figure figcaption{width:100%}
 .scout-qr-code{
   font:700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;
-  color:var(--soft-ink);padding:6px 10px;border-radius:10px;background:var(--soft-card);
+  color:var(--soft-ink);padding:6px 10px;border-radius:var(--soft-radius-xs);background:var(--soft-card);
   border:1px solid var(--soft-line);
 }
 .scout-qr-empty{
-  margin:0 0 12px;padding:14px;border-radius:14px;border:1px dashed var(--soft-line);
+  margin:0 0 12px;padding:14px;border-radius:var(--soft-radius-sm);border:1px dashed var(--soft-line);
 }
 .scout-qr-setup-steps{
   list-style:none;margin:0;padding:0;display:grid;gap:10px;
@@ -32,12 +32,12 @@
 .scout-qr-setup-steps p{margin:4px 0 0}
 .scout-qr-viewport{
   position:relative;display:grid;place-items:center;min-height:220px;margin-bottom:12px;overflow:hidden;
-  border-radius:16px;border:1px solid var(--soft-line);
+  border-radius:var(--soft-radius);border:1px solid var(--soft-line);
   background:linear-gradient(160deg,var(--soft-bg),var(--soft-card) 55%,var(--soft-bg));
 }
 /* Camera preview sits on a deliberate near-black stage in both themes. */
 .scout-qr-viewport.is-live{background:color-mix(in srgb,var(--soft-ink) 92%,#000)}
-.scout-qr-viewport video{width:100%;max-height:320px;object-fit:cover;display:block;border-radius:12px}
+.scout-qr-viewport video{width:100%;max-height:320px;object-fit:cover;display:block;border-radius:var(--soft-radius-sm)}
 .scout-qr-canvas{display:none}
 .scout-qr-manual{
   display:grid;gap:8px;margin:12px 0;font-size:13px;color:var(--soft-muted);

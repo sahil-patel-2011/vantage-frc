@@ -13,7 +13,7 @@
 }
 .aa-header h1 {
   margin: 4px 0 6px;
-  font-size: 1.35rem;
+  font-size:var(--soft-title-1);
 }
 .aa-header p {
   margin: 0;
@@ -95,7 +95,7 @@
 .aa-detail h2,
 .aa-answer h3 {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size:var(--soft-title-3);
 }
 .aa-history header p,
 .aa-detail header p {
@@ -151,7 +151,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius:var(--soft-radius-xs);
   border: 1px solid var(--app-line);
 }
 .aa-status--completed {
@@ -193,7 +193,7 @@
   white-space: pre-wrap;
   word-break: break-word;
   background: var(--app-soft);
-  border-radius: 4px;
+  border-radius:var(--soft-radius-xs);
 }
 .aa-answer {
   margin-top: 14px;
@@ -212,7 +212,7 @@
 }
 .aa-empty h2 {
   margin: 0;
-  font-size: 15px;
+  font-size:var(--soft-title-3);
 }
 .aa-empty p {
   margin: 0;

@@ -27,14 +27,14 @@
   gap: 12px;
   align-content: start;
   padding: 16px;
-  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
-  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  border-radius:var(--soft-radius-sm);
   background: var(--app-surface, transparent);
 }
 
 .ai-bridge-card h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size:var(--soft-title-3);
 }
 
 .ai-bridge-steps {
@@ -75,8 +75,8 @@
   display: grid;
   gap: 6px;
   padding: 12px;
-  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
-  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  border-radius:var(--soft-radius-xs);
 }
 
 .ai-bridge-device-head {
@@ -90,13 +90,13 @@
   font-size: 0.8rem;
   font-weight: 700;
   padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--app-border);
   color: var(--app-muted, inherit);
 }
 
 .ai-bridge-dot.online {
-  color: var(--app-success, #157347);
+  color: var(--app-success);
   border-color: currentColor;
 }
 
@@ -141,7 +141,7 @@
   margin: 0;
   padding: 10px 12px;
   border: 1px solid var(--hub-border, rgba(127, 127, 127, 0.25));
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   display: grid;
   gap: 4px;
 }
