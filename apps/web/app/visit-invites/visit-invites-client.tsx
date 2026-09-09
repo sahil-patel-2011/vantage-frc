@@ -174,10 +174,8 @@ function VisitShell({
               Create the first visit
             </a>
           ) : null}
-          <VisitRelated
-            orgId={orgId}
-            include={shell === "setup" ? ["logistics", "command", "calendar"] : [...VISIT_RELATED_INCLUDE]}
-          />
+          {/* Related links stay in the header — repeating them here showed the
+              same three or four buttons twice on one screen. */}
         </div>
         {steps.length > 0 ? (
           <ol className="strategy-setup-steps">
@@ -367,12 +365,10 @@ export default function VisitInvitesClient() {
             board link — no DEMO invite placeholders.
           </p>
         </header>
-        <div className="visit-inline-actions">
-          <button type="button" className="app-button secondary" onClick={() => void shareBoard()}>
-            Copy board link
-          </button>
-          <VisitRelated orgId={orgId} include={["calendar", "logistics", "command"]} />
-        </div>
+        {/* "Copy board link" and the Calendar / Logistics / Event Day links are
+            both in the page header, which is still on screen here. This panel is
+            about creating a visit, so it keeps the words and drops the second
+            copy of the same three controls. */}
       </section>
 
       {canManage ? (
@@ -502,14 +498,13 @@ export default function VisitInvitesClient() {
                 : "Mentors will post real visits here. Nothing is pre-filled with DEMO invites."
             }
           >
-            <div className="visit-inline-actions">
-              {canManage ? (
-                <a className="app-button" href="#visit-create">
-                  Jump to create
-                </a>
-              ) : null}
-              <VisitRelated orgId={orgId} include={["logistics", "command", "calendar"]} />
-            </div>
+            {/* One action out of an empty state. The related links live in the
+                header for every state of this page. */}
+            {canManage ? (
+              <a className="app-button" href="#visit-create">
+                Jump to create
+              </a>
+            ) : null}
           </EmptyState>
           <VisitNextActionsPanel actions={nextActions} />
         </>

@@ -200,7 +200,7 @@ function ScoutAccuracyShell({
           </ul>
         </Panel>
       ) : null}
-      <ScoutAccuracyNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScoutAccuracyNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
