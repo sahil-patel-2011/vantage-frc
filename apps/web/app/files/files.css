@@ -1,0 +1,615 @@
+/* Vantage Drive. Tokens only, so both themes come from soft-ui.css. */
+
+.drive-page {
+  display: grid;
+  gap: 16px;
+}
+
+.drive-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.drive-layout-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* The scoping paragraph is deliberately prominent: it is the thing that makes
+   a personal space trustworthy, and burying it would defeat the point. */
+.drive-scope-notice p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.drive-scope-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.drive-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .drive-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.drive-rail {
+  display: grid;
+  gap: 6px;
+  position: sticky;
+  top: 12px;
+}
+
+@media (max-width: 860px) {
+  .drive-rail {
+    position: static;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+}
+
+.drive-rail-item {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 1px solid var(--app-border, #d8d8e0);
+  border-radius: 10px;
+  background: var(--app-surface, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+
+.drive-rail-item strong {
+  font-size: 14px;
+}
+
+.drive-rail-item span {
+  font-size: 12px;
+  opacity: 0.72;
+  line-height: 1.35;
+}
+
+.drive-rail-item.active {
+  border-color: var(--app-accent, #4d5bd8);
+  box-shadow: inset 0 0 0 1px var(--app-accent, #4d5bd8);
+}
+
+.drive-main {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  position: relative;
+  border-radius: 12px;
+}
+
+.drive-main.dragging {
+  outline: 2px dashed var(--app-accent, #4d5bd8);
+  outline-offset: 6px;
+}
+
+.drive-drop-hint {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  background: var(--app-accent, #4d5bd8);
+  color: #fff;
+}
+
+.drive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drive-breadcrumbs {
+  font-size: 14px;
+}
+
+.drive-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.drive-usage {
+  font-size: 12px;
+}
+
+.drive-inline-form {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.drive-page .drive-inline-form input {
+  width: auto;
+  min-width: 180px;
+}
+
+/* --- folders + files --- */
+
+.drive-folders {
+  display: grid;
+  gap: 10px;
+}
+
+.drive-folders.grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.drive-folder {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border, #d8d8e0);
+  border-radius: 10px;
+}
+
+.drive-folder-open {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 44px;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.drive-folder-open strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drive-folder-open span.app-muted {
+  grid-column: 2;
+  font-size: 12px;
+}
+
+.drive-folder-actions,
+.drive-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.drive-files {
+  display: grid;
+  gap: 12px;
+}
+
+.drive-files.grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.drive-file {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--app-border, #d8d8e0);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.drive-file.pending {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.drive-file-open {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.drive-file-open:disabled {
+  cursor: default;
+}
+
+.drive-file-open strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.drive-file-open span.app-muted {
+  font-size: 12px;
+}
+
+.drive-file-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--app-surface-muted, rgba(128, 128, 150, 0.12));
+}
+
+.drive-files.list .drive-file-thumb {
+  aspect-ratio: auto;
+  height: 44px;
+  width: 44px;
+}
+
+.drive-files.list .drive-file {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.drive-file-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.drive-file-icon {
+  font-size: 26px;
+  opacity: 0.6;
+}
+
+.drive-file-meta {
+  font-size: 12px;
+}
+
+.drive-shared-badge {
+  font-weight: 600;
+}
+
+/* An unfinished upload says so rather than offering a download that 404s. */
+.drive-pending {
+  font-size: 12px;
+  color: var(--app-warning-text, #8a5a00);
+}
+
+/* --- uploads --- */
+
+.drive-uploads header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drive-uploads ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.drive-upload {
+  display: grid;
+  gap: 4px;
+}
+
+.drive-upload-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.drive-upload-line strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The honest destination, shown while the bytes are still moving. */
+.drive-route {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.drive-upload progress {
+  width: 100%;
+  height: 6px;
+}
+
+.drive-upload-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-danger-text, #a12b2b);
+}
+
+.drive-upload-reason {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* --- virtual folders (Media Library, CAD Vault) --- */
+
+.drive-virtual header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drive-virtual-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.drive-virtual-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* --- shared with me --- */
+
+.drive-shared-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.drive-shared-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-border, #d8d8e0);
+}
+
+.drive-shared-list li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.drive-shared-list span.app-muted {
+  font-size: 12px;
+}
+
+.drive-share-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+/* --- preview + share dialogs --- */
+
+.drive-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 10, 20, 0.62);
+}
+
+.drive-preview-inner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  width: min(1000px, 100%);
+  max-height: 90vh;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--app-bg, #fff);
+  color: inherit;
+  overflow: hidden;
+}
+
+.drive-preview-inner > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drive-preview-inner > header > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.drive-preview-inner > header span.app-muted {
+  font-size: 12px;
+}
+
+.drive-preview-inner > header > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.drive-preview-body {
+  overflow: auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.drive-preview-body img,
+.drive-preview-body video {
+  max-width: 100%;
+  max-height: 72vh;
+}
+
+.drive-preview-body iframe {
+  width: 100%;
+  height: 72vh;
+  border: 0;
+}
+
+.drive-preview-body pre {
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.drive-preview-none {
+  padding: 24px;
+  max-width: 52ch;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.drive-share-dialog .drive-preview-body {
+  display: block;
+  place-items: initial;
+}
+
+.drive-share-form {
+  display: grid;
+  gap: 12px;
+}
+
+.drive-share-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.drive-share-form label > span {
+  font-weight: 600;
+}
+
+.drive-share-form small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.drive-share-options {
+  display: grid;
+  gap: 12px;
+}
+
+.drive-page .drive-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+}
+
+.drive-page .drive-checkbox input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin-top: 3px;
+}
+
+.drive-share-message {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.drive-share-created,
+.drive-share-existing {
+  margin-top: 18px;
+}
+
+.drive-share-created h3,
+.drive-share-existing h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.drive-share-created ul,
+.drive-share-existing ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.drive-share-created li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.drive-share-created li span.app-muted {
+  grid-column: 1 / -1;
+  font-size: 12px;
+}
+
+.drive-share-existing li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--app-border, #d8d8e0);
+}
+
+.drive-share-existing li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.drive-share-existing span.app-muted {
+  font-size: 12px;
+}
+
+.drive-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drive-notice p {
+  margin: 0;
+  font-size: 14px;
+}
