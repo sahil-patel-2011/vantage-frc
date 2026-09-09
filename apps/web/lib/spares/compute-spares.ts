@@ -42,6 +42,7 @@ type ItemRow = {
   id: string;
   name: string;
   category: string;
+  isSpare: boolean;
   unit: string;
   onHand: string | number | null;
   reorderPoint: string | number | null;
@@ -70,6 +71,7 @@ function mapItem(row: ItemRow): Consumable {
     reorderPoint: num(row.reorderPoint),
     preferredVendor: row.preferredVendor,
     notes: row.notes?.trim() ? row.notes : null,
+    isSpare: Boolean(row.isSpare),
   };
 }
 
@@ -109,7 +111,7 @@ export async function computeSparesView(
 
   const result = await client.query<ItemRow>(
     `SELECT id, name, category, unit, quantity AS "onHand", min_quantity AS "reorderPoint",
-            vendor AS "preferredVendor", notes
+            vendor AS "preferredVendor", notes, is_spare AS "isSpare"
      FROM inventory_items
      WHERE org_id = $1 AND kind = 'consumable' AND archived = false`,
     [org.orgId],
@@ -141,12 +143,14 @@ export async function createConsumable(
     reorderPoint: number;
     preferredVendor: string | null;
     notes: string | null;
+    /** Also held as a competition spare — puts this row in Spare Forecast. */
+    isSpare?: boolean;
   },
 ): Promise<void> {
   const onHand = Math.max(0, input.onHand);
   const inserted = await client.query<{ id: string }>(
-    `INSERT INTO inventory_items (org_id, name, category, kind, unit, quantity, min_quantity, vendor, notes, created_by)
-     VALUES ($1, $2, $3, 'consumable', $4, $5::numeric, $6::numeric, $7, $8, $9)
+    `INSERT INTO inventory_items (org_id, name, category, kind, unit, quantity, min_quantity, vendor, notes, is_spare, created_by)
+     VALUES ($1, $2, $3, 'consumable', $4, $5::numeric, $6::numeric, $7, $8, $9::boolean, $10)
      RETURNING id`,
     [
       input.orgId,
@@ -157,6 +161,7 @@ export async function createConsumable(
       Math.max(0, input.reorderPoint),
       input.preferredVendor,
       input.notes ?? "",
+      input.isSpare ?? false,
       input.userId,
     ],
   );
@@ -182,6 +187,7 @@ export async function updateConsumable(
     reorderPoint?: number;
     preferredVendor?: string | null;
     notes?: string | null;
+    isSpare?: boolean;
   },
 ): Promise<void> {
   const updated = await client.query(
@@ -192,6 +198,7 @@ export async function updateConsumable(
        min_quantity = COALESCE($6::numeric, min_quantity),
        vendor = CASE WHEN $7::boolean THEN $8 ELSE vendor END,
        notes = CASE WHEN $9::boolean THEN COALESCE($10, '') ELSE notes END,
+       is_spare = COALESCE($11::boolean, is_spare),
        updated_at = now()
      WHERE id = $1 AND org_id = $2 AND kind = 'consumable'`,
     [
@@ -205,6 +212,7 @@ export async function updateConsumable(
       input.preferredVendor ?? null,
       input.notes !== undefined,
       input.notes ?? null,
+      input.isSpare ?? null,
     ],
   );
   if (!updated.rowCount) throw new Error("Consumable not found");

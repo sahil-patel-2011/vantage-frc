@@ -102,7 +102,7 @@ async function loadCandidateItems(client: PoolClient, orgId: string, seasonYear:
     client.query<InventoryRow>(
       `SELECT id, name, category, subsystem, quantity::text AS quantity, unit_cost::text AS "unitCost"
        FROM inventory_items
-       WHERE org_id = $1 AND archived = false AND category = 'spare'
+       WHERE org_id = $1 AND archived = false AND is_spare
        ORDER BY name
        LIMIT 200`,
       [orgId],

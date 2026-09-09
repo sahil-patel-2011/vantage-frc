@@ -72,6 +72,13 @@ export type InventoryItem = {
   /** One parts ledger (0462): 'part' | 'consumable'. Optional so pre-unification callers still typecheck. */
   kind?: ItemKind;
   category: InventoryCategory;
+  /**
+   * Held as a replacement (migration 0520). Orthogonal to `kind` and `category`:
+   * a spare gearbox is category 'gearbox' AND isSpare, which the old
+   * `category = 'spare'` filter could not express. Optional so callers written
+   * before 0520 still typecheck.
+   */
+  isSpare?: boolean;
   partNumber: string | null;
   vendor: string | null;
   unit: string;
@@ -280,6 +287,7 @@ const has = (body: Record<string, unknown>, key: string) => Object.prototype.has
 export type ItemPatch = {
   name?: string;
   category?: InventoryCategory;
+  isSpare?: boolean;
   unit?: string;
   partNumber?: string | null;
   vendor?: string | null;
@@ -299,6 +307,7 @@ export type InventoryAction =
       orgId: string;
       name: string;
       category: InventoryCategory;
+      isSpare: boolean;
       unit: string;
       partNumber: string | null;
       vendor: string | null;
@@ -331,6 +340,9 @@ export function parseInventoryAction(input: unknown): InventoryAction {
         orgId,
         name: requiredText(body.name, "Item name", 160),
         category: has(body, "category") ? enumValue(body.category, INVENTORY_CATEGORIES, "Category") : "other",
+        // The legacy 'spare' category still means "this is a spare", so the two
+        // can never disagree on a row written after 0520.
+        isSpare: Boolean(body.isSpare) || body.category === "spare",
         unit: optionalText(body.unit, 24) ?? "each",
         partNumber: optionalText(body.partNumber, 80),
         vendor: optionalText(body.vendor, 120),
@@ -346,6 +358,8 @@ export function parseInventoryAction(input: unknown): InventoryAction {
       const patch: ItemPatch = {};
       if (has(body, "name")) patch.name = requiredText(body.name, "Item name", 160);
       if (has(body, "category")) patch.category = enumValue(body.category, INVENTORY_CATEGORIES, "Category");
+      if (has(body, "isSpare")) patch.isSpare = Boolean(body.isSpare);
+      if (patch.category === "spare") patch.isSpare = true;
       if (has(body, "unit")) patch.unit = optionalText(body.unit, 24) ?? "each";
       if (has(body, "partNumber")) patch.partNumber = optionalText(body.partNumber, 80);
       if (has(body, "vendor")) patch.vendor = optionalText(body.vendor, 120);
