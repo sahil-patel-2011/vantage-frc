@@ -26,6 +26,7 @@
 // per-section empty states with the exact setup step. RLS scopes every query.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   matchLabel,
   normalizePlan,
@@ -329,7 +330,11 @@ async function computeStrategyFallback(
   client: PoolClient,
   input: { userId: string; orgId: string; matchKey: string },
 ): Promise<StrategySections | null> {
-  try {
+  // computeStrategyView both reads and persists, and the briefing keeps reading
+  // after this returns. Under a plain catch a failure here aborted the shared
+  // transaction, so the "honest empty state" this promises was accompanied by an
+  // equally empty everything-else. Savepointed: only this fallback degrades.
+  return withSavepoint(client, async () => {
     const { computeStrategyView } = await import("../strategy/compute-strategy");
     const { finalizeStrategyRecompute } = await import("../strategy/recompute");
     const view = finalizeStrategyRecompute(
@@ -360,9 +365,7 @@ async function computeStrategyFallback(
       scouted: normalizePlanOperations(planJson),
       tendencies: normalizePlanTendencies(planJson),
     };
-  } catch {
-    return null;
-  }
+  }, null);
 }
 
 export async function computeBriefingView(

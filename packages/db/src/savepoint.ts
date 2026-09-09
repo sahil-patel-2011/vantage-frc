@@ -4,7 +4,17 @@
  * without pulling a database connection into their module graph.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { PoolClient } from "@neondatabase/serverless";
+
+/**
+ * Structurally minimal client: all this needs is `query`.
+ *
+ * `PoolClient` satisfies it, and so do the narrow duck-typed clients a few
+ * feature modules accept so their unit tests can stub a single query without a
+ * database. Those modules need this protection too.
+ */
+export type SavepointClient = {
+  query: (sql: string, params?: unknown[]) => Promise<unknown>;
+};
 
 let savepointSeq = 0;
 
@@ -27,10 +37,10 @@ let savepointSeq = 0;
  * `AsyncLocalStorage` is what carries the frame into the work callback.
  */
 type SavepointFrame = { queue: Promise<unknown> };
-const nestedSavepointFrames = new AsyncLocalStorage<Map<PoolClient, SavepointFrame>>();
-const savepointQueues = new WeakMap<PoolClient, Promise<unknown>>();
+const nestedSavepointFrames = new AsyncLocalStorage<Map<SavepointClient, SavepointFrame>>();
+const savepointQueues = new WeakMap<SavepointClient, Promise<unknown>>();
 
-function serializeOnClient<T>(client: PoolClient, run: () => Promise<T>): Promise<T> {
+function serializeOnClient<T>(client: SavepointClient, run: () => Promise<T>): Promise<T> {
   const frames = nestedSavepointFrames.getStore();
   const frame = frames?.get(client);
   const previous = frame ? frame.queue : (savepointQueues.get(client) ?? Promise.resolve());
@@ -58,7 +68,7 @@ function serializeOnClient<T>(client: PoolClient, run: () => Promise<T>): Promis
  * Safe to call concurrently on one client: see `serializeOnClient` above.
  */
 export async function withSavepoint<T>(
-  client: PoolClient,
+  client: SavepointClient,
   work: () => Promise<T>,
   fallback: T,
 ): Promise<T> {
@@ -69,10 +79,36 @@ export async function withSavepoint<T>(
   });
 }
 
-async function runInSavepoint<T>(
-  client: PoolClient,
+/**
+ * Same protection, but the caller still sees the error.
+ *
+ * Use this where the error is not "optional work failed, carry on" but something
+ * the caller has to *classify* — a per-item loop that tolerates a foreign key
+ * violation and rethrows everything else, say. Written as a plain try/catch, that
+ * pattern is worse than a bare swallow: the tolerated error has already aborted
+ * the transaction, so the next iteration fails with "current transaction is
+ * aborted", the classifier does not recognise that message, and it rethrows —
+ * discarding every item the loop had successfully written. Here the transaction
+ * is repaired first, then the original error is rethrown for classification.
+ */
+export async function withSavepointOrThrow<T>(
+  client: SavepointClient,
   work: () => Promise<T>,
-  fallback: T,
+): Promise<T> {
+  return serializeOnClient(client, () => {
+    const frames = new Map(nestedSavepointFrames.getStore() ?? []);
+    frames.set(client, { queue: Promise.resolve() });
+    return nestedSavepointFrames.run(frames, () => runInSavepoint(client, work, RETHROW));
+  });
+}
+
+/** Sentinel fallback meaning "repair the transaction, then rethrow". */
+const RETHROW = Symbol("vantage.savepoint.rethrow");
+
+async function runInSavepoint<T>(
+  client: SavepointClient,
+  work: () => Promise<T>,
+  fallback: T | typeof RETHROW,
 ): Promise<T> {
   savepointSeq += 1;
   const name = `vantage_sp_${savepointSeq % 1_000_000}`;
@@ -82,7 +118,8 @@ async function runInSavepoint<T>(
     // Not inside a usable transaction; fall back to a plain guard.
     try {
       return await work();
-    } catch {
+    } catch (error) {
+      if (fallback === RETHROW) throw error;
       return fallback;
     }
   }
@@ -90,13 +127,14 @@ async function runInSavepoint<T>(
     const result = await work();
     await client.query(`RELEASE SAVEPOINT ${name}`);
     return result;
-  } catch {
+  } catch (error) {
     try {
       await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
       await client.query(`RELEASE SAVEPOINT ${name}`);
     } catch {
       // Connection is unusable; withRls will roll the request back.
     }
+    if (fallback === RETHROW) throw error;
     return fallback;
   }
 }
