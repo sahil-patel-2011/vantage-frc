@@ -334,8 +334,20 @@ export async function submitResponse(
 export type FormResults = {
   totalResponses: number;
   assignedCount: number;
+  /** Of the assigned people, how many have answered. Never derived from the response count. */
+  respondedAssignees: number;
   summaries: QuestionSummary[];
-  responses: Array<{ id: string; label: string; submittedAt: string }>;
+  responses: Array<{ id: string; label: string; submittedAt: string; hasAccount: boolean }>;
+  /**
+   * Answers that arrived through the share link from someone with no account.
+   *
+   * Carried separately because it decides what the team can and cannot do next:
+   * these people typed an address into a question so a team could reach them,
+   * which is not consent for Vantage to email them, and there is no preferences
+   * row or unsubscribe token to honour if it did. The route from here is an
+   * invite, not a mailing list.
+   */
+  linkResponses: number;
 };
 
 export async function getResults(
@@ -343,10 +355,16 @@ export async function getResults(
   orgId: string,
   form: FormDetail,
 ): Promise<FormResults> {
-  const responses = await client.query<{ id: string; label: string; submittedAt: string }>(
+  const responses = await client.query<{
+    id: string;
+    label: string;
+    submittedAt: string;
+    hasAccount: boolean;
+  }>(
     `SELECT r.id,
             COALESCE(NULLIF(r.respondent_label, ''), COALESCE(u.name, 'Anonymous')) AS label,
-            r.submitted_at::text AS "submittedAt"
+            r.submitted_at::text AS "submittedAt",
+            (r.respondent_user_id IS NOT NULL) AS "hasAccount"
        FROM form_responses r
        LEFT JOIN users u ON u.id = r.respondent_user_id
       WHERE r.form_id = $1::uuid AND r.org_id = $2::uuid
@@ -365,8 +383,21 @@ export async function getResults(
     [form.id, orgId],
   );
 
-  const assigned = await client.query<{ count: number }>(
-    `SELECT count(*)::int AS count FROM form_assignments WHERE form_id = $1::uuid AND org_id = $2::uuid`,
+  // Two different numbers: how many people were asked, and how many of THOSE
+  // answered. Deriving the second from the response count treats a stranger's
+  // link answer as an assignee's, which makes coverage rise when the wrong
+  // people reply.
+  const assigned = await client.query<{ count: number; responded: number }>(
+    `SELECT count(*)::int AS count,
+            count(*) FILTER (
+              WHERE EXISTS (
+                SELECT 1 FROM form_responses r
+                 WHERE r.form_id = a.form_id
+                   AND r.respondent_user_id = a.user_id
+              )
+            )::int AS responded
+       FROM form_assignments a
+      WHERE a.form_id = $1::uuid AND a.org_id = $2::uuid`,
     [form.id, orgId],
   );
 
@@ -374,7 +405,9 @@ export async function getResults(
   return {
     totalResponses: total,
     assignedCount: assigned.rows[0]?.count ?? 0,
+    respondedAssignees: assigned.rows[0]?.responded ?? 0,
     summaries: form.questions.map((question) => summarizeQuestion(question, answers.rows, total)),
     responses: responses.rows,
+    linkResponses: responses.rows.filter((row) => !row.hasAccount).length,
   };
 }

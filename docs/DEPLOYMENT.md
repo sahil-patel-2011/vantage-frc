@@ -111,7 +111,7 @@ it unset.
 
 ## 5. Cron jobs and the CRON_SECRET
 
-All seven cron routes live under `apps/web/app/api/cron/` and share one guard
+All eight cron routes live under `apps/web/app/api/cron/` and share one guard
 (`assertCronAuthorized` in `apps/web/lib/reference/run-ingest.ts`): they accept
 `Authorization: Bearer <CRON_SECRET>` **or** an `x-cron-secret: <CRON_SECRET>` header, return 503 when
 `CRON_SECRET` is unset, and 401 on a wrong secret. Vercel Cron automatically sends the Bearer header
@@ -124,6 +124,18 @@ when `CRON_SECRET` is set on the project.
 | `/api/cron/tba-sync?mode=event-day` | `0 14 * * *` |
 | `/api/cron/tba-sync?mode=season` | `0 6 * * *` |
 
+`?mode=season` is the daily catch-all. It is one Vercel cron but several jobs:
+`runSeasonCronPiggybacks()` runs sponsor reminders, scheduled product releases,
+the intel research sweep, and the new-member onboarding sequence, each wrapped so
+one failing cannot fail TBA ingest. **Adding a job means adding it there, not
+adding a fourth entry to a `crons` array.**
+
+> Only the **root** `vercel.json` is read — the Root Directory is the repo root,
+> which makes `apps/web/vercel.json` inert. A cron added to the inert file looks
+> scheduled in the diff and never fires, which is worse than a deploy error
+> because nothing complains. Member onboarding was added there once; that is why
+> it rides the season sync now.
+
 **Not scheduled — need an external ticker (or a Vercel plan with more crons):**
 
 - `/api/cron/parent-digest` (weekly parent email digest; listed in `apps/web/vercel.json` but that file
@@ -133,6 +145,10 @@ when `CRON_SECRET` is set on the project.
 - `/api/cron/sponsor-reminders`
 - `/api/cron/grant-deadline-alerts`
 - `/api/cron/research-sweep`
+- `/api/cron/member-onboarding` — **already running daily**, as a piggyback on `?mode=season`; the
+  route stays for `?orgId=` testing and for a Pro-plan ticker that wants its own schedule. It sends
+  nothing to anyone who joined before the `member_onboarding` row in `email_feature_epochs`, and
+  nothing at all to a member with no outstanding items.
 
 External ticker options (pick one):
 
