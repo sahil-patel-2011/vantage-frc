@@ -1,0 +1,147 @@
+/* Announcements. Tokens only, so both themes come from soft-ui.css. */
+
+.announcements-page {
+  display: grid;
+  gap: 16px;
+}
+
+.ann-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ann-field > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ann-field-inline {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+.ann-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+/*
+ * Scoped to the page so it outranks the shell's `.module-page label`
+ * (display: grid) and its `input { width: 100%; min-height: 44px }`. Unscoped,
+ * `.ann-check` lost on specificity and the checkbox rendered 214x44 with its
+ * label stacked underneath, which reads as a broken field rather than a
+ * checkbox. The 44px target moves to the label, which is the real hit area.
+ */
+.announcements-page .ann-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.announcements-page .ann-check input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+
+.ann-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--soft-danger, #b42318);
+}
+
+.ann-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ann-item {
+  padding: 14px 16px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+
+/* A pinned notice has to be findable at a glance in a long list; the accent
+   edge does that without a second badge competing with the priority one. */
+.ann-item.pinned {
+  border-left: 3px solid var(--soft-accent);
+}
+
+.ann-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ann-item-head h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+
+.ann-body {
+  margin: 10px 0 0;
+  line-height: 1.55;
+  /* Posted text is user-authored and may contain a long URL or part number. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ann-ack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.ann-ack-count {
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.ann-ack-done {
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.ann-outstanding {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-line);
+  background: var(--soft-bg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ann-admin {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .ann-item-head {
+    flex-direction: column;
+  }
+
+  .ann-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

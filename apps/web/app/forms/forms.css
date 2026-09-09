@@ -207,12 +207,28 @@
   flex: 0 0 auto;
 }
 
-.forms-required {
+/*
+ * Checkbox rows have to be scoped to the page to outrank the shell's
+ * `.module-page label { display: grid }` and `input { width: 100% }`.
+ * Unscoped, `.forms-required` and `.forms-option` lost on specificity and their
+ * checkboxes rendered 43x44 and 162x44 with the label stacked underneath —
+ * which reads as a broken field. Only visible once you switch views, which is
+ * why it survived the first pass.
+ */
+.forms-page .forms-required {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
   color: var(--soft-muted);
+}
+
+.forms-page .forms-required input[type="checkbox"],
+.forms-page .forms-option input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
 }
 
 .forms-add {
@@ -253,7 +269,8 @@
   gap: 8px;
 }
 
-.forms-option {
+.forms-page .forms-option,
+.public-form .forms-option {
   display: inline-flex;
   align-items: center;
   gap: 8px;
