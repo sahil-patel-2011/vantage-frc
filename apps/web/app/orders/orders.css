@@ -33,7 +33,7 @@
 .orders-season select {
   min-height: 44px;
   padding: 6px 12px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
   color: inherit;
@@ -46,8 +46,8 @@
 .orders-page .soft-panel > h2,
 .orders-embedded .soft-panel > h2 {
   margin: 4px 0 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .orders-flow-steps {
@@ -63,7 +63,7 @@
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
 }
@@ -97,7 +97,7 @@
 
 .orders-metric {
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
 }
@@ -153,7 +153,7 @@
   width: 100%;
   min-height: 44px;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
   color: inherit;
@@ -181,7 +181,7 @@
   min-height: 44px;
   padding: 0 16px;
   border: 0;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--orders-accent-fill);
   color: #fff;
   font: 700 13px var(--font-source-sans), ui-sans-serif;
@@ -206,7 +206,7 @@
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius:var(--soft-radius);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
 }
@@ -233,7 +233,7 @@
   align-items: center;
   min-height: 26px;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   font: 700 11px var(--font-source-sans), ui-sans-serif;
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
@@ -294,7 +294,7 @@
 .orders-admin-row button {
   min-height: 44px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
@@ -325,7 +325,7 @@
 .orders-buy-panel,
 .orders-approve-panel {
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px dashed var(--orders-accent-border);
   background: var(--orders-accent-soft);
   display: grid;
@@ -340,7 +340,7 @@
 .orders-buy-panel h3,
 .orders-approve-panel h3 {
   margin: 0;
-  font-size: 13px;
+  font-size:var(--soft-title-4);
   color: var(--orders-accent);
 }
 
@@ -365,7 +365,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 14px;
-  border-radius: 10px;
+  border-radius:var(--soft-radius-xs);
   background: var(--orders-accent-fill);
   color: #fff !important;
   font-weight: 700;
@@ -383,7 +383,7 @@
 .orders-error {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -435,9 +435,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
-  background: var(--soft-bg, var(--soft-card));
+  background: var(--soft-bg);
 }
 
 .orders-embedded .strategy-setup-steps li div,

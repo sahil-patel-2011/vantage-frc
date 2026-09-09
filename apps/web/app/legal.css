@@ -90,7 +90,7 @@
 .legal-toc h2 {
   margin: 0 0 12px;
   color: var(--m-muted);
-  font: 600 11px/1.4 var(--m-mono) !important;
+  font:600 var(--soft-text-xs)/1.4 var(--m-mono) !important;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -113,7 +113,7 @@
   grid-template-columns: 26px minmax(0, 1fr);
   gap: 6px;
   padding: 7px 6px;
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   color: var(--m-ink);
   font-size: 14px;
   line-height: 1.45;

@@ -18,12 +18,12 @@
 
 .strategy-next-actions-panel header h2 {
   margin: 0;
-  font: 800 15px/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  font:800 var(--soft-title-3)/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .strategy-next-actions-panel header p {
   margin: 0;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font: 600 13px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -72,7 +72,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 12px 0;
-  border-top: 1px solid var(--soft-line, var(--app-line));
+  border-top: 1px solid var(--soft-line);
 }
 
 .strategy-next-actions-panel li:first-child {
@@ -81,7 +81,7 @@
 }
 
 .strategy-next-actions-panel li.primary strong {
-  color: var(--soft-ink, var(--app-ink));
+  color: var(--soft-ink);
 }
 
 .strategy-next-actions-panel li div {
@@ -91,7 +91,7 @@
 }
 
 .strategy-next-actions-panel li span {
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font: 600 12px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 

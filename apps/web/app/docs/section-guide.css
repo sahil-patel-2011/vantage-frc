@@ -9,7 +9,7 @@
 
 .section-guide-head h2 {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size:var(--soft-title-2);
 }
 
 .section-guide-head p {
@@ -52,7 +52,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 16px;
 }
 
@@ -78,7 +78,7 @@
 
 .section-guide-hub h3 {
   margin: 0;
-  font-size: 16px;
+  font-size:var(--soft-title-3);
 }
 
 .section-guide-hub-link {
@@ -185,7 +185,7 @@
   color: var(--app-muted);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius: 5px;
+  border-radius:var(--soft-radius-xs);
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -194,7 +194,7 @@
 .section-guide-detail h4 {
   margin: 4px 0 0;
   color: var(--app-muted);
-  font-size: 10px;
+  font-size:var(--soft-text-xs);
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -230,7 +230,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
