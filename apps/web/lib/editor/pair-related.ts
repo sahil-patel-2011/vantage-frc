@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 import { githubConnectionHref } from "../github/github-related";
 
@@ -88,13 +89,13 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
     {
       id: "code",
       label: "Open Code Coach",
-      detail: "Local pattern review stays blank until you paste real robot source — never DEMO findings.",
+      detail: "Local pattern review stays blank until you paste real robot source — no sample findings.",
       href: hubHref("/build", "code", orgId),
     },
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Optional repo context stays disconnected until you link it — never DEMO repos.",
+      detail: "Optional repo context stays disconnected until you link it — no sample repos.",
       href: githubConnectionHref(orgId),
     },
     {
@@ -197,62 +198,10 @@ export function pairNextActions(input: {
   const deviceCount = input.deviceCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Pairing is org-scoped — pick a team before approving an editor code.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "code",
-          label: "Open Code Coach",
-          detail: "Local pattern review stays blank until you paste source — never DEMO findings.",
-          href: hubHref("/build", "code", null),
-        },
-        {
-          id: "github",
-          label: "Connect GitHub",
-          detail: "Optional repo context stays disconnected until linked — never DEMO repos.",
-          href: githubConnectionHref(null),
-        },
-        {
-          id: "chat",
-          label: "Open AI chat",
-          detail: "Team assistant is separate from editor pairing and uses plan credits.",
-          href: hubHref("/ai", "chat", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Pair VS Code can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "code",
-        label: "Open Code Coach",
-        detail: "Local pattern review stays blank until you paste real robot source.",
-        href: hubHref("/build", "code", orgId),
-      },
-      {
-        id: "github",
-        label: "Connect GitHub",
-        detail: "Optional repo context stays disconnected until you link it.",
-        href: githubConnectionHref(orgId),
-      },
-      {
-        id: "chat",
-        label: "Open AI chat",
-        detail: "Team assistant is separate from editor pairing and uses plan credits.",
-        href: hubHref("/ai", "chat", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of pairSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(pairSetupSteps(orgId));
   }
 
   if (input.shell === "empty" || deviceCount === 0) {
