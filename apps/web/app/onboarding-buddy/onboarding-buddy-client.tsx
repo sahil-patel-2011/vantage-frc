@@ -164,7 +164,7 @@ function BuddyShell({
           </ul>
         </Panel>
       ) : null}
-      <BuddyNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <BuddyNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

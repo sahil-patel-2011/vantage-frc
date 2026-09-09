@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { groupPacking, packProgress, type PackingList, type PackingView } from "../../lib/packing";
 
@@ -423,6 +424,17 @@ export default function PackingClient() {
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — seeded with the standard FRC
             competition kit. Teammates request extras; the packing lead owns the master list.
           </p>
+          {/* Packing sits between the shelf it draws from and the trip it loads
+              into. Both were a hamburger away from a page you work standing up
+              in the shop. */}
+          <nav className="product-hub-related" aria-label="Related packing tools">
+            <a className="app-button secondary" href={withOrgHref("/spares", view.context.orgId)}>
+              Consumables
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/logistics", view.context.orgId)}>
+              Logistics
+            </a>
+          </nav>
         </div>
         <div className="pack-header-actions">
           <input

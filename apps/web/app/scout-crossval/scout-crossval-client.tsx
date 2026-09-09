@@ -186,7 +186,7 @@ function ScoutCrossvalShell({
           </ul>
         </Panel>
       ) : null}
-      <ScoutCrossvalNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScoutCrossvalNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

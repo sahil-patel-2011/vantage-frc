@@ -1,7 +1,6 @@
 import { EmptyState, PageHeader } from "../../components/ui";
 import {
   SCOUT_DATA_IMPACT_RELATED_INCLUDE,
-  scoutDataImpactNextActions,
   scoutDataImpactRelatedLinks,
   scoutDataImpactSetupSteps,
   scoutDataImpactShellCopy,
@@ -22,7 +21,6 @@ export default async function ScoutDataImpactPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = scoutDataImpactShellCopy("setup");
-    const actions = scoutDataImpactNextActions({ orgId: null, shell: "setup" });
     const related = scoutDataImpactRelatedLinks(null, {
       include: [...SCOUT_DATA_IMPACT_RELATED_INCLUDE],
     });
@@ -74,28 +72,6 @@ export default async function ScoutDataImpactPage({
               </li>
             ))}
           </ul>
-        </section>
-        <section
-          className="app-card soft-panel edc-next-actions scout-data-impact-next-actions"
-          aria-label="Next actions"
-        >
-          <header>
-            <h2>Next actions</h2>
-            <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
-          </header>
-          <ol>
-            {actions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className="app-button secondary" href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
         </section>
         <p className="app-muted scout-data-impact-footer-links">
           Also see <a href={withOrgHref("/scout-accuracy", null)}>Accuracy</a>

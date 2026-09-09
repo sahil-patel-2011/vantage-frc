@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInFixture } from "./session";
 
 test("landing sign in reaches dashboard with local auth fixture", async ({ context, page }) => {
   await page.goto("/");
@@ -6,13 +7,7 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   await expect(page).toHaveURL(/\/signin$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
-  await context.addCookies([{
-    name: "vantage-e2e-session",
-    value: "authenticated",
-    url: "http://localhost:3310",
-    httpOnly: true,
-    sameSite: "Lax",
-  }]);
+  await signInFixture(context);
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

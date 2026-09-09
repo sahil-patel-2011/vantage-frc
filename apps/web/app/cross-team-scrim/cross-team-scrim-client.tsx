@@ -173,7 +173,7 @@ function ScrimShell({
           </ul>
         </Panel>
       ) : null}
-      <ScrimNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <ScrimNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

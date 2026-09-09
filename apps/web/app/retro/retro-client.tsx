@@ -175,7 +175,7 @@ function RetroShell({
           </ul>
         </Panel>
       ) : null}
-      <RetroNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <RetroNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

@@ -174,10 +174,11 @@ function LogisticsShell({
             Add a trip
           </a>
         ) : null}
-        <LogisticsRelated
-          orgId={orgId}
-          include={shell === "setup" ? ["command", "my-day", "visit-invites"] : [...LOGISTICS_RELATED_INCLUDE]}
-        />
+        {/* The same four cross-links are already in the page header, a few
+            hundred pixels up and always visible. Rendering them again inside the
+            empty state put Event Day / My Day / Calendar / Visit invites on this
+            screen twice and buried the one action that actually moves you
+            forward. The empty state keeps its single primary action. */}
         {steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {steps.map((step) => (

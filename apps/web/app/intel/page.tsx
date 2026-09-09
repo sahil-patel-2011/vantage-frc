@@ -1,6 +1,5 @@
 import { EmptyState, Panel } from "../../components/ui";
 import {
-  intelNextActions,
   intelSetupSteps,
   intelShellCopy,
 } from "../../lib/intel/intel-related";
@@ -20,7 +19,6 @@ export default async function IntelPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = intelShellCopy("setup");
-    const actions = intelNextActions({ orgId: null, shell: "setup" });
     const steps = intelSetupSteps(null);
     return (
       <main className="module-page intel-page soft-gate">
@@ -64,30 +62,6 @@ export default async function IntelPage({
               ))}
             </ul>
           </Panel>
-        ) : null}
-        {actions.length > 0 ? (
-          <section
-            className="app-card soft-panel edc-next-actions intel-next-actions"
-            aria-label="Next actions"
-          >
-            <header>
-              <h2>Next actions</h2>
-              <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
-            </header>
-            <ol>
-              {actions.map((action) => (
-                <li key={action.id} className={action.primary ? "primary" : undefined}>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.detail}</span>
-                  </div>
-                  <a className="app-button secondary" href={action.href}>
-                    Open
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </section>
         ) : null}
       </main>
     );
