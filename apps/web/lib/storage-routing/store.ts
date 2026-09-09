@@ -295,7 +295,10 @@ export async function insertUploadGrant(
   input: {
     orgId: string;
     nodeId: string;
-    purpose: "library" | "media";
+    // 'drive' was added by migration 0641; Vantage Drive finalizes through its
+    // own route rather than finalizeUploadGrant below, so the ledger row is
+    // there for the single-use nonce and the audit trail.
+    purpose: "library" | "media" | "drive";
     targetId: string;
     sha256: string;
     maxBytes: number;
