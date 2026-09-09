@@ -181,6 +181,93 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
     },
     {
+      id: "children",
+      heading: "Students under 13, and parental consent",
+      paragraphs: [
+        "FRC teams include middle-school students, so some members are under 13. We ask for date of birth during onboarding, which means we know when that is the case rather than guessing.",
+        "Vantage is not sold to children directly and cannot be joined by one on their own. Access is closed: a school or team organisation is provisioned by us, and its owners and admins invite specific email addresses. A student cannot create a workspace, and cannot join one without being invited by an adult who runs that team.",
+        "Where a member is under 13, the team — through its coach or lead mentors, acting for the school or organisation that runs it — is responsible for obtaining any parental consent their jurisdiction requires before inviting that student, and for holding the record of it. We support that rather than replace it: the team controls who is invited, and a parent or guardian may ask the team to remove their child at any time, which removes their access and lets the team delete their data.",
+        "If you are a parent or guardian and want to know what Vantage holds about your child, ask your child's coach or mentors first — they administer the workspace and can show you. If you cannot get an answer that way, write to " + CONTACT + " and we will work with the team to resolve it.",
+        "We do not use a student's information to advertise to them. We do not sell personal information, and we do not build advertising profiles. There is no advertising in Vantage.",
+      ],
+    },
+    {
+      id: "guardians",
+      heading: "Parents and guardians",
+      paragraphs: [
+        "Vantage has a parent view: a team can send a guardian a private link that shows upcoming team events and their own student's RSVP. That link is the entire credential, so treat it like a password and do not forward it.",
+        "The parent view deliberately shows very little. It carries the team name and number, upcoming events, and the linked student's own RSVP. It does not show other students' names, contact details, grades, notes, or anything a mentor has written. A guardian holding one of these links does not get an account and cannot see the rest of the workspace.",
+        "A team can turn a parent link off at any time, which stops it working immediately.",
+      ],
+    },
+    {
+      id: "your-rights",
+      heading: "Seeing, correcting, exporting, and deleting your information",
+      paragraphs: [
+        "You can see and change your own profile in the product at any time, and you can change or turn off every email category from your notification preferences.",
+        "You can ask for a copy of what we hold about you, ask us to correct it, or ask us to delete it. Write to " + CONTACT + ". We will ask you to confirm you are who you say you are before acting, because doing otherwise would itself be a privacy failure.",
+        "Two honest limits on deletion. First, some of what you did is also the team's record — hours you logged, scouting data you collected, a decision you wrote down. Removing your account does not silently rewrite the team's history; where we can, we detach your name from those records rather than destroying the team's work. Second, we keep what the law requires us to keep, such as billing records, for as long as it requires.",
+        "If your team stops using Vantage, its owners can export the team's data and ask us to delete the workspace.",
+      ],
+      list: [
+        "See it — your profile and preferences are visible in the product; ask us for anything else",
+        "Correct it — edit your profile, or write to us",
+        "Export it — team owners can export the team's data",
+        "Delete it — ask us, and we will explain exactly what is removed and what is retained and why",
+      ],
+    },
+    {
+      id: "subprocessors",
+      heading: "Companies that process data on our behalf",
+      paragraphs: [
+        "Running Vantage means other companies handle some of your data. These are the ones that do, and what each one sees. We choose them, and we are responsible for them.",
+        "Some of these only apply if your team turns the feature on. A team with no Onshape connection sends nothing to Onshape; a team using its own AI provider key sends nothing to ours.",
+      ],
+      list: [
+        "Neon — our Postgres database. Holds essentially everything described in this policy.",
+        "Vercel — hosting for the web app. Sees requests and standard server logs.",
+        "Resend — sends our email: sign-in codes, invitations, reminders, and digests. Sees the recipient address and the message.",
+        "Stripe — payments, for teams on a paid plan. Sees billing details; we do not store card numbers.",
+        "Google — only if you sign in with Google, which tells us your name and email.",
+        "AI providers (Anthropic, OpenAI, Groq, OpenRouter) — process the text of an AI request when a team uses an AI feature. A team may supply its own provider key instead, in which case the request goes to that team's own account.",
+        "Onshape — only if your team connects CAD. Sees the CAD documents you authorise.",
+        "Discord and Slack — only if your team connects a chat bridge, which forwards the messages your team chooses to forward.",
+        "The Blue Alliance and Statbotics — public FRC event and match data. We read from them; we do not send them your team's information.",
+        "Upstash — rate-limit counters, if configured. Sees no personal content.",
+      ],
+    },
+    {
+      id: "security-incidents",
+      heading: "If something goes wrong",
+      paragraphs: [
+        "If we find that personal information has been exposed to someone who should not have seen it — a data breach — we will investigate, fix it, and tell the affected teams' owners and admins without unreasonable delay, along with any breach notification the law requires. We will say what happened, what was affected, and what we are doing — not a vague reassurance.",
+        "We would rather hear about a problem than not. If you think you have found a security issue, write to " + CONTACT + ". We will not pursue you for reporting something you found in good faith and did not exploit.",
+      ],
+    },
+    {
+      id: "legal-requests",
+      heading: "Legal requests",
+      paragraphs: [
+        "We will disclose information if we are legally required to — a valid subpoena, court order, search warrant, or equivalent legal process, including a lawful law enforcement request. We check that a request is valid and we give it the narrowest reading we reasonably can.",
+        "Where we are permitted to tell the affected team that a request was made, we will, so that they can respond to it themselves.",
+      ],
+    },
+    {
+      id: "schools",
+      heading: "School-affiliated teams",
+      paragraphs: [
+        "Many FRC teams are run by a school. Where a school directs a team's use of Vantage, the school is the one deciding what is collected and why, and we process that information on the school's instruction under this policy and our terms.",
+        "If your school needs a written agreement covering student data before your team can use Vantage, write to " + CONTACT + " and we will work through it with you. We would rather have that conversation before your team starts than after.",
+      ],
+    },
+    {
+      id: "where-data-lives",
+      heading: "Where your data is held",
+      paragraphs: [
+        "Vantage is hosted in the United States, and your team's data is stored and processed there. If your team is outside the United States, using Vantage means that information is transferred there.",
+      ],
+    },
+    {
       id: "contact",
       heading: "Questions",
       paragraphs: [
@@ -271,6 +358,25 @@ export const TERMS_OF_SERVICE: LegalDocument = {
         "Several integrations require your own setup or credentials (CAD, GitHub, phone verification, your own AI keys, email delivery, payments). Until they are configured, those features tell you what is missing instead of working.",
         "Features can change, be added, or be withdrawn. If we remove something a team depends on, we will give notice where we reasonably can and make sure the data can be exported.",
         "To the extent the law allows, Vantage is provided \"as is\" and \"as available\", without warranties, and our liability is limited to what you paid us in the twelve months before the claim. Some jurisdictions do not allow these limits, in which case they apply only as far as they legally can.",
+      ],
+    },
+    {
+      id: "who-owns-what",
+      heading: "Who owns what",
+      paragraphs: [
+        "Your team owns its data. Scouting records, match notes, documents, CAD links, hours, budgets, chat — that is the team's work, and using Vantage does not transfer it to us. We hold it to run the service for you.",
+        "We do not sell it, we do not license it to anyone else, and we do not use one team's data to give another team an advantage. Aggregate operational metrics we use to keep the service running — error rates, load, feature usage counts — are not team data and never identify a team's strategy.",
+        "Vantage itself — the software, the interface, the name — stays ours.",
+        "Team owners can export their data, and can ask us to delete the workspace when they are done with it.",
+      ],
+    },
+    {
+      id: "members-under-18",
+      heading: "Members under 18",
+      paragraphs: [
+        "Most people using Vantage are high-school students, and some are younger. Accounts are created by invitation from a team's owners or admins — a student cannot sign themselves up.",
+        "If you are under 18, a parent, guardian, or the adult who runs your team must agree to these terms on your behalf. By inviting a student, the team confirms it has whatever permission its school or organisation requires.",
+        "A parent, guardian, or coach can have a student removed from a team workspace at any time by asking the team's owners or admins.",
       ],
     },
     {
