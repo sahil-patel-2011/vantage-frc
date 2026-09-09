@@ -1242,3 +1242,112 @@
     flex: 1 1 40px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Find a time — the AI scheduling panel in the side rail.
+ *
+ * Every selector is under .tc-ai on purpose. This panel sits inside .tc-panel
+ * on a .module-page, and both of those already style bare `input`/`label`
+ * descendants; scoping here means neither can reach in and stretch a row.
+ * ------------------------------------------------------------------------- */
+.tc-ai-open {
+  justify-self: start;
+}
+
+.tc-ai {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.tc-ai > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tc-ai > header strong {
+  font-size: 13px;
+}
+.tc-ai p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tc-ai-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.tc-ai-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--soft-radius-xs);
+  font: inherit;
+  font-size: 12px;
+}
+
+.tc-ai-error {
+  color: var(--app-critical);
+  font-weight: 600;
+}
+
+.tc-ai-out {
+  display: grid;
+  gap: 8px;
+}
+.tc-ai-basis {
+  padding-top: 8px;
+  border-top: 1px solid var(--app-line);
+}
+
+.tc-ai-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tc-ai-slot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--soft-radius-xs);
+}
+.tc-ai-slot > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tc-ai-slot strong {
+  font-size: 13px;
+}
+.tc-ai-slot small {
+  font-size: 11px;
+  line-height: 1.4;
+}
+/* A slot that clashes is still shown — a team may genuinely want to overlap —
+   but it must not look like the clear ones. */
+.tc-ai-slot.busy {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+}
+.tc-ai-clash {
+  color: var(--app-critical);
+  font-weight: 600;
+}
+
+.tc-ai-fine {
+  font-size: 11px;
+}
