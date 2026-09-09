@@ -6,7 +6,7 @@
 .mfg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
 
 /* >=44px touch targets on every interactive control. */
-.mfg-page button,.mfg-page select,.mfg-page input:not([type="checkbox"]),.mfg-page textarea,.mfg-page a.app-button{min-height:44px}
+.mfg-page button,.mfg-page select,.mfg-page input:not([type="checkbox"]),.mfg-page textarea{min-height:44px}
 .mfg-page input[type="checkbox"]{width:24px;height:24px;flex-shrink:0}
 
 /* Board: one column per state, horizontal scroll inside its own container so the

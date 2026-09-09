@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vantage — update</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f6f2;
+        --panel: #ffffff;
+        --ink: #17150f;
+        --muted: #5c574b;
+        --line: #e4e1d7;
+        --primary: #1f4fd6;
+        --primary-ink: #ffffff;
+        --mark: #14243a;
+        --mark-accent: #1457d9;
+        --danger: #a3341f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14130f;
+          --panel: #1d1b16;
+          --ink: #f2f0e9;
+          --muted: #a9a494;
+          --line: #2c2a23;
+          --primary: #6e9bff;
+          --primary-ink: #071014;
+          --mark: #e8ecf5;
+          --mark-accent: #6f9bff;
+          --danger: #ff9d87;
+        }
+      }
+      * { box-sizing: border-box; margin: 0; }
+      html, body { height: 100%; }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .shell { width: min(30rem, 100%); text-align: center; }
+      .brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 22px; }
+      .brand svg { width: 56px; height: 56px; }
+      .mark-v { fill: var(--mark); }
+      .mark-accent { fill: var(--mark-accent); }
+      .wordmark { font-size: 0.8rem; letter-spacing: 0.34em; text-transform: uppercase; color: var(--muted); }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px;
+        display: grid;
+        gap: 14px;
+        text-align: left;
+      }
+      h1 { font-size: 1.25rem; line-height: 1.3; }
+      p { color: var(--muted); font-size: 0.94rem; line-height: 1.55; }
+      .versions {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .versions b { color: var(--ink); font-variant-numeric: tabular-nums; }
+      .row { display: flex; flex-wrap: wrap; gap: 10px; }
+      button {
+        font: inherit;
+        min-height: 44px;
+        padding: 0 18px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.primary { background: var(--primary); color: var(--primary-ink); border-color: transparent; }
+      button:disabled { opacity: 0.55; cursor: default; }
+      .note { font-size: 0.82rem; }
+      .note.warn { color: var(--danger); }
+      .safety {
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path class="mark-v" d="M12 12h10l10 26 10-26h10L38 52h-12z" />
+          <circle class="mark-accent" cx="32" cy="8" r="4" />
+        </svg>
+        <span class="wordmark">Vantage</span>
+      </div>
+
+      <section class="card">
+        <h1 id="title">Checking for updates…</h1>
+        <p id="body">Vantage is looking for a newer desktop release.</p>
+        <div class="versions">
+          <span>Installed <b id="current">—</b></span>
+          <span id="available-wrap" hidden>Available <b id="available">—</b></span>
+        </div>
+        <div class="row">
+          <button class="primary" id="install" hidden>Update and restart</button>
+          <button id="download" hidden>Download in browser</button>
+          <button id="later" hidden>Not now</button>
+          <button id="recheck">Check again</button>
+        </div>
+        <p class="note" id="note" hidden></p>
+        <p class="safety">
+          Updates never install while Vantage is in use. A pending update is applied when
+          you close the app, or after several minutes with the window idle and off a
+          match-day screen — never in the middle of a match.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      const api = window.vantageDesktop && window.vantageDesktop.update;
+      const $ = (id) => document.getElementById(id);
+      const show = (el, on) => { el.hidden = !on; };
+
+      function render(status) {
+        if (!status) {
+          $("title").textContent = "Update status unavailable";
+          $("body").textContent = "This window could not reach the update service.";
+          return;
+        }
+        $("current").textContent = status.currentVersion;
+        const version = status.manifest ? status.manifest.version : null;
+        show($("available-wrap"), Boolean(version));
+        if (version) $("available").textContent = version;
+
+        const kind = status.plan.kind;
+        const busy = status.downloading;
+
+        if (kind === "none") {
+          $("title").textContent = "Vantage is up to date";
+          $("body").textContent = "No desktop update is needed. The app itself updates whenever the page reloads.";
+        } else if (kind === "required") {
+          $("title").textContent = "Update required";
+          $("body").textContent =
+            "Vantage on the web no longer supports this desktop version, so the product will not work correctly in this window until it is updated.";
+        } else if (kind === "overdue") {
+          $("title").textContent = "Update ready to install";
+          $("body").textContent =
+            "A newer Vantage desktop release has been waiting more than two days. It will install on its own the next time you close the app.";
+        } else {
+          $("title").textContent = "Update available";
+          $("body").textContent =
+            "A newer Vantage desktop release is available. It will install quietly when you next close the app.";
+        }
+
+        const canInstall = kind !== "none" && !status.portable;
+        show($("install"), canInstall);
+        $("install").disabled = busy || !status.downloadReady;
+        $("install").textContent = busy
+          ? "Downloading…"
+          : status.downloadReady
+            ? "Update and restart"
+            : "Preparing…";
+
+        show($("download"), kind !== "none" && (status.portable || Boolean(status.lastError)));
+        show($("later"), kind === "optional" || kind === "overdue");
+
+        const notes = [];
+        if (status.portable) {
+          notes.push(
+            "This is the portable build — it has no installer to replace in place. Download the new portable .exe and swap the file.",
+          );
+        }
+        if (status.lastError) notes.push("Last attempt: " + status.lastError);
+        $("note").className = "note" + (status.lastError ? " warn" : "");
+        $("note").textContent = notes.join(" ");
+        show($("note"), notes.length > 0);
+      }
+
+      async function refresh(force) {
+        if (!api) return render(null);
+        render(await (force ? api.check() : api.status()));
+      }
+
+      if (api) {
+        api.onState(render);
+        $("install").addEventListener("click", async () => {
+          $("install").disabled = true;
+          const ok = await api.install();
+          if (!ok) await refresh(false);
+        });
+        $("download").addEventListener("click", () => api.openDownload());
+        $("later").addEventListener("click", async () => render(await api.defer()));
+        $("recheck").addEventListener("click", () => refresh(true));
+      }
+      void refresh(false);
+    </script>
+  </body>
+</html>

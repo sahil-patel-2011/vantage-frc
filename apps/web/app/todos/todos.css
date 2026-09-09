@@ -79,7 +79,7 @@
 }
 .todos-cross-tracker-list li .app-button {
   flex: none;
-  min-height: 38px;
+  min-height: var(--soft-control-h-sm);
 }
 .todos-unified-empty {
   margin: 0;

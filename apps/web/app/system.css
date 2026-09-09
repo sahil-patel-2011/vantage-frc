@@ -385,8 +385,16 @@ main.content:has(> h1:only-child) > h1 {
    pages a person moves between inside one session, so it is one shape. Real
    specificity, not :where(), because it has to outrank the twenty-four copies;
    it is last in the cascade, so it wins the tie. Colour and layout stay with
-   whichever sheet had a reason for them. */
-[class$="-next-actions"] li .app-button {
+   whichever sheet had a reason for them.
+
+   `*=`, not `$=`. A suffix match only fires when the `-next-actions` class is
+   written LAST in the attribute, and about nineteen call sites write it first
+   ("account-next-actions app-card soft-panel", "notif-next-actions app-card
+   soft-panel", "risks-next-actions app-card soft-panel", …). Those pages
+   silently fell through to their own per-sheet copy, so /account's row was
+   44px while /pit's identical row was 36px — the exact split this rule exists
+   to end. Verified in the browser: /pit matched, /account did not. */
+[class*="-next-actions"] li .app-button {
   flex: none;
   min-height: var(--soft-control-h-sm);
   padding: 0 12px;

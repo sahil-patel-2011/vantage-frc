@@ -101,7 +101,8 @@
   font-size:12px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;
 }
 .practice-logger .app-button.secondary,.practice-stopwatch .app-button.secondary{color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line)}
-.app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
+/* Scoped: page density, not a redefinition of the shared `.sm` size. */
+.practice-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
 .practice-breakdown h3{margin:0 0 8px;font-size:var(--soft-title-4)}
 .practice-breakdown ul{margin:0;padding:0;list-style:none;display:grid;gap:2px}
 .practice-breakdown li{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;padding:8px 0;border-top:1px solid var(--app-line);font-size:12px}

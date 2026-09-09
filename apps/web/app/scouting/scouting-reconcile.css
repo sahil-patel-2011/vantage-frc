@@ -55,9 +55,6 @@ html[data-theme="dark"] {
   flex-wrap: wrap;
   gap: 8px;
 }
-.recon-actions .app-button {
-  min-height: 44px;
-}
 
 .recon-list {
   display: grid;
