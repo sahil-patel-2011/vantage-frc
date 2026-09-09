@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
+import { auth, resolveAuthBaseURL } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
@@ -12,6 +12,17 @@ import {
   outstandingAcks,
   setPinned,
 } from "../../../lib/announcements/store";
+import {
+  describeAnnouncementEmail,
+  emailAnnouncement,
+  shouldEmailAnnouncement,
+  type AnnouncementEmailOutcome,
+} from "../../../lib/announcements/notify-email";
+
+// Posting an urgent announcement to a large team is one query plus a bounded
+// set of provider round trips; the default serverless budget is tighter than
+// that deserves.
+export const maxDuration = 60;
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -145,7 +156,21 @@ export async function POST(request: Request) {
             title,
             priority,
           });
-          return { ok: true, announcementId, notified };
+          // Email is decided here but SENT after this transaction commits —
+          // see the emailAnnouncement call below.
+          return {
+            ok: true,
+            announcementId,
+            notified,
+            pendingEmail: {
+              orgId,
+              orgName: membership.orgName,
+              title,
+              body: (body.body ?? "").trim().slice(0, 4000),
+              priority,
+              requireAck: body.requireAck ?? false,
+            },
+          };
         }
 
         case "acknowledge": {
@@ -169,6 +194,41 @@ export async function POST(request: Request) {
           throw new HttpError(400, "Unknown announcement action");
       }
     });
+
+    // The announcement, its acknowledgement flag and its inbox fan-out are all
+    // committed by now. Only then does mail go out: a send cannot be rolled
+    // back, so it must never happen for a row that might not survive.
+    if ("pendingEmail" in result && result.pendingEmail) {
+      const { pendingEmail: pending, ...posted } = result;
+      let outcome: AnnouncementEmailOutcome = { attempted: false, reason: "not_urgent" };
+      if (shouldEmailAnnouncement(pending)) {
+        try {
+          outcome = await withRls({ userId: session.user.id }, (client) =>
+            emailAnnouncement(client, {
+              ...pending,
+              authorId: session.user.id,
+              baseUrl: resolveAuthBaseURL(),
+            }),
+          );
+        } catch (error) {
+          // A mail failure must not un-post an announcement that is already
+          // live in every member's inbox. Report it instead of throwing.
+          outcome = {
+            attempted: true,
+            candidates: 0,
+            eligible: 0,
+            sent: 0,
+            failed: 0,
+            setupRequired: error instanceof Error ? error.message : "email delivery failed",
+          };
+        }
+      }
+      return Response.json({
+        ...posted,
+        emailed: outcome.attempted ? outcome.sent : 0,
+        emailSummary: describeAnnouncementEmail(outcome),
+      });
+    }
 
     return Response.json(result);
   } catch (error) {
