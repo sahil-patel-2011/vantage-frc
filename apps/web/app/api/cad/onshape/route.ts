@@ -6,6 +6,7 @@ import {
   onshapeSetupStatus,
   cadOsSupportMatrix,
 } from "@vantage/cad";
+import { createKms, encryptSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -51,10 +52,36 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { orgId?: string; action?: string };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
+
+    // Disconnect must keep working after the OAuth client is rotated away or
+    // unset: a member who can no longer reconnect is exactly the member who
+    // still needs to revoke the token Vantage is holding. So it runs before the
+    // config gate rather than behind it.
+    if (body.action === "disconnect") {
+      const removed = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        const member = await client.query(`SELECT 1 FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid`, [
+          orgId,
+          session.user.id,
+        ]);
+        if (!member.rowCount) throw new Error("Organization access denied");
+        // The stored envelope is overwritten, not just flagged — a status column
+        // alone would leave a live refresh token decryptable in the row.
+        const wiped = JSON.stringify(await encryptSecret(JSON.stringify({ revoked: true }), createKms()));
+        const result = await client.query(
+          `UPDATE cad_connections
+           SET status='disconnected', disabled_at=now(), encrypted_credentials=$3, updated_at=now()
+           WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape' AND disabled_at IS NULL`,
+          [orgId, session.user.id, wiped],
+        );
+        return result.rowCount ?? 0;
+      });
+      return Response.json({ success: true, removed });
+    }
+
     const config = getOnshapeOAuthConfig();
     if (!config) {
       return Response.json(
-        { error: "Onshape OAuth is not configured", ...onshapeSetupStatus() },
+        { error: onshapeSetupStatus().message, ...onshapeSetupStatus() },
         { status: 503 },
       );
     }

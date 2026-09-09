@@ -8,6 +8,7 @@ import {
 import {
   ONSHAPE_LOCAL_PLAYWRIGHT_HINT,
   ONSHAPE_OAUTH_CTA,
+  onshapeAccountLabel,
   onshapeHostedBadge,
   onshapeOauthCtaEnabled,
   withLocalPlaywrightHint,
@@ -49,9 +50,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [onshapeOauthReady, setOnshapeOauthReady] = useState(false);
   const [onshapeConnections, setOnshapeConnections] = useState<
-    Array<{ id: string; status: string; label: string }>
+    Array<{ id: string; status: string; label: string; externalAccountRef?: string | null }>
   >([]);
   const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
+  const [onshapeCallbackUrl, setOnshapeCallbackUrl] = useState("");
   const [osSupport, setOsSupport] = useState<OsRow[]>([]);
   const [busy, setBusy] = useState(false);
   const related = connectionsRelatedLinks(orgId, {
@@ -67,6 +69,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       const oauthReady = onshapeOauthCtaEnabled(d.onshape);
       setOnshapeOauthReady(oauthReady);
       setOnshapeConnections(d.onshapeConnections ?? []);
+      setOnshapeCallbackUrl(String(d.onshape?.callbackUrl ?? ""));
       setOnshapeSetupMessage(
         d.onshape?.setupRequired || !oauthReady
           ? withLocalPlaywrightHint(
@@ -112,6 +115,24 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         return;
       }
       window.location.href = data.url;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnectOnshape() {
+    if (!confirm("Disconnect Onshape? Vantage forgets the stored token and hosted CAD jobs stop until you reconnect."))
+      return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/cad/onshape", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "disconnect" }),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? "Onshape disconnected." : (data.error ?? "Could not disconnect Onshape"));
+      if (response.ok) await load();
     } finally {
       setBusy(false);
     }
@@ -185,12 +206,28 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           </div>
           {onshapeOauthReady ? (
             <>
-              <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
-                {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
-              </button>
+              <div className="cad-connection-actions">
+                <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
+                  {onshapeConnected ? ONSHAPE_OAUTH_CTA.reconnect : ONSHAPE_OAUTH_CTA.connect}
+                </button>
+                {onshapeConnected ? (
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    disabled={busy}
+                    onClick={() => void disconnectOnshape()}
+                  >
+                    Disconnect
+                  </button>
+                ) : null}
+              </div>
               <small className="app-muted">
                 {onshapeConnected
-                  ? `Connected (${onshapeConnections[0]?.label ?? "Onshape"}). Pick document refs in CAD Builder.`
+                  ? `Connected as ${
+                      onshapeAccountLabel(onshapeConnections[0]?.externalAccountRef) ??
+                      onshapeConnections[0]?.label ??
+                      "Onshape"
+                    }. Pick document refs in CAD Builder.`
                   : "OAuth client configured — click to authorize."}
               </small>
             </>
@@ -200,6 +237,12 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                 {ONSHAPE_OAUTH_CTA.connect}
               </button>
               <small className="app-muted">{ONSHAPE_OAUTH_CTA.disabledDetail}</small>
+              {onshapeCallbackUrl ? (
+                <small className="app-muted">
+                  Register this exact callback URL on the Onshape OAuth application (dev-portal.onshape.com):{" "}
+                  <code>{onshapeCallbackUrl}</code>
+                </small>
+              ) : null}
             </>
           )}
         </article>

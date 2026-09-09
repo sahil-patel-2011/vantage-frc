@@ -59,13 +59,35 @@ export function isOnshapeOAuthConfigured(env: NodeJS.ProcessEnv = process.env): 
   return Boolean(env.ONSHAPE_OAUTH_CLIENT_ID?.trim() && env.ONSHAPE_OAUTH_CLIENT_SECRET?.trim());
 }
 
+/**
+ * The callback URL an admin must register in the Onshape developer portal.
+ *
+ * Deliberately computed WITHOUT the client id/secret: an admin who has not set
+ * them yet is exactly the person who needs to know which URL to paste into the
+ * OAuth application before they can produce those credentials. `redirectUri` on
+ * the config stays null-when-unconfigured, because a live `redirectUri` is what
+ * the Connect button treats as "OAuth is usable".
+ */
+export function onshapeCallbackUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const explicit = env.ONSHAPE_OAUTH_REDIRECT_URI?.trim();
+  if (explicit) return explicit;
+  const base = (env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").replace(/\/$/, "");
+  return `${base}/api/cad/onshape/oauth/callback`;
+}
+
+export function onshapeMissingEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  const missing: string[] = [];
+  if (!env.ONSHAPE_OAUTH_CLIENT_ID?.trim()) missing.push("ONSHAPE_OAUTH_CLIENT_ID");
+  if (!env.ONSHAPE_OAUTH_CLIENT_SECRET?.trim()) missing.push("ONSHAPE_OAUTH_CLIENT_SECRET");
+  return missing;
+}
+
 export function getOnshapeOAuthConfig(env: NodeJS.ProcessEnv = process.env): OnshapeOAuthConfig | null {
   if (!isOnshapeOAuthConfigured(env)) return null;
-  const base = (env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").replace(/\/$/, "");
   return {
     clientId: env.ONSHAPE_OAUTH_CLIENT_ID!.trim(),
     clientSecret: env.ONSHAPE_OAUTH_CLIENT_SECRET!.trim(),
-    redirectUri: (env.ONSHAPE_OAUTH_REDIRECT_URI?.trim() || `${base}/api/cad/onshape/oauth/callback`),
+    redirectUri: onshapeCallbackUrl(env),
     scopes: (env.ONSHAPE_OAUTH_SCOPES?.trim() || ONSHAPE_DEFAULT_SCOPES.join(" ")).split(/\s+/).filter(Boolean),
   };
 }
@@ -73,14 +95,19 @@ export function getOnshapeOAuthConfig(env: NodeJS.ProcessEnv = process.env): Ons
 export function onshapeSetupStatus(env: NodeJS.ProcessEnv = process.env) {
   const configured = isOnshapeOAuthConfigured(env);
   const config = configured ? getOnshapeOAuthConfig(env) : null;
+  const callbackUrl = onshapeCallbackUrl(env);
+  const missingEnv = onshapeMissingEnv(env);
   return {
     configured,
     setupRequired: !configured,
     redirectUri: config?.redirectUri ?? null,
+    /** Always present — the URL to register even before the client exists. */
+    callbackUrl,
+    missingEnv,
     scopes: config?.scopes ?? [...ONSHAPE_DEFAULT_SCOPES],
     message: configured
-      ? "Onshape OAuth client is configured. Users can connect in CAD Connections."
-      : "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET (and optional ONSHAPE_OAUTH_REDIRECT_URI).",
+      ? `Onshape OAuth client is configured. Users can connect in CAD Connections. Registered callback URL: ${callbackUrl}`
+      : `Setup required — set ${missingEnv.join(" and ")} in your deployment environment (Vercel → Project → Settings → Environment Variables), then redeploy. Register this exact callback URL on the Onshape OAuth application (dev-portal.onshape.com → OAuth applications): ${callbackUrl}`,
   };
 }
 
@@ -194,6 +221,39 @@ export function createOnshapeHttp(accessToken: string, apiBase = ONSHAPE_API_BAS
         ...init.headers,
       },
     });
+}
+
+export type OnshapeSessionInfo = { id: string; name: string | null; email: string | null };
+
+/**
+ * Who the freshly minted token belongs to, so Connections can say "Connected as
+ * jane@team.org" instead of echoing the Vantage user id back at the student.
+ *
+ * Returns null rather than throwing: a connection whose account lookup 404s or
+ * rate-limits is still a working connection, and failing the OAuth callback over
+ * a cosmetic label would be worse than an unlabelled row.
+ */
+export async function fetchOnshapeSessionInfo(http: OnshapeHttp): Promise<OnshapeSessionInfo | null> {
+  try {
+    const response = await http("/users/sessioninfo");
+    if (!response.ok) return null;
+    const data = (await response.json()) as Record<string, unknown>;
+    const id = data.id ? String(data.id) : "";
+    if (!id) return null;
+    return {
+      id,
+      name: data.name ? String(data.name) : null,
+      email: data.email ? String(data.email) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** `onshape:<email|name|id>` — the value stored in cad_connections.external_account_ref. */
+export function onshapeAccountRef(info: OnshapeSessionInfo | null, fallbackUserId: string): string {
+  const label = info?.email?.trim() || info?.name?.trim() || info?.id?.trim();
+  return `onshape:${label || fallbackUserId}`;
 }
 
 export async function listOnshapeDocuments(http: OnshapeHttp, limit = 20) {

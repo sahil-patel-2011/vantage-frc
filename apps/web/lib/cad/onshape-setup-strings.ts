@@ -66,10 +66,10 @@ export type HostedOnshapeFlags = {
 };
 
 export const MISSING_ENV_MESSAGE =
-  "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on the server. Server API keys are CLI last-resort only and do not connect hosted CAD.";
+  "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET as deployment environment variables (Vercel → Project → Settings → Environment Variables), then redeploy. The callback URL to register on the Onshape OAuth application is shown on CAD Connections. Server API keys are CLI last-resort only and do not connect hosted CAD.";
 
 export const MISSING_SESSION_MESSAGE =
-  "Setup required — connect Onshape OAuth in CAD Connections before hosted CAD can edit a Part Studio.";
+  "Setup required — connect Onshape OAuth in CAD Connections (/cad/connections) before hosted CAD can edit a Part Studio.";
 
 export const OAUTH_READY_MESSAGE =
   "Onshape OAuth client is configured. Users can connect in CAD Connections. Hosted calls spend the annual API allowance.";
@@ -127,6 +127,21 @@ export function onshapeOauthCtaEnabled(onshape: {
   if (!onshape) return false;
   if (typeof onshape.redirectUri === "string" && onshape.redirectUri.trim()) return true;
   return Boolean(onshape.configured && Array.isArray(onshape.scopes) && onshape.scopes.length > 0);
+}
+
+/**
+ * "jane@team.org" out of the `onshape:jane@team.org` stored in
+ * cad_connections.external_account_ref, so a card can say who it is connected as.
+ *
+ * Older rows stored `onshape:<vantage user uuid>`, which names nobody a student
+ * recognises — those are reported as unlabelled rather than shown raw.
+ */
+export function onshapeAccountLabel(ref: string | null | undefined): string | null {
+  if (!ref) return null;
+  const value = (ref.startsWith("onshape:") ? ref.slice("onshape:".length) : ref).trim();
+  if (!value) return null;
+  const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return looksLikeUuid ? null : value;
 }
 
 export function withLocalPlaywrightHint(message: string): string {
