@@ -325,6 +325,11 @@ const STANDALONE: CommandEntry[] = [
   { id: "packing", label: "Packing list", context: "Logistics", href: "/packing", kind: "destination", keywords: ["packing", "load out", "trailer", "what to bring", "cart"] },
   { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
   { id: "visit-invites", label: "Visit invites", context: "Logistics", href: "/visit-invites", kind: "destination", keywords: ["visit", "tour", "demo day", "rsvp"] },
+  // Forms is a standalone destination rather than a pillar leaf: the drawer
+  // keeps one link per pillar, and a second Team leaf breaks that invariant.
+  // Keywords carry the jobs people actually search for — "google form",
+  // "sign up sheet", "permission slip" — because nobody types "forms engine".
+  { id: "forms", label: "Forms", context: "Team", href: "/forms", kind: "destination", keywords: ["form", "forms", "survey", "google form", "microsoft forms", "sign up", "sign up sheet", "intake", "new members", "tryout", "dues", "permission slip", "questionnaire", "poll", "responses"], featured: true },
   { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },
   { id: "appearance", label: "Appearance & theme", context: "Settings", href: "/account?tab=appearance", kind: "destination", keywords: ["theme", "dark mode", "light mode", "appearance", "colors"] },
   { id: "notifications", label: "Notifications", context: "Settings", href: "/notifications", kind: "destination", keywords: ["notifications", "alerts", "inbox", "unread"] },

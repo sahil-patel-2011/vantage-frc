@@ -1,0 +1,422 @@
+/*
+ * Team Forms.
+ *
+ * Tokens only (--soft-*), so light and dark both come from the theme block in
+ * soft-ui.css rather than being restated here. No hard-coded ink or paper.
+ */
+
+.forms-page {
+  display: grid;
+  gap: 16px;
+}
+
+/* ---------- list ---------- */
+
+.forms-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forms-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  text-decoration: none;
+}
+
+.forms-list-row:hover {
+  border-color: var(--soft-accent);
+}
+
+.forms-list-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.forms-list-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forms-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  color: var(--soft-muted);
+}
+
+/* ---------- start a form ---------- */
+
+.forms-title-field {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 16px;
+}
+
+.forms-title-field span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forms-purpose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.forms-purpose {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.forms-purpose:hover:not(:disabled) {
+  border-color: var(--soft-accent);
+}
+
+.forms-purpose:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.forms-purpose small {
+  color: var(--soft-muted);
+  line-height: 1.45;
+}
+
+.forms-hint,
+.forms-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.forms-error {
+  color: var(--soft-danger, #b42318);
+}
+
+/* ---------- status ---------- */
+
+.forms-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.forms-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.forms-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 13px;
+  /* A share URL must be selectable in full and must not push the panel wide. */
+  overflow-wrap: anywhere;
+}
+
+.forms-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- builder ---------- */
+
+.forms-questions {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 18px;
+  padding: 0;
+  list-style: none;
+  counter-reset: forms-question;
+}
+
+.forms-questions > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+
+.forms-question-main {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.forms-question-label {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--soft-ink);
+  font: inherit;
+  font-weight: 600;
+}
+
+.forms-question-label:hover,
+.forms-question-label:focus {
+  border-color: var(--soft-line);
+  background: var(--soft-bg);
+}
+
+.forms-question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.forms-required {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.forms-add {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.forms-add label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.forms-add span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- answering ---------- */
+
+.forms-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.forms-field > label {
+  font-weight: 600;
+}
+
+.forms-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.forms-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+}
+
+/* ---------- results ---------- */
+
+.forms-insight-panel h2 {
+  margin: 0 0 6px;
+}
+
+.forms-provisional {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-accent);
+  background: var(--soft-bg);
+  font-size: 13px;
+  color: var(--soft-muted);
+}
+
+.forms-result {
+  padding: 16px 0;
+  border-top: 1px solid var(--soft-line);
+}
+
+.forms-result:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.forms-result header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.forms-result h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.forms-bars {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forms-bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 22%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.forms-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forms-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--soft-bg);
+  overflow: hidden;
+}
+
+.forms-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--soft-accent);
+}
+
+/* An option nobody picked keeps its row so the gap is visible, but must not
+   read as a bar of length zero that looks like a rendering fault. */
+.forms-bar-fill.empty {
+  background: transparent;
+}
+
+.forms-bar-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.forms-bar-value small {
+  color: var(--soft-muted);
+}
+
+.forms-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.forms-stats div {
+  padding: 8px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+}
+
+.forms-stats dt {
+  font-size: 12px;
+  color: var(--soft-muted);
+}
+
+.forms-stats dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.forms-text-answers {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forms-text-answers li {
+  padding: 8px 10px;
+  border-left: 3px solid var(--soft-line);
+  background: var(--soft-bg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forms-reading {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forms-reading-muted {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .forms-add {
+    grid-template-columns: 1fr;
+  }
+
+  .forms-bar-row {
+    grid-template-columns: minmax(70px, 34%) 1fr auto;
+  }
+
+  .forms-list-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

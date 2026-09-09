@@ -1,0 +1,195 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../components/ui";
+import { PURPOSE_LABELS, type FormPurpose, type FormSummary } from "../../lib/forms/types";
+
+type View = {
+  status: "ready";
+  orgId: string;
+  orgName: string;
+  canManage: boolean;
+  forms: FormSummary[];
+};
+
+/**
+ * The purposes offered when starting a form.
+ *
+ * Ordered by how often an FRC team actually needs one across a season rather
+ * than alphabetically, so the common case is the first thing in reach.
+ */
+const START_OPTIONS: Array<{ purpose: FormPurpose; blurb: string }> = [
+  { purpose: "intake", blurb: "Collect new students, their guardians, and which subteams they want." },
+  { purpose: "tryout", blurb: "Score driver and operator candidates on the same questions." },
+  { purpose: "mentor", blurb: "Sign up mentors and track youth-protection status." },
+  { purpose: "dues", blurb: "Track who has paid and who needs a quiet conversation." },
+  { purpose: "travel", blurb: "Headcount, emergency contacts, dietary and medical needs." },
+  { purpose: "safety", blurb: "Shop training and safety-glasses check before anyone builds." },
+  { purpose: "feedback", blurb: "Weekly retro from the whole team in two minutes." },
+  { purpose: "general", blurb: "Start from a blank form." },
+];
+
+function statusTone(status: FormSummary["status"]): BadgeTone {
+  if (status === "open") return "good";
+  if (status === "closed") return "neutral";
+  return "setup";
+}
+
+export default function FormsClient() {
+  const [view, setView] = useState<View | null>(null);
+  const [error, setError] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState<FormPurpose | null>(null);
+  const [title, setTitle] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const response = await fetch("/api/forms");
+      const data = (await response.json()) as View & { error?: string };
+      if (!response.ok) {
+        setError(data.error ?? "Could not load forms.");
+        return;
+      }
+      setView(data);
+      setError("");
+    } catch {
+      setError("Could not reach the server.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function create(purpose: FormPurpose) {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/forms", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "create_form",
+          title: trimmed,
+          purpose,
+          // A blank form starts blank; every other purpose starts from the
+          // questions a team would have written anyway.
+          useStarter: purpose !== "general",
+        }),
+      });
+      const data = (await response.json()) as { formId?: string; error?: string };
+      if (!response.ok || !data.formId) {
+        setError(data.error ?? "Could not create the form.");
+        return;
+      }
+      window.location.href = `/forms/${data.formId}`;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error && !view) {
+    return (
+      <main className="module-page forms-page">
+        <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team workspace" description={error}>
+          <a className="app-button" href="/workspace">Choose team</a>
+        </EmptyState>
+      </main>
+    );
+  }
+
+  if (!view) {
+    return (
+      <main className="module-page forms-page">
+        <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
+        <Panel><p className="app-muted">Loading forms…</p></Panel>
+      </main>
+    );
+  }
+
+  return (
+    <main className="module-page forms-page">
+      <PageHeader
+        breadcrumbs="Team / Forms"
+        title="Forms"
+        description={`Ask ${view.orgName} something — intake, tryouts, dues, travel, safety, feedback — and read what the answers mean.`}
+      />
+
+      {view.forms.length === 0 ? (
+        <EmptyState
+          soft
+          badge="No forms yet"
+          badgeTone="setup"
+          title="Start with what your season needs next"
+          description="Pick a purpose and Vantage writes the questions a team would normally write by hand. You can change every one of them."
+        />
+      ) : (
+        <Panel className="forms-list-panel">
+          <h2>Your forms</h2>
+          <ul className="forms-list">
+            {view.forms.map((form) => (
+              <li key={form.id}>
+                <a className="forms-list-row" href={`/forms/${form.id}`}>
+                  <span className="forms-list-main">
+                    <strong>{form.title}</strong>
+                    <small className="app-muted">
+                      {PURPOSE_LABELS[form.purpose]} · {form.questionCount}{" "}
+                      {form.questionCount === 1 ? "question" : "questions"}
+                    </small>
+                  </span>
+                  <span className="forms-list-meta">
+                    <Badge tone={statusTone(form.status)}>{form.status}</Badge>
+                    <small>
+                      {form.responseCount} {form.responseCount === 1 ? "response" : "responses"}
+                      {form.assignedCount > 0 ? ` of ${form.assignedCount} assigned` : ""}
+                    </small>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
+      {view.canManage ? (
+        <Panel className="forms-start-panel">
+          <h2>Start a form</h2>
+          <label className="forms-title-field">
+            <span>What are you asking?</span>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="2027 New Member Intake"
+              maxLength={160}
+              autoComplete="off"
+            />
+          </label>
+          <div className="forms-purpose-grid">
+            {START_OPTIONS.map((option) => (
+              <button
+                key={option.purpose}
+                type="button"
+                className={`forms-purpose${starting === option.purpose ? " selected" : ""}`}
+                aria-pressed={starting === option.purpose}
+                disabled={busy || !title.trim()}
+                onClick={() => {
+                  setStarting(option.purpose);
+                  void create(option.purpose);
+                }}
+              >
+                <strong>{PURPOSE_LABELS[option.purpose]}</strong>
+                <small>{option.blurb}</small>
+              </button>
+            ))}
+          </div>
+          {!title.trim() ? (
+            <p className="app-muted forms-hint">Give the form a name first, then pick what it is for.</p>
+          ) : null}
+          {error ? <p role="alert" className="forms-error">{error}</p> : null}
+        </Panel>
+      ) : null}
+    </main>
+  );
+}
