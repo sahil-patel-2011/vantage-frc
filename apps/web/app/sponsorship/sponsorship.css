@@ -36,9 +36,9 @@
   min-height: 44px;
   padding: 12px 14px;
   text-align: left;
-  border: 1px solid var(--soft-line, #d5dde8);
+  border: 1px solid var(--soft-line);
   border-radius: var(--soft-radius, 14px);
-  background: var(--soft-card, #fff);
+  background: var(--soft-card);
   box-shadow: var(--soft-shadow, 0 4px 14px rgba(28, 36, 48, 0.06));
   color: inherit;
   font: inherit;
@@ -46,12 +46,12 @@
 }
 
 .svp-list-item:hover {
-  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 35%, var(--soft-line, #d5dde8));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
 }
 
 .svp-list-item.active {
-  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 55%, var(--soft-line, #d5dde8));
-  background: color-mix(in srgb, var(--soft-accent-soft, #e8eefc) 55%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, var(--soft-accent) 55%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent-soft) 55%, var(--soft-card));
 }
 
 .svp-list-item strong {
@@ -60,7 +60,7 @@
 }
 
 .svp-list-item span {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
 }
 
@@ -69,10 +69,10 @@
   align-items: center;
   min-height: 22px;
   padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #eef2f7);
-  color: var(--soft-muted, #6b7280);
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-muted);
   font: 700 10px var(--font-source-sans), ui-sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -106,7 +106,7 @@
   display: grid;
   gap: 6px;
   font: 700 12px var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
 }
 
 .svp-form input,
@@ -114,10 +114,10 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  border-radius: 12px;
-  background: var(--soft-card, #fff);
-  color: var(--soft-ink, #0f172a);
+  border: 1px solid var(--soft-line);
+  border-radius:var(--soft-radius-sm);
+  background: var(--soft-card);
+  color: var(--soft-ink);
   font: 500 14px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -132,7 +132,7 @@
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  color: var(--soft-ink, #0f172a);
+  color: var(--soft-ink);
   font-weight: 600;
 }
 
@@ -158,12 +158,12 @@
   gap: 12px;
   padding: 18px 20px;
   border-radius: var(--soft-radius, 14px);
-  border: 1px solid var(--soft-line, #d5dde8);
+  border: 1px solid var(--soft-line);
   /* Tinted head fading into the card colour — token-only so dark mode stays dark. */
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--soft-accent-soft, var(--app-accent)) 40%, var(--soft-card)),
+      color-mix(in srgb, var(--soft-accent-soft) 40%, var(--soft-card)),
       var(--soft-card) 42%
     ),
     var(--soft-card);
@@ -175,17 +175,17 @@
   display: grid;
   gap: 4px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--soft-line, #d5dde8);
+  border-bottom: 1px solid var(--soft-line);
 }
 
 .svp-preview header strong {
   font-size: 18px;
   letter-spacing: -0.02em;
-  color: var(--soft-ink, #0f172a);
+  color: var(--soft-ink);
 }
 
 .svp-preview header span {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
 }
 
@@ -196,17 +196,17 @@
 
 .svp-preview h3 {
   margin: 0;
-  font: 800 11px var(--font-source-sans), ui-sans-serif;
+  font:800 var(--soft-text-xs) var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--soft-accent, #2563eb);
+  color: var(--soft-accent);
 }
 
 .svp-preview p {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.5;
-  color: var(--soft-ink, #0f172a);
+  color: var(--soft-ink);
   font-size: 14px;
 }
 
@@ -215,7 +215,7 @@
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  color: var(--soft-ink, #0f172a);
+  color: var(--soft-ink);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -231,10 +231,10 @@
   align-items: center;
   min-height: 26px;
   padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: var(--soft-bg, #eef2f7);
-  color: var(--soft-muted, #6b7280);
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-muted);
   font: 700 11px var(--font-source-sans), ui-sans-serif;
   font-style: normal;
 }
@@ -247,7 +247,7 @@
 
 .svp-note {
   margin: 0;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.4;
 }

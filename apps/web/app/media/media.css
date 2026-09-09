@@ -18,7 +18,7 @@
 .media-form label{display:grid;gap:4px;font-size:.9rem}
 .media-form input,.media-form select,.media-form textarea{
   width:100%;padding:8px 10px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);
-  border-radius:8px;background:transparent;color:inherit;font:inherit
+  border-radius:var(--soft-radius-xs);background:transparent;color:inherit;font:inherit
 }
 .media-form-actions{display:flex;flex-wrap:wrap;gap:8px}
 .media-kit-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

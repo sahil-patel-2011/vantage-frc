@@ -10,7 +10,7 @@
 .prt-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .prt-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .prt-tip{margin:0}
-.prt-reinspect{margin:0;padding:10px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--app-warning) 40%,var(--app-line));background:color-mix(in srgb,var(--app-warning) 12%,var(--app-surface));color:var(--app-warning);font-size:12px;font-weight:600;line-height:1.4}
+.prt-reinspect{margin:0;padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid color-mix(in srgb,var(--app-warning) 40%,var(--app-line));background:color-mix(in srgb,var(--app-warning) 12%,var(--app-surface));color:var(--app-warning);font-size:12px;font-weight:600;line-height:1.4}
 .prt-report-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .prt-report-card{display:grid;gap:6px}
 .prt-report-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}

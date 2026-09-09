@@ -5,6 +5,8 @@ import "./marketing.css";
 import "./marketing-v3.css";
 import "./soft-ui.css";
 import "./styles.css";
+// Last on purpose: system.css is the shared default layer (see its header).
+import "./system.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
 import { ConsentBanner } from "../components/consent-banner";
@@ -30,9 +32,11 @@ const ibmMono = IBM_Plex_Mono({
 export const metadata: Metadata = rootMarketingMetadata();
 
 export const viewport: Viewport = {
+  // Matches --soft-bg in both themes, so the OS browser chrome does not paint a
+  // different shade than the page behind it.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1014" },
+    { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1118" },
   ],
 };
 

@@ -10,8 +10,8 @@
   --mk-tone-overdue: #b42318;
   --mk-tone-due: #b54708;
   --mk-tone-done: #067647;
-  --mk-tone-info: var(--soft-accent, #1457d9);
-  --mk-tone-neutral: var(--soft-muted, #5a6578);
+  --mk-tone-info: var(--soft-accent);
+  --mk-tone-neutral: var(--soft-muted);
 }
 
 html[data-theme="dark"] .mk-page {
@@ -34,7 +34,7 @@ html[data-theme="dark"] .mk-page {
 
 .mk-tonight {
   box-shadow: var(--soft-shadow-lift, 0 8px 24px rgba(15, 23, 42, 0.1));
-  border-color: var(--soft-accent, #1457d9);
+  border-color: var(--soft-accent);
 }
 
 .mk-identity-chips {
@@ -82,7 +82,7 @@ html[data-theme="dark"] .mk-page {
 
 .mk-section.emphasis {
   box-shadow: var(--soft-shadow-lift, 0 8px 24px rgba(15, 23, 42, 0.1));
-  border-color: var(--soft-accent, #1457d9);
+  border-color: var(--soft-accent);
 }
 
 .mk-section-head {
@@ -95,13 +95,13 @@ html[data-theme="dark"] .mk-page {
 
 .mk-section-head h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size:var(--soft-title-3);
 }
 
 .mk-reason {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--soft-muted, #5a6578);
+  color: var(--soft-muted);
 }
 
 .mk-rows {
@@ -121,19 +121,19 @@ html[data-theme="dark"] .mk-page {
   min-height: 44px;
   padding: 10px 12px;
   border-radius: var(--soft-radius-sm, 12px);
-  border: 1px solid var(--soft-line, #e2e8f0);
-  background: var(--soft-card, #fff);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
   color: inherit;
   text-decoration: none;
 }
 
 .mk-row:hover,
 .mk-row:focus-visible {
-  border-color: var(--soft-accent, #1457d9);
+  border-color: var(--soft-accent);
 }
 
 .mk-row:focus-visible {
-  outline: 2px solid var(--soft-ring, #1457d9);
+  outline: 2px solid var(--soft-ring, var(--soft-accent));
   outline-offset: 2px;
 }
 
@@ -150,7 +150,7 @@ html[data-theme="dark"] .mk-page {
 
 .mk-row-detail {
   font-size: 0.85rem;
-  color: var(--soft-muted, #5a6578);
+  color: var(--soft-muted);
   overflow-wrap: anywhere;
 }
 
@@ -185,7 +185,7 @@ html[data-theme="dark"] .mk-page {
 .mk-empty {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--soft-muted, #5a6578);
+  color: var(--soft-muted);
 }
 
 .mk-section-footer {

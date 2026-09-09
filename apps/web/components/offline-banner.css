@@ -3,10 +3,10 @@
   gap: 4px;
   margin: 0 0 16px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--soft-accent, #0f766e) 35%, var(--soft-line, #d5ddd9));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--soft-accent, #0f766e) 10%, var(--soft-card, #fff));
-  color: var(--soft-ink, #14201c);
+  border: 1px solid color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  border-radius:var(--soft-radius-sm);
+  background: color-mix(in srgb, var(--soft-accent) 10%, var(--soft-card));
+  color: var(--soft-ink);
   font: 600 14px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
   box-shadow: 0 1px 0 color-mix(in srgb, #000 4%, transparent);
 }
@@ -16,24 +16,24 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--soft-ink, #14201c);
+  color: var(--soft-ink);
 }
 
 .offline-banner span {
-  color: var(--soft-muted, #5b6b66);
+  color: var(--soft-muted);
   font-weight: 500;
 }
 
 .offline-banner--offline {
-  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 35%, var(--soft-line, #d5ddd9));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
 }
 
 .offline-banner--syncing {
-  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 45%, var(--soft-line, #d5ddd9));
-  background: color-mix(in srgb, var(--soft-accent, #0f766e) 14%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent) 14%, var(--soft-card));
 }
 
 .offline-banner--degraded {
-  border-color: color-mix(in srgb, #b45309 40%, var(--soft-line, #d5ddd9));
-  background: color-mix(in srgb, #b45309 12%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, #b45309 40%, var(--soft-line));
+  background: color-mix(in srgb, #b45309 12%, var(--soft-card));
 }

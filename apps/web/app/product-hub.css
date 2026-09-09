@@ -5,7 +5,7 @@
 .product-hub .product-hub-tabs.soft-tab-bar {
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--soft-line, var(--app-line));
+  border-bottom: 1px solid var(--soft-line);
   border-radius: 0;
   padding: 0;
   gap: 2px 4px;
@@ -43,28 +43,40 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+/* One chip, whether the tool switches in place (<button>) or lives on its own
+   route (<a>). Without the flex box and `text-decoration:none` the link chips
+   rendered underlined and sat a few pixels higher than the button chips, so a
+   single row read as two different controls. */
 .hub-tool-chip {
-  min-height: 34px;
-  padding: 6px 12px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  border-radius: 999px;
-  background: var(--soft-card, var(--app-surface));
-  color: var(--soft-muted, var(--app-muted));
-  font: 600 13px/1.2 var(--font-source-sans), ui-sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--soft-control-h-sm);
+  padding: 0 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-pill);
+  background: var(--soft-card);
+  color: var(--soft-muted);
+  font: 600 var(--soft-text-sm)/1 var(--soft-font);
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
 }
 .hub-tool-chip:hover {
-  color: var(--soft-ink, var(--app-ink));
-  border-color: var(--soft-accent, var(--app-accent));
+  color: var(--soft-ink);
+  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
 }
 .hub-tool-chip.is-active {
-  background: var(--soft-accent-soft, var(--app-soft));
-  border-color: var(--soft-accent, var(--app-accent));
-  color: var(--soft-accent, var(--app-accent));
+  background: var(--soft-accent-soft);
+  border-color: color-mix(in srgb, var(--soft-accent) 55%, transparent);
+  color: var(--soft-accent);
   font-weight: 700;
 }
+/* Same shape as its siblings — a dashed chip read as a disabled/placeholder
+   control rather than "there are more tools". The muted fill carries it. */
 .hub-tool-more {
-  border-style: dashed;
+  background: var(--soft-surface-2);
+  color: var(--soft-muted);
 }
 /* The overflow is a named block with its own scroll, not twenty more chips
    shoved into the row above the page's content. */
@@ -74,13 +86,13 @@
   overscroll-behavior: contain;
   margin: 8px 0 0;
   padding: 10px 12px 12px;
-  border: 1px solid var(--soft-line, var(--app-line));
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--soft-card, var(--app-surface)) 60%, transparent);
+  border: 1px solid var(--soft-line);
+  border-radius:var(--soft-radius-sm);
+  background: color-mix(in srgb, var(--soft-card) 60%, transparent);
 }
 .hub-tool-overflow-head {
   margin: 0 0 8px;
-  color: var(--soft-muted, var(--app-muted));
+  color: var(--soft-muted);
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -89,8 +101,8 @@
    compact row keeps more tools on screen on a shop laptop. */
 @media (pointer: coarse) {
   .hub-tool-chip {
-    min-height: 44px;
-    padding: 10px 14px;
+    min-height: var(--soft-control-h);
+    padding: 0 16px;
   }
   .hub-tool-strip-row {
     gap: 8px;
@@ -192,7 +204,7 @@
   display: none !important;
 }
 .product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
-.product-hub-setup h2 { margin: 0; font-size: 1.25rem; }
+.product-hub-setup h2 { margin: 0; font-size:var(--soft-title-2); }
 .product-hub-finance { display: grid; gap: 14px; max-width: 52rem; }
 .product-hub-finance .state-control {
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
@@ -201,6 +213,9 @@
 .product-hub-finance .state-control small { display: block; margin-top: 4px; color: var(--soft-muted); }
 
 /* Shared Soft-UI related-tool strips inside hub panels */
+/* Cross-links read as the same chip family as the tool strip and the settings
+   bar, so a page carrying two strips looks like one system with two rows —
+   not two components arguing about what a "link to elsewhere" looks like. */
 .product-hub-related {
   display: flex;
   flex-wrap: wrap;
@@ -208,9 +223,12 @@
   margin: 0 0 16px;
 }
 .product-hub-related .app-button {
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 12px;
+  min-height: var(--soft-control-h-sm);
+  padding: 0 14px;
+  border-radius: var(--soft-radius-pill);
+  font-size: var(--soft-text-sm);
+  font-weight: 600;
+  color: var(--soft-muted);
 }
 
 /* Nested Team surfaces: drop page chrome padding / duplicate heroes */

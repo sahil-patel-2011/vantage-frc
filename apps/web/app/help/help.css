@@ -12,15 +12,15 @@
 .help-search input {
   width: 100%;
   padding: 0.75rem 0.9rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--soft-line, rgba(30, 40, 60, 0.16));
-  background: color-mix(in srgb, var(--soft-panel, #fff) 92%, #e8eefc);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-panel) 92%, #e8eefc);
   font: 500 0.95rem/1.4 var(--font-source-sans, ui-sans-serif, system-ui);
   color: inherit;
 }
 
 .help-search input:focus {
-  outline: 2px solid color-mix(in srgb, #1457d9 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--soft-accent) 55%, transparent);
   outline-offset: 1px;
 }
 
@@ -38,9 +38,9 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.9rem 1rem;
-  border-radius: 0.85rem;
-  border: 1px solid var(--soft-line, rgba(30, 40, 60, 0.14));
-  background: var(--soft-panel, #fff);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-panel);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -48,8 +48,8 @@
 
 .help-article-card:hover,
 .help-article-card:focus-visible {
-  border-color: color-mix(in srgb, #1457d9 45%, var(--soft-line, #ccd));
-  box-shadow: 0 1px 0 color-mix(in srgb, #1457d9 12%, transparent);
+  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--soft-accent) 12%, transparent);
 }
 
 .help-article-card strong {
@@ -57,7 +57,7 @@
 }
 
 .help-article-card span:last-child {
-  color: var(--app-muted, #5c6578);
+  color: var(--app-muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -88,9 +88,9 @@
   gap: 0.4rem;
   min-height: 44px;
   padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--soft-line, rgba(30, 40, 60, 0.16));
-  background: var(--soft-panel, #fff);
+  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--soft-line);
+  background: var(--soft-panel);
   color: inherit;
   font: 600 0.85rem/1.2 var(--font-source-sans, ui-sans-serif, system-ui);
   cursor: pointer;
@@ -102,25 +102,25 @@
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--soft-accent, #1457d9) 12%, transparent);
-  color: var(--soft-accent, #1457d9);
+  border-radius:var(--soft-radius-pill);
+  background: color-mix(in srgb, var(--soft-accent) 12%, transparent);
+  color: var(--soft-accent);
 }
 
 .help-cat-chip:hover,
 .help-cat-chip:focus-visible {
-  border-color: color-mix(in srgb, var(--soft-accent, #1457d9) 45%, var(--soft-line, #ccd));
+  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
 }
 
 .help-cat-chip:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--soft-accent, #1457d9) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--soft-accent) 55%, transparent);
   outline-offset: 1px;
 }
 
 .help-cat-chip[aria-pressed="true"] {
-  border-color: var(--soft-accent, #1457d9);
-  background: color-mix(in srgb, var(--soft-accent, #1457d9) 10%, var(--soft-panel, #fff));
-  color: var(--soft-accent, #1457d9);
+  border-color: var(--soft-accent);
+  background: color-mix(in srgb, var(--soft-accent) 10%, var(--soft-panel));
+  color: var(--soft-accent);
 }
 
 /* Category groups on the index. */
@@ -136,7 +136,7 @@
 
 .help-group h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size:var(--soft-title-3);
 }
 
 .help-group header p {
@@ -153,9 +153,9 @@
   gap: 0.75rem 1rem;
   margin-top: 1.5rem;
   padding: 0.9rem 1rem;
-  border-radius: 0.85rem;
-  border: 1px dashed color-mix(in srgb, var(--soft-accent, #1457d9) 35%, var(--soft-line, #ccd));
-  background: color-mix(in srgb, var(--soft-accent, #1457d9) 5%, var(--soft-panel, #fff));
+  border-radius:var(--soft-radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent) 5%, var(--soft-panel));
 }
 
 .help-crosslink p {
@@ -184,7 +184,7 @@
 
 .help-section h2 {
   margin: 0 0 0.4rem;
-  font-size: 1.05rem;
+  font-size:var(--soft-title-3);
 }
 
 .help-section ul {
@@ -205,7 +205,7 @@
   gap: 0.85rem 1.25rem;
   margin-top: 1.75rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--soft-line, rgba(30, 40, 60, 0.14));
+  border-top: 1px solid var(--soft-line);
   font-size: 0.9rem;
 }
 
@@ -214,7 +214,7 @@
   align-items: center;
   gap: 0.35rem;
   font: 600 0.8rem/1.2 var(--font-source-sans, ui-sans-serif);
-  color: #1457d9;
+  color: var(--soft-accent);
   text-decoration: none;
   white-space: nowrap;
 }

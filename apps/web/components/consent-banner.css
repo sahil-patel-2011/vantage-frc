@@ -48,10 +48,10 @@ body.has-app-shell .consent-banner {
   display: grid;
   gap: 14px;
   padding: 16px;
-  border: 1px solid var(--soft-line, #d5dde8);
+  border: 1px solid var(--soft-line);
   border-radius: var(--soft-radius, 16px);
-  background: var(--soft-card, #fff);
-  color: var(--soft-ink, #14243a);
+  background: var(--soft-card);
+  color: var(--soft-ink);
   box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
   font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
@@ -66,7 +66,7 @@ body.has-app-shell .consent-banner {
   font-size: 15px;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--soft-ink, #14243a);
+  color: var(--soft-ink);
 }
 
 .consent-banner-lead {
@@ -74,14 +74,14 @@ body.has-app-shell .consent-banner {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.45;
-  color: var(--soft-ink, #14243a);
+  color: var(--soft-ink);
 }
 
 .consent-banner-detail {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--soft-muted, #5a6578);
+  color: var(--soft-muted);
 }
 
 .consent-banner-current {
@@ -89,7 +89,7 @@ body.has-app-shell .consent-banner {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
-  color: var(--soft-accent, #1457d9);
+  color: var(--soft-accent);
 }
 
 .consent-banner-actions {
@@ -104,7 +104,7 @@ body.has-app-shell .consent-banner {
   min-height: 44px;
   padding: 10px 16px;
   border-radius: var(--soft-radius-sm, 12px);
-  border: 1px solid var(--soft-line, #d5dde8);
+  border: 1px solid var(--soft-line);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -118,22 +118,22 @@ body.has-app-shell .consent-banner {
 }
 
 .consent-banner-btn:focus-visible {
-  outline: 2px solid var(--soft-accent, #1457d9);
+  outline: 2px solid var(--soft-accent);
   outline-offset: 2px;
 }
 
 .consent-banner-btn--accept {
-  background: var(--soft-accent, #1457d9);
-  border-color: var(--soft-accent, #1457d9);
+  background: var(--soft-accent);
+  border-color: var(--soft-accent);
   color: var(--soft-brand-ink, #fff);
 }
 
 /* Same weight, same height, same prominence class of control — only the fill
    differs, because "no" must be as easy to click as "yes". */
 .consent-banner-btn--decline {
-  background: var(--soft-card, #fff);
-  color: var(--soft-ink, #14243a);
-  border-color: color-mix(in srgb, var(--soft-ink, #14243a) 24%, var(--soft-line, #d5dde8));
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  border-color: color-mix(in srgb, var(--soft-ink) 24%, var(--soft-line));
 }
 
 .consent-banner-link {
@@ -145,13 +145,13 @@ body.has-app-shell .consent-banner {
   border-radius: var(--soft-radius-sm, 12px);
   font-size: 13px;
   font-weight: 600;
-  color: var(--soft-accent, #1457d9);
+  color: var(--soft-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .consent-banner-link:focus-visible {
-  outline: 2px solid var(--soft-accent, #1457d9);
+  outline: 2px solid var(--soft-accent);
   outline-offset: 2px;
 }
 

@@ -1,6 +1,6 @@
 /* Season Calendar — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .cal-* prefixed and theme-aware. */
-.cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
 .cal-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .cal-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .cal-link.danger{color:var(--app-critical)}
@@ -14,12 +14,12 @@
 .cal-hero-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cal-hero-title strong{font-size:16px}
 .cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1;max-width:320px;font-size:12px}
-.cal-track{height:8px;background:var(--app-soft);border-radius:999px;overflow:hidden}
+.cal-track{height:8px;background:var(--app-soft);border-radius:var(--soft-radius-pill);overflow:hidden}
 .cal-track i{display:block;height:100%;background:var(--app-accent)}
 .cal-track i.done{background:var(--app-positive)}
 
 /* Kind chips: pill + border, colored via currentColor so they stay theme-safe. */
-.cal-chip{display:inline-flex;align-items:center;padding:2px 9px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.cal-chip{display:inline-flex;align-items:center;padding:2px 9px;border:1px solid currentColor;border-radius:var(--soft-radius-pill);font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .cal-chip.kind-kickoff,.cal-chip.kind-design{color:var(--app-accent)}
 .cal-chip.kind-build{color:var(--app-ink)}
 .cal-chip.kind-practice{color:var(--app-positive)}
@@ -46,16 +46,16 @@
 .cal-workflow-links a:hover{text-decoration:underline}
 
 /* Business / purchase dates (read-only). */
-.cal-linked h2{margin:0 0 6px;font-size:15px}
+.cal-linked h2{margin:0 0 6px;font-size:var(--soft-title-3)}
 .cal-linked>p{margin:0 0 10px;font-size:12px}
 .cal-linked ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px}
+.cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs)}
 .cal-linked li a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:inherit;text-decoration:none;min-width:0}
 .cal-linked li a strong{font-size:13px}
 
 /* Month timeline. */
 .cal-month{display:grid;gap:8px}
-.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--soft-title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
 .cal-month h2 span{font-variant-numeric:tabular-nums;font-size:11px}
 .cal-month ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .cal-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
@@ -71,7 +71,7 @@
 
 /* Add-milestone form. */
 .cal-add{display:grid;gap:10px}
-.cal-add h2{margin:0;font-size:15px}
+.cal-add h2{margin:0;font-size:var(--soft-title-3)}
 .cal-add-grid{display:grid;grid-template-columns:minmax(200px,1fr) 140px 150px 150px;gap:8px}
 .cal-add button[type="submit"]{justify-self:start}
 
@@ -86,16 +86,16 @@
 }
 
 /* Remote-join links (Zoom / Meet / Teams) */
-.cal-join{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:6px;padding:7px 12px;border-radius:8px;background:var(--app-accent);color:var(--app-accent-ink);font-size:12px;font-weight:800;text-decoration:none}
+.cal-join{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:6px;padding:7px 12px;border-radius:var(--soft-radius-xs);background:var(--app-accent);color:var(--app-accent-ink);font-size:12px;font-weight:800;text-decoration:none}
 .cal-join:hover{filter:brightness(1.06)}
 .cal-join.hero{margin-top:10px;padding:10px 16px;font-size:13px}
 
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
 .aii-panel{display:grid;gap:10px;margin-top:16px}
 .aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.aii-head h2{margin:0 0 4px;font-size:15px}
+.aii-head h2{margin:0 0 4px;font-size:var(--soft-title-3)}
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:10px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}

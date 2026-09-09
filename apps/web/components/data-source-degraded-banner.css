@@ -6,7 +6,7 @@
   flex-wrap: wrap;
   margin: 0 0 14px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   background: #fff8e8;
   border: 1px solid #f1dfb0;
   color: #7a5b16;
@@ -59,19 +59,19 @@
 }
 
 html[data-theme="dark"] .data-source-degraded-banner {
-  background: color-mix(in srgb, #92400e 22%, var(--soft-card, #111827));
-  border-color: color-mix(in srgb, #f59e0b 35%, var(--soft-line, #334155));
+  background: color-mix(in srgb, #92400e 22%, var(--soft-card));
+  border-color: color-mix(in srgb, #f59e0b 35%, var(--soft-line));
   color: #fde68a;
 }
 
 html[data-theme="dark"] .data-source-degraded-banner.mode-unavailable {
-  background: color-mix(in srgb, #7f1d1d 28%, var(--soft-card, #111827));
-  border-color: color-mix(in srgb, #f87171 40%, var(--soft-line, #334155));
+  background: color-mix(in srgb, #7f1d1d 28%, var(--soft-card));
+  border-color: color-mix(in srgb, #f87171 40%, var(--soft-line));
   color: #fecaca;
 }
 
 html[data-theme="dark"] .data-source-degraded-banner.mode-stale {
-  background: color-mix(in srgb, #1e3a8a 18%, var(--soft-card, #111827));
-  border-color: color-mix(in srgb, #60a5fa 30%, var(--soft-line, #334155));
+  background: color-mix(in srgb, #1e3a8a 18%, var(--soft-card));
+  border-color: color-mix(in srgb, #60a5fa 30%, var(--soft-line));
   color: #bfdbfe;
 }

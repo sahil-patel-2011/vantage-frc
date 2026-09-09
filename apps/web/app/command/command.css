@@ -31,7 +31,7 @@
 .edc-freshness {
   margin: 0 0 14px;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: color-mix(in srgb, var(--soft-card) 92%, var(--soft-line));
   color: var(--soft-muted);

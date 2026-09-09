@@ -64,7 +64,7 @@
   flex: 1 1 7rem;
   min-width: 6.5rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  border-radius:var(--soft-radius-sm);
   background: color-mix(in srgb, var(--app-surface) 88%, var(--app-line));
 }
 
@@ -109,13 +109,13 @@
 .team-invite-ledger {
   padding: 1.15rem 1.2rem;
   border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
-  border-radius: 1rem;
+  border-radius:var(--soft-radius);
   background: color-mix(in srgb, var(--app-surface) 92%, var(--app-line));
 }
 
 .team-invite-form h2 {
   margin: 0.15rem 0 0.45rem;
-  font-size: 1.2rem;
+  font-size:var(--soft-title-2);
 }
 
 .team-invite-form > p {
@@ -139,7 +139,7 @@
   min-height: 2.4rem;
   padding: 0.45rem 0.65rem;
   border: 1px solid var(--app-line);
-  border-radius: 0.7rem;
+  border-radius:var(--soft-radius-sm);
   background: var(--app-surface);
 }
 
@@ -149,7 +149,7 @@
   gap: 0.2rem;
   margin: 0 0 0.85rem;
   padding: 0.7rem 0.8rem;
-  border-radius: 0.75rem;
+  border-radius:var(--soft-radius-sm);
   font-size: 0.88rem;
   line-height: 1.4;
 }
@@ -199,7 +199,7 @@
   background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
   margin: 0 -0.6rem;
   padding: 0.85rem 0.6rem;
-  border-radius: 0.7rem;
+  border-radius:var(--soft-radius-sm);
   border-bottom: none;
 }
 
@@ -223,7 +223,7 @@
   min-height: 2rem;
   padding: 0.25rem 0.7rem;
   border: 1px solid var(--app-line);
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   background: var(--app-surface);
   font-size: 0.8rem;
   font-weight: 600;

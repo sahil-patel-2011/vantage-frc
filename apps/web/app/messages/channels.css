@@ -29,7 +29,7 @@
   color: var(--app-accent);
   background: transparent;
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -63,7 +63,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font: inherit;
   font-size: 13px;
 }
@@ -74,14 +74,14 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .messages-channel-form button[type="submit"] {
-  color: var(--app-on-accent, #fff);
+  color: var(--app-on-accent);
   background: var(--app-accent);
   border-color: var(--app-accent);
 }
@@ -99,7 +99,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius: 8px;
+  border-radius:var(--soft-radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;

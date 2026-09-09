@@ -31,7 +31,7 @@
 
 .parent-view-header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size:var(--soft-title-1);
   line-height: 1.2;
 }
 
@@ -87,7 +87,7 @@
 .parent-view-rsvp {
   font-size: 12px;
   border: 1px solid var(--soft-line);
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   padding: 2px 10px;
   color: var(--soft-muted);
   background: var(--soft-accent-soft);
@@ -108,7 +108,7 @@
 
 .parent-view-state h2 {
   margin: 0;
-  font-size: 18px;
+  font-size:var(--soft-title-2);
 }
 
 .parent-view-state p {

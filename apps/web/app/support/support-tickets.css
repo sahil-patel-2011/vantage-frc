@@ -1,5 +1,5 @@
 .support-tickets-page {
-  --support-accent: #1457d9;
+  --support-accent: var(--soft-accent);
   --support-accent-soft: #e8eefc;
   max-width: 760px;
   margin: 0 auto;
@@ -21,7 +21,7 @@
 .support-tickets-page .soft-panel h2,
 .support-tickets-next-actions h2 {
   margin: 0;
-  font: 700 1.15rem var(--font-source-sans), ui-sans-serif;
+  font:700 var(--soft-title-2) var(--font-source-sans), ui-sans-serif;
 }
 
 .support-tickets-next-actions {
@@ -38,7 +38,7 @@
 
 .support-tickets-next-actions > header p {
   margin: 0;
-  color: var(--app-muted, #6b7280);
+  color: var(--app-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -57,14 +57,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--app-line, #d5dde8);
-  background: var(--app-bg, #fff);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
 }
 
 .support-tickets-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--support-accent) 35%, var(--app-line, #d5dde8));
-  background: color-mix(in srgb, var(--support-accent) 8%, var(--app-bg, #fff));
+  border-color: color-mix(in srgb, var(--support-accent) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--support-accent) 8%, var(--app-bg));
 }
 
 .support-tickets-next-actions li div {
@@ -78,7 +78,7 @@
 }
 
 .support-tickets-next-actions li span {
-  color: var(--app-muted, #6b7280);
+  color: var(--app-muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -107,8 +107,8 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
   background: #fff;
   color: inherit;
   font: 500 14px var(--font-source-sans), ui-sans-serif;
@@ -122,7 +122,7 @@
 .support-tickets-error {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: #fef2f2;
   color: #991b1b;
   border: 1px solid #fecaca;
@@ -131,7 +131,7 @@
 .support-tickets-ok {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--support-accent-soft);
   color: #1e3a8a;
   border: 1px solid color-mix(in srgb, var(--support-accent) 22%, #fff);
@@ -162,13 +162,13 @@
   display: grid;
   gap: 8px;
   padding: 14px;
-  border-radius: 14px;
-  border: 1px solid var(--soft-line, #d5dde8);
-  background: color-mix(in srgb, var(--soft-card, #fff) 94%, #fff);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
 }
 
 .support-ticket-card.awaits-reply {
-  border-color: color-mix(in srgb, var(--support-accent) 28%, var(--soft-line, #d5dde8));
+  border-color: color-mix(in srgb, var(--support-accent) 28%, var(--soft-line));
 }
 
 .support-ticket-card header {
@@ -184,7 +184,7 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   font-size: 12px;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
 }
 
 .support-ticket-meta .awaiting {
@@ -205,7 +205,7 @@
 
 .support-ticket-card small,
 .support-ticket-reply small {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted);
 }
 
 .support-ticket-status {
@@ -213,7 +213,7 @@
   align-items: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -238,7 +238,7 @@
   gap: 6px;
   margin-top: 4px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   background: var(--support-accent-soft);
   border: 1px solid color-mix(in srgb, var(--support-accent) 18%, #fff);
 }
