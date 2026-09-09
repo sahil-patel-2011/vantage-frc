@@ -117,8 +117,8 @@ function ScopeNotice() {
       <p>
         <strong>Team files belong to the team.</strong> Every member can open them. Owners and admins
         can also see every share link anyone has created on team files, so a link that leaves the team
-        is never invisible to the people responsible for it — but they still cannot see inside anyone
-        &rsquo;s personal space.
+        is never invisible to the people responsible for it — but they still cannot see inside
+        anyone&rsquo;s personal space.
       </p>
       <p>
         <strong>A share link works without a Vantage account.</strong> Anyone holding the link can open
