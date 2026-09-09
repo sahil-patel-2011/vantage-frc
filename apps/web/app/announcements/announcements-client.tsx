@@ -7,6 +7,7 @@ import {
   type Announcement,
   type AnnouncementPriority,
 } from "../../lib/announcements/store";
+import { formatInstant } from "../../lib/announcements/time";
 
 type View = {
   orgId: string;
@@ -25,12 +26,6 @@ function priorityTone(priority: AnnouncementPriority): BadgeTone {
   if (priority === "urgent") return "danger";
   if (priority === "important") return "info";
   return "neutral";
-}
-
-function when(iso: string): string {
-  const date = new Date(iso.replace(" ", "T"));
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function AnnouncementsClient() {
@@ -199,7 +194,7 @@ export default function AnnouncementsClient() {
                     <div>
                       <h3>{item.title}</h3>
                       <small className="app-muted">
-                        {item.authorName ?? "Vantage"} · {when(item.createdAt)}
+                        {item.authorName ?? "Vantage"} · {formatInstant(item.createdAt)}
                         {item.pinned ? " · Pinned" : ""}
                       </small>
                     </div>
@@ -226,7 +221,17 @@ export default function AnnouncementsClient() {
                         </button>
                       )}
                       {view.canPost && item.ackCount < item.memberCount ? (
-                        <button type="button" className="text-button" onClick={() => void showOutstanding(item.id)}>
+                        <button
+                          type="button"
+                          className="text-button"
+                          aria-expanded={showing}
+                          onClick={() => {
+                            // The button labelled "Hide" has to actually hide;
+                            // re-calling the loader just refetched the same id.
+                            if (showing) setOutstanding(null);
+                            else void showOutstanding(item.id);
+                          }}
+                        >
                           {showing ? "Hide who is missing" : "Who has not confirmed?"}
                         </button>
                       ) : null}

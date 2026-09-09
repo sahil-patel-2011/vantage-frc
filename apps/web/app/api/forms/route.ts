@@ -11,6 +11,7 @@ import {
   getResults,
   listForms,
   moveQuestion,
+  rotateShareToken,
   setFormStatus,
   submitResponse,
   updateQuestion,
@@ -22,6 +23,7 @@ import {
   STARTER_QUESTIONS,
   type FormAudience,
   type FormStatus,
+  type QuestionConfig,
 } from "../../../lib/forms/types";
 
 class HttpError extends Error {
@@ -71,6 +73,39 @@ function requireAdmin(membership: Membership) {
   }
 }
 
+/**
+ * Narrow a caller-supplied config object to the fields a question actually has.
+ *
+ * This used to be `body.config as never`, which wrote arbitrary JSON into the
+ * jsonb column. A string or array then survived the write but was rejected by
+ * parseConfig on read, so a select question silently lost its options.
+ */
+function parseQuestionConfig(raw: unknown): QuestionConfig | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw new HttpError(400, "Question settings must be an object");
+  }
+  const input = raw as Record<string, unknown>;
+  const config: QuestionConfig = {};
+  if (input.options !== undefined) {
+    if (!Array.isArray(input.options)) throw new HttpError(400, "Options must be a list");
+    const options = input.options
+      .map((option) => String(option).trim())
+      .filter((option) => option.length > 0 && option.length <= 200)
+      .slice(0, 50);
+    // Duplicate options make a bar chart that double-counts one answer.
+    config.options = [...new Set(options)];
+  }
+  for (const key of ["min", "max", "step"] as const) {
+    const value = input[key];
+    if (value === undefined || value === null) continue;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) throw new HttpError(400, `${key} must be a number`);
+    config[key] = parsed;
+  }
+  return config;
+}
+
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: error instanceof Error ? error.message : "Form request failed" }, { status });
@@ -98,12 +133,31 @@ export async function GET(request: Request) {
 
       const form = await getForm(client, membership.orgId, formId);
       if (!form) throw new HttpError(404, "Form not found");
+      const canManage = membership.role === "owner" || membership.role === "admin";
+
+      // Results are a leadership view. RLS limits form_responses to the
+      // caller's own row for a non-manager, so computing them anyway produced a
+      // payload that read as team-wide ("1 response from prospective members")
+      // while describing one person. Better to return nothing than a figure
+      // that is honest only by accident.
+      if (!canManage) {
+        return {
+          status: "ready" as const,
+          orgId: membership.orgId,
+          orgName: membership.orgName,
+          canManage,
+          form,
+          results: null,
+          insight: null,
+        };
+      }
+
       const results = await getResults(client, membership.orgId, form);
       return {
         status: "ready" as const,
         orgId: membership.orgId,
         orgName: membership.orgName,
-        canManage: membership.role === "owner" || membership.role === "admin",
+        canManage,
         form,
         results,
         insight: formInsight({
@@ -128,6 +182,7 @@ type Action =
   | { action: "delete_question"; questionId: string }
   | { action: "move_question"; questionId: string; direction: "up" | "down" }
   | { action: "set_status"; formId: string; status: FormStatus; audience: FormAudience }
+  | { action: "rotate_link"; formId: string }
   | { action: "assign"; formId: string; userIds: string[] }
   | { action: "submit"; formId: string; answers: Array<{ questionId: string; value: string | string[] }> };
 
@@ -196,7 +251,7 @@ export async function POST(request: Request) {
             label: body.label,
             help: body.help,
             required: body.required,
-            config: body.config as never,
+            config: parseQuestionConfig(body.config),
           });
           return { ok: true };
         }
@@ -225,6 +280,13 @@ export async function POST(request: Request) {
           }
           await setFormStatus(client, orgId, body.formId, status, audience);
           return { ok: true };
+        }
+
+        case "rotate_link": {
+          requireAdmin(membership);
+          const shareToken = await rotateShareToken(client, orgId, body.formId);
+          if (!shareToken) throw new HttpError(404, "Form not found");
+          return { ok: true, shareToken };
         }
 
         case "assign": {

@@ -39,7 +39,6 @@ export default function FormsClient() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  const [starting, setStarting] = useState<FormPurpose | null>(null);
   const [title, setTitle] = useState("");
 
   const load = useCallback(async () => {
@@ -171,13 +170,9 @@ export default function FormsClient() {
               <button
                 key={option.purpose}
                 type="button"
-                className={`forms-purpose${starting === option.purpose ? " selected" : ""}`}
-                aria-pressed={starting === option.purpose}
+                className="forms-purpose"
                 disabled={busy || !title.trim()}
-                onClick={() => {
-                  setStarting(option.purpose);
-                  void create(option.purpose);
-                }}
+                onClick={() => void create(option.purpose)}
               >
                 <strong>{PURPOSE_LABELS[option.purpose]}</strong>
                 <small>{option.blurb}</small>

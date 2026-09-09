@@ -12,16 +12,27 @@ import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from ".
  * the parent-view resolver.
  *
  * `requestPool` is the app role. Nothing here touches @vantage/db/admin.
+ *
+ * CLAUDE.md says every request DB access goes through `withRls({ userId })`.
+ * This route is the documented exception, for the same reason
+ * /api/parent-view/[token] is: there is no user id to set, because the caller
+ * has no account and never will. Tenancy is enforced instead by the SECURITY
+ * DEFINER functions, which resolve the org from the token and can only ever
+ * touch the one form it names. Do NOT copy this pattern into a route that does
+ * have a session — there, `withRls` is what enforces tenancy.
  */
 export const dynamic = "force-dynamic";
 
 const TOKEN_PATTERN = /^[a-f0-9]{32}$/;
 
 // A public form is spammable by definition, so the write path is limited per
-// IP. The read path is limited more loosely — a family opening the link twice
-// on two phones is normal.
-const readLimiter = createRateLimiter({ limit: 30, windowMs: 60_000, namespace: "public-form-read" });
-const writeLimiter = createRateLimiter({ limit: 5, windowMs: 10 * 60_000, namespace: "public-form-write" });
+// anonymised IP — but the limit has to survive the case the link exists for.
+// A team running intake at a meeting has 40 students on one school Wi-Fi, and
+// a school NATs every device behind a single address, so a 5-per-10-minutes
+// cap locked out everyone after the fifth student. 60 per 10 minutes still
+// stops a script while letting a whole team answer in one sitting.
+const readLimiter = createRateLimiter({ limit: 120, windowMs: 60_000, namespace: "public-form-read" });
+const writeLimiter = createRateLimiter({ limit: 60, windowMs: 10 * 60_000, namespace: "public-form-write" });
 
 function notFound(): Response {
   return Response.json(
@@ -59,6 +70,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   }
 }
 
+type PublicQuestion = { id: string; label: string; required: boolean };
+
 type Body = {
   respondent?: string;
   answers?: Array<{ questionId: string; value: string | string[] }>;
@@ -91,6 +104,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (answers.length === 0) {
     return noStore({ error: "Answer at least one question before sending." }, { status: 400 });
+  }
+
+  // Enforce required questions here too. The browser checks them, but the
+  // signed-in submit path enforces them server-side and these two must agree
+  // about what a valid response is — otherwise a scripted POST creates an
+  // intake row with no student name, no email and no guardian phone.
+  try {
+    const shape = await requestPool.query<{ form: { questions?: PublicQuestion[] } | null }>(
+      "SELECT get_public_form($1) AS form",
+      [token],
+    );
+    const questions = shape.rows[0]?.form?.questions ?? [];
+    const answered = new Set(
+      answers.filter((answer) => answer.value.trim() !== "").map((answer) => answer.questionId),
+    );
+    const missing = questions.filter((question) => question.required && !answered.has(question.id));
+    if (missing.length > 0) {
+      return noStore(
+        { error: `Please answer: ${missing.map((question) => question.label).join(", ")}` },
+        { status: 400 },
+      );
+    }
+  } catch {
+    return noStore(
+      { error: "We could not check this form right now. Please try again in a minute." },
+      { status: 503 },
+    );
   }
 
   try {
