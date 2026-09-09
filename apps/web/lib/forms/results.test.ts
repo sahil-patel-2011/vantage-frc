@@ -103,6 +103,27 @@ describe("formInsight", () => {
     expect(insight.detail).toContain("8 outstanding");
   });
 
+  /**
+   * Coverage must be about the people who were asked. A form assigned to four
+   * students and also shared as a link can hold four responses of which one came
+   * from a stranger — and reading "4 of 4 have answered" off the response count
+   * makes coverage rise when the wrong people reply, which is the same shape of
+   * lie as a readiness score that climbs while a team enters less.
+   */
+  it("does not count a stranger's link answer as an assignee's", () => {
+    const insight = formInsight({
+      purpose: "travel",
+      totalResponses: 4,
+      assignedCount: 4,
+      respondedAssignees: 3,
+      summaries: [],
+    });
+    expect(insight.detail).toContain("3 of 4");
+    expect(insight.detail).toContain("1 outstanding");
+    expect(insight.detail).toContain("1 more answered through the link");
+    expect(insight.detail).not.toContain("4 of 4");
+  });
+
   it("flags a reading built on very few responses as provisional", () => {
     expect(formInsight({ purpose: "feedback", totalResponses: 2, assignedCount: 0, summaries: [] }).provisional).toBe(true);
     expect(formInsight({ purpose: "feedback", totalResponses: 9, assignedCount: 0, summaries: [] }).provisional).toBe(false);
@@ -133,6 +154,31 @@ describe("formInsight", () => {
     const insight = formInsight({ purpose: "dues", totalResponses: 3, assignedCount: 0, summaries });
     expect(insight.detail).toContain("1 still owe");
     expect(insight.detail).toContain("follow up privately");
+  });
+
+  /**
+   * Someone who is paying what they can while asking for help is one person, and
+   * they belong in the assistance count only. Counting them in both made a
+   * three-person form read as four, and put a family who asked for help into the
+   * group a treasurer chases.
+   */
+  it("counts an assistance request once, not as an unpaid balance as well", () => {
+    const q = question({
+      kind: "single_select",
+      label: "Payment status",
+      config: { options: ["Paid in full", "Partial payment — requesting assistance", "Not yet paid"] },
+    });
+    const summaries = [
+      summarizeQuestion(
+        q,
+        answers("q1", ["Paid in full", "Not yet paid", "Partial payment — requesting assistance"]),
+        3,
+      ),
+    ];
+    const insight = formInsight({ purpose: "dues", totalResponses: 3, assignedCount: 0, summaries });
+    expect(insight.detail).toContain("1 still owe");
+    expect(insight.detail).toContain("1 asked for assistance");
+    expect(insight.detail).not.toContain("2 still owe");
   });
 
   it("treats an unsafe answer as a shop-floor consequence", () => {
