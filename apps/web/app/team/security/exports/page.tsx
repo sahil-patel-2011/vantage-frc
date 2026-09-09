@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "../../../../components/ui";
 import ExportAuditClient from "./export-audit-client";
 
 export const metadata = {
@@ -10,6 +11,27 @@ export default async function TeamExportAuditPage({
   searchParams: Promise<{ orgId?: string }>;
 }) {
   const { orgId } = await searchParams;
-  if (!orgId) return <main className="content"><h1>Select an organization</h1></main>;
+  if (!orgId) {
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Security / Exports"
+          title="Export audit"
+          description="Who exported what, for one team — pick the workspace first."
+        />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose a team"
+          description="Export records are written per workspace so one team can never read another’s. Select one and come back."
+        >
+          <a className="app-button" href="/workspace">
+            Choose team
+          </a>
+        </EmptyState>
+      </main>
+    );
+  }
   return <ExportAuditClient orgId={orgId} />;
 }

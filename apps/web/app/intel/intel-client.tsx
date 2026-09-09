@@ -166,9 +166,6 @@ function IntelShell({
         )
       : null;
   const steps = shell === "setup" ? intelSetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const dossierHref = withOrgHref("/dossier", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -214,20 +211,9 @@ function IntelShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync season metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={dossierHref}>
-              Open Team Dossier
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
+          <a className="app-button" href={teamDataHref}>
+            Sync season metrics
+          </a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -489,19 +475,10 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         title="Team Intel"
         description="Search the global team index. Metrics stay blank until TBA/Statbotics data exists; research findings stay blank until a metered sweep — never DEMO research."
       >
+        {/* The strip already is Strategy · Dossier · Scouting. The row beside
+            it was the same three hrefs with the same three labels. */}
         <div className="intel-heading">
           <IntelRelatedStrip orgId={orgId} teamNumber={intel?.team.teamNumber ?? null} />
-          <div className="edc-header-actions">
-            <a className="app-button secondary" href={strategyHref}>
-              Strategy
-            </a>
-            <a className="app-button secondary" href={dossierHref}>
-              Dossier
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Scouting
-            </a>
-          </div>
         </div>
       </PageHeader>
 
@@ -563,17 +540,11 @@ export default function IntelClient({ orgId }: { orgId: string }) {
             title={emptyCopy.title}
             description={emptyCopy.description}
           >
+            {/* One action: the thing that fills this page. Strategy, Dossier,
+                and Scouting are in the strip at the top and again in Next
+                actions right below, each with the reason you would go. */}
             <a className="app-button" href={withOrgHref("/team/data", orgId)}>
               Sync season metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={dossierHref}>
-              Open Team Dossier
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
             </a>
           </EmptyState>
           <IntelNextActionsPanel actions={readyActions} />

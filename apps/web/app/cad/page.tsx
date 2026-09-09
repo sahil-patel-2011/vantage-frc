@@ -1,4 +1,5 @@
 import { cadToolSupportMatrix } from "@vantage/cad";
+import { EmptyState, PageHeader } from "../../components/ui";
 import CadWorkspace from "./cad-client";
 import "./cad-setup.css";
 
@@ -15,16 +16,22 @@ export default async function CadPage({
   if (!orgId) {
     return (
       <main className="module-page cad-module">
-        <header className="app-page-header">
-          <div>
-            <p className="breadcrumbs">Build / CAD</p>
-            <h1>Select an organization</h1>
-            <p>Open CAD from your team workspace so the Onshape agent stays scoped to the right org.</p>
-          </div>
-          <a className="app-button secondary" href="/workspace">
-            Choose workspace
+        <PageHeader
+          breadcrumbs="Build / CAD"
+          title="CAD"
+          description="The Onshape agent works inside one team’s documents — pick the workspace first."
+        />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose a team"
+          description="CAD stays scoped to the org whose Onshape connection and part history it is allowed to touch. Select the workspace and come back."
+        >
+          <a className="app-button" href="/workspace">
+            Choose team
           </a>
-        </header>
+        </EmptyState>
       </main>
     );
   }

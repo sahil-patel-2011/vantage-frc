@@ -414,11 +414,11 @@ function OrgContextCard({ org }: { org: OrgContext }) {
       <p className="app-muted">
         Display name and notification prefs are personal. AI keys, billing, and connectors follow this workspace.
       </p>
+      {/* AI keys / Billing / AI usage are exactly the related strip above this
+          panel, same hrefs in the same order. What belongs here is the one link
+          that is actually about the *active* workspace. */}
       <div className="settings-inline-links">
         <a href="/workspace">Switch workspace</a>
-        <a href={withOrgHref("/team/ai-keys", org.orgId)}>AI keys</a>
-        <a href={withOrgHref("/ai?tab=budgets", org.orgId)}>Billing</a>
-        <a href={withOrgHref("/team/usage", org.orgId)}>AI usage</a>
       </div>
     </Panel>
   );
@@ -725,12 +725,13 @@ export default function AccountClient() {
         title="Your settings"
         description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your active workspace."
       >
+        {/* "Support" used to sit here pointing at /support, while the related
+            strip one line below called the same page "Help & Support". Two
+            names for one destination on one screen reads as two destinations.
+            What's new stays: the strip does not carry it. */}
         <div className="account-header-actions">
           <a className="app-button secondary" href="/whats-new">
             What’s new
-          </a>
-          <a className="app-button secondary" href="/support">
-            Support
           </a>
         </div>
       </PageHeader>

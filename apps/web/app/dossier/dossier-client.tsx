@@ -111,9 +111,6 @@ function DossierShell({
         )
       : null;
   const steps = shell === "setup" ? dossierSetupSteps(orgId) : [];
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -163,20 +160,9 @@ function DossierShell({
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={teamDataHref}>
-              Sync season metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
-            </a>
-          </>
+          <a className="app-button" href={teamDataHref}>
+            Sync season metrics
+          </a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -338,19 +324,11 @@ export default function DossierClient() {
         title="Season team dossier"
         description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Every card carries a citation. Never DEMO stats."
       >
+        {/* The strip already is Strategy · Scouting · Pick desk. The row that
+            used to sit beside it here was the same three hrefs with the same
+            three labels, in the same header. */}
         <div className="dossier-heading">
           <DossierRelatedStrip orgId={resolvedOrgId} />
-          <div className="edc-header-actions">
-            <a className="app-button secondary" href={strategyHref}>
-              Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Scouting
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Pick desk
-            </a>
-          </div>
         </div>
       </PageHeader>
 
@@ -410,17 +388,12 @@ export default function DossierClient() {
                 : emptyCopy.description
             }
           >
+            {/* One action: the thing that actually fills this page. Strategy,
+                Scouting, and Pick desk are in the strip at the top and again in
+                Setup steps and Next actions directly below, each with the
+                reason you would go there. */}
             <a className="app-button" href={withOrgHref("/team/data", resolvedOrgId)}>
               Sync season metrics
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={pickDeskHref}>
-              Open Pick desk
             </a>
           </EmptyState>
           {view?.status === "empty" || view?.status === "setup_required" ? (
