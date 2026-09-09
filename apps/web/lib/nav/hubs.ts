@@ -148,6 +148,10 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view" },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
+        // The programming subteam's setup track. Sits with the other
+        // onboarding tools rather than under Build, because the person who
+        // needs it is new to the TEAM, not to the robot.
+        { id: "dev-setup", label: "Programming setup", legacyHref: "/dev-setup", featured: true },
         { id: "onboarding-buddy", label: "Onboarding buddy", legacyHref: "/onboarding-buddy" },
         { id: "alumni-network", label: "Alumni", legacyHref: "/alumni-network" },
         { id: "skills-graph", label: "Skills", legacyHref: "/skills-graph" },

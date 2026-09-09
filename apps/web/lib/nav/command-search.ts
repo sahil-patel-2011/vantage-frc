@@ -330,6 +330,7 @@ const STANDALONE: CommandEntry[] = [
   // Keywords carry the jobs people actually search for — "google form",
   // "sign up sheet", "permission slip" — because nobody types "forms engine".
   { id: "forms", label: "Forms", context: "Team", href: "/forms", kind: "destination", keywords: ["form", "forms", "survey", "google form", "microsoft forms", "sign up", "sign up sheet", "intake", "new members", "tryout", "dues", "permission slip", "questionnaire", "poll", "responses"], featured: true },
+  { id: "dev-setup", label: "Programming setup", context: "Team", href: "/dev-setup", kind: "destination", keywords: ["setup", "install", "laptop", "new programmer", "onboarding", "wpilib", "pathplanner", "homebrew", "git", "github", "student pack", "vs code", "claude", "cursor", "how do i start", "first day"], featured: true },
   { id: "subteams", label: "Subteam progress", context: "Team", href: "/subteams", kind: "destination", keywords: ["subteam", "subteams", "mechanical", "electrical", "programming", "cad", "pit crew", "drive team", "business", "who is on", "roster", "progress", "mentor view", "follow up"], featured: true },
   { id: "announcements", label: "Announcements", context: "Team", href: "/announcements", kind: "destination", keywords: ["announcement", "announcements", "notice", "post", "broadcast", "tell the team", "bulletin", "read receipt", "acknowledge"], featured: true },
   { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },
