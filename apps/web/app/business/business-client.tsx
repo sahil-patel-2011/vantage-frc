@@ -607,9 +607,10 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             <a href={ordersHref}>purchase requests</a>. Chat tools that read redacted budgets require{" "}
             <a href={financeAiHref}>Finance-in-AI</a> under AI governance — never card or bank details.
           </p>
+          {/* Finance-in-AI is the same label pointing at the same href three
+              lines up, in this card's own sentence. One copy. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <a className="app-button secondary" href={costsHref}>Open Season Costs</a>
-            <a className="app-button secondary" href={financeAiHref}>Finance-in-AI</a>
           </div>
         </article>
       </section>
