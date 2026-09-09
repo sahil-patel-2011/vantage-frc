@@ -179,8 +179,12 @@ export async function computePrivateEdgeView(
     });
   });
 
+  // Both optional blocks below persist as well as read, and both used to end in a
+  // bare catch. compute-strategy calls this mid-request, so a failure aborted the
+  // shared transaction and everything the strategy view read afterwards came back
+  // empty. Savepointed: the calibration rows are lost, the match view is not.
   let calibrations: ScoutCalibration[] = [];
-  try {
+  await withSavepoint(client, async () => {
     const cal = await client.query<{
       scoutUserId: string;
       fieldKey: string;
@@ -217,9 +221,7 @@ export async function computePrivateEdgeView(
         [input.orgId, input.eventKey, row.fieldKey, row.scoutUserId, row.agreementRate, row.nSamples],
       );
     }
-  } catch {
-    // stays [] (or keeps parsed rows if only the persistence write failed)
-  }
+  }, undefined);
 
   let remainingMatches = 0;
   try {
@@ -289,7 +291,7 @@ export async function computePrivateEdgeView(
   }
 
   let cadLinks = [] as ReturnType<typeof linkCadToScout>;
-  try {
+  await withSavepoint(client, async () => {
     const year = Number(input.eventKey.slice(0, 4));
     const subsystems = await client.query<{
       id: string;
@@ -314,9 +316,7 @@ export async function computePrivateEdgeView(
         [input.orgId, link.subsystemId, link.fieldKey],
       );
     }
-  } catch {
-    // stays [] (or keeps computed links if only the persistence write failed)
-  }
+  }, undefined);
 
   let knowledge: ReturnType<typeof crossSeasonVsOpponent> = [];
   const primaryOpponent = opponents[0];

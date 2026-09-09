@@ -6,6 +6,7 @@
 // input.refresh is set.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { normalizePlan, type BriefingPlan, type BriefingPrediction } from "../briefing";
 import {
   finalizeStrategyRecompute,
@@ -93,14 +94,19 @@ export async function refreshBriefingPrediction(
   client: PoolClient,
   input: BriefingPredictionRefreshInput,
 ): Promise<BriefingStrategySections | null> {
-  try {
-    const view = await recomputeStrategyView(client, {
-      userId: input.userId,
-      requestedOrg: input.orgId,
-      matchKey: input.matchKey,
-    });
-    return briefingSectionsFromStrategyView(view);
-  } catch {
-    return null;
-  }
+  // recomputeStrategyView persists as it goes, so a failure part-way leaves the
+  // shared transaction aborted. Degrading to null is right; doing it without a
+  // savepoint also emptied the stored rows the briefing falls back to.
+  return withSavepoint(
+    client,
+    async () => {
+      const view = await recomputeStrategyView(client, {
+        userId: input.userId,
+        requestedOrg: input.orgId,
+        matchKey: input.matchKey,
+      });
+      return briefingSectionsFromStrategyView(view);
+    },
+    null,
+  );
 }

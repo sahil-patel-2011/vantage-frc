@@ -5,6 +5,7 @@ import {
   sendCoachTodoEmail,
 } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
 import type {
   TeamTodo,
@@ -132,12 +133,25 @@ export async function computeTodosView(
   }
 
   const asOf = asOfUtcDate();
-  try {
-    const [todos, members, subteams] = await Promise.all([
-      loadTodos(client, org.orgId, asOf),
-      loadMembers(client, org.orgId),
-      loadSubteams(client, org.orgId),
-    ]);
+  // The POST handler calls this to render the page *after* its write. A failure
+  // caught here left the transaction aborted, so the todo the student had just
+  // created was discarded at COMMIT and the answer was "setup_required" —
+  // the phantom setup state that hides a write that silently did not happen.
+  // The savepoint keeps the write and lets the read degrade on its own.
+  const loaded = await withSavepoint(
+    client,
+    async () => {
+      const [todos, members, subteams] = await Promise.all([
+        loadTodos(client, org.orgId, asOf),
+        loadMembers(client, org.orgId),
+        loadSubteams(client, org.orgId),
+      ]);
+      return { todos, members, subteams };
+    },
+    null,
+  );
+  if (loaded) {
+    const { todos, members, subteams } = loaded;
     const focusTodoId =
       input.focusTodoId && todos.some((item) => item.id === input.focusTodoId) ? input.focusTodoId : null;
     return {
@@ -152,17 +166,16 @@ export async function computeTodosView(
       focusTodoId,
       computedAt: new Date().toISOString(),
     };
-  } catch {
-    return {
-      status: "setup_required",
-      message: "Could not load team todos. Confirm database migrations have been applied.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-        { id: "practice", label: "Open Practice", detail: "Drive sessions often create follow-up todos after logs exist", href: "/team?tab=practice" },
-      ],
-      orgId: org.orgId,
-    };
   }
+  return {
+    status: "setup_required",
+    message: "Could not load team todos. Confirm database migrations have been applied.",
+    steps: [
+      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "practice", label: "Open Practice", detail: "Drive sessions often create follow-up todos after logs exist", href: "/team?tab=practice" },
+    ],
+    orgId: org.orgId,
+  };
 }
 
 async function assertMember(client: PoolClient, orgId: string, userId: string): Promise<void> {

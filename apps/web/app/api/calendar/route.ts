@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   listSeasonTemplates,
@@ -123,12 +123,13 @@ export async function GET(request: Request) {
         [row.orgId],
       );
 
-      let linkedDeadlines: LinkedDeadline[] = [];
-      try {
-        linkedDeadlines = await loadLinkedDeadlines(client, row.orgId);
-      } catch {
-        // Business tables may be absent in partial local setups — calendar still works.
-      }
+      // Business tables may be absent in partial local setups — calendar still
+      // works. Savepointed so that is true of the sections after it as well.
+      const linkedDeadlines: LinkedDeadline[] = await withSavepoint(
+        client,
+        () => loadLinkedDeadlines(client, row.orgId),
+        [],
+      );
 
       return {
         status: "ready",
