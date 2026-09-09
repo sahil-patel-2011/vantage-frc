@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { statusFor, summarizeToolCheckout, TOOL_CATEGORIES } from ".";
 import {
   assertToolCheckoutAllowed,
@@ -122,7 +123,14 @@ export async function computeToolCheckoutView(
        ORDER BY checked_out_at DESC`,
       [org.orgId],
     ),
-    loadTrainingMatrixForCheckout(client, { userId: input.userId, orgId: org.orgId }),
+    // The view only *displays* the matrix, so an unreadable one degrades to empty
+    // here. The savepoint keeps that from emptying the loans loaded beside it.
+    // checkoutTool below calls the same loader without this guard on purpose.
+    withSavepoint(client, () => loadTrainingMatrixForCheckout(client, { userId: input.userId, orgId: org.orgId }), {
+      skills: [],
+      certifications: [],
+      members: [],
+    }),
   ]);
 
   const loansByTool = new Map<string, LoanRow[]>();

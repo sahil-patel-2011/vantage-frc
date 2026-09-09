@@ -7,7 +7,7 @@ import {
   resolveOnshapeBind,
 } from "@vantage/cad";
 import { isCadAgentMode } from "@vantage/cad";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   loadCadAgentModeState,
@@ -98,17 +98,21 @@ async function shadedPngBase64For(
   connected: boolean,
 ): Promise<string | null> {
   if (!connected || !bound?.documentId || !bound.workspaceId || !bound.elementId) return null;
-  try {
-    const onshape = await loadCadAgentOnshape(client, orgId, userId);
-    const view = await loadShadedView(onshape.http, {
-      documentId: bound.documentId,
-      workspaceId: bound.workspaceId,
-      elementId: bound.elementId,
-    });
-    return view.status === "ready" ? view.pngBase64 : null;
-  } catch {
-    return null;
-  }
+  // loadCadAgentOnshape reads the org's Onshape credentials from the shared
+  // transaction, so the "failures stay null" promise needs a savepoint to hold.
+  return withSavepoint(
+    client,
+    async () => {
+      const onshape = await loadCadAgentOnshape(client, orgId, userId);
+      const view = await loadShadedView(onshape.http, {
+        documentId: bound.documentId!,
+        workspaceId: bound.workspaceId!,
+        elementId: bound.elementId!,
+      });
+      return view.status === "ready" ? view.pngBase64 : null;
+    },
+    null,
+  );
 }
 
 const NOT_CONNECTED =

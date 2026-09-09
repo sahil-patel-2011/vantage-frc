@@ -1,3 +1,4 @@
+import { withSavepoint } from "@vantage/db";
 /**
  * Tesla-style cockpit: a handful of useful knobs, not a settings maze.
  *
@@ -88,15 +89,21 @@ export async function loadCockpitPrefs(
   client: CockpitQueryClient,
   userId: string,
 ): Promise<CockpitPrefs> {
-  try {
-    const result = await client.query(
-      `SELECT cockpit_prefs AS "cockpitPrefs" FROM profiles WHERE user_id = $1::uuid`,
-      [userId],
-    );
-    return parseCockpitPrefs(result.rows[0]?.cockpitPrefs);
-  } catch {
-    return { ...DEFAULT_COCKPIT_PREFS };
-  }
+  // `profiles.cockpit_prefs` may predate its migration, so defaults are the right
+  // answer — but only under a savepoint. /api/code calls this partway through a
+  // request; a plain catch left the transaction aborted and the coding-assistant
+  // work that followed failed on a dead transaction.
+  return withSavepoint(
+    client,
+    async () => {
+      const result = (await client.query(
+        `SELECT cockpit_prefs AS "cockpitPrefs" FROM profiles WHERE user_id = $1::uuid`,
+        [userId],
+      )) as { rows: Array<{ cockpitPrefs?: unknown }> };
+      return parseCockpitPrefs(result.rows[0]?.cockpitPrefs);
+    },
+    { ...DEFAULT_COCKPIT_PREFS },
+  );
 }
 
 /** Column-scoped upsert — never touches appearance / island / notification prefs. */

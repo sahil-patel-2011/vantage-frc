@@ -11,6 +11,7 @@
 // Notes / justifications carry MODEL partner-fit only when a real score exists — never DEMO.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepointOrThrow } from "@vantage/db";
 import {
   ensurePickList,
   isPickBucket,
@@ -265,37 +266,44 @@ export async function promoteChemistryShortlist(
   const promoted: string[] = [];
   const unknownTeams: string[] = [];
   for (const teamKey of teamKeys) {
+    // Per-team savepoint. A team the TBA reference has never seen raises a foreign
+    // key violation, which aborts the whole transaction — so `continue` moved on
+    // to a dead transaction, the next team failed with "current transaction is
+    // aborted", that message does not match /team reference/, and the rethrow
+    // discarded every team promoted before it. Rolling back to the savepoint
+    // leaves the earlier entries intact and the loop able to continue.
+    let outcome: "promoted" | "unknown";
     try {
-      const entryId = await upsertEntry(client, {
-        orgId: input.orgId,
-        userId: input.userId,
-        pickListId,
-        teamKey,
-        bucket,
-        notes,
-      });
-      if (justification) {
-        await setJustification(client, {
+      outcome = await withSavepointOrThrow(client, async () => {
+        const entryId = await upsertEntry(client, {
           orgId: input.orgId,
           userId: input.userId,
           pickListId,
-          entryId,
-          rationale: justification.rationale,
-          sources: justification.sources,
-          contradictionFlagged: false,
-          contradictionReason: null,
+          teamKey,
+          bucket,
+          notes,
         });
-      }
-      promoted.push(teamKey);
+        if (justification) {
+          await setJustification(client, {
+            orgId: input.orgId,
+            userId: input.userId,
+            pickListId,
+            entryId,
+            rationale: justification.rationale,
+            sources: justification.sources,
+            contradictionFlagged: false,
+            contradictionReason: null,
+          });
+        }
+        return "promoted" as const;
+      });
     } catch (error) {
-      // A team the TBA reference has never seen cannot be ranked; name it instead of failing all.
       const message = error instanceof Error ? error.message : "";
-      if (/team reference/i.test(message)) {
-        unknownTeams.push(teamKey);
-        continue;
-      }
-      throw error;
+      if (!/team reference/i.test(message)) throw error;
+      outcome = "unknown";
     }
+    if (outcome === "promoted") promoted.push(teamKey);
+    else unknownTeams.push(teamKey);
   }
 
   const allRejected = [...rejected, ...unknownTeams];

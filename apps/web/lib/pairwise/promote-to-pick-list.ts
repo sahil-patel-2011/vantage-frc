@@ -8,6 +8,7 @@
 // derived from recorded comparisons only.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepointOrThrow } from "@vantage/db";
 import {
   ensurePickList,
   isPickBucket,
@@ -131,25 +132,33 @@ export async function promotePairwiseOrder(
   const unknownTeams: string[] = [];
   const entryIds: string[] = [];
   for (const teamKey of payload.teamKeys) {
+    // Per-team savepoint: an unknown team raises a foreign key violation, which
+    // aborts the transaction, so `continue` used to hand a dead transaction to the
+    // next team — whose "current transaction is aborted" then failed the /team
+    // reference/ test and rethrew, discarding every team promoted before it.
+    let entryId: string | null;
     try {
-      const entryId = await upsertEntry(client, {
-        orgId: input.orgId,
-        userId: input.userId,
-        pickListId,
-        teamKey,
-        bucket,
-        notes: payload.notesByTeam[teamKey] ?? null,
-      });
-      promoted.push(teamKey);
-      entryIds.push(entryId);
+      entryId = await withSavepointOrThrow(client, () =>
+        upsertEntry(client, {
+          orgId: input.orgId,
+          userId: input.userId,
+          pickListId,
+          teamKey,
+          bucket,
+          notes: payload.notesByTeam[teamKey] ?? null,
+        }),
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (/team reference/i.test(message)) {
-        unknownTeams.push(teamKey);
-        continue;
-      }
-      throw error;
+      if (!/team reference/i.test(message)) throw error;
+      entryId = null;
     }
+    if (entryId === null) {
+      unknownTeams.push(teamKey);
+      continue;
+    }
+    promoted.push(teamKey);
+    entryIds.push(entryId);
   }
 
   // Last-to-first so pairwise #1 lands at the top; other list rows are pushed down, not deleted.
