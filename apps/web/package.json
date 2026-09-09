@@ -16,6 +16,7 @@
     "@vantage/core": "*",
     "@vantage/db": "*",
     "@vantage/export-center": "*",
+    "@vantage/free-relay": "*",
     "@vantage/game-year": "*",
     "@vantage/import": "*",
     "@vantage/intel-research": "*",
