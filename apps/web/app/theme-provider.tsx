@@ -168,7 +168,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     && !pathname.startsWith("/display/pit")
     && !pathname.startsWith("/showcase/present")
     // Public sponsor storefront stays shell-free; /support tickets use the Soft-UI app chrome.
-    && !/^\/support\/[^/]+/.test(pathname);
+    && !/^\/support\/[^/]+/.test(pathname)
+    // Token-scoped public form intake. The person answering has no account, so
+    // the product chrome is not just useless to them — the top bar renders a
+    // notifications bell and an avatar for whoever last signed in on that
+    // browser, and the island offers navigation they cannot follow.
+    && !/^\/f\/[a-f0-9]{32}$/.test(pathname);
 
   useEffect(() => {
     if (!productRoute) return;
