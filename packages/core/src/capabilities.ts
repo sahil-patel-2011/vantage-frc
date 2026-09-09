@@ -4,6 +4,12 @@ import { hashEmail } from "./email";
 
 type OrgRole = "owner" | "admin" | "scout" | "viewer";
 
+/**
+ * The capabilities the /team/admin member editor manages. 0620 added two more
+ * to the enum (`manage_budget`, `edit_docs`) that are granted from their own
+ * surfaces (/budget and /doc-roles) under stricter rules, so they are
+ * deliberately absent here — and every write below is scoped to this list.
+ */
 export const ORG_CAPABILITIES = [
   "manage_api_keys",
   "manage_team_settings",
@@ -163,9 +169,14 @@ export async function setMemberCapabilities(
     [input.orgId, input.userId],
   );
 
+  // Scoped to the capabilities THIS editor manages. `manage_budget` and
+  // `edit_docs` (0620) are granted elsewhere — edit_docs only by the owner —
+  // and an unscoped delete here would both silently revoke them and be refused
+  // by their RLS policies, failing the whole save for an admin.
   await client.query(
-    `DELETE FROM membership_capabilities WHERE org_id = $1 AND user_id = $2`,
-    [input.orgId, input.userId],
+    `DELETE FROM membership_capabilities
+      WHERE org_id = $1 AND user_id = $2 AND capability = ANY($3::org_capability[])`,
+    [input.orgId, input.userId, [...ORG_CAPABILITIES]],
   );
   for (const capability of unique) {
     await client.query(
@@ -235,9 +246,13 @@ export async function setMemberRole(
   );
 
   if (input.role === "admin") {
+    // Same scoping as setMemberCapabilities: an admin holds every capability
+    // implicitly, so these rows are redundant — but the owner-granted ones are
+    // not this function's to delete.
     await client.query(
-      `DELETE FROM membership_capabilities WHERE org_id = $1 AND user_id = $2`,
-      [input.orgId, input.userId],
+      `DELETE FROM membership_capabilities
+        WHERE org_id = $1 AND user_id = $2 AND capability = ANY($3::org_capability[])`,
+      [input.orgId, input.userId, [...ORG_CAPABILITIES]],
     );
   }
 
