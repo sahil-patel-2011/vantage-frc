@@ -36,7 +36,12 @@ function readCookiePreference(): ThemePreference | null {
   return null;
 }
 
-function readStoredPreference(): ThemePreference {
+/**
+ * The preference this browser has actually chosen, or `null` when it has never
+ * chosen one. The distinction matters: "no preference yet" must never be
+ * written back as if it were a choice — see the ThemeProvider effect below.
+ */
+function storedPreference(): ThemePreference | null {
   try {
     const pref = localStorage.getItem(PREF_STORAGE_KEY);
     if (pref === "light" || pref === "dark" || pref === "system") return pref;
@@ -49,7 +54,12 @@ function readStoredPreference(): ThemePreference {
   // here meant a browser with a cookie but no localStorage (a fresh profile, a
   // second device, private browsing) rendered dark and then flipped to light on
   // hydration. Same source of truth, same answer.
-  return readCookiePreference() ?? "light";
+  return readCookiePreference();
+}
+
+/** Same lookup, collapsed to what the UI should render when nothing is stored. */
+function readStoredPreference(): ThemePreference {
+  return storedPreference() ?? "light";
 }
 
 /** Keep the OS browser chrome on the same colour as --soft-bg. */
@@ -172,27 +182,60 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (!productRoute) return;
-    const localPref = readStoredPreference();
+    let cancelled = false;
+    const markReady = () => document.documentElement.classList.add("theme-ready");
+
+    // `null` means this browser has never picked a theme. Anything we write for
+    // it would be the *default*, not a choice.
+    const localPref = storedPreference();
     if (localPref === "system") {
       applyPreference("system");
-      document.documentElement.classList.add("theme-ready");
+      markReady();
       return;
     }
+
+    /**
+     * Settle on one preference and write it at most once.
+     *
+     * Two things used to go wrong here, both because the non-persisted branch
+     * called applyPreference() unconditionally:
+     *
+     *  1. With nothing stored, `localPref` fell back to "light" and we stamped
+     *     `vantage-theme-pref=light` into the cookie. The boot script reads the
+     *     cookie *ahead of* localStorage, so that fabricated default then
+     *     outranked a real dark choice on the next boot — a preference the user
+     *     never made, permanently masking the one they did.
+     *  2. `localPref` is a beat old by the time the request lands. Choosing a
+     *     theme from Account → Appearance while /api/theme was in flight got
+     *     stomped back to the pre-request value.
+     *
+     * So: re-read at settle time, let an in-flight choice win over the server's
+     * copy, and when neither side has a preference write nothing at all — the
+     * boot script has already painted the default.
+     */
+    const settle = (serverPref: ThemePreference | null) => {
+      if (cancelled) return;
+      const latest = storedPreference();
+      const chosenInFlight = latest !== localPref ? latest : null;
+      const next = chosenInFlight ?? serverPref ?? localPref;
+      if (next) applyPreference(next);
+      // No preference anywhere: leave storage untouched and only bring the OS
+      // browser chrome in line with whatever the boot script already painted.
+      else syncBrowserColor(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+      markReady();
+    };
+
     void fetch("/api/theme")
       .then(async (response) => response.ok ? response.json() as Promise<{ theme?: Theme; persisted?: boolean }> : null)
       .then((result) => {
-        if (result?.persisted && (result.theme === "light" || result.theme === "dark")) {
-          applyPreference(result.theme);
-          setTimeout(() => document.documentElement.classList.add("theme-ready"), 0);
-        } else {
-          applyPreference(localPref);
-          document.documentElement.classList.add("theme-ready");
-        }
+        const persisted = result?.persisted && (result.theme === "light" || result.theme === "dark")
+          ? result.theme
+          : null;
+        settle(persisted);
       })
-      .catch(() => {
-        applyPreference(localPref);
-        document.documentElement.classList.add("theme-ready");
-      });
+      .catch(() => settle(null));
+
+    return () => { cancelled = true; };
   }, [productRoute]);
 
   return (
