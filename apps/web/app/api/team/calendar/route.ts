@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { randomBytes } from "node:crypto";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
 import { describeRRule, RecurrenceError } from "../../../../lib/calendar/recurrence";
@@ -455,82 +455,90 @@ async function loadView(
     };
   });
 
-  let attendanceEvents: LinkableAttendance[] = [];
-  try {
-    const attendance = await client.query<LinkableAttendance>(
-      `SELECT id, title, occurred_on::text AS "occurredOn", kind
-       FROM attendance_events
-       WHERE org_id = $1
-       ORDER BY occurred_on DESC
-       LIMIT 100`,
-      [orgId],
-    );
-    attendanceEvents = attendance.rows;
-  } catch {
-    // Table absent: stays [].
-  }
+  // Four "Table absent: stays []" reads run in a row here on one transaction.
+  // Whichever failed first aborted it, so every later section — the other three,
+  // the calendar feed, the GitHub overlay — came back empty as well, and the
+  // calendar looked like a team with nothing scheduled. Each takes a savepoint.
+  const attendanceEvents = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<LinkableAttendance>(
+          `SELECT id, title, occurred_on::text AS "occurredOn", kind
+           FROM attendance_events
+           WHERE org_id = $1
+           ORDER BY occurred_on DESC
+           LIMIT 100`,
+          [orgId],
+        )
+      ).rows,
+    [] as LinkableAttendance[],
+  );
 
-  let practiceSessions: LinkablePractice[] = [];
-  try {
-    const practice = await client.query<LinkablePractice>(
-      `SELECT id, title, session_date::text AS "sessionDate"
-       FROM driver_sessions
-       WHERE org_id = $1
-       ORDER BY session_date DESC
-       LIMIT 100`,
-      [orgId],
-    );
-    practiceSessions = practice.rows;
-  } catch {
-    // Table absent: stays [].
-  }
+  const practiceSessions = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<LinkablePractice>(
+          `SELECT id, title, session_date::text AS "sessionDate"
+           FROM driver_sessions
+           WHERE org_id = $1
+           ORDER BY session_date DESC
+           LIMIT 100`,
+          [orgId],
+        )
+      ).rows,
+    [] as LinkablePractice[],
+  );
 
   const calendarFeed = await loadCalendarFeed(client, orgId, userId, feedScope, feedSubteamId);
 
-  let duties: DutyOnCalendar[] = [];
-  try {
-    const roster = await listDutiesForOrg(client, orgId, userId);
-    duties = roster.map((duty) => ({
-      id: duty.id,
-      title: duty.title,
-      kind: duty.kind,
-      startsAt: duty.startsAt,
-      endsAt: duty.endsAt,
-      subteamId: duty.subteamId,
-      subteamName: duty.subteamName,
-      subteamColor: duty.subteamColor,
-      assignedUserId: duty.assignedUserId,
-      assignedUserName: duty.assignedUserName,
-      calendarEventId: duty.calendarEventId,
-      notes: duty.notes,
-      createdByName: duty.createdByName,
-      mine: duty.mine,
-    }));
-  } catch {
-    // Table absent: stays [].
-  }
+  const duties = await withSavepoint(
+    client,
+    async () => {
+      const roster = await listDutiesForOrg(client, orgId, userId);
+      return roster.map((duty) => ({
+        id: duty.id,
+        title: duty.title,
+        kind: duty.kind,
+        startsAt: duty.startsAt,
+        endsAt: duty.endsAt,
+        subteamId: duty.subteamId,
+        subteamName: duty.subteamName,
+        subteamColor: duty.subteamColor,
+        assignedUserId: duty.assignedUserId,
+        assignedUserName: duty.assignedUserName,
+        calendarEventId: duty.calendarEventId,
+        notes: duty.notes,
+        createdByName: duty.createdByName,
+        mine: duty.mine,
+      }));
+    },
+    [] as DutyOnCalendar[],
+  );
 
 
-  let travelLegs: TravelLegOnCalendar[] = [];
-  try {
-    const legs = await client.query<TravelLegOnCalendar>(
-      `SELECT l.id, l.trip_id AS "tripId", t.title AS "tripTitle", l.kind, l.title,
-              l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
-              l.location, l.meeting_point AS "meetingPoint", l.notes,
-              l.subteam_id AS "subteamId", st.name AS "subteamName", st.color AS "subteamColor",
-              l.calendar_event_id AS "calendarEventId"
-       FROM logistics_travel_legs l
-       JOIN logistics_trips t ON t.id = l.trip_id
-       LEFT JOIN team_subteams st ON st.id = l.subteam_id
-       WHERE l.org_id = $1
-       ORDER BY l.starts_at, l.sort_order
-       LIMIT 200`,
-      [orgId],
-    );
-    travelLegs = legs.rows;
-  } catch {
-    // Table absent: stays [].
-  }
+  const travelLegs = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<TravelLegOnCalendar>(
+          `SELECT l.id, l.trip_id AS "tripId", t.title AS "tripTitle", l.kind, l.title,
+                  l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
+                  l.location, l.meeting_point AS "meetingPoint", l.notes,
+                  l.subteam_id AS "subteamId", st.name AS "subteamName", st.color AS "subteamColor",
+                  l.calendar_event_id AS "calendarEventId"
+           FROM logistics_travel_legs l
+           JOIN logistics_trips t ON t.id = l.trip_id
+           LEFT JOIN team_subteams st ON st.id = l.subteam_id
+           WHERE l.org_id = $1
+           ORDER BY l.starts_at, l.sort_order
+           LIMIT 200`,
+          [orgId],
+        )
+      ).rows,
+    [] as TravelLegOnCalendar[],
+  );
 
   const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
   const tbaMatches = await loadTbaMatchCalendar(client, orgId, orgRow.teamNumber);
@@ -1417,18 +1425,16 @@ export async function POST(request: Request) {
               throw error;
             }
           }
-          try {
-            await notifyCalendarEvent(client, {
-              orgId: action.orgId,
-              actorUserId: userId,
-              eventId,
-              title: action.title,
-              subteamId: action.subteamId,
-              mode: "created",
-            });
-          } catch {
-            // Inbox notify is best-effort; event creation still succeeds.
-          }
+          // notifyCalendarEvent takes its own savepoint, so a failed fan-out
+          // costs the notifications and not the event that was just written.
+          await notifyCalendarEvent(client, {
+            orgId: action.orgId,
+            actorUserId: userId,
+            eventId,
+            title: action.title,
+            subteamId: action.subteamId,
+            mode: "created",
+          });
           return { id: eventId, attendanceEventId };
         }
 
@@ -1465,18 +1471,14 @@ export async function POST(request: Request) {
           );
           if (!updated.rowCount) throw new HttpError(404, "Event not found");
           const row = updated.rows[0]!;
-          try {
-            await notifyCalendarEvent(client, {
-              orgId: action.orgId,
-              actorUserId: userId,
-              eventId: action.id,
-              title: row.title,
-              subteamId: row.subteamId,
-              mode: "updated",
-            });
-          } catch {
-            // Inbox notify is best-effort; event update still succeeds.
-          }
+          await notifyCalendarEvent(client, {
+            orgId: action.orgId,
+            actorUserId: userId,
+            eventId: action.id,
+            title: row.title,
+            subteamId: row.subteamId,
+            mode: "updated",
+          });
           return { ok: true };
         }
 

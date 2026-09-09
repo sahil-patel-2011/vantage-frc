@@ -6,6 +6,7 @@
 // rows and does not default a count when the order has none.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepointOrThrow } from "@vantage/db";
 import { adjustStock } from "../parts/store";
 
 export const RECEIVE_SOURCE_KIND = "purchase_request";
@@ -158,16 +159,24 @@ export async function receiveToInventory(
   if (!exists.rowCount) return { applied: false, reason: "missing_item" };
 
   try {
-    await adjustStock(client, {
-      orgId: input.orgId,
-      userId: input.userId,
-      itemId: plan.itemId,
-      delta: plan.delta,
-      reason: plan.reason,
-      note: plan.note,
-      sourceKind: plan.sourceKind,
-      sourceId: plan.sourceId,
-    });
+    // withSavepointOrThrow, not a plain try: a unique violation is a Postgres
+    // error, so by the time this catch classified it as "already_applied" the
+    // transaction was already aborted and the caller's next statement — the
+    // purchase-order update, or the next line of a multi-line receipt — failed
+    // with 25P02. Rolling back to the savepoint first makes "already_applied"
+    // and "missing_item" the harmless outcomes they read as.
+    await withSavepointOrThrow(client, () =>
+      adjustStock(client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        itemId: plan.itemId,
+        delta: plan.delta,
+        reason: plan.reason,
+        note: plan.note,
+        sourceKind: plan.sourceKind,
+        sourceId: plan.sourceId,
+      }),
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "Item not found") {
       return { applied: false, reason: "missing_item" };

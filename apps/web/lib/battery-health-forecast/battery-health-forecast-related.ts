@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Battery Health Forecast (never DEMO IR / EOL metrics). */
@@ -103,19 +104,19 @@ export function batteryHealthForecastSetupSteps(
     {
       id: "battery-rotation",
       label: "Open Battery Rotation",
-      detail: "Match assignments stay blank until packs exist — never DEMO charge plans.",
+      detail: "Match assignments stay blank until packs exist — no sample charge plans.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — never DEMO health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "pit",
       label: "Open Pit Command",
-      detail: "Event-day rack status uses the same real pack evidence — never DEMO volts.",
+      detail: "Event-day rack status uses the same real pack evidence — no sample volts.",
       href: withOrgHref("/pit", orgId),
     },
   ];
@@ -228,62 +229,10 @@ export function batteryHealthForecastNextActions(input: {
   const overdueCount = input.overdueCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Forecasts are org-scoped — pick a team before projecting pack retirement.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "battery-rotation",
-          label: "Open Battery Rotation",
-          detail: "Match assignments stay blank until packs exist — never DEMO charge plans.",
-          href: hubHref("/competition", "battery-rotation", null),
-        },
-        {
-          id: "batteries",
-          label: "Open Batteries",
-          detail: "IR and cycles stay blank until logged — never DEMO health scores.",
-          href: hubHref("/team", "batteries", null),
-        },
-        {
-          id: "pit",
-          label: "Open Pit Command",
-          detail: "Event-day rack status stays empty until packs are tracked — never DEMO volts.",
-          href: withOrgHref("/pit", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Battery Health Forecast can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "battery-rotation",
-        label: "Open Battery Rotation",
-        detail: "Plan which pack runs which match once packs exist.",
-        href: hubHref("/competition", "battery-rotation", orgId),
-      },
-      {
-        id: "batteries",
-        label: "Open Batteries",
-        detail: "Log IR and cycle evidence for the same fleet.",
-        href: hubHref("/team", "batteries", orgId),
-      },
-      {
-        id: "pit",
-        label: "Open Pit Command",
-        detail: "Event-day rack status uses the same pack evidence.",
-        href: withOrgHref("/pit", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of batteryHealthForecastSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(batteryHealthForecastSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

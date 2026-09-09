@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Collaborative Pick List (never DEMO ranks). */
@@ -80,13 +81,13 @@ export function picklistCollabSetupSteps(orgId?: string | null): PicklistCollabS
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist — never DEMO rankings.",
+      detail: "Event strategy stays empty until real metrics exist — no sample rankings.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them — no sample scores.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];
@@ -183,50 +184,10 @@ export function picklistCollabNextActions(input: {
   const totalVotes = input.totalVotes ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Pick lists are org-scoped — pick a team before ranking partners.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Collaborative Pick List can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before creating a pick list.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Log match scouting so ranks have real samples.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of picklistCollabSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(picklistCollabSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

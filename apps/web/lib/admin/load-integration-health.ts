@@ -10,6 +10,7 @@
  * checks and the setupStatus helpers each feature already ships.
  */
 import type { PoolClient, QueryResultRow } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { emailNotificationsSetupStatus } from "@vantage/core";
 import { onshapeSetupStatus } from "@vantage/cad";
 import {
@@ -41,17 +42,21 @@ function anyEnvFlag(env: NodeJS.ProcessEnv, ...names: string[]): boolean {
   return names.some((name) => Boolean(env[name]?.trim()));
 }
 
+/**
+ * A missing/renamed table on an older schema degrades to "no signal" rather than a
+ * crash — but only a savepoint makes that per-query.
+ *
+ * These run together in one `Promise.all` on the request transaction. With a plain
+ * try/catch the first failure aborted the transaction, so every later query
+ * returned [] too and the integration-health page reported "no signal" across the
+ * board — a uniformly dark dashboard that looks like an answer and is not one.
+ */
 async function safeQuery<T extends QueryResultRow>(
   client: PoolClient,
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  try {
-    return (await client.query<T>(sql, params)).rows;
-  } catch {
-    // A missing/renamed table on an older schema degrades to "no signal" rather than a crash.
-    return [];
-  }
+  return withSavepoint(client, async () => (await client.query<T>(sql, params)).rows, [] as T[]);
 }
 
 export async function loadIntegrationHealth(
@@ -61,10 +66,7 @@ export async function loadIntegrationHealth(
 ) {
   const [dbOk, referenceHealth, tbaCredentialRows, nexusRows, providerKeyRows, connectorRows, pricedPlanRows] =
     await Promise.all([
-      client
-        .query("SELECT 1 AS ok")
-        .then((result) => result.rows[0]?.ok === 1)
-        .catch(() => false),
+      withSavepoint(client, async () => (await client.query("SELECT 1 AS ok")).rows[0]?.ok === 1, false),
       loadDataSourceHealth(client, null),
       safeQuery<{ count: number }>(
         client,

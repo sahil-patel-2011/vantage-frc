@@ -46,8 +46,19 @@ describe("batteryHealth", () => {
     expect(batteryHealth({ ageMonths: 60 }).status).toBe("aging");
   });
 
-  it("stays good with no measurements at all", () => {
-    expect(batteryHealth({}).status).toBe("good");
+  it("has no score at all with no measurement, and says so", () => {
+    // It used to score a perfect 100 here — a pack nobody had tested outranked
+    // every pack the team had. There is no health number without a measurement.
+    const health = batteryHealth({});
+    expect(health.score).toBeNull();
+    expect(health.status).toBe("good");
+    expect(health.reasons.join(" ")).toMatch(/health is unknown, not good/i);
+  });
+
+  it("scores from cycles and age only once a real measurement exists", () => {
+    expect(batteryHealth({ cycleCount: 400 }).score).toBeNull();
+    expect(batteryHealth({ ageMonths: 60 }).score).toBeNull();
+    expect(batteryHealth({ restingVoltage: 12.7, cycleCount: 400 }).score).not.toBeNull();
   });
 });
 
@@ -127,6 +138,26 @@ describe("rankForRotation", () => {
       pack("d", "active", { status: "retire", score: 20, reasons: [] }, null),
     ]);
     expect(ranked.map((p) => p.id)).toEqual(["b", "a"]);
+  });
+
+  it("ranks an unmeasured pack behind every pack whose health is known", () => {
+    // The whole point: a null score is "we do not know", and the drive team is
+    // handed a pack the team knows about. A score of 100 on no evidence used to
+    // put the untested pack at the front of the queue.
+    const ranked = rankForRotation([
+      pack("untested", "active", { status: "good", score: null, reasons: [] }, null),
+      pack("weak", "active", { status: "aging", score: 55, reasons: [] }, "2026-03-01T12:00:00Z"),
+      pack("strong", "active", { status: "good", score: 92, reasons: [] }, "2026-03-02T12:00:00Z"),
+    ]);
+    expect(ranked.map((p) => p.id)).toEqual(["strong", "weak", "untested"]);
+  });
+
+  it("orders two unmeasured packs by least-recently-used, not by an invented score", () => {
+    const ranked = rankForRotation([
+      pack("recent", "active", { status: "good", score: null, reasons: [] }, "2026-03-05T12:00:00Z"),
+      pack("stale", "active", { status: "good", score: null, reasons: [] }, "2026-02-01T12:00:00Z"),
+    ]);
+    expect(ranked.map((p) => p.id)).toEqual(["stale", "recent"]);
   });
 });
 

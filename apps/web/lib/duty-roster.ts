@@ -2,6 +2,7 @@
 // duty-roster-shared.ts so Soft-UI never pulls @vantage/core into the browser.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { emitPreferredNotification } from "@vantage/core";
 import {
   DUTY_KIND_LABELS,
@@ -332,15 +333,19 @@ export async function deleteDuty(
 
   const calendarEventId = existing.rows[0]?.calendarEventId;
   if (calendarEventId) {
-    try {
-      await client.query(
-        `DELETE FROM subteam_calendar_events
-         WHERE id = $1 AND org_id = $2 AND notes LIKE 'Duty:%'`,
-        [calendarEventId, input.orgId],
-      );
-    } catch {
-      // Linked event may already be gone or calendar tables unavailable.
-    }
+    // Linked event may already be gone or calendar tables unavailable. Savepointed
+    // so that stays a tolerated miss: the duty DELETE above is already in this
+    // transaction, and a bare catch here would have taken it down at COMMIT.
+    await withSavepoint(
+      client,
+      () =>
+        client.query(
+          `DELETE FROM subteam_calendar_events
+           WHERE id = $1 AND org_id = $2 AND notes LIKE 'Duty:%'`,
+          [calendarEventId, input.orgId],
+        ),
+      null,
+    );
   }
 }
 
@@ -382,10 +387,20 @@ export async function computeDutyRosterView(
        LIMIT 500`,
       [org.orgId],
     ),
-    client.query<{ id: string; name: string; color: string }>(
-      `SELECT id, name, color FROM team_subteams WHERE org_id = $1 ORDER BY sort_order, lower(name)`,
-      [org.orgId],
-    ).catch(() => ({ rows: [] as { id: string; name: string; color: string }[] })),
+    // team_subteams is optional here; `.catch(() => …)` alone left the shared
+    // transaction aborted, so a missing table emptied the duties and members
+    // loaded alongside it rather than just the subteam colours.
+    withSavepoint(
+      client,
+      async () =>
+        (
+          await client.query<{ id: string; name: string; color: string }>(
+            `SELECT id, name, color FROM team_subteams WHERE org_id = $1 ORDER BY sort_order, lower(name)`,
+            [org.orgId],
+          )
+        ).rows,
+      [] as { id: string; name: string; color: string }[],
+    ),
   ]);
 
   return {
@@ -398,6 +413,6 @@ export async function computeDutyRosterView(
     canManage: org.role === "owner" || org.role === "admin",
     duties,
     members: members.rows,
-    subteams: subteams.rows,
+    subteams,
   };
 }

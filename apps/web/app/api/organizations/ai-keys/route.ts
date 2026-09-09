@@ -7,7 +7,7 @@ import {
 } from "@vantage/agent";
 import { createKms, encryptSecret } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { aiKeysEncryptionStatus } from "../../../../lib/ai-keys/kms-status";
 import {
@@ -78,7 +78,15 @@ async function loadLocalConnector(client: Parameters<Parameters<typeof withRls>[
 }
 
 async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]>[0], orgId: string) {
-  try {
+  // org_byok_routing_prefs may predate its migration, so automode is the right
+  // default — but the plain catch aborted the transaction, so the key list this
+  // route loads next came back empty and the page said "no keys configured".
+  const defaults = {
+    mode: "automode" as const,
+    fixedModelId: null as string | null,
+    enabledModelIds: BYOK_MODEL_OPTIONS.map((m) => m.id),
+  };
+  return withSavepoint(client, async () => {
     const row = (
       await client.query<{
         mode: string;
@@ -93,13 +101,7 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
         [orgId],
       )
     ).rows[0];
-    if (!row) {
-      return {
-        mode: "automode" as const,
-        fixedModelId: null as string | null,
-        enabledModelIds: BYOK_MODEL_OPTIONS.map((m) => m.id),
-      };
-    }
+    if (!row) return defaults;
     return {
       mode: row.mode === "fixed" ? ("fixed" as const) : ("automode" as const),
       fixedModelId: row.fixedModelId,
@@ -108,13 +110,7 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
           ? row.enabledModelIds
           : BYOK_MODEL_OPTIONS.map((m) => m.id),
     };
-  } catch {
-    return {
-      mode: "automode" as const,
-      fixedModelId: null as string | null,
-      enabledModelIds: BYOK_MODEL_OPTIONS.map((m) => m.id),
-    };
-  }
+  }, defaults);
 }
 
 export async function GET(request: Request) {

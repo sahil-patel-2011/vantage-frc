@@ -13,6 +13,7 @@ import {
   type MessageObjectLink,
 } from "../../../lib/messages/object-links";
 import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/history";
+import { cachedSchemaSupport } from "../../../lib/schema-probe";
 import {
   assertChannelWritable,
   canManageChannels,
@@ -84,64 +85,26 @@ let pinsSupportedCache: boolean | null = null;
 let mentionsSupportedCache: boolean | null = null;
 let objectLinksSupportedCache: boolean | null = null;
 
-/**
- * Ask the catalog whether an optional table/column exists, without letting the
- * answer poison anything.
- *
- * These probes are process-lifetime caches. They used to be a bare
- * `try { … } catch { cache = false }`, which had two teeth:
- *
- *  1. The request runs in one `withRls` transaction. If an earlier statement had
- *     already aborted it, the probe failed with 25P02 and the catch cached
- *     `false` — permanently disabling mentions, pins or object links for the
- *     whole server process, for every org, until a restart. A transient failure
- *     in one request turned into a fleet-wide feature outage.
- *  2. Swallowing inside the transaction leaves it aborted for everything after.
- *
- * A savepoint contains the failure, and a failed probe is answered `false` for
- * this request only — never cached. Only a definitive answer is remembered.
- */
-async function probeSchemaSupport(client: PoolClient, sql: string): Promise<boolean | null> {
-  const savepoint = "messages_schema_probe";
-  try {
-    await client.query(`SAVEPOINT ${savepoint}`);
-  } catch {
-    // Not inside a usable transaction; probe directly and still refuse to cache
-    // a failure.
-    try {
-      return Boolean((await client.query(sql)).rowCount);
-    } catch {
-      return null;
-    }
-  }
-  try {
-    const row = await client.query(sql);
-    await client.query(`RELEASE SAVEPOINT ${savepoint}`);
-    return Boolean(row.rowCount);
-  } catch {
-    try {
-      await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
-      await client.query(`RELEASE SAVEPOINT ${savepoint}`);
-    } catch {
-      // Connection is unusable; withRls will roll the request back.
-    }
-    return null;
-  }
-}
+// The savepoint-protected, never-caches-a-failure probe these three share now
+// lives in lib/schema-probe.ts, alongside the identical caches in channels.ts,
+// supervision.ts and hours/sweep.ts. Its header explains what the old
+// `catch { cache = false }` cost.
 
 async function supportsObjectLinks(client: PoolClient): Promise<boolean> {
-  if (objectLinksSupportedCache != null) return objectLinksSupportedCache;
-  const supported = await probeSchemaSupport(
+  return cachedSchemaSupport(
     client,
+    {
+      read: () => objectLinksSupportedCache,
+      write: (value) => {
+        objectLinksSupportedCache = value;
+      },
+    },
     `SELECT 1
        FROM information_schema.tables
        WHERE table_schema = 'public'
          AND table_name = 'org_message_object_links'
        LIMIT 1`,
   );
-  if (supported == null) return false;
-  objectLinksSupportedCache = supported;
-  return supported;
 }
 
 async function attachObjectLinks(client: PoolClient, orgId: string, messages: MessageRow[]) {
@@ -445,24 +408,31 @@ async function listLinkTargets(
 }
 
 async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
-  if (mentionsSupportedCache != null) return mentionsSupportedCache;
-  const supported = await probeSchemaSupport(
+  return cachedSchemaSupport(
     client,
+    {
+      read: () => mentionsSupportedCache,
+      write: (value) => {
+        mentionsSupportedCache = value;
+      },
+    },
     `SELECT 1
        FROM information_schema.tables
        WHERE table_schema = 'public'
          AND table_name = 'org_message_mentions'
        LIMIT 1`,
   );
-  if (supported == null) return false;
-  mentionsSupportedCache = supported;
-  return supported;
 }
 
 async function supportsMessagePins(client: PoolClient): Promise<boolean> {
-  if (pinsSupportedCache != null) return pinsSupportedCache;
-  const supported = await probeSchemaSupport(
+  return cachedSchemaSupport(
     client,
+    {
+      read: () => pinsSupportedCache,
+      write: (value) => {
+        pinsSupportedCache = value;
+      },
+    },
     `SELECT 1
        FROM information_schema.columns
        WHERE table_schema = 'public'
@@ -470,9 +440,6 @@ async function supportsMessagePins(client: PoolClient): Promise<boolean> {
          AND column_name = 'pinned_at'
        LIMIT 1`,
   );
-  if (supported == null) return false;
-  pinsSupportedCache = supported;
-  return supported;
 }
 
 async function requireSession() {

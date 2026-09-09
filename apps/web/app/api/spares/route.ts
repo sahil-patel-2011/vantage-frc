@@ -100,6 +100,7 @@ export async function POST(request: Request) {
             reorderPoint: qtyOrNull(body.reorderPoint) ?? 0,
             preferredVendor: trimmedOrNull(body.preferredVendor, 200),
             notes: trimmedOrNull(body.notes),
+            isSpare: Boolean(body.isSpare),
           });
           break;
         }
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
             reorderPoint: body.reorderPoint === undefined ? undefined : (qtyOrNull(body.reorderPoint) ?? undefined),
             preferredVendor: body.preferredVendor === undefined ? undefined : trimmedOrNull(body.preferredVendor, 200),
             notes: body.notes === undefined ? undefined : trimmedOrNull(body.notes),
+            isSpare: body.isSpare === undefined ? undefined : Boolean(body.isSpare),
           });
           break;
         }

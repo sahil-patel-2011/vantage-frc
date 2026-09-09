@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Sponsor Wall (never DEMO sponsor counts). */
@@ -190,39 +191,10 @@ export function sponsorWallNextActions(input: {
   const publishedCount = input.publishedCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Sponsor walls are org-scoped — pick a team before adding logos.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "sponsors",
-          label: "Open Sponsor CRM",
-          detail: "Sponsor rows stay blank until your team logs them — never DEMO logos.",
-          href: hubHref("/business", "sponsors", null),
-        },
-        {
-          id: "sponsorship",
-          label: "Open Sponsorship",
-          detail: "One-pagers stay empty until real packages exist — never invent DEMO tiers.",
-          href: hubHref("/business", "sponsorship", null),
-        },
-        {
-          id: "sponsor-suite",
-          label: "Open Sponsor Suite",
-          detail: "Suite assets stay blank until real sponsors land — never DEMO shout-outs.",
-          href: hubHref("/business", "sponsor-suite", null),
-        },
-      ];
-    }
-    return sponsorWallSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of sponsorWallSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(sponsorWallSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import {
   buildDefaultCadPlan,
   cadAiPlanUserMessage,
@@ -265,7 +265,10 @@ export async function POST(request: Request) {
           );
         }
 
-        try {
+        // FMEA unavailable — continue without invented risks. Savepointed, because
+        // createBriefJob writes below and a plain catch would have left the
+        // transaction aborted and thrown the brief away at COMMIT.
+        await withSavepoint(client, async () => {
           const { loadRepeatFailureAlerts } = await import("../../../lib/fmea/repeat-failures");
           const alerts = await loadRepeatFailureAlerts(client, orgId, { limit: 8 });
           for (const alert of alerts) {
@@ -284,9 +287,7 @@ export async function POST(request: Request) {
               classification: "hard_metric",
             });
           }
-        } catch {
-          // FMEA unavailable — continue without invented risks
-        }
+        }, undefined);
         const matchKey = body.matchKey ? String(body.matchKey).trim() : "";
         const seasonYearRaw = body.seasonYear != null ? Number(body.seasonYear) : NaN;
         const seasonYear =

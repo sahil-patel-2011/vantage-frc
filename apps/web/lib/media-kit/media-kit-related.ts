@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Media Kit (never DEMO asset counts). */
@@ -95,13 +96,13 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Pair media assets with real sponsor decks — never invent DEMO logos.",
+      detail: "Pair media assets with real sponsor decks — no sample logos.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
     {
       id: "outreach-calendar",
       label: "Open Outreach Calendar",
-      detail: "Outreach stays empty until you schedule real events — never DEMO reach.",
+      detail: "Outreach stays empty until you schedule real events — no sample reach.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },
   ];
@@ -217,33 +218,10 @@ export function mediaKitNextActions(input: {
   const documentCount = input.documentCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Media kits are org-scoped — pick a team before recording assets.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "sponsor-suite",
-          label: "Open Sponsor Suite",
-          detail: "Suite decks stay blank until real sponsors land — never DEMO logos.",
-          href: hubHref("/business", "sponsor-suite", null),
-        },
-        {
-          id: "outreach-calendar",
-          label: "Open Outreach Calendar",
-          detail: "Outreach stays empty until you schedule real events — never invent DEMO reach.",
-          href: hubHref("/business", "outreach-calendar", null),
-        },
-      ];
-    }
-    return mediaKitSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of mediaKitSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(mediaKitSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

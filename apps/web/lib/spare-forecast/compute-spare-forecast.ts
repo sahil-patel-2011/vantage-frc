@@ -34,8 +34,14 @@ export type SpareForecastView =
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
-      /** Real spare-category inventory rows only — never DEMO spare counts. */
+      /** Real is_spare inventory rows only — never DEMO spare counts. */
       spareBinCount: number;
+      /**
+       * How many of `spareBinCount` are consumables — the rows /spares manages.
+       * Before 0520 this was always 0 by construction, and the two "spares"
+       * surfaces shared no data at all.
+       */
+      consumableSpareCount: number;
       forecastLines: SpareForecastLine[];
       purchaseRequests: PurchaseRequestDraft[];
       /** Closed 200-day window → offseason; remaining-season risk is null, not "no risk". */
@@ -54,6 +60,7 @@ function isStatus(value: unknown): value is PurchaseRequestStatus {
 type InventoryRow = {
   id: string;
   name: string;
+  kind: string;
   category: string;
   subsystem: string | null;
   quantity: string;
@@ -159,15 +166,28 @@ async function loadForecastLines(
   orgId: string,
   seasonYear: number,
   asOf: Date = new Date(),
-): Promise<{ spareBinCount: number; forecastLines: SpareForecastLine[]; seasonHorizon: SeasonHorizon }> {
+): Promise<{
+  spareBinCount: number;
+  consumableSpareCount: number;
+  forecastLines: SpareForecastLine[];
+  seasonHorizon: SeasonHorizon;
+}> {
   const { daysElapsed, daysRemaining, horizon } = seasonWindow(seasonYear, asOf);
 
   const [inventoryResult, fmeaResult] = await Promise.all([
     client.query<InventoryRow>(
-      `SELECT id, name, category, subsystem, quantity::text AS quantity,
+      // is_spare, not category = 'spare' (migration 0520). 'spare' was a sibling
+      // of 'motor' / 'gearbox' in the 0037 taxonomy, so a team that filed its
+      // backup gearbox as a gearbox — which is what the category picker invites —
+      // got an empty forecast and no way to tell why. The flag is orthogonal to
+      // both category and kind, so a consumable the team holds as a spare (the
+      // /spares page's rows) is now forecast alongside spare parts. Those two
+      // surfaces could not share a row before: 'spare' is not a consumable
+      // category, so `category = 'spare'` and `kind = 'consumable'` were disjoint.
+      `SELECT id, name, kind, category, subsystem, quantity::text AS quantity,
               unit_cost::text AS "unitCost", min_quantity::text AS "minQuantity"
        FROM inventory_items
-       WHERE org_id = $1 AND archived = false AND category = 'spare'
+       WHERE org_id = $1 AND archived = false AND is_spare
        ORDER BY name
        LIMIT 200`,
       [orgId],
@@ -213,6 +233,7 @@ async function loadForecastLines(
   }
   return {
     spareBinCount: inventoryResult.rows.length,
+    consumableSpareCount: inventoryResult.rows.filter((row) => row.kind === "consumable").length,
     forecastLines: sortForecastLines(lines),
     seasonHorizon: horizon,
   };
@@ -276,6 +297,7 @@ export async function computeSpareForecastView(
     seasonYear,
     seasons,
     spareBinCount: forecastBundle.spareBinCount,
+    consumableSpareCount: forecastBundle.consumableSpareCount,
     forecastLines: forecastBundle.forecastLines,
     purchaseRequests: purchaseRequestResult.rows.map(mapPurchaseRequest),
     seasonHorizon: forecastBundle.seasonHorizon,

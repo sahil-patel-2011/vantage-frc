@@ -1,5 +1,6 @@
 import { emitPreferredNotification } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { recordMoney, removeMoney } from "../finance/ledger";
 import {
   canTransitionOrder,
@@ -294,12 +295,23 @@ export async function computeOrdersView(
 
   const seasonYear = input.seasonYear ?? currentSeasonYear();
 
-  try {
-    const [orders, members, financeAiEnabled] = await Promise.all([
-      loadOrders(client, org.orgId, seasonYear),
-      loadMembers(client, org.orgId),
-      loadFinanceAiEnabled(client, org.orgId, seasonYear),
-    ]);
+  // Called by the POST handler to re-render after its write, so a plain catch
+  // here aborted the transaction and threw away the purchase request that had
+  // just been submitted, answering "setup_required" instead. Savepointed.
+  const loaded = await withSavepoint(
+    client,
+    async () => {
+      const [orders, members, financeAiEnabled] = await Promise.all([
+        loadOrders(client, org.orgId, seasonYear),
+        loadMembers(client, org.orgId),
+        loadFinanceAiEnabled(client, org.orgId, seasonYear),
+      ]);
+      return { orders, members, financeAiEnabled };
+    },
+    null,
+  );
+  if (loaded) {
+    const { orders, members, financeAiEnabled } = loaded;
     const metrics = computeOrderMetrics(orders, input.userId);
     const aiSummary = financeAiEnabled ? summarizeOpenOrders(orders) : null;
     const focusOrderId =
@@ -320,16 +332,15 @@ export async function computeOrdersView(
       focusOrderId,
       computedAt: new Date().toISOString(),
     };
-  } catch {
-    return {
-      status: "setup_required",
-      message: "Could not load purchase requests. Confirm database migrations have been applied.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
-      orgId: org.orgId,
-    };
   }
+  return {
+    status: "setup_required",
+    message: "Could not load purchase requests. Confirm database migrations have been applied.",
+    steps: [
+      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+    ],
+    orgId: org.orgId,
+  };
 }
 
 export async function submitOrder(

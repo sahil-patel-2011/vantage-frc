@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Drive-Team Signals (never DEMO cheat sheets). */
@@ -164,50 +165,10 @@ export function driveTeamSignalsNextActions(input: {
   const signalCount = input.signalCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Signal sheets are org-scoped — pick a team before defining callouts.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "checklist",
-          label: "Open Match Checklist",
-          detail: "Pre-match cues stay blank until your team builds them.",
-          href: hubHref("/competition", "match-checklist", null),
-        },
-        {
-          id: "cards",
-          label: "Open Strategy Cards",
-          detail: "Strategy cards stay empty until match plans exist.",
-          href: hubHref("/competition", "match-strategy-cards", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Drive-Team Signals can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "checklist",
-        label: "Open Match Checklist",
-        detail: "Pair pre-match cues with drive-crew language.",
-        href: hubHref("/competition", "match-checklist", orgId),
-      },
-      {
-        id: "cards",
-        label: "Open Strategy Cards",
-        detail: "Match plans reference the same callouts.",
-        href: hubHref("/competition", "match-strategy-cards", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of driveTeamSignalsSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(driveTeamSignalsSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

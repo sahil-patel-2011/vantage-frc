@@ -205,18 +205,16 @@ async function syncVisitCalendar(
       [input.calendarEventId, input.orgId, calTitle, input.startsAt, input.endsAt, input.location, notes],
     );
     if (updated.rowCount) {
-      try {
-        await notifyCalendarEvent(client, {
-          orgId: input.orgId,
-          actorUserId: input.userId,
-          eventId: input.calendarEventId,
-          title: calTitle,
-          subteamId: null,
-          mode: "updated",
-        });
-      } catch {
-        /* best-effort */
-      }
+      // Savepointed inside notifyCalendarEvent: a failed fan-out must not take
+      // the calendar row (and the visit invite pointing at it) down with it.
+      await notifyCalendarEvent(client, {
+        orgId: input.orgId,
+        actorUserId: input.userId,
+        eventId: input.calendarEventId,
+        title: calTitle,
+        subteamId: null,
+        mode: "updated",
+      });
       return input.calendarEventId;
     }
   }
@@ -234,18 +232,14 @@ async function syncVisitCalendar(
      WHERE id = $2::uuid AND org_id = $3::uuid`,
     [eventId, input.visitId, input.orgId],
   );
-  try {
-    await notifyCalendarEvent(client, {
-      orgId: input.orgId,
-      actorUserId: input.userId,
-      eventId,
-      title: calTitle,
-      subteamId: null,
-      mode: "created",
-    });
-  } catch {
-    /* best-effort */
-  }
+  await notifyCalendarEvent(client, {
+    orgId: input.orgId,
+    actorUserId: input.userId,
+    eventId,
+    title: calTitle,
+    subteamId: null,
+    mode: "created",
+  });
   return eventId;
 }
 

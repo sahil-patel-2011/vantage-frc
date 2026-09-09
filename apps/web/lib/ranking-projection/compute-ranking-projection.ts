@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   buildRemainingMatches,
   buildStandings,
@@ -264,10 +265,13 @@ export async function computeRankingProjectionView(
     row.wins == null ? null : `${row.wins}-${row.losses ?? 0}-${row.ties ?? 0}`;
 
   // The planner is additive: a failure here must never take the rank card down.
-  const planner = await loadWhatIf(client, eventKey, eventYear).catch(() => ({
+  // `.catch()` alone did not achieve that — the failed statement left the shared
+  // transaction aborted, so the rank card's own reads were already done but the
+  // request's COMMIT could not land whatever else it was going to write.
+  const planner = await withSavepoint(client, () => loadWhatIf(client, eventKey, eventYear), {
     whatIf: null,
     message: "Could not load the remaining schedule for what-if planning.",
-  }));
+  });
 
   return {
     status: "live",

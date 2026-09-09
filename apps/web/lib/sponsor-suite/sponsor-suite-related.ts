@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Sponsor Suite (never DEMO fundraising metrics). */
@@ -86,13 +87,13 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     {
       id: "sponsorship",
       label: "Open Sponsorship",
-      detail: "One-pagers stay empty until real packages exist — never invent DEMO tiers.",
+      detail: "One-pagers stay empty until real packages exist — no sample tiers.",
       href: hubHref("/business", "sponsorship", orgId),
     },
     {
       id: "sponsor-wall",
       label: "Open Sponsor Wall",
-      detail: "Wall shout-outs stay blank until real entries land — never DEMO logos.",
+      detail: "Wall shout-outs stay blank until real entries land — no sample logos.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
   ];
@@ -223,33 +224,10 @@ export function sponsorSuiteNextActions(input: {
   const deckCount = input.deckCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Sponsor suite is org-scoped — pick a team before logging sponsors.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "sponsors",
-          label: "Open Sponsor CRM",
-          detail: "Sponsor rows stay blank until your team logs them — never DEMO logos.",
-          href: hubHref("/business", "sponsors", null),
-        },
-        {
-          id: "sponsorship",
-          label: "Open Sponsorship",
-          detail: "One-pagers stay empty until real packages exist — never invent DEMO tiers.",
-          href: hubHref("/business", "sponsorship", null),
-        },
-      ];
-    }
-    return sponsorSuiteSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of sponsorSuiteSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(sponsorSuiteSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

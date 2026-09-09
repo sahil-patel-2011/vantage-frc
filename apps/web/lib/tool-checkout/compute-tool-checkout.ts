@@ -122,6 +122,12 @@ export async function computeToolCheckoutView(
        ORDER BY checked_out_at DESC`,
       [org.orgId],
     ),
+    // Deliberately unguarded, like checkoutTool. An empty matrix reads as "no
+    // certification required", so a caught read failure would show a student a
+    // screen saying every tool is theirs to take. Failing the view is the honest
+    // outcome. (No savepoint here for a second reason: this module is value-
+    // imported by tool-checkout-client.tsx for TOOL_CATEGORIES, so importing
+    // @vantage/db would pull `pg` into the browser bundle.)
     loadTrainingMatrixForCheckout(client, { userId: input.userId, orgId: org.orgId }),
   ]);
 

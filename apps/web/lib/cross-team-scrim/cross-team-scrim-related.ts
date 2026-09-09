@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Cross-Team Scrim Scheduling (never DEMO scrim metrics). */
@@ -84,19 +85,19 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
     {
       id: "calendar",
       label: "Open Calendar",
-      detail: "Confirm practice/event windows before proposing dates — never DEMO schedules.",
+      detail: "Confirm practice/event windows before proposing dates — no sample schedules.",
       href: hubHref("/team", "calendar", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Data-share scopes use real scout sheets only — never invent DEMO partners.",
+      detail: "Data-share scopes use real scout sheets only — no sample partners.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm TBA/team context for partner outreach — never DEMO team numbers.",
+      detail: "Confirm TBA/team context for partner outreach — no sample team numbers.",
       href: withOrgHref("/team/data", orgId),
     },
   ];
@@ -197,56 +198,10 @@ export function crossTeamScrimNextActions(input: {
   const upcomingCount = input.upcomingCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Scrim invites are org-scoped — pick a team before proposing partners.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "calendar",
-          label: "Open Calendar",
-          detail: "Practice windows stay blank until real events exist — never DEMO schedules.",
-          href: hubHref("/team", "calendar", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Data-share stays empty without real scout sheets — never DEMO partners.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Scrim Scheduling can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "calendar",
-        label: "Open Calendar",
-        detail: "Confirm practice/event windows before proposing dates.",
-        href: hubHref("/team", "calendar", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Agree data-share scopes against real scout sheets only.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "team-data",
-        label: "Open Team Data",
-        detail: "Confirm TBA/team context for partner outreach — never DEMO numbers.",
-        href: withOrgHref("/team/data", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of crossTeamScrimSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(crossTeamScrimSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
