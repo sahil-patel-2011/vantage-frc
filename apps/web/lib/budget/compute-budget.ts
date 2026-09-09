@@ -200,7 +200,9 @@ const SPEND_BY_SOURCE_SQL = `
      AND counts_in_balance
      AND amount_usd > 0
    GROUP BY source_kind
-   ORDER BY 2 DESC
+   -- On the SUM, not on the "outUsd" text cast: ordering that string puts
+   -- $9.00 above $60.00.
+   ORDER BY COALESCE(SUM(amount_usd) FILTER (WHERE type = 'expense'), 0) DESC
    LIMIT 50`;
 
 /**
