@@ -186,7 +186,10 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   }
 
   const { form, results, insight, canManage } = view;
-  const shareUrl = form.shareToken ? `${window.location.origin}/forms/${form.id}` : null;
+  // The share URL points at the token route, not this page. /forms/<id> is
+  // session-gated, so handing it to a prospective student or a parent sends
+  // them to a sign-in screen for an account they will never have.
+  const shareUrl = form.shareToken ? `${window.location.origin}/f/${form.shareToken}` : null;
 
   return (
     <main className="module-page forms-page">

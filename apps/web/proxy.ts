@@ -121,11 +121,29 @@ function isPublicParentView(pathname: string) {
   );
 }
 
+/**
+ * Token-scoped public form intake only (migration 0601).
+ *
+ * A prospective student or a parent has no Vantage account, so a shared intake
+ * link has to work without a session or it is not a share link at all. The
+ * token is 32 hex characters of `gen_random_bytes(16)`, it is the entire
+ * authorization, and both database calls behind it are SECURITY DEFINER
+ * functions that return only an open, link-audience form and never any
+ * responses. The signed-in `/forms` builder and `/api/forms` stay gated.
+ */
+function isPublicFormIntake(pathname: string) {
+  return (
+    /^\/f\/[a-f0-9]{32}$/.test(pathname) ||
+    /^\/api\/public-forms\/[a-f0-9]{32}$/.test(pathname)
+  );
+}
+
 function isPublic(pathname: string) {
   return (
     PUBLIC_PAGES.has(pathname) ||
     isPublicCalendarFeed(pathname) ||
     isPublicParentView(pathname) ||
+    isPublicFormIntake(pathname) ||
     isPublicPartnerStorefront(pathname) ||
     isPublicSponsorWall(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
