@@ -129,14 +129,35 @@ export function staggerCue(brownoutRisk: boolean): string | null {
  *  - MPM motor cues: Mini Power Module loads with motors only from logged rows.
  */
 export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_DRAW_CEILING_AMPS) {
-  const totalTypicalAmps = round1(loads.reduce((sum, l) => sum + (l.typicalAmps ?? 0), 0));
+  // `typical_amps` is nullable on purpose: "logged the load, have not measured
+  // it yet" is a real state, and validateLoad accepts an empty value for it.
+  // Summing it with `?? 0` erased that state — an entirely unmeasured robot
+  // totalled 0 A, which is under any ceiling, so the page reported
+  // "Brownout risk: no" against a robot nobody had measured. Partial data was
+  // worse: five of fourteen loads measured presented a genuine undercount as
+  // the robot's total draw and derived a safe verdict from it.
+  //
+  // The total now sums only measured loads, and the verdict is withheld while
+  // any load is unmeasured. `null` means "cannot say yet" and is different
+  // from `false`, which means "measured, and under the ceiling".
+  const measured = loads.filter((l) => l.typicalAmps != null);
+  const unmeasuredCount = loads.length - measured.length;
+  const totalTypicalAmps = round1(measured.reduce((sum, l) => sum + (l.typicalAmps ?? 0), 0));
   const totalPeakAmps = round1(loads.reduce((sum, l) => sum + (l.peakAmps ?? 0), 0));
   const tripRisks = loads
     .filter((l) => l.peakAmps != null && l.breakerAmps != null && l.peakAmps > l.breakerAmps)
     .map((l) => l.name);
-  const brownoutRisk = totalTypicalAmps > sustainedCeiling;
+
+  // Over the ceiling on measured loads alone is a real finding even when the
+  // picture is incomplete — more unmeasured draw can only make it worse. Under
+  // the ceiling with loads still unmeasured says nothing.
+  const overCeiling = totalTypicalAmps > sustainedCeiling;
+  const brownoutRisk: boolean | null = overCeiling ? true : unmeasuredCount > 0 ? null : false;
+
   return {
     count: loads.length,
+    measuredCount: measured.length,
+    unmeasuredCount,
     totalTypicalAmps,
     totalPeakAmps,
     tripRisks,
@@ -144,8 +165,8 @@ export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_
     sustainedCeiling,
     breakerSizeCues: breakerSizeCues(loads),
     mpmMotorCues: mpmMotorCues(loads),
-    currentLimitCue: currentLimitCue(brownoutRisk, loads.length),
-    staggerCue: staggerCue(brownoutRisk),
+    currentLimitCue: currentLimitCue(brownoutRisk === true, loads.length),
+    staggerCue: staggerCue(brownoutRisk === true),
   };
 }
 
