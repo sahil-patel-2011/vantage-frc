@@ -124,7 +124,12 @@ describe("legal documents", () => {
     });
 
     it("states that analytics are opt-in and that declining costs nothing", () => {
-      expect(text(), "must say collection is off until the user agrees").toMatch(/off until you say yes/i);
+      // The claim under test is "collection is off until the person agrees",
+      // not one particular sentence — the wording is allowed to be edited, the
+      // promise is not.
+      expect(text(), "must say collection is off until the user agrees").toMatch(
+        /off until you (say yes|turn it on|opt in)/i,
+      );
       expect(text(), "must say the product still works after a decline").toMatch(
         /working exactly as it did|nothing is locked/i,
       );
