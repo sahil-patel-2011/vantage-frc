@@ -8,6 +8,8 @@ import {
   toWebcalUrl,
 } from "../../../lib/calendar-ics";
 import {
+  dayCountLabel,
+  monthCellLabel,
   monthEventCountLabel,
   monthEventPeek,
 } from "../../../lib/calendar/calendar-related";
@@ -22,6 +24,13 @@ import {
   type RepeatDraft,
 } from "./repeat-control";
 import { AiScheduler } from "./ai-scheduler";
+import { DayTasks } from "./task-chip";
+import {
+  filterTasksBySubteam,
+  taskSummary,
+  tasksByDay,
+  type TaskOnCalendar,
+} from "../../../lib/calendar/tasks-on-calendar";
 import {
   pickToDraft,
   toLocalInputValue,
@@ -50,6 +59,7 @@ import {
   isAllDayCalendarEvent,
   isReadonlyCalendarEvent,
   layoutTimedEventsForDay,
+  localDayKey,
   overlayItemsForDay,
   parseLocalDay,
   RSVP_LABELS,
@@ -158,6 +168,10 @@ function GitHubCalendarHint({
 function TimedCalendarGrid({
   cells,
   githubItems,
+  taskDays,
+  today,
+  orgId,
+  onTasksChanged,
   selectedEventId,
   onSelectEvent,
   onPickSlot,
@@ -165,6 +179,10 @@ function TimedCalendarGrid({
 }: {
   cells: CalendarGridCell[];
   githubItems: CalendarOverlayItem[];
+  taskDays: Map<string, TaskOnCalendar[]>;
+  today: string;
+  orgId: string;
+  onTasksChanged: () => void;
   selectedEventId: string | null;
   onSelectEvent: (id: string) => void;
   onPickSlot: (day: string, hour: number) => void;
@@ -221,6 +239,14 @@ function TimedCalendarGrid({
                     GitHub · {item.title}
                   </a>
                 ))}
+                {/* Tasks have a due date but no hour, so the all-day row is the
+                    only honest place for them — the same place Google puts them. */}
+                <DayTasks
+                  tasks={taskDays.get(cell.day) ?? []}
+                  today={today}
+                  orgId={orgId}
+                  onChanged={onTasksChanged}
+                />
               </div>
             );
           })}
@@ -514,6 +540,7 @@ function QuickAddForm({
   initialStartsAt,
   busy,
   run,
+  addTask,
   onDone,
 }: {
   orgId: string;
@@ -522,6 +549,8 @@ function QuickAddForm({
   initialStartsAt: string;
   busy: boolean;
   run: (body: ActionBody, key: string) => Promise<boolean>;
+  /** Creates a team task through /api/todos. Resolves false if it failed. */
+  addTask: (input: { title: string; dueOn: string; subteamId: string | null }) => Promise<boolean>;
   onDone?: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -529,6 +558,12 @@ function QuickAddForm({
   const [startsAt, setStartsAt] = useState(initialStartsAt);
   const [subteamId, setSubteamId] = useState(filterSubteamId ?? "");
   const [createAttendance, setCreateAttendance] = useState(true);
+  // Event or task, the way Google Calendar splits them. A task is a due date
+  // with no hour, so switching hides the time and the roll-call rather than
+  // pretending a deadline happens at 6pm.
+  const [entry, setEntry] = useState<"event" | "task">("event");
+  const [savingTask, setSavingTask] = useState(false);
+  const dueOn = startsAt.slice(0, 10);
 
   useEffect(() => {
     setStartsAt(initialStartsAt);
@@ -547,7 +582,23 @@ function QuickAddForm({
       className="tc-quick-add"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!title.trim() || !startsAt) return;
+        if (!title.trim()) return;
+
+        if (entry === "task") {
+          if (!dueOn) return;
+          setSavingTask(true);
+          void addTask({ title: title.trim(), dueOn, subteamId: subteamId || null })
+            .then((ok) => {
+              if (ok) {
+                setTitle("");
+                onDone?.();
+              }
+            })
+            .finally(() => setSavingTask(false));
+          return;
+        }
+
+        if (!startsAt) return;
         void run(
           {
             action: "create_event",
@@ -573,33 +624,66 @@ function QuickAddForm({
       }}
     >
       <div className="tc-quick-head">
-        <h2>Add event</h2>
+        <h2>{entry === "task" ? "Add task" : "Add event"}</h2>
+        <div className="tc-entry-switch" role="group" aria-label="What to add">
+          {(["event", "task"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={entry === value ? "active" : undefined}
+              aria-pressed={entry === value}
+              onClick={() => setEntry(value)}
+            >
+              {value === "event" ? "Event" : "Task"}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="tc-quick-grid">
         <input
           value={title}
-          disabled={busy}
+          disabled={busy || savingTask}
           required
-          placeholder="e.g. Tuesday drive practice"
-          aria-label="Event title"
+          placeholder={entry === "task" ? "e.g. Order the swerve modules" : "e.g. Tuesday drive practice"}
+          aria-label={entry === "task" ? "Task title" : "Event title"}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <select value={kind} disabled={busy} aria-label="Kind" onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
-          {SUBTEAM_EVENT_KINDS.map((value) => (
-            <option key={value} value={value}>
-              {SUBTEAM_EVENT_KIND_LABELS[value]}
-            </option>
-          ))}
-        </select>
-        <input
-          type="datetime-local"
-          value={startsAt}
-          disabled={busy}
-          required
-          aria-label="Starts"
-          onChange={(e) => setStartsAt(e.target.value)}
-        />
-        <select value={subteamId} disabled={busy} aria-label="Subteam" onChange={(e) => setSubteamId(e.target.value)}>
+        {entry === "event" ? (
+          <select value={kind} disabled={busy} aria-label="Kind" onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
+            {SUBTEAM_EVENT_KINDS.map((value) => (
+              <option key={value} value={value}>
+                {SUBTEAM_EVENT_KIND_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        {entry === "event" ? (
+          <input
+            type="datetime-local"
+            value={startsAt}
+            disabled={busy}
+            required
+            aria-label="Starts"
+            onChange={(e) => setStartsAt(e.target.value)}
+          />
+        ) : (
+          // A task is due on a day, not at an hour. Asking for a time here would
+          // invent precision the task does not have.
+          <input
+            type="date"
+            value={dueOn}
+            disabled={busy || savingTask}
+            required
+            aria-label="Due"
+            onChange={(e) => setStartsAt(e.target.value ? `${e.target.value}T09:00` : "")}
+          />
+        )}
+        <select
+          value={subteamId}
+          disabled={busy || savingTask}
+          aria-label="Subteam"
+          onChange={(e) => setSubteamId(e.target.value)}
+        >
           <option value="">Whole team</option>
           {subteams.map((st) => (
             <option key={st.id} value={st.id}>
@@ -608,17 +692,30 @@ function QuickAddForm({
           ))}
         </select>
       </div>
-      <label className="tc-check">
-        <input
-          type="checkbox"
-          checked={createAttendance}
-          disabled={busy}
-          onChange={(e) => setCreateAttendance(e.target.checked)}
-        />
-        <span>Create attendance roll-call</span>
-      </label>
-      <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsAt}>
-        Add event
+      {entry === "event" ? (
+        <label className="tc-check">
+          <input
+            type="checkbox"
+            checked={createAttendance}
+            disabled={busy}
+            onChange={(e) => setCreateAttendance(e.target.checked)}
+          />
+          <span>Create attendance roll-call</span>
+        </label>
+      ) : (
+        <p className="tc-muted">
+          Lands on the team task list and on this calendar, on the day it is due. Assign it on{" "}
+          <a href="/todos">Tasks</a>.
+        </p>
+      )}
+      <button
+        type="submit"
+        className="app-button"
+        disabled={
+          busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt)
+        }
+      >
+        {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
       </button>
     </form>
   );
@@ -1608,17 +1705,27 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     [ready, filterSubteamId],
   );
   const days = useMemo(() => groupEventsByDay(filtered), [filtered]);
+  // Tasks obey the same subteam rule as events: filtering to Mechanical still
+  // shows whole-team work, because that work is Mechanical's too.
+  const tasks = useMemo(
+    () => filterTasksBySubteam(ready?.tasks ?? [], filterSubteamId),
+    [ready, filterSubteamId],
+  );
+  const taskDays = useMemo(() => tasksByDay(tasks), [tasks]);
+  const taskDayKeys = useMemo(() => [...taskDays.keys()], [taskDays]);
+  const todayKey = useMemo(() => localDayKey(new Date()), []);
+  const taskCounts = useMemo(() => taskSummary(tasks, todayKey), [tasks, todayKey]);
+
   const listDays = useMemo(() => {
     const byDay = new Map(days.map((bucket) => [bucket.day, bucket]));
-    for (const item of githubItems) {
-      if (!byDay.has(item.dueOn)) {
-        byDay.set(item.dueOn, {
-          day: item.dueOn,
-          label: formatDayLabelLocal(item.dueOn),
-          items: [] as CalendarEvent[],
-        });
-      }
-    }
+    const addEmptyDay = (day: string) => {
+      if (byDay.has(day)) return;
+      byDay.set(day, { day, label: formatDayLabelLocal(day), items: [] as CalendarEvent[] });
+    };
+    for (const item of githubItems) addEmptyDay(item.dueOn);
+    // A day whose only entry is a task due still has to appear, or the list
+    // silently drops the deadline.
+    for (const day of taskDayKeys) addEmptyDay(day);
     const buckets = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
     if (!quickDay) return buckets;
     const focused = buckets.filter((bucket) => bucket.day === quickDay);
@@ -1634,7 +1741,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       ];
     }
     return [...focused, ...rest];
-  }, [days, githubItems, quickDay]);
+  }, [days, githubItems, taskDayKeys, quickDay]);
   const upcoming = useMemo(() => upcomingEvents(filtered, new Date(), 6), [filtered]);
   const weekCells = useMemo(() => buildWeekCells(anchor, filtered), [anchor, filtered]);
   const dayCells = useMemo(() => buildDayCells(anchor, filtered), [anchor, filtered]);
@@ -1733,6 +1840,30 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
   const setRsvp = (eventId: string, response: RsvpResponse | null) => {
     void run({ action: "set_rsvp", orgId, id: eventId, response }, `rsvp:${eventId}`);
+  };
+
+  // Creating a task goes to /api/todos, not to the calendar's own action set.
+  // One writer for tasks means RLS, notifications and the /todos page all keep
+  // agreeing with each other, instead of a second copy drifting from the first.
+  const addTask = async (input: { title: string; dueOn: string; subteamId: string | null }) => {
+    try {
+      const response = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "create-todo", orgId, ...input }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Could not add that task.");
+        return false;
+      }
+      setError("");
+      await load();
+      return true;
+    } catch {
+      setError("Could not reach the server.");
+      return false;
+    }
   };
 
   // Taking a suggested slot fills in the full event form and opens it. It does
@@ -1910,6 +2041,19 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
               <p className="tc-muted tc-list-hint">By day.</p>
             )}
             <div className="tc-toolbar-links">
+              {taskCounts.open > 0 ? (
+                <a className="tc-task-summary" href="/todos">
+                  {taskCounts.overdue > 0 ? (
+                    <strong className="is-late">
+                      {taskCounts.overdue} overdue
+                    </strong>
+                  ) : null}
+                  {taskCounts.dueToday > 0 ? <strong>{taskCounts.dueToday} due today</strong> : null}
+                  <span>
+                    {taskCounts.open} task{taskCounts.open === 1 ? "" : "s"} with a due date
+                  </span>
+                </a>
+              ) : null}
               <button type="button" className="tc-text-link" onClick={() => setTab("sync")}>
                 Phone calendar
               </button>
@@ -1960,9 +2104,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                       <h3>
                         {bucket.label}
                         <span className="tc-day-count">
-                          {bucket.items.length === 0
-                            ? " · none scheduled"
-                            : ` · ${bucket.items.length} event${bucket.items.length === 1 ? "" : "s"}`}
+                          {dayCountLabel(bucket.items.length, taskDays.get(bucket.day)?.length ?? 0)}
                         </span>
                       </h3>
                       {overlayItemsForDay(githubItems, bucket.day).map((item) => (
@@ -1976,8 +2118,24 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                           GitHub · {item.title}
                         </a>
                       ))}
+                      {(taskDays.get(bucket.day)?.length ?? 0) > 0 ? (
+                        <div className="tc-task-row">
+                          <DayTasks
+                            tasks={taskDays.get(bucket.day) ?? []}
+                            today={todayKey}
+                            orgId={orgId}
+                            onChanged={() => void load()}
+                          />
+                        </div>
+                      ) : null}
                       {bucket.items.length === 0 ? (
-                        <p className="tc-muted">Nothing scheduled this day.</p>
+                        // Only say nothing is scheduled when that is true. A day
+                        // with a deadline on it is not an empty day.
+                        (taskDays.get(bucket.day)?.length ?? 0) === 0 ? (
+                          <p className="tc-muted">Nothing scheduled this day.</p>
+                        ) : (
+                          <p className="tc-muted">No events — but there is work due.</p>
+                        )
                       ) : (
                         bucket.items.map((event) => renderEventCard(event))
                       )}
@@ -1990,6 +2148,10 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 <TimedCalendarGrid
                   cells={timedCells}
                   githubItems={githubItems}
+                  taskDays={taskDays}
+                  today={todayKey}
+                  orgId={orgId}
+                  onTasksChanged={() => void load()}
                   selectedEventId={selectedEventId}
                   onSelectEvent={setSelectedEventId}
                   onPickSlot={(day, hour) => {
@@ -2017,10 +2179,13 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   <div className="tc-month-grid">
                     {monthCells.map((cell) => {
                       const github = overlayItemsForDay(githubItems, cell.day);
-                      const countLabel = monthEventCountLabel(cell.items.length + github.length);
+                      const dayTasks = taskDays.get(cell.day) ?? [];
+                      const countLabel = monthEventCountLabel(
+                        cell.items.length + github.length + dayTasks.length,
+                      );
                       const { peeks, overflow } = monthEventPeek(
                         cell.items.map((event) => event.title),
-                        github.length > 0 ? 1 : 2,
+                        github.length > 0 || dayTasks.length > 0 ? 1 : 2,
                       );
                       return (
                         <button
@@ -2031,22 +2196,27 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                             cell.inMonth ? "" : "out",
                             cell.isToday ? "today" : "",
                             quickDay === cell.day ? "picked" : "",
-                            cell.items.length > 0 || github.length > 0 ? "has-events" : "",
+                            cell.items.length > 0 || github.length > 0 || dayTasks.length > 0
+                              ? "has-events"
+                              : "",
                           ]
                             .filter(Boolean)
                             .join(" ")}
-                          aria-label={`${formatDayLabelLocal(cell.day)}${
-                            cell.items.length + github.length > 0
-                              ? `, ${cell.items.length + github.length} item${cell.items.length + github.length === 1 ? "" : "s"}`
-                              : ", no events"
-                          }`}
+                          aria-label={monthCellLabel(
+                            formatDayLabelLocal(cell.day),
+                            cell.items.length + github.length,
+                            dayTasks.length,
+                          )}
                           onClick={() => {
                             setQuickDay(cell.day);
                             setQuickHour(null);
                             setAnchor(parseLocalDay(cell.day));
                             setMode("day");
                             setSelectedEventId(cell.items[0]?.id ?? null);
-                            if (cell.items.length === 0) {
+                            // Jump to the add form only when the day really is
+                            // empty. A day whose one entry is a task due is why
+                            // the person clicked; scrolling past it hides it.
+                            if (cell.items.length === 0 && dayTasks.length === 0) {
                               document
                                 .getElementById("tc-quick-add")
                                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2075,9 +2245,22 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                                 GitHub · {item.title}
                               </li>
                             ))}
+                            {dayTasks.slice(0, 1).map((task) => (
+                              <li key={task.id} className="tc-task-peek" title={task.title}>
+                                ☐ {task.title}
+                              </li>
+                            ))}
+                            {dayTasks.length > 1 ? (
+                              <li className="more">
+                                +{dayTasks.length - 1} task{dayTasks.length - 1 === 1 ? "" : "s"} due
+                              </li>
+                            ) : null}
                             {overflow > 0 ? <li className="more">+{overflow}</li> : null}
                           </ul>
-                          {cell.items.length === 0 && github.length === 0 && cell.inMonth ? (
+                          {cell.items.length === 0 &&
+                          github.length === 0 &&
+                          dayTasks.length === 0 &&
+                          cell.inMonth ? (
                             <span className="tc-month-empty">Add</span>
                           ) : null}
                         </button>
@@ -2102,6 +2285,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   initialStartsAt={quickStartsAt}
                   busy={busy}
                   run={run}
+                  addTask={addTask}
                   onDone={() => {
                     setQuickDay(null);
                     setQuickHour(null);

@@ -3,6 +3,8 @@ import {
   CALENDAR_TEAM_RELATED_INCLUDE,
   calendarNextActions,
   calendarOpsRelatedLinks,
+  dayCountLabel,
+  monthCellLabel,
   monthEventCountLabel,
   monthEventPeek,
 } from "./calendar-related";
@@ -68,5 +70,29 @@ describe("calendar Soft-UI helpers", () => {
     expect(calendarNextActions({ orgId: null, subteamCount: 0, eventCount: 0, canManage: false })[0]?.href).toBe(
       "/workspace",
     );
+  });
+});
+
+describe("monthCellLabel", () => {
+  it("counts events and tasks separately — six items hides which kind", () => {
+    expect(monthCellLabel("Tue 15 Sep", 3, 3)).toBe("Tue 15 Sep, 3 events, 3 tasks due");
+  });
+
+  it("says nothing is scheduled rather than reading as a bare date", () => {
+    expect(monthCellLabel("Tue 15 Sep", 0, 0)).toBe("Tue 15 Sep, nothing scheduled");
+  });
+
+  it("omits the kind that is zero, and gets the singular right", () => {
+    expect(monthCellLabel("Tue 15 Sep", 1, 0)).toBe("Tue 15 Sep, 1 event");
+    expect(monthCellLabel("Tue 15 Sep", 0, 1)).toBe("Tue 15 Sep, 1 task due");
+  });
+});
+
+describe("dayCountLabel", () => {
+  it("is a heading suffix, and never claims an empty day is busy", () => {
+    expect(dayCountLabel(0, 0)).toBe(" · none scheduled");
+    expect(dayCountLabel(2, 0)).toBe(" · 2 events");
+    expect(dayCountLabel(0, 2)).toBe(" · 2 tasks due");
+    expect(dayCountLabel(1, 1)).toBe(" · 1 event, 1 task due");
   });
 });
