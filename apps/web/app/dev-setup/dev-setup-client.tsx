@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  COMMAND_REFERENCE,
   OS_LABELS,
   TRACK,
   stepsForOs,
@@ -56,6 +57,42 @@ function CommandBlock({ lines }: { lines: string[] }) {
       >
         {copied ? "Copied" : "Copy"}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Alternative ways to do one step, each its own tab.
+ *
+ * Only the tabs for the reader's platform are shown, so a Windows student never
+ * sees a Homebrew tab they cannot use — the point of tabs here is choice
+ * between real options, not a platform switch, which the page already has.
+ */
+function MethodTabs({ methods, os }: { methods: NonNullable<Step["methods"]>; os: Os }) {
+  const mine = methods.filter((m) => !m.os || m.os === os);
+  const [active, setActive] = useState(0);
+  if (mine.length === 0) return null;
+  const current = mine[Math.min(active, mine.length - 1)]!;
+  return (
+    <div className="ds-methods">
+      {mine.length > 1 ? (
+        <div className="ds-method-tabs" role="tablist">
+          {mine.map((m, i) => (
+            <button
+              key={m.label}
+              type="button"
+              role="tab"
+              aria-selected={i === Math.min(active, mine.length - 1)}
+              className={i === Math.min(active, mine.length - 1) ? "ds-method-tab active" : "ds-method-tab"}
+              onClick={() => setActive(i)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <CommandBlock lines={current.lines} />
+      {current.note ? <p className="ds-method-note">{current.note}</p> : null}
     </div>
   );
 }
@@ -252,6 +289,7 @@ function StepBody({
         ))}
       </ol>
 
+      {step.methods ? <MethodTabs methods={step.methods} os={os} /> : null}
       {osCommands ? <CommandBlock lines={osCommands} /> : null}
       {sharedCommands ? <CommandBlock lines={sharedCommands} /> : null}
 
@@ -376,6 +414,9 @@ export default function DevSetupClient() {
             step later. This page is meant to be returned to, not read once. */}
         <nav className="ds-side" aria-label="Setup sections">
           <p className="ds-side-title">Programming onboarding</p>
+          <div className="ds-side-group">
+            <a href="#commands">Essential commands</a>
+          </div>
           {stages.map(({ stage, steps }) => (
             <div key={stage.id} className="ds-side-group">
               <a href={`#${stage.id}`}>{stage.title}</a>
@@ -459,6 +500,40 @@ export default function DevSetupClient() {
               ))}
             </section>
           ))}
+
+          <section className="ds-stage" id="commands">
+            <h2>
+              <a className="ds-anchor" href="#commands" aria-label="Link to Essential commands">
+                #
+              </a>
+              Essential commands
+            </h2>
+            <p className="ds-blurb">
+              The lines worth coming back for. Everything here appears in context above — this is the version you
+              scan at 10pm when the build is broken.
+            </p>
+            {COMMAND_REFERENCE.map((group) => {
+              const rows = group.rows.filter((r) => !r.os || r.os === os);
+              if (rows.length === 0) return null;
+              return (
+                <div key={group.group} className="ds-ref">
+                  <h3>{group.group}</h3>
+                  <table className="ds-ref-table">
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.command}>
+                          <td>
+                            <code>{row.command}</code>
+                          </td>
+                          <td>{row.does}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </section>
 
           <section className="ds-stage">
             <h2>Stuck?</h2>
