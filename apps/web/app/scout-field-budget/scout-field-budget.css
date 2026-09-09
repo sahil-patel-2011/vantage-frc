@@ -10,13 +10,13 @@
 .sfb-tip{margin:0}
 .sfb-budget-list{margin:6px 0 0;padding-left:18px}
 .sfb-lint-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
-.sfb-lint-row{display:grid;gap:6px;border-bottom:1px solid var(--app-border,#e5e7eb);padding-bottom:10px}
+.sfb-lint-row{display:grid;gap:6px;border-bottom:1px solid var(--app-border);padding-bottom:10px}
 .sfb-lint-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .sfb-lint-name{margin-left:8px}
 .sfb-block{display:block}
 .sfb-phase-list{list-style:none;padding:0;margin:0;display:grid;gap:2px}
 .sfb-phase-row{display:flex;justify-content:space-between;gap:8px}
-.sfb-over{color:var(--app-danger,#dc2626)}
+.sfb-over{color:var(--app-danger)}
 .sfb-recs{margin:4px 0 0;padding-left:18px}
 @media(max-width:900px){
   .sfb-next-actions li,.sfb-setup-steps li,.sfb-lint-header{flex-direction:column;align-items:stretch}

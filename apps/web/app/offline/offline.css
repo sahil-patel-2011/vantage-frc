@@ -3,9 +3,9 @@
   margin: 0;
   padding: clamp(28px, 6vw, 64px) clamp(18px, 5vw, 40px) 48px;
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--soft-accent, #0f766e) 18%, transparent), transparent),
-    linear-gradient(165deg, var(--soft-bg, #f7f6f2) 0%, color-mix(in srgb, var(--soft-bg, #f7f6f2) 88%, #dbe4e0) 100%);
-  color: var(--soft-ink, #14201c);
+    radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--soft-accent) 18%, transparent), transparent),
+    linear-gradient(165deg, var(--soft-bg) 0%, color-mix(in srgb, var(--soft-bg) 88%, #dbe4e0) 100%);
+  color: var(--soft-ink);
   font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -28,7 +28,7 @@
 .offline-shell-lead {
   max-width: 36rem;
   margin: 0 0 16px;
-  color: var(--soft-muted, #5b6b66);
+  color: var(--soft-muted);
   line-height: 1.5;
 }
 
@@ -36,11 +36,11 @@
   max-width: 36rem;
   margin: 0 0 22px;
   padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--soft-accent, #0f766e) 28%, var(--soft-line, #d5ddd9));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--soft-accent, #0f766e) 8%, var(--soft-card, #fff));
+  border: 1px solid color-mix(in srgb, var(--soft-accent) 28%, var(--soft-line));
+  border-radius:var(--soft-radius-sm);
+  background: color-mix(in srgb, var(--soft-accent) 8%, var(--soft-card));
   font-size: 13px;
-  color: var(--soft-ink, #14201c);
+  color: var(--soft-ink);
   line-height: 1.4;
 }
 
@@ -58,13 +58,13 @@
 
 .offline-shell-next h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .offline-shell-next > header p {
   margin: 0;
-  color: var(--soft-muted, #5b6b66);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -83,14 +83,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--soft-line, #d5ddd9);
-  background: color-mix(in srgb, var(--soft-card, #fff) 94%, transparent);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-card) 94%, transparent);
 }
 
 .offline-shell-next li.primary {
-  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 35%, var(--soft-line, #d5ddd9));
-  background: color-mix(in srgb, var(--soft-accent, #0f766e) 10%, var(--soft-card, #fff));
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent) 10%, var(--soft-card));
 }
 
 .offline-shell-next li div {
@@ -104,7 +104,7 @@
 }
 
 .offline-shell-next li span {
-  color: var(--soft-muted, #5b6b66);
+  color: var(--soft-muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -133,7 +133,7 @@
   max-width: 36rem;
   margin: 22px 0 0;
   font-size: 13px;
-  color: var(--soft-muted, #5b6b66);
+  color: var(--soft-muted);
   line-height: 1.45;
 }
 

@@ -21,7 +21,7 @@
 .myday-freshness {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--myday-line);
   background: color-mix(in srgb, var(--myday-card) 92%, var(--myday-line));
   color: var(--myday-muted);
@@ -31,7 +31,7 @@
 .myday-warn {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--myday-line));
   background: color-mix(in srgb, var(--app-warning) 12%, var(--myday-card));
   color: var(--app-warning);
@@ -54,7 +54,7 @@
   display: grid;
   gap: 10px;
   padding: 20px 18px;
-  border-radius: 18px;
+  border-radius:var(--soft-radius);
   border: 1px solid var(--myday-line);
   background: var(--myday-card);
   box-shadow: var(--soft-shadow);
@@ -93,7 +93,7 @@
 .myday-bumper {
   margin: 4px 0 2px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   text-align: center;
   font: 800 clamp(1.15rem, 4.5vw, 1.45rem) / 1.2 var(--font-source-sans), ui-sans-serif, system-ui,
     sans-serif;
@@ -143,7 +143,7 @@
   min-height: 44px;
   min-width: 44px;
   padding: 0 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--myday-line);
   background: color-mix(in srgb, var(--myday-card) 88%, var(--myday-line));
   color: var(--myday-ink);
@@ -170,7 +170,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--myday-line);
   background: var(--myday-card);
   color: var(--myday-ink);
@@ -192,7 +192,7 @@
 
 .myday-list-section h2 {
   margin: 0;
-  font: 700 1rem/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  font:700 var(--soft-title-3)/1.2 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .myday-list {
@@ -207,7 +207,7 @@
   display: grid;
   gap: 8px;
   padding: 14px;
-  border-radius: 16px;
+  border-radius:var(--soft-radius);
   border: 1px solid var(--myday-line);
   background: var(--myday-card);
 }
@@ -265,8 +265,8 @@
 
 .myday-next-actions h2 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .myday-next-actions > header p {
@@ -290,7 +290,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--myday-line);
   background: color-mix(in srgb, var(--myday-card) 92%, var(--myday-line));
 }

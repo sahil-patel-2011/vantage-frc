@@ -61,15 +61,15 @@
 
 .team-background-page .soft-panel h2 {
   margin: 0;
-  font: 700 16px var(--font-source-sans), ui-sans-serif;
-  letter-spacing: -0.02em;
+  font:700 var(--soft-title-3) var(--font-source-sans), ui-sans-serif;
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .team-background-page .soft-panel textarea {
   min-height: 88px;
   padding: 10px 12px;
   border: 1px solid var(--soft-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   font: 500 14px var(--font-source-sans), ui-sans-serif;
   background: var(--soft-card);
   color: inherit;
@@ -85,7 +85,7 @@
 .team-background-page .team-background-seed {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: color-mix(in srgb, var(--soft-accent-soft) 55%, var(--soft-card));
   white-space: pre-wrap;

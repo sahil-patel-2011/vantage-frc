@@ -24,6 +24,18 @@ function resolveTheme(pref: ThemePreference): Theme {
   return pref === "system" ? systemTheme() : pref;
 }
 
+function readCookiePreference(): ThemePreference | null {
+  try {
+    const pref = document.cookie.match(/(?:^|; )vantage-theme-pref=(light|dark|system)/);
+    if (pref) return pref[1] as ThemePreference;
+    const legacy = document.cookie.match(/(?:^|; )vantage-theme=(light|dark)/);
+    if (legacy) return legacy[1] as ThemePreference;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 function readStoredPreference(): ThemePreference {
   try {
     const pref = localStorage.getItem(PREF_STORAGE_KEY);
@@ -33,12 +45,17 @@ function readStoredPreference(): ThemePreference {
   } catch {
     /* ignore */
   }
-  return "light";
+  // The inline bootstrap in layout.tsx paints from the COOKIE, so ignoring it
+  // here meant a browser with a cookie but no localStorage (a fresh profile, a
+  // second device, private browsing) rendered dark and then flipped to light on
+  // hydration. Same source of truth, same answer.
+  return readCookiePreference() ?? "light";
 }
 
+/** Keep the OS browser chrome on the same colour as --soft-bg. */
 function syncBrowserColor(theme: Theme) {
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-    .forEach((meta) => { meta.content = theme === "dark" ? "#0b1014" : "#f7f6f2"; });
+    .forEach((meta) => { meta.content = theme === "dark" ? "#0c1118" : "#eef2f7"; });
 }
 
 function applyResolvedTheme(theme: Theme) {

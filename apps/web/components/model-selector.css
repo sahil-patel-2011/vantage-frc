@@ -10,15 +10,15 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted, #5b6472);
+  color: var(--app-muted);
 }
 
 .model-selector-select {
   width: 100%;
   padding: 9px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--app-border, #d5dbe4);
-  background: var(--app-surface, #ffffff);
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
   color: inherit;
   font: inherit;
 }
@@ -31,14 +31,14 @@
 .model-selector-forced {
   display: inline-block;
   padding: 9px 12px;
-  border-radius: 12px;
-  border: 1px dashed var(--app-border, #d5dbe4);
-  background: var(--app-surface-muted, #f4f6f9);
-  color: var(--app-muted, #5b6472);
+  border-radius:var(--soft-radius-sm);
+  border: 1px dashed var(--app-border);
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
   font-size: 0.92rem;
 }
 
 .model-selector-hint {
   font-size: 0.8rem;
-  color: var(--app-muted, #5b6472);
+  color: var(--app-muted);
 }

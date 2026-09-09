@@ -7,7 +7,7 @@
 .awards-status {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-bg);
   color: var(--soft-muted);
@@ -35,8 +35,8 @@
 .awards-items h2,
 .awards-next-actions h2 {
   margin: 0;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+  font-size:var(--soft-title-3);
+  letter-spacing:var(--soft-tracking-tight);
 }
 
 .awards-form p,
@@ -66,7 +66,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-bg);
   cursor: pointer;
@@ -111,7 +111,7 @@
   display: grid;
   gap: 8px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   border: 1px solid var(--soft-line);
   background: var(--soft-bg);
 }
@@ -121,7 +121,7 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--soft-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   font: 500 14px var(--font-source-sans), ui-sans-serif;
   background: var(--soft-card);
   color: inherit;

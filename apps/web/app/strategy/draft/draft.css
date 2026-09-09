@@ -39,7 +39,7 @@
 .draft-empty{
   margin:0;
   padding:14px;
-  border-radius:14px;
+  border-radius:var(--soft-radius-sm);
   border:1px dashed var(--soft-line);
 }
 .draft-kpis{

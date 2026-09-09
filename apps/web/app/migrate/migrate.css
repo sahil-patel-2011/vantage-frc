@@ -11,9 +11,9 @@
   gap: 4px;
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--app-critical, #b42318) 28%, var(--app-line));
-  background: color-mix(in srgb, var(--app-critical, #b42318) 8%, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--app-critical) 28%, var(--app-line));
+  background: color-mix(in srgb, var(--app-critical) 8%, var(--app-bg));
 }
 
 /* A rejected file always says what shape was expected. */
@@ -26,9 +26,9 @@
 .migrate-warn {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--app-warning, #b54708) 28%, var(--app-line));
-  background: color-mix(in srgb, var(--app-warning, #b54708) 8%, var(--app-bg));
+  border-radius:var(--soft-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--app-warning) 28%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning) 8%, var(--app-bg));
   font-size: 13px;
   line-height: 1.5;
 }
@@ -55,7 +55,7 @@
   min-height: 44px;
   padding: 10px 12px;
   border: 1px solid var(--app-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   color: var(--app-muted);
   font-size: 13px;
   font-weight: 600;
@@ -66,7 +66,7 @@
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius:var(--soft-radius-pill);
   border: 1px solid var(--app-line);
   background: var(--app-bg);
   font-size: 11px;
@@ -89,7 +89,7 @@
 }
 
 .migrate-steps li.current b {
-  color: var(--app-accent-ink, #fff);
+  color: var(--app-accent-ink);
   border-color: var(--app-accent);
   background: var(--app-accent);
 }
@@ -110,7 +110,7 @@
   color: inherit;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius: 16px;
+  border-radius:var(--soft-radius);
   cursor: pointer;
 }
 
@@ -141,7 +141,7 @@
 
 .migrate-panel-head h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size:var(--soft-title-2);
 }
 
 .migrate-panel-head p {
@@ -171,8 +171,8 @@
 .migrate-preview {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--app-soft, #f4f7fb);
+  border-radius:var(--soft-radius-sm);
+  background: var(--app-soft);
   font-size: 13px;
 }
 
@@ -201,8 +201,8 @@
 
 .migrate-group h3 {
   margin: 0;
-  font-size: 12px;
-  font-weight: 700;
+  font-size:var(--soft-text-xs);
+  font-weight:700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--app-muted);
@@ -255,7 +255,7 @@
 
 .migrate-notes details {
   border: 1px solid var(--app-line);
-  border-radius: 12px;
+  border-radius:var(--soft-radius-sm);
   padding: 10px 12px;
   background: var(--app-bg);
 }
@@ -297,7 +297,7 @@
   margin: 16px 0;
   padding: 14px;
   border: 1px solid var(--app-line);
-  border-radius: 14px;
+  border-radius:var(--soft-radius-sm);
   background: color-mix(in srgb, var(--app-muted) 4%, var(--app-bg));
 }
 
@@ -305,7 +305,7 @@
 .migrate-presets h3,
 .migrate-form-draft h3 {
   margin: 0;
-  font-size: 15px;
+  font-size:var(--soft-title-3);
 }
 
 .migrate-columns {
@@ -341,11 +341,11 @@
 }
 
 .migrate-confidence.likely {
-  color: var(--app-warning, #b54708);
+  color: var(--app-warning);
 }
 
 .migrate-confidence.unsure {
-  color: var(--app-critical, #b42318);
+  color: var(--app-critical);
 }
 
 .migrate-presets ul,
