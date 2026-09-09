@@ -1,0 +1,85 @@
+.tp-page {
+  display: grid;
+  gap: 16px;
+}
+.tp-error {
+  margin: 0;
+  color: var(--app-critical);
+  font-weight: 600;
+}
+.tp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.tp-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.tp-card h2 {
+  margin: 0;
+  font-size: var(--soft-title-3);
+}
+.tp-wide {
+  grid-column: 1 / -1;
+}
+.tp-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+.tp-facts dt {
+  color: var(--soft-muted);
+}
+.tp-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tp-table th,
+.tp-table td {
+  text-align: left;
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--soft-line);
+  vertical-align: top;
+}
+.tp-table th {
+  font-size: 11px;
+  color: var(--soft-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tp-outcome {
+  color: var(--soft-muted);
+}
+.tp-awards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.tp-awards li {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--soft-line);
+}
+.tp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}

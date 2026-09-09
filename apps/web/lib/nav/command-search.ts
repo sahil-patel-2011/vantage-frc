@@ -315,6 +315,10 @@ const KEYWORDS: Record<string, string[]> = {
     "3d print", "3d printing", "printer", "printers", "filament", "spool", "spools",
     "print queue", "pla", "petg", "abs", "print farm", "printing",
   ],
+  "team:profile": [
+    "team profile", "dossier", "about our team", "rookie year", "how long have we competed", "our awards",
+    "our rank", "epa", "statbotics", "blue alliance", "tba", "team history", "where are we from",
+  ],
   "build:cad-vault": [
     "cad files", "stl", "step", "upload cad", "model files", "drawings", "dxf",
     "versions", "vault", "download cad", "print file",
