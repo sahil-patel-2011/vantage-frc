@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Badge,
   EmptyState,
   ErrorState,
-  FormGrid,
   FormRow,
   PageHeader,
   Panel,
@@ -18,8 +17,6 @@ import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usag
 import {
   codeVersionStatusLabel,
   wiringStatusLabel,
-  CODE_VERSION_STATUSES,
-  WIRING_STATUSES,
 } from "../../lib/readiness-score";
 import type { ReadinessScoreView } from "../../lib/readiness-score/compute-readiness-score";
 import {
@@ -36,10 +33,8 @@ import {
   type ReadinessScoreShellKind,
 } from "../../lib/readiness-score/readiness-score-related";
 import type {
-  CodeVersionStatus,
   ReadinessFixCategory,
   ReadinessTier,
-  WiringStatus,
 } from "../../lib/readiness-score/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -173,8 +168,8 @@ function ReadinessShell({
           ) : null}
           {shell === "empty" ? (
             <>
-              <a className="app-button" href="#readiness-score-subsystem">
-                Log a subsystem
+              <a className="app-button" href={hubHref("/build", "subsystems", orgId)}>
+                Open Subsystems
               </a>
               <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
                 Open FMEA
@@ -416,8 +411,8 @@ export default function ReadinessScoreClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <a className="app-button" href="#readiness-score-subsystem">
-            Log a subsystem
+          <a className="app-button" href={hubHref("/build", "subsystems", orgId)}>
+            Open Subsystems
           </a>
           <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
             Open FMEA
@@ -431,8 +426,8 @@ export default function ReadinessScoreClient() {
       <div style={{ display: "grid", gap: 16 }}>
         {subsystemCount > 0 ? <ReadinessPanel view={view} /> : null}
         {subsystemCount > 0 ? <FixList view={view} /> : null}
-        <SubsystemForm busy={busy} mutate={mutate} cutoffCode={cutoffCode} orgId={orgId} />
-        <SubsystemList view={view} busy={busy} mutate={mutate} />
+        <SourcesPanel view={view} cutoffCode={cutoffCode} orgId={orgId} />
+        <SubsystemList view={view} />
         <ChecklistPanel view={view} busy={busy} mutate={mutate} />
       </div>
     </main>
@@ -506,108 +501,39 @@ function FixList({ view }: { view: LiveView }) {
   );
 }
 
-function SubsystemForm({
-  busy,
-  mutate,
-  cutoffCode,
-  orgId,
-}: {
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-  cutoffCode: string | null;
-  orgId: string | null;
-}) {
-  const empty = useMemo(
-    () => ({
-      name: "",
-      weightLbs: "",
-      powerDrawAmps: "",
-      wiringStatus: "not_started" as WiringStatus,
-      codeVersionStatus: "stale" as CodeVersionStatus,
-      notes: "",
-    }),
-    [],
-  );
-  const [form, setForm] = useState(empty);
-  const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
-
+/*
+ * Readiness Score used to own a form that wrote its own copy of every
+ * subsystem's weight, current draw, wiring state and code state. That copy
+ * drifted from the tools teams actually work in, and the score was computed
+ * from the copy — so a fully-recorded robot could read as empty. The score is
+ * now a read model, and this panel says where each number is entered instead
+ * of offering a second place to enter it.
+ */
+function SourcesPanel({ view, cutoffCode, orgId }: { view: LiveView; cutoffCode: string | null; orgId: string | null }) {
   return (
-    <Panel
-      id="readiness-score-subsystem"
-      as="form"
-      className="readiness-score-panel"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!form.name.trim()) return;
-        mutate({
-          action: "save-subsystem",
-          name: form.name,
-          weightLbs: Number(form.weightLbs) || 0,
-          powerDrawAmps: Number(form.powerDrawAmps) || 0,
-          wiringStatus: form.wiringStatus,
-          codeVersionStatus: form.codeVersionStatus,
-          notes: form.notes || undefined,
-        });
-        setForm(empty);
-      }}
-      style={{ display: "grid", gap: 10 }}
-    >
-      <h2 style={{ margin: 0 }}>Log / update subsystem</h2>
+    <Panel id="readiness-score-subsystem" className="readiness-score-panel" style={{ display: "grid", gap: 10 }}>
+      <h2 style={{ margin: 0 }}>Where these numbers come from</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Metered local health scoring — UsageCutoffBanner appears when budgets hard-stop. Never DEMO readiness.
+        Readiness reads the build tools directly, so there is nothing to re-enter here. Update a number where it
+        is owned and the score follows.
       </p>
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
-      <FormGrid min={160}>
-        <FormRow label="Subsystem name">
-          <input value={form.name} onChange={set("name")} placeholder="Drivetrain" required />
-        </FormRow>
-        <FormRow label="Weight (lbs)">
-          <input type="number" min={0} step="0.1" value={form.weightLbs} onChange={set("weightLbs")} />
-        </FormRow>
-        <FormRow label="Power draw (A)">
-          <input type="number" min={0} step="0.1" value={form.powerDrawAmps} onChange={set("powerDrawAmps")} />
-        </FormRow>
-        <FormRow label="Wiring status">
-          <select value={form.wiringStatus} onChange={set("wiringStatus")}>
-            {WIRING_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {wiringStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-        <FormRow label="Code-version status">
-          <select value={form.codeVersionStatus} onChange={set("codeVersionStatus")}>
-            {CODE_VERSION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {codeVersionStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </FormRow>
-      </FormGrid>
-      <FormRow label="Notes (optional)">
-        <textarea value={form.notes} onChange={set("notes")} rows={2} />
-      </FormRow>
-      <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
-          Save subsystem
-        </button>
-      </div>
+      <ul className="readiness-score-list">
+        {view.sources.map((source) => (
+          <li key={source.id} className="readiness-score-row">
+            <span>{source.label}</span>
+            <a className="text-button" href={source.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }
 
-function SubsystemList({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
+
+function SubsystemList({ view }: { view: LiveView }) {
   if (view.subsystems.length === 0) {
     return null;
   }
@@ -625,18 +551,6 @@ function SubsystemList({
               </small>
               {item.notes ? <small className="app-muted">{item.notes}</small> : null}
             </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove "${item.name}"?`)) {
-                  mutate({ action: "delete-subsystem", subsystemId: item.id });
-                }
-              }}
-            >
-              Remove
-            </button>
           </li>
         ))}
       </ul>
