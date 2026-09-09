@@ -1404,7 +1404,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               : !orgId
                 ? "Select a team workspace to load live data."
                 : tbaConfigured === false
-                  ? "Connect The Blue Alliance for live match and rank data."
+                  ? "Your week — what is next, what is due, and what to learn. Match data arrives once The Blue Alliance is connected below."
                   : setupRequired
                     ? "Select an active event to load competition data."
                     : context.eventName
@@ -1428,7 +1428,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
             <a className="app-button secondary" href="/workspace">
               Select workspace
             </a>
-          ) : setupRequired || tbaConfigured === false ? (
+          ) : (setupRequired || tbaConfigured === false) && dashShell === "ready" ? (
+            // The first-run banner below already carries this action; showing
+            // it here too was the third "Connect TBA" on one screen.
             <a
               className="app-button secondary"
               href={
@@ -1498,6 +1500,35 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                 <b aria-hidden="true">→</b>
               </a>
             ))}
+          </div>
+        </nav>
+      ) : null}
+
+      {/* Learning first. A new member's Home should point at the tracks that
+          make them useful, not only at event-day tools they cannot use yet. */}
+      {orgId && meLoaded && !editing ? (
+        <nav className="dash-learn" aria-label="Start here">
+          <div className="dash-learn-heading">
+            <strong>Start here</strong>
+            <span>The tracks every new member works through — and the profile the team already has</span>
+          </div>
+          <div className="dash-learn-links">
+            <a href={withOrgHref("/dev-setup", orgId)}>
+              <strong>Set up your laptop</strong>
+              <small>Git, VS Code, WPILib, PathPlanner, GitHub — step by step</small>
+            </a>
+            <a href={withOrgHref("/cad-learn", orgId)}>
+              <strong>Learn CAD</strong>
+              <small>Onshape from the first sketch to a graded part</small>
+            </a>
+            <a href={withOrgHref("/files", orgId)}>
+              <strong>Files</strong>
+              <small>Team drive and your own private space</small>
+            </a>
+            <a href={withOrgHref("/team/profile", orgId)}>
+              <strong>Team profile</strong>
+              <small>Where we are from, seasons, awards, results</small>
+            </a>
           </div>
         </nav>
       ) : null}

@@ -423,3 +423,51 @@ html[data-theme="dark"] .dash-snap-hud{background:rgba(8,12,18,.92)}
 /* Narrow boards: five chips will not fit next to the label. */
 .dash-home[data-cols="1"] .dash-size-btn.dash-size-reset,
 .dash-home[data-cols="4"] .dash-size-btn.dash-size-reset{padding:0 8px}
+
+/* Start here — the learning tracks and the team profile, for a new member's
+   first weeks. Same shape as Jump back in, one row of plain links. */
+.dash-learn {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--soft-card);
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm);
+}
+.dash-learn-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+.dash-learn-heading strong {
+  font-size: 14px;
+}
+.dash-learn-heading span {
+  color: var(--soft-muted);
+  font-size: 12px;
+}
+.dash-learn-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+.dash-learn-links a {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-xs);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  text-decoration: none;
+  font-size: 13px;
+}
+.dash-learn-links a:hover {
+  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
+}
+.dash-learn-links small {
+  color: var(--soft-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}

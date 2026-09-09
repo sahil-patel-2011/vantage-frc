@@ -42,7 +42,7 @@ export function rootMarketingMetadata(): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "Vantage — FRC scouting, event day, and team ops",
+      default: "Vantage — one place for everything your FRC team does",
       template: "%s — Vantage",
     },
     description:
@@ -50,7 +50,7 @@ export function rootMarketingMetadata(): Metadata {
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
-      title: "Vantage — FRC scouting, event day, and team ops",
+      title: "Vantage — one place for everything your FRC team does",
       description:
         "Scouting, strategy, event day, alliance selection, season planning, CAD, and team ops in one invite-only workspace.",
       url: SITE_URL,
@@ -60,7 +60,7 @@ export function rootMarketingMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vantage — FRC scouting, event day, and team ops",
+      title: "Vantage — one place for everything your FRC team does",
       description:
         "Operations software for FRC teams: offline scouting, event day, sourced strategy, human-gated AI.",
       images: [OG_IMAGE.url],
