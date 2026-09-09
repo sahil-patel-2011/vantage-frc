@@ -95,9 +95,18 @@ CREATE TABLE drive_files (
     OR (scope = 'personal' AND owner_user_id IS NOT NULL)
   ),
   -- Each storage location carries exactly its own pointer and nothing else.
+  --
+  -- A 'node' row is allowed a NULL node_item_id, and that is deliberate. The
+  -- FK above is ON DELETE SET NULL, and storage_node_items cascades from
+  -- storage_nodes — so if the CHECK demanded a pointer here, unpairing a
+  -- storage node would fail with a constraint violation and the team could
+  -- never remove their own hardware. A node row with no pointer means exactly
+  -- one thing: the node that held these bytes is gone. The app says that in
+  -- those words rather than making the file disappear, because the person who
+  -- uploaded it deserves to know it existed and where it went.
   CHECK (
     (storage_location = 'db' AND node_item_id IS NULL AND object_key IS NULL)
-    OR (storage_location = 'node' AND node_item_id IS NOT NULL AND bytes IS NULL AND object_key IS NULL)
+    OR (storage_location = 'node' AND bytes IS NULL AND object_key IS NULL)
     OR (storage_location = 'object' AND object_key IS NOT NULL AND bytes IS NULL AND node_item_id IS NULL)
   ),
   -- A 'ready' db file must actually hold its bytes. No phantom downloads.
@@ -353,6 +362,10 @@ CREATE POLICY drive_shares_update ON drive_shares FOR UPDATE TO vantage_app
   )
   WITH CHECK (is_org_member(org_id));
 
+-- Note: revoking is an UPDATE (revoked_at), which is what the product actually
+-- does — a revoked share stays on the record so "who shared this, and when did
+-- we turn it off" has an answer. DELETE exists for genuine cleanup and mirrors
+-- the same permissions, folder branch included.
 CREATE POLICY drive_shares_delete ON drive_shares FOR DELETE TO vantage_app
   USING (
     is_org_member(org_id)
@@ -364,6 +377,13 @@ CREATE POLICY drive_shares_delete ON drive_shares FOR DELETE TO vantage_app
           AND f.scope = 'team'
           AND (f.uploaded_by = current_app_user_id()
                OR has_org_role(f.org_id, ARRAY['owner', 'admin']::org_role[]))
+      )
+      OR EXISTS (
+        SELECT 1 FROM drive_folders d
+        WHERE d.id = drive_shares.folder_id
+          AND d.scope = 'team'
+          AND (d.created_by = current_app_user_id()
+               OR has_org_role(d.org_id, ARRAY['owner', 'admin']::org_role[]))
       )
     )
   );
@@ -425,7 +445,9 @@ AS $$
            'canDownload', live.can_download,
            'expiresAt', live.expires_at,
            'note', live.note,
-           'sharedWith', live.email,
+           -- The recipient's own address is deliberately NOT returned. It adds
+           -- nothing the reader does not already know, and a forwarded link
+           -- would otherwise hand a stranger somebody's email address.
            'orgName', o.name,
            'teamNumber', o.team_number,
            'folderName', d.name,

@@ -69,7 +69,12 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     if (file.storageLocation === "node") {
-      if (!file.nodeItemId) throw new DriveHttpError(409, "This file has no storage-node pointer.");
+      if (!file.nodeItemId) {
+        throw new DriveHttpError(
+          410,
+          "This file lived on a storage node that has since been removed from the team, so its bytes are gone.",
+        );
+      }
       // The node resolver is org-member gated, which is right: a recipient who
       // is not in the sending team genuinely cannot reach that team's node.
       // Say so rather than redirecting them into a 401.
