@@ -92,7 +92,7 @@ export function SiteFooter() {
           <a href="/pricing">Pricing</a>
           <a href="/signin">Sign in</a>
           <a href="/#waitlist">Waitlist</a>
-          <a href="mailto:hello@vantagefrc.com">Contact</a>
+          <a href="mailto:sahiljpatel2011@gmail.com">Contact</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Legal">
           <b>Legal</b>

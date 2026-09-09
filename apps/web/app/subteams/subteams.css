@@ -1,0 +1,108 @@
+/* Subteam progress. Tokens only, so both themes come from soft-ui.css. */
+
+.subteams-page {
+  display: grid;
+  gap: 16px;
+}
+
+.st-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.st-summary > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+}
+
+.st-summary strong {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.st-group > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.st-group > header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.st-group-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The people who joined and were never placed are the ones a team loses, so
+   the group carries the same accent treatment a pinned notice does. */
+.st-unassigned {
+  border-left: 3px solid var(--soft-accent);
+}
+
+.st-members {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+
+/* Someone who owes something is the reason to open this page; the marker is a
+   left edge rather than a red row, because "has not confirmed a notice yet" is
+   a nudge, not an error. */
+.st-member.owed {
+  border-left: 3px solid var(--soft-accent);
+}
+
+.st-member-name {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.st-member-state {
+  color: var(--soft-muted);
+  text-align: right;
+}
+
+@media (max-width: 620px) {
+  .st-member {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .st-member-state {
+    text-align: left;
+  }
+}
+
+.st-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
