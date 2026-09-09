@@ -32,7 +32,16 @@ type Pack = {
   lastRestingVoltage: number | null;
   lastUsedAt: string | null;
   lastChargedAt: string | null;
-  health: { status: HealthStatus; score: number; reasons: string[] };
+  /**
+   * `score` is null for a pack nobody has measured — the API returns whatever
+   * `batteryHealth` produced, and that function stopped inventing 100 for an
+   * untested pack. This type used to say `score: number`, which let the client
+   * treat "unknown" as if it were a number and let `status` (which stays
+   * "good" for an unmeasured pack, because no measurement escalated it) speak
+   * for a health nobody has checked. Both are now read through
+   * `healthBadge()` below.
+   */
+  health: { status: HealthStatus; score: number | null; reasons: string[] };
   readiness: { ready: boolean; reasons: string[] };
   cartSlot: CartSlot;
 };
@@ -64,6 +73,22 @@ type View =
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
 const HEALTH_LABEL: Record<HealthStatus, string> = { good: "Good", aging: "Aging", retire: "Retire" };
+
+/**
+ * The health badge for one pack.
+ *
+ * `status` alone is not safe to render: `batteryHealth` only ever *escalates*
+ * away from "good", so a pack with no internal-resistance or resting-voltage
+ * log comes back "good" simply because nothing contradicted it. On competition
+ * day that badge said "Good" about a pack the team had never tested. `score`
+ * is the honest signal — it is null exactly when there is no measurement — so
+ * the badge reads off the score and says Unknown rather than picking a grade
+ * out of nothing.
+ */
+function healthBadge(health: Pack["health"]): { tone: "unmeasured" | HealthStatus; label: string } {
+  if (health.score == null) return { tone: "unmeasured", label: "Unknown" };
+  return { tone: health.status, label: HEALTH_LABEL[health.status] };
+}
 const LOG_KIND_LABEL: Record<string, string> = {
   charge: "Charged",
   storage_charge: "Storage charge",
@@ -324,7 +349,12 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const canDelete = view.context.role === "owner" || view.context.role === "admin";
   const nextActions = batteryNextActions({
     orgId,
-    packs: view.packs,
+    // `BatteryPackSnap.health.score` in lib/battery/battery-related.ts is still
+    // `number`, but batteryHealth returns null for an unmeasured pack. The
+    // helper never reads `score` (it goes through packHasMeasurement), so this
+    // is only a too-narrow declaration — no value is invented here. Handoff:
+    // widen that field to `number | null` and this cast goes away.
+    packs: view.packs as unknown as Parameters<typeof batteryNextActions>[0]["packs"],
     logCount: view.logs.length,
     nextRotationLabel: rotationPacks[0]?.label ?? null,
   });
@@ -481,7 +511,13 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           : " · no IR yet"}
                       </small>
                     </span>
-                    {packHasMeasurement(pack) ? <span className="score">{pack.health.score}</span> : <span className="score muted">—</span>}
+                    {pack.health.score != null ? (
+                      <span className="score">{pack.health.score}</span>
+                    ) : (
+                      <span className="score muted" title="No resistance or voltage measurement logged yet">
+                        —
+                      </span>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -498,7 +534,10 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
               </header>
               <ul className="batt-fleet">
                 {view.packs.map((pack) => {
-                  const measured = packHasMeasurement(pack);
+                  const badge = healthBadge(pack.health);
+                  // One predicate for the row, the badge and the nudge below,
+                  // and it is the same one the scoring uses.
+                  const measured = badge.tone !== "unmeasured";
                   const breakInCue = batteryBreakInCue(pack.cycleCount);
                   const overDischargeCue = batteryOverDischargeCue({
                     cycleCount: pack.cycleCount,
@@ -534,11 +573,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           </small>
                         </div>
                         <div className="batt-badges">
-                          {!measured ? (
-                            <span className="batt-badge unmeasured">Needs reading</span>
-                          ) : (
-                            <span className={`batt-badge ${pack.health.status}`}>{HEALTH_LABEL[pack.health.status]}</span>
-                          )}
+                          {/* One badge, whatever the state: Unknown when nothing
+                              has been measured, the grade when something has. */}
+                          <span className={`batt-badge ${badge.tone}`}>{badge.label}</span>
                           <span className={`batt-badge ${pack.readiness.ready ? "ready" : "block"}`}>
                             {pack.readiness.ready ? "Event ready" : "Not ready"}
                           </span>

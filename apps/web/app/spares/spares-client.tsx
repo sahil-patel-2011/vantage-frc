@@ -30,6 +30,12 @@ const CONSUMABLE_CSV_COLUMNS: CsvColumn<Consumable>[] = [
     hint: "true when it is at or below the reorder point",
     value: (item) => evaluateConsumable(item).needsReorder,
   },
+  {
+    key: "isSpare",
+    header: "Held as a spare",
+    hint: "true when this bin is stocked as a replacement, not day-to-day shop stock",
+    value: (item) => item.isSpare,
+  },
   { key: "preferredVendor", header: "Preferred vendor", value: (item) => item.preferredVendor },
   { key: "notes", header: "Notes", value: (item) => item.notes },
 ];
@@ -249,6 +255,8 @@ function AddItemForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     [],
   );
   const [form, setForm] = useState(empty);
+  // Kept out of `form` because it is a boolean and `set` writes strings.
+  const [isSpare, setIsSpare] = useState(false);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -266,8 +274,10 @@ function AddItemForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           onHand: form.onHand || undefined,
           reorderPoint: form.reorderPoint || undefined,
           preferredVendor: form.preferredVendor || undefined,
+          isSpare,
         });
         setForm(empty);
+        setIsSpare(false);
       }}
       style={{ display: "grid", gap: 10 }}
     >
@@ -302,6 +312,13 @@ function AddItemForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         <label style={{ display: "grid", gap: 4 }}>
           <span className="app-muted">Preferred vendor</span>
           <input value={form.preferredVendor} onChange={set("preferredVendor")} />
+        </label>
+        {/* Migration 0520 put "held as a spare" on its own column so it can
+            cross category and kind. Spare Forecast counts these rows, and
+            nothing in the product could set the column until now. */}
+        <label style={{ display: "flex", alignItems: "center", gap: 8, gridColumn: "1 / -1" }}>
+          <input type="checkbox" checked={isSpare} onChange={(event) => setIsSpare(event.target.checked)} />
+          <span className="app-muted">Held as a spare — a replacement bin, not day-to-day shop stock</span>
         </label>
       </div>
       <div>
@@ -345,6 +362,7 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
             <th style={{ padding: "6px 8px", textAlign: "center" }}>On hand</th>
             <th style={{ padding: "6px 8px", textAlign: "right" }}>Reorder at</th>
             <th style={{ padding: "6px 8px" }}>Status</th>
+            <th style={{ padding: "6px 8px", textAlign: "center" }}>Spare</th>
             <th style={{ padding: "6px 8px" }} aria-label="actions" />
           </tr>
         </thead>
@@ -373,6 +391,17 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
                   <span className="app-badge" style={{ background: STATUS_COLOR[status], color: "#fff" }}>
                     {statusLabel(status)}
                   </span>
+                </td>
+                <td style={{ padding: "6px 8px", textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={item.isSpare}
+                    disabled={busy}
+                    aria-label={`${item.name} is held as a spare`}
+                    onChange={(event) =>
+                      mutate({ action: "update-item", itemId: item.id, isSpare: event.target.checked })
+                    }
+                  />
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "right" }}>
                   <button
