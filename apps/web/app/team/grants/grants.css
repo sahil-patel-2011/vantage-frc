@@ -1,4 +1,4 @@
-﻿.gwe-page input,.gwe-page select,.gwe-page textarea{width:100%;min-height:38px;padding:9px 11px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.gwe-page input,.gwe-page select,.gwe-page textarea{width:100%;min-height:38px;padding:9px 11px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
 .gwe-page textarea{min-height:auto;resize:vertical}
 .gwe-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
 .gwe-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}

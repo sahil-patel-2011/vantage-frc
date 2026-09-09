@@ -1,4 +1,4 @@
-﻿/* Marketing v3 — engineered warmth visual redesign. Layers over .marketing-lux. */
+/* Marketing v3 — engineered warmth visual redesign. Layers over .marketing-lux. */
 .marketing-lux{
   /* Fluid type scale (body >= 16px, display tight) */
   --m-step--1:clamp(13px,.78rem + .1vw,14px);
@@ -34,7 +34,7 @@ html[data-theme="dark"] .marketing-lux{
 /* Anchored sections land below the sticky header */
 .marketing-lux [id]{scroll-margin-top:76px}
 
-/* â”€â”€ Header: quiet glass over the canvas â”€â”€ */
+/* ── Header: quiet glass over the canvas ── */
 .marketing-lux .nav{
   background:color-mix(in srgb,var(--m-canvas) 82%,transparent);
   backdrop-filter:blur(14px);
@@ -42,7 +42,7 @@ html[data-theme="dark"] .marketing-lux{
   border-bottom:1px solid var(--m-line-soft);
 }
 
-/* â”€â”€ Hero: full-bleed blueprint field â”€â”€ */
+/* ── Hero: full-bleed blueprint field ── */
 .marketing-lux .lux-hero{
   position:relative;isolation:isolate;overflow:clip;
   display:block;max-width:none;margin:0;padding:0;min-height:0;
@@ -86,7 +86,7 @@ html[data-theme="dark"] .marketing-lux{
 .marketing-lux .lux-hero .actions{margin-top:30px;gap:14px}
 .marketing-lux .lux-hero-note{font-size:13px!important;max-width:36rem}
 
-/* â”€â”€ Hero visual: the agent-teaching panel â”€â”€ */
+/* ── Hero visual: the agent-teaching panel ── */
 .marketing-lux .hero-teach{
   position:relative;z-index:1;justify-self:end;width:min(100%,478px);
   border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
@@ -152,7 +152,7 @@ html[data-theme="dark"] .marketing-lux{
   color:var(--m-muted);font-size:11px;line-height:1.4;
 }
 
-/* â”€â”€ Section rhythm: eyebrow + headline + lede, alternate quiet/loud â”€â”€ */
+/* ── Section rhythm: eyebrow + headline + lede, alternate quiet/loud ── */
 .marketing-lux .lux-problem,
 .marketing-lux .lux-runs,
 .marketing-lux .lux-fit,
@@ -191,7 +191,7 @@ html[data-theme="dark"] .marketing-lux{
 }
 .marketing-lux .lux-closer{max-width:62ch;font-size:var(--m-step-0);line-height:1.6}
 
-/* â”€â”€ One card recipe, reused everywhere â”€â”€ */
+/* ── One card recipe, reused everywhere ── */
 .marketing-lux .lux-feature-grid li,
 .marketing-lux .lux-loop-steps li,
 .marketing-lux .lux-role-grid li,
@@ -331,7 +331,7 @@ html[data-theme="dark"] .marketing-lux .pricing-footnote{color:var(--m-muted)}
 html[data-theme="dark"] .marketing-lux .payg{background:var(--m-paper)}
 html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)}
 
-/* â”€â”€ Footer: brand + three clean columns â”€â”€ */
+/* ── Footer: brand + three clean columns ── */
 .marketing-lux .marketing-footer{
   display:grid;grid-template-columns:minmax(220px,1fr) auto;
   gap:36px 64px;align-items:start;
@@ -353,14 +353,14 @@ html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)
 }
 .marketing-lux .marketing-footer-col a:hover{color:var(--m-warm)!important}
 
-/* â”€â”€ Reveal-on-scroll (armed by ScrollReveal; reduced-motion never arms) â”€â”€ */
+/* ── Reveal-on-scroll (armed by ScrollReveal; reduced-motion never arms) ── */
 html.reveal-armed .marketing-lux [data-reveal]{
   opacity:0;transform:translateY(18px);
   transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);
 }
 html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 
-/* â”€â”€ Responsive â”€â”€ */
+/* ── Responsive ── */
 @media(max-width:var(--soft-radius-pill)){
   .marketing-lux .lux-hero-inner{
     grid-template-columns:1fr;min-height:0;align-items:start;

@@ -22,23 +22,40 @@ type EmptyHint = {
  * style, which is unreachable from any stylesheet and therefore wrong on a dark
  * panel by construction. The plate and the ink are derived per theme now
  * (system.css), so only the hue is named here.
+ *
+ * Each hue is the PILLAR the widget's data comes from, matching the drawer
+ * (lib/nav/product-nav.ts) exactly — amber Competition, green Team, olive
+ * Build, violet AI, blue Home. Before this the ramp was decorative: eleven of
+ * the fifteen were blue and the other four were picked one at a time, so
+ * scouting coverage was green and the alliance prediction beside it was blue
+ * for no reason a reader could recover. Now the chip answers "where does this
+ * number live", and the answer is the same colour it is in the nav.
+ *
+ * `alerts` is the one exception and keeps --tone-red: it is a status, not a
+ * pillar, which is exactly why no pillar was given a hue in the red band.
  */
 const WIDGET_ICON: Record<string, { icon: IconName; tone: string }> = {
-  next_match: { icon: "swords", tone: "var(--tone-blue)" },
-  recent_result: { icon: "stats", tone: "var(--tone-blue)" },
-  competition_snapshot: { icon: "target", tone: "var(--tone-blue)" },
-  scouting_coverage: { icon: "clipboard", tone: "var(--tone-green)" },
-  prediction_summary: { icon: "bolt", tone: "var(--tone-blue)" },
-  robot_readiness: { icon: "cube", tone: "var(--tone-teal)" },
-  pit_youtube: { icon: "display", tone: "var(--tone-blue)" },
-  sync_status: { icon: "gear", tone: "var(--tone-teal)" },
-  ai_usage: { icon: "bolt", tone: "var(--tone-blue)" },
+  // Competition — event day, scouting, strategy, pit.
+  next_match: { icon: "swords", tone: "var(--tone-amber)" },
+  recent_result: { icon: "stats", tone: "var(--tone-amber)" },
+  competition_snapshot: { icon: "target", tone: "var(--tone-amber)" },
+  scouting_coverage: { icon: "clipboard", tone: "var(--tone-amber)" },
+  prediction_summary: { icon: "bolt", tone: "var(--tone-amber)" },
+  pit_youtube: { icon: "display", tone: "var(--tone-amber)" },
+  // Build — the robot itself.
+  robot_readiness: { icon: "cube", tone: "var(--tone-olive)" },
+  // Team — people, work, the shared calendar, the team's own data feeds.
+  sync_status: { icon: "gear", tone: "var(--tone-green)" },
+  team_todos: { icon: "clipboard", tone: "var(--tone-green)" },
+  subteam_upcoming: { icon: "calendar", tone: "var(--tone-green)" },
+  // AI.
+  ai_usage: { icon: "bolt", tone: "var(--tone-violet)" },
+  // Home — the dashboard's own chrome.
   quick_actions: { icon: "grid", tone: "var(--tone-blue)" },
   notifications: { icon: "bell", tone: "var(--tone-blue)" },
-  alerts: { icon: "bell", tone: "var(--tone-red)" },
   onboarding_checklist: { icon: "pin", tone: "var(--tone-blue)" },
-  team_todos: { icon: "clipboard", tone: "var(--tone-blue)" },
-  subteam_upcoming: { icon: "calendar", tone: "var(--tone-teal)" },
+  // Status, not a pillar.
+  alerts: { icon: "bell", tone: "var(--tone-red)" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {

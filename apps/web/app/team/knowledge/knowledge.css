@@ -1,6 +1,11 @@
 /* Team Knowledge wiki — Soft-UI surface, .kb-* prefixed, theme-aware. */
 .kb-page{max-width:1100px;margin:0 auto}
-.kb-page input,.kb-page select,.kb-page textarea{
+/* `:not([type="checkbox"])` is load-bearing. This rule is written for the title
+   and tag fields; a bare `input` also caught the "Pinned" toggle in the editor,
+   which rendered as a full-width 40px bordered slab with "Pinned" stranded
+   after it. The .kb-row rule below used to patch that for the one row that had
+   a class; excluding checkboxes here covers every row instead. */
+.kb-page input:not([type="checkbox"]),.kb-page select,.kb-page textarea{
   width:100%;min-height:40px;padding:10px 12px;color:var(--soft-ink);
   background:var(--soft-bg);border:1px solid var(--soft-line);
   border-radius:var(--soft-radius-sm);font:inherit;
@@ -91,7 +96,6 @@
 .kb-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 .kb-row label{display:flex;align-items:center;gap:7px;font-size:13px}
 .kb-row select{width:auto;min-width:150px}
-.kb-row input[type="checkbox"]{width:auto;min-height:0}
 .kb-body{min-height:360px;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .kb-document{min-height:280px;padding:20px;border:1px solid var(--soft-line);border-radius:var(--soft-radius-sm);background:var(--soft-bg);color:var(--soft-ink);line-height:1.65}
 .kb-document h1,.kb-document h2,.kb-document h3{margin:1.2em 0 .45em;line-height:1.25;letter-spacing:-.015em}

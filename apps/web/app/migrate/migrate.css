@@ -156,11 +156,6 @@
   margin: 12px 0 16px;
 }
 
-.migrate-actions .app-button {
-  min-height: 44px;
-  padding: 0 14px;
-}
-
 .migrate-feeds {
   margin: 0 0 12px;
   padding-left: 18px;
@@ -361,10 +356,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.migrate-presets .app-button {
-  min-height: 44px;
 }
 
 .migrate-invites label,

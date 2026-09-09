@@ -1,4 +1,4 @@
-﻿/* Practice Planner — Soft-UI Team surface. Scoped .practice-* selectors. */
+/* Practice Planner — Soft-UI Team surface. Scoped .practice-* selectors. */
 .practice-page{
   /* --prac-deep/--prac-glow are the hero's own palette; the hero is a deliberate
      always-dark stage (white text in both themes). Everything else rides tokens. */
@@ -97,7 +97,7 @@
 .practice-toggle.miss{color:var(--prac-bad);border-color:var(--prac-bad)}
 .practice-toggle.sm{min-height:44px;padding:4px 10px}
 .practice-logger .app-button,.practice-new .app-button,.practice-empty .app-button{
-  min-height:44px;padding:10px 14px;color:var(--app-accent-ink);background:var(--prac-mid);border:0;border-radius:var(--soft-radius-xs);
+  padding:10px 14px;color:var(--app-accent-ink);background:var(--prac-mid);border:0;border-radius:var(--soft-radius-xs);
   font-size:12px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;
 }
 .practice-logger .app-button.secondary,.practice-stopwatch .app-button.secondary{color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line)}
@@ -124,6 +124,6 @@
 .practice-empty{display:grid;gap:12px;justify-items:start;padding:28px}
 .practice-empty.center{justify-items:center;text-align:center;min-height:220px;align-content:center}
 .practice-empty-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.practice-empty-actions .app-button.secondary{color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);min-height:44px;padding:10px 14px;border-radius:var(--soft-radius-xs);font-size:12px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center}
+.practice-empty-actions .app-button.secondary{color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);padding:10px 14px;border-radius:var(--soft-radius-xs);font-size:12px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center}
 @media(max-width:900px){.practice-hero,.practice-layout,.practice-links-row{grid-template-columns:1fr}.practice-kpis{grid-template-columns:repeat(2,1fr)}.practice-next-actions li{flex-direction:column;align-items:stretch}}
 @media(max-width:560px){.practice-page{padding:15px 11px 58px}.practice-hero{padding:26px 20px}.practice-hero h1{font-size:36px}.practice-kpis,.practice-stats{grid-template-columns:1fr 1fr}.practice-logger>input,.practice-secs{flex:1 1 100%!important;width:auto}}

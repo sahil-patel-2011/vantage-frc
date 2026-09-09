@@ -158,6 +158,22 @@
 /* Deliberately no font-size default for text fields: below 16px iOS Safari
    zooms the viewport on focus, and the fields that matter already set 16px. A
    14px blanket here would have been a house style that broke a phone. */
+
+/* No blanket checkbox rule here, and that is a finding rather than an omission.
+   The bug it would fix — a page's broad text-field rule stretching that page's
+   checkboxes into a full-width slab — cannot be fixed centrally, because the
+   rule that causes it and the rule that deliberately sizes a checkbox are the
+   same selector shape at the same specificity:
+
+     .costs-page input { width:100%; min-height:40px }   <- meant for text fields
+     .state-control input { width:22px; height:22px }    <- meant for the checkbox
+
+   Both are (0,1,1). Any floor strong enough to beat the first also beats the
+   second: measured, `body.has-app-shell input[type="checkbox"]` fixed the two
+   broken rows and collapsed 32 deliberate 16-24px checkboxes to the UA's 13px.
+   The distinguishing information is the page author's intent, which is not in
+   the CSS, so the fix has to be at the source — write the page's field rule as
+   `input:not([type="checkbox"])`, the way manufacturing.css already does. */
 .app-button:disabled,
 .app-button[aria-disabled="true"] {
   opacity: 0.55;

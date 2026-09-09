@@ -67,9 +67,6 @@ html[data-theme="dark"] {
   gap: 8px;
   align-items: center;
 }
-.bp-actions .app-button {
-  min-height: 44px;
-}
 
 .bp-match-list {
   display: grid;

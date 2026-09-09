@@ -56,7 +56,6 @@
 
 .prs-steps .app-button,
 .prs-empty-action {
-  min-height: 44px;
   display: inline-flex;
   align-items: center;
 }
@@ -142,7 +141,6 @@
 }
 
 .prs-two-up .app-button {
-  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-self: start;

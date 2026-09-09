@@ -30,11 +30,6 @@ export type ProductNavGroup = {
    * paints are derived per theme in system.css (--tone-plate / --tone-ink).
    */
   tone: string;
-  /**
-   * @deprecated Retained so existing readers keep compiling; nothing paints it.
-   * A tone's plate is derived from `tone` per theme now — see soft-ui.css.
-   */
-  toneBg: string;
   icon: ProductNavIcon;
   items: ProductNavItem[];
 };
@@ -65,11 +60,30 @@ export type ProductNavIcon =
   | "back";
 
 /**
- * Every pillar currently reads as the house blue — one palette was a deliberate
- * call. Kept as a token rather than folded away so giving a pillar its own hue
- * is a one-word change here and stays correct in both themes.
+ * One hue per pillar. The drawer is eight rows that differ only in a five-letter
+ * label and a 17px glyph; painting all eight the house blue meant the tone
+ * machinery ran on every row and told you nothing. A hue is the cheapest
+ * wayfinding cue there is — you learn "Logistics is the teal one" without
+ * reading — and it is the *secondary* cue, behind the icon and the label, so
+ * nobody depends on telling green from teal.
+ *
+ * Only the hue crosses the boundary. The plate the chip sits on, the ink the
+ * glyph is drawn in and the wash behind an active row are all derived from it
+ * per theme in system.css, so one value here is right on paper and on the dark
+ * drawer. Verified in both themes against those derivations: every text pair
+ * (--tone-ink on --tone-wash) is >= 4.56:1, and the lowest icon-on-chip pair
+ * (--tone-ink on --tone-plate) is 4.38:1 against a 3:1 bar for non-text.
  */
-const TONE = { tone: "var(--tone-blue)", toneBg: "" } as const;
+const TONE = {
+  home: "var(--tone-blue)",
+  competition: "var(--tone-amber)",
+  team: "var(--tone-green)",
+  logistics: "var(--tone-teal)",
+  business: "var(--tone-plum)",
+  media: "var(--tone-magenta)",
+  build: "var(--tone-olive)",
+  ai: "var(--tone-violet)",
+} as const;
 
 /** Routes that never append ?orgId= (account / platform chrome). */
 export const ORG_EXEMPT_HREFS = new Set([
@@ -92,49 +106,49 @@ export const ORG_EXEMPT_HREFS = new Set([
 export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
   {
     label: "Home",
-    ...TONE,
+    tone: TONE.home,
     icon: "home",
     items: [{ href: "/dashboard", label: "Home", icon: "home" }],
   },
   {
     label: "Competition",
-    ...TONE,
+    tone: TONE.competition,
     icon: "swords",
     items: [{ href: "/competition", label: "Competition", icon: "swords" }],
   },
   {
     label: "Team",
-    ...TONE,
+    tone: TONE.team,
     icon: "users",
     items: [{ href: "/team", label: "Team", icon: "users" }],
   },
   {
     label: "Logistics",
-    ...TONE,
+    tone: TONE.logistics,
     icon: "pin",
     items: [{ href: "/logistics", label: "Logistics", icon: "pin" }],
   },
   {
     label: "Business",
-    ...TONE,
+    tone: TONE.business,
     icon: "clipboard",
     items: [{ href: "/business", label: "Business", icon: "clipboard" }],
   },
   {
     label: "Media",
-    ...TONE,
+    tone: TONE.media,
     icon: "camera",
     items: [{ href: "/media", label: "Media", icon: "camera" }],
   },
   {
     label: "Build",
-    ...TONE,
+    tone: TONE.build,
     icon: "cube",
     items: [{ href: "/build", label: "Build", icon: "cube" }],
   },
   {
     label: "AI",
-    ...TONE,
+    tone: TONE.ai,
     icon: "bolt",
     items: [{ href: "/ai", label: "AI", icon: "bolt" }],
   },
@@ -353,9 +367,11 @@ export function findNavMatch(
       }
     }
     const homeGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Home");
+    // Settings is drawer footer chrome, not a pillar, so it borrows Home's hue
+    // rather than claiming a ninth one.
     const settingsPseudo: ProductNavGroup = {
       label: "Settings",
-      ...TONE,
+      tone: TONE.home,
       icon: "gear",
       items: SETTINGS_DEEP_LINKS,
     };

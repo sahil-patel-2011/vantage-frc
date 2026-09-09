@@ -59,7 +59,7 @@
 .kick-intel-head h2{margin:0 0 6px}
 .kick-intel-head p{margin:0}
 .kick-pipeline-links{display:flex;gap:8px;flex-wrap:wrap}
-.kick-pipeline-links .app-button{min-height:44px;padding:0 12px;font-size:12px}
+.kick-pipeline-links .app-button{padding:0 12px;font-size:12px}
 .kick-intel-empty{display:grid;gap:6px;padding:14px;background:var(--app-bg);border:1px dashed var(--app-line);border-radius:var(--soft-radius-xs)}
 .kick-intel-form{display:grid;gap:12px}
 .kick-intel-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--app-muted)}

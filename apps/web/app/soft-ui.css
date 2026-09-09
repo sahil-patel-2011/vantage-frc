@@ -70,6 +70,17 @@
   --tone-teal:#0f766e;
   --tone-amber:#b45309;
   --tone-red:#b91c1c;
+  /* Four more so the eight pillars can have eight hues instead of one blue
+     repeated eight times. Spread around the wheel with the existing four, all
+     at the same 700-ish weight so the ramp reads as one family: amber 26,
+     olive 86, green 142, teal 175, blue 220, violet 263, magenta 295, plum 335.
+     The tightest neighbours are violet/magenta at 32 degrees. Nothing sits in
+     the 340-20 band, which belongs to --tone-red: a pillar the colour of the
+     danger status would make a dashboard widget read as an alarm. */
+  --tone-violet:#6d28d9;
+  --tone-magenta:#a21caf;
+  --tone-olive:#4d7c0f;
+  --tone-plum:#be185d;
   /* How much hue goes into the plate, and into the ink, per theme. Light ink is
      the hue itself (100%); dark lifts it toward white so it clears 4.5:1 on the
      dark plate. These two scalars are the whole theme story for tones. */

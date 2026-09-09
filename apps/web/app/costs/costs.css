@@ -1,7 +1,11 @@
 /* Season Costs — Soft-UI surface, .costs-* prefixed, theme-aware.
    Totals from logged season costs / subscriptions / usage ledger only — never DEMO $. */
 .costs-page{max-width:1100px;margin:0 auto}
-.costs-page input,.costs-page select,.costs-page textarea{
+/* `:not([type="checkbox"])` is load-bearing. This rule is written for the
+   amount and date fields; a bare `input` also caught the AI-assist toggle in
+   the page header, which rendered as a 247x40 bordered slab beside its label
+   instead of a checkbox. */
+.costs-page input:not([type="checkbox"]),.costs-page select,.costs-page textarea{
   width:100%;min-height:40px;padding:10px 12px;color:var(--soft-ink);
   background:var(--soft-bg);border:1px solid var(--soft-line);
   border-radius:var(--soft-radius-sm);font:inherit;

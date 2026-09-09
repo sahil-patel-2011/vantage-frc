@@ -20,7 +20,6 @@
 .prt-resolve-picker{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .prt-resolve-picker select{flex:1 1 200px;min-height:44px}
 .prt-resolve-picker input{width:90px;min-height:44px}
-.prt-resolve-picker .app-button,.prt-resolve-form .app-button{min-height:44px}
 .prt-used-list{list-style:none;padding:0;margin:0;display:grid;gap:6px}
 .prt-used-list li{display:flex;justify-content:space-between;gap:8px;align-items:center;min-height:44px;padding:0 4px;border-bottom:1px solid var(--app-line)}
 .prt-used-list li:last-child{border-bottom:none}
