@@ -38,6 +38,10 @@ export default function AnnouncementsClient() {
   const [requireAck, setRequireAck] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [outstanding, setOutstanding] = useState<{ id: string; names: string[] } | null>(null);
+  // What actually left the building. The poster is about to walk away assuming
+  // everyone has been told, so "emailed 9 of 30, 21 have this off" belongs on
+  // screen rather than in a log nobody reads.
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -66,12 +70,13 @@ export default function AnnouncementsClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; emailSummary?: string };
       if (!response.ok) {
         setError(data.error ?? "That did not work.");
         return false;
       }
       setError("");
+      setNotice(data.emailSummary ?? "");
       await load();
       return true;
     } finally {
@@ -162,10 +167,16 @@ export default function AnnouncementsClient() {
                 Pin to the top
               </label>
             </div>
+            <p className="app-muted ann-delivery-note">
+              {priority === "urgent" || requireAck
+                ? "Everyone gets this in their inbox, and it is also emailed to members who have urgent announcements switched on."
+                : "Everyone gets this in their inbox. Mark it urgent, or require confirmation, to email it as well."}
+            </p>
             <button type="submit" className="app-button" disabled={busy || !title.trim()}>
               Post to {view.orgName}
             </button>
             {error ? <p role="alert" className="ann-error">{error}</p> : null}
+            {notice ? <p role="status" className="app-muted ann-delivery-note">{notice}</p> : null}
           </form>
         </Panel>
       ) : null}
