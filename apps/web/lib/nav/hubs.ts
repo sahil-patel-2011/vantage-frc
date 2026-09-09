@@ -129,6 +129,19 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "attendance", label: "People", legacyHref: "/attendance" },
       ...nest("attendance", [
         { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
+        // Subteams and Forms are people operations, so they live under People
+        // rather than as their own drawer pillar — the drawer keeps one link
+        // per pillar, and a tool nobody can click to might as well not exist.
+        // "Subteam progress", not "Subteams": the Team calendar toolbar already
+        // has a Subteams control, and two identical labels in one hub is the
+        // confusion this product is trying to remove. The longer name also says
+        // what the page is for.
+        { id: "subteams", label: "Subteam progress", legacyHref: "/subteams", featured: true },
+        { id: "team-forms", label: "Forms", legacyHref: "/forms", featured: true },
+        // Announcements is nested rather than a fifth Team workbench: the set
+        // of workbenches is pinned by a test on purpose, and "tell the team
+        // something" belongs with the people it is told to.
+        { id: "announcements", label: "Announcements", legacyHref: "/announcements", featured: true },
         // One presence record: RSVP → roll call → hours, so "who is coming tonight"
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
