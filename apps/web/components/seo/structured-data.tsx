@@ -17,7 +17,7 @@ const graph = {
       alternateName: "Vantage FRC",
       url: CANONICAL,
       logo: `${CANONICAL}/vantage-logo.svg`,
-      email: "hello@vantagefrc.com",
+      email: "sahiljpatel2011@gmail.com",
       description,
     },
     {

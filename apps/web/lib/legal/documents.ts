@@ -19,7 +19,11 @@
 export const LEGAL_LAST_UPDATED = "August 24, 2026";
 
 /** Where a privacy question goes. */
-export const LEGAL_CONTACT_EMAIL = "privacy@vantagefrc.com";
+// The Privacy Policy and Terms name this address as the way to reach a
+// human. It has to be one that is actually read: this product holds data
+// about minors, and a policy pointing at a mailbox nobody owns is worse
+// than no address at all.
+export const LEGAL_CONTACT_EMAIL = "sahiljpatel2011@gmail.com";
 
 export type LegalSection = {
   /** Stable anchor slug — `/privacy#what-we-collect` must keep working. */

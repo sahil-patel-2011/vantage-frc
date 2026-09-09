@@ -841,3 +841,15 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   line-height: 1.15;
   letter-spacing: -0.025em;
 }
+
+/* Access reality sits with the price, not buried in a footer: the plans are
+   what a team pays once it is provisioned, and provisioning is invite-only. */
+.marketing-lux .pricing-access-note{
+  margin:14px 0 0;
+  padding:12px 14px;
+  border-left:3px solid var(--m-accent, #1457d9);
+  background:var(--m-soft, #f4f6f9);
+  font-size:14px;
+  line-height:1.55;
+  max-width:60ch;
+}

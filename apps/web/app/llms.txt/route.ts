@@ -15,7 +15,7 @@ const body = `# Vantage
 - Type: Web application (installable as an iOS PWA) plus a Windows desktop shell (\`/desktop\`)
 - Audience: FRC coaches, mentors, drive teams, strategy staff, and students
 - Access: Closed / invite-only; platform admin provisions each team and owner; owners invite exact emails
-- Contact: hello@vantagefrc.com
+- Contact: sahiljpatel2011@gmail.com
 - Site: ${CANONICAL}/
 
 ## What Vantage does (citeable)

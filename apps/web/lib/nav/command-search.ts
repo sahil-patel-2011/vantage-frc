@@ -330,6 +330,7 @@ const STANDALONE: CommandEntry[] = [
   // Keywords carry the jobs people actually search for — "google form",
   // "sign up sheet", "permission slip" — because nobody types "forms engine".
   { id: "forms", label: "Forms", context: "Team", href: "/forms", kind: "destination", keywords: ["form", "forms", "survey", "google form", "microsoft forms", "sign up", "sign up sheet", "intake", "new members", "tryout", "dues", "permission slip", "questionnaire", "poll", "responses"], featured: true },
+  { id: "subteams", label: "Subteams", context: "Team", href: "/subteams", kind: "destination", keywords: ["subteam", "subteams", "mechanical", "electrical", "programming", "cad", "pit crew", "drive team", "business", "who is on", "roster", "progress", "mentor view", "follow up"], featured: true },
   { id: "announcements", label: "Announcements", context: "Team", href: "/announcements", kind: "destination", keywords: ["announcement", "announcements", "notice", "post", "broadcast", "tell the team", "bulletin", "read receipt", "acknowledge"], featured: true },
   { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },
   { id: "appearance", label: "Appearance & theme", context: "Settings", href: "/account?tab=appearance", kind: "destination", keywords: ["theme", "dark mode", "light mode", "appearance", "colors"] },

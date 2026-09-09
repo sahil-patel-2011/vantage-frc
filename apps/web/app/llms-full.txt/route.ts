@@ -71,7 +71,7 @@ ${CANONICAL}/llms.txt
 ${CANONICAL}/sitemap.xml
 
 ## Contact
-hello@vantagefrc.com · privacy@vantagefrc.com
+sahiljpatel2011@gmail.com
 `;
 
 export function GET() {

@@ -65,6 +65,10 @@ export default function Home() {
             <p className="lux-eyebrow">Closed beta</p>
             <h2>Request access.</h2>
             <p>Invite-only. We email when your team is provisioned. Joining the waitlist does not create an account.</p>
+            <p className="lux-hero-note">
+              Questions, or want to talk about your team before you join?{" "}
+              <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a>
+            </p>
           </div>
           <WaitlistForm idPrefix="hero" />
         </section>
