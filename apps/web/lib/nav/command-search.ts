@@ -181,6 +181,15 @@ const KEYWORDS: Record<string, string[]> = {
   "build:kickoff": ["kickoff", "game manual", "rules", "new game", "january", "strategy design"],
   "build:cad": ["cad", "onshape", "fusion", "model", "design", "parts", "drawing"],
   "build:cad-change-radar": ["cad changes", "change radar", "what changed in cad"],
+  // Deliberately no bare "cad" here: that word belongs to the CAD workbench,
+  // and adding it would make a new member searching for the modelling tool
+  // land on the training track instead.
+  "build:cad-learn": [
+    "learn cad", "onshape tutorial", "onshape lessons", "cad training", "cad lessons",
+    "teach cad", "new to cad", "beginner cad", "cad onboarding", "mechanical onboarding",
+    "design subteam", "sketching", "extrude", "fillet", "mates", "assemblies",
+    "grade my part", "mass properties", "moment of inertia", "how do i start cad",
+  ],
   "build:sketch-to-brief": ["sketch", "napkin", "idea to brief", "concept"],
   "build:code": ["code", "programming", "software", "java", "python", "wpilib", "robot code"],
   // The loudest blocker in the community research, so it carries the panic words a
