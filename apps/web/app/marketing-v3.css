@@ -779,3 +779,48 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);
   white-space:nowrap;border:0;
 }
+
+/*
+ * One column for the whole pricing route.
+ *
+ * `.marketing-site .pricing-page>section` (marketing.css) sets an 8vw side pad
+ * and outranks the lux rules for `.pricing-credits`, `.pricing-faq` and the
+ * waitlist, every one of which already asks for `var(--m-pad-x)`. The result
+ * was a page that alternated between two left edges down its own length —
+ * measured at 1440: plans/trial/payg text at x=79, credits/faq/waitlist at
+ * x=115 — while the hero, being a centred max-width box, put its headline at
+ * x=188. Nothing on the page agreed with anything else.
+ *
+ * The heroes on Product / How it works / For teams / Desktop are centred on
+ * `--m-content`, and their body sections line up with them. Pricing is the one
+ * route whose sections were full-bleed, so it is brought onto the same column
+ * rather than the hero being pushed off it. Same specificity as the rule in
+ * marketing.css, and this sheet loads second.
+ */
+.marketing-lux .pricing-page > section{
+  max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
+  margin-inline:auto;
+  padding-inline:var(--m-pad-x);
+}
+
+/*
+ * For teams: the pricing band sat at the page edge (text x=79) while every
+ * other band on that route sat at x=153, because it is a flex row whose copy
+ * starts at the padding edge rather than inside the shared measure.
+ */
+.marketing-lux .lux-pricing{
+  max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
+  margin-inline:auto;
+}
+
+/*
+ * `.marketing-lux .pricing-page .pricing-trial` (marketing.css) sets
+ * `max-width:none` explicitly, which outranks the column rule above and left
+ * this one band at the page edge while its seven siblings were centred. Matched
+ * on specificity here, where this sheet's later position decides it.
+ */
+.marketing-lux .pricing-page > .pricing-trial,
+.marketing-lux .pricing-page > .pricing-alternates{
+  max-width:calc(var(--m-content) + var(--m-pad-x) * 2);
+  margin-inline:auto;
+}
