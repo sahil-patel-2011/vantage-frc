@@ -197,6 +197,12 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // prioritize" a blocker for rookie coaches, so it is pinned to the front of
         // the Playbook workbench rather than buried in the tail.
         { id: "roadmap", label: "Season roadmap", legacyHref: "/roadmap", featured: true },
+        // Vantage Drive. It sits under Playbook because that workbench is
+        // already "the team's own written material", and a file space is the
+        // same idea with the bytes attached. Featured, because it is the
+        // reason a team can stop keeping half its season in someone's personal
+        // Google Drive — a tool nobody can click to might as well not exist.
+        { id: "files", label: "Files", legacyHref: "/files", featured: true },
         { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
         // The team's shared shelf: any file (STEP/DXF, PDFs, manuals), nestable
         // folders, and external links — with team-wide vs restricted sharing.
