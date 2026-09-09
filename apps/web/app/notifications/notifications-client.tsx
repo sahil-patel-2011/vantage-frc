@@ -41,16 +41,17 @@ function NextActions({
   itemCount,
   unreadCount,
   filter,
-  onMarkAllRead,
-  busy,
 }: {
   itemCount: number;
   unreadCount: number;
   filter: "all" | "unread";
-  onMarkAllRead: () => void;
-  busy: boolean;
 }) {
-  const actions = notificationNextActions({ itemCount, unreadCount, filter });
+  // `mark-read` is dropped, not rendered as a second button: the toolbar above
+  // this list already carries "Mark all as read", with the same enabled state
+  // and the same effect. The row's own reason is still visible up there as the
+  // unread badge.
+  const actions = notificationNextActions({ itemCount, unreadCount, filter })
+    .filter((action) => action.id !== "mark-read");
   return (
     <section className="notif-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
@@ -64,20 +65,9 @@ function NextActions({
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
             </div>
-            {action.id === "mark-read" ? (
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy || unreadCount < 1}
-                onClick={onMarkAllRead}
-              >
-                Mark all as read
-              </button>
-            ) : (
-              <a className="app-button secondary" href={action.href}>
-                Open
-              </a>
-            )}
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
           </li>
         ))}
       </ol>
@@ -173,18 +163,17 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         title="Notifications"
         description="Real alerts for your signed-in account. Empty means nothing has been sent yet — Vantage never invents DEMO competition notices."
       >
+        {/* Prefs and Account used to be repeated here, one line above the
+            related strip that already carries both — and the two "Account"
+            buttons pointed at different URLs (/account vs
+            /account?tab=notifications), so the same word meant two places on
+            one screen. The strip below is the single copy. */}
         <div className="notif-header-actions">
           {unreadCount >= 1 ? (
             <span className="app-badge">{unreadCount} unread</span>
           ) : (
             <span className="app-badge good">Inbox clear</span>
           )}
-          <a className="app-button secondary" href="/notifications/preferences">
-            Notification prefs
-          </a>
-          <a className="app-button secondary" href="/account?tab=notifications">
-            Account
-          </a>
         </div>
       </PageHeader>
 
@@ -241,13 +230,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                 </a>
               </div>
             </EmptyState>
-            <NextActions
-              itemCount={0}
-              unreadCount={0}
-              filter={filter}
-              busy={busy}
-              onMarkAllRead={() => void patch("read_all")}
-            />
+            <NextActions itemCount={0} unreadCount={0} filter={filter} />
           </>
           );
         })()
@@ -272,20 +255,17 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
               >
                 Mark all as read
               </button>
-              <a className="app-button secondary" href="/notifications/preferences">
-                Which events notify
-              </a>
             </div>
           </TabBar>
 
-          <NextActions
-            itemCount={items.length}
-            unreadCount={unreadCount}
-            filter={filter}
-            busy={busy}
-            onMarkAllRead={() => void patch("read_all")}
-          />
+          <NextActions itemCount={items.length} unreadCount={unreadCount} filter={filter} />
 
+          {/* This empty state carries no action row: it repeated the related
+              strip at the top of the page verbatim — prefs, What's new,
+              Support, Account — and the Next actions list directly above
+              already links all four with the reason for each. Three copies of
+              the same four buttons on one screen is not three chances to
+              click, it is noise. */}
           {items.length === 0 ? (
             <EmptyState
               soft
@@ -297,22 +277,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                   ? "You’re caught up. Switch to All for history, or wait for the next real todo, duty, calendar, or release alert — never DEMO fillers."
                   : "When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here with a real timestamp — never DEMO competition noise."
               }
-            >
-              <div className="notif-empty-actions">
-                <a className="app-button secondary" href="/notifications/preferences">
-                  Notification prefs
-                </a>
-                <a className="app-button secondary" href="/whats-new">
-                  What’s new
-                </a>
-                <a className="app-button secondary" href="/support">
-                  Help & Support
-                </a>
-                <a className="app-button secondary" href="/account?tab=notifications">
-                  Account
-                </a>
-              </div>
-            </EmptyState>
+            />
           ) : (
             <ul className="notif-list" id="notif-inbox-list" aria-label="Inbox">
               {items.map((item) => {

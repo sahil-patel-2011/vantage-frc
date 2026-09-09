@@ -329,6 +329,48 @@ export default function BusinessClient() {
         ) : null}
       </PageHeader>
 
+      <TabBar
+        aria-label="Business sections"
+        value={workbenchId}
+        onChange={(id) => {
+          if (isTab(id)) selectTab(id);
+          else selectTab((hubWorkbenchId(BUSINESS_HUB, id) as Tab) || "overview");
+        }}
+        tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
+        className="product-hub-tabs"
+      />
+      {visibleNested.length > 0 ? (
+        <ToolStrip
+          aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
+          value={tab}
+          onChange={(id) => {
+            if (isTab(id)) {
+              selectTab(id);
+              return;
+            }
+            const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === id);
+            if (nested?.legacyHref) {
+              window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
+            }
+          }}
+          items={visibleNested.map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            featured: entry.featured === true,
+            // Tools this hub does not render inline are real links, so they go
+            // straight to the page instead of bouncing off a redirect card.
+            href:
+              !isTab(entry.id) && entry.legacyHref
+                ? hubLegacyHref(entry, orgId ?? live?.orgId ?? null)
+                : undefined,
+          }))}
+        />
+      ) : null}
+
+      {/* Below the tab bar, not above it. A save error or a slow first load used
+          to push Business's own navigation down the page — the one thing you
+          need to still be where it was when something goes wrong. These belong
+          with the panel they are talking about. */}
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>
@@ -383,44 +425,6 @@ export default function BusinessClient() {
         ) : (
           <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
         )
-      ) : null}
-
-      <TabBar
-        aria-label="Business sections"
-        value={workbenchId}
-        onChange={(id) => {
-          if (isTab(id)) selectTab(id);
-          else selectTab((hubWorkbenchId(BUSINESS_HUB, id) as Tab) || "overview");
-        }}
-        tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
-        className="product-hub-tabs"
-      />
-      {visibleNested.length > 0 ? (
-        <ToolStrip
-          aria-label={`Tools in ${BUSINESS_HUB.tabs.find((entry) => entry.id === workbenchId)?.label ?? "Business"}`}
-          value={tab}
-          onChange={(id) => {
-            if (isTab(id)) {
-              selectTab(id);
-              return;
-            }
-            const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === id);
-            if (nested?.legacyHref) {
-              window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
-            }
-          }}
-          items={visibleNested.map((entry) => ({
-            id: entry.id,
-            label: entry.label,
-            featured: entry.featured === true,
-            // Tools this hub does not render inline are real links, so they go
-            // straight to the page instead of bouncing off a redirect card.
-            href:
-              !isTab(entry.id) && entry.legacyHref
-                ? hubLegacyHref(entry, orgId ?? live?.orgId ?? null)
-                : undefined,
-          }))}
-        />
       ) : null}
 
       {view?.status === "setup_required" ? (
@@ -603,9 +607,10 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             <a href={ordersHref}>purchase requests</a>. Chat tools that read redacted budgets require{" "}
             <a href={financeAiHref}>Finance-in-AI</a> under AI governance — never card or bank details.
           </p>
+          {/* Finance-in-AI is the same label pointing at the same href three
+              lines up, in this card's own sentence. One copy. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <a className="app-button secondary" href={costsHref}>Open Season Costs</a>
-            <a className="app-button secondary" href={financeAiHref}>Finance-in-AI</a>
           </div>
         </article>
       </section>

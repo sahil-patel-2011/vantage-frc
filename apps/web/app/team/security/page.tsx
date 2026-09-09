@@ -1,4 +1,4 @@
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, PageHeader } from "../../../components/ui";
 import CapabilitiesClient from "./capabilities-client";
 import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
@@ -16,15 +16,20 @@ export default async function TeamSecurityPage({
   if (!orgId) {
     return (
       <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Security"
+          title="Team security"
+          description="Access policy, hub access, and capabilities are set per team — pick the workspace first."
+        />
         <EmptyState
           soft
-          badge="Setup"
+          badge="Team needed"
           badgeTone="setup"
-          title="Select an organization"
-          description="Open Team security from Team admin so the workspace orgId is included."
+          title="Choose a team"
+          description="These controls change who can do what inside one workspace, so they need a team before they mean anything."
         >
-          <a className="app-button secondary" href="/team">
-            Open Team admin
+          <a className="app-button" href="/workspace">
+            Choose team
           </a>
         </EmptyState>
       </main>
