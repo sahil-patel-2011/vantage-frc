@@ -1,0 +1,36 @@
+-- Two new values on the EXISTING capability enum. Nothing else — see 0621.
+--
+-- THE ROLE QUESTION, ANSWERED
+-- The product rule is "only mentors manage the budget, students cannot access
+-- it", and "mentor" is not a permission in this system. `org_role` is
+-- ('owner','admin','scout','viewer'), referenced by ~1,800 RLS policies, and
+-- `profiles.team_role` ('student','mentor','coach','parent','other') is
+-- descriptive AND self-written under `profiles_self` — a student can set it to
+-- 'mentor'. It cannot be an authorization input.
+--
+-- Adding 'mentor' to org_role was the obvious move and the wrong one: every
+-- policy written as has_org_role(org_id, ARRAY['owner','admin']) would silently
+-- exclude mentors, so all ~1,800 would need an audit; the value also appears in
+-- TS unions, the invite role picker, the membership editor, and the
+-- `CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END` ordering
+-- copy-pasted through dozens of org resolvers.
+--
+-- It is also unnecessary, because this codebase ALREADY has the mechanism:
+-- 0049_member_capabilities_prompt_caching.sql added `org_capability`,
+-- `membership_capabilities`, and `has_org_capability(org_id, capability)`,
+-- whose entire purpose is "grant elevated powers to scout/viewer without
+-- promoting them to full admin". That function already returns true for
+-- owner/admin, so `has_org_capability(org, 'manage_budget')` means exactly
+-- "owner, admin, or a person explicitly trusted with the budget".
+--
+-- So: two new capability values on the existing enum, and the existing table
+-- carries the grants. No new table, no new permission primitive, org_role
+-- untouched.
+--
+-- This file adds ONLY the enum values. Postgres refuses to use a value added by
+-- ALTER TYPE inside the transaction that added it, and scripts/run-migrations.mjs
+-- wraps each file in BEGIN/COMMIT — so every policy that names them lives in
+-- 0621, which runs in its own transaction.
+
+ALTER TYPE org_capability ADD VALUE IF NOT EXISTS 'manage_budget';
+ALTER TYPE org_capability ADD VALUE IF NOT EXISTS 'edit_docs';

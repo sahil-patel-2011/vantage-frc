@@ -202,6 +202,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // folders, and external links — with team-wide vs restricted sharing.
         { id: "library", label: "Library", legacyHref: "/library", featured: true },
         { id: "team-storage", label: "Storage node", legacyHref: "/team/storage" },
+        // Who may write the playbook. It belongs beside the pages it governs,
+        // not in a settings corner — the owner grants the role from here.
+        { id: "doc-roles", label: "Document roles", legacyHref: "/doc-roles" },
         // Capture-from-work review queue. It sits beside the Playbook because that is
         // where an approved draft lands — and nothing lands there without an Approve.
         { id: "knowledge-drafts", label: "Knowledge drafts", legacyHref: "/knowledge-drafts" },
@@ -231,6 +234,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "finance", label: "Money" },
       ...nest("finance", [
         { id: "budget", label: "Budget" },
+        // The mentor-only season budget (0621 put season_budgets behind the
+        // manage_budget capability in RLS). Distinct from the per-category
+        // budget-vs-actual panel on the "Budget" tab above, which any member
+        // can open.
+        { id: "season-budget", label: "Season budget", legacyHref: "/budget" },
+        // Where a student asks for a part without needing budget access.
+        { id: "part-requests", label: "Part requests", legacyHref: "/part-requests" },
         { id: "orders", label: "Orders", legacyHref: "/orders" },
         { id: "costs", label: "Season costs", legacyHref: "/costs" },
         { id: "vendor-lead-times", label: "Lead times", legacyHref: "/vendor-lead-times" },

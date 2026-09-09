@@ -104,6 +104,13 @@ export async function POST(request: Request) {
 
       switch (action) {
         case "set-budget": {
+          // The season budget is mentor-only since 0621 — RLS refuses the write
+          // for anyone else, and this turns that refusal into a sentence.
+          const allowed = await client.query<{ allowed: boolean }>(
+            `SELECT has_org_capability($1::uuid, 'manage_budget'::org_capability) AS allowed`,
+            [orgId],
+          );
+          if (allowed.rows[0]?.allowed !== true) throw new Error("budget_forbidden");
           await setBudget(client, {
             orgId,
             userId,
@@ -208,6 +215,16 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Season costs request failed";
+    if (message === "budget_forbidden") {
+      return Response.json(
+        {
+          error:
+            "The season budget is limited to mentors — the team Owner and Admins, plus anyone an " +
+            "owner has granted budget access. Season costs stay open to everyone.",
+        },
+        { status: 403 },
+      );
+    }
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },

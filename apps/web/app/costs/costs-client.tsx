@@ -399,6 +399,27 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
     setAiAssist(budget.aiAssistEnabled);
   }, [budget.totalBudgetUsd, budget.aiAssistEnabled, view.computedAt]);
 
+  // The season budget moved behind the `manage_budget` capability in 0621, so for anyone
+  // below mentor level the row is not returned at all. Rendering the usual
+  // "no budget set / set one" card here would state something this session
+  // cannot know and offer a control the database would refuse.
+  if (!view.canManageBudget) {
+    return (
+      <Panel className="costs-panel">
+        <h2>Season budget</h2>
+        <p className="app-muted">
+          The season budget is visible to mentors only — the team Owner and Admins, plus anyone an
+          owner has granted budget access. Whether one is set is not shown here either way. The
+          season costs below are the team&rsquo;s real recorded spend and stay open to everyone.
+        </p>
+        <p className="app-muted">
+          Need a part? <a href="/part-requests">Send a part request</a> — that does not need budget
+          access.
+        </p>
+      </Panel>
+    );
+  }
+
   const pct = summary.pctUsed == null ? null : Math.min(1.2, summary.pctUsed);
   const barColor = summary.overBudget ? "#c02626" : (pct ?? 0) >= 0.85 ? "#b26a00" : "#1f7a3d";
 
