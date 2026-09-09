@@ -1351,3 +1351,139 @@
 .tc-ai-fine {
   font-size: 11px;
 }
+
+/* ---------------------------------------------------------------------------
+ * Tasks on the calendar.
+ *
+ * A task has a due date but no hour, so it lives in the all-day strip and in
+ * the month cell's peek list — never placed at a time we would have invented.
+ * ------------------------------------------------------------------------- */
+.tc-task-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 6px 2px 2px;
+  background: var(--app-surface);
+  border: 1px solid var(--tc-task-color, var(--app-line));
+  border-left: 3px solid var(--tc-task-color, var(--app-muted));
+  border-radius: var(--soft-radius-xs);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.tc-task-chip.is-doing {
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+}
+.tc-task-chip.is-late {
+  border-color: var(--app-critical);
+  border-left-color: var(--app-critical);
+}
+
+.tc-task-tick {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: var(--app-muted);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tc-task-tick:hover:not(:disabled) {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+.tc-task-tick:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tc-task-title {
+  overflow: hidden;
+  color: var(--app-ink);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-task-title:hover {
+  text-decoration: underline;
+}
+
+.tc-task-more {
+  align-self: center;
+  color: var(--app-muted);
+  font-size: 10px;
+}
+
+/* Agenda rows get their own line so chips wrap instead of crowding the cards. */
+.tc-task-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+
+/* Month cells are buttons, so a task there is text, not a control — clicking
+   the cell opens the day view, where the tick works. */
+.tc-task-peek {
+  background: var(--app-soft) !important;
+  color: var(--app-muted) !important;
+}
+
+.tc-task-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-muted);
+  text-decoration: none;
+  font-size: 12px;
+}
+.tc-task-summary strong {
+  padding: 2px 6px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+  font-size: 11px;
+}
+.tc-task-summary strong.is-late {
+  color: var(--app-critical);
+  border-color: var(--app-critical);
+}
+.tc-task-summary:hover {
+  text-decoration: underline;
+}
+
+/* Event / Task switch in the quick-add head. */
+.tc-quick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tc-entry-switch {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+}
+.tc-entry-switch button {
+  padding: 4px 10px;
+  color: var(--app-muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc-entry-switch button.active {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+}
