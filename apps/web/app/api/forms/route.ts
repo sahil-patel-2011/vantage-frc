@@ -1,0 +1,280 @@
+import type { PoolClient } from "@neondatabase/serverless";
+import { auth } from "@vantage/core";
+import { withRls } from "@vantage/db";
+import { headers } from "next/headers";
+import {
+  addQuestion,
+  assignForm,
+  createForm,
+  deleteQuestion,
+  getForm,
+  getResults,
+  listForms,
+  moveQuestion,
+  setFormStatus,
+  submitResponse,
+  updateQuestion,
+} from "../../../lib/forms/store";
+import { formInsight } from "../../../lib/forms/results";
+import {
+  isFormPurpose,
+  isQuestionKind,
+  STARTER_QUESTIONS,
+  type FormAudience,
+  type FormStatus,
+} from "../../../lib/forms/types";
+
+class HttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
+async function requireSession() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new HttpError(401, "Authentication required");
+  return session;
+}
+
+type Membership = { orgId: string; orgName: string; role: string };
+
+/**
+ * Resolve the workspace without demanding a query parameter.
+ *
+ * The scouting form builder gates on `searchParams.orgId` and shows "setup
+ * required" forever when you open it from the nav, even with exactly one team.
+ * Falling back to the caller's single membership avoids repeating that.
+ */
+async function resolveMembership(
+  client: PoolClient,
+  userId: string,
+  requestedOrgId: string | null,
+): Promise<Membership> {
+  const result = await client.query<Membership>(
+    `SELECT m.org_id AS "orgId", o.name AS "orgName", m.role
+       FROM memberships m
+       JOIN organizations o ON o.id = m.org_id
+      WHERE m.user_id = $1::uuid
+        AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
+      ORDER BY o.name
+      LIMIT 2`,
+    [userId, requestedOrgId],
+  );
+  const membership = result.rows[0];
+  if (!membership) throw new HttpError(403, "Organization membership required");
+  return membership;
+}
+
+function requireAdmin(membership: Membership) {
+  if (membership.role !== "owner" && membership.role !== "admin") {
+    throw new HttpError(403, "Only owners and admins can change forms");
+  }
+}
+
+function fail(error: unknown) {
+  const status = error instanceof HttpError ? error.status : 400;
+  return Response.json({ error: error instanceof Error ? error.message : "Form request failed" }, { status });
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+    const formId = url.searchParams.get("formId");
+
+    const view = await withRls({ userId: session.user.id }, async (client) => {
+      const membership = await resolveMembership(client, session.user.id, requestedOrg);
+
+      if (!formId) {
+        return {
+          status: "ready" as const,
+          orgId: membership.orgId,
+          orgName: membership.orgName,
+          canManage: membership.role === "owner" || membership.role === "admin",
+          forms: await listForms(client, membership.orgId),
+        };
+      }
+
+      const form = await getForm(client, membership.orgId, formId);
+      if (!form) throw new HttpError(404, "Form not found");
+      const results = await getResults(client, membership.orgId, form);
+      return {
+        status: "ready" as const,
+        orgId: membership.orgId,
+        orgName: membership.orgName,
+        canManage: membership.role === "owner" || membership.role === "admin",
+        form,
+        results,
+        insight: formInsight({
+          purpose: form.purpose,
+          totalResponses: results.totalResponses,
+          assignedCount: results.assignedCount,
+          summaries: results.summaries,
+        }),
+      };
+    });
+
+    return Response.json(view);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+type Action =
+  | { action: "create_form"; title: string; purpose: string; description?: string; useStarter?: boolean }
+  | { action: "add_question"; formId: string; kind: string; label: string; required?: boolean }
+  | { action: "update_question"; questionId: string; label?: string; help?: string; required?: boolean; config?: Record<string, unknown> }
+  | { action: "delete_question"; questionId: string }
+  | { action: "move_question"; questionId: string; direction: "up" | "down" }
+  | { action: "set_status"; formId: string; status: FormStatus; audience: FormAudience }
+  | { action: "assign"; formId: string; userIds: string[] }
+  | { action: "submit"; formId: string; answers: Array<{ questionId: string; value: string | string[] }> };
+
+export async function POST(request: Request) {
+  try {
+    const session = await requireSession();
+    const body = (await request.json()) as Action;
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+
+    const result = await withRls({ userId: session.user.id }, async (client) => {
+      const membership = await resolveMembership(client, session.user.id, requestedOrg);
+      const orgId = membership.orgId;
+
+      switch (body.action) {
+        case "create_form": {
+          requireAdmin(membership);
+          const title = (body.title ?? "").trim();
+          if (!title) throw new HttpError(400, "Give the form a title");
+          if (title.length > 160) throw new HttpError(400, "Title must be 160 characters or fewer");
+          if (!isFormPurpose(body.purpose)) throw new HttpError(400, "Pick a valid form purpose");
+          const formId = await createForm(client, {
+            orgId,
+            userId: session.user.id,
+            title,
+            purpose: body.purpose,
+            description: body.description,
+          });
+          // Starter questions are prompts for a blank form, never data. They are
+          // opt-in so a team that wants a blank sheet gets one.
+          if (body.useStarter) {
+            for (const starter of STARTER_QUESTIONS[body.purpose] ?? []) {
+              await addQuestion(client, {
+                orgId,
+                formId,
+                kind: starter.kind,
+                label: starter.label,
+                required: starter.required,
+                config: starter.config,
+              });
+            }
+          }
+          return { ok: true, formId };
+        }
+
+        case "add_question": {
+          requireAdmin(membership);
+          if (!isQuestionKind(body.kind)) throw new HttpError(400, "Pick a valid question type");
+          const form = await getForm(client, orgId, body.formId);
+          if (!form) throw new HttpError(404, "Form not found");
+          const questionId = await addQuestion(client, {
+            orgId,
+            formId: body.formId,
+            kind: body.kind,
+            label: body.label,
+            required: body.required,
+          });
+          return { ok: true, questionId };
+        }
+
+        case "update_question": {
+          requireAdmin(membership);
+          await updateQuestion(client, {
+            orgId,
+            questionId: body.questionId,
+            label: body.label,
+            help: body.help,
+            required: body.required,
+            config: body.config as never,
+          });
+          return { ok: true };
+        }
+
+        case "delete_question": {
+          requireAdmin(membership);
+          await deleteQuestion(client, orgId, body.questionId);
+          return { ok: true };
+        }
+
+        case "move_question": {
+          requireAdmin(membership);
+          await moveQuestion(client, orgId, body.questionId, body.direction === "up" ? "up" : "down");
+          return { ok: true };
+        }
+
+        case "set_status": {
+          requireAdmin(membership);
+          const status: FormStatus =
+            body.status === "open" || body.status === "closed" ? body.status : "draft";
+          const audience: FormAudience = body.audience === "link" ? "link" : "members";
+          const form = await getForm(client, orgId, body.formId);
+          if (!form) throw new HttpError(404, "Form not found");
+          if (status === "open" && form.questions.length === 0) {
+            throw new HttpError(400, "Add at least one question before opening the form");
+          }
+          await setFormStatus(client, orgId, body.formId, status, audience);
+          return { ok: true };
+        }
+
+        case "assign": {
+          requireAdmin(membership);
+          const userIds = Array.isArray(body.userIds) ? body.userIds.filter(Boolean) : [];
+          const assigned = await assignForm(client, {
+            orgId,
+            formId: body.formId,
+            userIds,
+            assignedBy: session.user.id,
+          });
+          return { ok: true, assigned };
+        }
+
+        case "submit": {
+          const form = await getForm(client, orgId, body.formId);
+          if (!form) throw new HttpError(404, "Form not found");
+          if (form.status !== "open") throw new HttpError(400, "This form is not open for responses");
+          const missing = form.questions.filter((question) => {
+            if (!question.required) return false;
+            const answer = body.answers?.find((a) => a.questionId === question.id);
+            const value = Array.isArray(answer?.value) ? answer?.value.join("") : answer?.value;
+            return !value || !String(value).trim();
+          });
+          if (missing.length > 0) {
+            throw new HttpError(400, `Answer required: ${missing.map((q) => q.label).join(", ")}`);
+          }
+          const responseId = await submitResponse(client, {
+            orgId,
+            formId: body.formId,
+            userId: session.user.id,
+            answers: body.answers ?? [],
+            questions: form.questions,
+          });
+          return { ok: true, responseId };
+        }
+
+        default:
+          throw new HttpError(400, "Unknown form action");
+      }
+    });
+
+    return Response.json(result);
+  } catch (error) {
+    // A second submission from the same member trips the partial unique index
+    // rather than a check in application code, so translate it into the
+    // sentence a respondent should actually see.
+    if (error instanceof Error && /form_responses_one_per_member_uq/.test(error.message)) {
+      return Response.json({ error: "You have already answered this form" }, { status: 409 });
+    }
+    return fail(error);
+  }
+}
