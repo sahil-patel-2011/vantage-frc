@@ -1,12 +1,40 @@
 /** Soft-card product UI shared by Home, Account, and Admin. */
+
+/* ---- Brand constants -------------------------------------------------------
+   The one place the Vantage navy, blue and papers are written down.
+
+   This app runs two colour systems on purpose: the product's `--soft-*`, which
+   flips for dark, and the marketing site's `--m-*`, which is an editorial scale
+   that stays on paper. What was NOT on purpose is that both spelled the same
+   four brand values as their own literals — #14243a, #1457d9, #eef2f7, #ffffff
+   appear in both sheets — plus a fifth pair, #e4ecfc and #e3ecfb, that are the
+   same tint typed twice. Declared once here and consumed by both, so "the
+   Vantage blue" has a single definition and a rebrand is a one-line edit.
+
+   What deliberately does NOT unify, and why: marketing keeps its own type
+   scale (82px editorial headlines against the product's 22px titles), its own
+   radius and shadow ramp, its own section padding, and — inside
+   `.marketing-lux` — a warmer paper (#f4f2ec), a navy-as-accent and a copper
+   warm tone. That is an editorial identity, not a drifted copy of the product,
+   and flattening it would cost the marketing site its voice. Marketing's muted
+   ink (#44536b) is also darker than the product's on purpose: long-form prose
+   on a wide white field wants more contrast than a dense dashboard label. */
 :root{
-  --soft-bg:#eef2f7;
-  --soft-card:#ffffff;
-  --soft-ink:#14243a;
+  --brand-navy:#14243a;
+  --brand-blue:#1457d9;
+  --brand-blue-soft:#e4ecfc;
+  --brand-paper:#eef2f7;
+  --brand-white:#ffffff;
+}
+
+:root{
+  --soft-bg:var(--brand-paper);
+  --soft-card:var(--brand-white);
+  --soft-ink:var(--brand-navy);
   --soft-muted:#5a6578;
   --soft-line:#d5dde8;
-  --soft-accent:#1457d9;
-  --soft-accent-soft:#e4ecfc;
+  --soft-accent:var(--brand-blue);
+  --soft-accent-soft:var(--brand-blue-soft);
   /* Semantic roles missing from the original ramp. --soft-accent-ink is the text
      colour that sits ON an accent fill (dark accent is a light blue, so white
      text fails 4.5:1 there). --soft-warning/--soft-danger are status text
@@ -25,6 +53,28 @@
      instead of the ~12 near-identical greys leaf sheets each invented. */
   --soft-surface-2:color-mix(in srgb,var(--soft-bg) 82%,var(--soft-line));
   --soft-line-soft:color-mix(in srgb,var(--soft-line) 55%,transparent);
+
+  /* ---- Tone ramp. Per-hub / per-widget accents. ---------------------------
+     A tone is a HUE and nothing else. The plate it sits on and the ink it
+     paints with are derived from that hue against the live surface (see
+     --tone-plate / --tone-ink in system.css), so one value is correct on paper
+     AND on a dark panel. The old pair shipped a second, light-only `--tone-bg`
+     alongside every tone — written as an inline style, therefore beyond the
+     reach of any stylesheet, which is exactly how a #e8eefc chip ended up on a
+     #0c1118 drawer. Nothing reads --tone-bg any more.
+     Named here so a hue is declared once instead of re-typed as a hex at each
+     call site (the drawer and the dashboard between them had two different
+     "blues", #1457d9/#e8eefc and #1457d9/#e4ecfc, for the same intent). */
+  --tone-blue:#1457d9;
+  --tone-green:#15803d;
+  --tone-teal:#0f766e;
+  --tone-amber:#b45309;
+  --tone-red:#b91c1c;
+  /* How much hue goes into the plate, and into the ink, per theme. Light ink is
+     the hue itself (100%); dark lifts it toward white so it clears 4.5:1 on the
+     dark plate. These two scalars are the whole theme story for tones. */
+  --tone-plate-mix:10%;
+  --tone-ink-mix:100%;
 
   /* ---- Radius scale. Five steps, nothing between them. -------------------- */
   --soft-radius-xs:8px;
@@ -59,6 +109,9 @@
 
   /* ---- Page rhythm. One content measure so 1440 is not 30% dead gutter. --- */
   --soft-measure:1180px;
+  /* One prose measure. Empty states said 52ch, setup cards said 60ch and the
+     error message said 52ch again — three numbers for "one comfortable line". */
+  --soft-measure-prose:58ch;
   --soft-measure-narrow:760px;
   --soft-gutter:clamp(14px,3vw,28px);
 
@@ -90,6 +143,10 @@ html[data-theme="dark"]{
   --soft-warning:#ffb936;
   --soft-danger:#ff9a91;
   --soft-success:#4ade80;
+  /* Tone hues stay put — a hue is brand, not theme. What changes is how much of
+     it goes into the plate and how far the ink is lifted off it. */
+  --tone-plate-mix:24%;
+  --tone-ink-mix:42%;
   --soft-island:rgba(21,27,36,.94);
   --soft-shadow:0 12px 36px rgba(0,0,0,.4);
   --soft-shadow-lift:0 16px 42px rgba(0,0,0,.5);
@@ -458,13 +515,17 @@ body.has-app-shell .app-topbar{display:none}
   background:transparent;border:1px solid transparent;transition:background .15s ease,border-color .15s ease;
 }
 .soft-drawer-hub:hover{background:color-mix(in srgb,var(--soft-bg) 72%,transparent)}
+/* The row takes the quieter wash so the icon's full-strength plate still reads
+   as a chip on top of it; the hairline is drawn from the INK, which is the half
+   of the tone pair that is guaranteed to have contrast against the surface in
+   either theme (the hue alone is a dark navy, invisible on a dark row). */
 .soft-drawer-hub.is-active,.soft-drawer-hub[aria-current="page"]{
-  background:var(--tone-bg,var(--soft-accent-soft));border-color:color-mix(in srgb,var(--soft-accent) 22%,transparent);
-  color:var(--tone,var(--soft-accent));
+  background:var(--tone-wash);border-color:color-mix(in srgb,var(--tone-ink) 34%,transparent);
+  color:var(--tone-ink);
 }
 .soft-drawer-hub i{
   display:grid;place-items:center;width:32px;height:32px;border-radius:var(--soft-radius-sm);flex:none;
-  background:var(--tone-bg,var(--soft-accent-soft));color:var(--tone,var(--soft-accent));
+  background:var(--tone-plate);color:var(--tone-ink);
 }
 .soft-drawer-hub i svg{width:17px;height:17px}
 .soft-drawer-hub.soft-drawer-platform{margin:4px 2px 8px;color:var(--soft-muted);font-weight:600}
@@ -481,26 +542,34 @@ body.has-app-shell .app-topbar{display:none}
 /* Logistics is the one pillar with no in-page tab bar, so the panel carries its
    pages. They are indented under the hub row so they never read as an eighth
    and ninth workspace. */
+/* `:not(.soft-drawer-hub)` on every rule below is load-bearing, not defensive.
+   The hub row IS an <a> inside .soft-nav-group, so these sub-link rules — one
+   specificity step higher than `.soft-drawer-hub` — were silently deciding the
+   hub row's height, padding, type AND icon colour. Two rules described the same
+   row and the one that reads like its definition lost: the row that says
+   `min-height:44px; font:650 14px` measured 42px at 13.5px/600, and the tone
+   ink never reached the glyph because `.soft-nav-group a svg` repainted it
+   muted grey inside a toned plate. */
 .soft-nav-items{display:grid;padding:0 2px 4px;margin-left:44px}
 .soft-nav-items>a{min-height:36px!important;padding:5px 12px!important;font-size:13px!important;font-weight:600;color:var(--soft-muted)}
 .soft-nav-items>a:hover{color:var(--soft-ink);background:color-mix(in srgb,var(--soft-bg) 72%,transparent)}
-.soft-nav-group a,.soft-nav-group span.planned{
+.soft-nav-group a:not(.soft-drawer-hub),.soft-nav-group span.planned{
   display:flex;align-items:center;gap:10px;min-height:42px;padding:7px 12px;margin:1px 0;border-radius:var(--soft-radius-sm);
   color:var(--soft-ink);text-decoration:none;font-size:13.5px;font-weight:600;
 }
-.soft-nav-group a svg,.soft-nav-group span.planned svg{width:17px;height:17px;flex:none;color:var(--soft-muted)}
+.soft-nav-group a:not(.soft-drawer-hub) svg,.soft-nav-group span.planned svg{width:17px;height:17px;flex:none;color:var(--soft-muted)}
 .soft-nav-group a small,.soft-nav-group span.planned small{margin-left:auto;color:var(--soft-muted);font-size:10px;font-weight:600;text-transform:uppercase}
 .soft-nav-group a .chev{display:none}
 .soft-nav-group a .soft-nav-badge{
   margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:var(--soft-radius-pill);
   background:#ef4444;color:#fff;font:700 10px/18px var(--font-source-sans),ui-sans-serif;text-align:center;
 }
-.soft-nav-group a[aria-current="page"]{
+.soft-nav-group a:not(.soft-drawer-hub)[aria-current="page"]{
   background:var(--soft-accent-soft);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--soft-accent) 35%,transparent);
   color:var(--soft-accent);
 }
-.soft-nav-group a[aria-current="page"] svg{color:var(--soft-accent)}
+.soft-nav-group a:not(.soft-drawer-hub)[aria-current="page"] svg{color:var(--soft-accent)}
 .soft-nav-group span.planned{opacity:.55}
 
 /* Island + FAB */
@@ -702,7 +771,7 @@ body.soft-nav-panel-open .soft-island{
 .soft-row:first-of-type{border-top:0}
 .soft-row>.copy{flex:1;min-width:0}.soft-row strong{display:block;font-size:14px}.soft-row span{display:block;margin-top:3px;color:var(--soft-muted);font-size:12px;line-height:1.4}
 .soft-row i.icon{
-  display:grid;place-items:center;width:38px;height:38px;border-radius:var(--soft-radius-sm);background:var(--tone-bg,#eef2ff);color:var(--tone,var(--soft-accent));flex:none;
+  display:grid;place-items:center;width:38px;height:38px;border-radius:var(--soft-radius-sm);background:var(--tone-plate);color:var(--tone-ink);flex:none;
 }
 .soft-row a.stretch{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none}
 .soft-seg{
@@ -952,12 +1021,11 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
 .dash-widget:hover,
 body.has-app-shell .dash-widget:hover{
   box-shadow:var(--soft-shadow-lift);
-  border-color:color-mix(in srgb,var(--tone,var(--soft-accent)) 28%,var(--soft-line));
+  border-color:color-mix(in srgb,var(--tone-hue) 28%,var(--soft-line));
 }
 .dash-widget.hero{
-  background:
-    linear-gradient(155deg,color-mix(in srgb,var(--tone-bg,var(--soft-accent-soft)) 70%,var(--soft-card)),var(--soft-card) 62%);
-  border-color:color-mix(in srgb,var(--tone,var(--soft-accent)) 32%,var(--soft-line));
+  background:linear-gradient(155deg,var(--tone-wash),var(--soft-card) 62%);
+  border-color:color-mix(in srgb,var(--tone-hue) 32%,var(--soft-line));
 }
 .dash-widget.hero.is-empty{
   background:
@@ -973,7 +1041,7 @@ body.has-app-shell .dash-widget:hover{
 .dash-widget>header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
 .dash-widget-title{display:flex;align-items:center;gap:10px;min-width:0}
 .dash-widget-title>div{display:grid;gap:1px;min-width:0}
-.dash-widget-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--soft-radius-sm);background:var(--tone-bg,var(--soft-accent-soft));color:var(--tone,var(--soft-accent))}
+.dash-widget-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--soft-radius-sm);background:var(--tone-plate);color:var(--tone-ink)}
 .dash-widget-icon svg{width:17px;height:17px}
 .dash-widget h2{margin:0;font:700 var(--soft-title-3)/1.25 var(--font-source-sans),ui-sans-serif;letter-spacing:var(--soft-tracking-tight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* One muted meta line under every widget title — same size, weight and colour. */
@@ -986,7 +1054,7 @@ body.has-app-shell .dash-widget:hover{
 body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .dash-widget.is-empty .dash-widget-title{gap:0}
 .dash-widget-msg{margin:0;font-size:13px}
-.dash-widget-link{margin-top:auto;color:var(--tone,var(--soft-accent));font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+.dash-widget-link{margin-top:auto;color:var(--tone-ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none}
 .dash-widget-link:hover{text-decoration:underline}
 .dash-empty{display:grid;gap:6px;flex:1;align-content:center;min-height:96px;padding:4px 2px}
 .dash-empty strong{font:700 14px/1.3 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
@@ -1190,9 +1258,14 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 .soft-admin-row>div:first-child{display:grid;gap:3px;min-width:0}
 .soft-admin-row strong{font-size:14px}
 .soft-admin-row span,.soft-admin-row small{color:var(--soft-muted);font-size:12px}
-.soft-empty{padding:22px;border-radius:var(--soft-radius-sm);border:1px dashed var(--soft-line);background:var(--soft-bg);text-align:center}
+/* The shell — padding, radius, dashed hairline, plate, rhythm and the action
+   row — is the shared empty-state treatment in system.css, and applies to
+   `.app-empty` and `.soft-empty` alike. This block used to restate five of
+   those declarations at class specificity, which meant the designed treatment
+   only ever landed on `.app-empty`: every `.soft-empty` in the product kept a
+   flat 22px box on --soft-bg and quietly opted out. Only `strong` is left,
+   because system.css does not style it. */
 .soft-empty strong{display:block;margin-bottom:6px}
-.soft-empty p{margin:0;color:var(--soft-muted);font-size:13px;line-height:1.45}
 .soft-banner{margin:0 0 12px;padding:12px 14px;border-radius:var(--soft-radius-sm);background:#fff8e8;border:1px solid #f1dfb0;color:#7a5b16;font-size:13px;line-height:1.45}
 @media(max-width:900px){
   .soft-admin-grid,.soft-metric-row{grid-template-columns:1fr}
@@ -1251,7 +1324,7 @@ html[data-theme="dark"] .dash-remove-btn{background:#ef4444;color:#fff}
 .dash-more-toggle:hover{border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));color:var(--soft-accent)}
 .dash-more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px}
 .readiness-track,.mini-probability{height:8px;overflow:hidden;border-radius:var(--soft-radius-pill);background:color-mix(in srgb,var(--soft-line) 70%,transparent);margin:4px 0 2px}
-.readiness-track i,.mini-probability i{display:block;height:100%;background:var(--tone,var(--soft-accent));border-radius:inherit}
+.readiness-track i,.mini-probability i{display:block;height:100%;background:var(--tone-ink);border-radius:inherit}
 @media(max-width:800px){
   .dash-home-header{flex-direction:column}
   .dash-home-actions{justify-content:flex-start}
@@ -1341,7 +1414,7 @@ html[data-theme="dark"] .signin-access-note{border-color:#31445e;background:#172
 .edc-card-title{display:flex;align-items:flex-start;gap:10px;min-width:0}
 .edc-card-title h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .edc-card-title p{margin:2px 0 0;color:var(--soft-muted);font-size:12px;line-height:1.35}
-.edc-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--soft-radius-sm);background:var(--tone-bg,var(--soft-accent-soft));color:var(--tone,var(--soft-accent))}
+.edc-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--soft-radius-sm);background:var(--tone-plate);color:var(--tone-ink)}
 .edc-icon svg{width:17px;height:17px}
 .edc-pill{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:var(--soft-radius-pill);background:var(--soft-accent-soft);color:var(--soft-accent);font:700 12px ui-monospace,monospace}
 .edc-match-hero{display:grid;gap:4px}
@@ -1437,7 +1510,7 @@ html[data-theme="dark"] .signin-access-note{border-color:#31445e;background:#172
 .edc-next-actions li div{display:grid;gap:2px;min-width:0}
 .edc-next-actions li strong{font-size:14px}
 .edc-next-actions li span{color:var(--soft-muted);font-size:12px;line-height:1.35}
-.edc-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.edc-next-actions li .app-button{flex:none}
 @media(max-width:980px){
   .edc-priority,.edc-secondary,.edc-actions{grid-template-columns:1fr 1fr}
 }
@@ -1558,10 +1631,19 @@ body.has-app-shell .app-badge{
   border-radius:var(--soft-radius-pill);border-color:transparent;background:var(--soft-accent-soft);color:var(--soft-accent);
 }
 /* Derived, so the same three tones survive the dark swap. The old literals
-   (#fff1df / #dcfce7 / #fff6d8) were paper-only pastels. */
-body.has-app-shell .app-badge.setup{color:var(--soft-warning);background:var(--soft-warning-soft)}
-body.has-app-shell .app-badge.good{color:var(--soft-success);background:var(--soft-success-soft)}
-body.has-app-shell .app-badge.demo{color:var(--soft-warning);background:var(--soft-warning-soft)}
+   (#fff1df / #dcfce7 / #fff6d8) were paper-only pastels.
+   The ink is the status hue pulled 16% toward the page's own ink — the same
+   expression the danger/error badges in components/ui/ui.module.css use, so the
+   seven badge tones now share one recipe instead of two. It also clears 4.5:1:
+   the hue straight on its own soft plate was 4.2:1 for all three, which is
+   under the floor for 11px bold. */
+body.has-app-shell .app-badge.setup,
+body.has-app-shell .app-badge.demo{
+  color:color-mix(in srgb,var(--soft-warning) 84%,var(--soft-ink));background:var(--soft-warning-soft);
+}
+body.has-app-shell .app-badge.good{
+  color:color-mix(in srgb,var(--soft-success) 84%,var(--soft-ink));background:var(--soft-success-soft);
+}
 /* Legacy controls that never joined .app-button. `.app-button` itself is NOT in
    this list any more: it carries the right radius at its own definition, and
    the !important here overrode every deliberate variant on top of it (the pill
@@ -1929,7 +2011,7 @@ body.has-app-shell{
 /* Denser drawer + island */
 .soft-drawer{width:min(320px,92vw);padding:12px 12px 24px}
 .soft-drawer-brand strong{font-size:16px}
-.soft-nav-group a,.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
+.soft-nav-group a:not(.soft-drawer-hub),.soft-nav-group span.planned{min-height:40px;padding:6px 10px;font-size:13px}
 .soft-island{
   gap:2px;padding:6px;max-width:calc(100vw - 24px);
   box-shadow:var(--soft-shadow-pop);
@@ -2276,21 +2358,30 @@ body.has-app-shell .admin-control .intel-panel small{display:block;margin-top:6p
   display:flex;flex-wrap:wrap;gap:6px;align-items:center;
   margin:0 0 14px;padding:0;max-width:100%;
 }
-.team-ops-nav a{
-  min-height:34px;padding:0 12px;display:inline-flex;align-items:center;
-  border:1px solid var(--soft-line);border-radius:var(--soft-radius-pill);
+/* Shape, size and type come from the shared chip rule in system.css — this was
+   the fifth independently-invented "row of links to elsewhere" (34px tall, 12px
+   /700, its own padding) sitting next to four others that had already been made
+   into one control. Only colour and state are its own. The current page renders
+   as a <span>, not a link, so both are styled. */
+.team-ops-nav :where(a,span){
+  border:1px solid var(--soft-line);
   background:var(--soft-card);color:var(--soft-muted);
-  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
 }
 .team-ops-nav a:hover{color:var(--soft-ink);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
-.team-ops-nav a.active, .team-ops-nav a[aria-current="page"]{
-  color:#fff;background:var(--soft-accent);border-color:var(--soft-accent);
+/* Same "this one is current" treatment as .hub-tool-chip.is-active and
+   .settings-bar-chip.is-active — a tinted plate, not a solid accent fill. Two
+   chip strips can appear on one page (Logistics carries both), and they were
+   marking the current item in two different visual languages. */
+.team-ops-nav :where(a,span).active, .team-ops-nav :where(a,span)[aria-current="page"]{
+  background:var(--soft-accent-soft);
+  border-color:color-mix(in srgb,var(--soft-accent) 55%,transparent);
+  color:var(--soft-accent);
 }
-.team-ops-nav.on-dark a{
+.team-ops-nav.on-dark :where(a,span){
   color:rgba(255,255,255,.88);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);
 }
 .team-ops-nav.on-dark a:hover{background:rgba(255,255,255,.18);color:#fff}
-.team-ops-nav.on-dark a.active,.team-ops-nav.on-dark a[aria-current="page"]{
+.team-ops-nav.on-dark :where(a,span).active,.team-ops-nav.on-dark :where(a,span)[aria-current="page"]{
   color:#0d3d46;background:#fff;border-color:#fff;
 }
 body.has-app-shell .messages-page .team-ops-header{

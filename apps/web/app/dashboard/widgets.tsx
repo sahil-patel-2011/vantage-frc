@@ -16,22 +16,29 @@ type EmptyHint = {
   ctaLabel?: string;
 };
 
-const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string }> = {
-  next_match: { icon: "swords", tone: "#1457d9", toneBg: "#e4ecfc" },
-  recent_result: { icon: "stats", tone: "#1457d9", toneBg: "#e4ecfc" },
-  competition_snapshot: { icon: "target", tone: "#1457d9", toneBg: "#e4ecfc" },
-  scouting_coverage: { icon: "clipboard", tone: "#15803d", toneBg: "#dcfce7" },
-  prediction_summary: { icon: "bolt", tone: "#1457d9", toneBg: "#e4ecfc" },
-  robot_readiness: { icon: "cube", tone: "#0f766e", toneBg: "#ccfbf1" },
-  pit_youtube: { icon: "display", tone: "#1457d9", toneBg: "#e4ecfc" },
-  sync_status: { icon: "gear", tone: "#0f766e", toneBg: "#ccfbf1" },
-  ai_usage: { icon: "bolt", tone: "#1457d9", toneBg: "#e4ecfc" },
-  quick_actions: { icon: "grid", tone: "#1457d9", toneBg: "#e4ecfc" },
-  notifications: { icon: "bell", tone: "#1457d9", toneBg: "#e4ecfc" },
-  alerts: { icon: "bell", tone: "#b91c1c", toneBg: "#fee2e2" },
-  onboarding_checklist: { icon: "pin", tone: "#1457d9", toneBg: "#e4ecfc" },
-  team_todos: { icon: "clipboard", tone: "#1457d9", toneBg: "#e4ecfc" },
-  subteam_upcoming: { icon: "calendar", tone: "#0f766e", toneBg: "#ccfbf1" },
+/**
+ * Widget accents are HUES, named from the tone ramp (soft-ui.css). They used to
+ * be hex pairs — a hue plus a light-only plate — written straight into an inline
+ * style, which is unreachable from any stylesheet and therefore wrong on a dark
+ * panel by construction. The plate and the ink are derived per theme now
+ * (system.css), so only the hue is named here.
+ */
+const WIDGET_ICON: Record<string, { icon: IconName; tone: string }> = {
+  next_match: { icon: "swords", tone: "var(--tone-blue)" },
+  recent_result: { icon: "stats", tone: "var(--tone-blue)" },
+  competition_snapshot: { icon: "target", tone: "var(--tone-blue)" },
+  scouting_coverage: { icon: "clipboard", tone: "var(--tone-green)" },
+  prediction_summary: { icon: "bolt", tone: "var(--tone-blue)" },
+  robot_readiness: { icon: "cube", tone: "var(--tone-teal)" },
+  pit_youtube: { icon: "display", tone: "var(--tone-blue)" },
+  sync_status: { icon: "gear", tone: "var(--tone-teal)" },
+  ai_usage: { icon: "bolt", tone: "var(--tone-blue)" },
+  quick_actions: { icon: "grid", tone: "var(--tone-blue)" },
+  notifications: { icon: "bell", tone: "var(--tone-blue)" },
+  alerts: { icon: "bell", tone: "var(--tone-red)" },
+  onboarding_checklist: { icon: "pin", tone: "var(--tone-blue)" },
+  team_todos: { icon: "clipboard", tone: "var(--tone-blue)" },
+  subteam_upcoming: { icon: "calendar", tone: "var(--tone-teal)" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
@@ -198,7 +205,7 @@ function Shell({
   return (
     <article
       className={`dash-widget app-card${isHero ? " hero" : ""}${showLive ? "" : " is-empty"}`}
-      style={showIcon ? ({ ["--tone" as string]: iconMeta!.tone, ["--tone-bg" as string]: iconMeta!.toneBg }) : undefined}
+      style={showIcon ? ({ ["--tone" as string]: iconMeta!.tone }) : undefined}
     >
       <header>
         <div className="dash-widget-title">

@@ -21,9 +21,18 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "admin", href: "/team/admin", label: "Admin", match: (p) => p === "/team/admin" || p.startsWith("/team/admin/") },
 ];
 
-/** Page-scoped strips — avoid dumping every TeamOps pill on Logistics / Calendar / Background. */
+/**
+ * Page-scoped strips — avoid dumping every TeamOps pill on Logistics / Calendar
+ * / Background.
+ *
+ * Logistics deliberately has no `calendar` pill: that page already renders the
+ * `LogisticsRelated` strip, whose "Team calendar" link goes to
+ * `/team/calendar?tab=trip` — the trip view, which is the calendar a person on
+ * the Logistics page actually wants. Listing a second "Calendar" beside it gave
+ * one destination two controls, two names and two landing tabs.
+ */
 const CONTEXT_KEYS: Partial<Record<TeamOpsKey, TeamOpsKey[]>> = {
-  logistics: ["logistics", "calendar", "attendance", "practice"],
+  logistics: ["logistics", "attendance", "practice"],
   calendar: ["calendar", "practice", "attendance", "messages", "logistics"],
   admin: ["admin", "start", "messages"],
 };
@@ -45,8 +54,20 @@ export function TeamOpsNav({ orgId, active, keys, className }: TeamOpsNavProps) 
     <nav className={["team-ops-nav", className].filter(Boolean).join(" ")} aria-label="Team operations">
       {links.map((link) => {
         const selected = active ? link.key === active : link.match(pathname);
+        // The strip's own page is a position marker, not a control. Rendering it
+        // as an <a> to the URL already in the address bar put an inert link in
+        // every tab order on ten routes (/logistics, /attendance, /practice,
+        // /start, /tasks, /batteries, /team/admin, …) — a target that looks
+        // pressable, announces as a link, and does nothing.
+        if (selected) {
+          return (
+            <span key={link.key} className="active" aria-current="page">
+              {link.label}
+            </span>
+          );
+        }
         return (
-          <a key={link.key} href={withOrgHref(link.href, orgId)} className={selected ? "active" : undefined} aria-current={selected ? "page" : undefined}>
+          <a key={link.key} href={withOrgHref(link.href, orgId)}>
             {link.label}
           </a>
         );

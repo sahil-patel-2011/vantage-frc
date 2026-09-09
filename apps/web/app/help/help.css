@@ -82,17 +82,14 @@
   margin: 0 0 1.25rem;
 }
 
+/* Shape, size, padding and type come from the shared chip rule in system.css.
+   This used to restate all four in rem (0.85rem/0.45rem/0.9rem), so the same
+   control measured 13.6px here and 13px in the four other places the product
+   draws a row of filter chips. Only what is genuinely local stays. */
 .help-cat-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  padding: 0.45rem 0.9rem;
-  border-radius:var(--soft-radius-pill);
   border: 1px solid var(--soft-line);
   background: var(--soft-panel);
   color: inherit;
-  font: 600 0.85rem/1.2 var(--font-source-sans, ui-sans-serif, system-ui);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -112,10 +109,8 @@
   border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
 }
 
-.help-cat-chip:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--soft-accent) 55%, transparent);
-  outline-offset: 1px;
-}
+/* No local focus ring: system.css draws one ring for every route, and a second
+   one here made the same control focus differently on /help than anywhere else. */
 
 .help-cat-chip[aria-pressed="true"] {
   border-color: var(--soft-accent);

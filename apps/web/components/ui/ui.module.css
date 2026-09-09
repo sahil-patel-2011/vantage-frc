@@ -62,16 +62,21 @@
 
 /* --- Badge tones missing from soft-ui.css (danger/info/neutral/error) --- */
 /* good / setup / demo already exist globally as .app-badge.<tone>; we only
-   supply the tones the global sheet lacks, token-driven for dark mode. */
+   supply the tones the global sheet lacks.
+   Every status colour below is ONE expression, not a light literal plus a dark
+   restatement. `--soft-danger` / `--soft-warning` already flip per theme, and
+   pulling the hue toward `--soft-ink` — which flips with them — is what buys the
+   contrast the dark block used to hand-tune: 5.2:1 / 8.0:1 for the warning pair,
+   5.2:1 / 6.6:1 for the danger pair, measured against their own plates. */
 .toneDanger {
-  color: var(--soft-danger);
-  background: color-mix(in srgb, #fee2e2 60%, var(--soft-card));
-  border-color: color-mix(in srgb, #ef4444 32%, var(--soft-line)) !important;
+  color: color-mix(in srgb, var(--soft-danger) 84%, var(--soft-ink));
+  background: var(--soft-danger-soft);
+  border-color: color-mix(in srgb, var(--soft-danger) 34%, var(--soft-line)) !important;
 }
 .toneError {
-  color: #9a3412;
-  background: color-mix(in srgb, #ffedd5 65%, var(--soft-card));
-  border-color: color-mix(in srgb, #f97316 34%, var(--soft-line)) !important;
+  color: color-mix(in srgb, var(--soft-warning) 84%, var(--soft-ink));
+  background: var(--soft-warning-soft);
+  border-color: color-mix(in srgb, var(--soft-warning) 34%, var(--soft-line)) !important;
 }
 .toneInfo {
   color: var(--soft-accent);
@@ -131,7 +136,7 @@
   font-size: 12px;
   font-weight: 700;
 }
-.deltaUp { color: #15803d; }
+.deltaUp { color: var(--soft-success); }
 .deltaDown { color: var(--soft-danger); }
 .deltaFlat { color: var(--soft-muted); }
 
@@ -213,24 +218,46 @@
 .cardPadLg { padding: 22px 24px; }
 .cardPadNone { padding: 0; }
 
-/* --- ErrorState --- */
-.errorState { display: grid; gap: 10px; justify-items: start; }
+/* --- ErrorState ---
+   Severity comes from the diagnosis, not from the bare fact that something
+   failed. An expired session, a dropped connection or a permissions gap is a
+   "here is what to do next"; painting those in the danger colour tells a team
+   their data broke when it did not. `--state-accent` carries that choice to the
+   glyph here, and `data-severity` carries the same choice to the card
+   treatment in system.css, so the plate, the hairline, the glyph and the badge
+   never disagree about how bad this is. */
+.errorState {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  --state-accent: var(--soft-danger);
+}
+.errorState[data-severity="notice"] { --state-accent: var(--soft-warning); }
 .errorGlyph {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
   border-radius:var(--soft-radius-pill);
-  color: #9a3412;
-  background: color-mix(in srgb, #ffedd5 70%, var(--soft-card));
+  color: color-mix(in srgb, var(--state-accent) 84%, var(--soft-ink));
+  background: color-mix(in srgb, var(--state-accent) 14%, var(--soft-card));
 }
 .errorGlyph svg { width: 18px; height: 18px; }
-.errorActions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* The recovery row sits apart from the prose, matching the empty-state rhythm
+   in system.css — badge, title, one measure of prose, then actions. */
+.errorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--soft-space-2, 10px);
+  align-items: center;
+  margin-top: 2px;
+}
 .errorMessage {
   margin: 0;
+  max-width: var(--soft-measure-prose);
   color: var(--soft-muted);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--soft-text-sm);
+  line-height: 1.55;
   word-break: break-word;
 }
 
@@ -372,8 +399,8 @@
   border-radius:var(--soft-radius-pill);
   flex: none;
 }
-.provOk { background: #15803d; }
-.provDegraded { background: #f97316; }
+.provOk { background: var(--soft-success); }
+.provDegraded { background: var(--soft-warning); }
 .provCached { background: var(--soft-muted); }
 .sourceFooter {
   display: inline-flex;
@@ -425,7 +452,7 @@
   cursor: pointer;
   text-decoration: underline;
 }
-.freshStale { color: #9a3412; }
+.freshStale { color: color-mix(in srgb, var(--soft-warning) 84%, var(--soft-ink)); }
 
 /* --- IntegrationSetupCard --- */
 .setupCard {
@@ -476,8 +503,8 @@
   text-decoration: none;
 }
 .healthPill:hover { border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line)); }
-.healthOk { background: #15803d; }
-.healthDegraded { background: #f97316; }
+.healthOk { background: var(--soft-success); }
+.healthDegraded { background: var(--soft-warning); }
 .healthOff { background: var(--soft-muted); }
 
 /* --- Modal / ConfirmDialog --- */
@@ -575,7 +602,9 @@
 .btnSecondary:hover:not(:disabled) { border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line)); }
 .btnGhost { background: transparent; color: var(--soft-ink); }
 .btnGhost:hover:not(:disabled) { background: var(--app-soft); }
-.btnDanger { background: #dc2626; color: #fff; }
+/* --app-critical-fill is the one destructive fill in the product (it is what
+   `.app-button.danger` paints); #dc2626 here was a second one, light-only. */
+.btnDanger { background: var(--app-critical-fill); color: #fff; }
 .btnDanger:hover:not(:disabled) { background: var(--soft-danger); }
 .btnIcon {
   min-width: 24px;
@@ -726,31 +755,11 @@
 }
 
 /* --- Dark theme --------------------------------------------------------
- * Everything above that is token-driven inherits dark automatically. These
- * few status colours are hardcoded light-theme values: they either sit
- * directly on a card that becomes #151b24 in dark, or are mixed against it
- * from a pale tint, and land at 2.3-3.5:1. Restate them as lighter variants
- * (all >= 6.8:1 against their own dark background). The dark selector wins on
- * specificity, so the !important border overrides have to be repeated.
+ * Deliberately empty of status colours now. There used to be nine rules here,
+ * each restating a light-only literal from above as a hand-tuned dark variant —
+ * two descriptions of one status, kept in step by hand. Every status colour in
+ * this file is now written once, as an expression over --soft-danger /
+ * --soft-warning / --soft-success / --soft-ink, all of which the theme already
+ * swaps. A new status needs one rule, not two, and cannot be right in one theme
+ * and forgotten in the other.
  */
-:global(html[data-theme="dark"]) .toneDanger {
-  color: #ff9a91;
-  background: color-mix(in srgb, #ef4444 20%, var(--soft-card));
-  border-color: color-mix(in srgb, #ef4444 42%, var(--soft-line)) !important;
-}
-:global(html[data-theme="dark"]) .toneError {
-  color: #fdba74;
-  background: color-mix(in srgb, #f97316 18%, var(--soft-card));
-  border-color: color-mix(in srgb, #f97316 40%, var(--soft-line)) !important;
-}
-:global(html[data-theme="dark"]) .errorGlyph {
-  color: #fdba74;
-  background: color-mix(in srgb, #f97316 22%, var(--soft-card));
-}
-:global(html[data-theme="dark"]) .deltaUp { color: #4ade80; }
-:global(html[data-theme="dark"]) .deltaDown { color: #ff8f85; }
-:global(html[data-theme="dark"]) .freshStale { color: #fdba74; }
-:global(html[data-theme="dark"]) .provOk,
-:global(html[data-theme="dark"]) .healthOk { background: #22c55e; }
-:global(html[data-theme="dark"]) .provDegraded,
-:global(html[data-theme="dark"]) .healthDegraded { background: #fb923c; }
