@@ -24,17 +24,46 @@ jobs:
       - run: npm run dist --workspace=@vantage/desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # The shell's updater reads this manifest, not the GitHub API: the API
+      # carries no per-asset digest, and with unsigned builds the SHA-256 is the
+      # only thing between "downloaded over TLS" and "safe to execute".
+      # MINIMUM_SHELL_VERSION is the oldest shell the web app still supports.
+      # Raise it only when a web change genuinely breaks older shells — it is
+      # what turns an optional update into a blocking "Update required".
+      - name: Build update manifest
+        shell: bash
+        env:
+          MINIMUM_SHELL_VERSION: "0.0.0"
+        run: |
+          set -euo pipefail
+          setup="$(ls apps/desktop/release/*-setup.exe | head -n1)"
+          # Exported, not interpolated: no shell value is ever spliced into JSON.
+          export V="$(node -p "require('./apps/desktop/package.json').version")"
+          export D="$(sha256sum "$setup" | cut -d' ' -f1)"
+          export U="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$setup")"
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync("apps/desktop/release/latest.json", JSON.stringify({
+              version: process.env.V,
+              minimumVersion: process.env.MINIMUM_SHELL_VERSION,
+              url: process.env.U,
+              sha256: process.env.D,
+            }, null, 2) + "\n");
+          '
+          cat apps/desktop/release/latest.json
       - uses: actions/upload-artifact@v4
         with:
           name: vantage-desktop-windows
-          path: apps/desktop/release/*.exe
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.json
       - name: GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          files=(apps/desktop/release/*.exe)
+          files=(apps/desktop/release/*.exe apps/desktop/release/latest.json)
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
           else
@@ -42,3 +71,6 @@ jobs:
               --title "Vantage desktop $GITHUB_REF_NAME" \
               --notes "Unsigned Windows installer and portable build. SmartScreen will warn until Authenticode certs exist. The window loads https://vantage-frc-web.vercel.app — the same invite-only product as the web app."
           fi
+          # The updater fetches /releases/latest/download/latest.json, which only
+          # resolves once this release is the latest non-draft, non-prerelease one.
+          gh release edit "$GITHUB_REF_NAME" --latest

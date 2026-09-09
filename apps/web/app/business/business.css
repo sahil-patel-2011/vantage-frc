@@ -1623,7 +1623,6 @@
 }
 .biz-sustain .app-button {
   justify-self: start;
-  min-height: 44px;
 }
 
 @media (max-width: 560px) {

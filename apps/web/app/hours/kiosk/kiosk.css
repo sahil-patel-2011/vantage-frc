@@ -52,7 +52,7 @@
 .kiosk-panel>header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .kiosk-panel h2{margin:0;font-size:17px}
 .kiosk-panel p{margin:0}
-.kiosk-panel .app-button,.kiosk-panel .app-button.secondary{justify-self:start;min-height:44px}
+.kiosk-panel .app-button{justify-self:start}
 
 .kiosk-here{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .kiosk-here li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 14px;background:var(--app-surface);border:1px solid var(--app-positive);border-radius:10px;font-size:15px}

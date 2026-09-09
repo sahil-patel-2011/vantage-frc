@@ -318,8 +318,6 @@
 
 .myday-next-actions li .app-button {
   flex: none;
-  min-height: 44px;
-  padding: 0 14px;
 }
 
 @media (min-width: 640px) {

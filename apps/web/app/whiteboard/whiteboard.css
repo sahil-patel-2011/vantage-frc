@@ -2,7 +2,8 @@
    global stylesheet. All selectors are .wb-* prefixed and theme-aware. */
 .wb-page input{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
 .wb-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
+/* Scoped: the board toolbar wants a 32px control; the shared `.sm` stays 36px. */
+.wb-page .app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
 .wb-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .wb-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .wb-link.danger{color:var(--app-critical)}
