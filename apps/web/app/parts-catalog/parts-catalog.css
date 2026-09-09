@@ -1,0 +1,95 @@
+.pc-page {
+  display: grid;
+  gap: 16px;
+}
+.pc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pc-toolbar input {
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.pc-toolbar select {
+  padding: 9px 10px;
+}
+.pc-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--soft-radius-sm);
+  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
+  font-size: 13px;
+}
+.pc-error {
+  margin: 0;
+  color: var(--app-critical);
+  font-weight: 600;
+}
+.pc-group {
+  display: grid;
+  gap: 8px;
+}
+.pc-group h2 {
+  margin: 8px 0 0;
+  font-size: var(--soft-title-3);
+}
+.pc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.pc-part {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.pc-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 360px;
+  font-size: 13px;
+}
+.pc-meta {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+.pc-instock {
+  color: var(--app-accent);
+  font-style: normal;
+  font-weight: 600;
+}
+.pc-spec {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+.pc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pc-link {
+  color: var(--app-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.pc-link:hover {
+  text-decoration: underline;
+}
+.pc-foot {
+  font-size: 12px;
+}

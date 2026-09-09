@@ -315,6 +315,10 @@ const KEYWORDS: Record<string, string[]> = {
     "3d print", "3d printing", "printer", "printers", "filament", "spool", "spools",
     "print queue", "pla", "petg", "abs", "print farm", "printing",
   ],
+  "business:parts-catalog": [
+    "parts catalog", "catalog", "cots", "what to order", "order parts", "buy parts", "neo", "spark max",
+    "bearing", "hex shaft", "box tube", "nyloc", "screws", "mcmaster", "wcp", "rev", "andymark", "vendor part",
+  ],
   "team:profile": [
     "team profile", "dossier", "about our team", "rookie year", "how long have we competed", "our awards",
     "our rank", "epa", "statbotics", "blue alliance", "tba", "team history", "where are we from",

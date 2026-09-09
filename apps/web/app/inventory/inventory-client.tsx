@@ -333,7 +333,9 @@ function AddItemForm({
         </button>
       </header>
       <p className="app-muted" style={{ margin: 0 }}>
-        Quantities and costs come from real parts — never DEMO stock rows.
+        Quantities and costs come from real parts — never DEMO stock rows. Adding a common COTS part?{" "}
+        <a href={`/parts-catalog?orgId=${encodeURIComponent(orgId)}`}>Pick it from the parts catalog</a> and the name,
+        vendor, part number and unit come filled in.
       </p>
       <div className="inventory-new-grid">
         <label className="inventory-field grow">

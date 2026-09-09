@@ -245,6 +245,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "season-budget", label: "Season budget", legacyHref: "/budget" },
         // Where a student asks for a part without needing budget access.
         { id: "part-requests", label: "Part requests", legacyHref: "/part-requests" },
+        // The COTS reference — what teams buy and the spec to pick between
+        // them. Feeds both Inventory (add) and Part requests (ask).
+        { id: "parts-catalog", label: "Parts catalog", legacyHref: "/parts-catalog", featured: true },
         { id: "orders", label: "Orders", legacyHref: "/orders" },
         { id: "costs", label: "Season costs", legacyHref: "/costs" },
         { id: "vendor-lead-times", label: "Lead times", legacyHref: "/vendor-lead-times" },
