@@ -1455,11 +1455,12 @@
   box-shadow:0 0 0 3px rgba(0,0,0,.08);background:var(--m-surface);
 }
 
-.marketing-lux .lux-route-hero,
-.marketing-lux .route-hero,
-.marketing-lux .pricing-hero{
-  max-width:680px;padding:clamp(36px,5vw,56px) var(--m-pad-x) clamp(28px,4vw,40px);
-}
+/* The container measure/padding for these heroes lives in marketing-v3.css,
+   which loads after this file. The rule that used to sit here declared the same
+   properties at the same specificity, so which one applied depended entirely on
+   stylesheet order — a coin flip on any chunking change. Removed rather than
+   left as a duplicate; the h1 and p measures below are still meaningful because
+   v3 overrides those deliberately. */
 .marketing-lux .lux-route-hero h1,
 .marketing-lux .route-hero h1,
 .marketing-lux .pricing-hero h1{
