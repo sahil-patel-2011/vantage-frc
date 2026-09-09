@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { OfflineBanner } from "../../../components/offline-banner";
 import {
@@ -21,6 +21,13 @@ import {
   type OccurrenceScope,
   type RepeatDraft,
 } from "./repeat-control";
+import { AiScheduler } from "./ai-scheduler";
+import {
+  pickToDraft,
+  toLocalInputValue,
+  type EventDraft,
+  type SchedulerPick,
+} from "../../../lib/calendar-ai/pick";
 import { githubConnectionHref } from "../../../lib/github/github-related";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
 import {
@@ -270,18 +277,11 @@ function TimedCalendarGrid({
   );
 }
 
-/** `datetime-local` wants local wall-clock text, not the stored instant. */
-function toLocalInputValue(iso: string | null): string {
-  if (!iso) return "";
-  const ms = new Date(iso).getTime();
-  if (Number.isNaN(ms)) return "";
-  const date = new Date(ms);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
-  );
-}
+/**
+ * A time the scheduler suggested, on its way into the create form as a draft.
+ * `nonce` only exists so picking the same slot twice re-fills the form.
+ */
+type EventPrefill = EventDraft & { nonce: number };
 
 /**
  * Edit one meeting. For a series the save step is the standard three-way choice,
@@ -630,6 +630,7 @@ function CreateEventForm({
   attendanceEvents,
   practiceSessions,
   filterSubteamId,
+  prefill,
   busy,
   run,
 }: {
@@ -638,6 +639,7 @@ function CreateEventForm({
   attendanceEvents: ReadyView["attendanceEvents"];
   practiceSessions: ReadyView["practiceSessions"];
   filterSubteamId: string | null;
+  prefill: EventPrefill | null;
   busy: boolean;
   run: (body: ActionBody, key: string) => Promise<boolean>;
 }) {
@@ -669,6 +671,20 @@ function CreateEventForm({
   useEffect(() => {
     if (kind === "practice" || kind === "build") setCreateAttendance(true);
   }, [kind]);
+
+  // A suggested slot lands here as a draft, never as a saved event. The nonce is
+  // what makes picking the same slot twice work: the values would be identical,
+  // so without it React would skip the effect and the form would look stuck.
+  useEffect(() => {
+    if (!prefill) return;
+    setTitle(prefill.title);
+    setKind(prefill.kind);
+    setStartsAt(prefill.startsAt);
+    setEndsAt(prefill.endsAt);
+    setSubteamId(prefill.subteamId ?? "");
+    // A one-off suggestion is not a series; leave any repeat rule the person
+    // typed alone rather than silently attaching it to a different date.
+  }, [prefill]);
 
   return (
     <form
@@ -1478,6 +1494,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
   const [syncSubteamId, setSyncSubteamId] = useState<string | null>(null);
   const [highlightDutyId, setHighlightDutyId] = useState<string | null>(null);
+  const [prefill, setPrefill] = useState<EventPrefill | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
@@ -1714,6 +1733,21 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
   const setRsvp = (eventId: string, response: RsvpResponse | null) => {
     void run({ action: "set_rsvp", orgId, id: eventId, response }, `rsvp:${eventId}`);
+  };
+
+  // Taking a suggested slot fills in the full event form and opens it. It does
+  // not create anything: the person still reads the draft and presses Add.
+  const usePick = (pick: SchedulerPick) => {
+    setPrefill({
+      nonce: Date.now(),
+      ...pickToDraft(pick, view.subteams.map((st) => st.id)),
+    });
+    setDetailsOpen(true);
+    // The form is below the fold on a laptop; a prefill nobody sees reads as a
+    // dead button.
+    requestAnimationFrame(() => {
+      detailsRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
   };
 
   const renderEventCard = (rawEvent: CalendarEvent) => {
@@ -2059,6 +2093,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </section>
 
             <aside className="tc-panel">
+              {canManage ? <AiScheduler onUse={usePick} /> : null}
               <div id="tc-quick-add">
                 <QuickAddForm
                   orgId={orgId}
@@ -2094,7 +2129,12 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 </ul>
               )}
 
-              <details className="tc-details">
+              <details
+                className="tc-details"
+                ref={detailsRef}
+                open={detailsOpen}
+                onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+              >
                 <summary>More event details</summary>
                 <CreateEventForm
                   orgId={orgId}
@@ -2102,6 +2142,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   attendanceEvents={view.attendanceEvents}
                   practiceSessions={view.practiceSessions}
                   filterSubteamId={filterSubteamId}
+                  prefill={prefill}
                   busy={busy}
                   run={run}
                 />
