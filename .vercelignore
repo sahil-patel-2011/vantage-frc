@@ -1,0 +1,45 @@
+# What NOT to upload to Vercel.
+#
+# Vercel installs dependencies and runs the build itself, so shipping local
+# build output and node_modules is pure waste — a CLI deploy from this repo
+# uploaded 354 MB before this file existed, almost all of it apps/web/.next
+# (3.5 GB on disk) and node_modules (656 MB). The CLI does not reliably fall
+# back to .gitignore for uploads, so these have to be listed here even though
+# git already ignores them.
+#
+# Git-triggered deploys are unaffected (they never upload local files); this
+# only governs `vercel deploy` from a workstation.
+
+# Installed and built on Vercel, never uploaded
+node_modules
+.next
+out
+dist
+release
+*.tsbuildinfo
+
+# Version control and local tooling
+.git
+.github
+.vercel
+
+# Agent worktrees — each is a full duplicate checkout. Ten of these once put
+# 452,390 files in this directory and broke `vercel deploy` outright with
+# "files should NOT have more than 15000 items, received 50400".
+.claude/worktrees
+.freebuff
+
+# Test and coverage artifacts
+coverage
+playwright-report
+test-results
+blob-report
+.playwright
+
+# Local environment and scratch files
+.env
+.env.*
+!.env.example
+*.log
+scratchpad
+pgdata
