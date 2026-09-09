@@ -10,6 +10,7 @@ const config: NextConfig = {
     "@vantage/core",
     "@vantage/db",
     "@vantage/export-center",
+    "@vantage/free-relay",
     "@vantage/intel-research",
     "@vantage/prediction-strategy",
     "@vantage/reference",

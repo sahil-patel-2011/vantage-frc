@@ -1,5 +1,7 @@
+import { hostname } from "node:os";
 import type { PoolClient } from "@neondatabase/serverless";
 import { createFreeRelayChatAdapter, type FreeRelayJobKind } from "./adapter";
+import { sweepAssemblyManualRuns, type AssemblyManualSweep } from "./assembly-manual";
 import { runMemoryDreamJob } from "./memory-dream";
 
 export type FreeRelaySweepResult = {
@@ -9,7 +11,30 @@ export type FreeRelaySweepResult = {
   failed: number;
   skipped: boolean;
   reason?: string;
+  /**
+   * Assembly-manual runs advanced by this sweep. Absent when the relay has no
+   * engine wired in — see `sweepAssemblyManualRuns`, which says so rather than
+   * reporting an empty queue.
+   */
+  assemblyManual?: AssemblyManualSweep;
 };
+
+/**
+ * Who this relay is, for the assembly-manual lease. Machine name plus pid, so
+ * two relays on the same box (or one restarted mid-run) never collide on the
+ * lease and quietly advance the same job twice.
+ */
+export function freeRelayLeaseOwner(env: NodeJS.ProcessEnv = process.env): string {
+  const label = env.FREE_RELAY_WORKER_ID?.trim();
+  if (label) return label.slice(0, 120);
+  let machine: string;
+  try {
+    machine = hostname() || "relay";
+  } catch {
+    machine = "relay";
+  }
+  return `${machine}:${process.pid}`.slice(0, 120);
+}
 
 function localDayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
@@ -133,6 +158,9 @@ export async function runFreeRelaySweep(input?: {
   scheduleDreams?: boolean;
   dayKey?: string;
   jobLimit?: number;
+  /** Set false to leave assembly-manual runs to a different worker. */
+  advanceAssemblyManuals?: boolean;
+  assemblyManualSliceMs?: number;
 }): Promise<FreeRelaySweepResult> {
   const { createSqlPool } = await import("@vantage/db/pool");
   const { firstConfiguredEnv } = await import("@vantage/db/postgres-url");
@@ -147,9 +175,35 @@ export async function runFreeRelaySweep(input?: {
     return { scheduled: 0, processed: 0, completed: 0, failed: 0, skipped: true, reason: "database_unset" };
   }
 
+  // The assembly manual does not need an AI backend — without one it writes
+  // deterministic step sentences and still produces the book — so it is swept
+  // before the free-relay AI gate below, not after it.
+  let assemblyManual: AssemblyManualSweep | undefined;
+  if (input?.advanceAssemblyManuals ?? true) {
+    const pool = createSqlPool(connectionString);
+    const client = await pool.connect();
+    try {
+      assemblyManual = await sweepAssemblyManualRuns(client, {
+        leaseOwner: freeRelayLeaseOwner(),
+        ...(input?.assemblyManualSliceMs !== undefined ? { sliceMs: input.assemblyManualSliceMs } : {}),
+      });
+    } finally {
+      client.release();
+      await pool.end().catch(() => undefined);
+    }
+  }
+
   const { isFreeRelayConfigured } = await import("./adapter");
   if (!isFreeRelayConfigured()) {
-    return { scheduled: 0, processed: 0, completed: 0, failed: 0, skipped: true, reason: "free_relay_unset" };
+    return {
+      scheduled: 0,
+      processed: 0,
+      completed: 0,
+      failed: 0,
+      skipped: true,
+      reason: "free_relay_unset",
+      ...(assemblyManual ? { assemblyManual } : {}),
+    };
   }
 
   const pool = createSqlPool(connectionString);
@@ -186,5 +240,12 @@ export async function runFreeRelaySweep(input?: {
     await pool.end().catch(() => undefined);
   }
 
-  return { scheduled, processed, completed, failed, skipped: false };
+  return {
+    scheduled,
+    processed,
+    completed,
+    failed,
+    skipped: false,
+    ...(assemblyManual ? { assemblyManual } : {}),
+  };
 }
