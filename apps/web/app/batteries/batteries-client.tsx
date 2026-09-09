@@ -368,8 +368,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         description={
           <>
             Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. IR and cycles only from logged
-            events — never demo metrics.
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. Internal resistance and cycle counts come from the charges your team logs.
           </>
         }
       >

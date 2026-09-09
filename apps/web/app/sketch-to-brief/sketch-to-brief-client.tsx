@@ -428,8 +428,8 @@ function LogSketchForm({
       <h2 style={{ margin: 0 }}>Log a kickoff sketch</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Transcribe the whiteboard: mechanism labels, function, and any dimensions or rule callouts written
-        on it. Sketch-to-Brief never invents dimensions or rule text — it only works from what you write
-        here and what your team already logged in Kickoff &amp; Game Analysis.
+        on it. The brief is built from what you write here and what your team logged in Kickoff &amp; Game
+        Analysis, so include any dimensions or rule callouts you want it to use.
       </p>
       <FormRow label="Title">
         <input value={form.title} onChange={set("title")} placeholder="Coral intake concept" required />

@@ -189,9 +189,10 @@ function looksLikeCode(line: string, match: string, index: number): boolean {
     const whole = `${opened[2]}${match}${closeAt === -1 ? "" : after.slice(0, closeAt)}`;
     if (/^[A-Za-z0-9_./:-]+$/.test(whole) && /[_/]/.test(whole)) return true;
   }
-  // Property access or object key: foo.fixture, { fixture: … }
+  // Property access: foo.fixture
   if (/\.\s*$/.test(before)) return true;
-  if (/^\s*:/.test(after) && !/^\s*:\s*["'`]/.test(after)) return true;
+  // An unquoted object key or type member: `setup_required: "Email not set"`.
+  if (/^\s*[:?]/.test(after) && /(^|[{,;([]|=>)\s*$/.test(before)) return true;
   // Import specifier / module path.
   if (/from\s+["'][^"']*$/.test(before) || /import\b/.test(before)) return true;
   if (/["'][^"']*$/.test(before) && /^[^"']*["']\s*[,)\]]/.test(after) && /\/|\.\./.test(before.slice(-20))) return true;

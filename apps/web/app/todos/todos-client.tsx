@@ -520,7 +520,7 @@ function Board({
       <EmptyState
         soft
         title="Nothing in this filter"
-        description="Try All, or create a todo that matches this view. Filters never invent rows."
+        description="Show all, or add a todo that matches this view."
       >
         <button type="button" className="app-button secondary" onClick={() => setFilter("all")}>
           Show all

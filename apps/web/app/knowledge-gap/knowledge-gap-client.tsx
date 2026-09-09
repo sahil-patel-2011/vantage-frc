@@ -303,7 +303,7 @@ export default function KnowledgeGapClient() {
           </>
         }
         title="Knowledge-gap detective"
-        description="Lists undocumented work from the real wiki vs Work (to-dos, build tasks, milestones) — never invented gaps. Cross-check Knowledge and Work."
+        description="Finds build work that has no write-up yet, by comparing the wiki against to-dos, build tasks, and milestones."
       >
         <div className="kg-header-actions">
           <RelatedStrip orgId={orgId} />

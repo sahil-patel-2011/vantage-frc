@@ -283,7 +283,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           }
           description={
             live!.entries.length === 0
-              ? "The maintained calendar is seeded outside the product. Owners and admins can add a grant your team found in the meantime — we never invent deadlines."
+              ? "No grants added yet. Owners and admins can add a grant your team found, with its deadline."
               : "Try “All” to see closed and undated grants too."
           }
         />

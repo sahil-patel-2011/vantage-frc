@@ -353,7 +353,7 @@ export default function RankingsClient() {
       ) : groups.length === 0 ? (
         <div className="app-card rank-empty">
           <strong>No elimination matches synced yet</strong>
-          <p className="app-muted">The bracket stays blank until TBA cache has playoff rows — never invented slots.</p>
+          <p className="app-muted">The bracket fills in once playoff results are posted for this event.</p>
         </div>
       ) : (
         <div className="rank-bracket">

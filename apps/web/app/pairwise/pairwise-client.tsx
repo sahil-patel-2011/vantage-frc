@@ -141,7 +141,7 @@ export default function PairwiseClient() {
           </>
         }
         title="Pairwise ranking"
-        description="Tap who looked better. Ranks come from those taps only — not TBA, not EPA, never invented."
+        description="Tap who looked better. Ranks come from your taps — not from official rankings or EPA."
       />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">

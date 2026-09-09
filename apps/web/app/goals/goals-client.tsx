@@ -210,7 +210,7 @@ export default function GoalsClient() {
         <PageHeader
           breadcrumbs="Team / Goals"
           title="Goals"
-          description="Set measurable season objectives and track progress from real entries only — never invented scorecards."
+          description="Set measurable season objectives; progress fills in as your team logs work against them."
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="goals-setup-steps">

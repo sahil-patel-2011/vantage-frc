@@ -670,7 +670,7 @@ function LearnedItems({
         <div>
           <h2 style={{ margin: 0 }}>Learned items</h2>
           <p className="app-muted">
-            Only start/stop/continue rows the team wrote — never invented lessons.
+            The start / stop / continue notes your team wrote.
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -688,8 +688,8 @@ function LearnedItems({
       ) : null}
       {items.length === 0 ? (
         <p className="app-muted">
-          No learned items yet. Write start/stop/continue notes first — this never invents lessons
-          for Season report or Playbook.
+          No learned items yet. Write a start / stop / continue note above and it will carry into the Season
+          report and the Playbook.
         </p>
       ) : (
         <ul className="retro-list">

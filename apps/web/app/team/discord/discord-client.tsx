@@ -266,7 +266,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Discord"
         title="Discord"
-        description="Link a guild and channel, post announcements, and optionally bridge object-linked Team Messages — never invented sync stats."
+        description="Link a server and channel, post announcements, and optionally mirror Team Messages into Discord."
       >
         <div className="team-discord-header-actions">
           <a className="app-button secondary" href={withOrgHref("/team?tab=messages", orgId)}>

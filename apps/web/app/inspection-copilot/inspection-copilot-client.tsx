@@ -911,7 +911,7 @@ function NewCheckForm({
         </FormGrid>
         <p className="app-muted">
           Chief Delphi: hollow pool noodles and reversible bumpers fail Thursday. Leave this off until you actually walk
-          the bumpers — never invent a fail.
+          the bumpers.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1064,7 +1064,7 @@ function NewCheckForm({
         <strong className="app-muted">2026 radio / roboRIO power</strong>
         <p className="app-muted">
           Chief Delphi: rio and radio must come off the main PD — Mini PD / RPM / VRM stops inspection. TU07: each is
-          the only load on its 10A branch. Leave this off until you actually walk the wiring — never invent a fail.
+          the only load on its 10A branch. Leave this off until you actually walk the wiring.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1134,7 +1134,7 @@ function NewCheckForm({
         <strong className="app-muted">Spark MAX USB-C</strong>
         <p className="app-muted">
           Chief Delphi 2026: a shorted Spark MAX phase can back-feed through USB-C and fry a laptop. Leave this off until
-          you actually log the check — never invent a fail.
+          you actually log the check.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1163,7 +1163,7 @@ function NewCheckForm({
         <p className="app-muted">
           FRC pit walk: strain relief, cable pinch, static vs loose wiring, CANivore backup power, torqued leads, breaker
           cover, no RIO USB camera next to a CANivore, PCM/PH away from the radio. Leave this off until you actually walk
-          the robot — never invent a fail.
+          the robot.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1246,7 +1246,7 @@ function NewCheckForm({
         <p className="app-muted">
           Inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, a missing pressure
           switch, paint on tanks, illegal solenoids, and buried gauges fail Thursday. Leave this off until you actually
-          walk stored pressure — never invent a fail.
+          walk stored pressure.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1381,7 +1381,7 @@ function NewCheckForm({
         <p className="app-muted">
           Inspectors probe Anderson-to-frame with the battery out and breaker on. Conductive chips in unused PDH sockets
           reboot radios. The PD, breakers, and wiring have to stay visible. ATC/ATO blades in the PD are ≤ 10A. Leave this
-          off until you actually meter the chassis — never invent a fail.
+          off until you actually meter the chassis.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1451,7 +1451,7 @@ function NewCheckForm({
         <strong className="app-muted">Robot signal light (RSL)</strong>
         <p className="app-muted">
           2026 checklist: visible from 36 in on at least one side, plugged into the roboRIO RSL port, flashing in sync.
-          Leave this off until you actually walk the light — never invent a fail.
+          Leave this off until you actually walk the light.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>

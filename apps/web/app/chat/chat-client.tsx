@@ -514,7 +514,7 @@ export default function ChatClient({
               <p>
                 {shell === "empty"
                   ? shellCopy.description
-                  : "Private chats stay yours. Team-shared channels are visible to members. Authorized tools never invent rows."}
+                  : "Private chats stay yours. Team channels are visible to every member."}
               </p>
               <div className="ch-empty-actions">
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>
