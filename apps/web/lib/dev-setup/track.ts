@@ -38,6 +38,20 @@ export type Step = {
   install: string[];
   /** Shell commands, shown in a copyable block. */
   commands?: { mac?: string[]; windows?: string[]; all?: string[] };
+  /**
+   * Alternative ways to do the same step, each its own tab on the code block.
+   * This is the shape the Claude Code docs use (Native install / Homebrew /
+   * WinGet) and it matters here because "install gh" genuinely has two right
+   * answers depending on the machine, and showing both at once is confusing
+   * while showing only one leaves half the team stuck.
+   */
+  methods?: Array<{
+    label: string;
+    /** Restrict this tab to one platform; omit to show on both. */
+    os?: Os;
+    lines: string[];
+    note?: string;
+  }>;
   /** How to know it actually worked. Every step needs one. */
   verify: string;
   links: StepLink[];
@@ -311,7 +325,7 @@ export const TRACK: Stage[] = [
         tip:
           "Take the photo in daylight, flat on a table, phone directly above — not at an angle. A tilted photo makes the text warp and reviewers cannot read it. If your name on the ID does not exactly match your GitHub profile name, set your profile name to match first; a mismatch gets rejected.",
         warning:
-          "Review is often quick — sometimes minutes — but the benefits can take a few days to actually appear on your account. That gap is normal. Do not submit the application again while you are waiting; duplicates slow it down.",
+          "GitHub usually reviews the application within about 15 minutes, and the benefits land on your account within about 72 hours. So a quick approval followed by nothing changing for a day or two is normal and does not mean it failed. Do not submit again while you are waiting — duplicates slow it down.",
         links: [
           { label: "Apply: education.github.com/pack", href: "https://education.github.com/pack", download: true },
           { label: "GitHub: how to apply as a student", href: "https://docs.github.com/en/education/about-github-education/github-education-for-students/apply-to-github-education-as-a-student" },
@@ -332,10 +346,32 @@ export const TRACK: Stage[] = [
           "It shows a one-time code. Copy it, press Enter, paste the code in the browser it opens, and approve.",
           "Come back to the terminal — it will say you are logged in.",
         ],
-        commands: {
-          mac: ["brew install gh", "gh auth login", "gh auth status"],
-          windows: ["winget install --id GitHub.cli", "gh auth login", "gh auth status"],
-        },
+        methods: [
+          {
+            label: "Homebrew",
+            os: "mac",
+            lines: ["brew install gh", "gh auth login", "gh auth status"],
+            note: "The usual way on a Mac. If brew is missing, do the Homebrew step at the top of this guide first.",
+          },
+          {
+            label: "Direct download",
+            os: "mac",
+            lines: ["gh auth login", "gh auth status"],
+            note: "If you would rather not use Homebrew, download the .pkg from cli.github.com, install it, then run these two.",
+          },
+          {
+            label: "WinGet",
+            os: "windows",
+            lines: ["winget install --id GitHub.cli", "gh auth login", "gh auth status"],
+            note: "winget ships with Windows 11. If it is not recognised, use the Direct download tab instead.",
+          },
+          {
+            label: "Direct download",
+            os: "windows",
+            lines: ["gh auth login", "gh auth status"],
+            note: "Download the .msi installer from cli.github.com, run it, then CLOSE and reopen your terminal before running these — PATH only updates in new windows.",
+          },
+        ],
         verify:
           "`gh auth status` prints your username and 'Logged in to github.com'. After this, `git push` works without asking for a password.",
         tip:
@@ -500,6 +536,65 @@ export const TRACK: Stage[] = [
         links: [],
         minutes: 60,
       },
+    ],
+  },
+];
+
+/**
+ * The commands worth coming back for, without re-reading the guide.
+ *
+ * This is the "I know what I need, just show me the line" surface. Everything
+ * here appears somewhere above in context; this is the version you scan at
+ * 10pm when the build is broken.
+ */
+export const COMMAND_REFERENCE: Array<{
+  group: string;
+  rows: Array<{ command: string; does: string; os?: Os }>;
+}> = [
+  {
+    group: "Every session",
+    rows: [
+      { command: "git pull", does: "Bring down everyone else's changes. Do this BEFORE you write anything." },
+      { command: "git status", does: "What have I changed, and am I on the right branch?" },
+      { command: "git diff", does: "Show me exactly what I changed, line by line. Read this before committing." },
+      { command: "git add -A", does: "Stage all your changes for the next commit." },
+      { command: 'git commit -m "why you changed it"', does: "Save a checkpoint on your laptop. Nobody else sees it yet." },
+      { command: "git push", does: "Send your commits to GitHub so the team gets them." },
+    ],
+  },
+  {
+    group: "Branches",
+    rows: [
+      { command: "git checkout -b my-change", does: "Start a new branch to work on." },
+      { command: "git checkout main", does: "Go back to the main branch." },
+      { command: "git push -u origin my-change", does: "Push a new branch to GitHub for the first time." },
+      { command: "git branch", does: "Which branches exist, and which am I on?" },
+    ],
+  },
+  {
+    group: "GitHub sign-in",
+    rows: [
+      { command: "gh auth login", does: "Sign in to GitHub from the terminal. Once per laptop." },
+      { command: "gh auth status", does: "Am I signed in, and as who?" },
+      { command: "git clone <repo url>", does: "Get your own copy of the team's code." },
+    ],
+  },
+  {
+    group: "Robot code",
+    rows: [
+      { command: "Ctrl+Shift+P → WPILib: Build Robot Code", does: "Compile. The lowest bar — it compiling is not proof it is right." },
+      { command: "Ctrl+Shift+P → WPILib: Simulate Robot Code", does: "Run it without a robot. Do this before you deploy." },
+      { command: "Ctrl+Shift+P → WPILib: Deploy Robot Code", does: "Send code to the roboRIO. Robot on blocks, hand on disable." },
+    ],
+  },
+  {
+    group: "When something is wrong",
+    rows: [
+      { command: "git stash", does: "Put your changes aside temporarily so you can pull or switch branches." },
+      { command: "git stash pop", does: "Bring those changes back." },
+      { command: "git log --oneline -10", does: "The last ten commits, one line each." },
+      { command: "brew --version", does: "Check Homebrew is installed and on your PATH.", os: "mac" },
+      { command: "git --version", does: "Check git is installed and on your PATH." },
     ],
   },
 ];
