@@ -13,6 +13,14 @@ export default tseslint.config(
       "**/release/**",
       "playwright-report/**",
       "test-results/**",
+      // Agent worktrees are full duplicate checkouts living inside this repo.
+      // Left in, each one adds a second tsconfig at a second root, and
+      // typescript-eslint refuses the whole run with "multiple candidate
+      // TSConfigRootDirs are present" — `npm run lint` reports thousands of
+      // parse errors on files that are not what is committed here. Same trap
+      // the vitest config had.
+      "**/.claude/worktrees/**",
+      "**/.freebuff/**",
     ],
   },
   js.configs.recommended,
