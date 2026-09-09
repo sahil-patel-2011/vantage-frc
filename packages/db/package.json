@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./savepoint": "./src/savepoint.ts",
     "./admin": "./src/admin.ts",
     "./auth": "./src/auth.ts",
     "./pool": "./src/pool.ts",

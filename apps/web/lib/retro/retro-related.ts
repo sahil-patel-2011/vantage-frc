@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Team Retrospective (never DEMO retro metrics). */
@@ -82,19 +83,19 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
     {
       id: "messages",
       label: "Open Messages",
-      detail: "Team chat stays blank until real threads exist — never DEMO feedback.",
+      detail: "Team chat stays blank until real threads exist — no sample feedback.",
       href: hubHref("/team", "messages", orgId),
     },
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Season postmortems pull real FMEA rows only — never invent DEMO failures.",
+      detail: "Season postmortems pull real FMEA rows only — no sample failures.",
       href: hubHref("/team", "fmea", orgId),
     },
     {
       id: "decisions",
       label: "Open Decisions",
-      detail: "Postmortems cite logged decisions only — never DEMO decision counts.",
+      detail: "Postmortems cite logged decisions only — no sample decision counts.",
       href: withOrgHref("/decisions", orgId),
     },
   ];
@@ -198,56 +199,10 @@ export function retroNextActions(input: {
   const learnedItemCount = input.learnedItemCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Retros are org-scoped — pick a team before collecting feedback.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "messages",
-          label: "Open Messages",
-          detail: "Team chat stays empty until real threads exist — never DEMO feedback.",
-          href: hubHref("/team", "messages", null),
-        },
-        {
-          id: "fmea",
-          label: "Open FMEA",
-          detail: "Postmortems stay blank without real FMEA rows — never invent DEMO failures.",
-          href: hubHref("/team", "fmea", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Retro can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "messages",
-        label: "Open Messages",
-        detail: "Collect informal feedback separately from structured retros.",
-        href: hubHref("/team", "messages", orgId),
-      },
-      {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "Season postmortems cite real FMEA failures only — never DEMO metrics.",
-        href: hubHref("/team", "fmea", orgId),
-      },
-      {
-        id: "decisions",
-        label: "Open Decisions",
-        detail: "Logged decisions feed postmortems — never invent DEMO counts.",
-        href: withOrgHref("/decisions", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of retroSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(retroSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

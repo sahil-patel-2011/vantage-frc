@@ -76,7 +76,8 @@ export async function GET(request: Request) {
 
       const [items, locations, transactions, bom] = await Promise.all([
         client.query<InventoryItem>(
-          `SELECT i.id, i.name, i.kind, i.category, i.part_number AS "partNumber", i.vendor, i.unit,
+          `SELECT i.id, i.name, i.kind, i.category, i.is_spare AS "isSpare",
+                  i.part_number AS "partNumber", i.vendor, i.unit,
                   i.quantity::float8 AS quantity, i.min_quantity::float8 AS "minQuantity",
                   i.unit_cost::float8 AS "unitCost", i.location_id AS "locationId", l.name AS "locationName",
                   i.subsystem, i.notes, i.archived, i.updated_at::text AS "updatedAt"
@@ -141,13 +142,14 @@ export async function POST(request: Request) {
         case "create_item": {
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO inventory_items
-               (org_id, name, category, part_number, vendor, unit, quantity, min_quantity, unit_cost, location_id, subsystem, notes, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13)
+               (org_id, name, category, is_spare, part_number, vendor, unit, quantity, min_quantity, unit_cost, location_id, subsystem, notes, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::uuid, $12, $13, $14)
              RETURNING id`,
             [
               action.orgId,
               action.name,
               action.category,
+              action.isSpare,
               action.partNumber,
               action.vendor,
               action.unit,
@@ -279,6 +281,7 @@ function buildItemUpdate(patch: ItemPatch) {
   };
   if (patch.name !== undefined) add("name", patch.name);
   if (patch.category !== undefined) add("category", patch.category);
+  if (patch.isSpare !== undefined) add("is_spare", patch.isSpare);
   if (patch.unit !== undefined) add("unit", patch.unit);
   if (patch.partNumber !== undefined) add("part_number", patch.partNumber);
   if (patch.vendor !== undefined) add("vendor", patch.vendor);

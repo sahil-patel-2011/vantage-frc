@@ -183,21 +183,22 @@ export async function loadTrainingMatrixForCheckout(
   client: PoolClient,
   input: { userId: string; orgId: string; now?: Date },
 ): Promise<TrainingMatrixSlice> {
-  try {
-    const view = await computeTrainingView(client, {
-      userId: input.userId,
-      requestedOrg: input.orgId,
-      now: input.now,
-    });
-    if (view.status !== "live") return { skills: [], certifications: [], members: [] };
-    return {
-      skills: view.skills,
-      certifications: view.certifications,
-      members: view.members.map((member) => ({ userId: member.userId, name: member.name })),
-    };
-  } catch {
-    return { skills: [], certifications: [], members: [] };
-  }
+  // Deliberately NOT tolerant. An empty slice means "no certification required",
+  // so swallowing a read failure here fails a safety gate open: `checkoutTool`
+  // would hand over a tool whose training requirement could not be checked. A
+  // Training feature that is genuinely absent still returns the empty slice via
+  // `status !== "live"` below — that path is a real answer, a caught error is not.
+  const view = await computeTrainingView(client, {
+    userId: input.userId,
+    requestedOrg: input.orgId,
+    now: input.now,
+  });
+  if (view.status !== "live") return { skills: [], certifications: [], members: [] };
+  return {
+    skills: view.skills,
+    certifications: view.certifications,
+    members: view.members.map((member) => ({ userId: member.userId, name: member.name })),
+  };
 }
 
 export function assertToolCheckoutAllowed(input: ToolCheckoutGateInput): {
