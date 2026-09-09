@@ -50,6 +50,10 @@
       "@vantage/cad": ["packages/cad/src/index.ts"],
       "@vantage/cad/fusion-relay": ["packages/cad/src/fusion-relay.ts"],
       "@vantage/export-center": ["packages/export-center/src/index.ts"],
+      "@vantage/free-relay": ["packages/free-relay/src/index.ts"],
+      "@vantage/free-relay/production-worker": [
+        "packages/free-relay/src/production-worker.ts"
+      ],
       "@vantage/game-year": ["packages/game-year/src/index.ts"],
       "@vantage/import": ["packages/import/src/index.ts"],
       "@vantage/import/connectors": ["packages/import/src/connectors.ts"],
