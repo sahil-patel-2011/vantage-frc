@@ -128,7 +128,13 @@ export async function computeRolesView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM team_roles WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
-    loadRoster(client, org.orgId).catch(() => [] as RosterMember[]),
+    // No `.catch(() => [])` here. loadRoster reads memberships JOIN users — the
+    // tables RLS itself is built on, never optional — so the only way it fails is
+    // that something earlier already aborted the transaction. Swallowing that gave
+    // an empty roster, which downstream is not "degraded" but wrong: unresolved
+    // holder names, and createRole/updateRole rejecting a real member with
+    // "Holder must be a member of this workspace". Let it surface.
+    loadRoster(client, org.orgId),
   ]);
 
   const roles = sortRoles(roleResult.rows.map((row) => mapRole(row, roster)));
@@ -168,7 +174,7 @@ export async function createRole(
     responsibilities: string | null;
   },
 ): Promise<void> {
-  const roster = await loadRoster(client, input.orgId).catch(() => [] as RosterMember[]);
+  const roster = await loadRoster(client, input.orgId);
   const member = input.holderUserId
     ? roster.find((candidate) => candidate.userId === input.holderUserId)
     : null;
@@ -207,10 +213,7 @@ export async function updateRole(
   },
 ): Promise<void> {
   const changingHolder = input.holderName !== undefined || input.holderUserId !== undefined;
-  const roster =
-    changingHolder
-      ? await loadRoster(client, input.orgId).catch(() => [] as RosterMember[])
-      : [];
+  const roster = changingHolder ? await loadRoster(client, input.orgId) : [];
   const member = input.holderUserId
     ? roster.find((candidate) => candidate.userId === input.holderUserId)
     : null;

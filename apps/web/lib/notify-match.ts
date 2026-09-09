@@ -12,7 +12,8 @@ import type { ScheduleMatch } from "./schedule-board";
 const COOLDOWN_MINUTES = 120;
 
 export type MatchNotifyResult = {
-  status: "skipped" | "sent" | "throttled" | "no_match";
+  /** `failed` is honest about a fan-out that could not run — never reported as `skipped`. */
+  status: "skipped" | "sent" | "throttled" | "no_match" | "failed";
   emitted: number;
   announced: boolean;
   discordPosted: boolean;
@@ -74,8 +75,37 @@ export async function loadScheduleMatchesForEvent(
   }));
 }
 
-/** After TBA sync: fan out next-match alerts (+ optional announcement/Discord). */
+/**
+ * After TBA sync: fan out next-match alerts (+ optional announcement/Discord).
+ *
+ * Self-protecting. Callers run this on the shared `withRls` client right after
+ * their own writes (the live-subscription upsert in /api/team/data, for one) and
+ * then swallowed any failure as "best-effort" — which instead aborted the
+ * transaction and discarded those writes at COMMIT behind a 200. A savepoint
+ * around the whole fan-out means a notify failure costs the notifications only,
+ * and the result says `status: "failed"` rather than pretending it was skipped.
+ */
 export async function notifyNextMatchReady(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    actorUserId: string;
+    eventKey: string;
+    eventName: string | null;
+    teamNumber: number | null;
+    announce?: boolean;
+  },
+): Promise<MatchNotifyResult> {
+  return withSavepoint(client, () => fanOutNextMatch(client, input), {
+    status: "failed",
+    emitted: 0,
+    announced: false,
+    discordPosted: false,
+    matchKey: null,
+  });
+}
+
+async function fanOutNextMatch(
   client: PoolClient,
   input: {
     orgId: string;
@@ -206,18 +236,21 @@ async function maybeAnnounceMyDay(
   );
   if (existing.rowCount) return { announced: false, discordPosted: false };
 
-  let discordPosted = false;
-  try {
-    const discord = await client.query<{
-      webhookUrl: string | null;
-      enabled: boolean;
-      channelId: string | null;
-    }>(
-      `SELECT webhook_url AS "webhookUrl", enabled, channel_id AS "channelId"
-       FROM team_discord WHERE org_id = $1`,
-      [input.orgId],
-    );
-    if (discord.rowCount && discord.rows[0]!.enabled) {
+  // team_discord is optional; the savepoint is what lets a missing table cost the
+  // Discord mirror instead of the announcement INSERT that follows it.
+  const discordPosted = await withSavepoint(
+    client,
+    async () => {
+      const discord = await client.query<{
+        webhookUrl: string | null;
+        enabled: boolean;
+        channelId: string | null;
+      }>(
+        `SELECT webhook_url AS "webhookUrl", enabled, channel_id AS "channelId"
+         FROM team_discord WHERE org_id = $1`,
+        [input.orgId],
+      );
+      if (!discord.rowCount || !discord.rows[0]!.enabled) return false;
       const webhookUrl =
         discord.rows[0]!.webhookUrl && isValidDiscordWebhook(discord.rows[0]!.webhookUrl)
           ? discord.rows[0]!.webhookUrl
@@ -227,11 +260,10 @@ async function maybeAnnounceMyDay(
         webhookUrl,
         channelId: discord.rows[0]!.channelId,
       });
-      discordPosted = post.ok;
-    }
-  } catch {
-    discordPosted = false;
-  }
+      return post.ok;
+    },
+    false,
+  );
 
   // The wide insert is tried first, with the narrow one as a fallback for a
   // database that predates the priority/pinned/require_ack columns. Both attempts

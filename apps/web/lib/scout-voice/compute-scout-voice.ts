@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { meteredAI } from "@vantage/billing";
 import { isSttUnsupportedStatus, resolveOrgSttEndpoint } from "@vantage/agent";
 import { resolveScoutOrg } from "../scout-org-access";
@@ -83,19 +84,25 @@ export async function detectCloudSttProvider(
   }
 
   if (userId) {
-    try {
-      const memberKeys = await client.query(
-        `SELECT 1
-         FROM member_llm_keys
-         WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) LIKE '%openai%'
-         LIMIT 1`,
-        [orgId, userId],
-      );
-      if (memberKeys.rowCount) {
-        return { cloudConfigured: true, cloudProvider: "openai" };
-      }
-    } catch {
-      // member_llm_keys may not exist yet before migration.
+    // member_llm_keys may not exist yet before migration; savepointed so a missing
+    // table costs this one probe instead of aborting the transaction the rest of
+    // the Scout Voice view is read on.
+    const memberKeys = await withSavepoint(
+      client,
+      async () =>
+        (
+          await client.query(
+            `SELECT 1
+             FROM member_llm_keys
+             WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) LIKE '%openai%'
+             LIMIT 1`,
+            [orgId, userId],
+          )
+        ).rowCount,
+      0,
+    );
+    if (memberKeys) {
+      return { cloudConfigured: true, cloudProvider: "openai" };
     }
   }
 

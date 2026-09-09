@@ -1,4 +1,5 @@
 import { auth } from "@vantage/core";
+import { withSavepoint } from "@vantage/db";
 import { ScoutingRepository } from "@vantage/scouting/repository";
 import type { SyncAcknowledgement } from "@vantage/scouting/repository";
 import type { SyncEntry } from "@vantage/scouting";
@@ -14,38 +15,53 @@ import {
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
 
-/** After an entry mints, stamp scout_media.entry_id from payload refs and the entry_client tag. */
+/**
+ * After an entry mints, stamp scout_media.entry_id from payload refs and the entry_client tag.
+ *
+ * This is the last thing the request does before COMMIT, and it used to be a bare
+ * `try { … } catch {}`. On a deploy whose `scout_media` was older than this query
+ * the failing statement aborted the shared `withRls` transaction, so the COMMIT
+ * that was supposed to persist the whole scouting batch rolled back instead —
+ * while the route still returned 200 with a full list of acknowledgements. An
+ * offline scout's outbox would clear against acknowledgements for rows that no
+ * longer existed. A savepoint bounds the failure to the media link.
+ *
+ * Returns false when the link could not be applied so the caller can say so.
+ */
 async function stampLinkedMediaAfterMint(
   client: PoolClient,
   orgId: string,
   acknowledgements: ReadonlyArray<{ clientId: string; entryId?: string | null }>,
   entries: ReadonlyArray<SyncEntry>,
-): Promise<void> {
-  try {
-    for (const job of mediaLinkJobsAfterMint({ acknowledgements, entries })) {
-      await backfillScoutMediaFromPayload(client, {
-        orgId,
-        entryId: job.entryId,
-        payload: job.payload,
-      });
-      if (!job.entryClientTag) continue;
-      const tagged = await client.query<{ clientId: string }>(
-        `SELECT client_id AS "clientId"
-         FROM scout_media
-         WHERE org_id = $1::uuid
-           AND entry_id IS NULL
-           AND $2 = ANY(tags)`,
-        [orgId, job.entryClientTag],
-      );
-      await linkScoutMediaToEntry(client, {
-        orgId,
-        entryId: job.entryId,
-        mediaClientIds: tagged.rows.map((row) => row.clientId),
-      });
-    }
-  } catch {
-    // scout_media (or the deploy) may be older than this query — leave unlinked, never invent.
-  }
+): Promise<boolean> {
+  return withSavepoint(
+    client,
+    async () => {
+      for (const job of mediaLinkJobsAfterMint({ acknowledgements, entries })) {
+        await backfillScoutMediaFromPayload(client, {
+          orgId,
+          entryId: job.entryId,
+          payload: job.payload,
+        });
+        if (!job.entryClientTag) continue;
+        const tagged = await client.query<{ clientId: string }>(
+          `SELECT client_id AS "clientId"
+           FROM scout_media
+           WHERE org_id = $1::uuid
+             AND entry_id IS NULL
+             AND $2 = ANY(tags)`,
+          [orgId, job.entryClientTag],
+        );
+        await linkScoutMediaToEntry(client, {
+          orgId,
+          entryId: job.entryId,
+          mediaClientIds: tagged.rows.map((row) => row.clientId),
+        });
+      }
+      return true;
+    },
+    false,
+  );
 }
 
 /** Deployed clients send the whole outbox in one POST — keep their contract. */
@@ -77,19 +93,25 @@ export async function POST(request: Request) {
 
     if (!perEntry) {
       // Legacy shape, unchanged: one bad entry fails the whole batch.
-      const acknowledgements = await withScoutingRequest(body.orgId ?? null, async (client) => {
-        const repository = new ScoutingRepository(client);
-        const results = [];
-        for (const entry of body.entries!) {
-          results.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
-        }
-        await stampLinkedMediaAfterMint(client, body.orgId!, results, body.entries!);
-        return results;
+      const { acknowledgements, mediaLinked } = await withScoutingRequest(
+        body.orgId ?? null,
+        async (client) => {
+          const repository = new ScoutingRepository(client);
+          const results = [];
+          for (const entry of body.entries!) {
+            results.push(await repository.syncEntry(body.orgId!, session.user.id, entry));
+          }
+          const linked = await stampLinkedMediaAfterMint(client, body.orgId!, results, body.entries!);
+          return { acknowledgements: results, mediaLinked: linked };
+        },
+      );
+      return Response.json({
+        acknowledgements,
+        ...(mediaLinked ? {} : { mediaLinkDeferred: true }),
       });
-      return Response.json({ acknowledgements });
     }
 
-    const { acknowledgements, rejected } = await withScoutingRequest(
+    const { acknowledgements, rejected, mediaLinked } = await withScoutingRequest(
       body.orgId ?? null,
       async (client) => {
         const repository = new ScoutingRepository(client);
@@ -110,14 +132,15 @@ export async function POST(request: Request) {
             });
           }
         }
-        await stampLinkedMediaAfterMint(client, body.orgId!, acks, body.entries!);
-        return { acknowledgements: acks, rejected: failures };
+        const linked = await stampLinkedMediaAfterMint(client, body.orgId!, acks, body.entries!);
+        return { acknowledgements: acks, rejected: failures, mediaLinked: linked };
       },
     );
     return Response.json({
       acknowledgements,
       accepted: acknowledgements.map((ack) => ack.clientId),
       rejected,
+      ...(mediaLinked ? {} : { mediaLinkDeferred: true }),
     });
   } catch (error) {
     return scoutingErrorResponse(error);
