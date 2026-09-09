@@ -28,6 +28,9 @@ type EmailPrefs = {
   coachPracticeReminders: boolean;
   sponsorReminders: boolean;
   performanceDigest: boolean;
+  announcements: boolean;
+  duesReminders: boolean;
+  memberOnboarding: boolean;
 };
 
 type Delivery = { status: "available" | "setup_required"; detail: string };
@@ -112,6 +115,24 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
     detail:
       "One email on days your team has real data — match results, tomorrow's schedule, and grounded pointers. On by default; sends nothing on quiet days.",
   },
+  {
+    key: "announcements",
+    title: "Urgent team announcements",
+    detail:
+      "Email only for announcements your team marks urgent or asks everyone to acknowledge — departure times, safety notices, deadlines. Every announcement still reaches your inbox. On by default.",
+  },
+  {
+    key: "duesReminders",
+    title: "Dues reminders",
+    detail:
+      "Email when your treasurer sends a reminder and your own answer says dues are outstanding. Never sent to anyone whose answer asked for financial assistance. On by default.",
+  },
+  {
+    key: "memberOnboarding",
+    title: "New member onboarding",
+    detail:
+      "A short sequence after you join a team, and only when you actually have something outstanding — a form to fill in, an announcement to acknowledge, a profile to finish. On by default.",
+  },
 ];
 
 const DEFAULT_IN_APP: InAppPrefs = {
@@ -133,6 +154,9 @@ const DEFAULT_EMAIL: EmailPrefs = {
   coachPracticeReminders: false,
   sponsorReminders: false,
   performanceDigest: true,
+  announcements: true,
+  duesReminders: true,
+  memberOnboarding: true,
 };
 
 function PrefsRelated() {
@@ -293,8 +317,9 @@ export default function NotificationPreferencesClient() {
           <Panel className="account-panel">
             <h2>Email opt-ins</h2>
             <p className="app-muted">
-              Most email categories start off; product updates and the daily performance digest start on.
-              Unsubscribe links are included in every message.
+              Each switch turns off exactly one kind of message and nothing else — opting out of dues
+              reminders does not stop urgent announcements, and the other way round. The coach and sponsor
+              categories start off; the rest start on. Every message carries its own unsubscribe link.
             </p>
             <ul className="account-prefs">
               {EMAIL_PREF_LABELS.map((item) => (

@@ -4,6 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../components/ui";
 import { PURPOSE_LABELS, type FormPurpose, type FormSummary } from "../../lib/forms/types";
 
+/**
+ * Carry the workspace into the link.
+ *
+ * The detail route re-resolves the workspace on its own, and with no hint it
+ * takes the caller's alphabetically first membership. For anyone who belongs to
+ * two teams — a mentor with a sister team, a student who moved — that meant
+ * every form in the second team answered "Form not found", from a list that had
+ * just shown it to them.
+ */
+function formHref(formId: string, orgId: string | undefined) {
+  return orgId ? `/forms/${formId}?orgId=${encodeURIComponent(orgId)}` : `/forms/${formId}`;
+}
+
 type View = {
   status: "ready";
   orgId: string;
@@ -82,7 +95,7 @@ export default function FormsClient() {
         setError(data.error ?? "Could not create the form.");
         return;
       }
-      window.location.href = `/forms/${data.formId}`;
+      window.location.href = formHref(data.formId, view?.orgId);
     } finally {
       setBusy(false);
     }
@@ -130,7 +143,7 @@ export default function FormsClient() {
           <ul className="forms-list">
             {view.forms.map((form) => (
               <li key={form.id}>
-                <a className="forms-list-row" href={`/forms/${form.id}`}>
+                <a className="forms-list-row" href={formHref(form.id, view.orgId)}>
                   <span className="forms-list-main">
                     <strong>{form.title}</strong>
                     <small className="app-muted">

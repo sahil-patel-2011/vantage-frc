@@ -33,6 +33,9 @@ const prefsSchema = z.object({
   teamChat: z.boolean().optional(),
 });
 
+// One key per email category. A category missing here is a switch the
+// preferences page can render but never save, which is worse than not offering
+// it: the reader believes they opted out and the mail keeps arriving.
 const emailPrefsSchema = z.object({
   productUpdates: z.boolean().optional(),
   coachAssignments: z.boolean().optional(),
@@ -40,6 +43,9 @@ const emailPrefsSchema = z.object({
   coachPracticeReminders: z.boolean().optional(),
   sponsorReminders: z.boolean().optional(),
   performanceDigest: z.boolean().optional(),
+  announcements: z.boolean().optional(),
+  duesReminders: z.boolean().optional(),
+  memberOnboarding: z.boolean().optional(),
 });
 
 const putSchema = z.object({

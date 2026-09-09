@@ -204,9 +204,20 @@ export function formInsight(input: {
   purpose: FormPurpose;
   totalResponses: number;
   assignedCount: number;
+  /**
+   * How many of the assigned people have actually answered.
+   *
+   * Distinct from `totalResponses`, and the distinction matters: a form that is
+   * assigned to four students and shared as a link can hold four responses of
+   * which one came from a stranger and one assignee never replied. Reading
+   * "4 of 4 assigned people have answered" off the response count is a coverage
+   * figure that goes up when the wrong people answer. Omitted means "unknown",
+   * and then the sentence does not claim coverage at all.
+   */
+  respondedAssignees?: number;
   summaries: QuestionSummary[];
 }): FormInsight {
-  const { purpose, totalResponses, assignedCount, summaries } = input;
+  const { purpose, totalResponses, assignedCount, respondedAssignees, summaries } = input;
 
   if (totalResponses === 0) {
     return {
@@ -220,10 +231,15 @@ export function formInsight(input: {
   }
 
   const provisional = totalResponses < 3;
-  const outstanding = assignedCount > 0 ? Math.max(assignedCount - totalResponses, 0) : 0;
+  const answeredAssignees = respondedAssignees ?? totalResponses;
+  const outstanding = assignedCount > 0 ? Math.max(assignedCount - answeredAssignees, 0) : 0;
+  // Responses that came from outside the assigned list — a share link, a parent,
+  // a prospective student. Named separately so the coverage figure stays about
+  // the people who were actually asked.
+  const extra = Math.max(totalResponses - answeredAssignees, 0);
   const coverage =
     assignedCount > 0
-      ? `${totalResponses} of ${assignedCount} assigned ${totalResponses === 1 ? "person has" : "people have"} answered${outstanding > 0 ? `; ${outstanding} outstanding` : ""}.`
+      ? `${answeredAssignees} of ${assignedCount} assigned ${answeredAssignees === 1 ? "person has" : "people have"} answered${outstanding > 0 ? `; ${outstanding} outstanding` : ""}${extra > 0 ? `; ${extra} more answered through the link` : ""}.`
       : `${totalResponses} ${totalResponses === 1 ? "response" : "responses"} so far.`;
 
   const detail = [coverage, purposeReading(purpose, summaries)].filter(Boolean).join(" ");
@@ -283,8 +299,14 @@ function purposeReading(purpose: FormPurpose, summaries: QuestionSummary[]): str
   if (purpose === "dues") {
     const status = choice.find((s) => s.buckets.some((b) => /paid|assist|not yet/i.test(b.label)));
     if (!status) return "";
-    const unpaid = status.buckets.filter((b) => /not yet|partial/i.test(b.label)).reduce((sum, b) => sum + b.count, 0);
+    // Someone who ticked both "Partial payment" and "Requesting assistance" is
+    // one person, and they belong in the assistance count only. Counting them in
+    // both made a four-person form read as though five people had answered, and
+    // put a family who asked for help into the list a treasurer chases.
     const assist = status.buckets.filter((b) => /assist/i.test(b.label)).reduce((sum, b) => sum + b.count, 0);
+    const unpaid = status.buckets
+      .filter((b) => /not yet|partial/i.test(b.label) && !/assist/i.test(b.label))
+      .reduce((sum, b) => sum + b.count, 0);
     const parts: string[] = [];
     if (unpaid > 0) parts.push(`${unpaid} still owe`);
     if (assist > 0) parts.push(`${assist} asked for assistance — follow up privately`);

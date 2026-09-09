@@ -134,6 +134,17 @@
   margin-top: 10px;
 }
 
+/* Who this reaches, said before the poster commits and again after they do. */
+.ann-delivery-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ann-delivery-note:last-child {
+  margin: 10px 0 0;
+}
+
 @media (max-width: 640px) {
   .ann-item-head {
     flex-direction: column;
