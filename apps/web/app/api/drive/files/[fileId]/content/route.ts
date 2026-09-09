@@ -108,7 +108,16 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     if (file.storageLocation === "node") {
-      if (!file.nodeItemId) throw new DriveHttpError(409, "This file has no storage-node pointer.");
+      if (!file.nodeItemId) {
+        // The pointer is nulled when the storage node itself is unpaired and
+        // removed. The row survives so the file is not silently erased from
+        // the listing — but the bytes went with the hardware, and saying so is
+        // the only honest answer.
+        throw new DriveHttpError(
+          410,
+          "This file lived on a storage node that has since been removed from the team, so its bytes are gone. The record is kept here so you know it existed.",
+        );
+      }
       // The node-item resolver already mints the signed GET grant and answers
       // honestly when the node is unreachable — no reason to write that twice.
       return Response.redirect(
