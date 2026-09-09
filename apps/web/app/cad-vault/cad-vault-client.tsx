@@ -24,6 +24,7 @@ import {
   type SubsystemOption,
 } from "../../lib/cad-vault/view";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { LinkOnshapePanel } from "./link-onshape";
 
 const MAX_INLINE_PREVIEW_BYTES = 20 * 1024 * 1024; // above this, use the stored thumbnail
 
@@ -483,6 +484,18 @@ export default function CadVaultClient() {
       ) : null}
 
       <div style={{ display: "grid", gap: 16 }}>
+        {orgId ? (
+          <LinkOnshapePanel
+            orgId={orgId}
+            seasonYear={seasonYear}
+            subteams={ready?.subsystems ?? []}
+            busy={busy}
+            onCreated={(title) => {
+              setNotice(`Linked "${title}".`);
+              load(seasonYear);
+            }}
+          />
+        ) : null}
         <Panel aria-label="Upload a CAD file" style={{ display: "grid", gap: 12 }}>
           <h2 style={{ margin: 0 }}>Upload</h2>
           <div

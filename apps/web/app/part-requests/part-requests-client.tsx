@@ -74,6 +74,18 @@ export default function PartRequestsClient() {
   const [vendor, setVendor] = useState("");
   const [itemUrl, setItemUrl] = useState("");
   const [neededBy, setNeededBy] = useState("");
+
+  // "Request this" from the parts catalog lands here with the item filled in.
+  // Read once on mount; nothing is submitted until the person presses the button.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const t = q.get("title");
+    const v = q.get("vendor");
+    const u = q.get("itemUrl");
+    if (t) setTitle(t.slice(0, 200));
+    if (v) setVendor(v.slice(0, 120));
+    if (u && /^https:\/\//.test(u)) setItemUrl(u.slice(0, 500));
+  }, []);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
 
   const [decide, setDecide] = useState<{ id: string; kind: "approve" | "reject" } | null>(null);
