@@ -33,7 +33,17 @@ export const AGE_AGING_MONTHS = 48;
 export const CYCLES_AGING = 300;
 
 export type HealthStatus = "good" | "aging" | "retire";
-export type BatteryHealth = { status: HealthStatus; score: number; reasons: string[] };
+/**
+ * `score` is null when the pack has never been measured.
+ *
+ * It used to start at 100 and only ever subtract, so a pack a team registered
+ * and never tested scored a perfect 100 and `rankForRotation` handed it to the
+ * drive team first — ahead of every pack whose health was actually known. The
+ * score rose the less a team measured, which is the same shape as the readiness
+ * index that reported a team as more ready the less they entered. There is no
+ * health number without a health measurement.
+ */
+export type BatteryHealth = { status: HealthStatus; score: number | null; reasons: string[] };
 
 const RANK: Record<HealthStatus, number> = { good: 0, aging: 1, retire: 2 };
 
@@ -45,6 +55,10 @@ function clamp(value: number, min: number, max: number) {
  * Grades a pack from its most recent measurements plus wear counters. `status`
  * drives the go/no-go badge; `score` (0-100, higher is healthier) ranks packs
  * for match rotation so the freshest battery gets picked next.
+ *
+ * Internal resistance and resting voltage are the only *health* signals; cycles
+ * and age are wear proxies that cannot stand in for a measurement. With neither
+ * measurement the score is null — not 100.
  */
 export function batteryHealth(input: {
   internalResistanceMohm?: number | null;
@@ -82,15 +96,21 @@ export function batteryHealth(input: {
     reasons.push(`${cycleCount} cycles logged`);
   }
 
-  let score = 100;
-  if (internalResistanceMohm != null) score -= clamp((internalResistanceMohm - 12) * 5, 0, 60);
-  if (restingVoltage != null) score -= clamp((VOLTAGE_FULL - restingVoltage) * 10, 0, 25);
-  if (cycleCount != null) score -= clamp(cycleCount * 0.05, 0, 15);
-  if (ageMonths != null) score -= clamp(ageMonths * 0.2, 0, 15);
-  score = clamp(Math.round(score), 0, 100);
-  if (status === "good" && score < 50) {
-    escalate("aging");
-    reasons.push("Composite health score is low");
+  const measured = internalResistanceMohm != null || restingVoltage != null;
+  let score: number | null = null;
+  if (measured) {
+    let raw = 100;
+    if (internalResistanceMohm != null) raw -= clamp((internalResistanceMohm - 12) * 5, 0, 60);
+    if (restingVoltage != null) raw -= clamp((VOLTAGE_FULL - restingVoltage) * 10, 0, 25);
+    if (cycleCount != null) raw -= clamp(cycleCount * 0.05, 0, 15);
+    if (ageMonths != null) raw -= clamp(ageMonths * 0.2, 0, 15);
+    score = clamp(Math.round(raw), 0, 100);
+    if (status === "good" && score < 50) {
+      escalate("aging");
+      reasons.push("Composite health score is low");
+    }
+  } else {
+    reasons.push("No resistance or voltage measurement logged yet — health is unknown, not good");
   }
 
   return { status, score, reasons };
@@ -311,6 +331,10 @@ export function cartSlot(input: {
 /**
  * Ranks active packs for the next match: healthiest first, and among equals the
  * one used longest ago, so the fleet wears evenly. Non-active packs drop out.
+ *
+ * A pack with no measurement has no score, and sorts behind every pack that
+ * does. It used to sort ahead of all of them on a fabricated 100 — the drive
+ * team was handed the pack the team knew least about, on competition day.
  */
 export function rankForRotation<T extends { status: BatteryStatus; health: BatteryHealth; lastUsedAt: string | null }>(
   packs: T[],
@@ -318,7 +342,14 @@ export function rankForRotation<T extends { status: BatteryStatus; health: Batte
   return packs
     .filter((pack) => pack.status === "active" && pack.health.status !== "retire")
     .sort((a, b) => {
-      if (b.health.score !== a.health.score) return b.health.score - a.health.score;
+      const left = a.health.score;
+      const right = b.health.score;
+      if (left == null || right == null) {
+        if (left != null) return -1;
+        if (right != null) return 1;
+      } else if (left !== right) {
+        return right - left;
+      }
       return (a.lastUsedAt ?? "").localeCompare(b.lastUsedAt ?? "");
     });
 }
