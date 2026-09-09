@@ -283,6 +283,11 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault" },
         { id: "cad-change-radar", label: "Change radar", legacyHref: "/cad-change-radar" },
         { id: "sketch-to-brief", label: "Sketch to brief", legacyHref: "/sketch-to-brief" },
+        // The learning track for new mechanical/design members — Onshape from
+        // the first sketch to a mated assembly, ending in an auto-graded part.
+        // Nested under CAD rather than added as a workbench: hubs.test.ts pins
+        // Build's four workbenches, and a training surface is not one of them.
+        { id: "cad-learn", label: "Learn CAD", legacyHref: "/cad-learn", featured: true },
       ]),
       { id: "code", label: "Code", legacyHref: "/code" },
       ...nest("code", [
