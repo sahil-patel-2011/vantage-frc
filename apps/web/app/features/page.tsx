@@ -8,7 +8,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Product — Vantage",
   description:
-    "What FRC teams open after sign-in: Competition, Team, Business, Build, AI, and Media — real tools, empty until your data is connected.",
+    "What FRC teams open after sign-in: Team, Build, Competition, and Business — every tool inside one of four workspaces, with Ask AI on every page.",
   path: "/features",
 });
 

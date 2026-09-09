@@ -10,9 +10,9 @@ import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/market
 import "./marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Vantage — FRC scouting, event day, CAD, and team ops",
+  title: "Vantage — one place for everything your FRC team does",
   description:
-    "Invite-only operations software for FIRST Robotics Competition teams: offline scouting, event day, alliance selection, CAD, Code Coach, business, and metered AI — sourced facts only, never DEMO metrics.",
+    "Invite-only workspace for FIRST Robotics Competition teams: learn CAD and code, run the shop, scout offline, pick the alliance, keep the money straight — one login for every student and mentor, with AI that helps and shows its work.",
   path: "/",
 });
 
@@ -30,10 +30,11 @@ export default function Home() {
           <div className="lux-hero-inner">
             <div className="lux-hero-copy">
               <p className="lux-kicker">For FRC teams · Invite-only</p>
-              <h1 id="lux-hero-title">The workspace your team actually runs.</h1>
+              <h1 id="lux-hero-title">One place for everything your team does.</h1>
               <p>
-                Offline scouting, event day, alliance selection, CAD, robot code, and season ops in one login. Screens
-                stay empty until TBA, scouting, or a connector has real data.
+                Learn CAD and code, run the shop, scout the event, pick the alliance, keep the money straight — one
+                login for every student and mentor, from a new member&rsquo;s first day to the last match. AI helps
+                with strategy, predictions and design, and shows its work.
               </p>
               <div className="actions">
                 <a className="button primary" href="#waitlist">
@@ -44,12 +45,13 @@ export default function Home() {
                 </a>
               </div>
               <ul className="mk-hero-proof">
-                <li>Invite-only</li>
-                <li>Empty until real data</li>
-                <li>CAD and code stay human-gated</li>
+                <li>Teaches new members</li>
+                <li>Works in the pit, offline</li>
+                <li>Your data stays yours</li>
               </ul>
               <p className="lux-hero-note">
-                Nothing on this page is live team data. Every surface stays empty until your team connects its own.
+                Invite-only while we bring teams on one at a time. Write to{" "}
+                <a href="mailto:sahiljpatel2011@gmail.com">sahiljpatel2011@gmail.com</a> to ask for one.
               </p>
             </div>
             <HeroProductPanel />

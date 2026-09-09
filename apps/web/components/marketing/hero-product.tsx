@@ -1,15 +1,15 @@
 /**
- * Hero visual: structure-only mock of Competition chrome.
- * Honest empty states — never invented match lists, EPA, or win rates.
+ * Hero visual: a structure-only mock of Home for a new member's first week.
+ * Illustrative UI, labelled as such — not a screenshot and not team data.
  */
 
-const rail = ["Home", "Compete", "Team", "Business"] as const;
-const tabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
+const rail = ["Home", "Compete", "Team", "Build"] as const;
+const tabs = ["Today", "Learn", "Files", "Ask AI"] as const;
 
-const briefing: readonly { label: string; value: string }[] = [
-  { label: "Active event", value: "Not connected" },
-  { label: "Next match", value: "Waiting on TBA" },
-  { label: "Scouting", value: "No entries yet" },
+const today: readonly { label: string; value: string }[] = [
+  { label: "Next meeting", value: "Tue 6 pm · build night" },
+  { label: "Due this week", value: "2 tasks · 1 part request" },
+  { label: "Learn CAD", value: "Lesson 5 of 14 · Name things" },
 ] as const;
 
 export function HeroProductPanel() {
@@ -21,7 +21,7 @@ export function HeroProductPanel() {
           <i />
           <i />
         </span>
-        <strong>Competition · Event day</strong>
+        <strong>Home · first week</strong>
         <b>Illustrative UI</b>
       </div>
 
@@ -29,7 +29,7 @@ export function HeroProductPanel() {
         <div className="mk-mock-main">
           <div className="mk-mock-tabs">
             {tabs.map((tab) => (
-              <span className={tab === "Event day" ? "is-active" : undefined} key={tab}>
+              <span className={tab === "Today" ? "is-active" : undefined} key={tab}>
                 {tab}
               </span>
             ))}
@@ -37,11 +37,11 @@ export function HeroProductPanel() {
 
           <article className="mk-mock-card">
             <header>
-              <strong>Pre-match briefing</strong>
-              <span>Setup required</span>
+              <strong>Good evening</strong>
+              <span>One login</span>
             </header>
             <dl className="mk-mock-rows">
-              {briefing.map((row) => (
+              {today.map((row) => (
                 <div key={row.label}>
                   <dt>{row.label}</dt>
                   <dd>{row.value}</dd>
@@ -49,24 +49,25 @@ export function HeroProductPanel() {
               ))}
             </dl>
             <p className="mk-mock-empty">
-              Event day, My Day, and checklists stay empty until this team’s TBA schedule is connected.
+              Calendar, tasks, files, chat, the learning track and the team&rsquo;s own docs — all here, nothing to
+              install and no second account.
             </p>
           </article>
 
           <div className="hero-teach-shot mk-mock-shot">
-            <span className="hero-teach-shot-tag">At the venue</span>
-            <p>Offline match and pit forms, QR handoff, and pit mesh — then sync when Wi-Fi returns.</p>
+            <span className="hero-teach-shot-tag">Ask AI</span>
+            <p>Strategy, match predictions, design help, writing — from your team&rsquo;s own data and the public record.</p>
             <div className="hero-teach-chips">
-              <span>Offline forms</span>
-              <span className="is-picked">Alliance desk</span>
+              <span>Predict our next match</span>
+              <span className="is-picked">Find a time for mechanical</span>
             </div>
-            <em>Strategy tools stay blank until scout entries and the public cache exist. No DEMO EPA.</em>
+            <em>It shows what it used, and says plainly when there is not enough to answer.</em>
           </div>
         </div>
 
         <div className="mk-mock-rail">
           {rail.map((item) => (
-            <span className={item === "Compete" ? "is-active" : undefined} key={item}>
+            <span className={item === "Home" ? "is-active" : undefined} key={item}>
               {item}
             </span>
           ))}
