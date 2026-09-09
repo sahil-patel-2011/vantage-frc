@@ -91,3 +91,40 @@ describe("parsePowerAction", () => {
     expect(() => parsePowerAction({ action: "overclock", orgId: "o1" })).toThrow(/Unsupported/);
   });
 });
+
+describe("summarizePower with unmeasured loads", () => {
+  const load = (name: string, typicalAmps: number | null) =>
+    ({ name, typicalAmps, peakAmps: null, breakerAmps: null }) as never;
+
+  it("does not report a safe verdict for a robot nobody has measured", () => {
+    // The shipped bug: `?? 0` summed unmeasured loads as zero, so fourteen
+    // unmeasured motors totalled 0 A, which is under any ceiling, and the page
+    // said "Brownout risk: no" about a robot nobody had measured.
+    const s = summarizePower([load("drive fl", null), load("drive fr", null), load("intake", null)]);
+    expect(s.totalTypicalAmps).toBe(0);
+    expect(s.brownoutRisk).toBeNull();
+    expect(s.brownoutRisk).not.toBe(false);
+    expect(s.unmeasuredCount).toBe(3);
+    expect(s.measuredCount).toBe(0);
+  });
+
+  it("withholds the verdict while any load is still unmeasured", () => {
+    const s = summarizePower([load("a", 10), load("b", 12), load("c", null)]);
+    expect(s.totalTypicalAmps).toBe(22); // measured only, not 22 + a fake 0
+    expect(s.brownoutRisk).toBeNull();
+    expect(s.unmeasuredCount).toBe(1);
+  });
+
+  it("still calls a real overload even when the picture is incomplete", () => {
+    // More unmeasured draw can only make an overload worse, so this one is
+    // safe to report without full coverage.
+    const s = summarizePower([load("a", 90), load("b", 40), load("c", null)], 100);
+    expect(s.brownoutRisk).toBe(true);
+  });
+
+  it("gives a definite no only when every load is measured", () => {
+    const s = summarizePower([load("a", 10), load("b", 12)], 100);
+    expect(s.brownoutRisk).toBe(false);
+    expect(s.unmeasuredCount).toBe(0);
+  });
+});
