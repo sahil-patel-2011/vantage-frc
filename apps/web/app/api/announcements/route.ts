@@ -77,10 +77,16 @@ export async function GET(request: Request) {
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await resolveMembership(client, session.user.id, requestedOrg);
       if (outstandingFor) {
+        // Who has not acknowledged a required notice is a leadership view. The
+        // page only offers the control to owners and admins, but the server was
+        // not enforcing it, so any member — including a viewer — could read the
+        // list, which falls back to a teammate's email address when no name is
+        // set. Client-side gating is not authorization.
+        requireAdmin(membership);
         return {
           orgId: membership.orgId,
           orgName: membership.orgName,
-          canPost: membership.role === "owner" || membership.role === "admin",
+          canPost: true,
           outstanding: await outstandingAcks(client, membership.orgId, outstandingFor),
           announcements: [],
         };
