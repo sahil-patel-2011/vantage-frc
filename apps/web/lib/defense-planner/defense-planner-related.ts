@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Defense Planner (never DEMO defense metrics). */
@@ -80,19 +81,19 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist — never DEMO rankings.",
+      detail: "Event strategy stays empty until real metrics exist — no sample rankings.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them — no sample scores.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "counter-book",
       label: "Open Counter-book",
-      detail: "Opponent tendencies stay blank until scout samples exist — never DEMO averages.",
+      detail: "Opponent tendencies stay blank until scout samples exist — no sample averages.",
       href: hubHref("/competition", "counter-book", orgId),
     },
   ];
@@ -193,56 +194,10 @@ export function defensePlannerNextActions(input: {
   const hasProfile = input.hasProfile ?? false;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Defense plans are org-scoped — pick a team before logging matchups.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Defense Planner can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before logging defensive matchups.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Log match scouting so cycle paths have real samples.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-      {
-        id: "counter-book",
-        label: "Open Counter-book",
-        detail: "Pair qualitative counters with quantitative defense plans.",
-        href: hubHref("/competition", "counter-book", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of defensePlannerSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(defensePlannerSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

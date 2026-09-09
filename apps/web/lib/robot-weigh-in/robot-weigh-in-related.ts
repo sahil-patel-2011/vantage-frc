@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Robot Weigh-In (never DEMO scale readings). */
@@ -165,50 +166,10 @@ export function robotWeighInNextActions(input: {
   const playoffReweighCue = input.playoffReweighCue?.trim() || null;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Weigh-ins are org-scoped — pick a team before logging scale readings.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "readiness",
-          label: "Open Readiness Score",
-          detail: "Readiness stays blank until real build signals exist.",
-          href: hubHref("/build", "readiness-score", null),
-        },
-        {
-          id: "inspection",
-          label: "Open Inspection Copilot",
-          detail: "Inspection checks stay empty until you configure them.",
-          href: hubHref("/build", "inspection-copilot", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Robot Weigh-In can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "readiness",
-        label: "Open Readiness Score",
-        detail: "Weight margin feeds competition readiness.",
-        href: hubHref("/build", "readiness-score", orgId),
-      },
-      {
-        id: "inspection",
-        label: "Open Inspection Copilot",
-        detail: "Pair event weigh-ins with inspection readiness.",
-        href: hubHref("/build", "inspection-copilot", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of robotWeighInSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(robotWeighInSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

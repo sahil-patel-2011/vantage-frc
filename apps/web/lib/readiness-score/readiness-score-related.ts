@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Robot Readiness Score (never DEMO readiness metrics). */
@@ -80,19 +81,19 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Open failure modes stay blank until real rows exist — never DEMO RPN.",
+      detail: "Open failure modes stay blank until real rows exist — no sample RPN.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "inspection-copilot",
       label: "Open Inspection Copilot",
-      detail: "Weight / frame / wiring readiness stays blank until measurements exist — never DEMO risk.",
+      detail: "Weight / frame / wiring readiness stays blank until measurements exist — no sample risk.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
     {
       id: "code",
       label: "Open Code Coach",
-      detail: "Code state stays honest without inventing DEMO deploy status.",
+      detail: "Code state stays honest and shows no sample deploy status.",
       href: hubHref("/build", "code", orgId),
     },
   ];
@@ -198,56 +199,10 @@ export function readinessScoreNextActions(input: {
   const fixCount = input.fixCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Readiness is org-scoped — pick a team before logging subsystems.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "fmea",
-          label: "Open FMEA",
-          detail: "Open failure modes stay blank until real rows exist — never DEMO RPN.",
-          href: hubHref("/build", "fmea", null),
-        },
-        {
-          id: "inspection-copilot",
-          label: "Open Inspection Copilot",
-          detail: "Inspection readiness stays blank until measurements exist — never DEMO risk.",
-          href: hubHref("/build", "inspection-copilot", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Readiness Score can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "Open failures feed the readiness fix list from real rows only.",
-        href: hubHref("/build", "fmea", orgId),
-      },
-      {
-        id: "inspection-copilot",
-        label: "Open Inspection Copilot",
-        detail: "Weight / frame / wiring checks sit beside the ship index.",
-        href: hubHref("/build", "inspection-copilot", orgId),
-      },
-      {
-        id: "code",
-        label: "Open Code Coach",
-        detail: "Code-version state pairs with subsystem deploy status.",
-        href: hubHref("/build", "code", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of readinessScoreSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(readinessScoreSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

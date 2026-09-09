@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Team Health (never DEMO morale). */
@@ -73,13 +74,13 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Engagement stays blank until real roll-call entries exist — never DEMO morale.",
+      detail: "Engagement stays blank until real roll-call entries exist — no sample morale.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Shop-time engagement stays blank until members clock in — never DEMO hours.",
+      detail: "Shop-time engagement stays blank until members clock in — no sample hours.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
   ];
@@ -183,27 +184,10 @@ export function teamHealthNextActions(input: {
   const orgId = input.orgId ?? null;
 
   if (!orgId || input.shell === "setup") {
-    return [
-      {
-        id: "workspace",
-        label: orgId ? "Open Workspace" : "Select workspace",
-        detail: "Team Health is org-scoped — pick a team before reading engagement.",
-        href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-        primary: true,
-      },
-      {
-        id: "attendance",
-        label: "Open Attendance",
-        detail: "Roll call stays blank until a meeting is logged.",
-        href: hubHref("/team", "attendance", orgId),
-      },
-      {
-        id: "hours-self-view",
-        label: "Open My Hours",
-        detail: "Shop hours stay empty until members clock in.",
-        href: hubHref("/team", "hours-self-view", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of teamHealthSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(teamHealthSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

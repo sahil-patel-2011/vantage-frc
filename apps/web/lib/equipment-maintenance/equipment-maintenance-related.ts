@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Equipment Maintenance (never DEMO service logs). */
@@ -163,50 +164,10 @@ export function equipmentMaintenanceNextActions(input: {
   const overdueCount = input.overdueCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Equipment logs are org-scoped — pick a team before registering machines.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "tools",
-          label: "Open Tool Checkout",
-          detail: "Hand-tool loans stay blank until you register tools.",
-          href: hubHref("/team", "tool-checkout", null),
-        },
-        {
-          id: "safety",
-          label: "Open Safety Training",
-          detail: "Training stays empty until completions are logged.",
-          href: hubHref("/team", "safety-training", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Equipment Maintenance can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "tools",
-        label: "Open Tool Checkout",
-        detail: "Track hand tools beside shop machines.",
-        href: hubHref("/team", "tool-checkout", orgId),
-      },
-      {
-        id: "safety",
-        label: "Open Safety Training",
-        detail: "Confirm operators completed required training.",
-        href: hubHref("/team", "safety-training", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of equipmentMaintenanceSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(equipmentMaintenanceSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

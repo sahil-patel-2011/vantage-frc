@@ -309,22 +309,27 @@ export function strategyNextActions(input: {
   }
 
   if (input.shell === "empty") {
-    const needsTba = input.tbaConfigured === false;
-    const needsMetrics = input.hasMetrics === false;
+    const needsReferenceData = input.tbaConfigured === false || input.hasMetrics === false;
+    // When reference data is already loaded the primary action IS Event Day, so
+    // the trailing "Open Event Day" below would be the same id and the same href
+    // listed twice — "Check Event Day schedule" over "Open Event Day".
     return [
-      {
-        id: needsTba || needsMetrics ? "team-data" : "command",
-        label: needsTba || needsMetrics ? "Sync event metrics" : "Check Event Day schedule",
-        detail:
-          needsTba || needsMetrics
-            ? "Load The Blue Alliance and Statbotics for this event. Win chance stays blank until then."
-            : "Confirm a scheduled match for your team.",
-        href:
-          needsTba || needsMetrics
-            ? withOrgHref("/team/data", orgId)
-            : hubHref("/competition", "command", orgId),
-        primary: true,
-      },
+      needsReferenceData
+        ? {
+            id: "team-data",
+            label: "Sync event metrics",
+            detail:
+              "Load The Blue Alliance and Statbotics for this event. Win chance stays blank until then.",
+            href: withOrgHref("/team/data", orgId),
+            primary: true,
+          }
+        : {
+            id: "command",
+            label: "Check Event Day schedule",
+            detail: "Confirm a scheduled match for your team.",
+            href: hubHref("/competition", "command", orgId),
+            primary: true,
+          },
       {
         id: "pick-desk",
         label: "Open Pick desk",
@@ -337,12 +342,16 @@ export function strategyNextActions(input: {
         detail: "Add match notes so factors deepen once a matchup loads.",
         href: hubHref("/competition", "scouting", orgId),
       },
-      {
-        id: "command",
-        label: "Open Event Day",
-        detail: "Confirm the active event and schedule sync status.",
-        href: hubHref("/competition", "command", orgId),
-      },
+      ...(needsReferenceData
+        ? [
+            {
+              id: "command",
+              label: "Open Event Day",
+              detail: "Confirm the active event and schedule sync status.",
+              href: hubHref("/competition", "command", orgId),
+            },
+          ]
+        : []),
     ];
   }
 

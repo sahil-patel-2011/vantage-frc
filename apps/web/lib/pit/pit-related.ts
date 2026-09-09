@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 import { isPitBoardLive, type PitBoardFlags } from "./board";
 
@@ -93,19 +94,19 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — never DEMO health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "match-checklist",
       label: "Open Match checklist",
-      detail: "Timed pit prep stays blank until you check real items — never DEMO progress.",
+      detail: "Timed pit prep stays blank until you check real items — no sample progress.",
       href: hubHref("/competition", "match-checklist", orgId),
     },
     {
       id: "command",
       label: "Open Event Day",
-      detail: "Active event and match queues stay empty until TBA context syncs — never DEMO schedules.",
+      detail: "Active event and match queues stay empty until TBA context syncs — no sample schedules.",
       href: hubHref("/competition", "command", orgId),
     },
   ];
@@ -244,62 +245,10 @@ export function pitNextActions(input: {
   const activeBatteries = input.activeBatteries ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Pit release evidence is org-scoped — pick a team before logging the board.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "batteries",
-          label: "Open Batteries",
-          detail: "IR and cycles stay blank until logged — never DEMO health scores.",
-          href: hubHref("/team", "batteries", null),
-        },
-        {
-          id: "match-checklist",
-          label: "Open Match checklist",
-          detail: "Timed pit prep stays blank until you check real items — never DEMO progress.",
-          href: hubHref("/competition", "match-checklist", null),
-        },
-        {
-          id: "command",
-          label: "Open Event Day",
-          detail: "Match queues stay empty until an active event syncs — never DEMO schedules.",
-          href: hubHref("/competition", "command", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Pit Command can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "batteries",
-        label: "Open Batteries",
-        detail: "Log IR and cycle evidence for the same fleet.",
-        href: hubHref("/team", "batteries", orgId),
-      },
-      {
-        id: "match-checklist",
-        label: "Open Match checklist",
-        detail: "Timed pre-match prep shares the same pit context.",
-        href: hubHref("/competition", "match-checklist", orgId),
-      },
-      {
-        id: "command",
-        label: "Open Event Day",
-        detail: "Confirm the active event before expecting next-match countdowns.",
-        href: hubHref("/competition", "command", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of pitSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(pitSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

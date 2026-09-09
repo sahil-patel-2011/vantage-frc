@@ -1,4 +1,5 @@
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for `/workspace` join / select. */
 export const WORKSPACE_RELATED_LINKS = [
@@ -205,19 +206,7 @@ export function workspaceJoinNextActions(
     ];
   }
 
-  return [
-    {
-      id: "invite",
-      label: "Open invite from email",
-      detail: "Use the full invitation link.",
-      href: "/invite",
-      primary: true,
-    },
-    {
-      id: "claim",
-      label: "Claim your FRC team",
-      detail: "Verified accounts can create one workspace per unused TBA team number.",
-      href: "/claim",
-    },
-  ];
+  // One list, not two: workspaceSetupSteps is the source. This was a second
+  // hand-written copy of the same two links with different wording.
+  return setupActionsFrom(workspaceSetupSteps());
 }

@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Grant Report (never DEMO grant dollars). */
@@ -218,39 +219,10 @@ export function grantReportNextActions(input: {
   const reportCount = input.reportCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Grant reports are org-scoped — pick a team before tracking awards.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "grants",
-          label: "Open Grants",
-          detail: "Awarded amounts stay blank until real grants land — never DEMO dollars.",
-          href: hubHref("/business", "grants", null),
-        },
-        {
-          id: "grant-workbench",
-          label: "Open Grants workbench",
-          detail: "Applications stay empty until you log them — never invent DEMO awards.",
-          href: withOrgHref("/team/grants", null),
-        },
-        {
-          id: "impact",
-          label: "Open Community Impact",
-          detail: "Outreach stays blank until your team logs it — never DEMO hours.",
-          href: hubHref("/business", "impact", null),
-        },
-      ];
-    }
-    return grantReportSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of grantReportSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(grantReportSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Award Tracker (never DEMO win rates). */
@@ -200,39 +201,10 @@ export function awardTrackerNextActions(input: {
   const dueSoonCount = input.dueSoonCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Award submissions are org-scoped — pick a team before tracking deadlines.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "evidence",
-          label: "Open Awards",
-          detail: "Award evidence stays blank until your team uploads it — never DEMO packets.",
-          href: hubHref("/business", "evidence", null),
-        },
-        {
-          id: "awards-workbench",
-          label: "Open Awards workbench",
-          detail: "Packets stay empty until real uploads exist — never invent DEMO awards.",
-          href: withOrgHref("/team/awards", null),
-        },
-        {
-          id: "impact-essay",
-          label: "Open Impact Essay",
-          detail: "Essay drafts stay blank until grounded outreach exists — never DEMO awards.",
-          href: hubHref("/business", "impact-essay", null),
-        },
-      ];
-    }
-    return awardTrackerSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of awardTrackerSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(awardTrackerSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
