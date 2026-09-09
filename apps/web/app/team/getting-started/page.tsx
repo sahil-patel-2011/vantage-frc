@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "../../../components/ui";
 import GettingStartedClient from "./getting-started-client";
 import "../../start/start.css";
 
@@ -11,6 +12,27 @@ export default async function TeamGettingStartedPage({
   searchParams: Promise<{ orgId?: string }>;
 }) {
   const { orgId } = await searchParams;
-  if (!orgId) return <main className="content"><h1>Select an organization</h1></main>;
+  if (!orgId) {
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Getting started"
+          title="Getting started"
+          description="The setup checklist tracks one team’s real progress — pick the workspace first."
+        />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose a team"
+          description="Each step is ticked from that workspace’s own data, so it needs a team before it can say anything true."
+        >
+          <a className="app-button" href="/workspace">
+            Choose team
+          </a>
+        </EmptyState>
+      </main>
+    );
+  }
   return <GettingStartedClient orgId={orgId} />;
 }

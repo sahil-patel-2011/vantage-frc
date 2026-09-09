@@ -1,3 +1,4 @@
+import { EmptyState, PageHeader } from "../../../components/ui";
 import AuditLogClient from "./audit-client";
 
 export const metadata = {
@@ -10,7 +11,28 @@ export default async function TeamAuditPage({
   searchParams: Promise<{ orgId?: string }>;
 }) {
   const { orgId } = await searchParams;
-  if (!orgId) return <main className="content"><h1>Select an organization</h1></main>;
+  if (!orgId) {
+    return (
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Audit"
+          title="Audit"
+          description="The membership, capability, and auth-policy trail belongs to one team — pick the workspace first."
+        />
+        <EmptyState
+          soft
+          badge="Team needed"
+          badgeTone="setup"
+          title="Choose a team"
+          description="Audit rows never cross workspaces. Select the team whose trail you want to read."
+        >
+          <a className="app-button" href="/workspace">
+            Choose team
+          </a>
+        </EmptyState>
+      </main>
+    );
+  }
   return (
     <main className="intel-app">
       <header className="intel-header">
