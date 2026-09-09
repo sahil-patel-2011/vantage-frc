@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   buildAllianceMatchup,
   buildAllianceWinBreakdown,
@@ -924,10 +925,14 @@ export async function computeStrategyView(
     );
   }
 
-  let engineeringContext: StrategyEngineeringContext[] = [];
-  try {
-    engineeringContext = (
-      await client.query<StrategyEngineeringContext>(
+  // Deploys may briefly run before the cross-feature graph migration lands, so
+  // this read is optional — under a savepoint, because the plain catch aborted
+  // the transaction and took Private Edge and everything after it down too.
+  const engineeringContext: StrategyEngineeringContext[] = await withSavepoint(
+    client,
+    async () =>
+      (
+        await client.query<StrategyEngineeringContext>(
         `SELECT j.id AS "jobId",j.title,j.status,j.platform,
                 COALESCE(j.brief->'requirements','[]'::jsonb) AS requirements,
                 COALESCE(j.brief->'constraints','[]'::jsonb) AS constraints,
@@ -946,31 +951,34 @@ export async function computeStrategyView(
          ) a ON true
          WHERE l.org_id=$1 AND l.source_kind='strategy_match' AND l.source_id=$2
          ORDER BY j.updated_at DESC LIMIT 6`,
-        [row.orgId, upcoming.matchKey],
-      )
-    ).rows;
-  } catch {
-    // Deploys may briefly run before the cross-feature graph migration lands.
-  }
+          [row.orgId, upcoming.matchKey],
+        )
+      ).rows,
+    [],
+  );
 
   const ourTeamKey = `frc${row.teamNumber}`;
   const publicEpaByTeam = new Map(metricRows.map((metric) => [metric.teamKey, metric.epaTotal]));
-  let privateEdge: PrivateEdgeView | undefined;
-  try {
-    privateEdge = await computePrivateEdgeView(client, {
-      orgId: row.orgId,
-      eventKey: row.eventKey!,
-      matchKey: upcoming.matchKey,
-      ourTeamKey,
-      ourAlliance,
-      red,
-      blue,
-      operations,
-      publicEpaByTeam,
-    });
-  } catch {
-    privateEdge = undefined;
-  }
+  // Private Edge is the optional half of the strategy view. Savepointed so a
+  // failure there costs the Edge panel and not the whole match strategy screen —
+  // the bare catch left the transaction aborted, and everything the caller read
+  // afterwards came back empty on a competition day.
+  const privateEdge: PrivateEdgeView | undefined = await withSavepoint(
+    client,
+    () =>
+      computePrivateEdgeView(client, {
+        orgId: row.orgId,
+        eventKey: row.eventKey!,
+        matchKey: upcoming.matchKey,
+        ourTeamKey,
+        ourAlliance,
+        red,
+        blue,
+        operations,
+        publicEpaByTeam,
+      }),
+    undefined,
+  );
 
   return {
     status: "live",

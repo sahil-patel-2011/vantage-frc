@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Tool Checkout (never DEMO loan ledgers). */
@@ -165,50 +166,10 @@ export function toolCheckoutNextActions(input: {
   const overdueCount = input.overdueCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Tool loans are org-scoped — pick a team before registering tools.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "equipment",
-          label: "Open Equipment Maintenance",
-          detail: "Shop machines stay blank until you add them.",
-          href: hubHref("/team", "equipment-maintenance", null),
-        },
-        {
-          id: "inventory",
-          label: "Open Inventory",
-          detail: "Stock locations stay empty until parts are logged.",
-          href: "/inventory",
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Tool Checkout can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "equipment",
-        label: "Open Equipment Maintenance",
-        detail: "Track mills and printers beside hand-tool loans.",
-        href: hubHref("/team", "equipment-maintenance", orgId),
-      },
-      {
-        id: "inventory",
-        label: "Open Inventory",
-        detail: "Cross-check asset tags with stock locations.",
-        href: withOrgHref("/inventory", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of toolCheckoutSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(toolCheckoutSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

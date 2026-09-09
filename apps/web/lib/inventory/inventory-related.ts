@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Inventory (never DEMO stock metrics). */
@@ -84,19 +85,19 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
     {
       id: "vendors",
       label: "Open Vendors",
-      detail: "Supplier contacts stay blank until you add them — never DEMO directory rows.",
+      detail: "Supplier contacts stay blank until you add them — no sample directory rows.",
       href: withOrgHref("/vendors", orgId),
     },
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+      detail: "Purchase orders stay empty until drafted — no sample PO totals.",
       href: hubHref("/business", "orders", orgId),
     },
     {
       id: "spare-forecast",
       label: "Open Spare Forecast",
-      detail: "Exhaustion projections stay blank until spare bins exist — never DEMO rates.",
+      detail: "Exhaustion projections stay blank until spare bins exist — no sample rates.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
   ];
@@ -199,62 +200,10 @@ export function inventoryNextActions(input: {
   const outOfStockCount = input.outOfStockCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Inventory is org-scoped — pick a team before tracking parts.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "vendors",
-          label: "Open Vendors",
-          detail: "Supplier contacts stay blank until added — never DEMO directory rows.",
-          href: withOrgHref("/vendors", null),
-        },
-        {
-          id: "orders",
-          label: "Open Orders",
-          detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
-          href: hubHref("/business", "orders", null),
-        },
-        {
-          id: "spare-forecast",
-          label: "Open Spare Forecast",
-          detail: "Exhaustion projections stay blank until spare bins exist — never DEMO rates.",
-          href: hubHref("/build", "spare-forecast", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Inventory can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "vendors",
-        label: "Open Vendors",
-        detail: "When you restock, pick suppliers you already trust.",
-        href: withOrgHref("/vendors", orgId),
-      },
-      {
-        id: "orders",
-        label: "Open Orders",
-        detail: "Turn low-stock parts into real purchase orders.",
-        href: hubHref("/business", "orders", orgId),
-      },
-      {
-        id: "spare-forecast",
-        label: "Open Spare Forecast",
-        detail: "Project which spare bins will run out once inventory exists.",
-        href: hubHref("/build", "spare-forecast", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of inventorySetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(inventorySetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -4,11 +4,11 @@ import {
   DEFAULT_COCKPIT_PREFS,
   clipBugbotInstructions,
   cockpitEquals,
-  loadCockpitPrefs,
   parseCockpitPrefs,
   saveCockpitPrefs,
   shouldPollWhileVisible,
 } from "./prefs";
+import { loadCockpitPrefs } from "./load-prefs";
 
 const KNOBS = [
   "confirmWrites",

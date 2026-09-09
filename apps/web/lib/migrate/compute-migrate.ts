@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepointOrThrow } from "@vantage/db";
 import { importScoutData, type FieldType, type SchemaDefinition } from "@vantage/scouting";
 import { ScoutingRepository } from "@vantage/scouting/repository";
 import { createOrganizationInvite, deliverInviteEmail, type OrgRole } from "@vantage/core";
@@ -782,11 +783,19 @@ export async function commitInviteDrafts(
     if (!email || seen.has(email)) continue;
     seen.add(email);
     try {
-      const invite = await createOrganizationInvite(client, input.userId, {
-        orgId: input.orgId,
-        email,
-        role: input.role,
-      });
+      // Per-email savepoint. One duplicate address raises a unique violation,
+      // which aborts the transaction — so the plain catch recorded that email as
+      // failed and then every remaining invite failed too, with "current
+      // transaction is aborted" as its reason, and none of the invites already
+      // created survived the COMMIT. The owner saw an import that reported
+      // partial success and delivered nothing.
+      const invite = await withSavepointOrThrow(client, () =>
+        createOrganizationInvite(client, input.userId, {
+          orgId: input.orgId,
+          email,
+          role: input.role,
+        }),
+      );
       result.invited += 1;
       if (input.sendEmail) {
         const delivery = await deliverInviteEmail(invite);

@@ -1,3 +1,4 @@
+import { withSavepoint } from "@vantage/db";
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
 import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
 import { recordPickListInfluence } from "../../../../lib/scouting/pick-feedback";
@@ -38,19 +39,23 @@ export async function POST(request: Request) {
         name: body.name!,
         entries: body.entries!,
       });
-      let influence = { attributed: 0, notified: 0 };
-      try {
-        influence = await recordPickListInfluence(client, {
-          orgId: body.orgId!,
-          eventKey: body.eventKey!,
-          pickListId: id,
-          listName: body.name!.trim(),
-          entries: body.entries!,
-          recordedBy: userId,
-        });
-      } catch {
-        // Influence tables may be mid-migrate; pick list save still succeeds.
-      }
+      // Influence tables may be mid-migrate. Savepointed so that stays true: the
+      // bare catch it replaces aborted the transaction, so the pick list this
+      // request had just saved was rolled back at COMMIT and the route still
+      // answered 201 with its id — on an alliance-selection afternoon.
+      const influence = await withSavepoint(
+        client,
+        () =>
+          recordPickListInfluence(client, {
+            orgId: body.orgId!,
+            eventKey: body.eventKey!,
+            pickListId: id,
+            listName: body.name!.trim(),
+            entries: body.entries!,
+            recordedBy: userId,
+          }),
+        { attributed: 0, notified: 0 },
+      );
       return { id, influence };
     });
     return Response.json(result, { status: 201 });

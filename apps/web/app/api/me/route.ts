@@ -1,5 +1,5 @@
 import { auth, listMemberHubAccess } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
@@ -101,54 +101,58 @@ export async function GET(request: Request) {
       let outsideGrants: boolean | null = null;
       let sponsorsAllowed: boolean | null = null;
       if (activeMembership?.orgId) {
-        try {
-          const entitlement = await client.query<{ planCode: string; status: string }>(
-            `SELECT e.plan_code AS "planCode", e.status
-             FROM org_entitlements e
-             WHERE e.org_id = $1::uuid
-             LIMIT 1`,
-            [activeMembership.orgId],
-          );
-          planCode = entitlement.rows[0]?.planCode ?? null;
-          planStatus = entitlement.rows[0]?.status ?? null;
-        } catch {
-          planCode = null;
-          planStatus = null;
-        }
-        try {
-          if (activeMembership.role === "owner" || activeMembership.role === "admin") {
-            hubAccess = [];
-          } else {
-            hubAccess = await listMemberHubAccess(client, activeMembership.orgId, session.user.id);
-          }
-        } catch {
-          hubAccess = [];
-        }
-        try {
-          const funding = await client.query<{
-            teamAffiliation: string | null;
-            schoolFunded: boolean | null;
-            outsideGrants: boolean | null;
-            sponsorsAllowed: boolean | null;
-          }>(
+        // Three tolerant reads in a row, on one transaction. Whichever failed
+        // first used to abort it, so the two after it silently returned their
+        // fallbacks too: /api/me — the endpoint the whole shell reads — reported
+        // no plan, no hub access and no funding profile at once, from a 200,
+        // because one of the three was unavailable. Each takes a savepoint now.
+        const entitlement = await withSavepoint(
+          client,
+          () =>
+            client.query<{ planCode: string; status: string }>(
+              `SELECT e.plan_code AS "planCode", e.status
+               FROM org_entitlements e
+               WHERE e.org_id = $1::uuid
+               LIMIT 1`,
+              [activeMembership.orgId],
+            ),
+          null,
+        );
+        planCode = entitlement?.rows[0]?.planCode ?? null;
+        planStatus = entitlement?.rows[0]?.status ?? null;
+
+        hubAccess =
+          activeMembership.role === "owner" || activeMembership.role === "admin"
+            ? []
+            : await withSavepoint(
+                client,
+                () => listMemberHubAccess(client, activeMembership.orgId, session.user.id),
+                [],
+              );
+
+        const funding = await withSavepoint(
+          client,
+          () =>
+            client.query<{
+              teamAffiliation: string | null;
+              schoolFunded: boolean | null;
+              outsideGrants: boolean | null;
+              sponsorsAllowed: boolean | null;
+            }>(
             `SELECT team_affiliation AS "teamAffiliation",
                     school_funded AS "schoolFunded",
                     outside_grants AS "outsideGrants",
                     sponsors_allowed AS "sponsorsAllowed"
-             FROM organizations WHERE id = $1::uuid`,
-            [activeMembership.orgId],
-          );
-          const row = funding.rows[0];
-          teamAffiliation = row?.teamAffiliation ?? null;
-          schoolFunded = row?.schoolFunded ?? null;
-          outsideGrants = row?.outsideGrants ?? null;
-          sponsorsAllowed = row?.sponsorsAllowed ?? null;
-        } catch {
-          teamAffiliation = null;
-          schoolFunded = null;
-          outsideGrants = null;
-          sponsorsAllowed = null;
-        }
+               FROM organizations WHERE id = $1::uuid`,
+              [activeMembership.orgId],
+            ),
+          null,
+        );
+        const row = funding?.rows[0];
+        teamAffiliation = row?.teamAffiliation ?? null;
+        schoolFunded = row?.schoolFunded ?? null;
+        outsideGrants = row?.outsideGrants ?? null;
+        sponsorsAllowed = row?.sponsorsAllowed ?? null;
       }
       return {
         platformAdmin: Boolean(platform.rowCount),

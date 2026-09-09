@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Battery Rotation (never DEMO IR / charge metrics). */
@@ -100,19 +101,19 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — never DEMO health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "battery-health-forecast",
       label: "Open Health Forecast",
-      detail: "Retirement projections stay blank until IR + cycle history exists — never DEMO EOL dates.",
+      detail: "Retirement projections stay blank until IR + cycle history exists — no sample EOL dates.",
       href: hubHref("/build", "battery-health-forecast", orgId),
     },
     {
       id: "pit",
       label: "Open Pit Command",
-      detail: "Event-day rack status uses the same real pack evidence — never DEMO volts.",
+      detail: "Event-day rack status uses the same real pack evidence — no sample volts.",
       href: withOrgHref("/pit", orgId),
     },
   ];
@@ -221,62 +222,10 @@ export function batteryRotationNextActions(input: {
   const upcomingAssignments = input.upcomingAssignments ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Rotation plans are org-scoped — pick a team before scheduling packs.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "batteries",
-          label: "Open Batteries",
-          detail: "IR and cycles stay blank until logged — never DEMO health scores.",
-          href: hubHref("/team", "batteries", null),
-        },
-        {
-          id: "battery-health-forecast",
-          label: "Open Health Forecast",
-          detail: "Retirement dates stay blank until IR history exists — never DEMO EOL metrics.",
-          href: hubHref("/build", "battery-health-forecast", null),
-        },
-        {
-          id: "pit",
-          label: "Open Pit Command",
-          detail: "Event-day rack status stays empty until packs are tracked — never DEMO volts.",
-          href: withOrgHref("/pit", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Battery Rotation can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "batteries",
-        label: "Open Batteries",
-        detail: "Log IR and cycle evidence for the same fleet.",
-        href: hubHref("/team", "batteries", orgId),
-      },
-      {
-        id: "battery-health-forecast",
-        label: "Open Health Forecast",
-        detail: "Project pack retirement from the same IR history.",
-        href: hubHref("/build", "battery-health-forecast", orgId),
-      },
-      {
-        id: "pit",
-        label: "Open Pit Command",
-        detail: "Event-day rack status uses the same pack evidence.",
-        href: withOrgHref("/pit", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of batteryRotationSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(batteryRotationSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

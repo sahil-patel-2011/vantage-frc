@@ -1,5 +1,5 @@
 import { assertOrgCapability, auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { notifyNextMatchReady } from "../../../../lib/notify-match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
@@ -119,25 +119,26 @@ export async function POST(request: Request) {
          WHERE o.id = $1::uuid`,
         [body.orgId, eventKey],
       );
-      let matchNotify: Awaited<ReturnType<typeof notifyNextMatchReady>> | null = null;
-      try {
-        matchNotify = await notifyNextMatchReady(client, {
-          orgId: body.orgId,
-          actorUserId: session.user.id,
-          eventKey,
-          eventName: orgMeta.rows[0]?.eventName ?? null,
-          teamNumber: orgMeta.rows[0]?.teamNumber ?? null,
-          announce: true,
-        });
-      } catch {
-        // Stays null — the SQL fingerprint path below still runs.
-      }
+      // notifyNextMatchReady savepoints itself and reports status "failed" rather
+      // than throwing, so the SQL fingerprint path below still runs on a live
+      // transaction — which the previous bare catch could not deliver.
+      const matchNotify = await notifyNextMatchReady(client, {
+        orgId: body.orgId,
+        actorUserId: session.user.id,
+        eventKey,
+        eventName: orgMeta.rows[0]?.eventName ?? null,
+        teamNumber: orgMeta.rows[0]?.teamNumber ?? null,
+        announce: true,
+      });
       // Prefer SQL fingerprint alerts when migration 0155 is applied; fall back is matchNotify above.
-      try {
-        await client.query(`SELECT emit_match_schedule_alerts(ARRAY[$1::text])`, [eventKey]);
-      } catch {
-        // Function missing until 0155_my_day_schedule_alerts migrates — inbox still got matchNotify.
-      }
+      // Savepointed: the function is genuinely absent before 0155, and swallowing
+      // that plainly aborted the transaction — which discarded the
+      // org_live_subscriptions upsert this request had just made, behind a 200.
+      await withSavepoint(
+        client,
+        () => client.query(`SELECT emit_match_schedule_alerts(ARRAY[$1::text])`, [eventKey]),
+        null,
+      );
       return { summary, matchNotify };
     });
     return Response.json({ success: true, ...result });

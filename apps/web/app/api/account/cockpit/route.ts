@@ -1,11 +1,8 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import {
-  DEFAULT_COCKPIT_PREFS,
-  loadCockpitPrefs,
-  saveCockpitPrefs,
-} from "../../../../lib/cockpit/prefs";
+import { DEFAULT_COCKPIT_PREFS, saveCockpitPrefs } from "../../../../lib/cockpit/prefs";
+import { loadCockpitPrefs } from "../../../../lib/cockpit/load-prefs";
 
 export const dynamic = "force-dynamic";
 

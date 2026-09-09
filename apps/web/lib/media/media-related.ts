@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 import { isMediaWorkspaceEmpty } from ".";
 
@@ -94,7 +95,7 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
     {
       id: "outreach-calendar",
       label: "Schedule outreach",
-      detail: "Press and demo dates stay empty until you add real events — never DEMO reach.",
+      detail: "Press and demo dates stay empty until you add real events — no sample reach.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },
     {
@@ -204,33 +205,10 @@ export function mediaNextActions(input: {
   const upcomingCount = input.upcomingCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Media tools are org-scoped — pick a team before recording assets.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "media-kit",
-          label: "Open Media Kit",
-          detail: "Press kits stay blank until real profile fields land — never DEMO logos.",
-          href: "/media-kit",
-        },
-        {
-          id: "outreach-calendar",
-          label: "Open Outreach Calendar",
-          detail: "Outreach stays empty until you schedule real events — never invent DEMO reach.",
-          href: hubHref("/business", "outreach-calendar", null),
-        },
-      ];
-    }
-    return mediaSetupSteps(orgId).map((step, index) => ({
-      ...step,
-      primary: index === 0,
-    }));
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of mediaSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(mediaSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

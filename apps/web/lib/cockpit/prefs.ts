@@ -38,7 +38,7 @@ function asMode(value: unknown): CockpitBugbotMode {
   return value === "ultra" || value === "subscription" ? value : DEFAULT_COCKPIT_PREFS.defaultBugbotMode;
 }
 
-type CockpitQueryClient = {
+export type CockpitQueryClient = {
   query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<{ cockpitPrefs?: unknown }> }>;
 };
 
@@ -82,21 +82,6 @@ export function shouldPollWhileVisible(
 ): boolean {
   if (!pauseWhenHidden) return true;
   return visibilityState !== "hidden";
-}
-
-export async function loadCockpitPrefs(
-  client: CockpitQueryClient,
-  userId: string,
-): Promise<CockpitPrefs> {
-  try {
-    const result = await client.query(
-      `SELECT cockpit_prefs AS "cockpitPrefs" FROM profiles WHERE user_id = $1::uuid`,
-      [userId],
-    );
-    return parseCockpitPrefs(result.rows[0]?.cockpitPrefs);
-  } catch {
-    return { ...DEFAULT_COCKPIT_PREFS };
-  }
 }
 
 /** Column-scoped upsert — never touches appearance / island / notification prefs. */

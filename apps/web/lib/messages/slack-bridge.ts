@@ -1,7 +1,16 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { formatSlackBridgeMessage, isValidSlackWebhook, postToSlackWebhook } from "../slack";
 
-/** Mirror a Team-channel message to Slack when the org bridge is on. Never throws. */
+/**
+ * Mirror a Team-channel message to Slack when the org bridge is on. Never throws.
+ *
+ * "Never throws" was not enough. This runs on the shared `withRls` client right
+ * after the message INSERT, so a failing bridge statement — `slack_bridge_posts`
+ * absent on an older deploy is the obvious one — aborted the transaction and the
+ * COMMIT discarded the message itself. The sender saw a 200 and their message
+ * gone on reload. The savepoint keeps the failure inside the bridge.
+ */
 export async function maybeBridgeTeamSlackMessage(
   client: PoolClient,
   input: {
@@ -12,7 +21,7 @@ export async function maybeBridgeTeamSlackMessage(
     body: string;
   },
 ): Promise<void> {
-  try {
+  await withSavepoint(client, async () => {
     const existing = await client.query(
       `SELECT 1 FROM slack_bridge_posts WHERE message_id = $1::uuid LIMIT 1`,
       [input.messageId],
@@ -60,7 +69,5 @@ export async function maybeBridgeTeamSlackMessage(
         post.ok ? null : (post.error ?? "Slack rejected the message"),
       ],
     );
-  } catch {
-    /* bridge must never block in-app send */
-  }
+  }, undefined);
 }

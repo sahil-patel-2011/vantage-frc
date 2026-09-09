@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import { RESISTANCE_RETIRE_MOHM } from "./battery";
 
 /**
@@ -41,7 +42,12 @@ export async function ensureBatteryRetireFailure(
     );
   }
 
-  try {
+  // The FMEA log is the optional half of this pair: the pit row above is what the
+  // release gate reads, and it must survive an `fmea_failures` that this deploy has
+  // not migrated yet. A bare catch here did the opposite — the failed statement
+  // aborted the shared withRls transaction, so the pit row the comment promised
+  // "still lands" was rolled back at COMMIT along with the Beak test that caused it.
+  await withSavepoint(client, async () => {
     const openFmea = await client.query(
       `SELECT 1 FROM fmea_failures
        WHERE org_id = $1 AND season_year = $2
@@ -73,7 +79,5 @@ export async function ensureBatteryRetireFailure(
         ],
       );
     }
-  } catch {
-    // fmea_failures may not be migrated yet — pit row still lands.
-  }
+  }, undefined);
 }

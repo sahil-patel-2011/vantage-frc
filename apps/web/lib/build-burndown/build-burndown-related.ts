@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Build-Season Burndown (never DEMO burndown metrics). */
@@ -81,19 +82,19 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     {
       id: "kickoff",
       label: "Open Kickoff",
-      detail: "Set the real build-season window from kickoff materials — never DEMO timelines.",
+      detail: "Set the real build-season window from kickoff materials — no sample timelines.",
       href: hubHref("/build", "kickoff", orgId),
     },
     {
       id: "task-board",
       label: "Open Task board",
-      detail: "Day-to-day build tasks stay blank until real work is logged — never DEMO progress.",
+      detail: "Day-to-day build tasks stay blank until real work is logged — no sample progress.",
       href: hubHref("/team", "task-board", orgId),
     },
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Risk work sits beside the burndown — never invent DEMO readiness.",
+      detail: "Risk work sits beside the burndown — no sample readiness.",
       href: hubHref("/build", "fmea", orgId),
     },
   ];
@@ -204,56 +205,10 @@ export function buildBurndownNextActions(input: {
   const remainingTasks = input.remainingTasks ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Select workspace",
-          detail: "Burndown plans are org-scoped — pick a team before tracking tasks.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "kickoff",
-          label: "Open Kickoff",
-          detail: "Build seasons stay blank until real kickoff materials exist — never DEMO timelines.",
-          href: hubHref("/build", "kickoff", null),
-        },
-        {
-          id: "task-board",
-          label: "Open Task board",
-          detail: "Day-to-day work stays empty without real task rows — never DEMO progress.",
-          href: hubHref("/team", "task-board", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Open Workspace",
-        detail: "Finish membership setup so Build Burndown can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "kickoff",
-        label: "Open Kickoff",
-        detail: "Confirm the real competition date before drawing an ideal plan line.",
-        href: hubHref("/build", "kickoff", orgId),
-      },
-      {
-        id: "task-board",
-        label: "Open Task board",
-        detail: "Day-to-day build ownership lives beside the burndown chart.",
-        href: hubHref("/team", "task-board", orgId),
-      },
-      {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "Risk burn-down stays separate — never invent DEMO readiness.",
-        href: hubHref("/build", "fmea", orgId),
-      },
-    ];
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of buildBurndownSetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(buildBurndownSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
