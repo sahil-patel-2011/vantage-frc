@@ -1,15 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
-  await context.addCookies([
-    {
-      name: "vantage-e2e-session",
-      value: "authenticated",
-      url: "http://localhost:3310",
-      httpOnly: true,
-      sameSite: "Lax",
-    },
-  ]);
+  await signInFixture(context);
 });
 
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
