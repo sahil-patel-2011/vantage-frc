@@ -378,6 +378,22 @@ main.content:has(> h1:only-child) > h1 {
   letter-spacing: var(--soft-tracking-tight);
 }
 
+/* --- "Next actions" rows ---------------------------------------------------
+   Twenty-four route sheets grew their own copy of this list, and each sized the
+   button in it independently: 36px/0 12px, 44px/0 12px, 44px/0 14px, and one at
+   an 8px radius on its own fill. It is the same component in the same slot on
+   pages a person moves between inside one session, so it is one shape. Real
+   specificity, not :where(), because it has to outrank the twenty-four copies;
+   it is last in the cascade, so it wins the tie. Colour and layout stay with
+   whichever sheet had a reason for them. */
+[class$="-next-actions"] li .app-button {
+  flex: none;
+  min-height: var(--soft-control-h-sm);
+  padding: 0 12px;
+  font-size: var(--soft-text-xs);
+  border-radius: var(--soft-radius-sm);
+}
+
 /* --- Setup / integration cards --------------------------------------------- */
 :where(.product-hub-setup) {
   display: grid;

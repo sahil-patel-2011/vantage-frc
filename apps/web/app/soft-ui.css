@@ -1510,7 +1510,7 @@ html[data-theme="dark"] .signin-access-note{border-color:#31445e;background:#172
 .edc-next-actions li div{display:grid;gap:2px;min-width:0}
 .edc-next-actions li strong{font-size:14px}
 .edc-next-actions li span{color:var(--soft-muted);font-size:12px;line-height:1.35}
-.edc-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.edc-next-actions li .app-button{flex:none}
 @media(max-width:980px){
   .edc-priority,.edc-secondary,.edc-actions{grid-template-columns:1fr 1fr}
 }
@@ -2368,8 +2368,14 @@ body.has-app-shell .admin-control .intel-panel small{display:block;margin-top:6p
   background:var(--soft-card);color:var(--soft-muted);
 }
 .team-ops-nav a:hover{color:var(--soft-ink);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+/* Same "this one is current" treatment as .hub-tool-chip.is-active and
+   .settings-bar-chip.is-active — a tinted plate, not a solid accent fill. Two
+   chip strips can appear on one page (Logistics carries both), and they were
+   marking the current item in two different visual languages. */
 .team-ops-nav :where(a,span).active, .team-ops-nav :where(a,span)[aria-current="page"]{
-  color:var(--soft-accent-ink);background:var(--soft-accent);border-color:var(--soft-accent);
+  background:var(--soft-accent-soft);
+  border-color:color-mix(in srgb,var(--soft-accent) 55%,transparent);
+  color:var(--soft-accent);
 }
 .team-ops-nav.on-dark :where(a,span){
   color:rgba(255,255,255,.88);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);

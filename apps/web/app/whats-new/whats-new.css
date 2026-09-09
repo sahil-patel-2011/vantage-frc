@@ -13,7 +13,7 @@
 .whats-new-next-actions li div{display:grid;gap:2px;min-width:0}
 .whats-new-next-actions li strong{font-size:14px}
 .whats-new-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.whats-new-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.whats-new-next-actions li .app-button{flex:none}
 
 .whats-new-list{display:grid;gap:14px}
 .whats-new-card{display:grid;gap:12px;padding:18px 20px;scroll-margin-top:88px}

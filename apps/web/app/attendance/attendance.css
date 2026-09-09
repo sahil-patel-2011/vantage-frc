@@ -16,7 +16,7 @@
 .att-next-actions li div{display:grid;gap:2px;min-width:0}
 .att-next-actions li strong{font-size:14px}
 .att-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.att-next-actions li .app-button{flex:none;min-height:44px;padding:0 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center}
+.att-next-actions li .app-button{flex:none;text-decoration:none;display:inline-flex;align-items:center}
 .att-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
 .att-filters{display:flex;flex-wrap:wrap;gap:6px}
 .att-filter{display:inline-flex;align-items:center;min-height:44px;padding:4px 14px;border-radius:var(--soft-radius-pill);border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-muted);font:700 11px inherit;cursor:pointer}

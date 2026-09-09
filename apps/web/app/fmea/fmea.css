@@ -22,7 +22,7 @@
 .fmea-next-actions li div{display:grid;gap:2px;min-width:0}
 .fmea-next-actions li strong{font-size:14px}
 .fmea-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.fmea-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+.fmea-next-actions li .app-button{flex:none}
 
 .fmea-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
 .fmea-summary-tile{display:grid;gap:3px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius,12px)}
