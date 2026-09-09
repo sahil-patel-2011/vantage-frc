@@ -41,6 +41,32 @@ export type ImpactActivity = {
   description: string | null;
   /** Award narratives this activity is offered as evidence for. */
   evidenceAwards: ImpactAwardTag[];
+  /**
+   * Named team members who were there. May be shorter than participantCount —
+   * a parent volunteer without an account still counts, just not by name.
+   */
+  participants: ImpactParticipant[];
+};
+
+export type ImpactParticipant = {
+  userId: string;
+  name: string;
+  /** Their own minutes at this activity; null = there, time not recorded. */
+  minutes: number | null;
+  role: string | null;
+};
+
+/** One person's outreach record for a season, from named participation only. */
+export type PersonOutreachTotal = {
+  userId: string;
+  name: string;
+  /** Activities they were named on. */
+  events: number;
+  /** Sum of recorded minutes. Never includes an unrecorded appearance. */
+  minutes: number;
+  hours: number;
+  /** Appearances with no minutes recorded — shown, never counted. */
+  unrecorded: number;
 };
 
 export type ImpactSummary = {

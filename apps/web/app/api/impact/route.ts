@@ -9,8 +9,11 @@ import {
   currentSeasonYear,
   deleteActivity,
   logActivity,
+  removeParticipant,
+  setParticipants,
   type ImpactView,
 } from "../../../lib/impact/compute-impact";
+import { normalizeParticipantInput } from "../../../lib/impact/participants";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory } from "../../../lib/impact/types";
 
 export type { ImpactView };
@@ -27,6 +30,12 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : null;
+}
+
+function uuidOrNull(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null;
 }
 
 function nonNegativeInt(value: unknown): number {
@@ -106,7 +115,7 @@ export async function POST(request: Request) {
           const evidenceAwards = Array.isArray(body.evidenceAwards)
             ? body.evidenceAwards.filter((tag): tag is ImpactAwardTag => oneOf<ImpactAwardTag>(IMPACT_AWARD_TAGS, tag) != null)
             : [];
-          await logActivity(client, {
+          const { activityId } = await logActivity(client, {
             orgId,
             userId,
             title,
@@ -121,6 +130,29 @@ export async function POST(request: Request) {
             seasonYear,
             evidenceAwards,
           });
+          // Whoever logs it can name everyone who helped in the same submit.
+          const participants = normalizeParticipantInput(body.participants);
+          if (participants.length > 0) {
+            await setParticipants(client, { orgId, userId, activityId, participants });
+          }
+          break;
+        }
+        case "set-participants": {
+          const activityId = uuidOrNull(body.activityId);
+          if (!activityId) throw new Error("activityId is required");
+          await setParticipants(client, {
+            orgId,
+            userId,
+            activityId,
+            participants: normalizeParticipantInput(body.participants),
+          });
+          break;
+        }
+        case "remove-participant": {
+          const activityId = uuidOrNull(body.activityId);
+          const target = uuidOrNull(body.userId);
+          if (!activityId || !target) throw new Error("activityId and userId are required");
+          await removeParticipant(client, { orgId, activityId, userId: target });
           break;
         }
         case "delete-activity": {

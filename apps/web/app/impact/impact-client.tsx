@@ -14,6 +14,7 @@ import {
   type ImpactView,
 } from "../../lib/impact/compute-impact";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory, ImpactTier } from "../../lib/impact/types";
+import { draftsToPayload, ParticipantNames, PeoplePanel, WhoHelped, type ParticipantDraft } from "./people";
 import "./impact.css";
 
 const TAG_LABEL: Record<ImpactAwardTag, string> = {
@@ -267,8 +268,9 @@ export default function ImpactClient() {
           <ImpactNextActions actions={nextActions} />
           <ReadinessPanel view={view} />
           <SummaryTiles view={view} />
-          <LogActivityForm busy={busy} mutate={mutate} />
+          <LogActivityForm busy={busy} mutate={mutate} members={view.members} currentUserId={view.currentUserId} />
           {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}
+          <PeoplePanel people={view.people} seasonYear={view.seasonYear} />
           <RecentActivities view={view} busy={busy} mutate={mutate} relatedOrg={relatedOrg} />
         </div>
       )}
@@ -427,6 +429,7 @@ function RecentActivities({
   mutate: (payload: Record<string, unknown>) => void;
   relatedOrg: string | null;
 }) {
+  const [editing, setEditing] = useState<string | null>(null);
   if (view.summary.totalEvents === 0) {
     return (
       <EmptyState
@@ -465,19 +468,44 @@ function RecentActivities({
                   ? ` · evidence for ${item.evidenceAwards.map((t) => TAG_LABEL[t]).join(", ")}`
                   : ""}
               </small>
+              <ParticipantNames activity={item} />
+              {editing === item.id ? (
+                <EditPeople
+                  activity={item}
+                  members={view.members}
+                  currentUserId={view.currentUserId}
+                  busy={busy}
+                  onSave={(drafts) => {
+                    mutate({ action: "set-participants", activityId: item.id, participants: draftsToPayload(drafts) });
+                    setEditing(null);
+                  }}
+                  onRemove={(userId) => mutate({ action: "remove-participant", activityId: item.id, userId })}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : null}
             </div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
-                  mutate({ action: "delete-activity", activityId: item.id });
-                }
-              }}
-            >
-              Delete
-            </button>
+            <div className="impact-row-actions">
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => setEditing(editing === item.id ? null : item.id)}
+              >
+                {item.participants.length ? "Edit people" : "Add people"}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm(`Delete "${item.title}"?`)) {
+                    mutate({ action: "delete-activity", activityId: item.id });
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -485,12 +513,74 @@ function RecentActivities({
   );
 }
 
+/** Name (or re-time) the people on an activity that is already logged. */
+function EditPeople({
+  activity,
+  members,
+  currentUserId,
+  busy,
+  onSave,
+  onRemove,
+  onCancel,
+}: {
+  activity: LiveView["activities"][number];
+  members: LiveView["members"];
+  currentUserId: string;
+  busy: boolean;
+  onSave: (drafts: ParticipantDraft[]) => void;
+  onRemove: (userId: string) => void;
+  onCancel: () => void;
+}) {
+  const [drafts, setDrafts] = useState<ParticipantDraft[]>(() =>
+    activity.participants.map((p) => ({
+      userId: p.userId,
+      minutes: p.minutes == null ? "" : String(p.minutes),
+      role: p.role ?? "",
+    })),
+  );
+  const removed = activity.participants.filter((p) => !drafts.some((d) => d.userId === p.userId));
+  return (
+    <div className="impact-edit-people">
+      <WhoHelped
+        members={members}
+        currentUserId={currentUserId}
+        drafts={drafts}
+        defaultMinutes={activity.durationMinutes ? String(activity.durationMinutes) : ""}
+        disabled={busy}
+        onChange={setDrafts}
+      />
+      <div className="impact-edit-people-actions">
+        <button
+          type="button"
+          className="app-button"
+          disabled={busy}
+          onClick={() => {
+            // Unticking someone who was already named is a removal, and the
+            // API treats the two separately so a re-save cannot resurrect them.
+            for (const p of removed) onRemove(p.userId);
+            onSave(drafts);
+          }}
+        >
+          Save people
+        </button>
+        <button type="button" className="text-button" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LogActivityForm({
   busy,
   mutate,
+  members,
+  currentUserId,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  members: LiveView["members"];
+  currentUserId: string;
 }) {
   const empty = useMemo(
     () => ({
@@ -508,6 +598,7 @@ function LogActivityForm({
   );
   const [form, setForm] = useState(empty);
   const [tags, setTags] = useState<ImpactAwardTag[]>([]);
+  const [who, setWho] = useState<ParticipantDraft[]>([]);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -533,9 +624,11 @@ function LogActivityForm({
           location: form.location || undefined,
           description: form.description || undefined,
           evidenceAwards: tags,
+          participants: draftsToPayload(who),
         });
         setForm(empty);
         setTags([]);
+        setWho([]);
       }}
       style={{ display: "grid", gap: 10 }}
     >
@@ -569,7 +662,7 @@ function LogActivityForm({
         <FormRow label="Duration (min)">
           <input type="number" min={0} value={form.durationMinutes} onChange={set("durationMinutes")} />
         </FormRow>
-        <FormRow label="Team members">
+        <FormRow label="Team members (count)">
           <input type="number" min={0} value={form.participantCount} onChange={set("participantCount")} />
         </FormRow>
         <FormRow label="People reached">
@@ -582,6 +675,14 @@ function LogActivityForm({
       <FormRow label="Notes (optional)">
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
+      <WhoHelped
+        members={members}
+        currentUserId={currentUserId}
+        drafts={who}
+        defaultMinutes={form.durationMinutes}
+        disabled={busy}
+        onChange={setWho}
+      />
       <fieldset className="impact-tag-row">
         <span className="app-muted">Evidence for:</span>
         {IMPACT_AWARD_TAGS.map((tag) => (

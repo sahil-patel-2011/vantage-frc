@@ -1,11 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeImpactReadiness, summarizeImpact } from ".";
+import { summarizePeople } from "./participants";
 import type {
   ImpactActivity,
   ImpactAudience,
   ImpactAwardTag,
   ImpactCategory,
+  ImpactParticipant,
   ImpactReadiness,
+  PersonOutreachTotal,
   ImpactSummary,
 } from "./types";
 
@@ -53,6 +56,11 @@ export type ImpactView =
       activities: ImpactActivity[];
       summary: ImpactSummary;
       readiness: ImpactReadiness;
+      /** Per-person outreach from named participation — empty until someone is named. */
+      people: PersonOutreachTotal[];
+      /** Everyone on the team, for the "who helped" picker. */
+      members: Array<{ userId: string; name: string }>;
+      currentUserId: string;
       computedAt: string;
     };
 
@@ -75,7 +83,7 @@ type ActivityRow = {
   evidenceAwards: string[] | null;
 };
 
-function mapActivity(row: ActivityRow): ImpactActivity {
+function mapActivity(row: ActivityRow, participants: ImpactParticipant[] = []): ImpactActivity {
   const evidenceAwards = Array.isArray(row.evidenceAwards)
     ? row.evidenceAwards.filter((tag): tag is ImpactAwardTag => (IMPACT_AWARD_TAGS as string[]).includes(tag))
     : [];
@@ -92,7 +100,60 @@ function mapActivity(row: ActivityRow): ImpactActivity {
     seasonYear: row.seasonYear,
     description: row.description,
     evidenceAwards,
+    participants,
   };
+}
+
+type ParticipantRow = {
+  activityId: string;
+  userId: string;
+  name: string;
+  minutes: number | null;
+  role: string | null;
+};
+
+/** Named participants for a set of activities, grouped by activity. */
+async function loadParticipants(
+  client: PoolClient,
+  orgId: string,
+  activityIds: string[],
+): Promise<Map<string, ImpactParticipant[]>> {
+  const byActivity = new Map<string, ImpactParticipant[]>();
+  if (activityIds.length === 0) return byActivity;
+  const rows = await client.query<ParticipantRow>(
+    `SELECT p.activity_id AS "activityId", p.user_id AS "userId", u.name, p.minutes, p.role
+       FROM impact_activity_participants p
+       JOIN users u ON u.id = p.user_id
+      WHERE p.org_id = $1::uuid AND p.activity_id = ANY($2::uuid[])
+      ORDER BY lower(u.name), u.id`,
+    [orgId, activityIds],
+  );
+  for (const row of rows.rows) {
+    const list = byActivity.get(row.activityId) ?? [];
+    list.push({
+      userId: row.userId,
+      name: row.name,
+      minutes: row.minutes == null ? null : Number(row.minutes),
+      role: row.role,
+    });
+    byActivity.set(row.activityId, list);
+  }
+  return byActivity;
+}
+
+async function loadMembers(
+  client: PoolClient,
+  orgId: string,
+): Promise<Array<{ userId: string; name: string }>> {
+  const rows = await client.query<{ userId: string; name: string }>(
+    `SELECT u.id AS "userId", u.name
+       FROM memberships m
+       JOIN users u ON u.id = m.user_id
+      WHERE m.org_id = $1::uuid
+      ORDER BY lower(u.name), u.id`,
+    [orgId],
+  );
+  return rows.rows;
 }
 
 async function resolveOrg(
@@ -149,8 +210,13 @@ export async function computeImpactView(
     ),
   ]);
 
-  const activities = activityResult.rows.map(mapActivity);
+  const [participants, members] = await Promise.all([
+    loadParticipants(client, org.orgId, activityResult.rows.map((r) => r.id)),
+    loadMembers(client, org.orgId),
+  ]);
+  const activities = activityResult.rows.map((row) => mapActivity(row, participants.get(row.id) ?? []));
   const summary = summarizeImpact(activities);
+  const people = summarizePeople(activities);
   const readiness = computeImpactReadiness(summary);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
@@ -164,6 +230,9 @@ export async function computeImpactView(
     activities,
     summary,
     readiness,
+    people,
+    members,
+    currentUserId: input.userId,
     computedAt: new Date().toISOString(),
   };
 }
@@ -187,12 +256,13 @@ export async function logActivity(
     seasonYear: number;
     evidenceAwards: ImpactAwardTag[];
   },
-): Promise<void> {
-  await client.query(
+): Promise<{ activityId: string }> {
+  const inserted = await client.query<{ id: string }>(
     `INSERT INTO impact_activities (
        org_id, title, category, occurred_on, duration_minutes, participant_count,
        people_reached, audience, location, description, season_year, evidence_awards, logged_by
-     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12::text[],$13)`,
+     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12::text[],$13)
+     RETURNING id`,
     [
       input.orgId,
       input.title,
@@ -208,6 +278,44 @@ export async function logActivity(
       input.evidenceAwards,
       input.userId,
     ],
+  );
+  return { activityId: inserted.rows[0]!.id };
+}
+
+/**
+ * Name the people who were at an activity. Upserts by (activity, user) so
+ * re-submitting the same list corrects minutes instead of failing on the
+ * unique constraint. The RLS policy — not this code — refuses a user id from
+ * another team and an activity from another org.
+ */
+export async function setParticipants(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    activityId: string;
+    participants: Array<{ userId: string; minutes: number | null; role: string | null }>;
+  },
+): Promise<void> {
+  for (const p of input.participants) {
+    await client.query(
+      `INSERT INTO impact_activity_participants (org_id, activity_id, user_id, minutes, role, added_by)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::int, $5, $6::uuid)
+       ON CONFLICT (activity_id, user_id)
+       DO UPDATE SET minutes = EXCLUDED.minutes, role = EXCLUDED.role`,
+      [input.orgId, input.activityId, p.userId, p.minutes, p.role, input.userId],
+    );
+  }
+}
+
+export async function removeParticipant(
+  client: PoolClient,
+  input: { orgId: string; activityId: string; userId: string },
+): Promise<void> {
+  await client.query(
+    `DELETE FROM impact_activity_participants
+      WHERE org_id = $1::uuid AND activity_id = $2::uuid AND user_id = $3::uuid`,
+    [input.orgId, input.activityId, input.userId],
   );
 }
 
