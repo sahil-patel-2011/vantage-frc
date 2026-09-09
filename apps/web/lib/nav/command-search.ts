@@ -127,6 +127,15 @@ const KEYWORDS: Record<string, string[]> = {
   "team:pit-map-planner": ["pit map", "pit layout", "pit setup", "floor plan"],
   "team:field-reset-timer": ["field reset", "timer"],
   "team:knowledge": ["playbook", "wiki", "knowledge", "docs", "how to", "handbook", "notes"],
+  // Nobody searches for "Vantage Drive". They search for the thing they are
+  // trying to find, or for the product they are trying to leave.
+  "team:files": [
+    "files", "drive", "file", "folder", "folders", "upload", "uploads", "storage",
+    "google drive", "dropbox", "onedrive", "share a file", "share file", "share link",
+    "attachment", "attachments", "documents", "pdf", "spreadsheet", "video", "videos",
+    "print files", "stl", "step", "dxf", "3mf", "cad export", "flyer", "poster",
+    "handbook pdf", "send to parents", "send to sponsor", "where is the file",
+  ],
   // A rookie coach does not know the word "roadmap" — they type the question they
   // are actually asking at 10pm in October. These are those questions verbatim.
   "team:roadmap": [

@@ -53,7 +53,17 @@ export type CandidateNode = {
   diskTotalBytes: number | null;
 };
 
-export type StorageDestination = "node" | "cloud" | "refused";
+export type StorageDestination = "node" | "cloud" | "object" | "refused";
+
+/**
+ * Whether this deployment has an S3-compatible object store configured
+ * (DRIVE_OBJECT_* — see lib/storage-routing/object-store.ts). Passing this in
+ * is optional: callers that predate object storage (media library, resource
+ * library) omit it and keep exactly the node/cloud behaviour they had.
+ */
+export type ObjectStoreAvailability =
+  | { configured: true }
+  | { configured: false; reason: string };
 
 export type StorageRouteDecision =
   | {
@@ -66,6 +76,12 @@ export type StorageRouteDecision =
   | {
       destination: "cloud";
       /** True when the file preferred the node but honestly fell back. */
+      fallback: boolean;
+      reason: string;
+    }
+  | {
+      destination: "object";
+      /** True when the file preferred the node and the node could not take it. */
       fallback: boolean;
       reason: string;
     }

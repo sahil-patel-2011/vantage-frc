@@ -45,7 +45,8 @@ reference data), `MFA_ENCRYPTION_KEY`, `MFA_RECOVERY_PEPPER`, `EXPORT_ENCRYPTION
 key saves fail without real KMS), `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`,
 `MARKETING_DATABASE_URL` (waitlist otherwise falls back to an in-memory dev store),
 `VAPID_PUBLIC_KEY/PRIVATE_KEY` (web push), `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY` (platform AI),
-`RATE_LIMIT_REDIS_URL/TOKEN` (otherwise per-instance in-memory rate limiting).
+`RATE_LIMIT_REDIS_URL/TOKEN` (otherwise per-instance in-memory rate limiting),
+`DRIVE_OBJECT_*` (object storage for Vantage Drive — section 4a).
 
 **Never set in production:** `E2E_AUTH_FIXTURE`, `DEV_KMS_MASTER_KEY`, `DEV_OTP_SECRET`. Remove
 `BOOTSTRAP_TOKEN` after first boot (section 6). `ENABLE_EMAIL_2FA_BYPASS` is emergency-only.
@@ -108,6 +109,43 @@ Resend) enable email OTP sign-in, email 2FA, and invite delivery. Until both are
 redeployed, email 2FA is not enforced and email delivery reports setup_required — this is a designed
 degradation, not an error. `ENABLE_EMAIL_2FA_BYPASS` keeps 2FA off even with Resend configured; leave
 it unset.
+
+## 4a. Object storage for Vantage Drive (`DRIVE_OBJECT_*`)
+
+Vantage Drive (`/files`) routes each upload to one of three homes: the hosted database, the team's own
+paired storage node, or an S3-compatible object store. The database path is capped by Vercel's
+request-body limit (4 MiB — see `apps/web/lib/storage-routing/caps.ts`) and the node path needs
+hardware the team owns and exposes, so a team with neither has nowhere to put a 300 MB practice-match
+video. These five variables give it one:
+
+| Var | Example |
+| --- | --- |
+| `DRIVE_OBJECT_ENDPOINT` | `https://<project>.supabase.co/storage/v1/s3` or `https://<account>.r2.cloudflarestorage.com` |
+| `DRIVE_OBJECT_BUCKET` | `vantage-drive` |
+| `DRIVE_OBJECT_ACCESS_KEY` | S3 access key id |
+| `DRIVE_OBJECT_SECRET_KEY` | S3 secret access key |
+| `DRIVE_OBJECT_REGION` | `us-east-1` (R2 uses `auto`; Supabase uses the project's region) |
+
+Notes:
+
+- **All five or none.** Until every one is set, `POST /api/drive/upload/plan` reports object storage as
+  `setup_required` and names the missing variables, and routing falls through to the existing
+  node/database logic. Half-configured never half-works.
+- The endpoint must be **https** — the browser PUTs directly to it from a secure page, so a plain-http
+  endpoint is refused at configuration time rather than failing at the end of an upload.
+- **Bytes never transit this deployment.** The server signs a presigned PUT (AWS SigV4, implemented in
+  `apps/web/lib/storage-routing/sigv4.ts` with `node:crypto` — no AWS SDK dependency) and the browser
+  uploads straight to the bucket. Downloads are presigned GETs the same way.
+- **The bucket needs CORS.** Because the browser is the uploader, the bucket must allow `PUT` and `GET`
+  from the app's origin, with `Content-Type` in the allowed headers. Without it the upload fails with an
+  opaque network error; the UI says so explicitly rather than blaming the file.
+- Addressing is **path-style** (`<endpoint>/<bucket>/<key>`), which both Supabase Storage and R2 accept
+  and which needs no per-bucket DNS.
+- Keys are `drive/<orgId>/<sha256>` — org-prefixed like `cad_document_versions.storage_key`, so the key
+  itself carries tenancy, and content-addressed within an org so re-uploading identical bytes is free.
+- The intent is to point this at **Supabase Storage** once that account exists. Identity and product
+  data stay on Better Auth + `withRls` regardless — this is object storage only, never the Supabase Data
+  API (see `docs/SUPABASE_CUTOVER.md`).
 
 ## 5. Cron jobs and the CRON_SECRET
 
