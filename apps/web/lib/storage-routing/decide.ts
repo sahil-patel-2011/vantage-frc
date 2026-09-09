@@ -19,6 +19,7 @@ import { formatBytes } from "../storage-node";
 import { contentClassFor } from "./classify";
 import type {
   CandidateNode,
+  ObjectStoreAvailability,
   StorageContentClass,
   StoragePlanEntry,
   StoragePlanFile,
@@ -98,10 +99,31 @@ export type DecideInput = {
   policy: StorageRoutingPolicy;
   node: CandidateNode | null;
   cloudCapBytes: number;
+  /**
+   * Optional third destination: an S3-compatible object store the browser can
+   * PUT to directly (Vantage Drive). Omit it and this function behaves exactly
+   * as it did before object storage existed — the media library and resource
+   * library callers do exactly that.
+   *
+   * Ordering, and why: the team's own node still wins when it can take the
+   * file. A team that bought and ran hardware should have its bytes land
+   * there, and it costs the org nothing per gigabyte. Object storage is the
+   * next choice, because a 300 MB video has nowhere else to go. The hosted
+   * database stays last for node-preferring files — it is the smallest and
+   * most expensive of the three.
+   */
+  objectStore?: ObjectStoreAvailability;
 };
 
+/** The honest sentence for "object storage could have taken this, but…". */
+function objectUnavailableNote(objectStore: ObjectStoreAvailability | undefined): string {
+  if (!objectStore) return "";
+  return objectStore.configured ? "" : ` ${objectStore.reason}`;
+}
+
 export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
-  const { byteSize, contentClass, policy, node, cloudCapBytes } = input;
+  const { byteSize, contentClass, policy, node, cloudCapBytes, objectStore } = input;
+  const objectReady = objectStore?.configured === true;
 
   const overThreshold = byteSize > policy.nodeThresholdBytes;
   const classPrefersNode = policy.preferNodeClasses.includes(contentClass);
@@ -122,6 +144,13 @@ export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
         reason: preferReason,
       };
     }
+    if (objectReady) {
+      return {
+        destination: "object",
+        fallback: true,
+        reason: `${eligibility.reason} Uploading straight to object storage instead — the bytes go from your browser to the bucket without passing through Vantage.`,
+      };
+    }
     if (fitsCloud && policy.cloudFallback) {
       return {
         destination: "cloud",
@@ -137,7 +166,7 @@ export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
     }
     return {
       destination: "refused",
-      reason: `${eligibility.reason} At ${formatBytes(byteSize)} it is also over the ${formatBytes(cloudCapBytes)} cloud upload limit, so there is nowhere honest to put it right now.`,
+      reason: `${eligibility.reason} At ${formatBytes(byteSize)} it is also over the ${formatBytes(cloudCapBytes)} cloud upload limit, so there is nowhere honest to put it right now.${objectUnavailableNote(objectStore)}`,
     };
   }
 
@@ -150,7 +179,8 @@ export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
   }
 
   // Under the threshold but over the cloud cap (possible when an admin raised
-  // the threshold above the platform cap): the node is the only honest home.
+  // the threshold above the platform cap): the node — or object storage — is
+  // the only honest home.
   const eligibility = nodeEligibilityFor(node, byteSize);
   if (eligibility.eligible) {
     return {
@@ -160,18 +190,30 @@ export function decideStorageRoute(input: DecideInput): StorageRouteDecision {
       reason: `${formatBytes(byteSize)} is over the ${formatBytes(cloudCapBytes)} cloud upload limit`,
     };
   }
+  if (objectReady) {
+    return {
+      destination: "object",
+      fallback: false,
+      reason: `${formatBytes(byteSize)} is over the ${formatBytes(cloudCapBytes)} cloud upload limit, so it goes to object storage`,
+    };
+  }
   return {
     destination: "refused",
-    reason: `${formatBytes(byteSize)} is over the ${formatBytes(cloudCapBytes)} cloud upload limit and the storage node cannot take it: ${eligibility.reason}`,
+    reason: `${formatBytes(byteSize)} is over the ${formatBytes(cloudCapBytes)} cloud upload limit and the storage node cannot take it: ${eligibility.reason}${objectUnavailableNote(objectStore)}`,
   };
 }
 
-/** Plan a whole selection of files at once (the pre-upload confirmation view). */
+/**
+ * Plan a whole selection of files at once (the pre-upload confirmation view).
+ * `objectStore` is optional and trailing so the pre-existing three-argument
+ * callers keep compiling and keep their exact behaviour.
+ */
 export function planFiles(
   files: StoragePlanFile[],
   policy: StorageRoutingPolicy,
   node: CandidateNode | null,
   cloudCapBytes: number,
+  objectStore?: ObjectStoreAvailability,
 ): StoragePlanEntry[] {
   return files.map((file) => {
     const contentClass = contentClassFor(file.name, file.contentType);
@@ -185,6 +227,7 @@ export function planFiles(
         policy,
         node,
         cloudCapBytes,
+        ...(objectStore ? { objectStore } : {}),
       }),
     };
   });

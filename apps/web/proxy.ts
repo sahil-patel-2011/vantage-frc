@@ -138,12 +138,32 @@ function isPublicFormIntake(pathname: string) {
   );
 }
 
+/**
+ * Token-scoped Vantage Drive share links only (migration 0641).
+ *
+ * Most of the people a team needs to hand a file to — a parent, a sponsor, a
+ * judge, another team's mentor — have no Vantage account and never will, so a
+ * share link that redirects to /signin is not a share link. The token is 32 hex
+ * characters of `gen_random_bytes(16)`, it is the entire authorization, and
+ * every database call behind it is a SECURITY DEFINER function that returns
+ * only what the one named share covers and never any bytes belonging to
+ * anything else. The signed-in `/files` page and `/api/drive` stay gated.
+ */
+function isPublicDriveShare(pathname: string) {
+  return (
+    /^\/s\/[a-f0-9]{32}$/.test(pathname) ||
+    /^\/api\/drive-share\/[a-f0-9]{32}$/.test(pathname) ||
+    /^\/api\/drive-share\/[a-f0-9]{32}\/download$/.test(pathname)
+  );
+}
+
 function isPublic(pathname: string) {
   return (
     PUBLIC_PAGES.has(pathname) ||
     isPublicCalendarFeed(pathname) ||
     isPublicParentView(pathname) ||
     isPublicFormIntake(pathname) ||
+    isPublicDriveShare(pathname) ||
     isPublicPartnerStorefront(pathname) ||
     isPublicSponsorWall(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
