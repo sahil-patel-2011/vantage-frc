@@ -1,0 +1,138 @@
+/*
+ * Public form intake.
+ *
+ * This page is seen by people who have never heard of Vantage — a prospective
+ * 9th-grader, a parent on a phone in a car park. It carries no app shell, so it
+ * defines its own ground rather than inheriting one, and it commits to a light
+ * surface in both themes: the viewer has no account and therefore no theme
+ * preference to honour, and a half-applied dark palette on a page with no
+ * chrome reads as broken rather than as a choice.
+ */
+
+.public-form {
+  --pf-ink: #14243a;
+  --pf-muted: #5a6578;
+  --pf-line: #d5dde8;
+  --pf-accent: #1457d9;
+  --pf-card: #ffffff;
+  --pf-bg: #eef2f7;
+
+  min-height: 100vh;
+  padding: clamp(20px, 5vw, 56px) clamp(16px, 5vw, 32px);
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.public-form-card {
+  width: min(680px, 100%);
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid var(--pf-line);
+  border-radius: 16px;
+  background: var(--pf-card);
+  box-shadow: 0 10px 28px rgba(19, 32, 51, 0.07);
+}
+
+.public-form-team {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pf-accent);
+}
+
+.public-form h1 {
+  margin: 0 0 10px;
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.public-form-lead {
+  margin: 0 0 20px;
+  color: var(--pf-muted);
+  line-height: 1.6;
+}
+
+.public-form-muted {
+  color: var(--pf-muted);
+  line-height: 1.55;
+}
+
+/* The shared field styles come from forms.css, which is token-driven for the
+   in-app surface; re-point those tokens at this page's own palette so one set
+   of field rules serves both without either page borrowing the other's ground. */
+.public-form {
+  --soft-ink: var(--pf-ink);
+  --soft-muted: var(--pf-muted);
+  --soft-line: var(--pf-line);
+  --soft-accent: var(--pf-accent);
+  --soft-card: var(--pf-card);
+  --soft-bg: var(--pf-bg);
+}
+
+.public-form .forms-field > label {
+  font-weight: 650;
+}
+
+/* Text-like controls only. A bare `input` selector here stretched the subteam
+   checkboxes to the full column width and shoved their labels to the far right
+   edge, which read as a layout fault rather than a checkbox. */
+.public-form input:not([type="checkbox"]):not([type="radio"]),
+.public-form select,
+.public-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--pf-line);
+  border-radius: 10px;
+  background: var(--pf-card);
+  color: var(--pf-ink);
+  font: inherit;
+}
+
+.public-form input:focus-visible,
+.public-form select:focus-visible,
+.public-form textarea:focus-visible,
+.public-form-submit:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.public-form-submit {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 12px 18px;
+  border: 1px solid var(--pf-accent);
+  border-radius: 12px;
+  background: var(--pf-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.public-form-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.public-form-error {
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid #b42318;
+  background: #fef3f2;
+  color: #912018;
+  font-size: 14px;
+}
+
+.public-form-fine {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--pf-muted);
+  text-align: center;
+}
