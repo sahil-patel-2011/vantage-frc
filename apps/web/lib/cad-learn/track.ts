@@ -348,6 +348,60 @@ export const CAD_TRACK: Unit[] = [
         minutes: 45,
       },
       {
+        id: "naming",
+        title: "Name things so the next person can find them",
+        why:
+          "Open a team's CAD from two seasons ago and you will find 'New Part 1', 'New Part 1 (2)', 'Part Studio 3', 'Sketch 14' and 'Untitled'. Nobody on the team can tell you what any of them are without opening each one, so nobody does, and the design gets rebuilt from scratch. A name is the cheapest documentation there is, and it is the only kind that survives the student who wrote it graduating. It also matters for machines: Vantage's assembly manual, bill of materials and CAD review all read the names straight out of your document — 'Part 1' becomes a manual step that says 'attach Part 1 to Part 2'.",
+        steps: [
+          "Name every PART for what it is and where it goes, in the pattern below: subsystem, then the thing, then which one if there are several. Rename it the moment you make it, not at the end.",
+          "Name every PART STUDIO for the group of parts it holds, not for the day you made it: 'Intake side plates', not 'Part Studio 3'.",
+          "Name every ASSEMBLY for the mechanism: 'Intake assembly', 'Drivetrain — left module'.",
+          "Name SKETCHES and FEATURES for what they define when they matter to someone else: 'Bearing hole pattern', 'Motor mount slots'. A sketch nobody will ever edit can stay 'Sketch 4'; the one that drives hole spacing cannot.",
+          "Put the revision in the name only when a part is actually made and then changed: 'Intake side plate L — Rev B'. Do not bump the letter for edits before anything was cut.",
+          "Never put a date, a person's name, or 'new'/'final'/'FINAL2' in a name. The version history already knows who and when; 'final' is never true.",
+        ],
+        methods: [
+          {
+            label: "The pattern",
+            lines: [
+              "Subsystem  ·  What it is  ·  Which one",
+              "DT — Swerve module plate — FL",
+              "Intake — Side plate — L",
+              "Intake — Roller shaft — 1/2 in hex",
+              "Elevator — Carriage bearing block",
+              "Climber — Hook — Rev B",
+            ],
+            note:
+              "Read left to right it sorts by subsystem, which is how the Parts list, the BOM and the manual are all browsed. Short subsystem codes (DT, Intake, Elev, Climb) are fine as long as the whole team uses the same ones — write them on the wiki.",
+          },
+          {
+            label: "What goes wrong",
+            lines: [
+              "'New Part 1' — nobody knows what it is; the manual says 'attach New Part 1'",
+              "'Plate' — which of the eleven plates?",
+              "'Bracket v2 FINAL' — is v2 the one on the robot? Nobody can say",
+              "'Sahil's part' — Sahil graduated",
+              "'Part Studio 3' — the studio with the gearbox in it, but you have to open it to know",
+            ],
+            note:
+              "Every one of these has cost a real team hours in build season. The fix costs seconds at the moment you create the thing.",
+          },
+        ],
+        practice:
+          "Go back through every document you have made in this track and rename every part, studio and important sketch using the pattern. Then open the Parts list and check that you can tell what each row is WITHOUT opening it.",
+        verify:
+          "Someone else on the team can read your Parts list and say what each part is and roughly where it goes on the robot, without you in the room.",
+        tip:
+          "Right-click a part in the Parts list and choose Rename, or double-click the name. You can rename a Part Studio tab by double-clicking the tab. It takes three seconds; do it before you make the next feature, because you will not come back for it later.",
+        warning:
+          "Renaming is free in Onshape — nothing breaks, mates and derived parts follow the part, not the name. The only thing a rename changes is whether the next person understands the design. So there is no reason to leave a bad name in place.",
+        // One link on purpose. Onshape has no dedicated "naming" help page, and
+        // its help site answers a wrong URL with the landing page rather than a
+        // 404 — a link that "works" and lands nowhere useful is worse than none.
+        links: [{ label: "Part Studios and the Parts list", href: `${HELP}/PartStudio/part_studios.htm`, primary: true }],
+        minutes: 25,
+      },
+      {
         id: "material",
         title: "Assign a material — cast iron for this track",
         why:
