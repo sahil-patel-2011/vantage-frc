@@ -11,6 +11,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { cachedSchemaSupport } from "../schema-probe";
 import {
   DEFAULT_DM_MODE,
   decideDm,
@@ -30,22 +31,36 @@ export type SupervisorRef = {
   addedAt: string;
 };
 
+/**
+ * Whether migration 0455 is present.
+ *
+ * This one is worth naming: the old `catch { cache = false }` meant a single
+ * aborted transaction anywhere in the process could latch youth protection OFF —
+ * for every org, until a restart — and the DM route would then stop applying the
+ * two-adult rule while reporting nothing wrong. A probe that cannot answer now
+ * answers `false` for this request only and is never cached.
+ */
 export async function supportsYouthProtection(client: PoolClient): Promise<boolean> {
-  if (youthProtectionSupportedCache != null) return youthProtectionSupportedCache;
-  try {
-    const row = await client.query(
-      `SELECT 1
+  return cachedSchemaSupport(
+    client,
+    {
+      read: () => youthProtectionSupportedCache,
+      write: (value) => {
+        youthProtectionSupportedCache = value;
+      },
+    },
+    `SELECT 1
        FROM information_schema.tables
        WHERE table_schema = 'public'
          AND table_name IN ('org_chat_policy', 'org_conversation_supervisors')
        GROUP BY table_schema
        HAVING COUNT(*) = 2`,
-    );
-    youthProtectionSupportedCache = Boolean(row.rowCount);
-  } catch {
-    youthProtectionSupportedCache = false;
-  }
-  return youthProtectionSupportedCache;
+  );
+}
+
+/** Test seam: the capability probe is cached per process like the other chat probes. */
+export function resetYouthProtectionCapabilityCache(): void {
+  youthProtectionSupportedCache = null;
 }
 
 export async function readDmMode(client: PoolClient, orgId: string): Promise<DmMode> {

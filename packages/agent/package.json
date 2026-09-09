@@ -10,5 +10,5 @@
     "./bugbot": "./src/bugbot.ts"
   },
   "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
-  "dependencies": { "@neondatabase/serverless": "latest", "@vantage/billing": "*" }
+  "dependencies": { "@neondatabase/serverless": "latest", "@vantage/billing": "*", "@vantage/db": "*" }
 }

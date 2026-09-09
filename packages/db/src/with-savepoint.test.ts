@@ -61,6 +61,60 @@ describe("withSavepoint", () => {
     expect(names[0]).not.toBe(names[1]);
   });
 
+  /**
+   * `Promise.all` over the request client is the house style for loading a page's
+   * sections. Interleaving two savepoints there produces `SAVEPOINT a; SAVEPOINT b;
+   * RELEASE a; RELEASE b` — and that last statement raises "no such savepoint",
+   * aborting the very transaction the savepoint was protecting.
+   */
+  it("serializes concurrent calls on one client instead of interleaving them", async () => {
+    const queries: string[] = [];
+    const client = {
+      query: vi.fn(async (sql: string) => {
+        queries.push(sql);
+        // A real driver round-trip yields; make the interleaving hazard reachable.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return { rows: [], rowCount: 0 };
+      }),
+    } as unknown as PoolClient;
+
+    await Promise.all([
+      withSavepoint(client, () => client.query("SELECT 1") as Promise<unknown>, null),
+      withSavepoint(client, () => client.query("SELECT 2") as Promise<unknown>, null),
+      withSavepoint(client, () => client.query("SELECT 3") as Promise<unknown>, null),
+    ]);
+
+    const open: string[] = [];
+    for (const sql of queries) {
+      if (sql.startsWith("SAVEPOINT ")) {
+        expect(open).toHaveLength(0);
+        open.push(sql.slice("SAVEPOINT ".length));
+      } else if (sql.startsWith("RELEASE SAVEPOINT ")) {
+        expect(open.pop()).toBe(sql.slice("RELEASE SAVEPOINT ".length));
+      }
+    }
+    expect(open).toHaveLength(0);
+    expect(queries.filter((sql) => sql.startsWith("SAVEPOINT "))).toHaveLength(3);
+  });
+
+  it("nests without deadlocking on the queue its own caller holds", async () => {
+    const queries: string[] = [];
+    const client = fakeClient(queries);
+
+    const result = await withSavepoint(
+      client,
+      async () => {
+        const inner = await withSavepoint(client, async () => "inner", "inner-fallback");
+        return `outer:${inner}`;
+      },
+      "outer-fallback",
+    );
+
+    expect(result).toBe("outer:inner");
+    const names = queries.filter((sql) => sql.startsWith("SAVEPOINT "));
+    expect(names).toHaveLength(2);
+  });
+
   it("still guards the work when no transaction is open to take a savepoint in", async () => {
     const client = {
       query: vi.fn(async (sql: string) => {
