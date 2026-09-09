@@ -336,6 +336,11 @@ const KEYWORDS: Record<string, string[]> = {
     "cad files", "stl", "step", "upload cad", "model files", "drawings", "dxf",
     "versions", "vault", "download cad", "print file",
   ],
+  "build:assembly-manual": [
+    "assembly manual", "build book", "instructions", "step by step", "lego instructions",
+    "how to build", "build order", "assembly instructions", "cut list", "materials list",
+    "drill", "tap", "fabrication", "shop drawing", "print the manual", "onshape assembly",
+  ],
   "competition:event-readiness": [
     "pre event", "pre-event", "event checklist", "ready to go", "inspection prep",
     "consent", "consent forms", "packing", "travel", "before the event", "are we ready",

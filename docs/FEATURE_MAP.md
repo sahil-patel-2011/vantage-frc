@@ -104,6 +104,7 @@
 | Shop hours | `/hours` (Team More tools, featured) | Clock-in kiosk + Lookout CSV import via Bring your season — never DEMO hour totals |
 | My Hours Soft-UI | `/hours-self-view` (Team More tools) | Own hour_logs plus TimeKeeper-style who’s in the shop from open sessions; kiosk lock + biometric consent; no public hours leaderboard — never DEMO occupancy |
 | Robot | `/robot` (Build More tools, featured) | Subsystem blueprint plus FMEA / batteries / weigh-in / inspection links — Onshape/Fusion stay CAD systems of record |
+| Assembly manual | `/assembly-manual` (Build › CAD, featured) | Queued relay job (`assembly_manual_runs`, leased + checkpointed) turning an Onshape assembly into a step book: build order derived twice and reconciled, per-step Onshape shaded views, cut/drill/tap from real features, dependency-free PDF. Every unsupported line prints "confirm — not specified in CAD"; a failed render is a labelled placeholder — never a stand-in picture or an invented drill size. Engine `apps/web/lib/assembly-manual`, queue `packages/free-relay/src/assembly-manual.ts`, docs `docs/ASSEMBLY_MANUAL.md` |
 | District Advancement | `/district-advancement` | Wires `district-trajectory-sim` compute to a Competition page; EPA cache only — never DEMO qualification odds |
 | Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
 
