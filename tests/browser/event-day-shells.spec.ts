@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInFixture } from "./session";
 
 const VIEWPORTS = [
   { name: "phone", width: 390, height: 844 },
@@ -7,15 +8,7 @@ const VIEWPORTS = [
 ] as const;
 
 test.beforeEach(async ({ context }) => {
-  await context.addCookies([
-    {
-      name: "vantage-e2e-session",
-      value: "authenticated",
-      url: "http://localhost:3310",
-      httpOnly: true,
-      sameSite: "Lax",
-    },
-  ]);
+  await signInFixture(context);
 });
 
 for (const viewport of VIEWPORTS) {

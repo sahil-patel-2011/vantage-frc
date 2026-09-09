@@ -185,7 +185,7 @@ function DefenseShell({
           </ul>
         </Panel>
       ) : null}
-      <DefenseNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <DefenseNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

@@ -166,7 +166,7 @@ function DeskShell({
           </ul>
         </Panel>
       ) : null}
-      <DeskNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <DeskNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

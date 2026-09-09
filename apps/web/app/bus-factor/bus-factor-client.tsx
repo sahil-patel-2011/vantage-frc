@@ -178,7 +178,7 @@ function BusFactorShell({
           </ul>
         </Panel>
       ) : null}
-      <BusFactorNextActionsPanel actions={actions} />
+      {steps.length === 0 ? <BusFactorNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
