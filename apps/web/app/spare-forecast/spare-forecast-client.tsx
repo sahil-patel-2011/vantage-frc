@@ -93,7 +93,10 @@ function SpareForecastShell({
   children?: ReactNode;
 }) {
   const actions = spareForecastNextActions({ orgId, shell });
-  const buildHref = hubHref("/build", "fmea", orgId);
+  // The crumb is the Build hub, not the FMEA tab inside it: a breadcrumb that
+  // says "Build" and lands on a sibling tool is a third door to FMEA wearing
+  // the name of the parent.
+  const buildHref = withOrgHref("/build", orgId);
   const copy = spareForecastShellCopy(shell);
   const inventoryHref = withOrgHref("/inventory", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
@@ -235,10 +238,28 @@ export default function SpareForecastClient() {
     purchaseRequestCount,
     seasonHorizon: view?.status === "live" ? view.seasonHorizon : undefined,
   });
+  // FMEA, Orders and Subsystems appeared three times on one screen: the header
+  // strip, the Next actions list, and the empty-state buttons. Next actions is
+  // the copy that says *why* to go, so it wins; the strip keeps whatever it is
+  // not already offering, and the empty state offers none of them.
+  const nextActionHrefs = new Set(nextActions.map((action) => action.href));
+  /** Drop any button whose destination the Next actions panel already offers. */
+  const shellActions = (buttons: Array<{ href: string; label: string; primary?: boolean }>) =>
+    buttons
+      .filter((button) => !nextActionHrefs.has(button.href))
+      .map((button, index) => (
+        <a
+          key={button.href}
+          className={button.primary || index === 0 ? "app-button" : "app-button secondary"}
+          href={button.href}
+        >
+          {button.label}
+        </a>
+      ));
   const relatedLinks = spareForecastRelatedLinks(orgId, {
     include: [...SPARE_FORECAST_RELATED_INCLUDE],
-  });
-  const buildHref = hubHref("/build", "fmea", orgId);
+  }).filter((link) => !nextActionHrefs.has(link.href));
+  const buildHref = withOrgHref("/build", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
@@ -365,15 +386,13 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={inventoryHref}>
-            Open Inventory
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
-          <a className="app-button secondary" href={batteriesHref}>
-            Open Batteries
-          </a>
+          {/* Only what Next actions is not already offering — this empty state
+              used to repeat all three of them a scroll below the panel. */}
+          {shellActions([
+            { href: inventoryHref, label: "Open Inventory", primary: true },
+            { href: subsystemsHref, label: "Open Subsystems" },
+            { href: batteriesHref, label: "Open Batteries" },
+          ])}
         </EmptyState>
       ) : null}
 
@@ -385,15 +404,11 @@ export default function SpareForecastClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
-          </a>
-          <a className="app-button secondary" href={subsystemsHref}>
-            Open Subsystems
-          </a>
-          <a className="app-button secondary" href={ordersHref}>
-            Open Orders
-          </a>
+          {shellActions([
+            { href: hubHref("/build", "fmea", orgId), label: "Open FMEA", primary: true },
+            { href: subsystemsHref, label: "Open Subsystems" },
+            { href: ordersHref, label: "Open Orders" },
+          ])}
         </EmptyState>
       ) : null}
 
@@ -430,8 +445,25 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       ? null
       : scoredExhaust.filter((line) => line.forecast.willExhaust === true).length;
   const offseason = view.seasonHorizon === "offseason";
-  const tiles = [
-    { label: "Spare bins", value: formatSpareForecastMetric(view.spareBinCount, loaded) },
+  // `consumableSpareCount` is a subset of `spareBinCount`, not a second pile:
+  // both counts come from the same `is_spare` rows, and the consumables among
+  // them are the ones /spares manages. Saying so on the tile stops the two
+  // numbers reading as two unrelated features that happen to sit together.
+  const consumables = view.consumableSpareCount;
+  const parts = Math.max(0, view.spareBinCount - consumables);
+  const tiles: Array<{ label: string; value: string; hint?: string }> = [
+    {
+      label: "Spare bins",
+      value: formatSpareForecastMetric(view.spareBinCount, loaded),
+      hint:
+        !loaded || view.spareBinCount === 0
+          ? undefined
+          : consumables === 0
+            ? `${parts} ${parts === 1 ? "part" : "parts"}`
+            : parts === 0
+              ? `${consumables} ${consumables === 1 ? "consumable" : "consumables"}`
+              : `${parts} ${parts === 1 ? "part" : "parts"} · ${consumables} ${consumables === 1 ? "consumable" : "consumables"}`,
+    },
     { label: "Forecasted", value: formatSpareForecastMetric(view.forecastLines.length, loaded) },
     { label: "Will exhaust", value: formatSpareForecastMetric(willExhaust, loaded) },
     { label: "Critical", value: formatSpareForecastMetric(offseason ? null : critical, loaded) },
@@ -472,6 +504,11 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
             <small className="app-muted" style={{ display: "block" }}>
               {tile.label}
             </small>
+            {tile.hint ? (
+              <small className="app-muted" style={{ display: "block" }} data-testid="spare-bin-breakdown">
+                {tile.hint}
+              </small>
+            ) : null}
           </div>
         ))}
       </div>
