@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_ERROR_BAND,
+  FIXTURE_ERROR_BAND,
+  errorBandFromMae,
   fixtureSeasonRows,
   isScorePredictionSkip,
   predictAllianceScores,
   scorePredictionMetrics,
+  typicalScoreErrorCopy,
 } from "../src/calibrated-score";
 
 describe("calibrated alliance score predictor", () => {
@@ -33,7 +37,7 @@ describe("calibrated alliance score predictor", () => {
     if (isScorePredictionSkip(prediction)) return;
     expect(prediction.drivers.length).toBeGreaterThan(0);
     expect(prediction.drivers.join(" ")).toMatch(/auto|climb/i);
-    expect(prediction.errorBand).toBeGreaterThan(0);
+    expect(prediction.errorBand).toBe(FIXTURE_ERROR_BAND);
   });
 
   it("reports honest metrics on the fixture (not a live TBA claim)", () => {
@@ -44,5 +48,22 @@ describe("calibrated alliance score predictor", () => {
     expect(metrics.within3).toBe(0);
     expect(metrics.within5).toBe(0);
     expect(metrics.modelVersion).toBe("calibrated-linear-v1");
+  });
+
+  it("uses the fixture MAE as the UI band, not a placeholder 8", () => {
+    expect(errorBandFromMae(Number.NaN)).toBe(1);
+    expect(errorBandFromMae(-4)).toBe(1);
+    expect(errorBandFromMae(0)).toBe(1);
+    expect(errorBandFromMae(89.7)).toBe(90);
+    const metrics = scorePredictionMetrics(fixtureSeasonRows());
+    expect(errorBandFromMae(metrics.mae)).toBe(FIXTURE_ERROR_BAND);
+    expect(FIXTURE_ERROR_BAND).toBe(90);
+    expect(DEFAULT_ERROR_BAND).toBe(FIXTURE_ERROR_BAND);
+    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±90 (last measured set)");
+    const [row] = fixtureSeasonRows();
+    const overridden = predictAllianceScores(row!, { errorBand: 12.4 });
+    expect(isScorePredictionSkip(overridden)).toBe(false);
+    if (isScorePredictionSkip(overridden)) return;
+    expect(overridden.errorBand).toBe(12);
   });
 });

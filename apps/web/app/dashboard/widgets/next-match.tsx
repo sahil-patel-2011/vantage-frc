@@ -69,7 +69,7 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
         <p className="app-muted">
           About {Math.round(Number(data.redPredicted))}–{Math.round(Number(data.bluePredicted))} points
           {typeof data.errorBand === "number" && Number.isFinite(data.errorBand)
-            ? ` · typical error ±${Math.round(Number(data.errorBand))}`
+            ? ` · typical error ±${Math.round(Number(data.errorBand))} (last measured set)`
             : ""}
         </p>
       ) : null}

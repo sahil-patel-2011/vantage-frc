@@ -1,3 +1,4 @@
+import { FIXTURE_ERROR_BAND } from "@vantage/prediction-strategy";
 import { describe, expect, it } from "vitest";
 import {
   featuresForAlliance,
@@ -36,7 +37,7 @@ describe("nextMatchScoreCard", () => {
     expect(isNextMatchScoreSkip(card)).toBe(false);
     if (isNextMatchScoreSkip(card)) return;
     expect(card.redPredicted).toBeGreaterThan(card.bluePredicted);
-    expect(card.errorBand).toBeGreaterThan(0);
+    expect(card.errorBand).toBe(FIXTURE_ERROR_BAND);
     expect(card.briefing).toMatch(/blue/i);
     expect(card.drivers.length).toBeGreaterThan(0);
   });

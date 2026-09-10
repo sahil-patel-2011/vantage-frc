@@ -15,7 +15,7 @@ DATABASE_URL=postgres://… node scripts/prediction-backtest.mjs --year 2026
 | fixture (2 matches) | 4 | **89.7** | **89.88** | **0.000** | **0.000** | `packages/prediction-strategy/test/calibrated-score.test.ts` — toy scores vs summed EPA; not a season claim |
 | live season | not run | — | — | — | — | needs `DATABASE_URL` to a local/ref cache, never production Neon from this agent |
 
-UI error band on the next-match widget is `DEFAULT_ERROR_BAND = 8` until a live backtest replaces it. The fixture MAE is much larger than 8, so the band is a placeholder, not a measured interval on this set.
+UI error band on the next-match widget is `FIXTURE_ERROR_BAND` = **90**, from `errorBandFromMae` on this fixture MAE (89.7 → 90). Copy reads **typical error ±90 (last measured set)**. That is not a ±3 promise and not a live-season interval — it is the measured error on this 2-match toy set, shown instead of a placeholder 8. A season backtest can pass a different `errorBand` into `predictAllianceScores`.
 
 ## Method
 

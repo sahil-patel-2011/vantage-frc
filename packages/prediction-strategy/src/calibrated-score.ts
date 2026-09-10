@@ -60,8 +60,35 @@ export type ScorePredictionMetrics = {
 
 const MODEL_VERSION = "calibrated-linear-v1" as const;
 
-/** Held-out expected error used as the UI band until a live backtest replaces it. */
-export const DEFAULT_ERROR_BAND = 8;
+/**
+ * Turn a measured MAE into the UI ±band. Round to the nearest point and never
+ * claim a tighter interval than 1 — a zero band would look like a guarantee.
+ */
+export function errorBandFromMae(mae: number): number {
+  if (!Number.isFinite(mae) || mae < 0) return 1;
+  return Math.max(1, Math.round(mae));
+}
+
+/**
+ * Rounded MAE of `fixtureSeasonRows()` (89.7 → 90). Tests lock this to
+ * `scorePredictionMetrics` so the widget cannot silently drift back to a
+ * placeholder. Not a season claim — the fixture scores are toy totals vs EPA.
+ */
+export const FIXTURE_ERROR_BAND = 90;
+
+/** @deprecated Use FIXTURE_ERROR_BAND. Alias kept so older imports still resolve. */
+export const DEFAULT_ERROR_BAND = FIXTURE_ERROR_BAND;
+
+export function typicalScoreErrorCopy(errorBand: number): string {
+  return `typical error ±${Math.round(errorBand)} (last measured set)`;
+}
+
+function resolveErrorBand(override: number | undefined): number {
+  if (typeof override === "number" && Number.isFinite(override) && override > 0) {
+    return Math.round(override);
+  }
+  return FIXTURE_ERROR_BAND;
+}
 
 function allianceTotal(side: TeamScoreFeatures[]): { total: number | null; missing: string[] } {
   const missing: string[] = [];
@@ -113,6 +140,7 @@ function driversFor(side: TeamScoreFeatures[], color: "red" | "blue"): string[] 
 
 export function predictAllianceScores(
   row: Omit<ScoreFeatureRow, "redScore" | "blueScore"> & { redScore?: number; blueScore?: number },
+  options?: { errorBand?: number },
 ): AllianceScorePrediction | ScorePredictionSkip {
   const red = allianceTotal(row.red);
   const blue = allianceTotal(row.blue);
@@ -128,7 +156,7 @@ export function predictAllianceScores(
     matchKey: row.matchKey,
     redPredicted: Math.round(red.total * 10) / 10,
     bluePredicted: Math.round(blue.total * 10) / 10,
-    errorBand: DEFAULT_ERROR_BAND,
+    errorBand: resolveErrorBand(options?.errorBand),
     drivers: [...redDrivers, ...blueDrivers].slice(0, 3),
     modelVersion: MODEL_VERSION,
   };

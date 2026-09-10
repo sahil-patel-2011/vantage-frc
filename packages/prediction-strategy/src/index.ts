@@ -18,10 +18,13 @@ export * from "./scout-ops";
 export * from "./dossier";
 export {
   DEFAULT_ERROR_BAND,
+  FIXTURE_ERROR_BAND,
+  errorBandFromMae,
   fixtureSeasonRows,
   isScorePredictionSkip,
   predictAllianceScores,
   scorePredictionMetrics,
+  typicalScoreErrorCopy,
 } from "./calibrated-score";
 export { matchPlanFromPrediction } from "./match-plan";
 export type { MatchPlan } from "./match-plan";

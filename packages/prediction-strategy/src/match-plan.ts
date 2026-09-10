@@ -30,17 +30,17 @@ export function matchPlanFromPrediction(
     ?? "Do not assign a defender unless scouting marked one. Defense without a flag is a guess.";
   const briefing = [
     ourAlliance
-      ? `You are ${ourAlliance}. Predicted ${us.toFixed(0)}–${them.toFixed(0)} (band ±${band}).`
-      : `Predicted red ${prediction.redPredicted.toFixed(0)} / blue ${prediction.bluePredicted.toFixed(0)} (band ±${band}). Alliance color is not set.`,
+      ? `You are ${ourAlliance}. Predicted ${us.toFixed(0)}–${them.toFixed(0)} (typical error ±${band}, last measured set).`
+      : `Predicted red ${prediction.redPredicted.toFixed(0)} / blue ${prediction.bluePredicted.toFixed(0)} (typical error ±${band}, last measured set). Alliance color is not set.`,
     margin != null
       ? margin >= 0
-        ? `That is about ${margin} points in your favour — only worth a stretch play if it is bigger than the ±${band} band.`
+        ? `That is about ${margin} points in your favour — only worth a stretch play if it is bigger than the typical ±${band} error.`
         : `You are about ${Math.abs(margin)} points behind — play the consistent cycle, not a miracle.`
       : "Set bumper color before the briefing line can pick a side.",
     ...prediction.drivers.slice(0, 3),
   ].join(" ");
   const pointDeltas = [
-    margin != null ? `Predicted margin ${margin > 0 ? "+" : ""}${margin} (band ±${band})` : `Error band ±${band} points`,
+    margin != null ? `Predicted margin ${margin > 0 ? "+" : ""}${margin} (typical error ±${band})` : `Typical error ±${band} points (last measured set)`,
     ...prediction.drivers.slice(0, 2),
   ];
   return { auto, defend, climb, briefing, pointDeltas };
