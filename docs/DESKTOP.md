@@ -107,9 +107,30 @@ handles the **portable** target, which electron-updater cannot update at all. Th
 portable build is told about the new version and pointed at the download; it is
 never restarted, because there is no installer to run in place.
 
-`/api/desktop/release` does not exist yet — the shell tolerates its 404 and uses
-GitHub. Adding it (in `apps/web`) is what lets the *web app* declare
-`minimumVersion` at deploy time rather than at desktop-release time.
+`/api/desktop/release` is public. It returns `{ version, minimumSupported, url, sha256, downloads: { win_msi, win_nsis, mac_dmg }, unsigned: true }` from GitHub `latest.json`, or 503 with an honest empty body when no `desktop-v*` release exists.
+
+## Signing and notarization (owner must buy)
+
+Builds are unsigned unless these env vars exist on the GitHub Actions runners:
+
+| Variable | What it is |
+|---|---|
+| `CSC_LINK` | Path or URL to the Windows Authenticode (or macOS Developer ID) certificate |
+| `CSC_KEY_PASSWORD` | Password for that certificate |
+| `APPLE_ID` | Apple ID for notarization |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password |
+| `APPLE_TEAM_ID` | Apple Team ID |
+
+Until those are set, `CSC_IDENTITY_AUTO_DISCOVERY=false` and the installer license (`apps/desktop/build/UNSIGNED.txt`) says the build is unsigned. SmartScreen and Gatekeeper will warn. That is honest, not a bug.
+
+macOS DMG/universal builds run on `macos-latest` in `.github/workflows/desktop.yml`. They cannot be produced on a Windows shop laptop.
+
+## Installer (unsigned)
+
+```text
+npm run desktop:dist        # Windows NSIS + MSI + portable
+npm run dist:mac --workspace=@vantage/desktop   # macOS DMG + zip (macOS only)
+```
 
 ## Run
 

@@ -1,4 +1,4 @@
-name: Desktop Windows package
+name: Desktop packages
 
 on:
   workflow_dispatch:
@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
 jobs:
   windows:
@@ -22,55 +25,86 @@ jobs:
       - run: npm run typecheck --workspace=@vantage/desktop
       - run: npm test --workspace=@vantage/desktop
       - run: npm run dist --workspace=@vantage/desktop
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      # The shell's updater reads this manifest, not the GitHub API: the API
-      # carries no per-asset digest, and with unsigned builds the SHA-256 is the
-      # only thing between "downloaded over TLS" and "safe to execute".
-      # MINIMUM_SHELL_VERSION is the oldest shell the web app still supports.
-      # Raise it only when a web change genuinely breaks older shells — it is
-      # what turns an optional update into a blocking "Update required".
-      - name: Build update manifest
-        shell: bash
-        env:
-          MINIMUM_SHELL_VERSION: "0.0.0"
-        run: |
-          set -euo pipefail
-          setup="$(ls apps/desktop/release/*-setup.exe | head -n1)"
-          # Exported, not interpolated: no shell value is ever spliced into JSON.
-          export V="$(node -p "require('./apps/desktop/package.json').version")"
-          export D="$(sha256sum "$setup" | cut -d' ' -f1)"
-          export U="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$setup")"
-          node -e '
-            const fs = require("fs");
-            fs.writeFileSync("apps/desktop/release/latest.json", JSON.stringify({
-              version: process.env.V,
-              minimumVersion: process.env.MINIMUM_SHELL_VERSION,
-              url: process.env.U,
-              sha256: process.env.D,
-            }, null, 2) + "\n");
-          '
-          cat apps/desktop/release/latest.json
       - uses: actions/upload-artifact@v4
         with:
           name: vantage-desktop-windows
           path: |
             apps/desktop/release/*.exe
-            apps/desktop/release/latest.json
-      - name: GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+            apps/desktop/release/*.msi
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace=@vantage/desktop
+      - run: npm test --workspace=@vantage/desktop
+      - run: npm run dist:mac --workspace=@vantage/desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vantage-desktop-macos
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+
+  release:
+    needs: [windows, macos]
+    if: always() && startsWith(github.ref, 'refs/tags/') && needs.windows.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Build latest.json and publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
+          MINIMUM_SHELL_VERSION: "0.0.0"
         run: |
-          files=(apps/desktop/release/*.exe apps/desktop/release/latest.json)
+          set -euo pipefail
+          mkdir -p out
+          find dist -type f \( -name '*.exe' -o -name '*.msi' -o -name '*.dmg' -o -name '*.zip' \) -exec cp {} out/ \;
+          nsis="$(ls out/*-setup.exe 2>/dev/null | head -n1 || true)"
+          msi="$(ls out/*.msi 2>/dev/null | head -n1 || true)"
+          dmg="$(ls out/*.dmg 2>/dev/null | head -n1 || true)"
+          if [ -z "$nsis" ]; then
+            echo "Windows NSIS installer missing"
+            exit 1
+          fi
+          export V="$(node -p "require('./apps/desktop/package.json').version")"
+          export D="$(sha256sum "$nsis" | cut -d' ' -f1)"
+          export NSIS_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$nsis")"
+          export MSI_URL=""
+          export DMG_URL=""
+          if [ -n "$msi" ]; then
+            export MSI_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$msi")"
+          fi
+          if [ -n "$dmg" ]; then
+            export DMG_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "$dmg")"
+          fi
+          node -e '
+            const fs = require("fs");
+            const downloads = { win_nsis: process.env.NSIS_URL, win_msi: process.env.MSI_URL || null, mac_dmg: process.env.DMG_URL || null };
+            fs.writeFileSync("out/latest.json", JSON.stringify({
+              version: process.env.V,
+              minimumVersion: process.env.MINIMUM_SHELL_VERSION,
+              minimumSupported: process.env.MINIMUM_SHELL_VERSION,
+              url: process.env.NSIS_URL,
+              sha256: process.env.D,
+              downloads,
+              notes: "Unsigned. SmartScreen and Gatekeeper will warn until signing credentials exist. The window loads the hosted Vantage web app.",
+            }, null, 2) + "\n");
+          '
+          files=(out/*)
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "${files[@]}" \
               --title "Vantage desktop $GITHUB_REF_NAME" \
-              --notes "Unsigned Windows installer and portable build. SmartScreen will warn until Authenticode certs exist. The window loads https://vantage-frc-web.vercel.app — the same invite-only product as the web app."
+              --notes "Unsigned Windows NSIS + MSI and macOS DMG (when the macOS job succeeded). SmartScreen/Gatekeeper will warn until Authenticode and Apple notarization credentials exist. The window loads https://vantage-frc-web.vercel.app — the same invite-only product as the web app."
           fi
-          # The updater fetches /releases/latest/download/latest.json, which only
-          # resolves once this release is the latest non-draft, non-prerelease one.
           gh release edit "$GITHUB_REF_NAME" --latest

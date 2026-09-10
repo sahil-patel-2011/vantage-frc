@@ -10,7 +10,9 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dist": "tsc && electron-builder --win nsis portable"
+    "dist": "tsc && electron-builder --win nsis msi portable",
+    "dist:mac": "tsc && electron-builder --mac dmg zip",
+    "dist:all": "tsc && electron-builder --win nsis msi portable --mac dmg zip"
   },
   "devDependencies": {
     "electron": "latest",
@@ -49,10 +51,32 @@
           "arch": ["x64"]
         },
         {
+          "target": "msi",
+          "arch": ["x64"]
+        },
+        {
           "target": "portable",
           "arch": ["x64"]
         }
       ]
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        },
+        {
+          "target": "zip",
+          "arch": ["universal"]
+        }
+      ],
+      "artifactName": "Vantage-${version}-mac-${arch}.${ext}"
+    },
+    "msi": {
+      "artifactName": "Vantage-${version}-win-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -60,7 +84,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Vantage",
-      "artifactName": "Vantage-${version}-win-${arch}-setup.${ext}"
+      "artifactName": "Vantage-${version}-win-${arch}-setup.${ext}",
+      "license": "build/UNSIGNED.txt"
     },
     "portable": {
       "artifactName": "Vantage-${version}-win-${arch}-portable.${ext}"

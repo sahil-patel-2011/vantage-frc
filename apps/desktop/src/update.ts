@@ -149,14 +149,25 @@ export function parseManifest(raw: unknown): ReleaseManifest | null {
   const version = typeof row.version === "string" ? row.version.trim() : "";
   if (!parseVersion(version)) return null;
 
-  const url = row.url;
+  const downloads =
+    row.downloads && typeof row.downloads === "object" ? (row.downloads as Record<string, unknown>) : {};
+  const url = isAllowedDownloadUrl(row.url)
+    ? row.url
+    : isAllowedDownloadUrl(downloads.win_nsis)
+      ? downloads.win_nsis
+      : null;
   if (!isAllowedDownloadUrl(url)) return null;
 
   const sha256 = typeof row.sha256 === "string" ? row.sha256.trim().toLowerCase() : "";
   if (!/^[0-9a-f]{64}$/.test(sha256)) return null;
 
   // A manifest that omits it means "no floor" — every version is still supported.
-  const minimumRaw = typeof row.minimumVersion === "string" ? row.minimumVersion.trim() : "";
+  const minimumRaw =
+    typeof row.minimumSupported === "string"
+      ? row.minimumSupported.trim()
+      : typeof row.minimumVersion === "string"
+        ? row.minimumVersion.trim()
+        : "";
   const minimumVersion = parseVersion(minimumRaw) ? minimumRaw : "0.0.0";
   // A floor above the release being offered would strand the shell with nothing
   // to install; clamp it to the offered version.
