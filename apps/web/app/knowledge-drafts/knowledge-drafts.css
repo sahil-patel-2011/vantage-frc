@@ -62,7 +62,7 @@
   align-items: center;
   gap: 6px;
   padding: 2px 10px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   border: 1px solid var(--app-line);
   background: var(--app-soft);
   color: var(--app-muted);

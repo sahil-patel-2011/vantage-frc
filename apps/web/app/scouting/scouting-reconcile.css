@@ -33,21 +33,21 @@ html[data-theme="dark"] {
   display: grid;
   gap: 3px;
   padding: 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 .recon-kpis span,
 .recon-kpis small {
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 .recon-kpis strong {
   font-size: clamp(20px, 3vw, 26px);
   line-height: 1.1;
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 
 .recon-actions {
@@ -65,9 +65,9 @@ html[data-theme="dark"] {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 .recon-match > header {
   display: flex;
@@ -79,19 +79,19 @@ html[data-theme="dark"] {
 .recon-match h3 {
   margin: 0;
   font-size:var(--soft-title-3);
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 
 .recon-chip {
   display: inline-block;
   padding: 3px 10px;
-  border-radius:var(--soft-radius-pill);
-  border: 1px solid var(--soft-line);
+  border-radius:var(--radius-pill);
+  border: 1px solid var(--line);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
   background: transparent;
 }
 .recon-chip.review {
@@ -109,18 +109,18 @@ html[data-theme="dark"] {
   display: grid;
   gap: 6px;
   padding: 10px;
-  border-radius: var(--soft-radius-sm, 12px);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 92%, var(--soft-line));
+  border-radius: var(--radius-sm, 12px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, var(--line));
 }
 .recon-alliance > b {
-  color: var(--soft-ink);
+  color: var(--ink);
   font-size: 13px;
 }
 .recon-alliance p {
   margin: 0;
   font-size: 12px;
-  color: var(--soft-muted);
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 
@@ -138,17 +138,17 @@ html[data-theme="dark"] {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 .recon-robots li span {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 .recon-robots li a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 0 10px;
-  color: var(--soft-accent);
+  color: var(--accent);
   font-weight: 600;
 }
 

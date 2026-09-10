@@ -52,7 +52,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 16px;
 }
 
@@ -185,7 +185,7 @@
   color: var(--app-muted);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -230,7 +230,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;

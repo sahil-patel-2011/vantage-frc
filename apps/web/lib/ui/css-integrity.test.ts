@@ -152,8 +152,10 @@ describe("stylesheet integrity", () => {
 
   it("declares --soft-*/--app-*/--m-* tokens only in system.css", () => {
     // Three competing palettes is how two secondary buttons on the same
-    // screen ended up different colours. Canonical names live in system.css;
-    // every other sheet may *consume* var(--soft-*) but must not redeclare it.
+    // screen ended up different colours. Canonical names live in system.css.
+    // Leaf sheets must not redeclare --soft-*/--app-*/--m-* tokens. Color,
+    // radius, and shadow consumption is locked to the canonical names;
+    // leftover --soft-* vars are type, space, and chrome.
     const tokenDecl = /--(?:soft|app|m)-[A-Za-z0-9-]+\s*:/;
     const offenders: string[] = [];
     for (const file of files) {
@@ -210,5 +212,27 @@ describe("stylesheet integrity", () => {
     }
     for (const root of roots) walk(root);
     expect(offenders, `TSX still uses --soft-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
+
+  it("consumes canonical color tokens instead of --soft-* color aliases", () => {
+    // Competing palettes is how two secondary buttons on the same screen ended
+    // up different colours. Leaf sheets must use --bg/--surface/--ink/--accent
+    // (and the other canonical names). --soft-* aliases remain declared in
+    // system.css for leftover type/space tokens only.
+    const colorAlias =
+      /var\(--soft-(?:bg|card|ink|muted|line(?:-soft)?|accent(?:-soft|-ink)?|warning(?:-soft)?|danger(?:-soft)?|success(?:-soft)?|surface-2|panel|border|brand|ring|radius(?:-xs|-sm|-lg|-pill)?|shadow(?:-lift|-pop)?)(?=[,)])/;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (colorAlias.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      `CSS still consumes --soft-* color/radius aliases:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
   });
 });

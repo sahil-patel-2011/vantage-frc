@@ -191,8 +191,8 @@
 }
 
 .prs-chips li {
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-pill);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-pill);
   padding: 4px 10px;
   font-size: 0.9em;
   opacity: 0.85;

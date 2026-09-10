@@ -29,7 +29,7 @@
   color: var(--app-accent);
   background: transparent;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -63,7 +63,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
   font-size: 13px;
 }
@@ -74,7 +74,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -99,7 +99,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;

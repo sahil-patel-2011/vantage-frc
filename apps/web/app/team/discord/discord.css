@@ -7,10 +7,10 @@
 .team-discord-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
 .team-discord-panel{display:grid;gap:12px;padding:18px}
 .team-discord-panel h2{margin:0;font-size:var(--soft-title-3)}
-.team-discord-panel textarea{width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--soft-radius-sm);background:var(--app-bg);color:var(--app-ink);font:inherit;resize:vertical}
+.team-discord-panel textarea{width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--radius-sm);background:var(--app-bg);color:var(--app-ink);font:inherit;resize:vertical}
 .team-discord-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .team-discord-meta{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.team-discord-meta li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);background:var(--app-bg);font-size:13px}
+.team-discord-meta li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--app-line);border-radius:var(--radius-xs);background:var(--app-bg);font-size:13px}
 .team-discord-meta span{color:var(--app-muted)}
 .team-discord-announce{display:grid;gap:10px;margin-top:8px;padding-top:14px;border-top:1px solid var(--app-line)}
 .team-discord-status{margin:0;font-size:13px;font-weight:600}
@@ -22,7 +22,7 @@
 .team-discord-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .team-discord-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .team-discord-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.team-discord-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
+.team-discord-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
 .team-discord-next-actions li.primary{border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
 .team-discord-next-actions li div{display:grid;gap:2px;min-width:0}
 .team-discord-next-actions li strong{font-size:14px}
@@ -30,7 +30,7 @@
 .team-discord-next-actions li .app-button{flex:none}
 
 .team-discord-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:100%}
-.team-discord-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
+.team-discord-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
 .team-discord-setup-steps li div{display:grid;gap:2px;min-width:0}
 .team-discord-setup-steps li strong{font-size:14px}
 .team-discord-setup-steps li span{color:var(--app-muted);font-size:12px;line-height:1.35}

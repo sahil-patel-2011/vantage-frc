@@ -27,15 +27,15 @@
   gap: 16px;
   min-height: 56px;
   padding: 12px 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
   text-decoration: none;
 }
 
 .forms-list-row:hover {
-  border-color: var(--soft-accent);
+  border-color: var(--accent);
 }
 
 .forms-list-main {
@@ -55,7 +55,7 @@
   align-items: center;
   gap: 10px;
   flex: 0 0 auto;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 /* ---------- start a form ---------- */
@@ -82,17 +82,17 @@
   gap: 4px;
   min-height: 76px;
   padding: 12px 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
   text-align: left;
   font: inherit;
   cursor: pointer;
 }
 
 .forms-purpose:hover:not(:disabled) {
-  border-color: var(--soft-accent);
+  border-color: var(--accent);
 }
 
 .forms-purpose:disabled {
@@ -101,7 +101,7 @@
 }
 
 .forms-purpose small {
-  color: var(--soft-muted);
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -112,7 +112,7 @@
 }
 
 .forms-error {
-  color: var(--soft-danger, #b42318);
+  color: var(--critical, #b42318);
 }
 
 /* ---------- status ---------- */
@@ -139,8 +139,8 @@
   gap: 10px;
   margin: 12px 0 0;
   padding: 10px 12px;
-  border: 1px dashed var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm, 12px);
   font-size: 13px;
   /* A share URL must be selectable in full and must not push the panel wide. */
   overflow-wrap: anywhere;
@@ -170,9 +170,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 
 .forms-question-main {
@@ -188,15 +188,15 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: var(--soft-ink);
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
 }
 
 .forms-question-label:hover,
 .forms-question-label:focus {
-  border-color: var(--soft-line);
-  background: var(--soft-bg);
+  border-color: var(--line);
+  background: var(--bg);
 }
 
 .forms-question-actions {
@@ -220,7 +220,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .forms-page .forms-required input[type="checkbox"],
@@ -237,7 +237,7 @@
   align-items: end;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .forms-add label {
@@ -276,8 +276,8 @@
   gap: 8px;
   min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
 }
 
 /* ---------- results ---------- */
@@ -289,15 +289,15 @@
 .forms-provisional {
   margin: 8px 0 0;
   padding: 8px 10px;
-  border-left: 3px solid var(--soft-accent);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .forms-result {
   padding: 16px 0;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .forms-result:first-child {
@@ -343,7 +343,7 @@
 .forms-bar-track {
   height: 10px;
   border-radius: 999px;
-  background: var(--soft-bg);
+  background: var(--bg);
   overflow: hidden;
 }
 
@@ -351,7 +351,7 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--soft-accent);
+  background: var(--accent);
 }
 
 /* An option nobody picked keeps its row so the gap is visible, but must not
@@ -368,7 +368,7 @@
 }
 
 .forms-bar-value small {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .forms-stats {
@@ -380,13 +380,13 @@
 
 .forms-stats div {
   padding: 8px 10px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
 }
 
 .forms-stats dt {
   font-size: 12px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .forms-stats dd {
@@ -406,8 +406,8 @@
 
 .forms-text-answers li {
   padding: 8px 10px;
-  border-left: 3px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--line);
+  background: var(--bg);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -434,8 +434,8 @@
 
 .forms-dues-groups li {
   padding: 8px 10px;
-  border-left: 3px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--line);
+  background: var(--bg);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -448,7 +448,7 @@
 .forms-dues-groups li small {
   display: block;
   margin-top: 2px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 /* The people this feature exists to leave alone. */

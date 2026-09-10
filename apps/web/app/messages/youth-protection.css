@@ -33,7 +33,7 @@
   color: var(--app-muted);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -91,7 +91,7 @@
   padding: 12px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   cursor: pointer;
 }
 
@@ -124,7 +124,7 @@
   color: var(--app-ink);
   background: color-mix(in srgb, var(--app-critical) 10%, var(--app-surface));
   border: 1px solid color-mix(in srgb, var(--app-critical) 40%, var(--app-line));
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -152,7 +152,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
   font-size: 14px;
 }
@@ -182,7 +182,7 @@ body.has-app-shell .chat-page .chat-sidebar button.chat-safety-toggle {
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   text-align: center;
   font-size: 12px;
   font-weight: 700;

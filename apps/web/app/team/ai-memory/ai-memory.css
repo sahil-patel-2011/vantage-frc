@@ -156,7 +156,7 @@
 
 .dream-chips li {
   padding: 3px 9px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
   background: var(--app-surface, transparent);
   color: var(--app-muted, inherit);

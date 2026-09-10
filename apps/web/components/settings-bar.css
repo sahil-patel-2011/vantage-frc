@@ -33,7 +33,7 @@
   flex: none;
 }
 .settings-bar-group + .settings-bar-group {
-  border-left: 1px solid var(--soft-line);
+  border-left: 1px solid var(--line);
   padding-left: 14px;
 }
 .settings-bar-group-label {
@@ -41,7 +41,7 @@
   font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 /* Same chip as .hub-tool-chip (product-hub.css) — one shape for every strip. */
 /* Shape, height, padding and type come from the shared chip rule in
@@ -50,9 +50,9 @@
    page, two sizes. `flex: none` and the border/colour are genuinely local. */
 .settings-bar-chip {
   flex: none;
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
-  color: var(--soft-muted);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
 }
 .settings-bar-chip svg {
   width: 16px;
@@ -61,13 +61,13 @@
   display: block;
 }
 .settings-bar-chip:hover {
-  color: var(--soft-ink);
-  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 .settings-bar-chip.is-active {
-  background: var(--soft-accent-soft);
-  border-color: color-mix(in srgb, var(--soft-accent) 55%, transparent);
-  color: var(--soft-accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
   font-weight: 700;
 }
 @media (prefers-reduced-motion: no-preference) {

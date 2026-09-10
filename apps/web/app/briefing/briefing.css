@@ -13,7 +13,7 @@
 .brief-hero-teams{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
 .brief-hero-lineup{color:var(--app-ink);font-size:13px;font-weight:600}
 .brief-hero-lineup em{color:var(--app-muted);font-style:normal;font-weight:500}
-.brief-alliance-chip{padding:3px 10px;border-radius:var(--soft-radius-pill);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.brief-alliance-chip{padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .brief-alliance-chip.red{color:var(--app-critical);border:1px solid var(--app-critical)}
 .brief-alliance-chip.blue{color:var(--app-accent);border:1px solid var(--app-accent)}
 .brief-prob{display:grid;gap:2px;align-content:center;justify-items:end;text-align:right;padding-left:18px;border-left:1px solid var(--app-line)}
@@ -70,7 +70,7 @@
 .brief-priorities{margin:0;padding-left:20px;display:grid;gap:4px;color:var(--app-ink);font-size:13px}
 .brief-chip-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .brief-chip-label{color:var(--app-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.brief-chip{padding:2px 8px;color:var(--app-muted);background:var(--app-soft);border-radius:var(--soft-radius-pill);font-size:11px;font-weight:600}
+.brief-chip{padding:2px 8px;color:var(--app-muted);background:var(--app-soft);border-radius:var(--radius-pill);font-size:11px;font-weight:600}
 .brief-chip.positive{color:var(--app-positive);background:transparent;border:1px solid var(--app-positive)}
 .brief-chip.critical{color:var(--app-critical);background:transparent;border:1px solid var(--app-critical)}
 .brief-play-title{margin:0;color:var(--app-ink);font-size:15px;font-weight:700}
@@ -89,7 +89,7 @@
 .brief-review-head b{color:var(--app-ink);font-size:13px}
 .brief-notes{margin:0;padding:0;list-style:none;display:grid;gap:5px}
 .brief-notes li{display:flex;align-items:baseline;gap:8px;font-size:13px}
-.brief-ts{flex:none;padding:1px 7px;color:var(--app-accent);border:1px solid var(--app-accent);border-radius:var(--soft-radius-pill);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.brief-ts{flex:none;padding:1px 7px;color:var(--app-accent);border:1px solid var(--app-accent);border-radius:var(--radius-pill);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
 .brief-tag{flex:none;color:var(--app-muted);font-size:11px;font-style:normal;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .brief-note-body{color:var(--app-ink)}
 .brief-no-notes{margin:0;font-size:12px}

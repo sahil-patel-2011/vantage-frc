@@ -108,7 +108,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -183,7 +183,7 @@
   padding: 8px 12px;
   background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
   border: 1px solid color-mix(in srgb, var(--app-warning) 35%, var(--app-line));
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   color: var(--app-warning);
   font-size: 11px;
   font-weight: 800;
@@ -202,7 +202,7 @@
   padding: 12px 14px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
 }
 .ch-msg.assistant {
   border-color: color-mix(in srgb, var(--app-accent) 25%, var(--app-line));
@@ -232,7 +232,7 @@
   padding: 8px 10px;
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 11px;
 }
 .ch-tool strong {
@@ -288,7 +288,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
 }
 .ch-composer textarea {
@@ -313,7 +313,7 @@
   padding: 12px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .ch-row {
   display: flex;
@@ -357,7 +357,7 @@
   padding: 10px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .ch-memories small {
   color: var(--app-muted);

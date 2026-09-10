@@ -7,16 +7,16 @@
 .awards-status {
   margin: 0;
   padding: 10px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
-  color: var(--soft-muted);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
   font-size: 13px;
 }
 
 .awards-status.ok {
-  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--soft-line));
-  background: color-mix(in srgb, var(--app-positive) 10%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--line));
+  background: color-mix(in srgb, var(--app-positive) 10%, var(--surface));
   color: var(--app-positive);
 }
 
@@ -42,7 +42,7 @@
 .awards-form p,
 .awards-items p {
   margin: 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -66,15 +66,15 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
   cursor: pointer;
 }
 
 .awards-submission-list li[data-selected="true"] {
-  border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
-  background: color-mix(in srgb, var(--soft-accent-soft) 70%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface));
 }
 
 .awards-submission-list li > div:first-child {
@@ -88,7 +88,7 @@
 }
 
 .awards-submission-list span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -111,19 +111,19 @@
   display: grid;
   gap: 8px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .awards-item-list textarea {
   min-height: 120px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-sm);
   font: 500 14px var(--font-source-sans), ui-sans-serif;
-  background: var(--soft-card);
+  background: var(--surface);
   color: inherit;
   resize: vertical;
 }
@@ -144,7 +144,7 @@
 
 .awards-export-note {
   margin: 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -154,7 +154,7 @@
   gap: 10px;
   margin-top: 4px;
   padding-top: 12px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .awards-add-item-row {

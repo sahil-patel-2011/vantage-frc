@@ -5,7 +5,7 @@
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}
 /* Opt-in AI expansion sits under the computed text with its own badge. */
 .aii-ai-text{border-left-color:color-mix(in srgb, var(--app-accent) 55%, transparent);background:color-mix(in srgb, var(--app-accent) 6%, var(--app-bg))}

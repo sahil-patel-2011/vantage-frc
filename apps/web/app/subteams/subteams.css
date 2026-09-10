@@ -15,8 +15,8 @@
   display: grid;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
 }
 
 .st-summary strong {
@@ -47,7 +47,7 @@
 /* The people who joined and were never placed are the ones a team loses, so
    the group carries the same accent treatment a pinned notice does. */
 .st-unassigned {
-  border-left: 3px solid var(--soft-accent);
+  border-left: 3px solid var(--accent);
 }
 
 .st-members {
@@ -65,16 +65,16 @@
   justify-content: space-between;
   gap: 10px;
   padding: 9px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 
 /* Someone who owes something is the reason to open this page; the marker is a
    left edge rather than a red row, because "has not confirmed a notice yet" is
    a nudge, not an error. */
 .st-member.owed {
-  border-left: 3px solid var(--soft-accent);
+  border-left: 3px solid var(--accent);
 }
 
 .st-member-name {
@@ -85,7 +85,7 @@
 }
 
 .st-member-state {
-  color: var(--soft-muted);
+  color: var(--muted);
   text-align: right;
 }
 

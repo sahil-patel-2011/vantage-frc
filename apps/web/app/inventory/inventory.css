@@ -1,6 +1,6 @@
 /* Soft-UI Inventory & BOM — .inventory-* + shared Soft-UI tokens. Never DEMO stock metrics. */
 .inventory-page{display:grid;gap:16px}
-.inventory-page input,.inventory-page select,.inventory-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.inventory-page input,.inventory-page select,.inventory-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
 .inventory-header-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:flex-end}
 /* Scoped: dense BOM tables want a 32px control; the shared `.sm` stays 36px. */
 .inventory-page .app-button.sm{min-height:32px;padding:5px 10px;font-size:11px}
@@ -20,7 +20,7 @@
 .inventory-tabs{display:flex;gap:4px;border-bottom:1px solid var(--app-line);margin-bottom:14px}
 .inventory-tabs button{padding:10px 12px;color:var(--app-muted);background:none;border:0;border-bottom:2px solid transparent;font-weight:700;font-size:13px;cursor:pointer}
 .inventory-tabs button.active{color:var(--app-ink);border-bottom-color:var(--app-accent)}
-.inventory-tabs b{margin-left:6px;padding:1px 6px;background:var(--app-soft);border-radius:var(--soft-radius-pill);color:var(--app-muted);font-size:10px}
+.inventory-tabs b{margin-left:6px;padding:1px 6px;background:var(--app-soft);border-radius:var(--radius-pill);color:var(--app-muted);font-size:10px}
 .inventory-section{display:grid;gap:12px}
 .inventory-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .inventory-search{flex:1;min-width:200px}
@@ -41,12 +41,12 @@
 .inventory-item-id{display:grid;gap:4px;min-width:0}
 .inventory-item-id strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inventory-item-tags{display:flex;flex-wrap:wrap;gap:6px}
-.inventory-item-tags em{font-style:normal;padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill);font-size:10px;font-weight:700;color:var(--app-muted)}
+.inventory-item-tags em{font-style:normal;padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--app-muted)}
 .inventory-item-tags em.loc{color:var(--app-accent)}
 .inventory-item-tags em.low-tag{color:var(--app-critical);border-color:var(--app-warning)}
 .inventory-item-tags em.arch-tag{opacity:.7}
 .inventory-item-qty{display:flex;align-items:center;gap:8px}
-.inventory-item-qty button{width:30px;height:30px;padding:0;font-size:18px;line-height:1;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);cursor:pointer}
+.inventory-item-qty button{width:30px;height:30px;padding:0;font-size:18px;line-height:1;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);cursor:pointer}
 .inventory-item-qty button:hover{border-color:var(--app-accent)}
 .inventory-item-qty b{display:grid;justify-items:center;min-width:52px;font-size:20px;line-height:1.05;font-variant-numeric:tabular-nums}
 .inventory-item-qty b span{color:var(--app-muted);font-size:9px;font-weight:600}
@@ -69,10 +69,10 @@
 .inventory-label-tools h2{margin:0 0 4px;font-size:var(--soft-title-3)}
 .inventory-label-tools p{margin:0}
 .inventory-scan-actions{display:flex;flex-wrap:wrap;gap:8px}
-.inventory-scan-video{width:min(100%,560px);max-height:360px;object-fit:cover;border:1px solid var(--app-line);border-radius:var(--soft-radius-sm);background:#101418}
+.inventory-scan-video{width:min(100%,560px);max-height:360px;object-fit:cover;border:1px solid var(--app-line);border-radius:var(--radius-sm);background:#101418}
 .inventory-scan-video.hidden{display:none}
 .inventory-label-sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
-.inventory-print-label{display:grid;justify-items:center;gap:5px;padding:14px;text-align:center;background:#fff;color:#172126;border:1px dashed #59666b;border-radius:var(--soft-radius-xs)}
+.inventory-print-label{display:grid;justify-items:center;gap:5px;padding:14px;text-align:center;background:#fff;color:#172126;border:1px dashed #59666b;border-radius:var(--radius-xs)}
 .inventory-print-label strong{font-size:16px}.inventory-print-label span,.inventory-print-label small{font-size:11px}
 .inventory-print-label img{width:180px;height:180px}
 .inventory-bom{display:grid;gap:8px;padding:14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
@@ -111,5 +111,5 @@
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}

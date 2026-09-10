@@ -15,7 +15,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
 }
 .grant-cal-page textarea {
@@ -67,7 +67,7 @@
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: var(--app-surface);
   color: var(--app-ink);
   font: inherit;
@@ -93,7 +93,7 @@
   padding: 14px 16px;
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   /* The urgency stripe is a redundant channel — the Badge always carries the words too. */
   border-left-width: 4px;
 }

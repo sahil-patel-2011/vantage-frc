@@ -26,10 +26,10 @@
 }
 .vid-soft-panel {
   padding: 16px 18px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius, 16px);
-  background: var(--soft-card);
-  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
+  box-shadow: var(--shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
 }
 .vid-soft-panel header {
   margin-bottom: 12px;
@@ -38,7 +38,7 @@
   margin: 0 0 4px;
   font-size:var(--soft-title-2);
   letter-spacing:var(--soft-tracking-tight);
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 .vid-setup-steps {
   list-style: none;
@@ -62,14 +62,14 @@
   display: grid;
   gap: 4px;
   padding: 16px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
-  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  box-shadow: var(--shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
 }
 .vid-kpis span,
 .vid-kpis small {
-  color: var(--soft-muted);
+  color: var(--muted);
   font: 700 10px/1.2 var(--font-ibm-mono), ui-monospace, monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -77,7 +77,7 @@
 .vid-kpis strong {
   font-size: clamp(24px, 3.6vw, 32px);
   letter-spacing: -0.03em;
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 .vid-footer-links {
   margin: 0;
@@ -89,7 +89,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
 }
 .vid-page textarea {
@@ -97,7 +97,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
   resize: vertical;
 }
@@ -153,7 +153,7 @@
   padding: 1px 7px;
   color: var(--app-accent);
   background: var(--app-soft);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -228,7 +228,7 @@
   gap: 6px;
   padding: 4px 10px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -256,7 +256,7 @@
   text-align: left;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   cursor: pointer;
   color: var(--app-ink);
 }
@@ -287,7 +287,7 @@
   padding: 8px 10px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .vid-time {
   flex: none;
@@ -296,7 +296,7 @@
   color: var(--app-accent);
   background: var(--app-soft);
   border: 0;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -337,7 +337,7 @@
   color: var(--app-muted);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -365,14 +365,14 @@
   padding: 8px 10px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .vid-tag {
   flex: none;
   padding: 2px 8px;
   color: var(--app-muted);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;

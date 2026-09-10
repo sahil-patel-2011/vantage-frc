@@ -12,15 +12,15 @@
 .help-search input {
   width: 100%;
   padding: 0.75rem 0.9rem;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-panel) 92%, #e8eefc);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, #e8eefc);
   font: 500 0.95rem/1.4 var(--font-source-sans, ui-sans-serif, system-ui);
   color: inherit;
 }
 
 .help-search input:focus {
-  outline: 2px solid color-mix(in srgb, var(--soft-accent) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
 }
 
@@ -38,9 +38,9 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.9rem 1rem;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-panel);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -48,8 +48,8 @@
 
 .help-article-card:hover,
 .help-article-card:focus-visible {
-  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--soft-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .help-article-card strong {
@@ -87,8 +87,8 @@
    control measured 13.6px here and 13px in the four other places the product
    draws a row of filter chips. Only what is genuinely local stays. */
 .help-cat-chip {
-  border: 1px solid var(--soft-line);
-  background: var(--soft-panel);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: inherit;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -99,23 +99,23 @@
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.1rem 0.45rem;
-  border-radius:var(--soft-radius-pill);
-  background: color-mix(in srgb, var(--soft-accent) 12%, transparent);
-  color: var(--soft-accent);
+  border-radius:var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
 }
 
 .help-cat-chip:hover,
 .help-cat-chip:focus-visible {
-  border-color: color-mix(in srgb, var(--soft-accent) 45%, var(--soft-line));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
 /* No local focus ring: system.css draws one ring for every route, and a second
    one here made the same control focus differently on /help than anywhere else. */
 
 .help-cat-chip[aria-pressed="true"] {
-  border-color: var(--soft-accent);
-  background: color-mix(in srgb, var(--soft-accent) 10%, var(--soft-panel));
-  color: var(--soft-accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
 }
 
 /* Category groups on the index. */
@@ -148,9 +148,9 @@
   gap: 0.75rem 1rem;
   margin-top: 1.5rem;
   padding: 0.9rem 1rem;
-  border-radius:var(--soft-radius-sm);
-  border: 1px dashed color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
-  background: color-mix(in srgb, var(--soft-accent) 5%, var(--soft-panel));
+  border-radius:var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
 }
 
 .help-crosslink p {
@@ -200,7 +200,7 @@
   gap: 0.85rem 1.25rem;
   margin-top: 1.75rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
   font-size: 0.9rem;
 }
 
@@ -209,7 +209,7 @@
   align-items: center;
   gap: 0.35rem;
   font: 600 0.8rem/1.2 var(--font-source-sans, ui-sans-serif);
-  color: var(--soft-accent);
+  color: var(--accent);
   text-decoration: none;
   white-space: nowrap;
 }

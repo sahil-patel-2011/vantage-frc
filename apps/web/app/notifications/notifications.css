@@ -56,14 +56,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   border: 1px solid var(--app-line);
   background: var(--app-bg);
 }
 
 .notif-next-actions li.primary {
-  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--app-line));
-  background: color-mix(in srgb, var(--soft-accent) 8%, var(--app-bg));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--app-bg));
 }
 
 .notif-next-actions li div {
@@ -106,15 +106,15 @@
   display: grid;
   gap: 8px;
   padding: 16px 18px;
-  border-radius: var(--soft-radius, 16px);
-  background: var(--soft-card);
-  border: 1px solid color-mix(in srgb, var(--soft-line) 85%, transparent);
-  box-shadow: var(--soft-shadow);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  box-shadow: var(--shadow);
 }
 
 .notif-list li.unread {
-  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
-  background: color-mix(in srgb, var(--soft-accent-soft) 55%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
 }
 
 .notif-list header {
@@ -133,13 +133,13 @@
 .notif-list small {
   display: block;
   margin-top: 3px;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
 .notif-list p {
   margin: 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }

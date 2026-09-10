@@ -135,7 +135,7 @@
   padding: 10px 12px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .cdc-next-actions li.primary {
   border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
@@ -223,7 +223,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
 }
 .cdc-panel textarea {
@@ -251,7 +251,7 @@
   padding: 12px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
 }
 .cdc-finding-head {
   display: flex;
@@ -264,7 +264,7 @@
 }
 .cdc-severity {
   padding: 2px 8px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -286,7 +286,7 @@
   padding: 10px;
   background: var(--app-surface);
   border: 1px dashed var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .cdc-lesson span {
   font-size: 10px;
@@ -305,7 +305,7 @@
   padding: 8px 10px;
   overflow-x: auto;
   background: var(--app-surface);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 11px;
 }
 .cdc-checks {
@@ -323,7 +323,7 @@
   padding: 10px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 13px;
 }
 .cdc-checks b {
@@ -336,7 +336,7 @@
   padding: 12px;
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
 }
 .cdc-proposal > span {
   font-size: 10px;
@@ -351,7 +351,7 @@
   overflow: auto;
   max-height: 220px;
   background: var(--app-surface);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -415,7 +415,7 @@
 }
 .cdc-scan-cost {
   padding: 4px 10px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   background: var(--app-soft);
@@ -479,7 +479,7 @@
 }
 .cdc-scan-bar {
   height: 8px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   overflow: hidden;
   background: var(--app-soft);
 }
@@ -496,7 +496,7 @@
 }
 .cdc-partial-tag {
   padding: 2px 8px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -537,7 +537,7 @@
 }
 .cdc-delta-chip {
   padding: 2px 8px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;

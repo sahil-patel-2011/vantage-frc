@@ -6,8 +6,8 @@
      `-fill` is the darker variant used behind white text (see styles.css). */
   --orders-accent: var(--app-positive);
   --orders-accent-fill: var(--app-positive-fill);
-  --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 14%, var(--soft-card));
-  --orders-accent-border: color-mix(in srgb, var(--orders-accent) 28%, var(--soft-line));
+  --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 14%, var(--surface));
+  --orders-accent-border: color-mix(in srgb, var(--orders-accent) 28%, var(--line));
   display: grid;
   gap: 16px;
 }
@@ -26,16 +26,16 @@
   display: inline-grid;
   gap: 6px;
   font: 600 13px var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-muted);
+  color: var(--muted);
   justify-self: start;
 }
 
 .orders-season select {
   min-height: 44px;
   padding: 6px 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: inherit;
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
@@ -63,9 +63,9 @@
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .orders-flow-steps strong {
@@ -74,7 +74,7 @@
 }
 
 .orders-flow-steps span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -90,16 +90,16 @@
 .orders-form-lead,
 .orders-section-lead {
   margin: 6px 0 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .orders-metric {
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .orders-metric strong {
@@ -109,7 +109,7 @@
 }
 
 .orders-metric span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -117,8 +117,8 @@
   border-color: var(--orders-accent-border);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--orders-accent-soft) 80%, var(--soft-card)),
-    var(--soft-card)
+    color-mix(in srgb, var(--orders-accent-soft) 80%, var(--surface)),
+    var(--surface)
   );
 }
 
@@ -153,9 +153,9 @@
   width: 100%;
   min-height: 44px;
   padding: 8px 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: inherit;
   font: 400 14px var(--font-source-sans), ui-sans-serif;
 }
@@ -166,7 +166,7 @@
 }
 
 .orders-form small {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-weight: 400;
 }
 
@@ -181,7 +181,7 @@
   min-height: 44px;
   padding: 0 16px;
   border: 0;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--orders-accent-fill);
   color: #fff;
   font: 700 13px var(--font-source-sans), ui-sans-serif;
@@ -206,9 +206,9 @@
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border-radius:var(--soft-radius);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .orders-card.focused {
@@ -233,16 +233,16 @@
   align-items: center;
   min-height: 26px;
   padding: 2px 10px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font: 700 11px var(--font-source-sans), ui-sans-serif;
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .orders-status.pending {
   color: var(--app-warning);
-  background: color-mix(in srgb, var(--app-warning) 14%, var(--soft-card));
-  border-color: color-mix(in srgb, var(--app-warning) 38%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--app-warning) 38%, var(--line));
 }
 
 .orders-status.approved {
@@ -253,20 +253,20 @@
 
 .orders-status.rejected {
   color: var(--app-critical);
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--soft-card));
-  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--line));
 }
 
 .orders-status.ordered,
 .orders-status.received,
 .orders-status.reimbursed {
   color: var(--app-accent);
-  background: color-mix(in srgb, var(--app-accent) 14%, var(--soft-card));
-  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--line));
 }
 
 .orders-meta {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   display: flex;
   flex-wrap: wrap;
@@ -275,7 +275,7 @@
 
 .orders-why-label {
   font-weight: 700;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .orders-waiting {
@@ -294,9 +294,9 @@
 .orders-admin-row button {
   min-height: 44px;
   padding: 0 12px;
-  border-radius:var(--soft-radius-xs);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border-radius:var(--radius-xs);
+  border: 1px solid var(--line);
+  background: var(--surface);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
   color: inherit;
@@ -312,8 +312,8 @@
 .orders-actions button.danger,
 .orders-admin-row button.danger {
   color: var(--app-critical);
-  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
-  background: color-mix(in srgb, var(--app-critical) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--line));
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--surface));
 }
 
 .orders-actions button:disabled,
@@ -325,7 +325,7 @@
 .orders-buy-panel,
 .orders-approve-panel {
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   border: 1px dashed var(--orders-accent-border);
   background: var(--orders-accent-soft);
   display: grid;
@@ -334,7 +334,7 @@
 
 .orders-approve-panel {
   border-style: solid;
-  background: color-mix(in srgb, var(--soft-card) 88%, var(--orders-accent-soft));
+  background: color-mix(in srgb, var(--surface) 88%, var(--orders-accent-soft));
 }
 
 .orders-buy-panel h3,
@@ -349,7 +349,7 @@
   margin: 0;
   padding-left: 18px;
   font-size: 12px;
-  color: var(--soft-muted);
+  color: var(--muted);
   display: grid;
   gap: 4px;
 }
@@ -365,7 +365,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 14px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--orders-accent-fill);
   color: #fff !important;
   font-weight: 700;
@@ -383,26 +383,26 @@
 .orders-error {
   margin: 0;
   padding: 10px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
 .orders-info {
-  background: color-mix(in srgb, var(--orders-accent-soft) 70%, var(--soft-card));
+  background: color-mix(in srgb, var(--orders-accent-soft) 70%, var(--surface));
   color: var(--orders-accent);
   border: 1px solid var(--orders-accent-border);
 }
 
 .orders-warn {
-  background: color-mix(in srgb, var(--app-warning) 14%, var(--soft-card));
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--surface));
   color: var(--app-warning);
-  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--soft-line));
+  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--line));
 }
 
 .orders-error {
-  background: color-mix(in srgb, var(--app-critical) 14%, var(--soft-card));
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--surface));
   color: var(--app-critical);
-  border: 1px solid color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
+  border: 1px solid color-mix(in srgb, var(--app-critical) 38%, var(--line));
 }
 
 .orders-admin-row {
@@ -435,9 +435,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .orders-embedded .strategy-setup-steps li div,
@@ -448,7 +448,7 @@
 
 .orders-embedded .strategy-setup-steps span,
 .orders-page .strategy-setup-steps span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 

@@ -35,7 +35,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .ds-side-group {
@@ -46,7 +46,7 @@
   display: block;
   margin-bottom: 4px;
   font-weight: 650;
-  color: var(--soft-ink);
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -54,19 +54,19 @@
   margin: 0;
   padding: 0 0 0 10px;
   list-style: none;
-  border-left: 1px solid var(--soft-line);
+  border-left: 1px solid var(--line);
 }
 
 .ds-side-group li a {
   display: block;
   padding: 3px 0 3px 8px;
-  color: var(--soft-muted);
+  color: var(--muted);
   text-decoration: none;
   line-height: 1.35;
 }
 
 .ds-side-group li a:hover {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .ds-side-done {
@@ -87,7 +87,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .ds-hero h1 {
@@ -99,7 +99,7 @@
 
 .ds-lead {
   margin: 0 0 18px;
-  color: var(--soft-muted);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -107,9 +107,9 @@
   display: inline-flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--soft-bg);
+  background: var(--bg);
 }
 
 .ds-os-tab {
@@ -118,7 +118,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--soft-muted);
+  color: var(--muted);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -126,9 +126,9 @@
 }
 
 .ds-os-tab.active {
-  background: var(--soft-card);
-  color: var(--soft-ink);
-  box-shadow: var(--soft-shadow, 0 1px 3px rgba(19, 32, 51, 0.12));
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow, 0 1px 3px rgba(19, 32, 51, 0.12));
 }
 
 .ds-progress {
@@ -139,7 +139,7 @@
 }
 
 .ds-muted {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-weight: 400;
 }
 
@@ -148,7 +148,7 @@
 .ds-stage {
   margin-top: 40px;
   padding-top: 24px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .ds-stage h2 {
@@ -159,7 +159,7 @@
 
 .ds-blurb {
   margin: 0 0 8px;
-  color: var(--soft-muted);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -167,7 +167,7 @@
    stays linkable — this page is meant to be shared step by step. */
 .ds-anchor {
   margin-right: 6px;
-  color: var(--soft-line);
+  color: var(--line);
   text-decoration: none;
   opacity: 0;
 }
@@ -176,15 +176,15 @@
 .ds-step h3:hover .ds-anchor,
 .ds-anchor:focus-visible {
   opacity: 1;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .ds-step {
   margin-top: 24px;
   padding: 18px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius, 16px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
   /* Anchored jumps otherwise land under the sticky app chrome. */
   scroll-margin-top: 24px;
 }
@@ -208,7 +208,7 @@
   flex: 0 0 auto;
   min-height: 36px;
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .ds-page .ds-done input[type="checkbox"] {
@@ -221,8 +221,8 @@
 .ds-why {
   margin: 12px 0;
   padding: 10px 12px;
-  border-left: 3px solid var(--soft-accent);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
   line-height: 1.55;
 }
 
@@ -247,9 +247,9 @@
 .ds-code {
   position: relative;
   margin: 12px 0;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
 }
 
 .ds-code pre {
@@ -267,10 +267,10 @@
   right: 8px;
   min-height: 30px;
   padding: 4px 12px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -282,7 +282,7 @@
 .ds-callout {
   margin: 12px 0;
   padding: 12px 14px;
-  border-radius: var(--soft-radius-sm, 12px);
+  border-radius: var(--radius-sm, 12px);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -300,12 +300,12 @@
 }
 
 .ds-tip {
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .ds-tip strong {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 /* A warning here means "painful to undo" — signing up with a school email, or
@@ -321,13 +321,13 @@
 }
 
 html[data-theme="dark"] .ds-warn {
-  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
-  color: var(--soft-ink);
+  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
+  color: var(--ink);
 }
 
 html[data-theme="dark"] .ds-warn strong {
-  color: var(--soft-warning, #c8922a);
+  color: var(--warning, #c8922a);
 }
 
 /* ---------- links ---------- */
@@ -346,23 +346,23 @@ html[data-theme="dark"] .ds-warn strong {
   align-items: center;
   min-height: 36px;
   padding: 6px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .ds-link:hover {
-  border-color: var(--soft-accent);
-  color: var(--soft-accent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* The actual download is the one control that should read as the action. */
 .ds-link-primary {
-  border-color: var(--soft-accent);
-  background: var(--soft-accent);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--soft-brand-ink, #fff);
 }
 
@@ -382,8 +382,8 @@ html[data-theme="dark"] .ds-warn strong {
     position: static;
     max-height: none;
     padding: 12px 14px;
-    border: 1px solid var(--soft-line);
-    border-radius: var(--soft-radius, 16px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 16px);
   }
 
   .ds-side-group ul {
@@ -396,7 +396,7 @@ html[data-theme="dark"] .ds-warn strong {
 .ds-extras {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px dashed var(--soft-line);
+  border-top: 1px dashed var(--line);
 }
 
 /* A team's own note outranks the generic instructions above it — it is the one
@@ -404,9 +404,9 @@ html[data-theme="dark"] .ds-warn strong {
 .ds-team {
   margin-bottom: 10px;
   padding: 10px 12px;
-  border-left: 3px solid var(--soft-accent);
-  background: var(--soft-bg);
-  border-radius: 0 var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px) 0;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+  border-radius: 0 var(--radius-sm, 12px) var(--radius-sm, 12px) 0;
 }
 
 .ds-team > strong {
@@ -415,7 +415,7 @@ html[data-theme="dark"] .ds-warn strong {
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .ds-team ul {
@@ -432,13 +432,13 @@ html[data-theme="dark"] .ds-warn strong {
 
 .ds-fold > summary {
   padding: 6px 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   cursor: pointer;
   list-style: revert;
 }
 
 .ds-fold > summary:hover {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .ds-fold-body {
@@ -452,10 +452,10 @@ html[data-theme="dark"] .ds-warn strong {
   width: 100%;
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 14px;
 }
@@ -475,9 +475,9 @@ html[data-theme="dark"] .ds-warn strong {
    assistant starts — and knows which one to trust less. */
 .ds-answer {
   padding: 12px 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -487,7 +487,7 @@ html[data-theme="dark"] .ds-warn strong {
 .ds-ask-error {
   margin: 0;
   font-size: 13px;
-  color: var(--soft-danger, #b42318);
+  color: var(--critical, #b42318);
 }
 
 /* ---------- tabbed install methods ---------- */
@@ -505,11 +505,11 @@ html[data-theme="dark"] .ds-warn strong {
 
 .ds-method-tab {
   padding: 6px 14px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-bottom-color: transparent;
   border-radius: 10px 10px 0 0;
-  background: var(--soft-bg);
-  color: var(--soft-muted);
+  background: var(--bg);
+  color: var(--muted);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -519,9 +519,9 @@ html[data-theme="dark"] .ds-warn strong {
 /* The selected tab joins the code block below it rather than floating above,
    so it reads as one control and one panel. */
 .ds-method-tab.active {
-  background: var(--soft-card);
-  color: var(--soft-ink);
-  border-bottom-color: var(--soft-card);
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom-color: var(--surface);
 }
 
 .ds-methods .ds-code {
@@ -533,7 +533,7 @@ html[data-theme="dark"] .ds-warn strong {
   margin: 6px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 /* ---------- command reference ---------- */
@@ -555,7 +555,7 @@ html[data-theme="dark"] .ds-warn strong {
 
 .ds-ref-table td {
   padding: 8px 10px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
   vertical-align: top;
   line-height: 1.5;
 }
@@ -574,7 +574,7 @@ html[data-theme="dark"] .ds-warn strong {
 }
 
 .ds-ref-table td:last-child {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 @media (max-width: 720px) {
@@ -594,6 +594,6 @@ html[data-theme="dark"] .ds-warn strong {
   }
 
   .ds-ref-table tr + tr {
-    border-top: 1px solid var(--soft-line);
+    border-top: 1px solid var(--line);
   }
 }

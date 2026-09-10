@@ -32,15 +32,15 @@
   justify-content:space-between;
   gap:10px;
   padding:10px 0;
-  border-bottom:1px solid var(--soft-line);
+  border-bottom:1px solid var(--line);
 }
 .dossier-setup-steps li:last-child{border-bottom:0}
 .dossier-setup-steps p{margin:4px 0 0}
 .dossier-empty{
   margin:0;
   padding:14px;
-  border-radius:var(--soft-radius-sm);
-  border:1px dashed var(--soft-line);
+  border-radius:var(--radius-sm);
+  border:1px dashed var(--line);
 }
 .dossier-kpis{
   display:grid;
@@ -51,18 +51,18 @@
   display:grid;
   gap:4px;
   padding:14px 16px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm,12px);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm,12px);
+  background:var(--surface);
+  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
 }
 .dossier-kpis strong{
   font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
-  color:var(--soft-ink);
+  color:var(--ink);
   letter-spacing:-.02em;
 }
 .dossier-kpis small{
-  color:var(--soft-muted);
+  color:var(--muted);
   font:600 12px var(--font-source-sans),ui-sans-serif;
 }
 .dossier-panel{min-height:auto}
@@ -75,7 +75,7 @@
   font-size:var(--soft-title-4);
   letter-spacing:.04em;
   text-transform:uppercase;
-  color:var(--soft-muted);
+  color:var(--muted);
 }
 .dossier-fact-grid{
   margin:0;

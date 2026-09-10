@@ -54,7 +54,7 @@
 .ann-error {
   margin: 10px 0 0;
   font-size: 13px;
-  color: var(--soft-danger, #b42318);
+  color: var(--critical, #b42318);
 }
 
 .ann-list {
@@ -67,15 +67,15 @@
 
 .ann-item {
   padding: 14px 16px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 
 /* A pinned notice has to be findable at a glance in a long list; the accent
    edge does that without a second badge competing with the priority one. */
 .ann-item.pinned {
-  border-left: 3px solid var(--soft-accent);
+  border-left: 3px solid var(--accent);
 }
 
 .ann-item-head {
@@ -105,7 +105,7 @@
   gap: 12px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .ann-ack-count {
@@ -116,14 +116,14 @@
 
 .ann-ack-done {
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .ann-outstanding {
   margin: 10px 0 0;
   padding: 8px 10px;
-  border-left: 3px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--line);
+  background: var(--bg);
   font-size: 13px;
   line-height: 1.5;
 }

@@ -151,7 +151,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 2px 8px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
 }
 .aa-status--completed {
@@ -193,7 +193,7 @@
   white-space: pre-wrap;
   word-break: break-word;
   background: var(--app-soft);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .aa-answer {
   margin-top: 14px;

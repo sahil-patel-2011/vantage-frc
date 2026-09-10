@@ -8,16 +8,16 @@
   padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   border: 0;
   cursor: pointer;
-  color: var(--soft-ink);
+  color: var(--ink);
   background:
-    radial-gradient(120% 90% at 18% -8%, color-mix(in srgb, var(--soft-accent) 16%, transparent), transparent 52%),
+    radial-gradient(120% 90% at 18% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 52%),
     radial-gradient(80% 60% at 100% 8%, color-mix(in srgb, #0ea5a4 10%, transparent), transparent 48%),
-    linear-gradient(165deg, var(--soft-bg) 0%, color-mix(in srgb, var(--soft-bg) 82%, #d7e0ec) 100%);
+    linear-gradient(165deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 82%, #d7e0ec) 100%);
   animation: paid-splash-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .paid-splash:focus-visible {
-  outline: 2px solid var(--soft-accent);
+  outline: 2px solid var(--accent);
   outline-offset: -4px;
 }
 
@@ -39,7 +39,7 @@
   letter-spacing: 0.28em;
   text-transform: uppercase;
   font: 650 11px/1 var(--font-ibm-mono, ui-monospace, monospace);
-  color: var(--soft-muted);
+  color: var(--muted);
   opacity: 0;
   animation: paid-splash-rise 0.5s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -49,7 +49,7 @@
   margin: 0;
   font: 700 clamp(4.5rem, 18vw, 7.5rem)/0.9 var(--font-source-serif, Georgia, serif);
   letter-spacing: -0.04em;
-  color: var(--soft-ink);
+  color: var(--ink);
   opacity: 0;
   animation: paid-splash-number 0.7s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -61,11 +61,11 @@
   right: 12%;
   bottom: -10px;
   height: 3px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--soft-accent) 75%, #0ea5a4),
+    color-mix(in srgb, var(--accent) 75%, #0ea5a4),
     transparent
   );
   transform: scaleX(0.35);
@@ -76,7 +76,7 @@
 .paid-splash-org {
   margin: 8px 0 0;
   font: 600 1.05rem/1.35 var(--font-source-sans, ui-sans-serif, system-ui, sans-serif);
-  color: var(--soft-muted);
+  color: var(--muted);
   opacity: 0;
   animation: paid-splash-rise 0.5s 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -86,7 +86,7 @@
   font: 500 0.78rem/1.2 var(--font-ibm-mono, ui-monospace, monospace);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--soft-muted) 85%, transparent);
+  color: color-mix(in srgb, var(--muted) 85%, transparent);
   opacity: 0;
   animation: paid-splash-rise 0.45s 0.55s ease both;
 }

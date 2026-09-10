@@ -23,7 +23,7 @@
 
 .strategy-next-actions-panel header p {
   margin: 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font: 600 13px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -72,7 +72,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 12px 0;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .strategy-next-actions-panel li:first-child {
@@ -81,7 +81,7 @@
 }
 
 .strategy-next-actions-panel li.primary strong {
-  color: var(--soft-ink);
+  color: var(--ink);
 }
 
 .strategy-next-actions-panel li div {
@@ -91,7 +91,7 @@
 }
 
 .strategy-next-actions-panel li span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font: 600 12px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }
 

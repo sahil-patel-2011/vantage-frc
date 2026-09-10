@@ -82,7 +82,7 @@
   min-height: 44px;
   padding: 8px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-surface);
   color: var(--app-ink);
   font: inherit;

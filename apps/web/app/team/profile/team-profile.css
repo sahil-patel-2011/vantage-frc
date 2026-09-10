@@ -32,7 +32,7 @@
   font-size: 13px;
 }
 .tp-facts dt {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 .tp-facts dd {
   margin: 0;
@@ -48,17 +48,17 @@
 .tp-table td {
   text-align: left;
   padding: 7px 6px;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 .tp-table th {
   font-size: 11px;
-  color: var(--soft-muted);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .tp-outcome {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 .tp-awards {
   margin: 0;
@@ -73,7 +73,7 @@
   gap: 10px;
   font-size: 13px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
 }
 .tp-foot {
   display: flex;

@@ -27,7 +27,7 @@
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-bg);
   color: var(--app-ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
@@ -65,7 +65,7 @@
   min-height: 0;
   flex: 1;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   overflow: hidden;
   background: var(--app-bg);
 }
@@ -152,7 +152,7 @@
   min-height: 72px;
   padding: 10px 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-soft);
   color: var(--app-ink);
   font: 400 14px/1.4 var(--font-source-sans), ui-sans-serif;
@@ -189,12 +189,12 @@
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: var(--app-soft);
 }
 .cad-mode-btn {
   border: 0;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   padding: 4px 10px;
   background: transparent;
   color: var(--app-muted);
@@ -220,7 +220,7 @@
   padding: 12px 14px;
   border: 1px solid var(--app-line);
   border-left: 3px solid var(--app-accent);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--app-soft);
 }
 .cad-proposal-card b {
@@ -247,7 +247,7 @@
   gap: 10px;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--app-soft);
 }
 .cad-plan-panel > b,
@@ -274,7 +274,7 @@
   min-height: 34px;
   padding: 6px 10px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-bg);
   color: var(--app-ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
@@ -307,7 +307,7 @@
   gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--app-soft);
 }
 .cad-task-list ul {
@@ -329,7 +329,7 @@
   text-transform: uppercase;
   color: var(--app-muted);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   padding: 2px 8px;
   white-space: nowrap;
 }

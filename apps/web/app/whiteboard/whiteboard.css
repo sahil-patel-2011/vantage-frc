@@ -1,6 +1,6 @@
 /* Strategy Whiteboard — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .wb-* prefixed and theme-aware. */
-.wb-page input{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.wb-page input{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
 .wb-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Scoped: the board toolbar wants a 32px control; the shared `.sm` stays 36px. */
 .wb-page .app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
@@ -17,12 +17,12 @@
 .wb-editor{display:grid;gap:12px;min-width:0}
 .wb-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .wb-tools,.wb-actions{display:flex;gap:6px;flex-wrap:wrap}
-.wb-tools button,.wb-actions button:not(.app-button){min-height:34px;padding:6px 11px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font-size:12px;font-weight:700;cursor:pointer}
+.wb-tools button,.wb-actions button:not(.app-button){min-height:34px;padding:6px 11px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font-size:12px;font-weight:700;cursor:pointer}
 .wb-tools button.active{border-color:var(--app-accent);color:var(--app-accent);box-shadow:0 0 0 1px var(--app-accent)}
 .wb-colors{display:flex;gap:6px}
-.wb-swatch{width:26px;height:26px;border-radius:var(--soft-radius-pill);border:2px solid var(--app-line);cursor:pointer;padding:0}
+.wb-swatch{width:26px;height:26px;border-radius:var(--radius-pill);border:2px solid var(--app-line);cursor:pointer;padding:0}
 .wb-swatch.active{border-color:var(--app-ink);box-shadow:0 0 0 2px var(--app-surface),0 0 0 4px var(--app-accent)}
-.wb-field{width:100%;height:auto;border-radius:var(--soft-radius-sm);touch-action:none;user-select:none;display:block}
+.wb-field{width:100%;height:auto;border-radius:var(--radius-sm);touch-action:none;user-select:none;display:block}
 .wb-field.tool-pen,.wb-field.tool-arrow{cursor:crosshair}
 .wb-field.tool-move{cursor:default}
 .wb-carpet{fill:var(--app-soft)}

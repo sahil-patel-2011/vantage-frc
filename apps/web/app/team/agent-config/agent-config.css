@@ -13,7 +13,7 @@
   padding: 18px;
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .agent-config-panel h2 {
   margin: 0 0 10px;
@@ -78,7 +78,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 13px;
 }
 .agent-config-editor textarea {
@@ -96,7 +96,7 @@
 .agent-config-actions button {
   min-height: 44px;
   padding: 10px 16px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: var(--app-soft);
   color: var(--app-ink);
@@ -119,7 +119,7 @@
   padding: 12px 14px 12px 28px;
   background: rgba(192, 38, 38, 0.07);
   border: 1px solid rgba(192, 38, 38, 0.35);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -135,7 +135,7 @@
   padding: 12px;
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -167,7 +167,7 @@
 .agent-config-revisions button {
   min-height: 44px;
   padding: 8px 14px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: var(--app-soft);
   color: var(--app-ink);
@@ -198,7 +198,7 @@
   margin: 0;
   padding: 12px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
 }
 .agent-config-sharing legend {
   padding: 0 4px;

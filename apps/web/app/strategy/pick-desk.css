@@ -32,15 +32,15 @@
   justify-content:space-between;
   gap:10px;
   padding:10px 0;
-  border-bottom:1px solid var(--soft-line);
+  border-bottom:1px solid var(--line);
 }
 .pick-desk-setup-steps li:last-child{border-bottom:0}
 .pick-desk-setup-steps p{margin:4px 0 0}
 .pick-desk-empty{
   margin:0;
   padding:14px;
-  border-radius:var(--soft-radius-sm);
-  border:1px dashed var(--soft-line);
+  border-radius:var(--radius-sm);
+  border:1px dashed var(--line);
 }
 .pick-desk-kpis{
   display:grid;
@@ -51,18 +51,18 @@
   display:grid;
   gap:4px;
   padding:14px 16px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  box-shadow:var(--shadow);
 }
 .pick-desk-kpis strong{
   font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
-  color:var(--soft-ink);
+  color:var(--ink);
   letter-spacing:-.02em;
 }
 .pick-desk-kpis small{
-  color:var(--soft-muted);
+  color:var(--muted);
   font:600 12px var(--font-source-sans),ui-sans-serif;
 }
 @media (max-width:800px){
@@ -78,9 +78,9 @@
   width: 100%;
   margin-top: 8px;
   padding: 10px;
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-xs);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-xs);
+  background: var(--bg);
 }
 .pick-heat-figure {
   margin: 0;
@@ -99,5 +99,5 @@
   aspect-ratio: 1;
   min-width: 14px;
   border-radius: 3px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
 }

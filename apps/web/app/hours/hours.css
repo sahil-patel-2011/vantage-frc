@@ -1,7 +1,7 @@
 /* Build Hours — co-located so styling survives independently of the shared global
    stylesheet. All selectors are .hours-* prefixed (plus reuse of app design-system
    classes) and use theme-aware CSS variables. */
-.hours-page input,.hours-page select,.hours-page textarea{min-height:44px;padding:10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.hours-page input,.hours-page select,.hours-page textarea{min-height:44px;padding:10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
 .hours-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Scoped: page density, not a redefinition of the shared `.sm` size. */
 .hours-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
@@ -15,7 +15,7 @@
 .hours-clock-state .elapsed{color:var(--app-positive);font-variant-numeric:tabular-nums;font-weight:700}
 .hours-clock-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hours-clock-actions select{min-width:130px}
-.hours-big-btn{min-height:52px;padding:12px 26px;font-size:15px;font-weight:800;border-radius:var(--soft-radius-sm);border:0;cursor:pointer;color:var(--app-accent-ink);background:var(--app-accent)}
+.hours-big-btn{min-height:52px;padding:12px 26px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);border:0;cursor:pointer;color:var(--app-accent-ink);background:var(--app-accent)}
 .hours-big-btn.out{background:var(--app-critical-fill);color:#fff}
 .hours-big-btn:disabled{opacity:.6;cursor:default}
 .hours-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
@@ -27,27 +27,27 @@
 .hours-panel{display:grid;gap:12px;align-content:start;min-width:0}
 .hours-panel h2{margin:0;font-size:var(--soft-title-3)}
 .hours-here{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-.hours-here li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-positive);border-radius:var(--soft-radius-xs);font-size:13px}
+.hours-here li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-positive);border-radius:var(--radius-xs);font-size:13px}
 .hours-here li b{color:var(--app-positive);font-variant-numeric:tabular-nums}
 .hours-board{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.hours-board li{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:4px 10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs)}
+.hours-board li{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:4px 10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--radius-xs)}
 .hours-board li.me{border-color:var(--app-accent)}
 .hours-board .rank{color:var(--app-muted);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 .hours-board .who{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
 .hours-board .who strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hours-board .who em{font-style:normal;color:var(--app-positive);font-size:10px;font-weight:800}
 .hours-board .total{font-variant-numeric:tabular-nums;font-weight:800;font-size:13px}
-.hours-board .goal-track{grid-column:2/4;height:5px;background:var(--app-soft);border-radius:var(--soft-radius-pill);overflow:hidden}
+.hours-board .goal-track{grid-column:2/4;height:5px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
 .hours-board .goal-track i{display:block;height:100%;background:var(--app-accent)}
 .hours-board .goal-track i.done{background:var(--app-positive)}
 .hours-log{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.hours-log li{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;padding:9px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font-size:12px}
+.hours-log li{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;padding:9px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--radius-xs);font-size:12px}
 .hours-log li.open{border-color:var(--app-positive)}
 .hours-log .session{display:grid;gap:2px;min-width:0}
 .hours-log .session strong{font-size:13px}
 .hours-log .session small{color:var(--app-muted)}
 .hours-log .dur{font-variant-numeric:tabular-nums;font-weight:700}
-.hours-kind{padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill);font-size:10px;font-weight:700;color:var(--app-muted);white-space:nowrap}
+.hours-kind{padding:2px 7px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--app-muted);white-space:nowrap}
 .hours-forms{display:grid;gap:12px}
 .hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--app-radius)}
 .hours-manual h3,.hours-policy h3{margin:0;font-size:var(--soft-title-4)}
@@ -60,7 +60,7 @@
 /* Shop kiosk (tap-to-clock-in on a shared device) */
 .hours-kiosk-hint{margin:0 0 12px;font-size:12px}
 .hours-kiosk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.hours-kiosk-tile{display:grid;gap:6px;min-height:110px;padding:16px;text-align:left;background:var(--app-surface);border:2px solid var(--app-line);border-radius:var(--soft-radius-sm);cursor:pointer;color:var(--app-ink)}
+.hours-kiosk-tile{display:grid;gap:6px;min-height:110px;padding:16px;text-align:left;background:var(--app-surface);border:2px solid var(--app-line);border-radius:var(--radius-sm);cursor:pointer;color:var(--app-ink)}
 .hours-kiosk-tile:hover{border-color:var(--app-accent)}
 .hours-kiosk-tile:disabled{opacity:.55;cursor:default}
 .hours-kiosk-tile.in{border-color:var(--app-positive);background:var(--app-soft)}
@@ -76,5 +76,5 @@
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}

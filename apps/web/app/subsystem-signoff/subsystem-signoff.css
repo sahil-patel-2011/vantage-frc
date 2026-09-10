@@ -2,9 +2,9 @@
    Readiness % only from recorded gate decisions — never DEMO %. */
 .signoff-page{max-width:1100px;margin:0 auto}
 .signoff-page input,.signoff-page select,.signoff-page textarea{
-  width:100%;min-height:40px;padding:10px 12px;color:var(--soft-ink);
-  background:var(--soft-bg);border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);font:inherit;
+  width:100%;min-height:40px;padding:10px 12px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius-sm);font:inherit;
 }
 .signoff-page select{cursor:pointer}
 
@@ -17,7 +17,7 @@
 .signoff-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .signoff-next-actions>header p,.signoff-next-actions>p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .signoff-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.signoff-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
+.signoff-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
 .signoff-next-actions li.primary{border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
 .signoff-next-actions li div{display:grid;gap:2px;min-width:0}
 .signoff-next-actions li strong{font-size:14px}
@@ -28,14 +28,14 @@
 .signoff-readiness>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .signoff-readiness h2{margin:6px 0 0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .signoff-readiness .score{
-  display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border-radius:var(--soft-radius-sm);
+  display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border-radius:var(--radius-sm);
   background:var(--app-soft);border:1px solid var(--app-line);font-variant-numeric:tabular-nums;
 }
 .signoff-readiness .score em{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--app-muted)}
 .signoff-readiness .score strong{font-size:1.75rem;line-height:1}
 .signoff-readiness .score.empty strong{color:var(--app-muted);font-size:1.5rem}
 .signoff-recs{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.signoff-recs li{padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg);font-size:13px;line-height:1.4}
+.signoff-recs li{padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg);font-size:13px;line-height:1.4}
 
 .signoff-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
 .signoff-summary-tile{display:grid;gap:3px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius,12px)}
@@ -46,7 +46,7 @@
 
 .signoff-list{display:grid;gap:12px;margin-top:4px}
 .signoff-card{
-  display:grid;gap:12px;padding:16px 18px;border-radius:var(--soft-radius-sm);
+  display:grid;gap:12px;padding:16px 18px;border-radius:var(--radius-sm);
   border:1px solid var(--app-line);background:var(--app-surface);
 }
 .signoff-card.signed_off{border-color:color-mix(in srgb,#1f7a3d 40%,var(--app-line))}
@@ -61,7 +61,7 @@
 .signoff-card-actions label{display:flex;gap:6px;align-items:center;color:var(--app-muted);font-size:12px}
 
 .signoff-badge{
-  display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--soft-radius-pill);
+  display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--radius-pill);
   border:1px solid var(--app-line);background:var(--app-soft);color:var(--app-muted);
   font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
 }
@@ -73,7 +73,7 @@
 .signoff-gates{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .signoff-gates li{
   display:flex;justify-content:space-between;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg);
+  padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg);
 }
 .signoff-gates .gate-name{font-size:13px;font-weight:600}
 .signoff-gates .gate-detail{color:var(--app-muted);font-size:11px}
@@ -82,9 +82,9 @@
 .signoff-panel h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .signoff-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
 .signoff-form-actions{display:flex;gap:12px;align-items:center;margin-top:4px;flex-wrap:wrap}
-.signoff-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--soft-radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
+.signoff-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
 .signoff-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:min(100%,420px)}
-.signoff-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
+.signoff-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
 .signoff-setup-steps li div{display:grid;gap:2px;min-width:0}
 .signoff-setup-steps strong{font-size:13px}
 .signoff-setup-steps span{color:var(--app-muted);font-size:12px}

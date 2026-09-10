@@ -3,12 +3,12 @@
 .admin-partners-page .admin-ai-smoke {
   margin: 0 0 1.25rem;
   padding: 1rem 1.15rem;
-  border-radius:var(--soft-radius);
-  border: 1px solid color-mix(in srgb, var(--soft-line) 90%, transparent);
+  border-radius:var(--radius);
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--soft-accent) 5%, #fff) 0%,
-    var(--soft-bg) 55%,
+    color-mix(in srgb, var(--accent) 5%, #fff) 0%,
+    var(--bg) 55%,
     #fff 100%
   );
 }

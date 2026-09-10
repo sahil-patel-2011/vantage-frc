@@ -13,7 +13,7 @@
 }
 
 .logistics-mine {
-  border-color: color-mix(in srgb, var(--soft-accent) 28%, var(--soft-line));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
 
 .logistics-list {
@@ -28,9 +28,9 @@
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
 }
 
 .logistics-list strong {
@@ -38,7 +38,7 @@
 }
 
 .logistics-list span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -54,13 +54,13 @@
   display: grid;
   gap: 2px 10px;
   padding: 10px 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
 }
 
 .logistics-timeline > li.next {
-  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
   background: #f4f7fd;
 }
 
@@ -68,7 +68,7 @@
   font: 700 11px/1.2 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .log-page {
@@ -82,7 +82,7 @@
 .log-banner {
   margin: 0;
   padding: 10px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -109,7 +109,7 @@
   font: 700 11px/1.2 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
   margin-bottom: 6px;
 }
 
@@ -123,8 +123,8 @@
 .log-grid-form input,
 .log-grid-form select,
 .log-grid-form textarea {
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-xs);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-xs);
   padding: 8px 10px;
   font: inherit;
   background: #fff;
@@ -135,10 +135,10 @@
 }
 
 .log-grid-form button[type="submit"] {
-  border: 1px solid color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
   background: #e8eefc;
-  color: var(--soft-accent);
-  border-radius:var(--soft-radius-xs);
+  color: var(--accent);
+  border-radius:var(--radius-xs);
   padding: 8px 12px;
   font: 600 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
@@ -157,9 +157,9 @@
 }
 
 .log-trip-tabs button {
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   background: #fff;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   padding: 6px 12px;
   cursor: pointer;
   font: 600 13px var(--font-source-sans), ui-sans-serif;
@@ -168,13 +168,13 @@
 .log-trip-tabs button.active {
   background: #e8eefc;
   border-color: #c5d4f7;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .log-link {
   border: 0;
   background: transparent;
-  color: var(--soft-accent);
+  color: var(--accent);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
   padding: 0;
@@ -182,7 +182,7 @@
 }
 
 .log-link.danger {
-  color: var(--soft-danger);
+  color: var(--critical);
 }
 
 .log-section-head {
@@ -200,13 +200,13 @@
   min-width: 120px;
   text-align: right;
   font: 600 12px var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .log-progress-bar {
   height: 8px;
-  border-radius:var(--soft-radius-pill);
-  background: color-mix(in srgb, var(--soft-accent) 65%, #fff);
+  border-radius:var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 65%, #fff);
   border: 1px solid #c5d4f7;
 }
 
@@ -224,9 +224,9 @@
   gap: 8px 10px;
   align-items: center;
   padding: 10px 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
 }
 
 .log-checklist-list label.log-check-done {
@@ -241,7 +241,7 @@
   gap: 8px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
 }
 
 .log-inline-actions {
@@ -259,7 +259,7 @@
   gap: 8px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
 }
 
 .log-trip-panel {
@@ -272,7 +272,7 @@
   gap: 16px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .log-trip-meta h3 {
@@ -283,9 +283,9 @@
   display: grid;
   gap: 10px;
   padding: 14px;
-  border-radius:var(--soft-radius);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 92%, #f8fafc);
+  border-radius:var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, #f8fafc);
 }
 
 .log-subpanel-head {
@@ -305,9 +305,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 96%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 96%, #fff);
 }
 
 .log-hotel-head {
@@ -319,7 +319,7 @@
 }
 
 .log-contact-primary {
-  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 
 .log-check-inline {

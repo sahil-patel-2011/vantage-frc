@@ -26,12 +26,12 @@
   width: 100%;
   height: 120px;
   display: block;
-  border-radius:var(--soft-radius-xs);
-  background: color-mix(in srgb, var(--soft-accent) 5%, var(--soft-bg));
+  border-radius:var(--radius-xs);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
 }
 
 .admin-analytics-chart rect {
-  fill: var(--soft-accent);
+  fill: var(--accent);
   opacity: 0.85;
 }
 
@@ -39,7 +39,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  color: var(--soft-muted);
+  color: var(--muted);
   font: 11px/1.4 ui-monospace, monospace;
 }
 
@@ -54,10 +54,10 @@
   align-items: center;
   min-height: 32px;
   padding: 0 12px;
-  border-radius:var(--soft-radius-pill);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
-  color: var(--soft-ink);
+  border-radius:var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
   font-size: 12px;
 }
 
@@ -74,22 +74,22 @@
 }
 
 .admin-analytics-histogram-row small {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .admin-analytics-histogram-bar {
   display: block;
   height: 10px;
-  border-radius:var(--soft-radius-pill);
-  background: color-mix(in srgb, var(--soft-line) 60%, transparent);
+  border-radius:var(--radius-pill);
+  background: color-mix(in srgb, var(--line) 60%, transparent);
   overflow: hidden;
 }
 
 .admin-analytics-histogram-bar i {
   display: block;
   height: 100%;
-  border-radius:var(--soft-radius-pill);
-  background: var(--soft-accent);
+  border-radius:var(--radius-pill);
+  background: var(--accent);
 }
 
 .admin-analytics-columns {
@@ -118,13 +118,13 @@
 .admin-analytics-table td {
   padding: 10px 12px;
   text-align: left;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
   white-space: nowrap;
 }
 
 .admin-analytics-table thead th {
   border-top: 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -135,7 +135,7 @@
 }
 
 .admin-analytics-drilldown {
-  border-left: 3px solid var(--soft-accent);
+  border-left: 3px solid var(--accent);
 }
 
 .admin-analytics-drilldown-head {

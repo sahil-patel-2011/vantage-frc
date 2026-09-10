@@ -1,5 +1,5 @@
 .support-tickets-page {
-  --support-accent: var(--soft-accent);
+  --support-accent: var(--accent);
   --support-accent-soft: #e8eefc;
   max-width: 760px;
   margin: 0 auto;
@@ -57,7 +57,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   border: 1px solid var(--app-line);
   background: var(--app-bg);
 }
@@ -104,8 +104,8 @@
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
   background: #fff;
   color: inherit;
   font: 500 14px var(--font-source-sans), ui-sans-serif;
@@ -119,7 +119,7 @@
 .support-tickets-error {
   margin: 0;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: #fef2f2;
   color: #991b1b;
   border: 1px solid #fecaca;
@@ -128,7 +128,7 @@
 .support-tickets-ok {
   margin: 0;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--support-accent-soft);
   color: #1e3a8a;
   border: 1px solid color-mix(in srgb, var(--support-accent) 22%, #fff);
@@ -159,13 +159,13 @@
   display: grid;
   gap: 8px;
   padding: 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
 }
 
 .support-ticket-card.awaits-reply {
-  border-color: color-mix(in srgb, var(--support-accent) 28%, var(--soft-line));
+  border-color: color-mix(in srgb, var(--support-accent) 28%, var(--line));
 }
 
 .support-ticket-card header {
@@ -181,7 +181,7 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   font-size: 12px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .support-ticket-meta .awaiting {
@@ -202,7 +202,7 @@
 
 .support-ticket-card small,
 .support-ticket-reply small {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .support-ticket-status {
@@ -210,7 +210,7 @@
   align-items: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -235,7 +235,7 @@
   gap: 6px;
   margin-top: 4px;
   padding: 12px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--support-accent-soft);
   border: 1px solid color-mix(in srgb, var(--support-accent) 18%, #fff);
 }

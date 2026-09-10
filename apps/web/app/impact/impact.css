@@ -7,10 +7,10 @@
 .impact-status {
   margin: 0;
   padding: 10px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
-  color: var(--soft-muted);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -52,7 +52,7 @@
 
 .impact-component small {
   text-align: right;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -61,7 +61,7 @@
   padding-left: 18px;
   display: grid;
   gap: 4px;
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .impact-breakdowns small {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -109,9 +109,9 @@
   gap: 12px;
   align-items: flex-start;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .impact-activity-list li > div:first-child {
@@ -126,7 +126,7 @@
 
 .impact-activity-list span,
 .impact-activity-list small {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -174,9 +174,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
 }
 .impact-who-head {
   display: flex;
@@ -208,7 +208,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 6px;
-  border-radius: var(--soft-radius-xs);
+  border-radius: var(--radius-xs);
 }
 .impact-who-list li.picked {
   background: color-mix(in srgb, var(--app-accent) 8%, transparent);
@@ -237,7 +237,7 @@
 }
 
 .impact-names {
-  color: var(--soft-ink) !important;
+  color: var(--ink) !important;
 }
 .impact-row-actions {
   display: flex;
@@ -265,11 +265,11 @@
 .impact-people td {
   text-align: left;
   padding: 8px 6px;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
 }
 .impact-people th {
   font-size: 11px;
-  color: var(--soft-muted);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

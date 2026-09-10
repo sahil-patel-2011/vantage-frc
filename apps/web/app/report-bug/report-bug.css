@@ -3,17 +3,17 @@
 
 .report-bug-form{display:grid;gap:18px;padding:18px 20px}
 .report-bug-description{display:grid;gap:6px;font-weight:600;font-size:14px}
-.report-bug-description textarea{resize:vertical;min-height:132px;padding:12px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font:inherit;font-weight:400;line-height:1.5}
+.report-bug-description textarea{resize:vertical;min-height:132px;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font:inherit;font-weight:400;line-height:1.5}
 .report-bug-description textarea:focus-visible{outline:2px solid var(--app-accent);outline-offset:1px}
 
 .report-bug-severity{display:grid;gap:6px;margin:0;padding:0;border:0}
 .report-bug-severity legend{font-weight:600;font-size:14px;padding:0;margin-bottom:2px}
-.report-bug-severity-option{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg);cursor:pointer;font-size:14px}
+.report-bug-severity-option{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg);cursor:pointer;font-size:14px}
 .report-bug-severity-option:has(input:checked){border-color:color-mix(in srgb,var(--app-accent) 45%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
 .report-bug-severity-option input{width:18px;height:18px;accent-color:var(--app-accent);flex:none}
 .report-bug-clear-severity{justify-self:start;min-height:44px;padding:0 12px;border:0;background:none;color:var(--app-muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
 
-.report-bug-details{display:grid;gap:8px;padding:14px;border-radius:var(--soft-radius-sm);border:1px dashed var(--app-line);background:color-mix(in srgb,var(--app-ink) 3%,var(--app-bg))}
+.report-bug-details{display:grid;gap:8px;padding:14px;border-radius:var(--radius-sm);border:1px dashed var(--app-line);background:color-mix(in srgb,var(--app-ink) 3%,var(--app-bg))}
 .report-bug-details-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;font-size:14px;cursor:pointer}
 .report-bug-details-toggle input{width:18px;height:18px;accent-color:var(--app-accent);flex:none}
 .report-bug-details ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}

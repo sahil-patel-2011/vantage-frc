@@ -1,6 +1,6 @@
 /* Robot Blueprint — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .robot-* prefixed and theme-aware. */
-.robot-page input,.robot-page select{min-height:44px;padding:7px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font:inherit}
+.robot-page input,.robot-page select{min-height:44px;padding:7px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:var(--radius-xs);font:inherit}
 .robot-header-actions{display:flex;align-items:center;gap:10px}
 /* Scoped: an unscoped `.app-button.sm` here leaks to every page once this stylesheet loads. */
 .robot-page .app-button.sm{min-height:44px;padding:4px 10px;font-size:11px}
@@ -11,7 +11,7 @@
 .robot-rollup{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:16px}
 .robot-rollup-main{display:grid;gap:6px;flex:1;min-width:240px}
 .robot-rollup-main strong{font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
-.robot-track{height:7px;background:var(--app-soft);border-radius:var(--soft-radius-pill);overflow:hidden}
+.robot-track{height:7px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
 .robot-track.big{height:9px}
 .robot-track i{display:block;height:100%;background:var(--app-accent)}
 .robot-track i.warn{background:var(--app-warning)}
@@ -32,12 +32,12 @@
 .robot-domain{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:8px}
 .robot-domain-label{color:var(--app-muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 .robot-domain-value{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
-.robot-cad-btn{display:inline-flex;align-items:center;min-height:44px;padding:6px 11px;border-radius:var(--soft-radius-xs);background:var(--app-accent);color:var(--app-accent-ink);font-size:11px;font-weight:800;text-decoration:none}
-.robot-code{padding:4px 8px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--soft-radius-xs);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.robot-cad-btn{display:inline-flex;align-items:center;min-height:44px;padding:6px 11px;border-radius:var(--radius-xs);background:var(--app-accent);color:var(--app-accent-ink);font-size:11px;font-weight:800;text-decoration:none}
+.robot-code{padding:4px 8px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-xs);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .robot-inline-form{display:flex;gap:6px;flex-wrap:wrap;flex:1}
 .robot-inline-form input{flex:1;min-width:160px;min-height:44px}
 .robot-ops{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--app-line)}
-.robot-chip{display:inline-flex;align-items:center;min-height:44px;padding:5px 9px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill);color:var(--app-muted);font-size:11px;font-weight:700;text-decoration:none}
+.robot-chip{display:inline-flex;align-items:center;min-height:44px;padding:5px 9px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill);color:var(--app-muted);font-size:11px;font-weight:700;text-decoration:none}
 .robot-chip.warn{color:var(--app-critical);border-color:var(--app-warning)}
 .robot-ops .robot-link.danger{margin-left:auto}
 .robot-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
@@ -51,5 +51,5 @@
 .aii-head h2 span{color:var(--app-accent)}
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
-.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--soft-radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--app-muted);font-size:10px}

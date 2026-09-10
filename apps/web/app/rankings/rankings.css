@@ -3,9 +3,9 @@
    --app-critical / --app-accent tokens so dots and chips survive dark mode. */
 .rank-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .rank-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-.rank-standing{padding:6px 12px;color:var(--app-accent);background:transparent;border:1px solid var(--app-accent);border-radius:var(--soft-radius-pill);font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
-.rank-tabs{display:inline-flex;align-self:start;justify-self:start;width:max-content;padding:3px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--soft-radius-pill)}
-.rank-tabs button{padding:6px 16px;color:var(--app-muted);background:transparent;border:0;border-radius:var(--soft-radius-pill);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.rank-standing{padding:6px 12px;color:var(--app-accent);background:transparent;border:1px solid var(--app-accent);border-radius:var(--radius-pill);font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rank-tabs{display:inline-flex;align-self:start;justify-self:start;width:max-content;padding:3px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:var(--radius-pill)}
+.rank-tabs button{padding:6px 16px;color:var(--app-muted);background:transparent;border:0;border-radius:var(--radius-pill);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .rank-tabs button.active{color:var(--app-accent-ink);background:var(--app-accent)}
 .rank-list{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .rank-row{display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
@@ -17,15 +17,15 @@
 .rank-team{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
 .rank-team b{color:var(--app-ink);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .rank-nick{color:var(--app-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rank-us{flex:none;padding:1px 6px;color:var(--app-accent);border:1px solid var(--app-accent);border-radius:var(--soft-radius-pill);font-size:9px;font-weight:800;font-style:normal;letter-spacing:.06em}
+.rank-us{flex:none;padding:1px 6px;color:var(--app-accent);border:1px solid var(--app-accent);border-radius:var(--radius-pill);font-size:9px;font-weight:800;font-style:normal;letter-spacing:.06em}
 .rank-record{flex:0 0 74px;color:var(--app-ink);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rank-epa{display:grid;gap:3px;flex:1 1 220px;min-width:0}
 .rank-epa-top{display:flex;align-items:center;gap:8px}
 .rank-epa-top b{min-width:44px;color:var(--app-ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.rank-epa-bar{flex:1;height:6px;background:var(--app-soft);border-radius:var(--soft-radius-pill);overflow:hidden}
-.rank-epa-bar i{display:block;height:100%;background:var(--app-accent);border-radius:var(--soft-radius-pill)}
+.rank-epa-bar{flex:1;height:6px;background:var(--app-soft);border-radius:var(--radius-pill);overflow:hidden}
+.rank-epa-bar i{display:block;height:100%;background:var(--app-accent);border-radius:var(--radius-pill)}
 .rank-epa-split{color:var(--app-muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rank-source-chip{flex:none;padding:2px 8px;color:var(--app-muted);background:var(--app-soft);border-radius:var(--soft-radius-pill);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.rank-source-chip{flex:none;padding:2px 8px;color:var(--app-muted);background:var(--app-soft);border-radius:var(--radius-pill);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 .rank-source-label{flex:none}
 .rank-bracket{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;align-items:start}
 .rank-round{display:grid;gap:8px}
@@ -37,7 +37,7 @@
 .rank-match-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rank-match-top strong{color:var(--app-ink);font-size:13px}
 .rank-match-time{margin-left:auto;color:var(--app-muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rank-winner{margin-left:auto;padding:2px 8px;border-radius:var(--soft-radius-pill);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.rank-winner{margin-left:auto;padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
 .rank-winner.red{color:var(--app-critical);border:1px solid var(--app-critical)}
 .rank-winner.blue{color:var(--app-accent);border:1px solid var(--app-accent)}
 .rank-alliance{display:flex;align-items:center;gap:8px}

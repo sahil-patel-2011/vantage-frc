@@ -2,9 +2,9 @@
    Totals from logged season costs / subscriptions / usage ledger only — never DEMO $. */
 .costs-page{max-width:1100px;margin:0 auto}
 .costs-page input,.costs-page select,.costs-page textarea{
-  width:100%;min-height:40px;padding:10px 12px;color:var(--soft-ink);
-  background:var(--soft-bg);border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);font:inherit;
+  width:100%;min-height:40px;padding:10px 12px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius-sm);font:inherit;
 }
 .costs-page select{cursor:pointer}
 
@@ -17,7 +17,7 @@
 .costs-next-actions h2{margin:0;font-size:var(--soft-title-3);letter-spacing:var(--soft-tracking-tight)}
 .costs-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
 .costs-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.costs-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--soft-radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
+.costs-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--app-line);background:var(--app-bg)}
 .costs-next-actions li.primary{border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
 .costs-next-actions li div{display:grid;gap:2px;min-width:0}
 .costs-next-actions li strong{font-size:14px}
@@ -33,7 +33,7 @@
 .costs-summary-tile.good strong{color:#1f7a3d}
 
 .costs-progress-wrap{display:grid;gap:6px;margin-top:12px}
-.costs-progress-bar{height:8px;border-radius:var(--soft-radius-pill);background:var(--app-soft);overflow:hidden;border:1px solid var(--app-line)}
+.costs-progress-bar{height:8px;border-radius:var(--radius-pill);background:var(--app-soft);overflow:hidden;border:1px solid var(--app-line)}
 .costs-progress-bar i{display:block;height:100%;border-radius:inherit;min-width:0}
 .costs-progress-bar.empty i{width:0!important}
 
@@ -64,7 +64,7 @@
 
 .costs-subs-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .costs-subs-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.costs-subs-list li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
+.costs-subs-list li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
 .costs-subs-list li.inactive{opacity:.55}
 .costs-subs-actions{display:flex;gap:6px;align-items:center}
 .costs-sub-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--app-line);padding-top:12px}
@@ -82,7 +82,7 @@
 .costs-log .vendor{display:block;color:var(--app-muted);font-size:12px}
 
 .costs-badge{
-  display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--soft-radius-pill);
+  display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--radius-pill);
   border:1px solid var(--app-line);background:var(--app-soft);color:var(--app-muted);
   font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;
 }
@@ -93,9 +93,9 @@
 .costs-form-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
 .costs-row-links{display:flex;flex-wrap:wrap;gap:8px}
 .costs-row-links a{font-size:12px;font-weight:600}
-.costs-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--soft-radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
+.costs-alert{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-xs);background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
 .costs-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:min(100%,420px)}
-.costs-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--soft-radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
+.costs-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-xs);border:1px solid var(--app-line);background:var(--app-bg)}
 .costs-setup-steps li div{display:grid;gap:2px;min-width:0}
 .costs-setup-steps strong{font-size:13px}
 .costs-setup-steps span{color:var(--app-muted);font-size:12px}

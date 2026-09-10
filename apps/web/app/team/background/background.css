@@ -68,10 +68,10 @@
 .team-background-page .soft-panel textarea {
   min-height: 88px;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-sm);
   font: 500 14px var(--font-source-sans), ui-sans-serif;
-  background: var(--soft-card);
+  background: var(--surface);
   color: inherit;
   resize: vertical;
 }
@@ -85,9 +85,9 @@
 .team-background-page .team-background-seed {
   margin: 0;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-accent-soft) 55%, var(--soft-card));
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
   white-space: pre-wrap;
   font: 500 13px/1.5 var(--font-source-sans), ui-sans-serif;
 }

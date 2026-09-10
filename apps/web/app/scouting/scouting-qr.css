@@ -7,40 +7,40 @@
 .scout-qr-related{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .scout-qr-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .scout-qr-figure{
-  margin:0;display:grid;justify-items:center;gap:10px;padding:16px;border-radius:var(--soft-radius);
-  background:var(--soft-bg);border:1px solid var(--soft-line);
+  margin:0;display:grid;justify-items:center;gap:10px;padding:16px;border-radius:var(--radius);
+  background:var(--bg);border:1px solid var(--line);
 }
 /* The QR bitmap itself must stay light-on-white in both themes or scanners lose contrast. */
-.scout-qr-figure img{width:min(280px,100%);height:auto;border-radius:var(--soft-radius-sm);background:#fff}
+.scout-qr-figure img{width:min(280px,100%);height:auto;border-radius:var(--radius-sm);background:#fff}
 .scout-qr-figure figcaption{width:100%}
 .scout-qr-code{
   font:700 18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;
-  color:var(--soft-ink);padding:6px 10px;border-radius:var(--soft-radius-xs);background:var(--soft-card);
-  border:1px solid var(--soft-line);
+  color:var(--ink);padding:6px 10px;border-radius:var(--radius-xs);background:var(--surface);
+  border:1px solid var(--line);
 }
 .scout-qr-empty{
-  margin:0 0 12px;padding:14px;border-radius:var(--soft-radius-sm);border:1px dashed var(--soft-line);
+  margin:0 0 12px;padding:14px;border-radius:var(--radius-sm);border:1px dashed var(--line);
 }
 .scout-qr-setup-steps{
   list-style:none;margin:0;padding:0;display:grid;gap:10px;
 }
 .scout-qr-setup-steps li{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 0;border-bottom:1px solid var(--soft-line);
+  padding:10px 0;border-bottom:1px solid var(--line);
 }
 .scout-qr-setup-steps li:last-child{border-bottom:0}
 .scout-qr-setup-steps p{margin:4px 0 0}
 .scout-qr-viewport{
   position:relative;display:grid;place-items:center;min-height:220px;margin-bottom:12px;overflow:hidden;
-  border-radius:var(--soft-radius);border:1px solid var(--soft-line);
-  background:linear-gradient(160deg,var(--soft-bg),var(--soft-card) 55%,var(--soft-bg));
+  border-radius:var(--radius);border:1px solid var(--line);
+  background:linear-gradient(160deg,var(--bg),var(--surface) 55%,var(--bg));
 }
 /* Camera preview sits on a deliberate near-black stage in both themes. */
-.scout-qr-viewport.is-live{background:color-mix(in srgb,var(--soft-ink) 92%,#000)}
-.scout-qr-viewport video{width:100%;max-height:320px;object-fit:cover;display:block;border-radius:var(--soft-radius-sm)}
+.scout-qr-viewport.is-live{background:color-mix(in srgb,var(--ink) 92%,#000)}
+.scout-qr-viewport video{width:100%;max-height:320px;object-fit:cover;display:block;border-radius:var(--radius-sm)}
 .scout-qr-canvas{display:none}
 .scout-qr-manual{
-  display:grid;gap:8px;margin:12px 0;font-size:13px;color:var(--soft-muted);
+  display:grid;gap:8px;margin:12px 0;font-size:13px;color:var(--muted);
 }
 .scout-qr-manual textarea{width:100%;resize:vertical;min-height:84px}
 .scout-qr-message{margin:0 0 12px}

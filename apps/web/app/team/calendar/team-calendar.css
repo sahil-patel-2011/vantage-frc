@@ -7,7 +7,7 @@
   color: var(--app-ink);
   background: var(--app-bg);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font: inherit;
 }
 .tc-page textarea {
@@ -37,7 +37,7 @@
   padding: 16px 18px;
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   box-shadow: 0 8px 28px color-mix(in srgb, var(--app-ink) 4%, transparent);
 }
 .tc-next-actions > header {
@@ -68,7 +68,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   border: 1px solid var(--app-line);
   background: color-mix(in srgb, var(--app-bg) 70%, var(--app-surface));
 }
@@ -103,7 +103,7 @@
 .tc-tabs button {
   padding: 8px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: var(--app-surface);
   color: var(--app-muted);
   font: inherit;
@@ -131,7 +131,7 @@
   min-height: 44px;
   padding: 7px 14px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: var(--app-surface);
   color: var(--app-ink);
   font: inherit;
@@ -184,7 +184,7 @@
   display: grid;
   gap: 8px;
   padding: 10px 0;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
 }
 .tc-day.focused {
   padding: 12px;
@@ -221,7 +221,7 @@
   gap: 6px;
   padding: 12px 13px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
   border-left: 3px solid var(--tc-accent, var(--app-accent));
 }
@@ -246,7 +246,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   border: 1px solid currentColor;
   font-size: 11px;
   font-weight: 700;
@@ -322,7 +322,7 @@
   display: grid;
   gap: 2px;
   padding: 10px 11px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: var(--app-bg);
 }
@@ -370,7 +370,7 @@
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--app-bg);
 }
 .tc-sub-name {
@@ -407,7 +407,7 @@
   height: 28px;
   padding: 0 8px;
   margin: 0 3px 3px 0;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   border: 1px solid var(--app-line);
   background: var(--app-surface);
   color: var(--app-muted);
@@ -424,7 +424,7 @@
 .tc-error {
   margin: 0 0 12px;
   padding: 10px 12px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
   color: var(--app-critical);
   font-size: 13px;
@@ -435,10 +435,10 @@
   margin: 0 0 12px;
   min-height: 36px;
   padding: 6px 10px;
-  border: 1px solid var(--soft-line);
-  border-radius:var(--soft-radius-xs);
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius:var(--radius-xs);
+  background: var(--surface);
+  color: var(--ink);
   font: 600 13px inherit;
   width: fit-content;
   max-width: 100%;
@@ -491,7 +491,7 @@
 .tc-mode {
   display: inline-flex;
   padding: 3px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: color-mix(in srgb, var(--app-soft) 80%, var(--app-surface));
   border: 1px solid var(--app-line);
 }
@@ -499,7 +499,7 @@
   min-height: 34px;
   padding: 0 14px;
   border: 0;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: transparent;
   color: var(--app-muted);
   font: inherit;
@@ -525,7 +525,7 @@
 .tc-icon-btn {
   width: 34px;
   height: 34px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: var(--app-surface);
   color: var(--app-ink);
@@ -554,7 +554,7 @@
   gap: 6px;
   min-height: 44px;
   padding: 0 14px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
   background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
   color: var(--app-accent);
@@ -639,7 +639,7 @@
   align-content: start;
   min-height: 160px;
   padding: 10px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   border: 1px solid var(--app-line);
   background: color-mix(in srgb, var(--app-bg) 70%, var(--app-surface));
   text-align: left;
@@ -682,7 +682,7 @@
   display: grid;
   gap: 1px;
   padding: 6px 7px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border-left: 3px solid var(--app-accent);
   background: var(--app-surface);
   font-size: 11px;
@@ -733,7 +733,7 @@
   align-content: start;
   min-height: 84px;
   padding: 6px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: var(--app-bg);
   text-align: left;
@@ -769,7 +769,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
   color: var(--app-accent);
   font-size: 10px;
@@ -787,7 +787,7 @@
 }
 .tc-month-cell li {
   padding: 2px 5px;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   color: #fff;
   font-size: 10px;
   font-weight: 650;
@@ -855,8 +855,8 @@
 }
 .tc-sync-note {
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  background: color-mix(in srgb, var(--soft-accent-soft) 70%, transparent);
+  border-radius:var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
   border: 1px solid color-mix(in srgb, var(--app-accent) 18%, var(--app-line));
 }
 .tc-sync-note strong {
@@ -931,7 +931,7 @@
   align-items: center;
   max-width: 100%;
   padding: 2px 8px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   border: 1px solid var(--app-line);
   background: color-mix(in srgb, var(--app-ink) 7%, var(--app-surface));
   color: inherit;
@@ -963,7 +963,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: var(--app-surface);
   overflow: hidden;
 }
@@ -1051,7 +1051,7 @@
   padding: 2px 6px;
   border: 1px solid var(--app-accent);
   border-left-width: 3px;
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
   color: inherit;
   font: inherit;
@@ -1111,7 +1111,7 @@
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
 }
 .tc-repeat-days {
@@ -1134,7 +1134,7 @@
   min-height: 44px;
   padding: 0 8px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-surface);
   color: var(--app-ink);
   font: inherit;
@@ -1176,7 +1176,7 @@
   gap: 8px;
   padding: 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
 }
 .tc-scope-title {
@@ -1196,7 +1196,7 @@
   min-height: 44px;
   padding: 8px 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   background: var(--app-surface);
   color: var(--app-ink);
   font: inherit;
@@ -1226,7 +1226,7 @@
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
 }
 .tc-occurrence-actions {
@@ -1289,7 +1289,7 @@
   color: var(--app-ink);
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius: var(--soft-radius-xs);
+  border-radius: var(--radius-xs);
   font: inherit;
   font-size: 12px;
 }
@@ -1323,7 +1323,7 @@
   padding: 9px 10px;
   background: var(--app-surface);
   border: 1px solid var(--app-line);
-  border-radius: var(--soft-radius-xs);
+  border-radius: var(--radius-xs);
 }
 .tc-ai-slot > div {
   display: grid;
@@ -1367,7 +1367,7 @@
   background: var(--app-surface);
   border: 1px solid var(--tc-task-color, var(--app-line));
   border-left: 3px solid var(--tc-task-color, var(--app-muted));
-  border-radius: var(--soft-radius-xs);
+  border-radius: var(--radius-xs);
   font-size: 11px;
   line-height: 1.3;
 }

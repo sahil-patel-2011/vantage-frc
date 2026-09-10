@@ -27,7 +27,7 @@
   color: var(--app-muted);
   background: transparent;
   border: 1px solid transparent;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font: 700 15px/1 var(--font-source-sans, ui-sans-serif), system-ui;
   cursor: pointer;
 }
@@ -109,7 +109,7 @@
   color: var(--app-muted);
   background: transparent;
   border: 0;
-  border-radius:var(--soft-radius-pill);
+  border-radius:var(--radius-pill);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -197,7 +197,7 @@
   color: var(--app-ink);
   background: var(--app-soft);
   border: 1px solid var(--app-line);
-  border-radius:var(--soft-radius-xs);
+  border-radius:var(--radius-xs);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -259,8 +259,8 @@
     position: sticky;
     right: 0;
     margin-left: 4px;
-    background: var(--soft-bg);
-    border-radius:var(--soft-radius-pill);
+    background: var(--bg);
+    border-radius:var(--radius-pill);
   }
 }
 

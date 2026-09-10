@@ -15,7 +15,7 @@
 .duties-warn {
   margin: 0;
   padding: 10px 14px;
-  border-radius:var(--soft-radius-sm);
+  border-radius:var(--radius-sm);
   background: #fff7ed;
   color: #9a3412;
   border: 1px solid #fed7aa;
@@ -34,9 +34,9 @@
   display: grid;
   gap: 2px;
   padding: 12px 14px;
-  border-radius:var(--soft-radius-sm);
-  border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  border-radius:var(--radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, #fff);
 }
 
 .duties-list strong {
@@ -44,7 +44,7 @@
 }
 
 .duties-list span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .duties-active span {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 

@@ -26,20 +26,20 @@
 .scout-disagreements-season{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
   padding:14px 16px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius,16px);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+  border:1px solid var(--line);
+  border-radius:var(--radius,16px);
+  background:var(--surface);
+  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
 }
 .scout-disagreements-season label{
   display:grid;gap:6px;
   font:600 12px var(--font-source-sans),ui-sans-serif;
-  color:var(--soft-muted);
+  color:var(--muted);
 }
 .scout-disagreements-season select{
   min-height:40px;min-width:120px;padding:0 12px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);background:#fff;color:var(--soft-ink);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:#fff;color:var(--ink);
 }
 .scout-disagreements-kpis{
   display:grid;
@@ -49,39 +49,39 @@
 .scout-disagreements-kpis article{
   display:grid;gap:4px;
   padding:16px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm,12px);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm,12px);
+  background:var(--surface);
+  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
 }
 .scout-disagreements-kpis span,.scout-disagreements-kpis small{
-  color:var(--soft-muted);
+  color:var(--muted);
   font:700 10px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
   letter-spacing:.06em;text-transform:uppercase;
 }
 .scout-disagreements-kpis strong{
   font-size:clamp(24px,3.6vw,32px);
-  letter-spacing:-.03em;color:var(--soft-ink);
+  letter-spacing:-.03em;color:var(--ink);
 }
 .scout-disagreements-panel{
   padding:16px 18px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius,16px);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+  border:1px solid var(--line);
+  border-radius:var(--radius,16px);
+  background:var(--surface);
+  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
 }
 .scout-disagreements-panel header{margin-bottom:12px}
 .scout-disagreements-panel h2{
-  margin:0 0 4px;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight);color:var(--soft-ink);
+  margin:0 0 4px;font-size:var(--soft-title-2);letter-spacing:var(--soft-tracking-tight);color:var(--ink);
 }
 .scout-disagreements-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .scout-disagreements-list li{
   display:grid;gap:8px;
-  padding:12px 14px;border-radius:var(--soft-radius-sm);border:1px solid var(--soft-line);
+  padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);
   background:#f8fafc;
 }
-.scout-disagreements-list strong{font-size:15px;color:var(--soft-ink)}
-.scout-disagreements-list small{display:block;color:var(--soft-muted);font-size:12px;margin-top:2px}
+.scout-disagreements-list strong{font-size:15px;color:var(--ink)}
+.scout-disagreements-list small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .scout-disagreements-row-head{
   display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
 }
@@ -91,15 +91,15 @@
 .scout-disagreements-actions select,
 .scout-disagreements-actions input{
   min-height:40px;padding:0 12px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);background:#fff;color:var(--soft-ink);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);background:#fff;color:var(--ink);
 }
 .scout-disagreements-actions input{flex:1;min-width:160px}
 .scout-disagreements-form{display:grid;gap:10px}
 .scout-disagreements-audit{list-style:none;padding:0;margin:0;display:grid;gap:6px}
 .scout-disagreements-audit li{
   display:flex;justify-content:space-between;gap:8px;
-  padding:8px 0;border-bottom:1px solid var(--soft-line);
+  padding:8px 0;border-bottom:1px solid var(--line);
 }
 .scout-disagreements-audit li:last-child{border-bottom:0}
 @media (max-width:900px){

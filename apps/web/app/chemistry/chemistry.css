@@ -32,15 +32,15 @@
   justify-content:space-between;
   gap:10px;
   padding:10px 0;
-  border-bottom:1px solid var(--soft-line);
+  border-bottom:1px solid var(--line);
 }
 .chem-setup-steps li:last-child{border-bottom:0}
 .chem-setup-steps p{margin:4px 0 0}
 .chem-empty{
   margin:0;
   padding:14px;
-  border-radius:var(--soft-radius-sm);
-  border:1px dashed var(--soft-line);
+  border-radius:var(--radius-sm);
+  border:1px dashed var(--line);
 }
 .chem-kpis{
   display:grid;
@@ -51,18 +51,18 @@
   display:grid;
   gap:4px;
   padding:14px 16px;
-  border:1px solid var(--soft-line);
-  border-radius:var(--soft-radius-sm);
-  background:var(--soft-card);
-  box-shadow:var(--soft-shadow);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  box-shadow:var(--shadow);
 }
 .chem-kpis strong{
   font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
-  color:var(--soft-ink);
+  color:var(--ink);
   letter-spacing:-.02em;
 }
 .chem-kpis small{
-  color:var(--soft-muted);
+  color:var(--muted);
   font:600 12px var(--font-source-sans),ui-sans-serif;
 }
 .chem-panel{min-height:auto}

@@ -39,7 +39,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-side-group {
@@ -50,7 +50,7 @@
   display: block;
   margin-bottom: 4px;
   font-weight: 650;
-  color: var(--soft-ink);
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -58,19 +58,19 @@
   margin: 0;
   padding: 0 0 0 10px;
   list-style: none;
-  border-left: 1px solid var(--soft-line);
+  border-left: 1px solid var(--line);
 }
 
 .cl-side-group li a {
   display: block;
   padding: 3px 0 3px 8px;
-  color: var(--soft-muted);
+  color: var(--muted);
   text-decoration: none;
   line-height: 1.35;
 }
 
 .cl-side-group li a:hover {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-side-done {
@@ -91,7 +91,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-hero h1 {
@@ -103,7 +103,7 @@
 
 .cl-lead {
   margin: 0 0 18px;
-  color: var(--soft-muted);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -115,7 +115,7 @@
 }
 
 .cl-muted {
-  color: var(--soft-muted);
+  color: var(--muted);
   font-weight: 400;
 }
 
@@ -124,7 +124,7 @@
 .cl-unit {
   margin-top: 40px;
   padding-top: 24px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
 }
 
 .cl-unit h2 {
@@ -135,7 +135,7 @@
 
 .cl-blurb {
   margin: 0 0 8px;
-  color: var(--soft-muted);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -143,7 +143,7 @@
    linkable — this page gets shared one lesson at a time. */
 .cl-anchor {
   margin-right: 6px;
-  color: var(--soft-line);
+  color: var(--line);
   text-decoration: none;
   opacity: 0;
 }
@@ -152,15 +152,15 @@
 .cl-lesson h3:hover .cl-anchor,
 .cl-anchor:focus-visible {
   opacity: 1;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-lesson {
   margin-top: 24px;
   padding: 18px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius, 16px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
   /* Anchored jumps otherwise land under the sticky app chrome. */
   scroll-margin-top: 24px;
 }
@@ -184,7 +184,7 @@
   flex: 0 0 auto;
   min-height: 36px;
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-page .cl-done input[type="checkbox"] {
@@ -197,8 +197,8 @@
 .cl-why {
   margin: 12px 0;
   padding: 10px 12px;
-  border-left: 3px solid var(--soft-accent);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
   line-height: 1.55;
 }
 
@@ -217,8 +217,8 @@
 .cl-practice {
   margin: 12px 0;
   padding: 10px 12px;
-  border: 1px dashed var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm, 12px);
   line-height: 1.55;
   font-size: 14px;
 }
@@ -244,11 +244,11 @@
 
 .cl-method-tab {
   padding: 6px 14px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-bottom-color: transparent;
   border-radius: 10px 10px 0 0;
-  background: var(--soft-bg);
-  color: var(--soft-muted);
+  background: var(--bg);
+  color: var(--muted);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -256,17 +256,17 @@
 }
 
 .cl-method-tab.active {
-  background: var(--soft-card);
-  color: var(--soft-ink);
-  border-bottom-color: var(--soft-card);
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom-color: var(--surface);
 }
 
 .cl-method-lines {
   margin: 0;
   padding: 12px 14px 12px 32px;
-  border: 1px solid var(--soft-line);
-  border-radius: 0 var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px) var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: 0 var(--radius-sm, 12px) var(--radius-sm, 12px) var(--radius-sm, 12px);
+  background: var(--bg);
   font-size: 13.5px;
   line-height: 1.6;
 }
@@ -275,7 +275,7 @@
   margin: 6px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 /* ---------- callouts ---------- */
@@ -283,7 +283,7 @@
 .cl-callout {
   margin: 12px 0;
   padding: 12px 14px;
-  border-radius: var(--soft-radius-sm, 12px);
+  border-radius: var(--radius-sm, 12px);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -301,12 +301,12 @@
 }
 
 .cl-tip {
-  border: 1px solid var(--soft-line);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  background: var(--bg);
 }
 
 .cl-tip strong {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-warn {
@@ -320,13 +320,13 @@
 }
 
 html[data-theme="dark"] .cl-warn {
-  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
-  color: var(--soft-ink);
+  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
+  color: var(--ink);
 }
 
 html[data-theme="dark"] .cl-warn strong {
-  color: var(--soft-warning, #c8922a);
+  color: var(--warning, #c8922a);
 }
 
 /* ---------- links ---------- */
@@ -345,22 +345,22 @@ html[data-theme="dark"] .cl-warn strong {
   align-items: center;
   min-height: 36px;
   padding: 6px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .cl-link:hover {
-  border-color: var(--soft-accent);
-  color: var(--soft-accent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .cl-link-primary {
-  border-color: var(--soft-accent);
-  background: var(--soft-accent);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--soft-brand-ink, #fff);
 }
 
@@ -374,9 +374,9 @@ html[data-theme="dark"] .cl-warn strong {
 .cl-grader {
   margin-top: 16px;
   padding: 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
 }
 
 .cl-grader-head {
@@ -398,14 +398,14 @@ html[data-theme="dark"] .cl-warn strong {
    student needs to see that where they act, not where they read. */
 .cl-chip {
   padding: 3px 10px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--soft-card);
+  background: var(--surface);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -413,7 +413,7 @@ html[data-theme="dark"] .cl-warn strong {
   display: block;
   margin: 10px 0 8px;
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-page .cl-field > span {
@@ -425,10 +425,10 @@ html[data-theme="dark"] .cl-warn strong {
   width: 100%;
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
-  color: var(--soft-ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 14px;
 }
@@ -436,9 +436,9 @@ html[data-theme="dark"] .cl-warn strong {
 .cl-page .cl-button {
   min-height: 38px;
   padding: 8px 16px;
-  border: 1px solid var(--soft-accent);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--accent);
   color: var(--soft-brand-ink, #fff);
   font: inherit;
   font-size: 14px;
@@ -462,9 +462,9 @@ html[data-theme="dark"] .cl-warn strong {
 .cl-grade {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 
 .cl-grade-head {
@@ -487,22 +487,22 @@ html[data-theme="dark"] .cl-warn strong {
 }
 
 .cl-band-match {
-  background: color-mix(in srgb, var(--soft-success, #1a7f4b) 16%, transparent);
-  color: var(--soft-success, #1a7f4b);
+  background: color-mix(in srgb, var(--positive, #1a7f4b) 16%, transparent);
+  color: var(--positive, #1a7f4b);
 }
 
 .cl-band-close {
-  background: color-mix(in srgb, var(--soft-warning, #c8922a) 18%, transparent);
+  background: color-mix(in srgb, var(--warning, #c8922a) 18%, transparent);
   color: var(--soft-warning-ink, #8a6a20);
 }
 
 .cl-band-off {
-  background: color-mix(in srgb, var(--soft-danger, #b42318) 14%, transparent);
-  color: var(--soft-danger, #b42318);
+  background: color-mix(in srgb, var(--critical, #b42318) 14%, transparent);
+  color: var(--critical, #b42318);
 }
 
 html[data-theme="dark"] .cl-band-close {
-  color: var(--soft-warning, #c8922a);
+  color: var(--warning, #c8922a);
 }
 
 .cl-factors {
@@ -513,9 +513,9 @@ html[data-theme="dark"] .cl-band-close {
 
 .cl-factor {
   padding: 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
 }
 
 .cl-factor-label {
@@ -524,7 +524,7 @@ html[data-theme="dark"] .cl-band-close {
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-factor-value {
@@ -540,7 +540,7 @@ html[data-theme="dark"] .cl-band-close {
    reads as a zero, and a zero here would be a score nothing earned. */
 .cl-factor-unknown .cl-factor-value {
   font-size: 17px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-factor p {
@@ -559,14 +559,14 @@ html[data-theme="dark"] .cl-band-close {
 .cl-axes {
   margin: 10px 0 0;
   font-size: 12.5px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-axis {
   display: inline-block;
   margin-left: 8px;
   padding: 2px 8px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
 }
@@ -574,18 +574,18 @@ html[data-theme="dark"] .cl-band-close {
 .cl-density {
   margin: 10px 0 0;
   font-size: 12.5px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-density-bad {
-  color: var(--soft-danger, #b42318);
+  color: var(--critical, #b42318);
   font-weight: 600;
 }
 
 .cl-what {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px dashed var(--soft-line);
+  border-top: 1px dashed var(--line);
 }
 
 .cl-what > strong {
@@ -594,7 +594,7 @@ html[data-theme="dark"] .cl-band-close {
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-what ul {
@@ -609,7 +609,7 @@ html[data-theme="dark"] .cl-band-close {
 .cl-notice {
   margin-top: 14px;
   padding: 12px 14px;
-  border-radius: var(--soft-radius-sm, 12px);
+  border-radius: var(--radius-sm, 12px);
   font-size: 13.5px;
   line-height: 1.55;
 }
@@ -627,12 +627,12 @@ html[data-theme="dark"] .cl-band-close {
 }
 
 .cl-notice-setup {
-  border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .cl-notice-setup strong {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-notice-fail {
@@ -642,9 +642,9 @@ html[data-theme="dark"] .cl-band-close {
 }
 
 html[data-theme="dark"] .cl-notice-fail {
-  border-color: color-mix(in srgb, var(--soft-warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--soft-warning, #c8922a) 12%, transparent);
-  color: var(--soft-ink);
+  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
+  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
+  color: var(--ink);
 }
 
 /* ---------- folds and tables ---------- */
@@ -656,13 +656,13 @@ html[data-theme="dark"] .cl-notice-fail {
 
 .cl-fold > summary {
   padding: 6px 0;
-  color: var(--soft-muted);
+  color: var(--muted);
   cursor: pointer;
   list-style: revert;
 }
 
 .cl-fold > summary:hover {
-  color: var(--soft-accent);
+  color: var(--accent);
 }
 
 .cl-fold-body {
@@ -677,17 +677,17 @@ html[data-theme="dark"] .cl-notice-fail {
 
 .cl-table th {
   padding: 6px 8px;
-  border-bottom: 1px solid var(--soft-line);
+  border-bottom: 1px solid var(--line);
   text-align: left;
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-table td {
   padding: 7px 8px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
 }
@@ -711,7 +711,7 @@ html[data-theme="dark"] .cl-notice-fail {
 
 .cl-ref-table td {
   padding: 8px 10px;
-  border-top: 1px solid var(--soft-line);
+  border-top: 1px solid var(--line);
   vertical-align: top;
   line-height: 1.5;
 }
@@ -724,7 +724,7 @@ html[data-theme="dark"] .cl-notice-fail {
 }
 
 .cl-ref-table td:last-child {
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 .cl-ref-table code {
@@ -742,8 +742,8 @@ html[data-theme="dark"] .cl-notice-fail {
     position: static;
     max-height: none;
     padding: 12px 14px;
-    border: 1px solid var(--soft-line);
-    border-radius: var(--soft-radius, 16px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 16px);
   }
 
   .cl-side-group ul {
@@ -767,6 +767,6 @@ html[data-theme="dark"] .cl-notice-fail {
   }
 
   .cl-ref-table tr + tr {
-    border-top: 1px solid var(--soft-line);
+    border-top: 1px solid var(--line);
   }
 }

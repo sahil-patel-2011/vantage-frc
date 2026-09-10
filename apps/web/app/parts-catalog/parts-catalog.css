@@ -20,7 +20,7 @@
 .pc-notice {
   margin: 0;
   padding: 10px 12px;
-  border-radius: var(--soft-radius-sm);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
   font-size: 13px;
 }

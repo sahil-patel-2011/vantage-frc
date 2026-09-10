@@ -32,9 +32,9 @@
 .pr-confirm {
   margin: 8px 0 0;
   padding: 10px 12px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
   font-size: 14px;
   line-height: 1.8;
 }
@@ -49,9 +49,9 @@
 
 .pr-item {
   padding: 14px 16px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
 }
 
 .pr-item-head {
@@ -77,8 +77,8 @@
 .pr-review {
   margin: 10px 0 0;
   padding: 8px 10px;
-  border-left: 3px solid var(--soft-line);
-  background: var(--soft-bg);
+  border-left: 3px solid var(--line);
+  background: var(--bg);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -110,13 +110,13 @@
 .pr-error {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--soft-danger, #b42318);
+  color: var(--critical, #b42318);
 }
 
 .pr-notice {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--soft-muted);
+  color: var(--muted);
 }
 
 @media (max-width: 640px) {
