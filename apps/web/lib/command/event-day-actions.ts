@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { dropEventDayRelatedDuplicates } from "./event-day-related";
 import type { CommandSnapshot } from "./types";
 
 export type EventDayNextAction = {
@@ -140,5 +141,5 @@ export function eventDayNextActions(
     });
   }
 
-  return actions.slice(0, 5);
+  return dropEventDayRelatedDuplicates(orgId, actions).slice(0, 5);
 }

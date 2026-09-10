@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Event Day Command (never DEMO schedule). */
@@ -66,6 +67,27 @@ export type EventDayEmptyCopy = {
   description: string;
 };
 
+function eventDayRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    eventDayRelatedLinks(orgId, { include: [...EVENT_DAY_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = eventDayRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
+export function dropEventDayRelatedDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  return dropRelatedStripDuplicates(orgId, items);
+}
+
 /** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO schedule. */
 export type EventDaySetupStep = {
   id: string;
@@ -75,7 +97,7 @@ export type EventDaySetupStep = {
 };
 
 export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
-  return [
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "workspace",
       label: "Choose your team",
@@ -112,7 +134,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
       detail: "Coverage queues stay empty until real partners/opponents post.",
       href: hubHref("/competition", "scouting", orgId),
     },
-  ];
+  ]);
 }
 
 /** Real match counts only. */
@@ -183,12 +205,16 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
         title: "No upcoming matches",
         description: "Matches appear after TBA sync for this event.",
       };
-    default:
+    case "ready":
       return {
         kind,
         title: "Command",
         description: "Next match, scout gaps, and briefs.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
@@ -202,100 +228,18 @@ export function eventDayShellNextActions(input: {
   hasActiveEvent?: boolean;
 }): EventDayShellNextAction[] {
   const orgId = input.orgId ?? null;
-
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team first.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "my-day",
-          label: "Open My Day",
-          detail: "Personal next-match glance stays blank until a team exists.",
-          href: hubHref("/competition", "my-day", null),
-        },
-        {
-          id: "schedule",
-          label: "Open Schedule",
-          detail: "Full event boards stay blank until a team and TBA sync exist.",
-          href: withOrgHref("/schedule", null),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Alliance prep lives on Strategy once event context is set.",
-          href: hubHref("/competition", "strategy", null),
-        },
-      ];
-    }
-    if (input.hasActiveEvent === false) {
-      return [
-        {
-          id: "event",
-          label: "Set active event",
-          detail: "Owners/admins set the event Command reads.",
-          href: withOrgHref("/command", orgId),
-          primary: true,
-        },
-        {
-          id: "my-day",
-          label: "Open My Day",
-          detail: "Personal timing shares the same active event once it is set.",
-          href: hubHref("/competition", "my-day", orgId),
-        },
-        {
-          id: "schedule",
-          label: "Open Schedule",
-          detail: "Event match rows stay blank until the active event is set and synced.",
-          href: withOrgHref("/schedule", orgId),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Strategy shares the same active event once it is selected.",
-          href: hubHref("/competition", "strategy", orgId),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Coverage queues need the same event context.",
-          href: hubHref("/competition", "scouting", orgId),
-        },
-      ].slice(0, 4);
-    }
-    return [
-      {
-        id: "team-data",
-        label: "Sync Team Data",
-        detail: "Pull the match schedule from The Blue Alliance.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "my-day",
-        label: "Open My Day",
-        detail: "Personal next-match glance uses the same event context.",
-        href: hubHref("/competition", "my-day", orgId),
-      },
-      {
-        id: "schedule",
-        label: "Open Schedule",
-        detail: "Full board and Command share TBA match rows.",
-        href: withOrgHref("/schedule", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Prep callouts stay blank until real scout/TBA metrics exist.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-    ];
+    return setupActionsFrom(eventDaySetupSteps(orgId));
   }
+  return dropRelatedStripDuplicates(orgId, eventDayShellNextActionCandidates(input));
+}
+
+function eventDayShellNextActionCandidates(input: {
+  orgId?: string | null;
+  shell: EventDayShellKind;
+  hasActiveEvent?: boolean;
+}): EventDayShellNextAction[] {
+  const orgId = input.orgId ?? null;
 
   if (input.shell === "error") {
     return [
@@ -331,22 +275,10 @@ export function eventDayShellNextActions(input: {
     return [
       {
         id: "schedule",
-        label: "Open Schedule",
+        label: "Check schedule sync",
         detail: "Confirm TBA rows on the full board.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
-      },
-      {
-        id: "my-day",
-        label: "Open My Day",
-        detail: "Personal next-match glance stays blank until your team is on the schedule.",
-        href: hubHref("/competition", "my-day", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Prep while waiting — Strategy stays blank without metrics.",
-        href: hubHref("/competition", "strategy", orgId),
       },
       {
         id: "scouting",
@@ -359,29 +291,11 @@ export function eventDayShellNextActions(input: {
 
   return [
     {
-      id: "my-day",
-      label: "Open My Day",
-      detail: "Personal bumper cue and travel strip for this next match.",
-      href: hubHref("/competition", "my-day", orgId),
-      primary: true,
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Countdowns and the full board use the same TBA schedule rows.",
-      href: withOrgHref("/schedule", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Alliance prep for partners and opponents stays grounded in real data.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
       id: "scouting",
       label: "Open Scouting",
       detail: "Close coverage gaps for upcoming alliances from the scout queue.",
       href: hubHref("/competition", "scouting", orgId),
+      primary: true,
     },
   ];
 }

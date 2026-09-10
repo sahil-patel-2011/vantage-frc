@@ -34,17 +34,11 @@ describe("eventDayRelatedLinks", () => {
 });
 
 describe("eventDaySetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO schedule", () => {
+  it("keeps team + TBA + scouting; My Day / Schedule / Strategy / Logistics live on the related strip", () => {
     const steps = eventDaySetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["workspace", "team-data", "scouting"]);
     expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
     expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "my-day")?.href).toBe(
-      "/competition?tab=my-day&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "schedule")?.href).toBe("/schedule?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
     expect(steps.find((s) => s.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
@@ -116,40 +110,38 @@ describe("eventDayShellCopy", () => {
 });
 
 describe("eventDayShellNextActions", () => {
-  it("prioritizes workspace when no org", () => {
+  it("prioritizes workspace when no org and does not repeat the related strip", () => {
     const actions = eventDayShellNextActions({ orgId: null, shell: "setup" });
     expect(actions[0]?.id).toBe("workspace");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["my-day", "schedule", "strategy"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(["workspace", "team-data", "scouting"]);
   });
 
-  it("points empty boards at My Day / Schedule / Strategy / Scouting", () => {
+  it("points empty boards at scouting; Schedule lives on the related strip", () => {
     const actions = eventDayShellNextActions({
       orgId: "org-1",
       shell: "empty",
     });
-    expect(actions.map((a) => a.id)).toEqual(["schedule", "my-day", "strategy", "scouting"]);
+    expect(actions.map((a) => a.id)).toEqual(["scouting"]);
     expect(actions.every((a) => !/\bDEMO\b/.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
-    expect(actions.find((a) => a.id === "my-day")?.href).toBe(
-      "/competition?tab=my-day&orgId=org-1",
-    );
-    expect(actions.find((a) => a.id === "schedule")?.href).toBe("/schedule?orgId=org-1");
-    expect(actions.find((a) => a.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
     expect(actions.find((a) => a.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
   });
 
-  it("ready boards prioritize My Day with Strategy / Scouting links", () => {
+  it("ready boards keep scouting without repeating the related strip", () => {
     const actions = eventDayShellNextActions({ orgId: "org-1", shell: "ready" });
-    expect(actions[0]?.id).toBe("my-day");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["my-day", "schedule", "strategy", "scouting"]),
+    expect(actions.map((a) => a.id)).toEqual(["scouting"]);
+  });
+
+  it("does not repeat header related-strip destinations as next actions", () => {
+    const related = new Set(
+      eventDayRelatedLinks("org-1", { include: [...EVENT_DAY_RELATED_INCLUDE] }).map((link) => link.href),
     );
+    for (const shell of ["empty", "setup", "error", "ready"] as const) {
+      const actions = eventDayShellNextActions({ orgId: "org-1", shell });
+      expect(actions.every((action) => !related.has(action.href))).toBe(true);
+    }
   });
 });

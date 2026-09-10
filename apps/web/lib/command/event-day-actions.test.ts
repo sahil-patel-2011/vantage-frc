@@ -90,8 +90,8 @@ describe("eventDayNextActions", () => {
   it("prioritizes event setup when missing", () => {
     const actions = eventDayNextActions(baseSnap({ eventKey: null, eventName: null }));
     expect(actions[0]?.id).toBe("event");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "my-day")).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(false);
+    expect(actions.some((a) => a.id === "my-day")).toBe(false);
   });
 
   it("surfaces checklist and scout gaps when a match is queued", () => {
@@ -135,8 +135,8 @@ describe("eventDayNextActions", () => {
     );
     expect(actions.find((a) => a.id === "checklist")?.primary).toBe(true);
     expect(actions.find((a) => a.id === "scout")?.label).toMatch(/2 coverage/);
-    expect(actions.find((a) => a.id === "my-day")?.detail).toMatch(/RED bumpers/i);
-    expect(actions.find((a) => a.id === "logistics")?.href).toContain("/logistics");
+    expect(actions.find((a) => a.id === "my-day")).toBeUndefined();
+    expect(actions.find((a) => a.id === "logistics")).toBeUndefined();
     expect(
       actions.every((a) => {
         const blob = `${a.label} ${a.detail}`;

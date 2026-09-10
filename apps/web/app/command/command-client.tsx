@@ -1,200 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Icon } from "../../components/app-shell";
-import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { OfflineBanner } from "../../components/offline-banner";
-import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
-import { CopyShareLink } from "../../components/copy-share-link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
+import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
-import {
-  EVENT_DAY_RELATED_INCLUDE,
-  classifyEventDayShell,
-  eventDayRelatedLinks,
-  eventDayShellCopy,
-  formatEventDayMatchCount,
-  type EventDayShellKind,
-} from "../../lib/command/event-day-related";
-import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
+import { formatEventDayMatchCount } from "../../lib/command/event-day-related";
 import type { CommandSnapshot } from "../../lib/command/types";
-import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
-import { formatMyDayWhen } from "../../lib/my-day";
-import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import {
+  EventDayShell,
+  classifyEventDayShell,
+} from "./command-chrome";
+import { CommandEventPicker } from "./command-event-picker";
+import {
+  COMMAND_POLL_MS,
+  commandHrefsFromSnap,
+  type EventOption,
+  type Me,
+} from "./command-model";
+import { CommandReadyView } from "./command-ready-view";
 import "./command.css";
-
-type Me = {
-  orgId?: string | null;
-  orgName?: string | null;
-  teamNumber?: number | null;
-  role?: string | null;
-};
-
-type EventOption = {
-  eventKey: string;
-  name: string;
-  startDate: string | null;
-  endDate: string | null;
-  city: string | null;
-  stateProv: string | null;
-  year: number;
-};
-
-const POLL_MS = 20_000;
-
-function pct(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return `${Math.round(value * 100)}%`;
-}
-
-function teamLabel(teamKey: string, teamNumber?: number | null) {
-  if (teamNumber) return String(teamNumber);
-  const m = /^frc(\d+)$/i.exec(teamKey);
-  return m ? m[1] : teamKey;
-}
-
-function AllianceChips({
-  keys,
-  ours,
-  highlight,
-}: {
-  keys: string[];
-  ours: string | null;
-  highlight?: "red" | "blue";
-}) {
-  return (
-    <ul className="edc-alliance">
-      {keys.map((key) => (
-        <li key={key} className={key === ours ? "us" : highlight ?? ""}>
-          {teamLabel(key)}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = eventDayRelatedLinks(orgId, {
-    include: [...EVENT_DAY_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related edc-related" aria-label="Related live ops tools">
-      {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
-      ))}
-    </nav>
-  );
-}
-
-function EventDayShell({
-  orgId,
-  shell,
-  hasActiveEvent,
-  error,
-  onRetry,
-  onSelectEvent,
-  canSetEvent,
-  embedded = false,
-  children,
-}: {
-  orgId?: string | null;
-  shell: EventDayShellKind;
-  hasActiveEvent?: boolean;
-  error?: string;
-  onRetry?: () => void;
-  onSelectEvent?: () => void;
-  canSetEvent?: boolean;
-  embedded?: boolean;
-  children?: ReactNode;
-}) {
-  const copy = eventDayShellCopy(shell);
-  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const teamDataHref = withOrgHref("/team/data", orgId);
-
-  if (shell === "loading") {
-    return (
-      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
-        {embedded ? null : (
-          <PageHeader
-            breadcrumbs="Competition / Event Day"
-            title="Command"
-            description="Next match and pit cues."
-          />
-        )}
-        {children}
-        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
-          <StatRowSkeleton count={3} />
-          <CardGridSkeleton cols={3} rows={1} />
-        </div>
-      </main>
-    );
-  }
-
-  if (shell === "error") {
-    return (
-      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
-        {embedded ? null : (
-          <PageHeader
-            breadcrumbs="Competition / Event Day"
-            title="Command"
-            description="Next match and pit cues."
-          />
-        )}
-        {children}
-        <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-      </main>
-    );
-  }
-
-  const primarySetupCta =
-    canSetEvent && onSelectEvent ? (
-      <Button variant="primary" type="button" onClick={onSelectEvent}>
-        Set active event
-      </Button>
-    ) : (
-      <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
-        {orgId ? "Connect TBA" : "Choose your team"}
-      </Button>
-    );
-
-  return (
-    <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
-      {embedded ? null : (
-        <PageHeader
-          breadcrumbs="Competition / Event Day"
-          title="Command"
-          description="Connect TBA and set an active event."
-        />
-      )}
-      {children}
-      <EmptyState
-        soft
-        className="edc-empty"
-        badge={shell === "setup" ? "Setup required" : copy.badge}
-        badgeTone="setup"
-        title={shell === "setup" && !hasActiveEvent ? "No event linked" : copy.title}
-        description={
-          error ??
-          (shell === "setup"
-            ? "Connect TBA and set the active event."
-            : copy.description)
-        }
-      >
-        {shell === "setup" ? primarySetupCta : null}
-        {shell === "empty" ? (
-          <Button as="a" variant="primary" href={withOrgHref("/schedule", orgId)}>Check schedule sync</Button>
-        ) : null}
-      </EmptyState>
-    </main>
-  );
-}
 
 export default function CommandClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [me, setMe] = useState<Me>({});
@@ -312,7 +139,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       timer = window.setTimeout(() => {
         if (document.visibilityState !== "hidden") void load(orgId);
         if (!cancelled) schedule();
-      }, visibilityPollDelay(POLL_MS, document.visibilityState === "hidden"));
+      }, visibilityPollDelay(COMMAND_POLL_MS, document.visibilityState === "hidden"));
     };
     schedule();
     const onVisibility = () => {
@@ -373,73 +200,26 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     }
   }
 
+  const hrefs = commandHrefsFromSnap(snap, orgId || null);
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
   const countdown = useMemo(() => countdownLabel(next?.scheduledTime), [next?.scheduledTime, tick]);
   const liveActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
-  const myDayHref = snap?.links.myDay ?? hubHref("/competition", "my-day", orgId || null);
-  const scheduleHref = snap?.links.schedule ?? withOrgHref("/schedule", orgId || null);
-  const strategyHref = snap?.links.strategy ?? hubHref("/competition", "strategy", orgId || null);
-  const scoutingHref = snap?.links.scouting ?? hubHref("/competition", "scouting", orgId || null);
-  const teamDataHref = snap?.links.teamData ?? withOrgHref("/team/data", orgId || null);
-  const matchChecklistHref =
-    snap?.links.matchChecklist ?? hubHref("/competition", "match-checklist", orgId || null);
-  const logisticsHref = snap?.links.logistics ?? withOrgHref("/logistics", orgId || null);
-  const pitHref = snap?.links.pit ?? withOrgHref("/pit", orgId || null);
-  const batteriesHref = snap?.links.batteries ?? withOrgHref("/batteries", orgId || null);
-  const intelHref = snap?.links.intel ?? withOrgHref("/intel", orgId || null);
-  const chemistryHref = snap?.links.chemistry ?? hubHref("/competition", "chemistry", orgId || null);
 
-  const eventPicker = eventOpen ? (
-    <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
-      <div>
-        <header>
-          <h2 id="edc-event-title">Select active event</h2>
-          {/* Bare `<button>×</button>` had no min-height, so it fell short of the
-              44px touch target on the tablets this dialog runs on pit-side. */}
-          <Button variant="icon" aria-label="Close" onClick={() => setEventOpen(false)}>
-            ×
-          </Button>
-        </header>
-        <p className="edc-muted">
-          Only owners and admins can set the event. Empty list means sync TBA first.
-        </p>
-        <input
-          className="edc-search"
-          value={eventQ}
-          onChange={(e) => setEventQ(e.target.value)}
-          placeholder="Search event name, key, or city"
-          aria-label="Search events"
-        />
-        <ul className="edc-event-list">
-          {events.length ? (
-            events.map((event) => (
-              <li key={event.eventKey}>
-                <button type="button" disabled={eventBusy} onClick={() => void setActiveEvent(event.eventKey)}>
-                  <strong>{event.name}</strong>
-                  <span>
-                    {event.eventKey}
-                    {event.city ? ` · ${event.city}` : ""}
-                    {event.stateProv ? `, ${event.stateProv}` : ""}
-                  </span>
-                </button>
-              </li>
-            ))
-          ) : (
-            <li className="edc-empty-events">
-              No events in cache for this year.{" "}
-              <a href={teamDataHref}>Open Team → Data to sync TBA</a>
-            </li>
-          )}
-        </ul>
-        {snap?.eventKey ? (
-          <Button variant="secondary" type="button" disabled={eventBusy} onClick={() => void setActiveEvent(null)}>
-            Clear active event
-          </Button>
-        ) : null}
-      </div>
-    </div>
-  ) : null;
+  const eventPicker = (
+    <CommandEventPicker
+      open={eventOpen}
+      query={eventQ}
+      events={events}
+      busy={eventBusy}
+      snap={snap}
+      teamDataHref={hrefs.teamData}
+      onClose={() => setEventOpen(false)}
+      onQuery={setEventQ}
+      onSelect={(eventKey) => void setActiveEvent(eventKey)}
+      onClear={() => void setActiveEvent(null)}
+    />
+  );
 
   if (loading && !snap && orgId) {
     return <EventDayShell embedded={embedded} orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
@@ -457,7 +237,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if ((fetchFailed || error) && !snap) {
     return (
       <>
-        <EventDayShell embedded={embedded}
+        <EventDayShell
+          embedded={embedded}
           orgId={orgId || null}
           shell="error"
           error={error || undefined}
@@ -482,7 +263,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if (shell === "setup") {
     return (
       <>
-        <EventDayShell embedded={embedded}
+        <EventDayShell
+          embedded={embedded}
           orgId={orgId || null}
           shell="setup"
           hasActiveEvent={Boolean(snap?.eventKey)}
@@ -503,7 +285,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
             {snap?.eventName ?? snap?.eventKey ?? "Active event"}
             {" · "}
             {formatEventDayMatchCount(snap?.matches.length ?? 0, Boolean(snap))} upcoming matches
-            
           </p>
           <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
         </EventDayShell>
@@ -512,571 +293,34 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     );
   }
 
-  const headerActions = (
-        <div className="edc-header-actions">
-          <span className="edc-live" aria-live="polite">
-            {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
-          </span>
-          <CopyShareLink orgId={orgId || null} />
-          {snap?.canSetEvent ? (
-            <Button variant="secondary" type="button" onClick={() => setEventOpen(true)}>
-              {snap.eventKey ? "Change event" : "Select event"}
-            </Button>
-          ) : null}
-          <Button variant="secondary" type="button" onClick={() => void load(orgId)} disabled={!orgId}>
-            Refresh
-          </Button>
-        </div>
-  );
+  if (!snap) {
+    return <EventDayShell embedded={embedded} orgId={orgId || null} shell="setup" hasActiveEvent={false} />;
+  }
 
   return (
-    <main className={`edc-page${embedded ? " is-embedded" : ""}`}>
-      {embedded ? (
-        headerActions
-      ) : (
-      <PageHeader
-        breadcrumbs="Competition / Event Day"
-        title={snap?.eventName ?? "Event Day Command"}
-        description={
-          <>
-            {snap?.orgName ? `${snap.orgName}` : me.orgName ?? "Your team"}
-            {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
-            {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
-            {" — "}
-            Next match, scout gaps, and briefs.
-          </>
-        }
-      >
-        {headerActions}
-      </PageHeader>
-      )}
-      <OfflineBanner feature="Competition" fromCache={fromCache} cachedAt={cachedAt} />
-      <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
-
-      <EventDayRelatedStrip orgId={orgId || null} />
-
-      {error ? <p className="edc-banner error">{error}</p> : null}
-      {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
-      <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
-      {snap?.nexus ? (
-        <p className="edc-freshness" role="status">
-          Nexus queue: {snap.nexus.nowQueuing ?? "none posted"}
-          {snap.nexus.pitCount ? ` · ${snap.nexus.pitCount} pit addresses cached` : ""}
-          {" · "}
-          <a href={snap.nexus.attributionHref} rel="noreferrer" target="_blank">
-            frc.nexus
-          </a>
-        </p>
-      ) : null}
-
-      <NexusQueuePanel nexus={snap?.nexus ?? null} eventKey={snap?.eventKey ?? null} />
-
-      {liveActions.length ? (
-        <section className="edc-next-actions soft-panel" aria-label="Next actions">
-          <header>
-            <h2>Next actions</h2>
-            <p>Field-side steps from schedule and scout gaps.</p>
-          </header>
-          <ol>
-            {liveActions.slice(0, 5).map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
-      <section className="edc-priority" aria-label="Priority panels">
-        <article className={`edc-card edc-next ${next ? "live" : "empty"}`}>
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
-                <Icon name="swords" />
-              </span>
-              <div>
-                <h2>Now / Next</h2>
-                <p>{next ? "Your upcoming match from TBA cache" : "Waiting for schedule"}</p>
-              </div>
-            </div>
-            {next ? <span className="edc-pill">{countdown}</span> : null}
-          </header>
-          {next ? (
-            <>
-              <div className={`edc-match-hero alliance-${next.ourAlliance ?? "tbd"}`}>
-                <strong>
-                  {next.compLevel.toUpperCase()} {next.matchNumber}
-                </strong>
-                <span className="edc-match-when">{formatMyDayWhen(next.scheduledTime) ?? "Time TBD"}</span>
-                <span className={`edc-bumper-cue ${next.ourAlliance ?? ""}`}>
-                  {snap?.myDay?.bumperCue ??
-                    (next.ourAlliance
-                      ? `Switch to ${next.ourAlliance.toUpperCase()} bumpers`
-                      : "Alliance TBD — confirm bumpers")}
-                </span>
-              </div>
-              <p className="edc-partners">
-                <span>With</span>{" "}
-                <b>
-                  {(next.ourAlliance === "red"
-                    ? next.red.teamKeys
-                    : next.ourAlliance === "blue"
-                      ? next.blue.teamKeys
-                      : []
-                  )
-                    .filter((key) => key !== snap?.teamKey)
-                    .map((key) => teamLabel(key))
-                    .join(" · ") || "—"}
-                </b>
-                <span className="edc-vs"> vs </span>
-                <b>
-                  {(next.ourAlliance === "red"
-                    ? next.blue.teamKeys
-                    : next.ourAlliance === "blue"
-                      ? next.red.teamKeys
-                      : []
-                  )
-                    .map((key) => teamLabel(key))
-                    .join(" · ") || "—"}
-                </b>
-              </p>
-              <div className="edc-alliances">
-                <div>
-                  <span>Red</span>
-                  <AllianceChips keys={next.red.teamKeys} ours={snap?.teamKey ?? null} highlight="red" />
-                </div>
-                <div>
-                  <span>Blue</span>
-                  <AllianceChips keys={next.blue.teamKeys} ours={snap?.teamKey ?? null} highlight="blue" />
-                </div>
-              </div>
-              {snap?.myDay ? (
-                <ul className="edc-myday-strip" aria-label="Hotels and travel">
-                  <li>
-                    <span>Travel</span>
-                    <b>
-                      {snap.myDay.nextTravelLabel ??
-                        "No leave time — open Logistics"}
-                    </b>
-                  </li>
-                  <li>
-                    <span>Room</span>
-                    <b>
-                      {snap.myDay.lodgingLabel ??
-                        "No lodging assigned — mentors publish hotels on Logistics"}
-                    </b>
-                  </li>
-                  {snap.myDay.onDutyLabel ? (
-                    <li>
-                      <span>On duty</span>
-                      <b>{snap.myDay.onDutyLabel}</b>
-                    </li>
-                  ) : (
-                    <li>
-                      <span>On duty</span>
-                      <b>No on-duty mentor posted yet</b>
-                    </li>
-                  )}
-                </ul>
-              ) : null}
-              <footer className="edc-after edc-myday-links">
-                <a href={myDayHref}>My Day</a>
-                <a href={scheduleHref}>Schedule</a>
-                <a href={matchChecklistHref}>Checklist</a>
-                <a href={logisticsHref}>Logistics</a>
-                {after ? (
-                  <span>
-                    After · {after.compLevel.toUpperCase()} {after.matchNumber}
-                    {after.scheduledTime ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
-                  </span>
-                ) : null}
-              </footer>
-            </>
-          ) : (
-            <div className="dash-empty">
-              <strong>No upcoming match</strong>
-              <p>{snap?.message ?? "Sync TBA and select your event."}</p>
-              {snap?.myDay ? (
-                <ul className="edc-myday-strip" aria-label="Hotels and travel">
-                  <li>
-                    <span>Travel</span>
-                    <b>{snap.myDay.nextTravelLabel ?? "No leave time published yet"}</b>
-                  </li>
-                  <li>
-                    <span>Room</span>
-                    <b>{snap.myDay.lodgingLabel ?? "No lodging assigned yet"}</b>
-                  </li>
-                </ul>
-              ) : null}
-              <a className="dash-empty-cta" href={scheduleHref}>
-                Open Schedule
-              </a>
-              <a className="dash-empty-cta" href={logisticsHref}>
-                Open Logistics
-              </a>
-            </div>
-          )}
-        </article>
-
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#15803d", ["--tone-bg" as string]: "#dcfce7" }}>
-                <Icon name="clipboard" />
-              </span>
-              <div>
-                <h2>Scout next</h2>
-                <p>
-                  {snap
-                    ? `${snap.coverage.upcomingUnscouted} gap${snap.coverage.upcomingUnscouted === 1 ? "" : "s"} in upcoming alliances`
-                    : "Coverage queue"}
-                </p>
-              </div>
-            </div>
-          </header>
-          {snap?.scoutQueue.length ? (
-            <ul className="edc-queue">
-              {snap.scoutQueue.map((item) => (
-                <li key={`${item.teamKey}-${item.matchKey}`}>
-                  <div>
-                    <strong>{item.teamNumber ?? teamLabel(item.teamKey)}</strong>
-                    <span>
-                      {item.matchLabel ?? "Event"} · {item.reasons.slice(0, 2).join(" · ")}
-                    </span>
-                  </div>
-                  <a href={item.formHref}>Scout</a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>Queue clear</strong>
-              <p>
-                {snap?.eventKey
-                  ? "Upcoming alliance partners and opponents already have coverage, or no matches are queued."
-                  : "Select an event to build the scout queue from schedule gaps."}
-              </p>
-              <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
-              </a>
-            </div>
-          )}
-        </article>
-
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
-                <Icon name="bolt" />
-              </span>
-              <div>
-                <h2>Matchup snapshot</h2>
-                <p>
-                  {snap?.prediction.modelVersion
-                    ? `MODEL ${snap.prediction.modelVersion}`
-                    : "Labeled win/loss when schedule + metrics exist"}
-                </p>
-              </div>
-            </div>
-          </header>
-          {snap?.prediction.status === "live" &&
-          predictionWinDisplay({
-            winProbability: snap.prediction.pOur,
-            modelVersion: snap.prediction.modelVersion,
-            caveats: snap.prediction.caveats,
-          }) ? (
-            <>
-              <div className="edc-prob">
-                <strong>
-                  {predictionWinDisplay({
-                    winProbability: snap.prediction.pOur,
-                    modelVersion: snap.prediction.modelVersion,
-                    caveats: snap.prediction.caveats,
-                  })?.label}
-                </strong>
-                <span>Our win probability</span>
-              </div>
-              <p className="edc-muted">
-                Opp{" "}
-                {predictionWinDisplay({
-                  winProbability: snap.prediction.pOpp,
-                  modelVersion: snap.prediction.modelVersion,
-                  caveats: snap.prediction.caveats,
-                })?.label ?? "—"}
-                {snap.prediction.confidenceLow != null && snap.prediction.confidenceHigh != null
-                  ? ` · band ${pct(snap.prediction.confidenceLow)}–${pct(snap.prediction.confidenceHigh)}`
-                  : ""}
-              </p>
-              <ul className="edc-factors">
-                {snap.prediction.keyFactors.slice(0, 3).map((factor) => (
-                  <li key={factor.name}>
-                    <strong>{factor.name}</strong>
-                    <span>{factor.evidence}</span>
-                  </li>
-                ))}
-              </ul>
-              {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
-              <button
-                type="button"
-                className="edc-link"
-                disabled={recomputing}
-                onClick={() => void recomputePrediction()}
-              >
-                {recomputing ? "Recomputing…" : "Recompute prediction"}
-              </button>
-              <a className="edc-link" href={strategyHref}>
-                Open full strategy →
-              </a>
-            </>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No prediction yet</strong>
-              <p>Needs an upcoming match plus TBA/Statbotics metrics.</p>
-              <a className="dash-empty-cta" href={strategyHref}>
-                Open Strategy
-              </a>
-            </div>
-          )}
-        </article>
-      </section>
-
-      <section className="edc-coverage-section" aria-label="Live scout coverage">
-        <article className={`edc-card edc-coverage ${snap?.coverage.missingRows ? "gap" : ""}`}>
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#b45309", ["--tone-bg" as string]: "#ffedd5" }}>
-                <Icon name="users" />
-              </span>
-              <div>
-                <h2>Live coverage</h2>
-                <p>
-                  {snap?.coverage.liveBoard?.length
-                    ? `${snap.coverage.missingRows} uncovered · ${snap.coverage.doubleCovered} double-scouted on now/next`
-                    : "Double-scouted vs unscouted rows for now/next matches"}
-                </p>
-              </div>
-            </div>
-            {snap?.coverage.coordinatorNudge?.status === "sent" ? (
-              <span className="edc-pill warn">Coordinator nudged</span>
-            ) : snap?.coverage.coordinatorNudge?.status === "throttled" ? (
-              <span className="edc-pill">Nudge cooling down</span>
-            ) : null}
-          </header>
-          {snap?.coverage.liveBoard?.length ? (
-            <>
-              <div className="edc-coverage-board" role="list">
-                {snap.coverage.liveBoard.slice(0, 24).map((cell) => (
-                  <article key={`${cell.matchKey}-${cell.teamKey}`} className={cell.state} role="listitem">
-                    <b>
-                      {cell.compLevel.toUpperCase()} {cell.matchNumber}
-                    </b>
-                    <span>{cell.teamNumber ?? teamLabel(cell.teamKey)}</span>
-                    <small>
-                      {cell.state.replaceAll("_", " ")}
-                      {cell.entryCount > 1 ? ` · ${cell.entryCount}` : ""}
-                    </small>
-                  </article>
-                ))}
-              </div>
-              {snap.coverage.coordinatorNudge?.message ? (
-                <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
-              ) : null}
-              <a className="edc-link" href={scoutingHref}>
-                Open Scouting →
-              </a>
-            </>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No live match rows yet</strong>
-              <p>
-                When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here — never
-                coverage zeros.
-              </p>
-              <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
-              </a>
-            </div>
-          )}
-        </article>
-      </section>
-
-      <section className="edc-secondary" aria-label="Briefs and flags">
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#0f766e", ["--tone-bg" as string]: "#ccfbf1" }}>
-                <Icon name="target" />
-              </span>
-              <div>
-                <h2>Drive coach briefs</h2>
-                <p>Opponent tendencies + scout capabilities (cited)</p>
-              </div>
-            </div>
-          </header>
-          {snap?.briefs.length ? (
-            <ul className="edc-briefs">
-              {snap.briefs.map((brief) => (
-                <li key={brief.teamKey}>
-                  <div className="edc-brief-head">
-                    <strong>{brief.teamNumber ?? teamLabel(brief.teamKey)}</strong>
-                    <div className="edc-tags">
-                      {brief.labels.map((label) => (
-                        <span key={label}>{label}</span>
-                      ))}
-                    </div>
-                  </div>
-                  {brief.capabilities.length ? (
-                    <p className="edc-caps">{brief.capabilities.join(" · ")}</p>
-                  ) : null}
-                  <ul>
-                    {brief.evidence.slice(0, 3).map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No opponent briefs</strong>
-              <p>Briefs appear once your next match is known and reference metrics or scout notes exist.</p>
-            </div>
-          )}
-        </article>
-
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#b91c1c", ["--tone-bg" as string]: "#fee2e2" }}>
-                <Icon name="bell" />
-              </span>
-              <div>
-                <h2>Pit flags · this match</h2>
-                <p>Mechanical / reliability signals that matter now</p>
-              </div>
-            </div>
-          </header>
-          {snap?.pitFlags.length ? (
-            <ul className="edc-flags">
-              {snap.pitFlags.map((flag) => (
-                <li key={`${flag.teamKey}-${flag.title}`} data-severity={flag.severity}>
-                  <strong>
-                    {flag.teamNumber ?? teamLabel(flag.teamKey)} · {flag.title}
-                  </strong>
-                  <span>{flag.detail}</span>
-                  <small>{flag.evidence}</small>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No pit flags</strong>
-              <p>Pit and match scout reliability notes for the next alliance appear here when logged.</p>
-            </div>
-          )}
-        </article>
-
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
-                <Icon name="stats" />
-              </span>
-              <div>
-                <h2>Season pulse</h2>
-                <p>Record & rank with source label</p>
-              </div>
-            </div>
-          </header>
-          {snap?.record.status === "live" ? (
-            <div className="edc-pulse">
-              <div>
-                <strong>
-                  {snap.record.wins ?? 0}-{snap.record.losses ?? 0}-{snap.record.ties ?? 0}
-                </strong>
-                <span>W-L-T</span>
-              </div>
-              <div>
-                <strong>{snap.record.rank ?? "—"}</strong>
-                <span>Rank</span>
-              </div>
-              <div>
-                <strong>{snap.record.epaTotal != null ? Math.round(snap.record.epaTotal * 10) / 10 : "—"}</strong>
-                <span>EPA</span>
-              </div>
-              <p className="edc-muted">
-                Source: {snap.record.source ?? "reference"}
-                {snap.record.syncedAt ? ` · synced ${new Date(snap.record.syncedAt).toLocaleString()}` : ""}
-              </p>
-              <p className="edc-muted">
-                Scout coverage: {snap.coverage.matchReports} match · {snap.coverage.pitReports} pit
-                {snap.coverage.openDisagreements ? ` · ${snap.coverage.openDisagreements} open disagreements` : ""}
-              </p>
-            </div>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after TBA/Statbotics sync.</p>
-            </div>
-          )}
-        </article>
-      </section>
-
-      <nav className="edc-actions" aria-label="Primary competition links">
-        <a href={myDayHref}>
-          <Icon name="calendar" />
-          <strong>My Day</strong>
-          <span>Personal next match</span>
-        </a>
-        <a href={scheduleHref}>
-          <Icon name="calendar" />
-          <strong>Schedule</strong>
-          <span>Full event board</span>
-        </a>
-        <a href={strategyHref}>
-          <Icon name="bolt" />
-          <strong>Strategy</strong>
-          <span>Playbook & prediction</span>
-        </a>
-        <a href={scoutingHref}>
-          <Icon name="clipboard" />
-          <strong>Scouting</strong>
-          <span>Match & pit forms</span>
-        </a>
-        <a href={pitHref}>
-          <Icon name="cube" />
-          <strong>Pit</strong>
-          <span>Release gate & batteries</span>
-        </a>
-        <a href={batteriesHref}>
-          <Icon name="bolt" />
-          <strong>Batteries</strong>
-          <span>Fleet readiness</span>
-        </a>
-        <a href={logisticsHref}>
-          <Icon name="pin" />
-          <strong>Logistics</strong>
-          <span>Hotel & travel</span>
-        </a>
-        <a href={intelHref}>
-          <Icon name="stats" />
-          <strong>Intel</strong>
-          <span>Team lookup</span>
-        </a>
-        <a href={chemistryHref}>
-          <Icon name="users" />
-          <strong>Chemistry</strong>
-          <span>Alliance fit</span>
-        </a>
-      </nav>
-
-      {eventPicker}
-    </main>
+    <CommandReadyView
+      embedded={embedded}
+      orgId={orgId}
+      me={me}
+      snap={snap}
+      hrefs={hrefs}
+      liveActions={liveActions}
+      next={next}
+      after={after}
+      countdown={countdown}
+      loading={loading}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
+      error={error}
+      eventMessage={eventMessage}
+      recomputing={recomputing}
+      cheatOpen={cheatOpen}
+      shortcuts={shortcuts}
+      eventPicker={eventPicker}
+      onSelectEvent={() => setEventOpen(true)}
+      onRefresh={() => void load(orgId)}
+      onRecompute={() => void recomputePrediction()}
+      onCloseCheatsheet={() => setCheatOpen(false)}
+    />
   );
 }
