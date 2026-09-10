@@ -13,10 +13,13 @@ test("CAD hub still loads after the panel split", async ({ page }) => {
 
   const modes = page.getByRole("group", { name: "Agent mode" });
   const recovery = page.locator(".cad-agent-error strong");
-  await expect(modes.or(recovery)).toBeVisible({ timeout: 20_000 });
+  // Same GHA trap as Scouting: HubOrgGate paints "Choose a team" and
+  // never mounts CadClient when there is no org.
+  const teamGate = page.getByRole("heading", { name: /choose (a|your) team/i });
+  await expect(modes.or(recovery).or(teamGate)).toBeVisible({ timeout: 20_000 });
 
   if ((await modes.count()) === 0) {
-    await expect(recovery).toBeVisible();
+    await expect(teamGate.or(recovery)).toBeVisible();
     return;
   }
 

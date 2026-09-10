@@ -13,10 +13,13 @@ test("Scouting hub still loads after the panel split", async ({ page }) => {
 
   const views = page.getByRole("navigation", { name: "Scouting views" });
   const recovery = page.locator(".scout-shell-empty");
-  await expect(views.or(recovery)).toBeVisible({ timeout: 20_000 });
-
+  // GHA Playwright has no Postgres. Fixture cookie is not a Better Auth
+  // session, so HubOrgGate never mounts ScoutingClient. "Choose a team" is
+  // the honest no-org gate — not a shell regression.
+  const teamGate = page.getByRole("heading", { name: /choose (a|your) team/i });
+  await expect(views.or(recovery).or(teamGate)).toBeVisible({ timeout: 20_000 });
   if ((await views.count()) === 0) {
-    await expect(recovery).toBeVisible();
+    await expect(teamGate.or(recovery)).toBeVisible();
     return;
   }
 
