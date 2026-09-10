@@ -39,9 +39,9 @@ Assumption stated: “a new FRC student can do everything from one login without
 | Check | Result | Evidence |
 |---|---|---|
 | `npm ci` | 718 packages, 9s | this session, no lockfile change |
-| `npm test` | **879 files, 8,323 passed, 10 skipped, 52.31s** | `vitest run` this session |
+| `npm test` | **880 files, 8,331 passed, 10 skipped, 52.69s** | `vitest run` this session |
 | `npm run typecheck` | clean across workspaces that changed | this session |
-| `npx eslint .` | clean (exit 0) | this session, 30.1s |
+| `npx eslint .` | clean (exit 0) | this session, 30.7s |
 | `npm run build --workspace=@vantage/web` | compiled, **zero warnings** in the log, 695 pages; `/connectors` `/team/relays` `/video-analysis` in the route table. Shared runtime 540.3 KB. | `next build` this session, 66.4s |
 | `node scripts/deploy-preflight.mjs` | 8 FAIL in this image (no Vercel env). Owner must still set `CRON_SECRET` in the project. | this session |
 | `npm audit --omit=dev` | **0 vulnerabilities** | this session |
@@ -100,7 +100,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **879 files, 8,323 passed, 10 skipped** (52.31s) |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **880 files, 8,331 passed, 10 skipped** (52.69s) |
 | 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Product `<a className="app-button">` and leftover native `<button className="app-button">` now use `<Button>`. Product TSX no longer uses `var(--soft-*)`. Leaf CSS now consumes canonical `--bg/--surface/--ink/--accent/--warning/--critical/--positive/--radius/--shadow` (css-integrity). Leftover `--soft-*` consumption is type, space, island, and control-height tokens (~500 vars). |
 | 3 | Full UI pass | in progress | Student copy says team, not workspace, on Home widgets, related strips, Event Day setup, intel crumbs, and `/workspace`. Empty/setup cards keep one primary. Video re-scout review tools are a ToolStrip. Remaining TabBars are hub-level (Business, Media, Account, Help, Notifications). FEATURE_MAP walk unfinished. No signed-in student/mentor browser walk. |
 | 4 | Home widgets | in progress | Live cards in `widgets/home-cards.tsx`. Canvas helpers in `dashboard-canvas.ts`. Widget chrome/empty copy in `widgets/widget-shell.tsx`. Competition/ops widgets in `widgets/ops-cards.tsx`. Board types in `dashboard-board-types.ts`. First-run banner, board switcher, widget palette, library sheet, boards modal, edit/preview docks, and **pointer-drag** (`use-dashboard-pointer-drag.ts`) are sibling modules. `dashboard-client.tsx` is the save/poll/keyboard shell (~1452 lines). |
@@ -117,4 +117,4 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive/workspace/account/invite/connectors/onboarding/help/bugbot/business/cad-vault/packing/season-calendar vs scouting/messages/pit/hours. `FEATURE_DIRS` includes bugbot, business, and cad-vault. File-path matching covers `packing.ts` / `season-calendar.ts`. `funding-profile.ts` is shared onboarding types. `/training` and `/roles` are on Team › People (no longer unreachable). Remaining dead-page work is collapsing duplicate scout-* satellites and `/tasks` vs `/todos`, not deleting reachable jobs. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
 | 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. Production `next build` previous pass: compiled 14.4s, TypeScript 48s, 695 pages, no warnings. Shared runtime (rootMain + polyfill) **540.3 KB**. Route first-load uncompressed JS (this image's `.next/diagnostics/route-bundle-stats.json`): Home `/dashboard` 832 KB, Scouting 838 KB, Strategy 762 KB, Pit 728 KB, `/workspace` 701 KB. Unique on-disk chunks (not shared with every route): Home 142 KB, Scouting 148 KB, Strategy 73 KB, Pit 41 KB, `/workspace` 15 KB. Prior 248–391 KB "unique client-reference JS" numbers were a different measurement (manifest file sizes). Next 16 Turbopack does not print a First Load JS column. |
-| 18 | Final verification | pending | this pass: `tsc -p apps/web` clean on the token/Bugbot/Home-drag edits; targeted vitest (css-integrity, scan-elapsed, copy-lint, code-related, module-boundaries, dashboard-related) 34 passed. Full suite / RLS proof / signed-in `next start` walk still pending this image. |
+| 18 | Final verification | pending | this pass: `tsc -p apps/web` clean; `npx eslint .` clean (30.7s); full `vitest run` **880 / 8,331 passed / 10 skipped / 52.69s**. Fixture Chromium walk (`E2E_AUTH_FIXTURE=1`, `next dev :3001`): `/` `/dashboard` `/bugbot` `/connectors` `/offline` all 200, Bugbot copy says team's keys, Home one-primary setup. RLS proof and a real signed-in `next start` walk still not in this image. |
