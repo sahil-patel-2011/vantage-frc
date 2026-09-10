@@ -13,3 +13,6 @@ test-results/
 .env*
 !.env.example
 .vercel
+
+# Written by scripts/run-migrations.mjs on a failed apply; local diagnostics, never committed.
+scripts/migration-failures.log
