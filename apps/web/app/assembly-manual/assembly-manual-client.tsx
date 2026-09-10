@@ -98,6 +98,27 @@ type StartResult =
 
 const ACTIVE: RunStatus[] = ["queued", "running", "paused"];
 
+function labelAssemblyRunStatus(status: RunStatus): string {
+  switch (status) {
+    case "queued":
+      return "Waiting";
+    case "running":
+      return "Building the book";
+    case "paused":
+      return "Paused";
+    case "completed":
+      return "Ready";
+    case "failed":
+      return "Stopped with an error";
+    case "cancelled":
+      return "Stopped";
+    default: {
+      const _never: never = status;
+      return _never;
+    }
+  }
+}
+
 function inches(mm: number): string {
   return `${(mm / 25.4).toFixed(2)} in`;
 }
@@ -414,9 +435,9 @@ function RunList({
                   </a>
                 </td>
                 <td>
-                  <span className={`am-status am-status-${run.status}`}>{run.status}</span>
+                  <span className={`am-status am-status-${run.status}`}>{labelAssemblyRunStatus(run.status)}</span>
                   {run.cancelRequestedAt && ACTIVE.includes(run.status) ? (
-                    <div className="am-small am-muted">cancel requested</div>
+                    <div className="am-small am-muted">Stopping…</div>
                   ) : null}
                   {run.error ? <div className="am-small am-error-text">{run.error}</div> : null}
                 </td>
@@ -527,6 +548,7 @@ function RunDetail({
     <section className="am-card am-detail">
       <div className="am-detail-head">
         <h2>{run.assemblyName || "Assembly"}</h2>
+        <p className="am-muted">{labelAssemblyRunStatus(run.status)}</p>
         <div className="am-detail-actions">
           {run.status === "completed" && run.pdfByteSize ? (
             <a className="am-primary am-primary-link" href={`/api/assembly-manual/${runId}/pdf`}>
@@ -535,7 +557,7 @@ function RunDetail({
           ) : null}
           {canCancel && ACTIVE.includes(run.status) && !run.cancelRequestedAt ? (
             <button type="button" onClick={() => void cancel()}>
-              Cancel run
+              Stop this book
             </button>
           ) : null}
         </div>
@@ -545,7 +567,7 @@ function RunDetail({
 
       {ACTIVE.includes(run.status) ? (
         <p className="am-note">
-          {run.progress?.note || "Waiting for a worker to pick this up."}
+          {run.progress?.note || "Waiting for a shop Pi to start this book."}
           {run.progress?.stepsTotal
             ? ` · ${run.progress.rendersDone ?? 0} of ${run.progress.stepsTotal} steps rendered`
             : ""}

@@ -483,9 +483,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   checked={policy.killSwitch}
                   onChange={(e) => setPolicy({ ...policy, killSwitch: e.target.checked })}
                 />
-                Hard kill switch
+                Pause Chat for everyone
               </label>
-              <button className="primary-action">Save org limits</button>
+              <button className="primary-action">Save limits</button>
             </form>
 
             <form

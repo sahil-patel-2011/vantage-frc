@@ -35,6 +35,38 @@ type Job = {
 
 type Snapshot = { jobs: Job[] };
 
+function labelVideoJobStatus(status: string, confirmed: boolean): string {
+  switch (status) {
+    case "queued":
+      return "Waiting";
+    case "running":
+      return "Watching";
+    case "completed":
+      return confirmed ? "Saved as evidence" : "Ready to confirm";
+    case "failed":
+      return "Could not read this video";
+    case "cancelled":
+      return "Stopped";
+    case "skipped":
+      return "Skipped — no video model";
+    default:
+      return status.replaceAll("_", " ");
+  }
+}
+
+function labelVideoSourceKind(kind: string): string {
+  switch (kind) {
+    case "youtube":
+      return "YouTube";
+    case "upload":
+      return "File";
+    case "pit_camera":
+      return "Pit camera";
+    default:
+      return kind.replaceAll("_", " ");
+  }
+}
+
 export default function VideoAnalysisClient() {
   const [orgId, setOrgId] = useState("");
   const [sourceRef, setSourceRef] = useState("");
@@ -137,7 +169,7 @@ export default function VideoAnalysisClient() {
                 />
               </label>
               <Button type="submit" variant="primary" disabled={busy}>
-                {busy ? "Queuing…" : "Queue analysis"}
+                {busy ? "Starting…" : "Analyze this video"}
               </Button>
             </form>
             {message ? <p className="app-muted">{message}</p> : null}
@@ -157,7 +189,7 @@ export default function VideoAnalysisClient() {
             <ul>
               {jobs.map((job) => (
                 <li key={job.id}>
-                  <strong>{job.sourceKind}</strong> · {job.status}
+                  <strong>{labelVideoSourceKind(job.sourceKind)}</strong> · {labelVideoJobStatus(job.status, job.confirmed)}
                   {job.minutesBehind != null ? ` · ${job.minutesBehind} min behind` : ""}
                   {job.confirmed ? " · confirmed as video evidence" : ""}
                   <div>{job.sourceRef}</div>

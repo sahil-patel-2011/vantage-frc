@@ -103,7 +103,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:battery-rotation": ["battery", "batteries", "charge", "charging", "packs", "cart"],
 
   // --- Team ---
-  "team:calendar": ["calendar", "schedule", "meetings", "events", "when", "dates", "shop nights"],
+  "team:calendar": ["calendar", "schedule", "meetings", "events", "when", "dates", "shop nights", "season calendar", "milestones", "kickoff"],
   "team:messages": ["chat", "message", "dm", "talk", "discuss", "slack", "discord", "inbox"],
   "team:attendance": [
     "attendance", "who is here", "who is coming", "coming tonight", "roster", "present",
@@ -163,7 +163,7 @@ const KEYWORDS: Record<string, string[]> = {
     "document roles", "doc editing", "who can edit", "wiki permissions",
     "playbook access", "editor role", "grant editing",
   ],
-  "team:offline-shell": ["offline", "no wifi", "airplane", "sync", "cache"],
+  "team:offline-shell": ["offline", "no wifi", "airplane", "sync", "this phone", "no signal"],
   "team:degraded-mode": ["degraded", "outage", "fallback", "backup plan"],
   "team:object-chat-bridge": ["object chat", "bridge"],
   "team:bus-factor": ["bus factor", "single point", "overloaded", "workload", "burnout"],
@@ -263,7 +263,7 @@ const KEYWORDS: Record<string, string[]> = {
   "ai:chat": ["ai", "chat", "assistant", "ask", "gpt", "claude", "question"],
   "ai:writer": ["writer", "draft", "write", "essay", "grant writing", "compose"],
   "ai:agent": ["agent", "autonomous", "research", "do it for me", "tool use"],
-  "ai:budgets": ["budgets", "controls", "spend cap", "limits", "kill switch"],
+  "ai:budgets": ["budgets", "controls", "spend cap", "limits", "chat limits", "credits"],
   "ai:memory": ["memory", "remember", "context", "ai memory"],
   "ai:governance": ["governance", "policy", "allowlist", "approvals", "rules"],
   "ai:finance": ["finance in ai", "money data", "redaction", "consent"],

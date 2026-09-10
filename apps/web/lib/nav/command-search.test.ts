@@ -69,6 +69,9 @@ describe("searchCommands ranking", () => {
 
   it("survives a dropped letter via subsequence matching", () => {
     expect(hrefs("clendar")).toContain("/team?tab=calendar");
+    expect(hrefs("season calendar")).toContain("/team?tab=calendar");
+    expect(hrefs("this phone")).toContain("/team?tab=offline-shell");
+    expect(hrefs("chat limits")).toContain("/ai?tab=budgets");
     expect(hrefs("btteries", 8)).toContain("/team?tab=batteries");
   });
 
