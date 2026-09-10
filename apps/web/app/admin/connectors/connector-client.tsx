@@ -103,7 +103,7 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
         </p>
         <p>
           {orgId
-            ? "Team BYO keys are a controlled fallback under rate pressure — they do not start a second unrestricted poller."
+            ? "The team's own keys are a controlled fallback under rate pressure — they do not start a second unrestricted poller."
             : "Set the platform TBA_AUTH_KEY (or TBA_API_KEY alias, or save an encrypted platform credential below) so every org shares one polite ingest."}
         </p>
       </section>

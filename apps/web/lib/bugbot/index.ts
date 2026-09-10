@@ -45,3 +45,9 @@ export {
   type BugbotQualityNoticeInput,
   type BugbotQualityNoticeMode,
 } from "./quality-notice";
+export {
+  bugbotBilledNote,
+  bugbotScanMetaLine,
+  formatScanElapsed,
+  type BugbotBillingMode,
+} from "./scan-elapsed";

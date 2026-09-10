@@ -551,7 +551,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite exact emails, manage real members, configure GitHub robot-code context, and BYO model providers (API keys). Rosters and repo lists stay blank until real rows exist."
+        description="Invite exact emails, manage real members, configure GitHub robot-code context, and your own model providers (API keys). Rosters and repo lists stay blank until real rows exist."
       >
         <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
           {membershipRelated.map((link) => (

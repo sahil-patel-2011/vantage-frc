@@ -985,7 +985,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Subscription vs Ultra",
         body: [
           "Subscription Bugbot uses your team's AI key or plan allowance — including keys you paste and models that run in the shop.",
-          "Bugbot Ultra is a hosted API priced at $1.00 to scan, $2.00 to propose a fix, and $1.00 to recheck. It does not use your BYO key — it is the one deliberately hosted-only AI feature.",
+          "Bugbot Ultra is a hosted API priced at $1.00 to scan, $2.00 to propose a fix, and $1.00 to recheck. It does not use your team's keys — it is the one deliberately hosted-only AI feature.",
         ],
       },
       {

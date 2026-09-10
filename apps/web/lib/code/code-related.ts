@@ -126,7 +126,7 @@ export function codeCoachNextActions(input: {
     {
       id: "bugbot",
       label: "Run AI Bugbot",
-      detail: "Subscription uses your plan/BYO key. Bugbot Ultra is $1 scan, $2 fix, $1 recheck.",
+      detail: "Subscription uses your team's keys or plan. Bugbot Ultra is $1 scan, $2 fix, $1 recheck.",
       href: withOrgHref("/bugbot", orgId),
     },
   );

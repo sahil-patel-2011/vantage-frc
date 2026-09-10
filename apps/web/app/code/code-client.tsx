@@ -16,7 +16,14 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
-import { enforceBugbotFileCap, prepareBugbotWritePr, resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot";
+import {
+  bugbotBilledNote,
+  bugbotScanMetaLine,
+  enforceBugbotFileCap,
+  prepareBugbotWritePr,
+  resolveBugbotTarget,
+  type BugbotScanTarget,
+} from "../../lib/bugbot";
 import { BUGBOT_INSTRUCTION_MAX } from "../../lib/cockpit/prefs";
 import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import {
@@ -206,6 +213,7 @@ export function CodeClient({
     proposedDiff?: string | null;
     reviewId?: string | null;
     filesScanned?: number;
+    elapsedMs?: number;
     githubRepo?: string | null;
     githubSha?: string | null;
     branchMoved?: boolean;
@@ -602,6 +610,7 @@ export function CodeClient({
     const outcomes: BugbotChunkOutcome[] = [];
     let stoppedReason: string | null = null;
     const operationRequestId = crypto.randomUUID();
+    const startedAt = Date.now();
 
     function postChunk(chunkIndex: number, spentUsd: number) {
       return fetch("/api/code", {
@@ -640,6 +649,7 @@ export function CodeClient({
         proposedDiff: data.proposedDiff,
         reviewId: data.reviewId,
         filesScanned: data.filesScanned,
+        elapsedMs: Date.now() - startedAt,
         githubRepo: data.githubRepo ?? (useRepo ? targetRepo ?? null : null),
         githubSha: data.githubSha ?? null,
         branchMoved: Boolean(data.branchMoved),
@@ -660,9 +670,7 @@ export function CodeClient({
     }
 
     function billedNote(chargeUsd: number | undefined, modeUsed: BugbotMode | undefined): string {
-      return modeUsed === "ultra" && chargeUsd
-        ? ` Charged $${Number(chargeUsd).toFixed(2)} Bugbot Ultra.`
-        : " Uses your subscription / BYO key.";
+      return bugbotBilledNote(modeUsed, chargeUsd);
     }
 
     try {
@@ -805,10 +813,11 @@ export function CodeClient({
         const billed =
           mode === "ultra"
             ? ` Charged $${run.spentUsd.toFixed(2)} Bugbot Ultra across ${run.chunksRun} chunk${run.chunksRun === 1 ? "" : "s"}.`
-            : " Uses your subscription / BYO key.";
+            : bugbotBilledNote("subscription");
         const found = run.findings.length
           ? `${run.findings.length} grounded finding${run.findings.length === 1 ? "" : "s"} (${run.newCount} new · ${run.knownCount} known · ${run.fixedCount} fixed)`
           : "no grounded findings";
+        setBugbotMeta((prev) => (prev ? { ...prev, elapsedMs: Date.now() - startedAt } : prev));
         setMessage(`Bugbot repo ${phase}: ${found}. ${describeBugbotCoverage(run)}${billed} Never deploys.`);
         await refreshBugbotState();
       }
@@ -1013,7 +1022,7 @@ export function CodeClient({
           <span className="app-badge">Subscription</span>
           <h2>Bugbot on your plan</h2>
           <p>
-            Scan connected GitHub robot-code (or a pasted file) on your team allowance / BYO key. Findings must
+            Scan connected GitHub robot-code (or a pasted file) on your team's keys or plan allowance. Findings must
             quote the source. Distinct from CAD briefs and chat.
           </p>
           <div className="cdc-billing-actions">
@@ -1029,7 +1038,7 @@ export function CodeClient({
           <span className="app-badge">Bugbot Ultra</span>
           <h2>Hosted API · published prices</h2>
           <p>
-            Straight hosted pass that does not use your BYO key: ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} to scan, $
+            Straight hosted pass that does not use your team's keys: ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} to scan, $
             {BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} to propose a fix, ${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} to
             recheck. Fixes stay diffs — never pushed to GitHub.
           </p>
@@ -1261,7 +1270,7 @@ export function CodeClient({
               <p className="app-muted" style={{ margin: "4px 0 0" }}>
                 Connect a GitHub repo, scan robot-code, then optionally propose a human-approved diff and recheck.
                 Findings must quote the source. Never deploys, never pushes.
-                {bugbotMeta?.model ? ` · ${bugbotMeta.provider}/${bugbotMeta.model}` : ""}
+                {bugbotScanMetaLine(bugbotMeta ?? {})}
               </p>
             </div>
           </header>
@@ -1274,7 +1283,7 @@ export function CodeClient({
               onClick={() => setBugbotMode("subscription")}
             >
               <strong>On your subscription</strong>
-              <span>Plan allowance or BYO key · feature=coding</span>
+              <span>Plan allowance or your own keys</span>
             </button>
             <button
               type="button"
@@ -1438,7 +1447,7 @@ export function CodeClient({
                     <span className={`cdc-scan-cost ${bugbotMode === "ultra" ? "paid" : "included"}`}>
                       {bugbotMode === "ultra"
                         ? `$${scanPlan.cost.totalUsd.toFixed(2)} · $${scanPlan.cost.perChunkUsd.toFixed(2)} × ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
-                        : `${scanPlan.chunkCount} metered call${scanPlan.chunkCount === 1 ? "" : "s"} on your subscription / BYO key`}
+                        : `${scanPlan.chunkCount} metered call${scanPlan.chunkCount === 1 ? "" : "s"} on your team's keys or plan allowance`}
                     </span>
                   </header>
                   <p className="app-muted" style={{ margin: 0 }}>

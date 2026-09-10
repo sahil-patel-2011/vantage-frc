@@ -80,6 +80,11 @@ const RULES: readonly Rule[] = [
     why: 'billing jargon — say "your own keys"',
   },
   {
+    label: "BYO key",
+    pattern: /\bBYO\s+keys?\b/i,
+    why: 'billing jargon — say "your own keys" or "the team\'s keys"',
+  },
+  {
     label: "row-level security",
     pattern: /\brow[-\s]level\s+security\b/i,
     why: "database vocabulary",

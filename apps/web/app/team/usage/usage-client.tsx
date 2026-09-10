@@ -86,7 +86,7 @@ type DenialsData = {
 
 const KEY_SOURCE_LABELS: Record<string, string> = {
   platform: "Platform key",
-  byo: "BYO key",
+  byo: "Your own key",
   local: "Local",
   local_cli: "Local CLI",
 };

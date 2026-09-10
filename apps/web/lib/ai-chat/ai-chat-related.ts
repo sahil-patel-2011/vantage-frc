@@ -113,7 +113,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Setup required",
         title: "AI provider not configured",
         description:
-          "Configure a platform or BYO key before messaging. Chat stays empty until a key is set; rankings and scouting stay empty until those exist.",
+          "Configure a platform or your own keys before messaging. Chat stays empty until a key is set; rankings and scouting stay empty until those exist.",
       };
     case "empty":
       return {
@@ -189,7 +189,7 @@ export function aiChatNextActions(input: {
       {
         id: "admin",
         label: "Open Team Admin",
-        detail: "Owners/admins add a platform or BYO provider key for metered Chat.",
+        detail: "Owners/admins add a platform or your own provider key for metered Chat.",
         href: adminHref,
         primary: true,
       },
