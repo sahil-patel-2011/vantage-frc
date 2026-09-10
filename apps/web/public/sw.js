@@ -100,6 +100,10 @@ const SHELL_ROUTES = [
   "/vendors",
   "/season-report",
   "/media",
+  "/battery-health-forecast",
+  "/vendor-lead-times",
+  "/bin-shelf-locator",
+  "/build-burndown",
 ];
 
 function isShellPath(pathname) {

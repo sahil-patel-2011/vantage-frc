@@ -82,6 +82,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/vendors",
   "/season-report",
   "/media",
+  "/battery-health-forecast",
+  "/vendor-lead-times",
+  "/bin-shelf-locator",
+  "/build-burndown",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -115,6 +119,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
+  if (bare.startsWith("/build-burndown")) return "Build Burndown";
   if (bare.startsWith("/build")) return "Build";
   if (bare.startsWith("/files")) return "Files";
   if (bare.startsWith("/docs") || bare.startsWith("/help")) return "Docs";
@@ -159,6 +164,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/battery-rotation")) return "Battery Rotation";
   if (bare.startsWith("/vendors")) return "Vendors";
   if (bare.startsWith("/season-report")) return "Season Report";
+  if (bare.startsWith("/battery-health-forecast")) return "Battery Health Forecast";
+  if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
+  if (bare.startsWith("/bin-shelf-locator")) return "Bin/Shelf Locator";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

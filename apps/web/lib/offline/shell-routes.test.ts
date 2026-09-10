@@ -95,6 +95,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/vendors")).toBe(true);
     expect(pathnameIsOfflineShell("/season-report")).toBe(true);
     expect(pathnameIsOfflineShell("/media")).toBe(true);
+    expect(pathnameIsOfflineShell("/battery-health-forecast")).toBe(true);
+    expect(pathnameIsOfflineShell("/vendor-lead-times")).toBe(true);
+    expect(pathnameIsOfflineShell("/bin-shelf-locator")).toBe(true);
+    expect(pathnameIsOfflineShell("/build-burndown")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -168,6 +172,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
     expect(offlineCapableLabel("/media")).toBe("Media");
     expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
+    expect(offlineCapableLabel("/battery-health-forecast")).toBe("Battery Health Forecast");
+    expect(offlineCapableLabel("/vendor-lead-times")).toBe("Vendor Lead Times");
+    expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin/Shelf Locator");
+    expect(offlineCapableLabel("/build-burndown")).toBe("Build Burndown");
+    expect(offlineCapableLabel("/build")).toBe("Build");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -241,6 +250,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("vendors", "org-1")).toBe("vendors:org-1");
     expect(featureCacheKey("season-report", "org-1", "2026")).toBe("season-report:org-1:2026");
     expect(featureCacheKey("media", "org-1", "2026")).toBe("media:org-1:2026");
+    expect(featureCacheKey("battery-health-forecast", "org-1")).toBe("battery-health-forecast:org-1");
+    expect(featureCacheKey("vendor-lead-times", "org-1")).toBe("vendor-lead-times:org-1");
+    expect(featureCacheKey("bin-shelf-locator", "org-1")).toBe("bin-shelf-locator:org-1");
+    expect(featureCacheKey("build-burndown", "org-1", "2026")).toBe("build-burndown:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

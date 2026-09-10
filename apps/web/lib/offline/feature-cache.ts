@@ -77,7 +77,11 @@ export type OfflineFeature =
   | "battery-rotation"
   | "vendors"
   | "season-report"
-  | "media";
+  | "media"
+  | "battery-health-forecast"
+  | "vendor-lead-times"
+  | "bin-shelf-locator"
+  | "build-burndown";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
