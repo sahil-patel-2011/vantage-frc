@@ -27,7 +27,7 @@ test("Logistics still loads after the panel split", async ({ page }) => {
   const setup = page.getByRole("heading", { name: "Finish setup for travel plans" });
   if (!(await expectHubReadyOrGate(page, checklist, empty.or(setup)))) {
     if (process.env.LOGISTICS_SHOT === "1") {
-      await page.screenshot({ path: "/opt/cursor/artifacts/logistics-after-split.png", fullPage: true });
+      await page.screenshot({ path: "/opt/cursor/artifacts/logistics-empty-one-primary.png", fullPage: true });
     }
     return;
   }
@@ -40,6 +40,6 @@ test("Logistics still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("tab")).toHaveCount(0);
 
   if (process.env.LOGISTICS_SHOT === "1") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/logistics-after-split.png", fullPage: true });
+    await page.screenshot({ path: "/opt/cursor/artifacts/logistics-ready-after-split.png", fullPage: true });
   }
 });

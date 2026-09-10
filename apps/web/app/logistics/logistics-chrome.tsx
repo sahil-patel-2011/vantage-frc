@@ -15,6 +15,7 @@ import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   LOGISTICS_RELATED_INCLUDE,
+  logisticsRelatedLinks,
   logisticsShellCopy,
   logisticsShellNextActions,
   logisticsSetupSteps,
@@ -62,10 +63,23 @@ export function LogisticsShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = logisticsShellNextActions({ orgId, shell, canManage });
-  const copy = logisticsShellCopy(shell);
-  const steps = shell === "setup" || shell === "empty" ? logisticsSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const emptyPrimaryHref =
+    shell === "empty" && canManage ? withOrgHref("/logistics", orgId) + "#logistics-create-trip" : null;
+  const cardPrimaryHref = shell === "setup" ? workspaceHref : emptyPrimaryHref;
+  const relatedHrefs = new Set(
+    logisticsRelatedLinks(orgId, { include: [...LOGISTICS_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+  const actions = logisticsShellNextActions({ orgId, shell, canManage }).filter(
+    (action) => action.href !== cardPrimaryHref,
+  );
+  const copy = logisticsShellCopy(shell);
+  const steps =
+    shell === "setup"
+      ? logisticsSetupSteps(orgId).filter(
+          (step) => !relatedHrefs.has(step.href) && step.href !== cardPrimaryHref,
+        )
+      : [];
 
   if (shell === "loading") {
     return (
@@ -101,7 +115,8 @@ export function LogisticsShell({
         <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-        <LogisticsNextActionsPanel actions={actions} />
+        {/* ErrorState already owns Retry / Sign in. Related-strip destinations stay in the header. */}
+        <LogisticsNextActionsPanel actions={onRetry ? [] : actions} />
       </main>
     );
   }

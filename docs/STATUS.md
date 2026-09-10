@@ -116,7 +116,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/scouting/forms` | Hub shell was 1312 lines; chrome, option/settings editors, preview, and starter drafts now live in sibling modules. Match / Pit stay a ToolStrip, not a nested TabBar. | this commit |
 | `/build` Kickoff | Hub shell was 1249 lines; intelligence, scoring, priorities, and rules now live in sibling modules. Shell is 257 lines. Hub TabBar stays Kickoff · CAD · Code · Robot. | this commit |
 | `/team/ai-keys` | Hub shell was 1186 lines; chrome, provider cards, and the painted workbench now live in sibling modules. Shell is 485 lines. Mine / Team stay sections, not a nested TabBar. Empty copy says team, not workspace. | this commit |
-| `/logistics` | Hub shell was 1162 lines; chrome, day-of, mentor planning, and trips now live in sibling modules. Shell is 286 lines. Trip switcher is a ToolStrip, not a nested TabBar. Travel-legs empty no longer repeats My Day / Calendar from the header. | this commit |
+| `/logistics` | Hub shell was 1162 lines; chrome, day-of, mentor planning, and trips now live in sibling modules. Shell is 286 lines. Trip switcher is a ToolStrip, not a nested TabBar. Empty keeps one primary (Add a trip); next actions no longer repeat the header related strip. | this commit |
 
 ---
 

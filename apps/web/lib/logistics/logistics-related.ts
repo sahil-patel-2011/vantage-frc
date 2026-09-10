@@ -157,11 +157,34 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
   }
 }
 
+function dropRelatedStripDuplicates(
+  orgId: string | null | undefined,
+  actions: LogisticsShellNextAction[],
+): LogisticsShellNextAction[] {
+  const relatedHrefs = new Set(
+    logisticsRelatedLinks(orgId, { include: [...LOGISTICS_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+  return actions.filter((action) => !relatedHrefs.has(action.href));
+}
+
 /**
  * Soft-UI next actions for Logistics empty/setup shells.
  * Points at real Event Day / My Day / Calendar / Visit invites — never DEMO lodging.
+ * Destinations already in the header related strip are omitted so each href
+ * appears once on the page.
  */
 export function logisticsShellNextActions(input: {
+  orgId?: string | null;
+  shell: LogisticsShellKind;
+  canManage?: boolean;
+  lodgingGaps?: number;
+  travelLegCount?: number;
+  hotelCount?: number;
+}): LogisticsShellNextAction[] {
+  return dropRelatedStripDuplicates(input.orgId, logisticsShellNextActionCandidates(input));
+}
+
+function logisticsShellNextActionCandidates(input: {
   orgId?: string | null;
   shell: LogisticsShellKind;
   canManage?: boolean;

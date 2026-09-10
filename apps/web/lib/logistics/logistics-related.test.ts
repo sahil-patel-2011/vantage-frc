@@ -60,6 +60,30 @@ describe("logistics Soft-UI shells", () => {
     expect(actions[0]?.id).toBe("create");
     expect(actions[0]?.href).toContain("#logistics-create-trip");
     expect(actions.every((a) => !a.href.toLowerCase().includes("/demo"))).toBe(true);
+    expect(actions.some((a) => a.id === "command" || a.id === "my-day")).toBe(false);
+  });
+
+  it("does not repeat header related-strip destinations as next actions", () => {
+    const related = new Set(
+      logisticsRelatedLinks("org-1", { include: [...LOGISTICS_RELATED_INCLUDE] }).map((link) => link.href),
+    );
+    for (const shell of ["empty", "setup", "error", "ready"] as const) {
+      const actions = logisticsShellNextActions({
+        orgId: "org-1",
+        shell,
+        canManage: true,
+        lodgingGaps: 1,
+        hotelCount: 1,
+        travelLegCount: 1,
+      });
+      expect(actions.every((action) => !related.has(action.href))).toBe(true);
+    }
+    const noOrg = logisticsShellNextActions({ shell: "setup" });
+    const relatedNoOrg = new Set(
+      logisticsRelatedLinks(null, { include: [...LOGISTICS_RELATED_INCLUDE] }).map((link) => link.href),
+    );
+    expect(noOrg.every((action) => !relatedNoOrg.has(action.href))).toBe(true);
+    expect(noOrg.some((action) => action.id === "workspace")).toBe(true);
   });
 
   it("ready shell surfaces lodging gaps for mentors", () => {
