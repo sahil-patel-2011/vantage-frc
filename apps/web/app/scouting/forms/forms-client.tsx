@@ -1,636 +1,42 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  DEFAULT_DRIVETRAIN_OPTIONS,
-  FIELD_POSITION_MAX_GRID,
-  FIELD_POSITION_MIN_GRID,
-  RATING_MAX_STARS,
-  RATING_MIN_STARS,
-  type EntryType,
-  type FormResetBehavior,
-  type SchemaDefinition,
-  type ScoutSchema,
-} from "@vantage/scouting";
-import { StudioField } from "../studio-fields";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
-  FORM_BUILDER_RELATED_INCLUDE,
   IMPORTED_FORM_DRAFT_KEY,
-  addOption,
   classifyFormBuilderShell,
   definitionFromDraft,
   draftFromDefinition,
   formBuilderNextActions,
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
-  formBuilderRelatedLinks,
-  formBuilderSetupSteps,
   formBuilderShellCopy,
-  isStudioAnswerKind,
-  moveOption,
   moveQuestion,
   needsOptionEditor,
   needsSettingsEditor,
   newDraftQuestion,
   parseOptions,
-  parseSubCounters,
-  previewFieldForQuestion,
-  removeOption,
   resolveDraftPublishStatus,
   retypeQuestion,
   RESET_BEHAVIOR_OPTIONS,
   SCOUT_IDENTITY_LOCK_COPY,
-  serializeOptions,
   STRATEGY_ROLE_OPTIONS,
   detectedRoleForQuestion,
-  updateOptionAt,
   validateDraft,
   type AnswerKind,
-  type DraftFieldSettings,
   type DraftQuestion,
-  type FormBuilderNextAction,
-  type FormBuilderShellKind,
   type StrategyFieldRole,
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
-
-type SchemasPayload = {
-  eventKey: string | null;
-  year: number | null;
-  schemas: ScoutSchema[];
-  canManageSchemas: boolean;
-};
-
-type Mode = "edit" | "preview";
-
-function defaultQuestions(type: EntryType): DraftQuestion[] {
-  if (type === "pit") {
-    return [
-      newDraftQuestion({
-        label: "Drivetrain",
-        kind: "drivetrain",
-        optionsText: DRIVETRAIN_OPTIONS_TEXT,
-      }),
-      newDraftQuestion({
-        label: "Programming language",
-        kind: "dropdown",
-        optionsText: "java, c++, python, labview, other",
-      }),
-      newDraftQuestion({ label: "Drivetrain motors", kind: "short" }),
-      newDraftQuestion({ label: "Driver seasons of experience", kind: "number" }),
-      newDraftQuestion({ label: "Coach seasons of experience", kind: "number" }),
-      newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
-      newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
-    ];
-  }
-  // Default roles so an untouched starter form feeds strategy out of the box.
-  return [
-    newDraftQuestion({ label: "Auto score", kind: "number", role: "auto_score" }),
-    newDraftQuestion({ label: "Teleop score", kind: "number", role: "teleop_score" }),
-    newDraftQuestion({
-      label: "Endgame",
-      kind: "dropdown",
-      optionsText: "none, partial, full",
-      role: "endgame",
-    }),
-    newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
-  ];
-}
-
-function OptionEditor({
-  optionsText,
-  disabled,
-  kind,
-  onChange,
-}: {
-  optionsText: string;
-  disabled: boolean;
-  kind: AnswerKind;
-  onChange: (optionsText: string) => void;
-}) {
-  const options = parseOptions(optionsText);
-  const rows = options.length ? options : ["", ""];
-
-  function commit(next: string[]) {
-    onChange(serializeOptions(next));
-  }
-
-  return (
-    <div className="sfb-option-editor">
-      <div className="sfb-option-editor-head">
-        <span>Options</span>
-        <small className="app-muted">
-          {ANSWER_KIND_OPTIONS.find((o) => o.kind === kind)?.hint ?? "Edit choices"}
-        </small>
-      </div>
-      <ul className="sfb-option-list">
-        {rows.map((option, index) => (
-          <li key={`opt-${index}`}>
-            <input
-              value={option}
-              disabled={disabled}
-              placeholder={`Option ${index + 1}`}
-              aria-label={`Option ${index + 1}`}
-              onChange={(event) => {
-                const base = options.length ? options : ["", ""];
-                commit(updateOptionAt(base, index, event.target.value));
-              }}
-            />
-            <div className="sfb-option-actions">
-              <button
-                type="button"
-                disabled={disabled || index === 0}
-                aria-label={`Move option ${index + 1} up`}
-                onClick={() => commit(moveOption(rows, index, index - 1))}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                disabled={disabled || index === rows.length - 1}
-                aria-label={`Move option ${index + 1} down`}
-                onClick={() => commit(moveOption(rows, index, index + 1))}
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                disabled={disabled || rows.length <= 2}
-                aria-label={`Remove option ${index + 1}`}
-                onClick={() => commit(removeOption(rows, index))}
-              >
-                ✕
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <Button variant="secondary" type="button" disabled={disabled} onClick={() => commit(addOption(options.length ? options : ["", ""], ""))}>
-        Add option
-      </Button>
-    </div>
-  );
-}
-
-function FormBuilderRelatedStrip({ orgId }: { orgId?: string | null }) {
-  const links = formBuilderRelatedLinks(orgId, {
-    include: [...FORM_BUILDER_RELATED_INCLUDE],
-  });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
-      ))}
-    </nav>
-  );
-}
-
-function FormBuilderNextActionsPanel({ actions }: { actions: FormBuilderNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions sfb-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function FormBuilderShell({
-  orgId,
-  shell,
-  entryType,
-  error,
-  errorStatus,
-  onRetry,
-  children,
-}: {
-  orgId?: string | null;
-  shell: FormBuilderShellKind;
-  entryType?: EntryType;
-  error?: string;
-  /** HTTP status of the failed load, so an expired session can offer sign-in. */
-  errorStatus?: number | null;
-  onRetry?: () => void;
-  children?: ReactNode;
-}) {
-  const actions = formBuilderNextActions({ orgId, shell, entryType });
-  const copy = formBuilderShellCopy(shell, { entryType });
-  const steps = shell === "setup" ? formBuilderSetupSteps(orgId) : [];
-  const failure =
-    shell === "error"
-      ? loadFailureCopy(
-          classifyLoadFailure({
-            status: errorStatus ?? null,
-            message: error ?? null,
-            online: typeof navigator === "undefined" ? true : navigator.onLine,
-          }),
-          {
-            nextPath:
-              typeof window === "undefined"
-                ? null
-                : `${window.location.pathname}${window.location.search}`,
-            message: error ?? null,
-          },
-        )
-      : null;
-  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const commandHref = hubHref("/competition", "command", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
-
-  return (
-    <main className="module-page sfb-page soft-gate">
-      <PageHeader
-        breadcrumbs="Competition / Form builder"
-        title="Scouting form builder"
-        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists."
-      >
-        <FormBuilderRelatedStrip orgId={orgId} />
-      </PageHeader>
-      {children}
-      <EmptyState
-        soft
-        className="sfb-shell-empty"
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : copy.badge
-        }
-        badgeTone="setup"
-        title={failure ? failure.title : copy.title}
-        description={failure ? failure.description : (error ?? copy.description)}
-        aria-busy={shell === "loading"}
-      >
-        {failure?.primary ? (
-          <Button as="a" variant="primary" href={failure.primary.href}>
-            {failure.primary.label}
-          </Button>
-        ) : null}
-        {failure?.showRetry && onRetry ? (
-          <Button variant="secondary" type="button" onClick={onRetry}>
-            Retry
-          </Button>
-        ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
-        ) : null}
-        {shell === "empty" ? (
-          <Button as="a" variant="primary" href={scoutingHref}>Open Scouting</Button>
-        ) : null}
-        {shell === "setup" && steps.length > 0 ? (
-          <ol className="sfb-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-      </EmptyState>
-      {shell !== "loading" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
-    </main>
-  );
-}
-
-/**
- * Config editor for the studio answer types.
- *
- * Everything here writes into the draft's `settings`, which `definitionFromDraft`
- * serializes into the published `config` — the exact bag the entry renderers and
- * the server-side validator both read. One source of truth for "what is in range".
- */
-function StudioSettingsEditor({
-  question,
-  disabled,
-  onChange,
-}: {
-  question: DraftQuestion;
-  disabled: boolean;
-  onChange(settings: DraftFieldSettings): void;
-}) {
-  const settings = question.settings ?? {};
-  const patch = (next: DraftFieldSettings) => onChange({ ...settings, ...next });
-  const numberOr = (raw: string, fallback: number) => {
-    const value = Number(raw);
-    return Number.isFinite(value) ? value : fallback;
-  };
-
-  if (question.kind === "counter" || question.kind === "multi_counter") {
-    const subCounters = parseSubCounters(settings.subCountersText);
-    return (
-      <div className="sfb-settings">
-        {question.kind === "multi_counter" ? (
-          <FormRow
-            label="Named counters"
-            hint={
-              subCounters.length
-                ? `${subCounters.length} counter${subCounters.length === 1 ? "" : "s"}: ${subCounters
-                    .map((counter) => counter.label)
-                    .join(" · ")}`
-                : "Add at least one — comma separated (e.g. High, Mid, Low)"
-            }
-          >
-            <input
-              value={settings.subCountersText ?? ""}
-              disabled={disabled}
-              placeholder="High, Mid, Low"
-              aria-label="Named counters"
-              onChange={(event) => patch({ subCountersText: event.target.value })}
-            />
-          </FormRow>
-        ) : null}
-        <FormRow label="Bulk step buttons" hint="Comma separated; the first one is the big primary tap">
-          <input
-            value={settings.counterStepsText ?? ""}
-            disabled={disabled}
-            placeholder="1, 5, 10"
-            aria-label="Counter step buttons"
-            onChange={(event) => patch({ counterStepsText: event.target.value })}
-          />
-        </FormRow>
-        <FormRow label="Max" hint="Blank for no cap — the server rejects anything above it">
-          <input
-            type="number"
-            value={settings.maxText ?? ""}
-            disabled={disabled}
-            placeholder="No cap"
-            aria-label="Counter maximum"
-            onChange={(event) => patch({ maxText: event.target.value })}
-          />
-        </FormRow>
-        <label className="sfb-check">
-          <input
-            type="checkbox"
-            checked={Boolean(settings.allowNegative)}
-            disabled={disabled}
-            onChange={(event) => patch({ allowNegative: event.target.checked })}
-          />
-          <span>
-            <strong>Allow negative counts</strong>
-            <small className="app-muted">Off by default — a tally cannot go below zero</small>
-          </span>
-        </label>
-      </div>
-    );
-  }
-
-  if (question.kind === "timer") {
-    return (
-      <div className="sfb-settings">
-        <FormRow
-          label="Stopwatch mode"
-          hint={
-            settings.timerMode === "total"
-              ? "Start-stop adds to one running total"
-              : "Each start-stop records a lap; the total and average come from the laps"
-          }
-        >
-          <select
-            value={settings.timerMode ?? "lap"}
-            disabled={disabled}
-            aria-label="Stopwatch mode"
-            onChange={(event) => patch({ timerMode: event.target.value === "total" ? "total" : "lap" })}
-          >
-            <option value="lap">Laps — one per start-stop</option>
-            <option value="total">Total — one running clock</option>
-          </select>
-        </FormRow>
-      </div>
-    );
-  }
-
-  if (question.kind === "rating") {
-    return (
-      <div className="sfb-settings">
-        <FormRow label="Stars" hint={`Between ${RATING_MIN_STARS} and ${RATING_MAX_STARS}`}>
-          <input
-            type="number"
-            min={RATING_MIN_STARS}
-            max={RATING_MAX_STARS}
-            value={settings.ratingMax ?? 5}
-            disabled={disabled}
-            aria-label="Rating stars"
-            onChange={(event) => patch({ ratingMax: numberOr(event.target.value, 5) })}
-          />
-        </FormRow>
-      </div>
-    );
-  }
-
-  if (question.kind === "slider") {
-    return (
-      <div className="sfb-settings">
-        <FormRow label="Min">
-          <input
-            type="number"
-            value={settings.sliderMin ?? 0}
-            disabled={disabled}
-            aria-label="Slider minimum"
-            onChange={(event) => patch({ sliderMin: numberOr(event.target.value, 0) })}
-          />
-        </FormRow>
-        <FormRow label="Max">
-          <input
-            type="number"
-            value={settings.sliderMax ?? 10}
-            disabled={disabled}
-            aria-label="Slider maximum"
-            onChange={(event) => patch({ sliderMax: numberOr(event.target.value, 10) })}
-          />
-        </FormRow>
-        <FormRow label="Step" hint="Must be positive and no wider than the range">
-          <input
-            type="number"
-            value={settings.sliderStep ?? 1}
-            disabled={disabled}
-            aria-label="Slider step"
-            onChange={(event) => patch({ sliderStep: numberOr(event.target.value, 1) })}
-          />
-        </FormRow>
-        <FormRow label="Low end label" hint="Optional — shown under the left end">
-          <input
-            value={settings.sliderMinLabel ?? ""}
-            disabled={disabled}
-            placeholder="e.g. Never"
-            aria-label="Slider low label"
-            onChange={(event) => patch({ sliderMinLabel: event.target.value })}
-          />
-        </FormRow>
-        <FormRow label="High end label" hint="Optional — shown under the right end">
-          <input
-            value={settings.sliderMaxLabel ?? ""}
-            disabled={disabled}
-            placeholder="e.g. Every cycle"
-            aria-label="Slider high label"
-            onChange={(event) => patch({ sliderMaxLabel: event.target.value })}
-          />
-        </FormRow>
-      </div>
-    );
-  }
-
-  if (question.kind === "field_position") {
-    return (
-      <div className="sfb-settings">
-        <FormRow
-          label="Grid columns"
-          hint={`${FIELD_POSITION_MIN_GRID}–${FIELD_POSITION_MAX_GRID}. Only cell numbers are stored — no game art, so the form survives the next reveal.`}
-        >
-          <input
-            type="number"
-            min={FIELD_POSITION_MIN_GRID}
-            max={FIELD_POSITION_MAX_GRID}
-            value={settings.gridCols ?? 6}
-            disabled={disabled}
-            aria-label="Field grid columns"
-            onChange={(event) => patch({ gridCols: numberOr(event.target.value, 6) })}
-          />
-        </FormRow>
-        <FormRow label="Grid rows" hint={`${FIELD_POSITION_MIN_GRID}–${FIELD_POSITION_MAX_GRID}`}>
-          <input
-            type="number"
-            min={FIELD_POSITION_MIN_GRID}
-            max={FIELD_POSITION_MAX_GRID}
-            value={settings.gridRows ?? 3}
-            disabled={disabled}
-            aria-label="Field grid rows"
-            onChange={(event) => patch({ gridRows: numberOr(event.target.value, 3) })}
-          />
-        </FormRow>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-/**
- * Live preview of one studio field.
- *
- * It renders the real entry control against the real published config, so what
- * a coach taps here is exactly what a scout will tap in the stands. State is
- * local and thrown away — nothing previewed is ever saved.
- */
-function StudioPreviewField({ question }: { question: DraftQuestion }) {
-  const field = useMemo(() => previewFieldForQuestion(question), [question]);
-  const [value, setValue] = useState<unknown>(undefined);
-  const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
-  return <StudioField field={field} value={value} onChange={setValue} label={label} />;
-}
-
-function PreviewField({ question }: { question: DraftQuestion }) {
-  const options = parseOptions(question.optionsText);
-  const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
-
-  if (isStudioAnswerKind(question.kind)) {
-    return <StudioPreviewField question={question} />;
-  }
-  if (question.kind === "yesno") {
-    return (
-      <label className="sfb-check">
-        <input type="checkbox" disabled />
-        <span>{label}</span>
-      </label>
-    );
-  }
-  if (question.kind === "mc") {
-    return (
-      <FormRow label={label}>
-        <div className="sfb-radio-row" role="radiogroup">
-          {(options.length ? options : ["Option A", "Option B"]).map((option) => (
-            <label key={option}>
-              <input type="radio" name={question.id} disabled />
-              {option}
-            </label>
-          ))}
-        </div>
-      </FormRow>
-    );
-  }
-  if (question.kind === "dropdown" || question.kind === "drivetrain") {
-    const choices =
-      question.kind === "drivetrain"
-        ? options.length
-          ? options
-          : [...DEFAULT_DRIVETRAIN_OPTIONS]
-        : options;
-    return (
-      <FormRow label={label}>
-        <select disabled defaultValue="">
-          <option value="">Select…</option>
-          {choices.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
-      </FormRow>
-    );
-  }
-  if (question.kind === "robot_image") {
-    return (
-      <FormRow label={label} hint="Camera or gallery — stored per organization">
-        <div className="sfb-robot-image-preview">
-          <div className="sfb-robot-image-actions">
-            <span className="app-button secondary" aria-disabled>
-              Camera
-            </span>
-            <span className="app-button secondary" aria-disabled>
-              Gallery
-            </span>
-          </div>
-          <span className="app-muted">Live entry lets scouts capture or pick photos offline.</span>
-        </div>
-      </FormRow>
-    );
-  }
-  if (question.kind === "free") {
-    return (
-      <FormRow label={label}>
-        <textarea disabled placeholder="Free-text notes…" />
-      </FormRow>
-    );
-  }
-  return (
-    <FormRow label={label}>
-      <input
-        type={question.kind === "number" ? "number" : "text"}
-        disabled
-        placeholder={question.kind === "number" ? "0" : "Short answer"}
-      />
-    </FormRow>
-  );
-}
+import { FormBuilderNextActionsPanel, FormBuilderRelatedStrip, FormBuilderShell } from "./forms-chrome";
+import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
+import { OptionEditor } from "./forms-option-editor";
+import { PreviewField } from "./forms-preview";
+import { StudioSettingsEditor } from "./forms-settings-editor";
 
 export default function FormsClient({ orgId }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
@@ -638,9 +44,9 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [type, setType] = useState<EntryType>("match");
-  const [mode, setMode] = useState<Mode>("edit");
+  const [mode, setMode] = useState<FormBuilderMode>("edit");
   const [title, setTitle] = useState("Match scouting");
-  const [questions, setQuestions] = useState<DraftQuestion[]>(() => defaultQuestions("match"));
+  const [questions, setQuestions] = useState(() => defaultQuestions("match"));
   const [year, setYear] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -709,7 +115,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
   useEffect(() => {
     void load();
     // Mount / org only — type switches reuse the loaded schema list.
-     
   }, [orgId]);
 
   function switchType(next: EntryType) {
@@ -961,7 +366,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
         <FormRow label="View">
           <select
             value={mode}
-            onChange={(event) => setMode(event.target.value as Mode)}
+            onChange={(event) => setMode(event.target.value as FormBuilderMode)}
             aria-label="Edit or preview"
           >
             <option value="edit">Edit questions</option>
