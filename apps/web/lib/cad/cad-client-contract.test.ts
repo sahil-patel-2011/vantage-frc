@@ -16,7 +16,11 @@ function read(relative: string): string {
  * break this test first.
  */
 describe("cad-client mounts CadViewport and CadOperationComposer", () => {
-  const client = read("app/cad/cad-client.tsx");
+  const client = [
+    read("app/cad/cad-client.tsx"),
+    read("app/cad/cad-session.ts"),
+    read("app/cad/cad-ready-view.tsx"),
+  ].join("\n");
   const viewport = read("app/cad/cad-viewport.tsx");
   const composer = read("app/cad/cad-operation-composer.tsx");
   const elements = read("lib/cad/list-document-elements.ts");
