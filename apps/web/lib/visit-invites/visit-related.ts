@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Setup required",
         title: "Finish setup for visit invites",
         description:
-          "Select a team and apply the visit invites migration if tables are missing.",
+          "Choose your team and apply the visit invites migration if tables are missing.",
       };
     case "empty":
       return {

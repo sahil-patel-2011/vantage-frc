@@ -119,9 +119,9 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging gain sets and test results.",
+          "Choose your team before logging gain sets and test results.",
       };
     case "empty":
       return {

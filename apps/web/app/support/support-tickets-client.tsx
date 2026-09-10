@@ -188,7 +188,7 @@ export default function SupportTicketsClient() {
           soft
           badge="Setup required"
           badgeTone="setup"
-          title={view.message ?? "Select a team first."}
+          title={view.message ?? "Choose your team first."}
           description="Choose the organization you need help for, then return here to submit a real ticket."
         >
           <div className="support-tickets-header-actions">

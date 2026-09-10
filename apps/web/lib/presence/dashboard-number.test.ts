@@ -212,7 +212,7 @@ describe("presenceDashboardNumber — no invented people", () => {
   it("is setup_required with a zero count — never invents a shop from a missing workspace", () => {
     const payload = presenceDashboardNumber({
       status: "setup_required",
-      message: "Select a team to see who is coming and who was here.",
+      message: "Choose your team to see who is coming and who was here.",
     });
     expect(payload.status).toBe("setup_required");
     expect(payload.data.comingTonight).toBe(0);
@@ -221,7 +221,7 @@ describe("presenceDashboardNumber — no invented people", () => {
     expect(payload.data.parts).toEqual({ rsvpGoing: 0, present: 0, clocked: 0 });
     expect(payload.data.href).toBe("/workspace");
     expect(payload.data.ctaLabel).toBe("Choose your team");
-    expect(payload.message).toMatch(/Select a team/);
+    expect(payload.message).toMatch(/Choose your team/);
     expect(presenceDashboardComingTonight({ status: "setup_required" })).toBe(0);
   });
 });

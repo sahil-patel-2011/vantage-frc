@@ -103,7 +103,7 @@ export default function PrintFarmClient() {
   if (view == null || view.status !== "live") {
     return (
       <FarmShell
-        description={view?.status === "setup_required" ? view.message : "Select a team to run the print farm."}
+        description={view?.status === "setup_required" ? view.message : "Choose your team to run the print farm."}
         orgId={orgId}
         kind="setup"
       />

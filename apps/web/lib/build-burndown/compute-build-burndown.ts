@@ -103,7 +103,7 @@ export async function computeBuildBurndownView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track the build-season burndown.",
+      message: "Choose your team to track the build-season burndown.",
       steps: buildBurndownSetupSteps(null),
       orgId: null,
       seasonYear,

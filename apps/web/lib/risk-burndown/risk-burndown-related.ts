@@ -109,9 +109,9 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging real season risks.",
+          "Choose your team before logging real season risks.",
       };
     case "empty":
       return {

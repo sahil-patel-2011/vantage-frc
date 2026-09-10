@@ -113,7 +113,7 @@ export async function computePitMapPlannerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan your pit map.",
+      message: "Choose your team to plan your pit map.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

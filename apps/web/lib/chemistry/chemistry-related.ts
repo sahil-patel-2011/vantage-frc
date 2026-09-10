@@ -175,9 +175,9 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
       return {
         kind,
         badge: "Setup",
-        title: "Select a team and event",
+        title: "Choose your team",
         description:
-          "Select a team and the event this alliance is at before partner-fit scores appear.",
+          "Choose your team and the event this alliance is at before partner-fit scores appear.",
       };
     case "empty":
       return {

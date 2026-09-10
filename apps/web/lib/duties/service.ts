@@ -297,7 +297,7 @@ export async function computeDutiesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to post who is on duty.",
+      message: "Choose your team to post who is on duty.",
       orgId: null,
     };
   }

@@ -173,7 +173,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
           "Join or pick a team before linking OAuth or a PAT.",
       };

@@ -213,7 +213,7 @@ export async function loadMyDayView(
     return {
       status: "setup_required",
       context: emptyContext,
-      message: "Select a team to open My Day.",
+      message: "Choose your team to open My Day.",
       steps: [
         {
           id: "workspace",
@@ -239,7 +239,7 @@ export async function loadMyDayView(
     return {
       status: "setup_required",
       context,
-      message: "Select an active event to load your match queue.",
+      message: "Set your active event to load your match queue.",
       steps: [
         {
           id: "event",

@@ -465,7 +465,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Open Command",
         body: [
           "Competition → Event day, or /command (Vantage Event Day).",
-          "Select a team and active event first. Command stays blank until the schedule is saved.",
+          "Choose your team and active event first. Command stays blank until the schedule is saved.",
         ],
       },
       {

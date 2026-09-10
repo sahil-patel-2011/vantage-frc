@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load failure patterns. Select a team and confirm database access.",
+        message: "Could not load failure patterns. Choose your team and confirm database access.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],

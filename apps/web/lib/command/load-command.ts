@@ -217,7 +217,7 @@ export async function loadEventDayCommand(
       ...base,
       status: "setup_required",
       message: !row.eventKey
-        ? "Select an active event to turn Event Day Command into your field-side OS."
+        ? "Set your active event to turn Event Day Command into your field-side OS."
         : "Set your organization team number so we can filter your match queue.",
       matches: [],
       scoutQueue: [],

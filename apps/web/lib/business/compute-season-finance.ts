@@ -281,7 +281,7 @@ export async function computeSeasonFinanceView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team to plan season funding, purchases, and sponsorships.", null, seasonYear);
+  if (!org) return setup("Choose your team to plan season funding, purchases, and sponsorships.", null, seasonYear);
 
   const orgId = org.orgId;
   const canManageFinance = org.role === "owner" || org.role === "admin";

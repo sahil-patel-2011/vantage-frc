@@ -233,7 +233,7 @@ export async function computeAllianceSelectionDeskView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to run Alliance Selection Desk.",
+      message: "Choose your team to run Alliance Selection Desk.",
       steps: setupSteps(null, null),
       orgId: null,
       eventKey: null,

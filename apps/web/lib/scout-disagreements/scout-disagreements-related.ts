@@ -167,9 +167,9 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before the resolution queue appears.",
+          "Choose your team before the resolution queue appears.",
       };
     case "empty":
       return {

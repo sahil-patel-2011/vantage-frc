@@ -191,7 +191,7 @@ export async function computeSeasonPlanningWorkspaceView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan the season.",
+      message: "Choose your team to plan the season.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

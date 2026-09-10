@@ -51,14 +51,14 @@ export async function GET(request: Request) {
       if (!row) {
         return buildRankingsView({
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
-          setupMessage: "Select a team to view event rankings.",
+          setupMessage: "Choose your team to view event rankings.",
         });
       }
 
       if (!row.eventKey) {
         return buildRankingsView({
           context: row,
-          setupMessage: "Select an active event on Your team.",
+          setupMessage: "Set your active event on Your team.",
         });
       }
 

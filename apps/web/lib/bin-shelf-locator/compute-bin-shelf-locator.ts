@@ -155,7 +155,7 @@ export async function computeBinShelfLocatorView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to set up bin/shelf locations.",
+      message: "Choose your team to set up bin/shelf locations.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -275,7 +275,7 @@ export async function computeEventReadinessView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build a pre-event readiness plan.",
+      message: "Choose your team to build a pre-event readiness plan.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

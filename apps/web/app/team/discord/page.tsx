@@ -23,7 +23,7 @@ export default async function TeamDiscordPage({
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
-          title="Select a team"
+          title="Choose your team"
           description="Open a team to connect Discord and the object-linked Messages bridge."
           badge="Setup required"
           badgeTone="setup"

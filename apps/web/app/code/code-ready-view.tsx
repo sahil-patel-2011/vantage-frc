@@ -64,7 +64,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Choose a team to coach code"
+          title="Choose your team to coach code"
           description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."
           className="product-hub-setup"
         >

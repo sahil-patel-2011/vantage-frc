@@ -146,9 +146,9 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging real practice cycles.",
+          "Choose your team before logging real practice cycles.",
       };
     case "empty":
       return {

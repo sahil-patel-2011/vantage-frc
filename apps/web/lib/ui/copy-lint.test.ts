@@ -116,6 +116,16 @@ const RULES: readonly Rule[] = [
     why: "a disclaimer that the data is real tells the reader nothing to do",
   },
   {
+    label: "Select a team",
+    pattern: /\bSelect a team\b/,
+    why: 'say "Choose your team" — titles and buttons must match',
+  },
+  {
+    label: "Select an active event",
+    pattern: /\bSelect an active event\b/i,
+    why: 'say "Set active event" as the title/button, or "Set your active event" in a sentence',
+  },
+  {
     // "Set the real build-season window — no sample timelines." The em-dash
     // clause is the tell: everything before it is the instruction, everything
     // after it is the product promising it did not make the data up. Lower-case
@@ -142,6 +152,8 @@ function isCopyFile(entry: string): boolean {
   if (entry === "inspection-new-check-model.ts") return true;
   if (entry === "app-shell-model.ts") return true;
   if (entry === "next-match-copy.ts") return true;
+  if (entry === "dashboard-home-model.ts") return true;
+  if (entry === "snapshot.ts") return true;
   return false;
 }
 
@@ -168,6 +180,41 @@ function collectCopy(dir: string, acc: string[] = []): string[] {
 }
 
 const files = ROOTS.flatMap((root) => collectCopy(root));
+
+function isAnySource(entry: string): boolean {
+  if (entry.endsWith(".test.ts") || entry.endsWith(".test.tsx") || entry.endsWith(".d.ts")) {
+    return false;
+  }
+  // This file and copy-assertions name the banned phrases on purpose.
+  if (entry === "copy-assertions.ts") return false;
+  return entry.endsWith(".ts") || entry.endsWith(".tsx");
+}
+
+function collectSource(dir: string, acc: string[] = []): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return acc;
+  }
+  for (const entry of entries) {
+    if (entry.startsWith(".") || entry === "node_modules") continue;
+    const full = join(dir, entry);
+    let stats;
+    try {
+      stats = statSync(full);
+    } catch {
+      continue;
+    }
+    if (stats.isDirectory()) collectSource(full, acc);
+    else if (isAnySource(entry)) acc.push(full);
+  }
+  return acc;
+}
+
+const SELECT_RULES = RULES.filter(
+  (rule) => rule.label === "Select a team" || rule.label === "Select an active event",
+);
 
 /** Replace a span with same-length blanks so byte offsets stay line-accurate. */
 function blank(source: string, start: number, end: number, out: string[]): void {
@@ -268,7 +315,7 @@ function looksLikeCode(line: string, match: string, index: number): boolean {
 
 type Finding = { file: string; line: number; label: string; why: string; text: string };
 
-function scan(file: string): Finding[] {
+function scan(file: string, rules: readonly Rule[] = RULES): Finding[] {
   const source = readFileSync(file, "utf8");
   const stripped = stripComments(source);
   const lines = stripped.split(/\r?\n/);
@@ -276,7 +323,7 @@ function scan(file: string): Finding[] {
   const findings: Finding[] = [];
 
   lines.forEach((line, idx) => {
-    for (const rule of RULES) {
+    for (const rule of rules) {
       const re = new RegExp(rule.pattern.source, rule.pattern.flags.includes("g") ? rule.pattern.flags : `${rule.pattern.flags}g`);
       let m: RegExpExecArray | null;
       while ((m = re.exec(line)) !== null) {
@@ -313,6 +360,19 @@ describe("user-facing copy", () => {
     // Reads product .tsx plus related-copy / help modules. Under 4 s alone;
     // keep a 60 s ceiling so a typecheck running beside it cannot turn green
     // copy into a timeout.
+    60_000,
+  );
+
+  it(
+    "never tells the reader to Select a team or Select an active event",
+    () => {
+      const all = ROOTS.flatMap((root) => collectSource(root));
+      const findings = all.flatMap((file) => scan(file, SELECT_RULES));
+      const report = findings
+        .map((f) => `apps/web/${f.file}:${f.line}  [${f.label}] ${f.why}\n    ${f.text}`)
+        .join("\n");
+      expect(report, `\n${findings.length} leftover Select-a-team phrase(s):\n${report}\n`).toBe("");
+    },
     60_000,
   );
 });

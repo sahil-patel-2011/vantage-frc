@@ -22,7 +22,7 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: undefined,
       setupRequired: false,
       eventName: null,
-    })).toBe("Select a team to load live data.");
+    })).toBe("Choose your team to load live data.");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",
@@ -36,7 +36,7 @@ describe("homeHeaderDetail", () => {
       tbaConfigured: true,
       setupRequired: true,
       eventName: null,
-    })).toBe("Select an active event to load competition data.");
+    })).toBe("Set your active event to load competition data.");
     expect(homeHeaderDetail({
       meLoaded: true,
       orgId: "org-1",

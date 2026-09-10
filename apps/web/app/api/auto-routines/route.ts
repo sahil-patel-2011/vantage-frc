@@ -54,7 +54,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team to catalog your autos." };
+      if (!row) return { status: "setup_required" as const, message: "Choose your team to catalog your autos." };
 
       const routines = await client.query<RoutineRow>(
         `SELECT ${SELECT_COLS}, u.name AS "byName"

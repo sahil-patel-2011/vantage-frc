@@ -175,7 +175,7 @@ export function connectionsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select a team",
+        label: "Choose your team",
         detail: "Pick a team before linking.",
         href: "/workspace",
         primary: true,

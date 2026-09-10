@@ -239,8 +239,8 @@ function discordIntegration(
     return {
       status: setup.configured ? "available" : "setup_required",
       detail: setup.configured
-        ? "Discord bot token is on this deployment. Select a team to add a webhook or channel."
-        : "Select a team, then add a channel webhook (bot token optional) on Discord settings.",
+        ? "Discord bot token is on this deployment. Choose your team to add a webhook or channel."
+        : "Choose your team, then add a channel webhook (bot token optional) on Discord settings.",
       platformConfigured: setup.configured,
       canPost: false,
     };
@@ -318,7 +318,7 @@ function slackIntegration(
   if (!orgId) {
     return {
       status: setup.configured ? "available" : "setup_required",
-      detail: "Select a team, then paste a Slack incoming webhook on Team → Slack.",
+      detail: "Choose your team, then paste a Slack incoming webhook on Team → Slack.",
     };
   }
   return {

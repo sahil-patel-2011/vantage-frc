@@ -110,7 +110,7 @@ export async function computeGoalsTrackerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to set season goals and track progress.",
+      message: "Choose your team to set season goals and track progress.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

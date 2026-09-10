@@ -473,7 +473,7 @@ export async function computeStrategyView(
   if (!row?.orgId) {
     return setupPayload(access, {
       status: "setup_required",
-      message: "Select a team before running win/loss strategy.",
+      message: "Choose your team before running win/loss strategy.",
       steps: baseSteps,
       orgId: null,
       eventKey: null,
@@ -489,7 +489,7 @@ export async function computeStrategyView(
       access,
       {
         status: "setup_required",
-        message: "Select an active event and team number to load a match schedule.",
+        message: "Set your active event and team number to load a match schedule.",
         steps: baseSteps,
         orgId: row.orgId,
         eventKey: row.eventKey,

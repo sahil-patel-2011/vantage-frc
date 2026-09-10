@@ -144,7 +144,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           badge="Setup required"
           badgeTone="setup"
           title={view.message}
-          description="Choose a team, then return here to open nominations. Empty shells stay empty."
+          description="Choose your team, then return here to open nominations. Empty shells stay empty."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

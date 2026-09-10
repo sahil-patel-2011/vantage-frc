@@ -100,7 +100,7 @@ export async function computeScoutAssistedCountView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to start scout-assisted counting.",
+      message: "Choose your team to start scout-assisted counting.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

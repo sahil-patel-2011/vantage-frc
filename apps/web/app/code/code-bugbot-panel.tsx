@@ -195,7 +195,7 @@ export function CodeBugbotPanel({
               soft
               badge="Setup required"
               badgeTone="setup"
-              title="Choose a team for Bugbot"
+              title="Choose your team for Bugbot"
               description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
             >
               <Button as="a" variant="primary" href="/workspace">

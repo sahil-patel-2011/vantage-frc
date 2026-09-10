@@ -208,7 +208,7 @@ export async function computeFmeaView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to log structured failures against your subsystems.",
+      message: "Choose your team to log structured failures against your subsystems.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

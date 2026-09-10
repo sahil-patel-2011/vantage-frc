@@ -125,7 +125,7 @@ export async function computeSketchToBriefView(
 
   if (!org) {
     return setupRequired(
-      "Select a team to turn kickoff sketches into CAD briefs.",
+      "Choose your team to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       seasonYear,
@@ -205,7 +205,7 @@ export async function generateBriefFromSketch(
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
     return setupRequired(
-      "Select a team to turn kickoff sketches into CAD briefs.",
+      "Choose your team to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       currentSeasonYear(),

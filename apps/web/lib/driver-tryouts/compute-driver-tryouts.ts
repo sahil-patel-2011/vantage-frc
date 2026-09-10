@@ -127,7 +127,7 @@ export async function computeDriverTryoutsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to run driver tryouts.",
+      message: "Choose your team to run driver tryouts.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

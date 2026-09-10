@@ -150,9 +150,9 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before reading attendance and hour logs.",
+          "Choose your team before reading attendance and hour logs.",
       };
     case "empty":
       return {

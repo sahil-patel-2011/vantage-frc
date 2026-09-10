@@ -103,9 +103,9 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging whiteboard sketches.",
+          "Choose your team before logging whiteboard sketches.",
       };
     case "empty":
       return {

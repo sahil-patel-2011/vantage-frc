@@ -76,7 +76,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           setError(message);
           setView({
             status: "setup_required",
-            message: "Select a team before running win/loss strategy.",
+            message: "Choose your team before running win/loss strategy.",
             steps: strategyShellSetupSteps(null).map((step) => ({
               id: step.id,
               label: step.label,

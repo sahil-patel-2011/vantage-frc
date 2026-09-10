@@ -18,8 +18,8 @@ export default async function CadSetupPage({
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">CAD / Setup</span>
-            <h1>Select a team</h1>
-            <p className="app-muted">Connections belong to a team. Choose a team to run the setup wizard.</p>
+            <h1>Choose your team</h1>
+            <p className="app-muted">Connections belong to a team. Choose your team to run the setup wizard.</p>
           </div>
           <a className="primary-action" href="/workspace">
             Choose your team →

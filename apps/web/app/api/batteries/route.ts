@@ -76,7 +76,7 @@ export async function GET(request: Request) {
       );
       const row = membership.rows[0];
       if (!row) {
-        return { status: "setup_required" as const, message: "Select a team to track batteries.", context: { orgId: null } };
+        return { status: "setup_required" as const, message: "Choose your team to track batteries.", context: { orgId: null } };
       }
 
       const [packs, logs] = await Promise.all([

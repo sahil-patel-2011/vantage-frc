@@ -155,9 +155,9 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before overlaying quals, batteries, and pit windows.",
+          "Choose your team before overlaying quals, batteries, and pit windows.",
       };
     case "empty":
       return {

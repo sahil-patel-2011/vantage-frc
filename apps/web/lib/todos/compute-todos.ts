@@ -122,7 +122,7 @@ export async function computeTodosView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to manage shared todos.",
+      message: "Choose your team to manage shared todos.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         { id: "calendar", label: "Open Calendar", detail: "Plan due dates and subteams once the team is set", href: "/team?tab=calendar" },

@@ -134,9 +134,9 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before clustering.",
+          "Choose your team before clustering.",
       };
     case "empty":
       return {

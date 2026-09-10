@@ -49,7 +49,7 @@ export type RoadmapView =
 const SETUP_STEPS: RoadmapSetupStep[] = [
   {
     id: "workspace",
-    label: "Select a team",
+    label: "Choose your team",
     detail: "The roadmap tracks your team's progress, so it needs to know which team you are on.",
     href: "/workspace",
   },
@@ -57,7 +57,7 @@ const SETUP_STEPS: RoadmapSetupStep[] = [
 
 export function setupRequired(
   orgId: string | null = null,
-  message = "Choose a team to open your team's season roadmap.",
+  message = "Choose your team to open your team's season roadmap.",
 ): Extract<RoadmapView, { status: "setup_required" }> {
   return { status: "setup_required", message, steps: SETUP_STEPS, orgId };
 }

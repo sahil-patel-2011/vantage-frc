@@ -27,13 +27,13 @@ export default async function MessagesPage({
       <main className="module-page">
         <PageHeader breadcrumbs="Team / Chat" title="Chat" />
         <EmptyState
-          title="Choose a team"
+          title="Choose your team"
           description="Pick a team to open chat."
           badge="Setup"
           badgeTone="setup"
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

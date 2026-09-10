@@ -107,9 +107,9 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before generating reports.",
+          "Choose your team before generating reports.",
       };
     case "empty":
       return {

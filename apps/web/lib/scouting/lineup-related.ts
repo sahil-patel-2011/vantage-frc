@@ -299,9 +299,9 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team and event",
+        title: "Choose your team",
         description:
-          "Select a team and the event this alliance is at before coverage gaps appear.",
+          "Choose your team and the event this alliance is at before coverage gaps appear.",
       };
     case "empty":
       return {

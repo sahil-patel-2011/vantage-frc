@@ -217,7 +217,7 @@ export async function computeRankingProjectionView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team to project rankings.", null);
+  if (!org) return setup("Choose your team to project rankings.", null);
   if (!org.teamNumber) return setup("Set your team number so rankings can find your TBA row.", org.orgId);
 
   const context = await client.query<{ eventKey: string | null }>(

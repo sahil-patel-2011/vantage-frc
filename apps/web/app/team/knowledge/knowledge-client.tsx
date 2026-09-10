@@ -397,9 +397,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             </div>
           </header>
         ) : null}
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Choose a team" description={view.message}>
+        <EmptyState soft badge="Setup" badgeTone="setup" title="Choose your team" description={view.message}>
           <a className="button primary" href="/workspace">
-            Choose team
+            Choose your team
           </a>
         </EmptyState>
       </main>

@@ -106,7 +106,7 @@ export function accountNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select a team",
+        label: "Choose your team",
         detail: "AI keys, billing, and team connectors need an active team — profile prefs still save for this login.",
         href: "/workspace",
         primary: true,

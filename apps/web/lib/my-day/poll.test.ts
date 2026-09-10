@@ -145,7 +145,7 @@ describe("mergeMyDayView", () => {
         eventKey: null,
         eventName: null,
       },
-      message: "Select an active event to load your match queue.",
+      message: "Set your active event to load your match queue.",
     };
     expect(mergeMyDayView(ready(), incoming)).toEqual(incoming);
   });

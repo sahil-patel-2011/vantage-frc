@@ -103,7 +103,7 @@ export async function computeEventDayPlanView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build the event-day plan.",
+      message: "Choose your team to build the event-day plan.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

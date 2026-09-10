@@ -54,7 +54,7 @@ test.describe("one control per destination", () => {
     for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
     }
-    if ((await main.getByRole("heading", { name: "Select a team" }).count()) > 0) {
+    if ((await main.getByRole("heading", { name: "Choose your team" }).count()) > 0) {
       await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
       await expect(main.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
     }
@@ -153,7 +153,7 @@ test.describe("workflow handoffs", () => {
     }
     await page.goto("/showcase");
     // Was a bare <h1> with nothing to click.
-    await expect(page.getByRole("link", { name: "Choose team" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
   });
 });
 

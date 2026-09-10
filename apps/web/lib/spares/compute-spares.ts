@@ -101,7 +101,7 @@ export async function computeSparesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track consumables and spares.",
+      message: "Choose your team to track consumables and spares.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

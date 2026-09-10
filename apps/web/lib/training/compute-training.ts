@@ -126,7 +126,7 @@ export async function computeTrainingView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build the training matrix.",
+      message: "Choose your team to build the training matrix.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

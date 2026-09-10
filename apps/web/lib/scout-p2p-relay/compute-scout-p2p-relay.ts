@@ -103,7 +103,7 @@ export async function computeScoutP2pRelayView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to run device-to-device scout sync sessions.",
+      message: "Choose your team to run device-to-device scout sync sessions.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

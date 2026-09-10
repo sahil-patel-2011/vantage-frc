@@ -82,7 +82,7 @@ export async function computeTrajectoryView(
   input: { userId: string; requestedOrg: string | null; targetPoints?: number | null; simRuns?: number | null },
 ): Promise<TrajectoryView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
-  if (!org) return setupRequiredView("Select a team to project district trajectory.");
+  if (!org) return setupRequiredView("Choose your team to project district trajectory.");
   if (!org.teamNumber) {
     return setupRequiredView(
       "Set your team number in workspace settings so the trajectory simulator can find its EPA baseline.",

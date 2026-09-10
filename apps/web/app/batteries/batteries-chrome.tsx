@@ -79,7 +79,7 @@ export function BatteriesSetupShell({
       />
       {!embed ? <TeamOpsNav active="batteries" /> : null}
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
-      <EmptyState title="Select a team" description={message} badge="Setup" badgeTone="setup" soft>
+      <EmptyState title="Choose your team" description={message} badge="Setup" badgeTone="setup" soft>
         <Button as="a" variant="primary" href="/workspace">
           Choose your team
         </Button>

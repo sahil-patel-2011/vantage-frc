@@ -175,9 +175,9 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before agree/conflict badges appear.",
+          "Choose your team before agree/conflict badges appear.",
       };
     case "empty":
       return {

@@ -155,9 +155,9 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Choose a team and event",
+        title: "Choose your team",
         description:
-          "Select a team, set the event you are at, then sync match data. This screen stays empty until then.",
+          "Choose your team, set the event you are at, then sync match data. This screen stays empty until then.",
       };
     case "empty":
       return {
@@ -196,7 +196,7 @@ export function strategyNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose a team before loading event predictions.",
+          detail: "Choose your team before loading event predictions.",
           href: "/workspace",
           primary: true,
         },

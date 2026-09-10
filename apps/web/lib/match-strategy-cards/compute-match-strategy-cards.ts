@@ -134,7 +134,7 @@ export async function computeMatchStrategyCardsView(
   if (!context?.orgId) {
     return {
       status: "setup_required",
-      message: "Select a team to build printable match strategy cards.",
+      message: "Choose your team to build printable match strategy cards.",
       steps: baseSteps,
       orgId: null,
       eventKey: null,
@@ -144,7 +144,7 @@ export async function computeMatchStrategyCardsView(
   if (!context.eventKey || !context.teamNumber) {
     return {
       status: "setup_required",
-      message: "Select an active event and confirm your team number to load the match schedule.",
+      message: "Set your active event and confirm your team number to load the match schedule.",
       steps: baseSteps,
       orgId: context.orgId,
       eventKey: context.eventKey,

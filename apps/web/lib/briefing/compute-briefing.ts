@@ -397,7 +397,7 @@ export async function computeBriefingView(
   if (!row) {
     return {
       status: "setup_required",
-      message: "Select a team to open the pre-match briefing.",
+      message: "Choose your team to open the pre-match briefing.",
       context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
     };
   }
@@ -412,7 +412,7 @@ export async function computeBriefingView(
   };
 
   if (!row.eventKey) {
-    return { status: "setup_required", message: "Select an active event on Your team.", context };
+    return { status: "setup_required", message: "Set your active event on Your team.", context };
   }
   if (row.teamNumber == null) {
     return {

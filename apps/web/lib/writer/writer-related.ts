@@ -93,9 +93,9 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Choose a team organization before composing. FRC Assistant needs a provider key; templates work without one.",
+          "Choose your team before composing. FRC Assistant needs a provider key; templates work without one.",
       };
     case "provider_setup":
       return {

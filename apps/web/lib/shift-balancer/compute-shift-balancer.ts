@@ -96,7 +96,7 @@ export async function computeShiftBalancerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build scout shift rotations.",
+      message: "Choose your team to build scout shift rotations.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

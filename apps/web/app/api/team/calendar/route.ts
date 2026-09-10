@@ -690,7 +690,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team to open subteam calendars.",
+          message: "Choose your team to open subteam calendars.",
           context: {
             orgId: null,
             orgName: null,

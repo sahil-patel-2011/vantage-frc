@@ -24,8 +24,8 @@ export default async function GrantsPage({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a team"
-          description="Grant narratives belong to one team. Choose a team to open the writing workbench — award amounts stay blank until you record them."
+          title="Choose your team"
+          description="Grant narratives belong to one team. Choose your team to open the writing workbench — award amounts stay blank until you record them."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

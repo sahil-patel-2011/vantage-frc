@@ -18,8 +18,8 @@ for (const viewport of VIEWPORTS) {
     test("scouting hub stays empty/setup and never DEMO", async ({ page }) => {
       await page.goto("/scouting");
       await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Choose a team" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Choose team" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Choose your team" })).toBeVisible();
       await expect(page.getByText("Deterministic demo")).toHaveCount(0);
     });
 

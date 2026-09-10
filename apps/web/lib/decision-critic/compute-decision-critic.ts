@@ -200,7 +200,7 @@ export async function computeDecisionCriticView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to get a second opinion on design decisions.",
+      message: "Choose your team to get a second opinion on design decisions.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

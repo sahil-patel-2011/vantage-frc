@@ -115,7 +115,7 @@ export async function computeTeamHealthDashboardView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see engagement from attendance and hour logs.",
+      message: "Choose your team to see engagement from attendance and hour logs.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

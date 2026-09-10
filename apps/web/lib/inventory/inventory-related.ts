@@ -180,9 +180,9 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before tracking real parts.",
+          "Choose your team before tracking real parts.",
       };
     case "empty":
       return {

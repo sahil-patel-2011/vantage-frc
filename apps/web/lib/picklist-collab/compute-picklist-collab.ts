@@ -98,7 +98,7 @@ async function resolveOrg(
 function setupRequired(orgId: string | null): PicklistCollabView {
   return {
     status: "setup_required",
-    message: "Select a team to build a collaborative pick list.",
+    message: "Choose your team to build a collaborative pick list.",
     steps: [
       { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],

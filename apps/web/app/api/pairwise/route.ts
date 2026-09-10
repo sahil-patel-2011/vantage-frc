@@ -12,7 +12,7 @@ import { promotePairwiseOrder } from "../../../lib/pairwise/promote-to-pick-list
 
 const FALLBACK: PairwiseView = {
   status: "setup_required",
-  message: "Could not load pairwise ranking. Select a team and confirm database access.",
+  message: "Could not load pairwise ranking. Choose your team and confirm database access.",
   steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   seasonYear: currentPairwiseSeason(),

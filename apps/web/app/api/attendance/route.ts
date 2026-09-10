@@ -126,7 +126,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team to track practice and meeting attendance.",
+          message: "Choose your team to track practice and meeting attendance.",
           context: {
             orgId: null,
             orgName: null,

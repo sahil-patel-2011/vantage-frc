@@ -44,11 +44,11 @@ export function homeHeaderDetail(input: {
   eventName: unknown;
 }): string {
   if (!input.meLoaded) return "Loading your team…";
-  if (!input.orgId) return "Select a team to load live data.";
+  if (!input.orgId) return "Choose your team to load live data.";
   if (input.tbaConfigured === false) {
     return "Your week — what is next, what is due, and what to learn. Match data arrives once The Blue Alliance is connected below.";
   }
-  if (input.setupRequired) return "Select an active event to load competition data.";
+  if (input.setupRequired) return "Set your active event to load competition data.";
   if (input.eventName) return String(input.eventName);
   return "Home — widgets appear when live data exists.";
 }

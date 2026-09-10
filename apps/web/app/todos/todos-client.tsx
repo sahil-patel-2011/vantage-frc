@@ -281,7 +281,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               : `${window.location.pathname}${window.location.search}`,
           message:
             loadErrorMessage ||
-            "A network or server issue prevented loading. Select a team and try again.",
+            "A network or server issue prevented loading. Choose your team and try again.",
         },
       )
     : null;

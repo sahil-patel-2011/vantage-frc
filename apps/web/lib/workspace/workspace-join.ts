@@ -138,7 +138,7 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
       return {
         kind,
         eyebrow: "TEAMS",
-        title: "Choose a team",
+        title: "Choose your team",
         description: "You belong to more than one team. Pick which one to open.",
         badge: "Multiple teams",
       };

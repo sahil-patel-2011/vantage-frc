@@ -129,7 +129,7 @@ export async function computeEquipmentMaintenanceView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track shop equipment maintenance.",
+      message: "Choose your team to track shop equipment maintenance.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

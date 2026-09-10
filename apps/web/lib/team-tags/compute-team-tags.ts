@@ -168,7 +168,7 @@ export async function computeTeamTagsView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team to tag robots for the drive team.", null, seasonYear);
+  if (!org) return setup("Choose your team to tag robots for the drive team.", null, seasonYear);
 
   try {
     for (const tag of DEFAULT_TEAM_TAGS) {

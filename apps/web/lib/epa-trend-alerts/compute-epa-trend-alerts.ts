@@ -89,7 +89,7 @@ function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
 function setupRequiredView(orgId: string | null = null): EpaTrendAlertsView {
   return {
     status: "setup_required",
-    message: "Select a team to build an EPA trend watchlist.",
+    message: "Choose your team to build an EPA trend watchlist.",
     steps: setupSteps(orgId),
     orgId,
   };

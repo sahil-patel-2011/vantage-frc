@@ -169,9 +169,9 @@ export function strategyCoverageLinks(
 
 /** Setup copy for pick-clock / draft / chemistry when the surface cannot run yet. */
 export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
-  if (!ctx.orgId) return "Select a team before opening this Competition tool.";
+  if (!ctx.orgId) return "Choose your team before opening this Competition tool.";
   if (!ctx.eventKey) {
-    return "Select an active event on Event Day. Rankings stay blank until then.";
+    return "Set your active event on Event Day. Rankings stay blank until then.";
   }
   if (ctx.tbaConfigured === false && ctx.hasMetrics === false) {
     return "Connect The Blue Alliance, then sync under Team → Data.";

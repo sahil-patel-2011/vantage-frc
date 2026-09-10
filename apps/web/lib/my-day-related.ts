@@ -160,9 +160,9 @@ export function myDayShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team, set the event, and sync the schedule before a next match appears.",
+          "Choose your team, set the event, and sync the schedule before a next match appears.",
       };
     case "empty":
       if (options?.emptyReason === "no_upcoming") {

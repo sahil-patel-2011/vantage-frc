@@ -113,7 +113,7 @@ export async function computeSubsystemSignoffView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track subsystem sign-offs.",
+      message: "Choose your team to track subsystem sign-offs.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

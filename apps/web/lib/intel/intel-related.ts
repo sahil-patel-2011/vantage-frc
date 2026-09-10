@@ -165,9 +165,9 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
       return {
         kind,
         badge: "Setup",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and sync event ratings before metrics or findings appear.",
+          "Choose your team and sync event ratings before metrics or findings appear.",
       };
     case "empty":
       return {

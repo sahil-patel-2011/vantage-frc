@@ -259,7 +259,7 @@ export async function computeScoutVoiceView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to configure scouting voice notes.",
+      message: "Choose your team to configure scouting voice notes.",
       steps: [
         {
           id: "workspace",

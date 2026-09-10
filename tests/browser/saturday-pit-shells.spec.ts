@@ -58,7 +58,7 @@ for (const shell of SHELLS) {
     await expect(page.locator("body")).not.toContainText("Application error");
 
     const board = page.getByRole("heading", { name: shell.board });
-    const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+    const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
     const empty = page.getByRole("heading", { name: shell.empty });
     const unavailable = loadFailureHeading(page);
     if (!(await expectHubReadyOrGate(page, board, empty.or(setup).or(unavailable)))) {

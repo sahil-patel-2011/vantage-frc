@@ -167,7 +167,7 @@ export async function computeSponsorRenewalRoiView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to compute sponsor renewal-risk scores.",
+      message: "Choose your team to compute sponsor renewal-risk scores.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

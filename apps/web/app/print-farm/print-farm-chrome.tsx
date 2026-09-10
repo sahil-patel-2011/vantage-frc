@@ -60,7 +60,7 @@ function farmShellBody({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a team"
+          title="Choose your team"
           description={description}
         >
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>

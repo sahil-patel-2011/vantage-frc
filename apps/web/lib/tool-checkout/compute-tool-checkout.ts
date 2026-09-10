@@ -97,7 +97,7 @@ export async function computeToolCheckoutView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track tool checkout.",
+      message: "Choose your team to track tool checkout.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

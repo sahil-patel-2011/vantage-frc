@@ -221,7 +221,7 @@ export async function computeMatchingGiftFinderView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to find employer matching-gift programs.",
+      message: "Choose your team to find employer matching-gift programs.",
       steps: setupSteps(null),
       orgId: null,
     };

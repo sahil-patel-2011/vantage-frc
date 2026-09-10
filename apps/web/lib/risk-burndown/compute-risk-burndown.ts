@@ -130,7 +130,7 @@ export async function computeRiskBurndownView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track your season risk register.",
+      message: "Choose your team to track your season risk register.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

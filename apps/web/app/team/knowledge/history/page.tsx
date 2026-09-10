@@ -23,11 +23,11 @@ export default async function TeamKnowledgeHistoryPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="History replays the edits a single team actually made. Select one and come back."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

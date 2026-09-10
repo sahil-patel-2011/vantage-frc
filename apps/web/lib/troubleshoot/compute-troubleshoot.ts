@@ -98,7 +98,7 @@ export type TroubleshootSessionView = {
 const SETUP_STEPS: TroubleshootSetupStep[] = [
   {
     id: "workspace",
-    label: "Select a team",
+    label: "Choose your team",
     detail: "Get-unstuck records what your team tried, so it needs to know which team you are on.",
     href: "/workspace",
   },
@@ -107,7 +107,7 @@ const SETUP_STEPS: TroubleshootSetupStep[] = [
 export function setupRequired(orgId: string | null = null): Extract<TroubleshootView, { status: "setup_required" }> {
   return {
     status: "setup_required",
-    message: "Choose a team to use Get-unstuck with your team's history.",
+    message: "Choose your team to use Get-unstuck with your team's history.",
     steps: SETUP_STEPS,
     orgId,
   };

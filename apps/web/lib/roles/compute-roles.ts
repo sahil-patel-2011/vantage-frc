@@ -107,7 +107,7 @@ export async function computeRolesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to map roles and responsibilities.",
+      message: "Choose your team to map roles and responsibilities.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

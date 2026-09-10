@@ -154,7 +154,7 @@ export async function computeWiringDiagnoserView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to diagnose wiring and power-budget faults.",
+      message: "Choose your team to diagnose wiring and power-budget faults.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -12,7 +12,7 @@ test("Team dossier still loads after the Saturday shell pass", async ({ page }) 
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const board = page.getByRole("heading", { name: /Season team dossier/i });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on cited season facts/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, board, empty.or(setup).or(unavailable)))) {

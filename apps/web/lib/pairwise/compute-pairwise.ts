@@ -102,7 +102,7 @@ export async function computePairwiseView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team to rank robots by qualitative taps.", null, seasonYear);
+  if (!org) return setup("Choose your team to rank robots by qualitative taps.", null, seasonYear);
 
   try {
     for (const criterion of DEFAULT_CRITERIA) {

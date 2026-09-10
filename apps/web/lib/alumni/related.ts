@@ -98,9 +98,9 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before adding graduates.",
+          "Choose your team before adding graduates.",
       };
     case "empty":
       return {

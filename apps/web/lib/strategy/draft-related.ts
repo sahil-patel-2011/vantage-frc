@@ -174,9 +174,9 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team and event",
+        title: "Choose your team",
         description:
-          "Select a team and the event this alliance is at before alliance slots appear.",
+          "Choose your team and the event this alliance is at before alliance slots appear.",
       };
     case "empty":
       return {

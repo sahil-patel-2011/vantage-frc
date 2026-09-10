@@ -126,7 +126,7 @@ export async function computeExitInterviewView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to capture graduation exit interviews.",
+      message: "Choose your team to capture graduation exit interviews.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

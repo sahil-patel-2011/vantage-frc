@@ -26,10 +26,10 @@ test("Event Day Command still loads after the panel split", async ({ page }) => 
 
   const nowNext = page.getByRole("heading", { name: "Now / Next" });
   const empty = page.getByRole("heading", { name: "No upcoming matches" });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team|No event linked|Set an active event/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team|No event linked|Set an active event/i });
   const unavailable = page.getByRole("heading", { name: /Could not load Command/i });
   if (!(await expectHubReadyOrGate(page, nowNext, empty.or(setup).or(unavailable)))) {
-    // GHA has no Postgres: HubOrgGate paints Choose a team. A real empty board
+    // GHA has no Postgres: HubOrgGate paints Choose your team. A real empty board
     // (event linked, no matches) is the only place Check schedule sync belongs.
     if (await empty.isVisible()) {
       await expect(page.getByRole("link", { name: "Check schedule sync" })).toHaveCount(1);

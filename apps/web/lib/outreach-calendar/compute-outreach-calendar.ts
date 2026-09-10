@@ -95,7 +95,7 @@ export async function computeOutreachCalendarView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan outreach events and projected impact.",
+      message: "Choose your team to plan outreach events and projected impact.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -167,9 +167,9 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before comparing official results to predictions.",
+          "Choose your team before comparing official results to predictions.",
       };
     case "empty":
       return {

@@ -157,7 +157,7 @@ export async function computeScoutTrainingView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to start scout training mode.",
+      message: "Choose your team to start scout training mode.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

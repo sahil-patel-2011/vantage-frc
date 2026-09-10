@@ -115,7 +115,7 @@ export async function computeVendorsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to keep a vendor directory.",
+      message: "Choose your team to keep a vendor directory.",
       steps: setupStepsFor(null),
       orgId: null,
     };

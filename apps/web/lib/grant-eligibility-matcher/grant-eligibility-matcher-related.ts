@@ -160,9 +160,9 @@ export function grantEligibilityMatcherShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and complete your team profile.",
+          "Choose your team and complete your team profile.",
       };
     case "empty":
       return {

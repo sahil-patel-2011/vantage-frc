@@ -327,13 +327,13 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     // event picker. Every "Connect TBA" button in the product — the dashboard
     // widget, the setup checklist, Command's empty state — lands here, and a
     // workspace that has not picked an event yet (the common case for a team
-    // setting Vantage up) got "Select an active event" and no way to connect
+    // setting Vantage up) got "Set your active event" and no way to connect
     // TBA at all. The two are independent: a key can be saved before an event
     // exists, and both are needed before anything syncs.
     const needsTba = !tbaConfigured;
     return (
       <TeamDataShell
-        title={needsTba ? "Connect TBA" : needsEvent ? "Select an active event" : "Finish Team Data setup"}
+        title={needsTba ? "Connect TBA" : needsEvent ? "Set active event" : "Finish Team Data setup"}
         description={
           needsTba
             ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`

@@ -150,7 +150,7 @@ export async function computeCostsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track season costs and budget.",
+      message: "Choose your team to track season costs and budget.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

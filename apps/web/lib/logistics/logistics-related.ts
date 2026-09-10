@@ -138,7 +138,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Setup required",
         title: "Finish setup for travel plans",
         description:
-          "Select a team and apply the event logistics migration if tables are missing.",
+          "Choose your team and apply the event logistics migration if tables are missing.",
       };
     case "empty":
       return {

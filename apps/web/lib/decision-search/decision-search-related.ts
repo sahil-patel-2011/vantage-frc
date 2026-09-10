@@ -119,9 +119,9 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before indexing decisions, design reviews, or notebook entries.",
+          "Choose your team before indexing decisions, design reviews, or notebook entries.",
       };
     case "empty":
       return {

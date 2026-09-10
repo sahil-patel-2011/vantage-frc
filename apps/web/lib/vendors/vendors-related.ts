@@ -116,9 +116,9 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before adding real suppliers.",
+          "Choose your team before adding real suppliers.",
       };
     case "empty":
       return {

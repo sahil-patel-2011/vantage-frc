@@ -16,7 +16,7 @@ import {
 
 const FALLBACK: SeasonFinanceView = {
   status: "setup_required",
-  message: "Could not load season finance. Select a team and confirm database access.",
+  message: "Could not load season finance. Choose your team and confirm database access.",
   steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   seasonYear: validFinanceSeason(undefined),

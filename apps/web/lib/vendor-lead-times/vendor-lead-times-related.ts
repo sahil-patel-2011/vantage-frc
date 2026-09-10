@@ -116,9 +116,9 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging real vendors and reorders.",
+          "Choose your team before logging real vendors and reorders.",
       };
     case "empty":
       return {

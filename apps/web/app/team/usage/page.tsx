@@ -20,7 +20,7 @@ export default async function TeamUsagePage({
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a team"
+          title="Choose your team"
           description="Each team has its own AI usage log. Choose your team or Account, then return from the AI hub."
         >
           <Button as="a" variant="secondary" href="/workspace">

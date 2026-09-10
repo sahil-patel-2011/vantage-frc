@@ -140,9 +140,9 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before mapping bins.",
+          "Choose your team before mapping bins.",
       };
     case "empty":
       return {

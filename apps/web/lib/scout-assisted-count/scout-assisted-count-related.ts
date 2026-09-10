@@ -131,9 +131,9 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before starting sessions.",
+          "Choose your team before starting sessions.",
       };
     case "empty":
       return {

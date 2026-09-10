@@ -175,9 +175,9 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
       return {
         kind,
         badge: "Setup",
-        title: "Select a team and event",
+        title: "Choose your team",
         description:
-          "Select a team and the event this alliance is at before pick recommendations appear.",
+          "Choose your team and the event this alliance is at before pick recommendations appear.",
       };
     case "empty":
       return {

@@ -987,9 +987,9 @@ export function formBuilderShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team and event",
+        title: "Choose your team",
         description:
-          "Form builder is org- and season-scoped. Select a team and set an active TBA event so the publish year is known.",
+          "Form builder is org- and season-scoped. Choose your team and set an active TBA event so the publish year is known.",
       };
     case "empty":
       return {
@@ -1029,7 +1029,7 @@ export function formBuilderNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose a team before publishing schemas.",
+          detail: "Choose your team before publishing schemas.",
           href: "/workspace",
           primary: true,
         },

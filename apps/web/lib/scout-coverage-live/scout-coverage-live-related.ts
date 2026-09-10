@@ -175,9 +175,9 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and active event before zero/thin cells appear.",
+          "Choose your team and active event before zero/thin cells appear.",
       };
     case "empty":
       return {

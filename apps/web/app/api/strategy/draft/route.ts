@@ -242,8 +242,8 @@ export async function GET(request: Request) {
           status: "setup_required",
           message:
             data.error === "event_required"
-              ? "Select an active event before opening draft day."
-              : "Select a team to open the alliance board.",
+              ? "Set your active event before opening draft day."
+              : "Choose your team to open the alliance board.",
           orgId: "orgId" in data ? data.orgId : null,
         },
         { status: 200 },

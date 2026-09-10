@@ -144,7 +144,7 @@ export async function computeSpareRobotKitView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to generate a spare-robot-kit checklist.",
+      message: "Choose your team to generate a spare-robot-kit checklist.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         {

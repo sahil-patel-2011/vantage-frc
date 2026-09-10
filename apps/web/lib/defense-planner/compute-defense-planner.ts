@@ -160,7 +160,7 @@ export async function computeDefensePlannerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan defensive matchups.",
+      message: "Choose your team to plan defensive matchups.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

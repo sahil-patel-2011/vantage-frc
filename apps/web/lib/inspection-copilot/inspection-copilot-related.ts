@@ -121,9 +121,9 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before comparing limits to measured robot values.",
+          "Choose your team before comparing limits to measured robot values.",
       };
     case "empty":
       return {

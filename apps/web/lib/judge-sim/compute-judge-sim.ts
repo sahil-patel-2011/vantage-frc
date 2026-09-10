@@ -181,7 +181,7 @@ export async function computeJudgeSimView(
     return {
       status: "setup_required",
       message:
-        "Select a team to practice judge Q&A grounded in your own logged evidence.",
+        "Choose your team to practice judge Q&A grounded in your own logged evidence.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

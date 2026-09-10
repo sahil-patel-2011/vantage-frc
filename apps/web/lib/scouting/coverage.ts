@@ -194,7 +194,7 @@ export async function computeScoutingCoverageView(
 ): Promise<ScoutingCoverageView> {
   const org = await resolveScoutOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequired("Select a team to see lineup coverage.", null, [
+    return setupRequired("Choose your team to see lineup coverage.", null, [
       WORKSPACE_STEP,
       EVENT_STEP,
     ]);

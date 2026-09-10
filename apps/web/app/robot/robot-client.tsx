@@ -352,7 +352,7 @@ export default function RobotClient() {
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
         </header>
-        <EmptyState className="robot-empty" title="Select a team" description={view.message}>
+        <EmptyState className="robot-empty" title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

@@ -124,7 +124,7 @@ export async function computeStandupView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see the morning standup digest.",
+      message: "Choose your team to see the morning standup digest.",
       steps: [WORKSPACE_STEP],
       orgId: null,
       digestDate,

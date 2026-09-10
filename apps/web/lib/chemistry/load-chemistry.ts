@@ -116,7 +116,7 @@ export async function loadAllianceChemistry(
   if (!row.eventKey) {
     return {
       status: "setup_required",
-      message: "Select an active event on Event Day Command before scoring alliance chemistry.",
+      message: "Set your active event on Event Day Command before scoring alliance chemistry.",
       orgId: input.orgId,
       eventKey: null,
       eventName: null,

@@ -106,7 +106,7 @@ export async function POST(request: Request) {
           );
           const eventKey = active.rows[0]?.eventKey;
           if (!eventKey) {
-            throw new Error("Select an active event before syncing TBA data for this team.");
+            throw new Error("Set your active event before syncing TBA data for this team.");
           }
           await client.query(
             `INSERT INTO org_live_subscriptions(org_id, enabled, fallback_credential_id, updated_by)

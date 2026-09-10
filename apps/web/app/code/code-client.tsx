@@ -424,7 +424,7 @@ export function CodeClient({
       return;
     }
     if (!orgId) {
-      setMessage("Choose a team before running Bugbot.");
+      setMessage("Choose your team before running Bugbot.");
       return;
     }
     if (useRepo && !githubConnected) {

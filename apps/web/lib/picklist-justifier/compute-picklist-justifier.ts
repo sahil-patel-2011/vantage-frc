@@ -214,7 +214,7 @@ export async function computePicklistJustifierView(
 ): Promise<PicklistJustifierView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequiredView("Select a team to justify pick-list slots.");
+    return setupRequiredView("Choose your team to justify pick-list slots.");
   }
 
   const pickLists = await loadPickLists(client, org.orgId);

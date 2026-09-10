@@ -23,7 +23,7 @@ test("Print Farm still loads after the panel split", async ({ page }) => {
   }
 
   const queue = page.getByRole("heading", { name: "Queue a print", exact: true });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const unavailable = page.getByRole("heading", { name: /Could not load the Print Farm/i });
   if (!(await expectHubReadyOrGate(page, queue, setup.or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);

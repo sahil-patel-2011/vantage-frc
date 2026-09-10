@@ -185,7 +185,7 @@ export async function computeKnowledgeGapView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to scan work items against the wiki.",
+      message: "Choose your team to scan work items against the wiki.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

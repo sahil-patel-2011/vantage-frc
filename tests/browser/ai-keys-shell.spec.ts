@@ -23,7 +23,7 @@ test("AI keys still loads after the panel split", async ({ page }) => {
   }
 
   const mine = page.getByRole("heading", { name: "Use your own key, just for you" });
-  const empty = page.getByRole("heading", { name: "Select a team to add API keys" });
+  const empty = page.getByRole("heading", { name: "Choose your team to add API keys" });
   const kms = page.getByRole("heading", { name: "Key encryption is not available" });
   if (!(await expectHubReadyOrGate(page, mine, empty.or(kms)))) {
     if (process.env.KEYS_SHOT === "1") {

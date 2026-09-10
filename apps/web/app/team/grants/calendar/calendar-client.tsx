@@ -195,7 +195,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           title="Grant calendar"
           description={view.message}
         />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Select a team">
+        <EmptyState soft badge="Setup required" badgeTone="setup" title="Choose your team">
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}

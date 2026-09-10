@@ -339,7 +339,7 @@ async function buildContext(
   if (!org) {
     return {
       setup: setupRequired(
-        "Select a team to open Match Copilot.",
+        "Choose your team to open Match Copilot.",
         setupStepsFor(null, "workspace"),
         null,
       ),
@@ -359,7 +359,7 @@ async function buildContext(
   if (!activeEvent.eventKey || !activeEvent.seasonYear) {
     return {
       setup: setupRequired(
-        "Select an active event so Match Copilot can find your next match.",
+        "Set your active event so Match Copilot can find your next match.",
         setupStepsFor(org.orgId, "event"),
         org.orgId,
       ),

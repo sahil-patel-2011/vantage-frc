@@ -23,11 +23,11 @@ export default async function TeamAuditPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Audit rows stay on this team. Select the team whose trail you want to read."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

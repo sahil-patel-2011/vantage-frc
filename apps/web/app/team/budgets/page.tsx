@@ -15,7 +15,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a team"
+          title="Choose your team"
           description="Each team sets its own Chat limits. Open Teams or Account, then come back from Ask AI."
         >
           <Button as="a" variant="secondary" href="/workspace">

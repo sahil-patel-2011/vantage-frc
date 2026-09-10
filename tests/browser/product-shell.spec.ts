@@ -205,6 +205,6 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
 test("code route requires a real team and never falls back to fixture findings", async ({ page }) => {
   await page.goto("/code");
   await expect(page.getByRole("tab", { name: "Code" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Choose a team" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
   await expect(page.getByText("blocking robot loop")).toHaveCount(0);
 });

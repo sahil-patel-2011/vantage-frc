@@ -122,7 +122,7 @@ function payloadOf(
   const href = resolved === "setup_required" ? "/workspace" : "/presence";
   const message =
     resolved === "setup_required"
-      ? (setupMessage ?? "Select a team to see who is coming tonight.")
+      ? (setupMessage ?? "Choose your team to see who is coming tonight.")
       : label;
 
   return {

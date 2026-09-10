@@ -151,7 +151,7 @@ export async function computeAlumniNetworkView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build your alumni network directory.",
+      message: "Choose your team to build your alumni network directory.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

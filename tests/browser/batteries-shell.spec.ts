@@ -25,7 +25,7 @@ test("Batteries still loads after the panel split", async ({ page }) => {
   }
 
   const add = page.getByRole("heading", { name: "Add a battery", exact: true });
-  const setup = page.getByRole("heading", { name: "Select a team", exact: true });
+  const setup = page.getByRole("heading", { name: "Choose your team", exact: true });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, add, setup.or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/batteries-after-split.png", fullPage: true });

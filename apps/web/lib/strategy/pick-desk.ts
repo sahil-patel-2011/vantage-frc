@@ -113,7 +113,7 @@ export async function loadPickDesk(
   if (!row?.orgId) {
     return {
       status: "setup_required",
-      message: "Select a team before building pick lists.",
+      message: "Choose your team before building pick lists.",
       orgId: null,
       eventKey: null,
     };
@@ -121,7 +121,7 @@ export async function loadPickDesk(
   if (!row.eventKey) {
     return {
       status: "setup_required",
-      message: "Select an active event to load event teams and metrics.",
+      message: "Set your active event to load event teams and metrics.",
       orgId: row.orgId,
       eventKey: null,
     };

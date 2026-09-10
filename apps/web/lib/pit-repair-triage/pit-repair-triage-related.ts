@@ -153,9 +153,9 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging failures.",
+          "Choose your team before logging failures.",
       };
     case "empty":
       return {

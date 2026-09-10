@@ -23,11 +23,11 @@ export default async function TeamPosturePage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Every check reads that team’s own configuration, so it needs a team before it can score anything."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

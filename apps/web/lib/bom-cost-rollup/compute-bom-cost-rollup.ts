@@ -94,7 +94,7 @@ export async function computeBomCostRollupView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track BOM cost against budget.",
+      message: "Choose your team to track BOM cost against budget.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

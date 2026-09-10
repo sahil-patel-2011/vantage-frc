@@ -121,7 +121,7 @@ export async function computeWriterView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to draft grants and sponsor emails.",
+      message: "Choose your team to draft grants and sponsor emails.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

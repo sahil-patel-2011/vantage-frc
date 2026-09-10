@@ -218,7 +218,7 @@ export async function computeSustainabilityView(
     return {
       status: "setup_required",
       message:
-        "Select a team to read your sustainability signal. It is computed only from rows your team recorded.",
+        "Choose your team to read your sustainability signal. It is computed only from rows your team recorded.",
       steps: [
         {
           id: "workspace",

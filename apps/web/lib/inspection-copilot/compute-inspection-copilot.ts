@@ -224,7 +224,7 @@ export async function computeInspectionCopilotView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to predict inspection failures before you travel.",
+      message: "Choose your team to predict inspection failures before you travel.",
       steps: inspectionSetupSteps(null),
       orgId: null,
       seasonYear,

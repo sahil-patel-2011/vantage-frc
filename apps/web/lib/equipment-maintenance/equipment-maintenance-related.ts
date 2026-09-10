@@ -132,9 +132,9 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before registering real shop machines.",
+          "Choose your team before registering real shop machines.",
       };
     case "empty":
       return {

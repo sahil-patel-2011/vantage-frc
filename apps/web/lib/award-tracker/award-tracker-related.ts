@@ -164,9 +164,9 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and log real submissions before tracking deadlines.",
+          "Choose your team and log real submissions before tracking deadlines.",
       };
     case "empty":
       return {

@@ -329,11 +329,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         ) : null}
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
-          <strong>Choose a team</strong>
+          <strong>Choose your team</strong>
           <p className="app-muted">{view.message}</p>
           <div className="tc-guide-actions">
             <Button as="a" variant="primary" href="/workspace">
-              Choose team
+              Choose your team
             </Button>
           </div>
         </div>

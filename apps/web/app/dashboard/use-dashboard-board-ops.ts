@@ -238,7 +238,7 @@ export function useDashboardBoardOps(input: {
   async function save(activateScope: "personal" | "org" = "personal") {
     if (!orgId) {
       setMessageKind("error");
-      setMessage("Select a team to save a custom layout.");
+      setMessage("Choose your team to save a custom layout.");
       return;
     }
     if (activateScope === "org" && !canShareOrg) {

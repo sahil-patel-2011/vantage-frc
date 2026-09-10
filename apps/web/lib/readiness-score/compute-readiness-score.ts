@@ -212,7 +212,7 @@ export async function computeReadinessScoreView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track robot readiness.",
+      message: "Choose your team to track robot readiness.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

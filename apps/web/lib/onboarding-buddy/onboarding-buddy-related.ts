@@ -166,7 +166,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
           "Join or pick a team before pairing members.",
       };

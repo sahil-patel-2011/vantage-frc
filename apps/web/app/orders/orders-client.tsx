@@ -285,7 +285,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             badge="Setup required"
             badgeTone="setup"
             title={view.message}
-            description="Choose a team, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
+            description="Choose your team, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
           >
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>

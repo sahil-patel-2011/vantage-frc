@@ -165,7 +165,7 @@ export async function computePitRepairTriageView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to triage pit repairs.",
+      message: "Choose your team to triage pit repairs.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

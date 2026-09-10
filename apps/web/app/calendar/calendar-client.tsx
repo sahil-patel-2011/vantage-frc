@@ -429,7 +429,7 @@ export default function CalendarClient() {
       <main className="module-page cal-page">
         <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft title="Choose a team" description={view.message}>
+        <EmptyState soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

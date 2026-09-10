@@ -240,7 +240,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load the Media team. Select a team and confirm database access.",
+        message: "Could not load the Media team. Choose your team and confirm database access.",
         steps: [
           {
             id: "workspace",

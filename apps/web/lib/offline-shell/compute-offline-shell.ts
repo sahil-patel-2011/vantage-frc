@@ -82,7 +82,7 @@ export async function computeOfflineShellView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Choose a team to see whether Scouting stays on this phone.",
+      message: "Choose your team to see whether Scouting stays on this phone.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -186,7 +186,7 @@ export async function computeGrantCalendarView(
     return {
       status: "setup_required",
       message:
-        "Select a team to open the grant calendar. Deadlines and eligibility are scoped to your team.",
+        "Choose your team to open the grant calendar. Deadlines and eligibility are scoped to your team.",
       steps: [
         {
           id: "workspace",

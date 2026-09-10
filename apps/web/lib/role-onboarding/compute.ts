@@ -142,7 +142,7 @@ export async function loadRoleOnboarding(
   if (!orgId) {
     return {
       status: "setup_required",
-      message: "Select a team to open your onboarding path.",
+      message: "Choose your team to open your onboarding path.",
     };
   }
 

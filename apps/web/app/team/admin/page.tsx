@@ -33,7 +33,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Membership, invites, and GitHub context belong to one team. Choose a team to continue."
+          description="Membership, invites, and GitHub context belong to one team. Choose your team to continue."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (

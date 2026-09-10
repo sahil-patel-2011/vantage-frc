@@ -16,7 +16,7 @@ test("Inspection Copilot still loads after the panel split", async ({ page }) =>
 
   const form = page.locator("#inspection-copilot-form");
   const readyHeading = page.getByRole("heading", { name: "Run an inspection-readiness check" });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, readyHeading, setup.or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);

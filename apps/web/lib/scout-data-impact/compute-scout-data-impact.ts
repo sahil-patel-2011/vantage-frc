@@ -119,7 +119,7 @@ export async function computeScoutDataImpactView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see how your scouting data informed alliance picks.",
+      message: "Choose your team to see how your scouting data informed alliance picks.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

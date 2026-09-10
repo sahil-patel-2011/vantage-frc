@@ -110,9 +110,9 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before mapping driver and operator inputs.",
+          "Choose your team before mapping driver and operator inputs.",
       };
     case "empty":
       return {

@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team to log tuning constants." };
+      if (!row) return { status: "setup_required" as const, message: "Choose your team to log tuning constants." };
 
       const constants = await client.query<ConstantRow>(
         `SELECT c.id, c.subsystem, c.name, c.value, c.unit, c.category, c.notes, u.name AS "byName", c.updated_at::text AS "updatedAt"

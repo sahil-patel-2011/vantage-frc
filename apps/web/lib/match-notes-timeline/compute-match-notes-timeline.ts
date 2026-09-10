@@ -94,7 +94,7 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select a team",
+      label: "Choose your team",
       detail: "Choose your team to open the match-note timeline.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
@@ -122,7 +122,7 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
 function setupRequiredView(seasonYear: number, orgId: string | null = null): MatchNotesTimelineView {
   return {
     status: "setup_required",
-    message: "Select a team to log in-match notes synced to the match clock.",
+    message: "Choose your team to log in-match notes synced to the match clock.",
     steps: setupSteps(orgId),
     orgId,
     seasonYear,

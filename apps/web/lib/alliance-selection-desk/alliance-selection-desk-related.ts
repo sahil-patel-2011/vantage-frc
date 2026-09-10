@@ -169,9 +169,9 @@ export function allianceSelectionDeskShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before creating a live board.",
+          "Choose your team before creating a live board.",
       };
     case "empty":
       return {

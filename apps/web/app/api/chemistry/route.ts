@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       });
       if (!view.eventKey) {
         throw new Error(
-          "Select an active event on Event Day Command before saving to the pick list.",
+          "Set your active event on Event Day Command before saving to the pick list.",
         );
       }
       // Fit comes from the just-loaded view — never from a client-supplied DEMO score.

@@ -186,9 +186,9 @@ export function batteryHealthForecastShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before projecting retirement from real logs.",
+          "Choose your team before projecting retirement from real logs.",
       };
     case "empty":
       return {

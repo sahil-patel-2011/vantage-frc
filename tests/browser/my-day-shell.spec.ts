@@ -12,7 +12,7 @@ test("My Day still loads after the Saturday shell pass", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const title = page.getByRole("heading", { name: /My Day|Next match/i });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Waiting on the event schedule|Schedule is in/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, title, empty.or(setup).or(unavailable)))) {

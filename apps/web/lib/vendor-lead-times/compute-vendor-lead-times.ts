@@ -143,7 +143,7 @@ export async function computeVendorLeadTimesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track vendor lead times and reorders.",
+      message: "Choose your team to track vendor lead times and reorders.",
       steps: setupStepsFor(null),
       orgId: null,
     };

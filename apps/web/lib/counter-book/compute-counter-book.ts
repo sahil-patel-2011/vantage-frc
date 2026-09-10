@@ -116,7 +116,7 @@ export async function computeCounterBookView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to generate opponent counter-books.",
+      message: "Choose your team to generate opponent counter-books.",
       steps: setupSteps(null),
       orgId: null,
     };

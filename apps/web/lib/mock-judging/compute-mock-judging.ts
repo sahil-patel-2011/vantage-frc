@@ -146,7 +146,7 @@ export async function computeMockJudgingView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to run mock judging practice sessions.",
+      message: "Choose your team to run mock judging practice sessions.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

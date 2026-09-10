@@ -113,9 +113,9 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before justifying slots.",
+          "Choose your team before justifying slots.",
       };
     case "empty":
       return {

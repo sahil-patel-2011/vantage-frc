@@ -153,9 +153,9 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before reading your logged sessions.",
+          "Choose your team before reading your logged sessions.",
       };
     case "empty":
       return {

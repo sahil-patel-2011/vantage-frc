@@ -142,7 +142,7 @@ export async function computeSeasonReportView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build your season retrospective.",
+      message: "Choose your team to build your season retrospective.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

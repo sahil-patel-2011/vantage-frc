@@ -118,7 +118,7 @@ export async function computeDecisionSearchView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to search decisions, design reviews, and notebook entries.",
+      message: "Choose your team to search decisions, design reviews, and notebook entries.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

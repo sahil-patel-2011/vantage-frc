@@ -24,7 +24,7 @@ test("Logistics still loads after the panel split", async ({ page }) => {
 
   const checklist = page.getByRole("heading", { name: "Day-of checklist" });
   const empty = page.getByRole("heading", { name: "Travel plan not published" });
-  const setup = page.getByRole("heading", { name: /Finish setup for travel plans|Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Finish setup for travel plans|Choose your team|Choose your team/i });
   const unavailable = page.getByRole("heading", { name: /Could not load Logistics/i });
   if (!(await expectHubReadyOrGate(page, checklist, empty.or(setup).or(unavailable)))) {
     if (process.env.LOGISTICS_SHOT === "1") {

@@ -147,9 +147,9 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before defining real callouts.",
+          "Choose your team before defining real callouts.",
       };
     case "empty":
       return {

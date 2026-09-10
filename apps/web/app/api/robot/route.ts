@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team to open the robot blueprint.",
+          message: "Choose your team to open the robot blueprint.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, seasonYear: new Date().getFullYear() },
         } satisfies BlueprintView;
       }

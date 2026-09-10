@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team to manage inventory.",
+          message: "Choose your team to manage inventory.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies InventoryView;
       }

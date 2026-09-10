@@ -330,7 +330,7 @@ export default function VideoClient() {
           </div>
         </header>
         <div className="app-card vid-empty">
-          <strong>Select a team</strong>
+          <strong>Choose your team</strong>
           <p className="app-muted">{view.message}</p>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

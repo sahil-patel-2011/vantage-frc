@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not check this phone. Choose a team and try again.",
+        message: "Could not check this phone. Choose your team and try again.",
         steps: [
           { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],

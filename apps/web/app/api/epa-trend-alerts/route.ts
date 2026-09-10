@@ -24,7 +24,7 @@ function teamNumberOrNull(value: unknown): number | null {
 
 const SETUP_REQUIRED_FALLBACK: EpaTrendAlertsView = {
   status: "setup_required",
-  message: "Could not load EPA trend alerts. Select a team and confirm database access.",
+  message: "Could not load EPA trend alerts. Choose your team and confirm database access.",
   steps: [
     { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
   ],

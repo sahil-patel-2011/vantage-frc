@@ -75,7 +75,7 @@ export async function computeMediaLibraryView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to open your media library.",
+      message: "Choose your team to open your media library.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

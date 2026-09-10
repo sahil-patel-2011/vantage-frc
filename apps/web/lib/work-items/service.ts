@@ -199,7 +199,7 @@ export async function computeWorkItemsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see todos, build tasks, and season milestones together.",
+      message: "Choose your team to see todos, build tasks, and season milestones together.",
       steps: [
         {
           id: "workspace",

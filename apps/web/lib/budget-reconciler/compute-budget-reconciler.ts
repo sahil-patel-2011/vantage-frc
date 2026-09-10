@@ -149,7 +149,7 @@ export async function computeBudgetReconcilerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to reconcile the weight/power budget.",
+      message: "Choose your team to reconcile the weight/power budget.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

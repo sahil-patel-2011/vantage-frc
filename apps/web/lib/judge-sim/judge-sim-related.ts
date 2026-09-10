@@ -117,9 +117,9 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and log real evidence before grading answers.",
+          "Choose your team and log real evidence before grading answers.",
       };
     case "empty":
       return {

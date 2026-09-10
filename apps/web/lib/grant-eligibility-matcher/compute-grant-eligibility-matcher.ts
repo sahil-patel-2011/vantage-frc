@@ -182,7 +182,7 @@ export async function computeGrantEligibilityView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see grants your team qualifies for.",
+      message: "Choose your team to see grants your team qualifies for.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

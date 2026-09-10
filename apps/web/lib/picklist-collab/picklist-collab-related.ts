@@ -159,9 +159,9 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before ranking teams.",
+          "Choose your team before ranking teams.",
       };
     case "empty":
       return {

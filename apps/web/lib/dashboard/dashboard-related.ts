@@ -181,7 +181,7 @@ export function dashboardSetupSteps(input: {
   const steps: DashboardSetupStep[] = [
     {
       id: "workspace",
-      label: hasOrg ? "Your team" : "Choose a team",
+      label: hasOrg ? "Your team" : "Choose your team",
       detail: hasOrg
         ? isOwnerAdmin
           ? "Team selected"

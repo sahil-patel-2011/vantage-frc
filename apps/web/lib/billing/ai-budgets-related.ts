@@ -437,7 +437,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
       return {
         kind,
         badge: "Setup",
-        title: "Select a team and plan",
+        title: "Choose your team and plan",
         description:
           "Usage needs a team on a plan. Open Account or Pricing, then send a Chat message to record the first call.",
       };

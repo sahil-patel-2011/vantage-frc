@@ -101,7 +101,7 @@ export async function computeRisksView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build the season risk register.",
+      message: "Choose your team to build the season risk register.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -37,10 +37,10 @@ for (const route of NO_ORG_ROUTES) {
     const main = page.locator("#main-content");
     await expect(main.getByRole("heading", { level: 1 })).toHaveText(route.heading);
     await expect(main.locator(".breadcrumbs")).toHaveText(route.crumb);
-    await expect(main.getByRole("heading", { level: 2, name: "Choose a team" })).toBeVisible();
+    await expect(main.getByRole("heading", { level: 2, name: "Choose your team" })).toBeVisible();
 
     // The action has to go somewhere real, not just say the word "team".
-    const choose = main.getByRole("link", { name: "Choose team" });
+    const choose = main.getByRole("link", { name: "Choose your team" });
     await expect(choose).toHaveAttribute("href", "/workspace");
     await choose.click();
     // /workspace picks the team for real sessions. Under E2E_AUTH_FIXTURE there

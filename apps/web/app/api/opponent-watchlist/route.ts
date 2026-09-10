@@ -33,7 +33,7 @@ function boolOrDefault(value: unknown, fallback: boolean): boolean {
 
 const SETUP_REQUIRED: OpponentWatchlistView = {
   status: "setup_required",
-  message: "Could not load your opponent watchlist. Select a team and confirm database access.",
+  message: "Could not load your opponent watchlist. Choose your team and confirm database access.",
   steps: [
     { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
   ],

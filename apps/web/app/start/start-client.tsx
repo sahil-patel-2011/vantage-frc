@@ -112,7 +112,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
         <PageHeader
           navPath="/start"
           title="Your path"
-          description={view?.message ?? error ?? "Select a team to open your path."}
+          description={view?.message ?? error ?? "Choose your team to open your path."}
         />
         <TeamOpsNav orgId={orgId} active="start" />
         <div className="start-empty">

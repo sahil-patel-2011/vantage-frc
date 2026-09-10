@@ -141,7 +141,7 @@ export async function computePartsRelayView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to post and track parts relay listings.",
+      message: "Choose your team to post and track parts relay listings.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

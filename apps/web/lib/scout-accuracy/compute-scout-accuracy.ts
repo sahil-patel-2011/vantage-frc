@@ -68,7 +68,7 @@ export async function computeScoutAccuracyView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to score scout accuracy against official results.",
+      message: "Choose your team to score scout accuracy against official results.",
       steps: scoutAccuracySetupSteps(null),
       orgId: null,
     };

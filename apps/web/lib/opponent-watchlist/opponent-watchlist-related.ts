@@ -112,9 +112,9 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before watching opponents.",
+          "Choose your team before watching opponents.",
       };
     case "empty":
       return {

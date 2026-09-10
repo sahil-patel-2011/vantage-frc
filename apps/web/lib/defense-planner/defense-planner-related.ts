@@ -165,9 +165,9 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging robot profile or matchups.",
+          "Choose your team before logging robot profile or matchups.",
       };
     case "empty":
       return {

@@ -146,9 +146,9 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before adding household employers.",
+          "Choose your team before adding household employers.",
       };
     case "empty":
       return {

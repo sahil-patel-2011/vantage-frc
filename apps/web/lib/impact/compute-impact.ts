@@ -184,7 +184,7 @@ export async function computeImpactView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to log community impact and outreach.",
+      message: "Choose your team to log community impact and outreach.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -13,7 +13,7 @@ test("Hours still loads after the shell split", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const clockIn = page.getByRole("button", { name: "Clock in" });
-  const setup = page.getByRole("heading", { name: "Select a team", exact: true });
+  const setup = page.getByRole("heading", { name: "Choose your team", exact: true });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, clockIn, setup.or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/hours-after-split.png", fullPage: true });

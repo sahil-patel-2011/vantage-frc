@@ -192,7 +192,7 @@ describe("briefingSectionsFromStrategyView", () => {
     expect(
       briefingSectionsFromStrategyView({
         status: "setup_required",
-        message: "Select a team.",
+        message: "Choose your team.",
         steps: [],
         orgId: null,
         eventKey: null,

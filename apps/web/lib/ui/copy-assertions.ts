@@ -34,6 +34,8 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
     /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|dollars?|hours?|logos?|slots?|lessons?)\b/i,
     "a disclaimer that the data is real",
   ],
+  [/\bSelect a team\b/, 'say "Choose your team"'],
+  [/\bSelect an active event\b/i, 'say "Set active event"'],
 ];
 
 /** Returns a human-readable problem with this copy, or null when it is fine. */

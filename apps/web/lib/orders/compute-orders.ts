@@ -285,7 +285,7 @@ export async function computeOrdersView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to manage purchase requests.",
+      message: "Choose your team to manage purchase requests.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

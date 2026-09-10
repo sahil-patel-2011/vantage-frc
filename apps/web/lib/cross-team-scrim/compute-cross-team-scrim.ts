@@ -105,7 +105,7 @@ export async function computeCrossTeamScrimView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to schedule scrims and manage data-sharing agreements with nearby teams.",
+      message: "Choose your team to schedule scrims and manage data-sharing agreements with nearby teams.",
       steps: crossTeamScrimSetupSteps(null),
       orgId: null,
       seasonYear,

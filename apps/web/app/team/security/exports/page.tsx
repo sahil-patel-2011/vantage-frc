@@ -23,11 +23,11 @@ export default async function TeamExportAuditPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Export records are written per team so one team can never read another’s. Select one and come back."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

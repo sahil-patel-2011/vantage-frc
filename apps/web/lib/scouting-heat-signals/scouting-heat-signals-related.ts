@@ -145,9 +145,9 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging rising/falling teams.",
+          "Choose your team before logging rising/falling teams.",
       };
     case "empty":
       return {

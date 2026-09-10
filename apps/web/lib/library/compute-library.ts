@@ -91,7 +91,7 @@ export async function computeLibraryView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to open your team library.",
+      message: "Choose your team to open your team library.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -131,9 +131,9 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before scanning.",
+          "Choose your team before scanning.",
       };
     case "empty":
       return {

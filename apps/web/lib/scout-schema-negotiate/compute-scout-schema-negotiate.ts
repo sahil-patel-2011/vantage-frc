@@ -101,7 +101,7 @@ export async function computeScoutSchemaNegotiateView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to negotiate scouting schema versions.",
+      message: "Choose your team to negotiate scouting schema versions.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

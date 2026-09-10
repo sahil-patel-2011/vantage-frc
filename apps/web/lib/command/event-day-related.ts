@@ -182,7 +182,7 @@ export function eventDayEmptyTitle(input: {
   hasActiveEvent?: boolean;
 }): string {
   if (!input.orgId && (input.shell === "setup" || input.shell === "empty")) {
-    return "Choose a team";
+    return "Choose your team";
   }
   if (input.shell === "setup" && !input.hasActiveEvent) {
     return "No event linked";

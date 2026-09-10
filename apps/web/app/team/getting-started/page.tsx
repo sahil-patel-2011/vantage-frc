@@ -24,11 +24,11 @@ export default async function TeamGettingStartedPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Each step is ticked from that team’s own data, so it needs a team before it can say anything true."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

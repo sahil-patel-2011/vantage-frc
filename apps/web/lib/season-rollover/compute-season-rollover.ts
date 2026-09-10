@@ -85,7 +85,7 @@ export async function computeSeasonRolloverView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan your season rollover.",
+      message: "Choose your team to plan your season rollover.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

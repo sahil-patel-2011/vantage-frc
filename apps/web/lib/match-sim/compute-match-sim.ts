@@ -167,7 +167,7 @@ export async function computeMatchSimView(
 ): Promise<MatchSimView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupView("Select a team to run the match simulator.", null);
+    return setupView("Choose your team to run the match simulator.", null);
   }
 
   const runsResult = await client.query<RunRow>(

@@ -146,9 +146,9 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before indexing clips.",
+          "Choose your team before indexing clips.",
       };
     case "empty":
       return {

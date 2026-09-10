@@ -18,9 +18,9 @@ export default async function DisplayPage({
     return (
       <main className="module-page display-setup display-gate">
         <span className="eyebrow">VANTAGE / DISPLAY</span>
-        <h1>Select a team</h1>
+        <h1>Choose your team</h1>
         <p>
-          Pit TV boards are saved per team. Select a team before creating a display layout.
+          Pit TV boards are saved per team. Choose your team before creating a display layout.
         </p>
         <div className="disp-gate-actions">
           <Button as="a" variant="primary" href="/workspace">

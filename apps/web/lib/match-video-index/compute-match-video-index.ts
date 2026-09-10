@@ -83,7 +83,7 @@ export async function computeMatchVideoIndexView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to start indexing match videos.",
+      message: "Choose your team to start indexing match videos.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

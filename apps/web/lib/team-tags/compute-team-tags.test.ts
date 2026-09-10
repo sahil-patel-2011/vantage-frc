@@ -66,7 +66,7 @@ describe("teamTagsPickReasonsPayload", () => {
   it("returns an empty payload until the board is live", () => {
     const payload = teamTagsPickReasonsPayload({
       status: "setup_required",
-      message: "Select a team",
+      message: "Choose your team",
       steps: [],
       orgId: null,
       seasonYear: 2026,

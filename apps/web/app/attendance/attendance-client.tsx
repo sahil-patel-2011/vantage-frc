@@ -623,7 +623,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             <TeamOpsNav active="attendance" />
           </>
         ) : null}
-        <EmptyState soft title="Select a team" description={view.message} badge="Setup" badgeTone="setup">
+        <EmptyState soft title="Choose your team" description={view.message} badge="Setup" badgeTone="setup">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

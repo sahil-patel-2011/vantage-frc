@@ -23,11 +23,11 @@ export default async function TeamAiRunsPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Runs come from that team’s real usage ledger. Select one and come back."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

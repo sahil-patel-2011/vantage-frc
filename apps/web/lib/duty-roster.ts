@@ -371,7 +371,7 @@ export async function computeDutyRosterView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to assign duties on the calendar.",
+      message: "Choose your team to assign duties on the calendar.",
       orgId: null,
     };
   }

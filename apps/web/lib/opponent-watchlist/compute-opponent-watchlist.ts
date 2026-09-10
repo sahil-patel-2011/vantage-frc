@@ -63,7 +63,7 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
 function setupRequiredView(orgId: string | null = null): OpponentWatchlistView {
   return {
     status: "setup_required",
-    message: "Select a team to build an opponent watchlist.",
+    message: "Choose your team to build an opponent watchlist.",
     steps: setupSteps(orgId),
     orgId,
   };

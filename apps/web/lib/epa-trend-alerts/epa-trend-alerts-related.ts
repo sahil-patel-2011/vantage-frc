@@ -110,9 +110,9 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before watching teams.",
+          "Choose your team before watching teams.",
       };
     case "empty":
       return {

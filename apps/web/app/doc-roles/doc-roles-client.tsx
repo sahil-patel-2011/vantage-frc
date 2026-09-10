@@ -63,7 +63,7 @@ export default function DocRolesClient() {
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Document roles need a team" description={error}>
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

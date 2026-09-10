@@ -18,9 +18,9 @@ export default async function AwardsPage({
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Business / Awards workbench</span>
-            <h1>Select a team</h1>
+            <h1>Choose your team</h1>
             <p className="app-muted">
-              Award submissions and essay prompts belong to one team. Choose a team to open the awards workbench.
+              Award submissions and essay prompts belong to one team. Choose your team to open the awards workbench.
             </p>
           </div>
         </header>

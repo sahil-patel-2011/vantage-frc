@@ -283,7 +283,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
             description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
-        <EmptyState title="Select a team" description={view.message}>
+        <EmptyState title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

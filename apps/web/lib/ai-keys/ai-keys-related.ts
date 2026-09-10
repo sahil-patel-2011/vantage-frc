@@ -96,7 +96,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
   if (kind === "empty") {
     return {
       eyebrow: "CHOOSE A TEAM",
-      title: "Select a team to add API keys",
+      title: "Choose your team to add API keys",
       description: "Choose your team, then return here to paste keys for yourself or the team.",
       badge: "No team",
     };

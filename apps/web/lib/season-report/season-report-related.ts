@@ -116,9 +116,9 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging build, results, budget, or outreach notes.",
+          "Choose your team before logging build, results, budget, or outreach notes.",
       };
     case "empty":
       return {

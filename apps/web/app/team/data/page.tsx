@@ -26,7 +26,7 @@ export default async function TeamDataPage({ searchParams }: { searchParams: Pro
             <span className="breadcrumbs">Team / Live data</span>
             <h1>Team Data</h1>
             <p>
-              Select a team so TBA sync and inventory stay scoped to the right organization.
+              Choose your team so TBA sync and inventory stay scoped to the right organization.
             </p>
           </div>
           <nav className="product-hub-related team-data-related" aria-label="Related team data tools">

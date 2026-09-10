@@ -23,7 +23,7 @@ export default async function TeamSlackPage({
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
-          title="Select a team"
+          title="Choose your team"
           description="Open a team to connect Slack. Team chat still works without Slack."
           badge="Setup required"
           badgeTone="setup"

@@ -24,7 +24,7 @@ test("Inventory still loads after the panel split", async ({ page }) => {
 
   const tracked = page.getByText("Tracked items", { exact: true });
   const empty = page.getByRole("heading", { name: "Add a part before tracking stock" });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team|Finish setup/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team|Finish setup/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, tracked, empty.or(setup).or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);

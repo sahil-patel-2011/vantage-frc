@@ -18,7 +18,7 @@ function digestDateOrNull(value: unknown): string | null {
 function setupFailure(digestDate: string): StandupView {
   return {
     status: "setup_required",
-    message: "Could not load the standup digest. Select a team and confirm database access.",
+    message: "Could not load the standup digest. Choose your team and confirm database access.",
     steps: [
       { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],

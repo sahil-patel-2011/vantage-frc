@@ -99,7 +99,7 @@ export async function computeDecisionsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to record engineering and strategy decisions.",
+      message: "Choose your team to record engineering and strategy decisions.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

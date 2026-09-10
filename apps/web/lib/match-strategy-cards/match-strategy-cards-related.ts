@@ -167,9 +167,9 @@ export function matchStrategyCardsShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and active event before drafting plans.",
+          "Choose your team and active event before drafting plans.",
       };
     case "empty":
       return {

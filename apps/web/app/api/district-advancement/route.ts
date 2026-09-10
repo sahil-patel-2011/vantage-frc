@@ -7,7 +7,7 @@ import type { TrajectoryView } from "../../../lib/district-trajectory-sim/comput
 
 const FALLBACK: TrajectoryView = {
   status: "setup_required",
-  message: "Could not load district advancement. Select a team and confirm database access.",
+  message: "Could not load district advancement. Choose your team and confirm database access.",
   steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
 };

@@ -107,7 +107,7 @@ export async function computeAllianceSimView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to simulate playoff-alliance role assignments.",
+      message: "Choose your team to simulate playoff-alliance role assignments.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

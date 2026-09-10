@@ -208,7 +208,7 @@ async function buildView(
     return {
       status: "setup_required",
       seasonYear,
-      message: "Select a team to compose sponsorship one-pagers.",
+      message: "Choose your team to compose sponsorship one-pagers.",
       context: {
         orgId: null,
         orgName: null,

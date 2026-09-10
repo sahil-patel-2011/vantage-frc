@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message:
-          "Could not load capture drafts. Select a team and confirm database access.",
+          "Could not load capture drafts. Choose your team and confirm database access.",
         steps: [
           {
             id: "workspace",

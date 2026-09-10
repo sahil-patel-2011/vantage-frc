@@ -135,7 +135,7 @@ export async function computeMatchDeltaWatcherView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to watch live match deltas.",
+      message: "Choose your team to watch live match deltas.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -128,7 +128,7 @@ export async function computeCadReviewQueueView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to open the CAD review queue.",
+      message: "Choose your team to open the CAD review queue.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

@@ -160,7 +160,7 @@ export async function computeCadChangeRadarView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track CAD release changes.",
+      message: "Choose your team to track CAD release changes.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

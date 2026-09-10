@@ -15,9 +15,9 @@ test("Pick clock hub still loads after the Saturday shell pass", async ({ page }
   const tools = page.getByRole("navigation", { name: "Tools in Strategy" });
   const clock = page.getByRole("heading", { name: /Next pick|45-second pick clock/i });
   const empty = page.getByRole("heading", { name: "Waiting on a real pick pool" });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const unavailable = loadFailureHeading(page);
-  // GHA has no Postgres: HubOrgGate paints Choose a team and never mounts PickClockClient.
+  // GHA has no Postgres: HubOrgGate paints Choose your team and never mounts PickClockClient.
   if (!(await expectHubReadyOrGate(page, clock, empty.or(setup).or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/pick-clock-after-shell.png", fullPage: true });
     return;

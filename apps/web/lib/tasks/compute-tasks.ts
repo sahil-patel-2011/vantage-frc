@@ -108,7 +108,7 @@ export async function computeTasksView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to plan and track build-season tasks.",
+      message: "Choose your team to plan and track build-season tasks.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

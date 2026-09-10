@@ -122,7 +122,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
 
       {!orgId ? (
         <section className="app-card soft-panel" role="status">
-          <h2>Choose a team</h2>
+          <h2>Choose your team</h2>
           <p className="app-muted">Choose your team, then return here.</p>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

@@ -83,7 +83,7 @@ export async function computeStorageNodeView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to manage self-hosted storage.",
+      message: "Choose your team to manage self-hosted storage.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

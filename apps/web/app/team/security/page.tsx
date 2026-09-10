@@ -25,11 +25,11 @@ export default async function TeamSecurityPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="These controls change who can do what inside one team, so they need a team before they mean anything."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

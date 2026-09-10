@@ -53,7 +53,7 @@ export async function loadConnectorProofs(
 
   if (!input.orgId) {
     const note =
-      "Team connectors are saved per team. Select a team on /workspace, then come back — nothing is linked until a real row exists.";
+      "Team connectors are saved per team. Choose your team on /workspace, then come back — nothing is linked until a real row exists.";
     for (const def of CONNECTORS) {
       if (def.scope !== "platform") proofs[def.id] = { linked: false, note };
     }

@@ -290,11 +290,11 @@ export function HubOrgGate({
     return (
       <section className="app-card soft-panel product-hub-setup">
         <span className="app-badge setup">Team needed</span>
-        <h2>Choose a team</h2>
+        <h2>Choose your team</h2>
         <p className="app-muted">{label} needs a team selected.</p>
         <div className="product-hub-setup-actions">
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </div>
       </section>

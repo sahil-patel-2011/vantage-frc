@@ -134,9 +134,9 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before registering real shop tools.",
+          "Choose your team before registering real shop tools.",
       };
     case "empty":
       return {

@@ -25,7 +25,7 @@ export default async function TeamBackgroundPage({
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a team"
+          title="Choose your team"
           description="Open Team background from Team admin so the team is included."
         >
           <Button as="a" variant="primary" href="/workspace">

@@ -120,9 +120,9 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging game-manual deltas.",
+          "Choose your team before logging game-manual deltas.",
       };
     case "empty":
       return {

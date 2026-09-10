@@ -119,14 +119,14 @@ export function buildScheduleView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Select a team to view the match schedule.",
+      message: input.setupMessage ?? "Choose your team to view the match schedule.",
     };
   }
   if (!input.context.eventKey) {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Select an active event on Your team.",
+      message: input.setupMessage ?? "Set your active event on Your team.",
     };
   }
   return {

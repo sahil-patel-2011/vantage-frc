@@ -78,7 +78,7 @@ export async function computeDegradedModeView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see data-source health and degraded-mode fallbacks.",
+      message: "Choose your team to see data-source health and degraded-mode fallbacks.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

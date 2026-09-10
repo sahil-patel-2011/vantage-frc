@@ -50,7 +50,7 @@ function nonNegativeIntOrNull(value: unknown, max = 365): number | null {
 function setupFallback(today: string): EventReadinessView {
   return {
     status: "setup_required",
-    message: "Could not load event readiness. Select a team and confirm database access.",
+    message: "Could not load event readiness. Choose your team and confirm database access.",
     steps: [
       { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],

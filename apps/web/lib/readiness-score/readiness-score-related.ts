@@ -162,9 +162,9 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging subsystems.",
+          "Choose your team before logging subsystems.",
       };
     case "empty":
       return {

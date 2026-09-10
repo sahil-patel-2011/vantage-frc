@@ -96,7 +96,7 @@ export async function computeAwardTrackerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track award submissions and deadlines.",
+      message: "Choose your team to track award submissions and deadlines.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

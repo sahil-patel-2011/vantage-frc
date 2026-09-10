@@ -300,7 +300,7 @@ export async function computeCaptureView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to review capture-from-work drafts.",
+      message: "Choose your team to review capture-from-work drafts.",
       steps: [
         {
           id: "workspace",

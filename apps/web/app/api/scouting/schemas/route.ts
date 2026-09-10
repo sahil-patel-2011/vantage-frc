@@ -97,7 +97,7 @@ export async function POST(request: Request) {
           [body.orgId],
         );
         const eventKey = context.rows[0]?.eventKey;
-        if (!eventKey) throw new Error("Select an active event before creating starter forms.");
+        if (!eventKey) throw new Error("Set your active event before creating starter forms.");
         const repository = new ScoutingRepository(client);
         await repository.ensureDefaultSchemas(body.orgId!, session.user.id, eventKey);
         return repository.bootstrap(body.orgId!, session.user.id);

@@ -122,7 +122,7 @@ export default function FormsClient() {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
         <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">Choose team</Button>
+          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </EmptyState>
       </main>
     );

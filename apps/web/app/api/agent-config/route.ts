@@ -70,7 +70,7 @@ async function computeView(
   if (!membership) {
     return {
       status: "setup_required",
-      message: "Select a team to share agent configuration.",
+      message: "Choose your team to share agent configuration.",
       orgId: null,
     };
   }

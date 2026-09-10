@@ -252,7 +252,7 @@ export async function computeAlliancePartnerBriefView(
 ): Promise<AlliancePartnerBriefView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequiredView("Select a team to generate an alliance-partner brief.", null, null);
+    return setupRequiredView("Choose your team to generate an alliance-partner brief.", null, null);
   }
 
   const board = await loadLatestBoard(client, org.orgId, input.eventKey ?? null);

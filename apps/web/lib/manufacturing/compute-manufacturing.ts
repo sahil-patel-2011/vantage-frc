@@ -120,7 +120,7 @@ export async function computeManufacturingView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track parts through manufacturing.",
+      message: "Choose your team to track parts through manufacturing.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

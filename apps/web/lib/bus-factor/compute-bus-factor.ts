@@ -122,7 +122,7 @@ export async function computeBusFactorView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to see burnout / bus-factor risk.",
+      message: "Choose your team to see burnout / bus-factor risk.",
       steps: setupSteps(null),
       orgId: null,
       windowWeeks,

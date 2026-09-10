@@ -176,9 +176,9 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before pick credit appears.",
+          "Choose your team before pick credit appears.",
       };
     case "empty":
       return {

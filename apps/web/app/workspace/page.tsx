@@ -243,7 +243,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             </article>
           ))
         ) : (
-          <p>{data.context.eventKey ? "No upcoming matches synced yet." : "Select an active event first."}</p>
+          <p>{data.context.eventKey ? "No upcoming matches synced yet." : "Set your active event first."}</p>
         )}
       </section>
     </main>

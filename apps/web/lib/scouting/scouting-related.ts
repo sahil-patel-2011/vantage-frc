@@ -189,9 +189,9 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Choose a team and event",
+        title: "Choose your team",
         description:
-          "Select a team and the event you are at before match and pit forms load.",
+          "Choose your team and the event you are at before match and pit forms load.",
       };
     case "empty":
       return {
@@ -231,7 +231,7 @@ export function scoutingNextActions(input: {
         {
           id: "workspace",
           label: "Choose your team",
-          detail: "Choose a team before caching forms offline.",
+          detail: "Choose your team before caching forms offline.",
           href: "/workspace",
           primary: true,
         },

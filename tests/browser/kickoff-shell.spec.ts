@@ -13,8 +13,8 @@ test("Kickoff hub still loads after the panel split", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const intel = page.getByRole("heading", { name: "Game release intelligence" });
-  const setup = page.getByRole("heading", { name: "Select a team" });
-  // GHA has no Postgres: HubOrgGate paints Choose a team and never mounts KickoffClient.
+  const setup = page.getByRole("heading", { name: "Choose your team" });
+  // GHA has no Postgres: HubOrgGate paints Choose your team and never mounts KickoffClient.
   if (!(await expectHubReadyOrGate(page, intel, setup))) {
     if (process.env.KICKOFF_SHOT === "1") {
       await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-hub-org-gate.png", fullPage: true });

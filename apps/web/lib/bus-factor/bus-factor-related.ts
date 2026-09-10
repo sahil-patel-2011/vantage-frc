@@ -162,9 +162,9 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before logging weekly workload.",
+          "Choose your team before logging weekly workload.",
       };
     case "empty":
       return {

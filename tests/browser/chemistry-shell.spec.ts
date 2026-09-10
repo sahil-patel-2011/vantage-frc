@@ -15,9 +15,9 @@ test("Chemistry hub still loads after the Saturday shell pass", async ({ page })
   const tools = page.getByRole("navigation", { name: "Tools in Strategy" });
   const seats = page.getByRole("heading", { name: "Alliance seats" });
   const empty = page.getByRole("heading", { name: "Waiting on real alliance seats" });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const unavailable = loadFailureHeading(page);
-  // GHA has no Postgres: HubOrgGate paints Choose a team and never mounts ChemistryClient.
+  // GHA has no Postgres: HubOrgGate paints Choose your team and never mounts ChemistryClient.
   if (!(await expectHubReadyOrGate(page, seats, empty.or(setup).or(unavailable)))) {
     await page.screenshot({ path: "/opt/cursor/artifacts/chemistry-after-shell.png", fullPage: true });
     return;

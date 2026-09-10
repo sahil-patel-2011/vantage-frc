@@ -140,8 +140,8 @@ export function hoursShellCopy(kind: HoursShellKind): HoursEmptyCopy {
       return {
         kind,
         badge: "Setup",
-        title: "Select a team",
-        description: "Select a team before clocking in.",
+        title: "Choose your team",
+        description: "Choose your team before clocking in.",
       };
     case "ready":
       return {

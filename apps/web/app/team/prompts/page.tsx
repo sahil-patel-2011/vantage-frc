@@ -23,11 +23,11 @@ export default async function TeamPromptsPage({
           soft
           badge="Team needed"
           badgeTone="setup"
-          title="Choose a team"
+          title="Choose your team"
           description="Prompts are written and reused inside one team and never leak between teams. Select one and come back."
         >
           <Button as="a" variant="primary" href="/workspace">
-            Choose team
+            Choose your team
           </Button>
         </EmptyState>
       </main>

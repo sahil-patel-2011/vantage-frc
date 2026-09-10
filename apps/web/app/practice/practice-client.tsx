@@ -517,7 +517,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           </div>
         </header>
         <div className="practice-panel practice-empty">
-          <strong>Select a team</strong>
+          <strong>Choose your team</strong>
           <p className="practice-muted">{view.message}</p>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </div>

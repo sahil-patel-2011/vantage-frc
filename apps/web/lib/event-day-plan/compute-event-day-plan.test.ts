@@ -56,7 +56,7 @@ describe("computeEventDayPlanView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
-      expect(view.message).toMatch(/Select a team/);
+      expect(view.message).toMatch(/Choose your team/);
     }
   });
 

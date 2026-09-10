@@ -6,7 +6,7 @@ export const metadata = {
 
 /**
  * Deliberately takes no required query string. Every other connector surface in
- * the app answers a bare visit with "Select a team"; this page is reached
+ * the app answers a bare visit with "Choose your team"; this page is reached
  * from the settings menu, so it resolves the caller's own membership server-side
  * and shows deployment-level configuration even when there is no team at all.
  */

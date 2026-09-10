@@ -162,7 +162,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
           "Join or pick a team before approving a VS Code code.",
       };

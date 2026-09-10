@@ -77,7 +77,7 @@ export function DashboardWidgetPalette({
             ? canShareOrg
               ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
               : " Done saves your personal Home — teammates keep their own layouts."
-            : " Select a team to save this layout."}
+            : " Choose your team to save this layout."}
         </span>
       </div>
       <div className="dash-palette-heading">

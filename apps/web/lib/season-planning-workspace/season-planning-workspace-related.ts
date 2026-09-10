@@ -150,9 +150,9 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before creating a plan.",
+          "Choose your team before creating a plan.",
       };
     case "empty":
       return {

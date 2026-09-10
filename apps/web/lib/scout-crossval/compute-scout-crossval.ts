@@ -106,7 +106,7 @@ export async function computeScoutCrossvalView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to cross-validate scout entries against official results.",
+      message: "Choose your team to cross-validate scout entries against official results.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

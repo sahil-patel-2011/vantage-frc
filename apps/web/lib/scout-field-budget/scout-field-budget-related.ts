@@ -145,9 +145,9 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before linting schema phases.",
+          "Choose your team before linting schema phases.",
       };
     case "empty":
       return {

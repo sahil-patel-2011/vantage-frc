@@ -127,7 +127,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "Setup required",
         title: "Finish team and event setup",
         description:
-          "Overnight Intel needs an org and active event. Select a team and set your event.",
+          "Overnight Intel needs an org and active event. Choose your team and set your event.",
       };
     case "empty":
       return {

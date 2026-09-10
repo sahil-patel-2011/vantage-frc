@@ -169,7 +169,7 @@ export async function computeMediaView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to open the Media team.",
+      message: "Choose your team to open the Media team.",
       steps: [
         {
           id: "workspace",

@@ -430,7 +430,7 @@ export default function AccountClient() {
             ) : (
               <a href="/workspace">
                 <strong>Your team</strong>
-                <span>Choose a team for keys, billing, and usage</span>
+                <span>Choose your team for keys, billing, and usage</span>
               </a>
             )}
           </nav>

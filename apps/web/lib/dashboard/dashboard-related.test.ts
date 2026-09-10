@@ -64,9 +64,9 @@ describe("dashboard Soft-UI related", () => {
     expect(steps.find((step) => step.id === "ai")?.href).toContain("/team/ai-keys");
   });
 
-  it("names the first Home step Choose a team when no team is selected", () => {
+  it("names the first Home step Choose your team when no team is selected", () => {
     const steps = dashboardSetupSteps({ orgId: null });
-    expect(steps.find((step) => step.id === "workspace")?.label).toBe("Choose a team");
+    expect(steps.find((step) => step.id === "workspace")?.label).toBe("Choose your team");
     expect(steps.find((step) => step.id === "workspace")?.href).toBe("/invite");
   });
 

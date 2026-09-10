@@ -12,7 +12,7 @@ test("Alliance selection desk still loads after the Saturday shell pass", async 
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const board = page.getByRole("heading", { name: /Alliance selection desk|Live alliance selection board/i });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const setup = page.getByRole("heading", { name: /Choose your team|Choose your team/i });
   const empty = page.getByRole("heading", { name: /Create a selection desk session/i });
   const unavailable = loadFailureHeading(page);
   if (!(await expectHubReadyOrGate(page, board, empty.or(setup).or(unavailable)))) {

@@ -133,7 +133,7 @@ export async function computeMediaKitView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to build your media kit.",
+      message: "Choose your team to build your media kit.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

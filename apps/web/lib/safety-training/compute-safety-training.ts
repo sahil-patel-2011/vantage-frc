@@ -123,7 +123,7 @@ export async function computeSafetyTrainingView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to track shop safety training and certifications.",
+      message: "Choose your team to track shop safety training and certifications.",
       steps: [
         { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],

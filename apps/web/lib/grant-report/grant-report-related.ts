@@ -182,9 +182,9 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and mark real awards before generating.",
+          "Choose your team and mark real awards before generating.",
       };
     case "empty":
       return {

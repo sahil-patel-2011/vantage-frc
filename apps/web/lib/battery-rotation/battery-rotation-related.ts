@@ -181,9 +181,9 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before scheduling packs from real IR trends.",
+          "Choose your team before scheduling packs from real IR trends.",
       };
     case "empty":
       return {

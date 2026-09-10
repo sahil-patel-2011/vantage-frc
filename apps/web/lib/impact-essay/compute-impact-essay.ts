@@ -220,7 +220,7 @@ export async function computeImpactEssayView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to draft a grounded FIRST Impact essay.",
+      message: "Choose your team to draft a grounded FIRST Impact essay.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

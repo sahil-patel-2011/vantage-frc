@@ -132,7 +132,7 @@ export async function computeScoutDisagreementsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to review scouting disagreements.",
+      message: "Choose your team to review scouting disagreements.",
       steps: scoutDisagreementsSetupSteps(null),
       orgId: null,
       seasonYear,

@@ -181,9 +181,9 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team and record real profile fields before generating one-pagers.",
+          "Choose your team and record real profile fields before generating one-pagers.",
       };
     case "empty":
       return {

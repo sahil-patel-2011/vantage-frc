@@ -204,9 +204,9 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before TBA-verified ranks appear.",
+          "Choose your team before TBA-verified ranks appear.",
       };
     case "empty":
       return {

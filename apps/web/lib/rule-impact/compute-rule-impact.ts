@@ -184,7 +184,7 @@ export async function computeRuleImpactView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to analyze rule-change impact against your subsystem library.",
+      message: "Choose your team to analyze rule-change impact against your subsystem library.",
       steps: [
         {
           id: "workspace",

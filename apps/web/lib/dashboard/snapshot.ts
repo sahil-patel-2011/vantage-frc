@@ -133,7 +133,7 @@ export async function loadDashboardSnapshot(
 
   async function nextMatch() {
     if (!eventKey || !teamKey) {
-      widgets.next_match = stamp("setup_required", "next_match", undefined, "Select an active event and team.");
+      widgets.next_match = stamp("setup_required", "next_match", undefined, "Set your active event and team.");
       return;
     }
     const match = await client.query<{
@@ -262,7 +262,7 @@ export async function loadDashboardSnapshot(
 
   async function recentResult() {
     if (!eventKey || !teamKey) {
-      widgets.recent_result = stamp("setup_required", "recent_result", undefined, "Select an active event and team.");
+      widgets.recent_result = stamp("setup_required", "recent_result", undefined, "Set your active event and team.");
       return;
     }
     const match = await client.query<{
@@ -311,7 +311,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "competition_snapshot",
         undefined,
-        "Select a team so Statbotics/TBA EPA can load.",
+        "Choose your team so Statbotics/TBA EPA can load.",
       );
       return;
     }
@@ -395,7 +395,7 @@ export async function loadDashboardSnapshot(
 
   async function scoutingCoverage() {
     if (!eventKey) {
-      widgets.scouting_coverage = stamp("setup_required", "scouting_coverage", undefined, "Select an active event.");
+      widgets.scouting_coverage = stamp("setup_required", "scouting_coverage", undefined, "Set your active event.");
       return;
     }
     const counts = await client.query<{
@@ -419,7 +419,7 @@ export async function loadDashboardSnapshot(
 
   async function predictionSummary() {
     if (!eventKey) {
-      widgets.prediction_summary = stamp("setup_required", "prediction_summary", undefined, "Select an active event.");
+      widgets.prediction_summary = stamp("setup_required", "prediction_summary", undefined, "Set your active event.");
       return;
     }
     if (!teamKey) {

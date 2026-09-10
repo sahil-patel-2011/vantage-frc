@@ -134,7 +134,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
-        <EmptyState badge="Setup required" badgeTone="setup" soft title="Select a team" description={view.message}>
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>

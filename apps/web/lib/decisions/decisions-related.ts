@@ -111,9 +111,9 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before recording engineering or strategy calls.",
+          "Choose your team before recording engineering or strategy calls.",
       };
     case "empty":
       return {

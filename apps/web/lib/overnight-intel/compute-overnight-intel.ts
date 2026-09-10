@@ -195,7 +195,7 @@ export async function computeOvernightIntelView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team to view the overnight event-intel brief.",
+      message: "Choose your team to view the overnight event-intel brief.",
       steps: workspaceSetupSteps(null),
       orgId: null,
     };

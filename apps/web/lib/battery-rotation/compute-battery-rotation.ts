@@ -131,7 +131,7 @@ export async function computeBatteryRotationView(
     return {
       status: "setup_required",
       message:
-        "Select a team to plan battery rotation and charge scheduling.",
+        "Choose your team to plan battery rotation and charge scheduling.",
       steps: [
         {
           id: "workspace",

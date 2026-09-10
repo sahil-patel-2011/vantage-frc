@@ -146,9 +146,9 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team",
+        title: "Choose your team",
         description:
-          "Select a team before recording firmware builds.",
+          "Choose your team before recording firmware builds.",
       };
     case "empty":
       return {

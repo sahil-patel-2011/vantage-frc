@@ -343,7 +343,7 @@ export default function KioskClient() {
         <div className="app-card hours-empty">
           {view?.status === "setup_required" ? (
             <>
-              <strong>Select a team</strong>
+              <strong>Choose your team</strong>
               <p className="app-muted">{view.message}</p>
               <Button as="a" variant="primary" href="/workspace">
                 Choose your team
