@@ -131,9 +131,11 @@ export function onboardingFundingReady(input: {
   schoolFunded: boolean;
   outsideGrants: boolean;
   sponsorsAllowed: boolean;
+  fundingModel?: string | null;
 }): boolean {
   if (!input.isTeamHead) return true;
   if (!input.teamAffiliation) return false;
+  if (input.fundingModel && input.fundingModel.length > 0) return true;
   return Boolean(input.schoolFunded || input.outsideGrants || input.sponsorsAllowed);
 }
 

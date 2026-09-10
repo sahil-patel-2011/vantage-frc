@@ -37,6 +37,7 @@ const completeSchema = z.object({
   termsAccepted: z.literal(true),
   privacyAccepted: z.literal(true),
   teamAffiliation: teamAffiliation.nullable().optional(),
+  fundingModel: z.enum(["self_funded", "school_funded_no_sponsors", "sponsored", "school_related_sponsored"]).nullable().optional(),
   schoolFunded: z.boolean().optional(),
   outsideGrants: z.boolean().optional(),
   sponsorsAllowed: z.boolean().optional(),

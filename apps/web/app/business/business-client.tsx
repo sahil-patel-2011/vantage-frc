@@ -17,6 +17,10 @@ import {
   type PurchaseRequest,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import {
+  businessDefaultTab,
+  fundingModelFromFlags,
+} from "../../lib/funding-profile";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import {
@@ -184,6 +188,20 @@ export default function BusinessClient() {
 
   const live = view?.status === "live" ? view : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !live) return;
+    if (new URLSearchParams(window.location.search).get("tab")) return;
+    const model = fundingModelFromFlags({
+      schoolFunded: Boolean(live.schoolFunded),
+      sponsorsAllowed: live.sponsorsAllowed !== false,
+    });
+    const next = businessDefaultTab(model);
+    if (isTab(next) && next !== tab) {
+      setTab(next);
+      writeTabToUrl(next);
+    }
+  }, [live, tab]);
   const visibleWorkbenches = useMemo(
     () =>
       filterTabsByHubAccess(

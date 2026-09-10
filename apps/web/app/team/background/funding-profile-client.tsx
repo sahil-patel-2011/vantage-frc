@@ -5,13 +5,19 @@ import { EmptyState, Panel } from "../../../components/ui";
 import {
   FUNDING_AFFILIATION_LABELS,
   FUNDING_AFFILIATION_OPTIONS,
+  FUNDING_MODEL_LABELS,
+  FUNDING_MODEL_OPTIONS,
+  flagsFromFundingModel,
+  isFundingModel,
   type FundingAffiliation,
+  type FundingModel,
   type FundingProfileView,
 } from "../../../lib/funding-profile";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type Draft = {
   teamAffiliation: FundingAffiliation;
+  fundingModel: FundingModel;
   schoolFunded: boolean;
   outsideGrants: boolean;
   sponsorsAllowed: boolean;
@@ -19,9 +25,10 @@ type Draft = {
 
 const DEFAULT_DRAFT: Draft = {
   teamAffiliation: "community",
+  fundingModel: "self_funded",
   schoolFunded: false,
-  outsideGrants: false,
-  sponsorsAllowed: true,
+  outsideGrants: true,
+  sponsorsAllowed: false,
 };
 
 export default function FundingProfileClient({ orgId }: { orgId: string }) {
@@ -54,6 +61,9 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     setCanEdit(data.canEdit);
     setDraft({
       teamAffiliation: data.teamAffiliation,
+      fundingModel: isFundingModel(data.fundingModel)
+        ? data.fundingModel
+        : "self_funded",
       schoolFunded: data.schoolFunded,
       outsideGrants: data.outsideGrants,
       sponsorsAllowed: data.sponsorsAllowed,
@@ -161,41 +171,31 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
           </fieldset>
           {draft.teamAffiliation === "private_school" ? (
             <p className="app-muted">
-              Many private schools self-fund and disallow outside sponsors. Uncheck Sponsors allowed if that matches
-              your school.
+              Many private schools pay for the team themselves and cannot have sponsors. Pick that option below if it
+              matches your school.
             </p>
           ) : null}
           <fieldset className="onboarding-funding-paths">
-            <legend>
-              Funding paths <small>Select at least one</small>
-            </legend>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={draft.schoolFunded}
-                disabled={!canEdit}
-                onChange={(event) => setDraft((prev) => ({ ...prev, schoolFunded: event.target.checked }))}
-              />
-              School funds
-            </label>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={draft.outsideGrants}
-                disabled={!canEdit}
-                onChange={(event) => setDraft((prev) => ({ ...prev, outsideGrants: event.target.checked }))}
-              />
-              Outside grants
-            </label>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={draft.sponsorsAllowed}
-                disabled={!canEdit}
-                onChange={(event) => setDraft((prev) => ({ ...prev, sponsorsAllowed: event.target.checked }))}
-              />
-              Sponsors allowed
-            </label>
+            <legend>How is the team funded?</legend>
+            {FUNDING_MODEL_OPTIONS.map((value) => (
+              <label key={value} className="check-field">
+                <input
+                  type="radio"
+                  name="fundingModel"
+                  value={value}
+                  checked={draft.fundingModel === value}
+                  disabled={!canEdit}
+                  onChange={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      fundingModel: value,
+                      ...flagsFromFundingModel(value),
+                    }))
+                  }
+                />
+                {FUNDING_MODEL_LABELS[value]}
+              </label>
+            ))}
           </fieldset>
           {canEdit ? (
             <button type="submit" className="app-button" disabled={saving}>

@@ -100,7 +100,11 @@ describe("onboarding step gates", () => {
       ),
     ).toMatchObject({ ok: false, field: "funding" });
     expect(
-      validateOnboardingStep("team", { ...draft, teamAffiliation: "public_school" }, head),
+      validateOnboardingStep(
+        "team",
+        { ...draft, teamAffiliation: "public_school", fundingModel: "sponsored" },
+        head,
+      ),
     ).toEqual({ ok: true });
   });
 

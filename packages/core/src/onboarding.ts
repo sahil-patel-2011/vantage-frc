@@ -53,11 +53,53 @@ export type OrgLocationInput = {
   privacyAccepted?: boolean;
 };
 
+export const FUNDING_MODEL_OPTIONS = [
+  "self_funded",
+  "school_funded_no_sponsors",
+  "sponsored",
+  "school_related_sponsored",
+] as const;
+export type FundingModelOption = (typeof FUNDING_MODEL_OPTIONS)[number];
+
+export function isFundingModelOption(value: unknown): value is FundingModelOption {
+  return typeof value === "string" && (FUNDING_MODEL_OPTIONS as readonly string[]).includes(value);
+}
+
+export function flagsFromFundingModel(model: FundingModelOption): {
+  schoolFunded: boolean;
+  outsideGrants: boolean;
+  sponsorsAllowed: boolean;
+} {
+  switch (model) {
+    case "self_funded":
+      return { schoolFunded: false, outsideGrants: true, sponsorsAllowed: false };
+    case "school_funded_no_sponsors":
+      return { schoolFunded: true, outsideGrants: false, sponsorsAllowed: false };
+    case "sponsored":
+      return { schoolFunded: false, outsideGrants: true, sponsorsAllowed: true };
+    case "school_related_sponsored":
+      return { schoolFunded: true, outsideGrants: true, sponsorsAllowed: true };
+    default: {
+      const _never: never = model;
+      return _never;
+    }
+  }
+}
+
+export function parseFundingModel(value: unknown): FundingModelOption | null {
+  if (value == null || value === "") return null;
+  if (!isFundingModelOption(value)) {
+    throw new Error("Select how the team is funded: ourselves, the school, sponsors, or both.");
+  }
+  return value;
+}
+
 export type OrgFundingInput = {
   teamAffiliation?: TeamAffiliationOption | null;
   schoolFunded?: boolean | null;
   outsideGrants?: boolean | null;
   sponsorsAllowed?: boolean | null;
+  fundingModel?: FundingModelOption | null;
 };
 
 export type NormalizedOrgLocation = {
@@ -89,6 +131,7 @@ export type OnboardingPayload = {
   schoolFunded?: boolean | null;
   outsideGrants?: boolean | null;
   sponsorsAllowed?: boolean | null;
+  fundingModel?: FundingModelOption | null;
 };
 
 export type OnboardingState = {
@@ -115,6 +158,7 @@ export type OnboardingState = {
   orgSchoolFunded: boolean | null;
   orgOutsideGrants: boolean | null;
   orgSponsorsAllowed: boolean | null;
+  orgFundingModel: FundingModelOption | null;
   canCreateOrg: boolean;
   platformAdmin: boolean;
   termsAcceptedAt: string | null;
@@ -263,6 +307,7 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     schoolFunded: input.schoolFunded ?? null,
     outsideGrants: input.outsideGrants ?? null,
     sponsorsAllowed: input.sponsorsAllowed ?? null,
+    fundingModel: parseFundingModel(input.fundingModel),
   };
 }
 
@@ -343,11 +388,13 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     schoolFunded: boolean | null;
     outsideGrants: boolean | null;
     sponsorsAllowed: boolean | null;
+    fundingModel: FundingModelOption | null;
   } = {
     teamAffiliation: null,
     schoolFunded: null,
     outsideGrants: null,
     sponsorsAllowed: null,
+    fundingModel: null,
   };
   if (locked?.orgId) {
     const funding = await client.query<{
@@ -355,11 +402,13 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
       schoolFunded: boolean | null;
       outsideGrants: boolean | null;
       sponsorsAllowed: boolean | null;
+      fundingModel: FundingModelOption | null;
     }>(
       `SELECT team_affiliation AS "teamAffiliation",
               school_funded AS "schoolFunded",
               outside_grants AS "outsideGrants",
-              sponsors_allowed AS "sponsorsAllowed"
+              sponsors_allowed AS "sponsorsAllowed",
+              funding_model AS "fundingModel"
        FROM organizations WHERE id = $1::uuid`,
       [locked.orgId],
     );
@@ -390,6 +439,7 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     orgSchoolFunded: orgFunding.schoolFunded,
     orgOutsideGrants: orgFunding.outsideGrants,
     orgSponsorsAllowed: orgFunding.sponsorsAllowed,
+    orgFundingModel: orgFunding.fundingModel,
     canCreateOrg: Boolean(admin.rowCount),
     platformAdmin: Boolean(admin.rowCount),
     termsAcceptedAt: row?.termsAcceptedAt ?? null,
@@ -493,11 +543,19 @@ export async function completeOnboarding(
     if (!payload.teamAffiliation) {
       throw new Error("Select whether your team is a private school, public school, or community team.");
     }
-    const schoolFunded = Boolean(payload.schoolFunded);
-    const outsideGrants = Boolean(payload.outsideGrants);
-    const sponsorsAllowed =
+    const fundingModel = parseFundingModel(payload.fundingModel);
+    let schoolFunded = Boolean(payload.schoolFunded);
+    const outsideGrants = fundingModel
+      ? flagsFromFundingModel(fundingModel).outsideGrants
+      : Boolean(payload.outsideGrants);
+    let sponsorsAllowed =
       payload.sponsorsAllowed == null ? true : Boolean(payload.sponsorsAllowed);
-    if (!schoolFunded && !outsideGrants && !sponsorsAllowed) {
+    if (fundingModel) {
+      const flags = flagsFromFundingModel(fundingModel);
+      schoolFunded = flags.schoolFunded;
+      sponsorsAllowed = flags.sponsorsAllowed;
+    }
+    if (!fundingModel && !schoolFunded && !outsideGrants && !sponsorsAllowed) {
       throw new Error("Select at least one funding path: school funds, outside grants, or sponsors.");
     }
     await client.query(
@@ -508,7 +566,8 @@ export async function completeOnboarding(
            team_affiliation = $5,
            school_funded = $6,
            outside_grants = $7,
-           sponsors_allowed = $8
+           sponsors_allowed = $8,
+           funding_model = $9::org_funding_model
        WHERE id = $1::uuid`,
       [
         state.lockedOrgId,
@@ -519,6 +578,7 @@ export async function completeOnboarding(
         schoolFunded,
         outsideGrants,
         sponsorsAllowed,
+        fundingModel,
       ],
     );
   }

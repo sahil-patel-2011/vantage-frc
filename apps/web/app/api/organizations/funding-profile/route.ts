@@ -2,9 +2,11 @@ import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  fundingModelFromFlags,
   isFundingAffiliation,
   parseFundingProfileSave,
   type FundingAffiliation,
+  type FundingModel,
   type FundingProfileView,
 } from "../../../../lib/funding-profile";
 
@@ -19,6 +21,7 @@ type FundingRow = {
   schoolFunded: boolean | null;
   outsideGrants: boolean | null;
   sponsorsAllowed: boolean | null;
+  fundingModel: string | null;
   role: string;
 };
 
@@ -26,14 +29,18 @@ function toView(orgId: string, row: FundingRow, canEdit: boolean): FundingProfil
   const teamAffiliation: FundingAffiliation = isFundingAffiliation(row.teamAffiliation)
     ? row.teamAffiliation
     : "community";
+  const sponsorsAllowed = row.sponsorsAllowed !== false;
+  const schoolFunded = Boolean(row.schoolFunded);
+  const fundingModel: FundingModel = (row.fundingModel as FundingModel | null) ??
+    fundingModelFromFlags({ schoolFunded, sponsorsAllowed });
   return {
     orgId,
     canEdit,
     teamAffiliation,
-    schoolFunded: Boolean(row.schoolFunded),
+    schoolFunded,
     outsideGrants: Boolean(row.outsideGrants),
-    // Null sponsors_allowed ⇒ show sponsors (legacy orgs).
-    sponsorsAllowed: row.sponsorsAllowed !== false,
+    sponsorsAllowed,
+    fundingModel,
   };
 }
 
@@ -49,6 +56,7 @@ export async function GET(request: Request) {
                 o.school_funded AS "schoolFunded",
                 o.outside_grants AS "outsideGrants",
                 o.sponsors_allowed AS "sponsorsAllowed",
+                o.funding_model AS "fundingModel",
                 m.role
          FROM organizations o
          JOIN memberships m ON m.org_id = o.id AND m.user_id = $2::uuid
@@ -85,7 +93,8 @@ export async function POST(request: Request) {
          SET team_affiliation = $2,
              school_funded = $3,
              outside_grants = $4,
-             sponsors_allowed = $5
+             sponsors_allowed = $5,
+             funding_model = $6::org_funding_model
          WHERE id = $1::uuid`,
         [
           orgId,
@@ -93,6 +102,7 @@ export async function POST(request: Request) {
           payload.schoolFunded,
           payload.outsideGrants,
           payload.sponsorsAllowed,
+          payload.fundingModel,
         ],
       );
       await client.query(
@@ -106,6 +116,7 @@ export async function POST(request: Request) {
             schoolFunded: payload.schoolFunded,
             outsideGrants: payload.outsideGrants,
             sponsorsAllowed: payload.sponsorsAllowed,
+            fundingModel: payload.fundingModel,
           }),
         ],
       );

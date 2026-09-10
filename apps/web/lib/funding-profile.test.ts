@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  businessDefaultTab,
+  flagsFromFundingModel,
   fundingPathsReady,
   isFundingAffiliation,
   parseFundingProfileSave,
@@ -35,7 +37,17 @@ describe("funding-profile", () => {
       schoolFunded: true,
       outsideGrants: true,
       sponsorsAllowed: false,
+      fundingModel: "school_funded_no_sponsors",
     });
+  });
+
+  it("prefers an explicit funding model over the three checkboxes", () => {
+    expect(
+      parseFundingProfileSave({
+        teamAffiliation: "community",
+        fundingModel: "self_funded",
+      }).fundingModel,
+    ).toBe("self_funded");
   });
 
   it("rejects empty funding paths", () => {
@@ -46,6 +58,20 @@ describe("funding-profile", () => {
         outsideGrants: false,
         sponsorsAllowed: false,
       }),
-    ).toThrow(/at least one funding path/i);
+    ).toThrow(/how the team is funded/i);
+  });
+
+  it("maps each funding model to flags and a Business landing tab", () => {
+    expect(flagsFromFundingModel("self_funded")).toEqual({
+      schoolFunded: false,
+      outsideGrants: true,
+      sponsorsAllowed: false,
+    });
+    expect(flagsFromFundingModel("school_funded_no_sponsors").sponsorsAllowed).toBe(false);
+    expect(businessDefaultTab("self_funded")).toBe("evidence");
+    expect(businessDefaultTab("school_funded_no_sponsors")).toBe("finance");
+    expect(businessDefaultTab("sponsored")).toBe("sponsors");
+    expect(businessDefaultTab("school_related_sponsored")).toBe("sponsors");
+    expect(businessDefaultTab(null)).toBe("overview");
   });
 });

@@ -24,6 +24,7 @@ import {
   type TeamAffiliationOption,
 } from "./onboarding-flow";
 import { lookupTeamNumber, parseTeamNumber, type TeamLookupAccessStatus } from "./team-lookup";
+import { isFundingModel, type FundingModel } from "../funding-profile";
 
 export type OnboardingRole = "student" | "mentor" | "coach" | "parent" | "other";
 export type OnboardingCrew =
@@ -57,6 +58,7 @@ export type OnboardingDraft = {
   orgStateProv: string;
   orgDescription: string;
   teamAffiliation: TeamAffiliationOption | "";
+  fundingModel: FundingModel | "";
   schoolFunded: boolean;
   outsideGrants: boolean;
   sponsorsAllowed: boolean;
@@ -97,6 +99,7 @@ export function emptyOnboardingDraft(): OnboardingDraft {
     orgStateProv: "",
     orgDescription: "",
     teamAffiliation: "",
+    fundingModel: "",
     schoolFunded: false,
     outsideGrants: false,
     sponsorsAllowed: true,
@@ -180,11 +183,11 @@ function validateTeamStep(draft: OnboardingDraft, context: OnboardingStepContext
         message: "Pick how your team is affiliated (private school, public school, or community).",
       };
     }
-    if (!draft.schoolFunded && !draft.outsideGrants && !draft.sponsorsAllowed) {
+    if (!isFundingModel(draft.fundingModel)) {
       return {
         ok: false,
         field: "funding",
-        message: "Select at least one funding path (school funds, grants, or sponsors).",
+        message: "Pick how the team is funded: yourselves, the school, sponsors, or both.",
       };
     }
   }

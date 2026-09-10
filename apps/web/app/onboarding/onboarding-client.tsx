@@ -30,7 +30,15 @@ import {
   type OnboardingStepContext,
   type TeamAffiliationOption,
 } from "../../lib/onboarding";
-import { PENDING_INVITE_KEY } from "../invite/invite-client";
+import {
+  flagsFromFundingModel,
+  FUNDING_MODEL_LABELS,
+  FUNDING_MODEL_OPTIONS,
+  fundingModelFromFlags,
+  isFundingModel,
+  type FundingModel,
+} from "../../lib/funding-profile";
+import { PENDING_INVITE_STORAGE_KEY } from "../../lib/invite";
 import { legalConsentMessage } from "../../lib/legal";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import "./onboarding-flow.css";
@@ -67,6 +75,7 @@ type OnboardingState = {
   orgSchoolFunded: boolean | null;
   orgOutsideGrants: boolean | null;
   orgSponsorsAllowed: boolean | null;
+  orgFundingModel: FundingModel | null;
   termsAcceptedAt: string | null;
   privacyAcceptedAt: string | null;
   currentStep: "profile" | "team" | "preferences" | "complete";
@@ -118,7 +127,7 @@ const FOCUS_OPTIONS: Array<{ value: OnboardingFocus; label: string; description:
 
 function pendingInviteDestination() {
   try {
-    const token = sessionStorage.getItem(PENDING_INVITE_KEY);
+    const token = sessionStorage.getItem(PENDING_INVITE_STORAGE_KEY);
     return token ? `/invite?token=${encodeURIComponent(token)}` : null;
   } catch {
     return null;
@@ -153,7 +162,8 @@ function FundingFields({
     <fieldset className="onboarding-team-profile onboarding-funding-profile">
       <legend>Team affiliation &amp; funding</legend>
       <p className="onboarding-team-profile-hint">
-        Required for owners and admins. Shapes the Business tools — teams that disallow sponsors hide sponsor features.
+        Required for owners and admins. This decides which Business tools you see — a school that cannot have
+        sponsors will not see sponsor pages.
       </p>
       <fieldset className="onboarding-affiliation">
         <legend>Affiliation</legend>
@@ -172,25 +182,29 @@ function FundingFields({
       </fieldset>
       {draft.teamAffiliation === "private_school" ? (
         <p className="onboarding-funding-note">
-          Many private schools self-fund and disallow outside sponsors. Uncheck Sponsors allowed if that matches your school.
+          Many private schools pay for the team themselves and cannot have sponsors. Pick that option below if it
+          matches your school.
         </p>
       ) : null}
       <fieldset className="onboarding-funding-paths">
-        <legend>
-          Funding paths <small>Select at least one</small>
-        </legend>
-        <label className="check-field">
-          <input type="checkbox" checked={draft.schoolFunded} onChange={(event) => patch({ schoolFunded: event.target.checked })} />
-          School funds
-        </label>
-        <label className="check-field">
-          <input type="checkbox" checked={draft.outsideGrants} onChange={(event) => patch({ outsideGrants: event.target.checked })} />
-          Outside grants
-        </label>
-        <label className="check-field">
-          <input type="checkbox" checked={draft.sponsorsAllowed} onChange={(event) => patch({ sponsorsAllowed: event.target.checked })} />
-          Sponsors allowed
-        </label>
+        <legend>How is the team funded?</legend>
+        {FUNDING_MODEL_OPTIONS.map((value) => (
+          <label key={value} className="check-field">
+            <input
+              type="radio"
+              name="fundingModel"
+              value={value}
+              checked={draft.fundingModel === value}
+              onChange={() =>
+                patch({
+                  fundingModel: value,
+                  ...flagsFromFundingModel(value),
+                })
+              }
+            />
+            {FUNDING_MODEL_LABELS[value]}
+          </label>
+        ))}
       </fieldset>
     </fieldset>
   );
@@ -235,6 +249,14 @@ export default function OnboardingClient() {
       orgStateProv: data.orgStateProv ?? current.orgStateProv,
       orgDescription: data.orgDescription ?? current.orgDescription,
       teamAffiliation: data.orgTeamAffiliation ?? current.teamAffiliation,
+      fundingModel:
+        data.orgFundingModel && isFundingModel(data.orgFundingModel)
+          ? data.orgFundingModel
+          : current.fundingModel ||
+            fundingModelFromFlags({
+              schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
+              sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
+            }),
       schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
       outsideGrants: data.orgOutsideGrants ?? current.outsideGrants,
       sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
@@ -475,6 +497,7 @@ export default function OnboardingClient() {
           stateProv: isTeamHead ? draft.orgStateProv.trim() || null : undefined,
           description: isTeamHead ? draft.orgDescription.trim() || null : undefined,
           teamAffiliation: isTeamHead ? draft.teamAffiliation || null : undefined,
+          fundingModel: isTeamHead && isFundingModel(draft.fundingModel) ? draft.fundingModel : undefined,
           schoolFunded: isTeamHead ? draft.schoolFunded : undefined,
           outsideGrants: isTeamHead ? draft.outsideGrants : undefined,
           sponsorsAllowed: isTeamHead ? draft.sponsorsAllowed : undefined,
