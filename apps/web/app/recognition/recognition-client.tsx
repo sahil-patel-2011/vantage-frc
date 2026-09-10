@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { RECOGNITION_STAGE_LABEL, SUGGESTED_AWARDS, type RecognitionStage } from "../../lib/recognition";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type RankedNomination = { id: string; nomineeName: string; reason: string; voteCount: number };
@@ -33,6 +36,33 @@ const NEXT_STAGE: Record<RecognitionStage, RecognitionStage | null> = {
   closed: null,
 };
 
+function isRecognitionView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function recognitionCacheOrg(data: View, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistRecognitionSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: View,
+): Promise<void> {
+  const cacheOrg = recognitionCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "ready" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("recognition", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("recognition", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live recognition already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
@@ -41,19 +71,60 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [awardName, setAwardName] = useState("");
   const [nomineeInputs, setNomineeInputs] = useState<Record<string, string>>({});
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    const response = await fetch(
-      `/api/recognition?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`,
-    );
-    const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) {
-      setMessage(data.error ?? "Failed to load team awards");
-      setErrorStatus(response.status);
-      return;
+    const orgHint = orgId?.trim() ?? "";
+    const seasonHint = String(seasonYear);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("recognition", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isRecognitionView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
     }
+    setFetchFailed(false);
     setErrorStatus(null);
-    setView(data);
+    try {
+      const response = await fetch(
+        `/api/recognition?seasonYear=${seasonYear}${orgHint ? `&orgId=${encodeURIComponent(orgHint)}` : ""}`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+      );
+      const data = (await response.json()) as View & { error?: string };
+      if (!response.ok || !isRecognitionView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Recognition. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setMessage("error" in data && data.error ? data.error : "Failed to load team awards");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRecognitionSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Recognition. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
+    }
   }, [orgId, seasonYear]);
   useEffect(() => {
     void load();
@@ -61,14 +132,19 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
 
   async function post(body: Record<string, unknown>, okMessage: string) {
     if (view?.status !== "ready") return;
-    const response = await fetch("/api/recognition", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId: view.context.orgId, ...body }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? okMessage : data.error);
-    if (response.ok) await load();
+    try {
+      const response = await fetch("/api/recognition", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: view.context.orgId, ...body }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? okMessage : data.error);
+      if (response.ok) await load();
+    } catch {
+      setMessage("Network error — changes were not saved.");
+    }
   }
 
   async function createAward(name: string) {
@@ -85,8 +161,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   }
 
   if (!view) {
-    // A failed load names its own recovery — Retry cannot fix an expired session.
-    const copy = message
+    const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
             status: errorStatus,
@@ -107,26 +182,26 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
         <PageHeader
           navPath="/recognition"
           title="Recognition"
-          description={
-            copy
-              ? "Nominate teammates for your team's own end-of-season awards, then vote."
-              : "Loading team awards…"
-          }
+          description="Nominate teammates for your team's own end-of-season awards, then vote."
         />
-        {copy ? (
-          <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
-            {copy.primary ? (
-              <Button as="a" variant="primary" href={copy.primary.href}>
-                {copy.primary.label}
-              </Button>
-            ) : null}
-            {copy.showRetry ? (
-              <Button variant="secondary" type="button" onClick={() => void load()}>
-                Retry
-              </Button>
-            ) : null}
-          </EmptyState>
-        ) : null}
+        <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading team awards…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -139,12 +214,13 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           title="Recognition"
           description="Nominate teammates for your team's own end-of-season awards, then vote."
         />
+        <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge="Setup required"
           badgeTone="setup"
-          title={view.message}
-          description="Choose your team, then return here to open nominations. Empty shells stay empty."
+          title="Choose your team"
+          description={view.message}
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -172,6 +248,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           </Button>
         </nav>
       </PageHeader>
+      <OfflineBanner feature="Recognition" fromCache={fromCache} cachedAt={cachedAt} />
       {message ? <p className="telemetry-status" role="status">{message}</p> : null}
 
       {canManage ? (

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -16,6 +17,8 @@ import { formatHours } from "../../lib/my-kit/compose";
 import type { MyKitSection, MyKitSectionId, MyKitTone, MyKitView } from "../../lib/my-kit/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./my-kit.css";
 
 /** The surface each section hands off to — named so the button is not "Open My open work". */
@@ -33,6 +36,28 @@ const OPEN_LABEL: Record<MyKitSectionId, string> = {
   money: "Open Orders",
   onboarding: "Open Getting started",
 };
+
+function isMyKitView(value: unknown): value is MyKitView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function myKitCacheOrg(data: MyKitView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistMyKitSnapshot(orgHint: string, data: MyKitView): Promise<void> {
+  const cacheOrg = myKitCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("my-kit", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("my-kit", "_", data);
+  } catch {
+    // Live My Kit already painted; IndexedDB is best-effort.
+  }
+}
 
 const TONE_LABEL: Record<MyKitTone, string> = {
   overdue: "Overdue",
@@ -92,25 +117,62 @@ export default function MyKitClient() {
   const [view, setView] = useState<MyKitView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MyKitView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setErrorMessage("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/my-kit${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orgHint = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MyKitView>("my-kit", orgHint || "_");
+        if (!viewRef.current && cached?.data && isMyKitView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      try {
+        const query = new URLSearchParams();
+        if (orgHint) query.set("orgId", orgHint);
+        const response = await fetch(`/api/my-kit${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as MyKitView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorMessage("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+        if (!response.ok || !isMyKitView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setErrorMessage("error" in data && data.error ? data.error : "");
+            setFetchFailed(true);
+          }
           return;
         }
+        setErrorMessage("");
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMyKitSnapshot(orgHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -154,6 +216,9 @@ export default function MyKitClient() {
           </Button>
         </nav>
       </PageHeader>
+
+      <OfflineBanner feature="My Kit" fromCache={fromCache} cachedAt={cachedAt} />
+      {errorMessage && view ? <p className="app-muted">{errorMessage}</p> : null}
 
       <Shell
         state={shell}

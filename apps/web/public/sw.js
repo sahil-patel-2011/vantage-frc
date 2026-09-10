@@ -146,6 +146,10 @@ const SHELL_ROUTES = [
   "/match-debrief",
   "/ranking-projection",
   "/whiteboard",
+  "/robot",
+  "/my-kit",
+  "/part-requests",
+  "/recognition",
 ];
 
 function isShellPath(pathname) {

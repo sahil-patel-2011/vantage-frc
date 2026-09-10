@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   cadProvider,
@@ -17,6 +20,27 @@ import {
 } from "../../lib/robot-blueprint";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isBlueprintView(value: unknown): value is BlueprintView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function robotCacheOrg(data: BlueprintView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistRobotSnapshot(orgHint: string, data: BlueprintView): Promise<void> {
+  const cacheOrg = robotCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("robot", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("robot", "_", data);
+  } catch {
+    // Live robot already painted; IndexedDB is best-effort.
+  }
+}
 
 function LinkEditor({
   value,
@@ -228,25 +252,59 @@ export default function RobotClient() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [robotLabel, setRobotLabel] = useState("competition");
   const [newName, setNewName] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BlueprintView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<BlueprintView>("robot", orgHint || "_");
+      if (!viewRef.current && cached?.data && isBlueprintView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setFailureStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/robot${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/robot${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as BlueprintView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load the robot blueprint.");
-        setFailureStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isBlueprintView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Robot. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load the robot blueprint.");
+          setFailureStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRobotSnapshot(orgHint, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Robot. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -263,6 +321,7 @@ export default function RobotClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -291,7 +350,23 @@ export default function RobotClient() {
     [ready, robotLabel],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page robot-page">
         <header className="app-page-header">
@@ -300,44 +375,25 @@ export default function RobotClient() {
             <h1>Robot Blueprint</h1>
           </div>
         </header>
-        <div className="app-card robot-empty">
-          {fetchFailed ? (
-            (() => {
-              const copy = loadFailureCopy(
-                classifyLoadFailure({
-                  status: failureStatus,
-                  message: error,
-                  online: typeof navigator === "undefined" ? true : navigator.onLine,
-                }),
-                {
-                  nextPath:
-                    typeof window === "undefined"
-                      ? null
-                      : `${window.location.pathname}${window.location.search}`,
-                  message: error || "Check your connection and try again.",
-                },
-              );
-              return (
-                <>
-                  <strong>{copy.title}</strong>
-                  <p className="app-muted">{copy.description}</p>
-                  {copy.primary ? (
-                    <Button as="a" variant="primary" href={copy.primary.href}>
-                      {copy.primary.label}
-                    </Button>
-                  ) : null}
-                  {copy.showRetry ? (
-                    <Button variant="secondary" type="button" onClick={() => void load()}>
-                      Retry
-                    </Button>
-                  ) : null}
-                </>
-              );
-            })()
-          ) : (
-            <p className="app-muted">Loading robot blueprint…</p>
-          )}
-        </div>
+        <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          className="robot-empty"
+          soft
+          title={failure ? failure.title : "Loading robot blueprint…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -352,6 +408,7 @@ export default function RobotClient() {
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
         </header>
+        <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState className="robot-empty" title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -388,6 +445,7 @@ export default function RobotClient() {
         </div>
       </header>
 
+      <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

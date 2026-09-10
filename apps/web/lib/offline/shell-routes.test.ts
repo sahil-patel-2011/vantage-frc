@@ -141,6 +141,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/match-debrief")).toBe(true);
     expect(pathnameIsOfflineShell("/ranking-projection")).toBe(true);
     expect(pathnameIsOfflineShell("/whiteboard")).toBe(true);
+    expect(pathnameIsOfflineShell("/robot")).toBe(true);
+    expect(pathnameIsOfflineShell("/my-kit")).toBe(true);
+    expect(pathnameIsOfflineShell("/part-requests")).toBe(true);
+    expect(pathnameIsOfflineShell("/recognition")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -264,6 +268,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/match-debrief")).toBe("Match debrief");
     expect(offlineCapableLabel("/ranking-projection")).toBe("Ranking projection");
     expect(offlineCapableLabel("/whiteboard")).toBe("Whiteboard");
+    expect(offlineCapableLabel("/robot")).toBe("Robot");
+    expect(offlineCapableLabel("/robot-weigh-in")).toBe("Robot weigh-in");
+    expect(offlineCapableLabel("/my-kit")).toBe("My Kit");
+    expect(offlineCapableLabel("/part-requests")).toBe("Part requests");
+    expect(offlineCapableLabel("/recognition")).toBe("Recognition");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -384,6 +393,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("match-debrief", "org-1", "2026")).toBe("match-debrief:org-1:2026");
     expect(featureCacheKey("ranking-projection", "org-1")).toBe("ranking-projection:org-1");
     expect(featureCacheKey("whiteboard", "org-1")).toBe("whiteboard:org-1");
+    expect(featureCacheKey("robot", "org-1")).toBe("robot:org-1");
+    expect(featureCacheKey("my-kit", "org-1")).toBe("my-kit:org-1");
+    expect(featureCacheKey("part-requests", "org-1", "2026")).toBe("part-requests:org-1:2026");
+    expect(featureCacheKey("recognition", "org-1", "2026")).toBe("recognition:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

@@ -124,7 +124,11 @@ export type OfflineFeature =
   | "kickoff"
   | "match-debrief"
   | "ranking-projection"
-  | "whiteboard";
+  | "whiteboard"
+  | "robot"
+  | "my-kit"
+  | "part-requests"
+  | "recognition";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

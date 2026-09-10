@@ -128,6 +128,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/match-debrief",
   "/ranking-projection",
   "/whiteboard",
+  "/robot",
+  "/my-kit",
+  "/part-requests",
+  "/recognition",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -266,6 +270,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/field-reset-timer")) return "Field reset timer";
   if (bare.startsWith("/drive-team-signals")) return "Drive-team signals";
   if (bare.startsWith("/robot-weigh-in")) return "Robot weigh-in";
+  if (bare.startsWith("/robot")) return "Robot";
+  if (bare.startsWith("/my-kit")) return "My Kit";
+  if (bare.startsWith("/part-requests")) return "Part requests";
+  if (bare.startsWith("/recognition")) return "Recognition";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";

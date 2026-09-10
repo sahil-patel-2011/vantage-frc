@@ -1,15 +1,46 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import {
   describeApprovalImpact,
   type PartRequest,
   type PartRequestsView,
 } from "../../lib/part-requests/compute-part-requests";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const money = (value: number) =>
   value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+
+function isPartRequestsView(value: unknown): value is PartRequestsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function partRequestsCacheOrg(data: PartRequestsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistPartRequestsSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: PartRequestsView,
+): Promise<void> {
+  const cacheOrg = partRequestsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("part-requests", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("part-requests", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live part requests already painted; IndexedDB is best-effort.
+  }
+}
 
 function statusTone(status: PartRequest["status"]): BadgeTone {
   if (status === "rejected") return "danger";
@@ -66,6 +97,12 @@ export default function PartRequestsClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PartRequestsView | null>(null);
+  viewRef.current = view;
 
   const [title, setTitle] = useState("");
   const [justification, setJustification] = useState("");
@@ -92,17 +129,63 @@ export default function PartRequestsClient() {
   const [reviewNotes, setReviewNotes] = useState("");
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = params.get("season");
+    const seasonHint =
+      seasonQuery && Number.isFinite(Number(seasonQuery)) ? String(Number(seasonQuery)) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch("/api/part-requests");
-      const data = (await response.json()) as PartRequestsView & { error?: string };
-      if (!response.ok) {
-        setError((data as { error?: string }).error ?? "Could not load part requests.");
+      const cached = await getFeatureSnapshot<PartRequestsView>(
+        "part-requests",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isPartRequestsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonHint) query.set("season", seasonHint);
+      const response = await fetch(`/api/part-requests${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = (await response.json()) as PartRequestsView | { error?: string };
+      if (!response.ok || !isPartRequestsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Part requests. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load part requests.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
-      setView(data);
       setError("");
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistPartRequestsSnapshot(orgHint, seasonHint, data);
     } catch {
-      setError("Could not reach the server.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Part requests. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -119,14 +202,17 @@ export default function PartRequestsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as PartRequestsView & { error?: string };
-      if (!response.ok) {
-        setError((data as { error?: string }).error ?? "That did not work.");
+      const data = (await response.json()) as PartRequestsView | { error?: string };
+      if (!response.ok || !isPartRequestsView(data)) {
+        setError("error" in data && data.error ? data.error : "That did not work.");
         return false;
       }
       setView(data);
       setNotice(success);
+      const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+      await persistPartRequestsSnapshot(orgHint, String(data.seasonYear), data);
       return true;
     } catch {
       setError("Could not reach the server. Nothing was saved.");
@@ -136,26 +222,44 @@ export default function PartRequestsClient() {
     }
   }
 
-  if (error && !view) {
-    return (
-      <main className="module-page part-requests-page">
-        <PageHeader breadcrumbs="Business / Money" title="Part requests" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Part requests need a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-        </EmptyState>
-      </main>
-    );
-  }
-
   if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page part-requests-page">
         <PageHeader breadcrumbs="Business / Money" title="Part requests" />
-        <Panel>
-          <p className="app-muted">Loading…</p>
-        </Panel>
+        <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading part requests…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -164,7 +268,18 @@ export default function PartRequestsClient() {
     return (
       <main className="module-page part-requests-page">
         <PageHeader breadcrumbs="Business / Money" title="Part requests" />
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Not migrated yet" description={view.message} />
+        <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }
@@ -178,6 +293,7 @@ export default function PartRequestsClient() {
         title="Part requests"
         description={`Ask for what you need in ${view.orgName}. A mentor decides, and an approved request becomes real spend against the season budget.`}
       />
+      <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
 
       <Panel>
         <h2>Ask for a part</h2>
