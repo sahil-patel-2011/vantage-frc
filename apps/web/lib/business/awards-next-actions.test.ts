@@ -18,7 +18,7 @@ describe("awardsNextActions Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
     expect(actions.find((a) => a.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /empty is not|never DEMO|never fabricated/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("prioritizes unfinished essays over status updates", () => {

@@ -32,7 +32,7 @@ describe("writerNextActions Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "awards")?.href).toBe("/team/awards?orgId=org-1");
     expect(actions.find((a) => a.id === "knowledge")?.href).toBe("/team?tab=knowledge&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never DEMO|not invented|fabricated/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("prompts first compose when profile is filled but library is empty", () => {

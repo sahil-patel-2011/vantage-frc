@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeRiskBurndownView } from "./compute-risk-burndown";
 import { computeRiskBurndownSeries, riskCategoryLabel, riskStatusLabel, severityBandOf, severityOf, summarizeRisks } from ".";
 import type { RiskItem } from "./types";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 type QueryCall = { sql: string; params: unknown[] };
 
@@ -54,7 +55,7 @@ describe("computeRiskBurndownView", () => {
       expect(view.steps.find((s) => s.id === "risks")?.href).toBe("/risks");
       expect(view.steps.find((s) => s.id === "fmea")?.href).toBe("/team?tab=fmea");
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

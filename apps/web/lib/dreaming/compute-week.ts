@@ -97,7 +97,7 @@ export function assembleWeekPrompt(digest: WeekDigest): string {
     "3. What next week should start with",
     "",
     "Grounding rules (mandatory):",
-    "Use ONLY the daily recaps quoted below.",
+    "- Use ONLY the daily recaps quoted below. Never invent names, numbers, matches, scores, tasks, or outcomes.",
     "- Do not fill gaps between days: a day not quoted below recorded nothing.",
     '- If a section has no supporting facts, write exactly "Nothing recorded."',
     "- Plain text only, no markdown headings, under 250 words total.",

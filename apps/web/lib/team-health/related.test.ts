@@ -41,7 +41,7 @@ describe("teamHealthNextActions", () => {
     expect(actions[0]?.id).toBe("attendance");
     expect(actions.some((a) => a.id === "hours-self-view")).toBe(true);
     expect(actions.every((a) => !/\bDEMO morale score/i.test(`${a.label} ${a.detail}`))).toBe(true);
-    expect(actions.some((a) => /never DEMO morale/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("ready boards prioritize check-ins when roster members have no logs", () => {

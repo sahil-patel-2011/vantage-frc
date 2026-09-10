@@ -72,7 +72,7 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
   actions.push({
     id: "impact",
     label: "Log community impact evidence",
-    detail: "Outreach hours and reach appear in narratives only after someone records them — never fabricated metrics.",
+    detail: "Outreach hours and reach appear in narratives once someone records them.",
     href: withOrgHref("/impact", orgId),
     primary: actions.length === 0,
   });

@@ -17,7 +17,7 @@ describe("Default yardstick labels stay honest", () => {
       "default 115 until you set one",
     );
     expect(web("app/readiness-score/readiness-score-client.tsx")).toContain(
-      "default 115 lb / 120 A yardstick",
+      "115 lb / 120 A yardstick until you record your own budgets — not a measured weigh-in",
     );
     expect(web("app/leadership/leadership-client.tsx")).toContain(
       "not a recorded team goal",

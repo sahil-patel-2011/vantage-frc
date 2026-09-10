@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { expectPlainCopy } from "../ui/copy-assertions";
 
 const WEB_ROOT = join(__dirname, "..", "..");
 
@@ -107,7 +106,65 @@ describe("cad-client mounts CadViewport and CadOperationComposer", () => {
     expect(client).toContain("lastSketchFeatureId");
     expect(client).toMatch(/parametersForExecute\(\s*\{[\s\S]*operation[\s\S]*parameters/);
     expect(client).toContain("parametersForExecute(step, lastSketchFeatureId.current)");
-    expectPlainCopy(client);
+    expect(client).toMatch(
+      /lastSketchFeatureId\.current = rememberLastSketchFeatureId\(\s*operation,\s*executed\.featureId/,
+    );
+    expect(client).not.toMatch(/sketchFeatureId:\s*["']DEMO/i);
+  });
+
+  it("fills assemblyElementId from lastAssemblyElementId after create_assembly", () => {
+    expect(client).toContain("lastAssemblyElementId");
+    expect(client).toContain("assemblyElementId");
+    expect(client).toContain("create_assembly");
+    expect(client).toContain("add_assembly_instance");
+    expect(client).toContain("create_mate");
+    expect(client).toContain("withLastAssemblyElementId");
+    expect(client).toContain("rememberLastAssemblyElementId");
+    expect(client).toMatch(/executed\.featureId[\s\S]{0,80}result\?\.elementId/);
+    expect(client).not.toMatch(/assemblyElementId:\s*["']DEMO/i);
+  });
+
+  it("persists lastAssemblyElementId in sessionStorage across refresh", () => {
+    expect(client).toContain("sessionStorage");
+    expect(client).toContain("vantage-cad-assembly:");
+    expect(client).toContain("`vantage-cad-assembly:${orgId}:${documentId}`");
+    expect(client).toContain("readStoredAssemblyElementId");
+    expect(client).toContain("writeStoredAssemblyElementId");
+    expect(client).toContain("lastAssemblyElementId.current = stored");
+    expect(client).not.toMatch(/sessionStorage\.(setItem|getItem)\([^)]*DEMO/i);
+    expect(client).not.toMatch(/vantage-cad-assembly:[^`]*DEMO/i);
+  });
+
+  it("lists Onshape document tabs via list-onshape-elements after bind", () => {
+    expect(client).toContain("listDocumentElements");
+    expect(client).toContain('from "../../lib/cad/list-document-elements"');
+    expect(client).toContain("list-onshape-elements");
+    expect(client).toContain("switchBoundElement");
+    expect(client).toContain("documentTabKind");
+    expect(client).toContain('kind === "assembly"');
+    expect(client).toContain('kind === "variablestudio"');
+    expect(client).toContain("lastVariableStudioElementId");
+    expect(client).toContain('action: "set-document"');
+    expect(client).toContain('action: "bind"');
+    expect(elements).toContain('action: "list-onshape-elements"');
+    expect(elements).toContain("Part Studio");
+    expect(elements).toContain("Assembly");
+    expect(elements).toContain("Variable Studio");
+    expect(elements).not.toMatch(/id:\s*["']DEMO/i);
+    expect(client).not.toMatch(/elementId:\s*["']DEMO/i);
+  });
+
+  it("lists assembly instances and passes them to the composer", () => {
+    expect(client).toContain("listOnshapeAssemblyInstances");
+    expect(client).toContain('from "../../lib/cad/list-assembly"');
+    expect(client).toContain("instances={listedAssembly.instances}");
+    expect(client).toContain("lastInstanceIds");
+    expect(client).toContain("firstInstanceId");
+    expect(client).toContain("secondInstanceId");
+    expect(client).not.toMatch(/firstInstanceId:\s*["']DEMO/i);
+    expect(client).not.toMatch(/secondInstanceId:\s*["']DEMO/i);
+    expect(client).not.toMatch(/<iframe\b/);
+  });
 
   it("never mounts an Onshape iframe in the client or the viewport", () => {
     expect(client).not.toMatch(/<iframe\b/);

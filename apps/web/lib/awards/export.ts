@@ -20,7 +20,7 @@ import {
 } from "./notebook-evidence";
 
 export const AWARD_EXPORT_DISCLAIMER =
-  "Only written award items are included. Empty prompts are omitted. Impact hours are never invented. Text-only notebook entries are not photo evidence.";
+  "Only prompts you have answered are included; blank ones are skipped. Impact hours come from your logged outreach. A text-only notebook entry does not count as photo evidence.";
 
 export {
   AWARD_NOTEBOOK_TEXT_ONLY_REFUSAL,

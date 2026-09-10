@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeJudgeSimView, runSession } from "./compute-judge-sim";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -30,7 +31,7 @@ describe("computeJudgeSimView", () => {
       expect(view.steps.some((s) => s.href.includes("/business?tab=impact-essay"))).toBe(true);
       expect(view.steps.some((s) => s.href.includes("/business?tab=evidence"))).toBe(true);
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.every((s) => /never DEMO|org-scoped|real|blank/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

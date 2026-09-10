@@ -10,6 +10,6 @@ describe("Season Finance honesty", () => {
     expect(source).toContain("/api/finance/budget-vs-actual");
     expect(source).toContain("describeBudgetLine");
     expect(source).toContain("Per-sponsor recorded contributions");
-    expect(source).not.toMatch(/never (a )?DEMO|never invents?/i);
+    expect(source).not.toMatch(/never (a )?DEMO|never invents?\b/i);
   });
 });

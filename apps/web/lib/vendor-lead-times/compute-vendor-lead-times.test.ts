@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeVendorLeadTimesView } from "./compute-vendor-lead-times";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -30,7 +31,7 @@ describe("computeVendorLeadTimesView", () => {
       expect(view.steps.some((s) => s.href.includes("/build?tab=spare-forecast"))).toBe(true);
       expect(view.steps.some((s) => s.href.includes("/vendors"))).toBe(true);
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.every((s) => /never DEMO|org-scoped|real|blank/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

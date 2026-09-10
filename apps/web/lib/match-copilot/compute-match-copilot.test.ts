@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeMatchCopilotView } from "./compute-match-copilot";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -29,7 +30,7 @@ describe("computeMatchCopilotView", () => {
       expect(view.steps[0]?.href).toBe("/workspace");
       expect(view.steps.some((s) => s.href.includes("/competition?tab=strategy"))).toBe(true);
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.every((s) => /never DEMO|org-scoped|real|blank/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

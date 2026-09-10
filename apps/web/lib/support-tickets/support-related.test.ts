@@ -8,6 +8,7 @@ import {
   ticketAwaitsReply,
 } from "./support-related";
 import type { SupportTicket } from "./types";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 function ticket(partial: Partial<SupportTicket> & Pick<SupportTicket, "id" | "status">): SupportTicket {
   return {
@@ -43,7 +44,7 @@ describe("support Soft-UI helpers", () => {
     const actions = supportNextActions({});
     expect(actions.map((a) => a.id)).toEqual(["workspace", "account", "help"]);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /tutorials|App manual|Soft-UI|manual/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("asks for first ticket when empty — never DEMO tickets", () => {
@@ -53,7 +54,7 @@ describe("support Soft-UI helpers", () => {
     expect(actions.map((a) => a.id)).toContain("help");
     expect(actions.map((a) => a.id)).toContain("account");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("summarizes only real tickets — empty stays zero", () => {

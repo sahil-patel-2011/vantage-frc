@@ -106,7 +106,7 @@ describe("classifyAiGovernanceShell + copy", () => {
   it("refuses invented DEMO policy stats in empty/setup copy", () => {
     for (const kind of ["empty", "setup", "forbidden", "ready"] as const) {
       const copy = aiGovernanceShellCopy(kind);
-      expect(copy.description).toMatch(/never|not|admin|Budgets|Memory/i);
+      expectPlainCopy(copy.description);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expectPlainCopy(aiGovernanceShellCopy("empty").description);
