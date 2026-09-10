@@ -29,7 +29,6 @@ export default defineConfig({
     env: {
       ...process.env,
       E2E_AUTH_FIXTURE: "1",
-      NODE_OPTIONS: "--max-old-space-size=6144",
       AUTH_TRUSTED_ORIGINS: [
         process.env.AUTH_TRUSTED_ORIGINS,
         "http://localhost:3310",
