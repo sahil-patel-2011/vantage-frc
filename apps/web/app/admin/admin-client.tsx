@@ -265,7 +265,7 @@ function AdminClientInner() {
             <input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           </label>
           <label>
-            Workspace slug
+            Team slug
             <input
               required
               pattern="[a-z0-9]+(?:-[a-z0-9]+)*"

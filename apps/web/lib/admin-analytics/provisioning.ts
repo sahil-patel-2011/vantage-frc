@@ -36,7 +36,7 @@ export function validateProvisionInput(input: ProvisionInput): ProvisionValidati
   const teamNumber = Number(input.teamNumber);
 
   if (!name) return { ok: false, error: "Organization name is required" };
-  if (!slug) return { ok: false, error: "Workspace slug is required" };
+  if (!slug) return { ok: false, error: "Team slug is required" };
   if (!SLUG_PATTERN.test(slug))
     return { ok: false, error: "Slug must use lowercase letters, numbers, and hyphens" };
   if (!Number.isInteger(teamNumber) || teamNumber < TEAM_NUMBER_MIN || teamNumber > TEAM_NUMBER_MAX)
@@ -102,6 +102,6 @@ export function provisionConflictMessage(errorText: string): string | null {
   const text = errorText.toLowerCase();
   if (!text.includes("duplicate key")) return null;
   if (text.includes("team_number")) return "That team number already has a team";
-  if (text.includes("slug")) return "That workspace slug is already taken";
-  return "A workspace with those details already exists";
+  if (text.includes("slug")) return "That team slug is already taken";
+  return "A team with those details already exists";
 }
