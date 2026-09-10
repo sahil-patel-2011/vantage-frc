@@ -20,7 +20,8 @@
 | Scouting | `/scouting` (also `/competition?tab=scouting`) | Main Scouting Hub empty/setup + next actions; OfflineBanner from real outbox counts; cloud voice STT UsageCutoffBanner; cross-links to Forms / Coverage / Strategy / Offline|
 | Scouting forms | `/scouting/forms` (also `/competition?tab=forms`) | Form builder empty/setup + publish clarity; custom schemas; **pit default** is drivetrain / language / driver experience / photos (CD: no claimed scoring); claimed-scoring lint on pit drafts|
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
-| Offline Shell | `/offline`, `/offline-shell` | Cold SW fallover + precache readiness; next actions + Scouting links; banners on Schedule / Scouting / Calendar / Todos / Logistics|
+| This phone | `/offline`, `/offline-shell` | Cold no-signal boot plus a page that shows whether Scouting is saved on this device. Last snapshots stay on Competition, Calendar, Files, Chat, Hours, Packing, Batteries, Pit, and Match notes. Writes queue on the device. |
+| Season calendar | `/calendar` | Kickoff-relative milestones. Last snapshot stays on the phone; ticking a date or adding one queues and uploads on reconnect. Seeding a whole template needs a connection. |
 | Scout P2P Relay | `/scout-p2p-relay` (Competition More tools) | BroadcastChannel pit mesh + paste envelopes merge IndexedDB outbox last-write-wins; captain uplink; QR handoff for other tablets|
 | Graduation exit interviews | `/exit-interview` (Team More tools) | Structured off-boarding; submitted rows write a season-handoff wiki page|
 | Match checklist | `/match-checklist` (also `/competition?tab=match-checklist`) | Timed pit runs plus **hang the correct bumpers** from TBA lists, **SB50 lock / battery strap**, **DS laptop** (charging / never sleep, ethernet seated, Game Bar off), **vision lens wipe**, **bolt check**, **Kraken power screws**, and **tape accidental controller buttons** — older stored runs stay complete; empty/setup + next actions|
@@ -93,7 +94,7 @@
 | Decision Search | `/ai` More tools · `/decision-search` | semantic search over indexed decisions / design reviews / notebook entries; empty/setup + next actions; metered search cutoff banner; cross-links to Season Report / Knowledge / Strategy|
 | AI Memory | `/ai?tab=memory` (also `/team/ai-memory`) | Admin opt-in team memory policy + real Neon counts; private vs team-shared clarity; empty/setup/forbidden shells; Chat/Budgets cross-links|
 | AI Governance | `/ai?tab=governance` (also `/team/ai-policy`) | Feature/tool allowlists, high-cost approvals, spend alerts, Finance-in-AI consent; empty/setup/forbidden shells; Memory/Budgets/Chat cross-links|
-| AI Budgets | `/ai?tab=budgets` (also `/team/budgets`) | Hard spend/token caps, allowlists, kill switch, prompt caching; empty/setup/forbidden shells; UsageCutoffBanner CTAs via hubHref; Chat/Pricing/Account cross-links|
+| Chat limits | `/ai?tab=budgets` (also `/team/budgets`) | Spend and token limits, which models are allowed, Pause Chat for everyone. Cutoff banners send people to Pricing or Chat limits. |
 | AI Usage | `/ai?tab=usage` (also `/team/usage`) | Metered calls, funding source, denials, member/model breakdown; empty/setup shells; UsageCutoffBanner consistency; Chat/Budgets/Pricing/Account via hubHref/withOrgHref|
 | Finance-in-AI | `/ai?tab=finance` | Admin redaction consent toggle + honest empty/off; cross-links to Governance / Chat / Budgets / Memory|
 | Connections | `/account?tab=integrations` (also `/cad/connections`) | TBA / Onshape / Google / Discord / Slack / GitHub setup_required + empty shells; Connected only from real rows; cross-links to Account / CAD / Discord / Slack|
@@ -104,12 +105,12 @@
 | Shop hours | `/hours` (Team More tools, featured) | Clock in/out, kiosk scans, and last-snapshot when the shop Wi-Fi dies. Queued clock events upload when you are back online. |
 | My hours | `/hours-self-view` (Team More tools) | Your hours plus who is in the shop from open sessions. Kiosk lock + biometric consent. |
 | Robot | `/robot` (Build More tools, featured) | Subsystem blueprint plus FMEA / batteries / weigh-in / inspection links — Onshape/Fusion stay CAD systems of record |
-| Assembly manual | `/assembly-manual` (Build › CAD, featured) | Queued relay job (`assembly_manual_runs`, leased + checkpointed) turning an Onshape assembly into a step book: build order derived twice and reconciled, per-step Onshape shaded views, cut/drill/tap from real features, dependency-free PDF. Every unsupported line prints "confirm — not specified in CAD"; a failed render is a labelled placeholder — never a stand-in picture or an invented drill size. Engine `apps/web/lib/assembly-manual`, queue `packages/free-relay/src/assembly-manual.ts`, docs `docs/ASSEMBLY_MANUAL.md` |
+| Assembly manual | `/assembly-manual` (Build › CAD, featured) | A shop Pi turns an Onshape assembly into a step book. Status is Waiting / Building the book / Ready — not queued/running. Every unsupported line prints "confirm — not specified in CAD"; a failed render is a labelled placeholder. |
 | District Advancement | `/district-advancement` | Wires `district-trajectory-sim` compute to a Competition page; EPA cache only|
 | Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
 | Connectors | `/connectors` (Settings) | One page for Google, GitHub, TBA, Onshape, Discord, Slack, email, Stripe, storage node, Fusion relay, and the Pi free relay. Status is Connected only from a stored row. Missing env names the variables and the callback URL to register. |
 | AI relays | `/team/relays` (Team) | Pair a Raspberry Pi with a code. Chat / agent / video roles. Heartbeat shows online. Freebuff website cookies are refused. |
-| Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Results are a timeline with confidence; a person confirms before scouted numbers change. |
+| Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Status is Waiting / Watching / Ready to confirm. Results are a timeline with confidence; a person confirms before scouted numbers change. |
 | Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |
 | Desktop shell | `/desktop` + `apps/desktop` | Same UI as the web. Windows NSIS + MSI + portable; macOS DMG on tag `desktop-v*`. Auto-update via `GET /api/desktop/release`. Unsigned until the owner pastes signing certs. |
 
