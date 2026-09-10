@@ -75,7 +75,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/pit` | "no invented percentage" on the board | this branch |
 | `/files` | No way to keep a file on the device | this branch |
 | `/strategy` empty | "Neon cache", TBA_AUTH_KEY, "will not invent EPA" | this commit |
-| `/calendar` | Breadcrumb repeated "Calendar / Season Calendar"; offline edits lied then dropped | this commit |
+| `/calendar` | Breadcrumb repeated "Calendar / Season Calendar"; offline edits lied then dropped; ⌘K "season calendar" opened the shop calendar | this commit |
+| Chat limits / Usage / Pricing / Help | PAYG, kill switch, BYOK, TBA_AUTH_KEY leaked into student copy; copy-lint now scans related-copy + the manual | this commit |
 | Rankings banner | "Data source degraded", ETag/Neon | this commit |
 | `/ai` Agent | `setup_required` / `running` shown as pills | this commit |
 | `/offline` `/offline-shell` | "Offline Shell", "precache" | this commit |
@@ -89,7 +90,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; 8,262 tests |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
-| 3 | Full UI pass | in progress | Neon/ETag/"will not invent"/Offline Shell/PAYG stripped from student screens. Agent, assembly book, and video jobs use words. FEATURE_MAP walk unfinished. |
+| 3 | Full UI pass | in progress | PAYG / kill switch / BYOK / TBA_AUTH_KEY stripped from Chat limits, Usage, Pricing, Help, Team Data, and related-copy. Season calendar is in Help and ⌘K. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |
 | 5 | Offline shell | in progress | Season calendar now restores the last snapshot and queues add/tick/edit/delete (`calendar_action`). Seed-season still needs a connection. Packing/batteries/pit/season-tasks already queued. Playwright spec also opens `/calendar` and `/packing`. No signed-in `next start` walk. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
@@ -97,11 +98,11 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
 | 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence (does not merge into scouting). Worker skips without a vision model. No live Pi. |
 | 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
-| 11 | Copy sweep | in progress | `copy-lint.test.ts` bans "will not invent". PAYG/kill switch/API budgets rewritten to Chat limits / pause / pay-as-you-go. |
+| 11 | Copy sweep | in progress | `copy-lint.test.ts` now scans related-copy, the in-app manual, usage banners, and dossier setup copy. Bans PAYG and kill switch as well as BYOK. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
 | 13 | CAD / assembly manual | in progress | Ask AI plans `cad.vault` for heavy-part / fastener questions; session facts list vault titles and Onshape links (no fabricated kg). Prompt pins "Cite vault documents by title". Assembly manual on a real Onshape document still unverified. |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
-| 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive vs scouting/messages/pit/hours. |
+| 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive vs scouting/messages/pit/hours. `FEATURE_DIRS` now includes season-calendar and packing. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
-| 17 | Performance / cost | in progress | Home, Event day, Pit, and pit Display kiosk/stage polls skip while the tab is hidden. |
+| 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. |
 | 18 | Final verification | pending | |

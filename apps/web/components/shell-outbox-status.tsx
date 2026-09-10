@@ -43,7 +43,10 @@ export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
     window.addEventListener("online", updateOnline);
     window.addEventListener("offline", updateOnline);
     refresh();
-    const tick = window.setInterval(refresh, 12_000);
+    const tick = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      refresh();
+    }, 12_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.removeEventListener("online", updateOnline);

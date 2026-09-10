@@ -252,7 +252,6 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "tabs",
       "personal navigation",
       "customize island",
-      "soft-ui",
       "dynamic island",
     ],
     relatedHref: "/dashboard",
@@ -592,7 +591,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     summary:
       "Tasks with a due date sit on the calendar and can be ticked off there. Find a time suggests meeting slots from when your team actually turns up.",
     category: "team",
-    keywords: ["calendar", "tasks", "todo", "due", "find a time", "schedule", "meeting", "build night", "attendance", "season calendar"],
+    keywords: ["calendar", "tasks", "todo", "due", "find a time", "schedule", "meeting", "build night", "attendance"],
     relatedHref: "/team?tab=calendar",
     sections: [
       {
@@ -600,7 +599,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open tasks with a due date appear in the all-day row, in month cells, and in the list. Tick the box to mark one done; it goes through the same task list as Work.",
           "Quick add switches between Event and Task, so a deadline can be written down where you noticed it.",
-          "If venue Wi-Fi dies, the last calendar stays on screen. Ticking a date or adding one saves on this phone and uploads when you are back online. Seeding a whole season template still needs a connection.",
+          "If venue Wi-Fi dies, the last calendar stays on screen. Ticking a date or adding one saves on this phone and uploads when you are back online. Seeding a whole season template still needs a connection. For kickoff-relative milestones, see Season calendar.",
         ],
       },
       {
@@ -609,6 +608,39 @@ export const HELP_ARTICLES: HelpArticle[] = [
           "Describe what you need in a sentence — 'a two hour build session next week for mechanical'. The suggestions come from your own past sessions, RSVPs and attendance, and are checked against the calendar for clashes; each one shows why it was suggested.",
           "It needs at least three past sessions before it will call something a pattern. With no history it says so instead of guessing.",
           "Nothing is added to the calendar until you pick a slot and press Add.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "season-calendar",
+    slug: "season-calendar",
+    title: "Season calendar",
+    summary:
+      "Kickoff-relative dates for the build season. The last list stays on this phone; ticking or adding a date uploads when you reconnect. Seeding a whole template needs a connection.",
+    category: "team",
+    keywords: [
+      "season calendar",
+      "kickoff",
+      "milestones",
+      "build season",
+      "offline calendar",
+      "season board",
+    ],
+    relatedHref: "/calendar",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Dates counted from kickoff: bag day, first event, stop-build, and the other season markers your team added.",
+          "If venue Wi-Fi dies, a quiet bar says you are looking at the copy saved on this phone. The same list stays up.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Open Season calendar once on venue Wi-Fi so it caches. Tick a date done or add one — those changes wait on this phone and send when you reconnect.",
+          "Adding a whole season template still needs a connection — wait until you are back online.",
         ],
       },
     ],
@@ -952,7 +984,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Subscription vs Ultra",
         body: [
-          "Subscription Bugbot uses your workspace AI key or plan allowance (feature coding) — it fully honors BYOK and local models.",
+          "Subscription Bugbot uses your team's AI key or plan allowance — including keys you paste and models that run in the shop.",
           "Bugbot Ultra is a hosted API priced at $1.00 to scan, $2.00 to propose a fix, and $1.00 to recheck. It does not use your BYO key — it is the one deliberately hosted-only AI feature.",
         ],
       },
@@ -1276,8 +1308,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Usage and hosting",
         body: [
-          "BYOK call estimates live under BYOK usage (/team/ai-keys). BYOK and local calls are metered for visibility but never debited by Vantage.",
-          "With no BYOK path configured, calls use your plan's hosted allowance or purchased credits — see Billing & plans.",
+          "Calls on your own keys are listed under AI keys (/team/ai-keys). Those calls and local models are counted so you can see them, but Vantage does not bill them.",
+          "With no key of your own, calls use your plan's hosted allowance or purchased credits — see Billing & plans.",
           "A teammate's Claude Pro/Max or ChatGPT subscription can also serve the team at $0 API cost — see the subscription bridge article.",
         ],
       },
@@ -1362,7 +1394,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What answers, in order",
         body: [
-          "Every request resolves the same way: your personal key → team keys or the OpenAI-compatible connector (Automode or fixed model) → the plan's hosted path → the free-tier pool. If nothing resolves, you get an honest error — never a fabricated answer.",
+          "Every request tries, in order: your personal key → team keys or the shop model address (Automode or a pinned model) → the plan's hosted path → the free-tier pool. If nothing resolves, the page says what is missing.",
           "Each surface can show what answered (provider, model, and endpoint origin). Localhost/LAN models carry a plain notice that they are smaller than frontier defaults; unrecognized custom models are described as custom, never assumed bad.",
           "Voice scouting transcription also follows your OpenAI-compatible endpoint when it supports audio; when it does not, the UI says so and degrades to browser speech recognition.",
         ],
@@ -1371,7 +1403,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "The exceptions, stated",
         body: [
           "Many features are deterministic on-server compute (metered at $0) and run with no AI key at all.",
-          "Bugbot Ultra is the one deliberately hosted-only AI feature — its flat fees run on Vantage's hosted keys, and subscription Bugbot remains fully local/BYOK-capable.",
+          "Bugbot Ultra is the one hosted-only AI feature — its flat fees run on Vantage's hosted keys. Subscription Bugbot still uses your own key or a shop model.",
         ],
       },
     ],
@@ -1417,10 +1449,10 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "BYOK and local on every plan",
+        heading: "Your own keys and local models on every plan",
         body: [
           "Bring any provider key — OpenAI, Anthropic, Google AI Studio, OpenRouter, Groq, Mistral, or anything OpenAI-compatible — or point Vantage at Ollama / LM Studio. Unlimited by Vantage; you pay your provider directly.",
-          "When a hosted allowance runs out, usage hard-stops: buy a credit pack, enable pay-as-you-go with an explicit cap, or keep working on BYOK/local. There is never silent overage.",
+          "When a hosted allowance runs out, Chat stops: buy a credit pack, turn on pay-as-you-go with an explicit cap, or keep working on your own keys or a shop model. There is never a silent extra bill.",
         ],
       },
     ],
@@ -1428,9 +1460,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "credits-vs-free",
     slug: "credits-vs-free",
-    title: "Hosted credits, PAYG, and spend controls",
+    title: "Hosted credits, pay-as-you-go, and spend limits",
     summary:
-      "How the hosted allowance, credit packs, and pay-as-you-go work — hard stops before every metered call, never surprise overage.",
+      "How the hosted allowance, credit packs, and pay-as-you-go work — Chat stops before every extra billed call, with no surprise bill.",
     category: "billing-plans",
     keywords: [
       "credits",
@@ -1449,22 +1481,22 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where hosted usage comes from",
         body: [
-          "Every plan includes a monthly hosted AI allowance (see Plans: Free, Pro, Pro+, and Max). Metered features draw from it whenever no BYOK/local path answers first.",
+          "Every plan includes a monthly hosted AI allowance (see Plans: Free, Pro, Pro+, and Max). Billed features draw from it whenever no key of your own or shop model answers first.",
           "Credit packs top the pool up without changing plans; pay-as-you-go continues past the allowance only up to a spend cap you set explicitly.",
         ],
       },
       {
         heading: "Hard stops, not surprises",
         body: [
-          "Budgets and caps are checked before each metered call runs, not tallied afterwards — when the pool is empty and no PAYG cap allows more, the call is refused with a clear banner.",
-          "Set org spend and token caps under AI → Controls (/team/budgets); watch real usage, funding source, and denials under /team/usage. BYOK estimates live under /team/ai-usage.",
+          "Chat limits are checked before each billed call runs, not tallied afterwards — when the pool is empty and no pay-as-you-go cap allows more, the call is refused with a clear banner.",
+          "Set spend and token caps under Ask AI → Controls (/team/budgets); watch real usage and refusals under /team/usage. Estimates for your own keys live under /team/ai-usage.",
         ],
       },
       {
         heading: "What Free does not include",
         body: [
-          "On Free with nothing configured, hosted calls run on the budget-class pool until its allowance is spent, then features show a clear cutoff state — never fabricated results.",
-          "Adding your own key or a local model at /team/ai-keys removes the ceiling entirely; Vantage never bills BYOK or local calls.",
+          "On Free with nothing configured, hosted calls run on the budget-class pool until its allowance is spent, then features show a clear cutoff state.",
+          "Adding your own key or a local model at /team/ai-keys removes the ceiling entirely; Vantage never bills those calls.",
         ],
       },
     ],
@@ -1476,7 +1508,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "integrations",
     title: "Connect TBA, Onshape, GitHub, and chat",
     summary:
-      "Every integration is setup-required by design: the page shows Connect steps until real credentials exist, and never fakes a connected state.",
+      "Settings → Connectors lists every integration. Connect stays available until a real credential is saved. Connected only appears when that save worked.",
     category: "integrations",
     keywords: [
       "integrations",

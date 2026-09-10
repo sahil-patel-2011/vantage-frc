@@ -176,7 +176,10 @@ export default function AssemblyManualClient() {
   // a request every five seconds for as long as the tab is open.
   useEffect(() => {
     if (!hasActive) return;
-    const timer = setInterval(() => void load(), 5000);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 5000);
     return () => clearInterval(timer);
   }, [hasActive, load]);
 
@@ -526,7 +529,10 @@ function RunDetail({
 
   useEffect(() => {
     if (!run || !ACTIVE.includes(run.status)) return;
-    const timer = setInterval(() => void load(), 5000);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 5000);
     return () => clearInterval(timer);
   }, [load, run]);
 

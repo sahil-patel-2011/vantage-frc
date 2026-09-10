@@ -6,8 +6,9 @@
  * what the reader should do next. Empty states say what is missing and what to
  * do — never why the engineering is honest ("… never DEMO scoring tables").
  *
- * This scans user-visible text in every .tsx under app/ and components/:
- * JSX text nodes and string literals. Code comments and identifiers are
+ * This scans user-visible text in every .tsx under app/, components/, and
+ * lib/, plus related-copy modules (`*-related.ts`), the in-app manual, and
+ * a few copy-producing helpers. Code comments and identifiers are
  * deliberately out of scope — `type X = "setup_required"` is a state value,
  * `new URLSearchParams()` is an API, and neither is copy.
  *
@@ -19,7 +20,7 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const WEB_ROOT = join(__dirname, "..", "..");
-const ROOTS = [join(WEB_ROOT, "app"), join(WEB_ROOT, "components")];
+const ROOTS = [join(WEB_ROOT, "app"), join(WEB_ROOT, "components"), join(WEB_ROOT, "lib")];
 
 type Rule = { readonly label: string; readonly pattern: RegExp; readonly why: string };
 
@@ -89,6 +90,16 @@ const RULES: readonly Rule[] = [
     why: "honesty disclaimer — say what is missing and what to do",
   },
   {
+    label: "PAYG",
+    pattern: /\bPAYG\b/,
+    why: 'billing jargon — say "pay-as-you-go"',
+  },
+  {
+    label: "kill switch",
+    pattern: /\bkill\s+switch\b/i,
+    why: 'billing internals — say "pause Chat"',
+  },
+  {
     label: "placeholder/demo data disclaimer",
     pattern: /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|copy|content)\b/i,
     why: "a disclaimer that the data is real tells the reader nothing to do",
@@ -104,7 +115,19 @@ const RULES: readonly Rule[] = [
   },
 ] as const;
 
-function collectTsx(dir: string, acc: string[] = []): string[] {
+function isCopyFile(entry: string): boolean {
+  if (entry.endsWith(".test.ts") || entry.endsWith(".test.tsx")) return false;
+  if (entry.endsWith(".tsx")) return true;
+  // Related-copy modules and the in-app manual are what empty states actually print.
+  if (entry.endsWith("-related.ts")) return true;
+  if (entry === "articles.ts") return true;
+  if (entry === "metered-ai-fail.ts") return true;
+  if (entry === "usage-cutoff.ts") return true;
+  if (entry === "compute-dossier.ts") return true;
+  return false;
+}
+
+function collectCopy(dir: string, acc: string[] = []): string[] {
   let entries: string[];
   try {
     entries = readdirSync(dir);
@@ -120,13 +143,13 @@ function collectTsx(dir: string, acc: string[] = []): string[] {
     } catch {
       continue;
     }
-    if (stats.isDirectory()) collectTsx(full, acc);
-    else if (entry.endsWith(".tsx")) acc.push(full);
+    if (stats.isDirectory()) collectCopy(full, acc);
+    else if (isCopyFile(entry)) acc.push(full);
   }
   return acc;
 }
 
-const files = ROOTS.flatMap((root) => collectTsx(root));
+const files = ROOTS.flatMap((root) => collectCopy(root));
 
 /** Replace a span with same-length blanks so byte offsets stay line-accurate. */
 function blank(source: string, start: number, end: number, out: string[]): void {
@@ -267,9 +290,9 @@ describe("user-facing copy", () => {
         .join("\n");
       expect(report, `\n${findings.length} banned phrase(s) in user-visible copy:\n${report}\n`).toBe("");
     },
-    // Reads and regex-scans every .tsx under app/ and components/ (~1,500
-    // files). Under 3 s alone; it hit 8.8 s with a typecheck and a build
-    // running beside it, and the 5 s default turned that into a red run.
+    // Reads product .tsx plus related-copy / help modules. Under 4 s alone;
+    // keep a 60 s ceiling so a typecheck running beside it cannot turn green
+    // copy into a timeout.
     60_000,
   );
 });

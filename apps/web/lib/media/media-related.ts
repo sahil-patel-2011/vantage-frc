@@ -95,7 +95,7 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
     {
       id: "outreach-calendar",
       label: "Schedule outreach",
-      detail: "Press and demo dates stay empty until you add real events — no sample reach.",
+      detail: "Press and demo-day dates stay empty until you add them.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },
     {

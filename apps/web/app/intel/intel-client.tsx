@@ -359,7 +359,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) {
         setCutoffCode(cutoff);
-        setStatus(data.error ?? "Usage cutoff — research paused until credits or PAYG.");
+        setStatus(data.error ?? "Usage cutoff — research paused until you buy credits or turn on pay-as-you-go.");
         setMessageKind("error");
         return;
       }

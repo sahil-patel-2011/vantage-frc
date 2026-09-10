@@ -15,11 +15,11 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a team workspace"
-          description="Each team sets its own AI budget. Open Workspace or Account, then return from the AI hub."
+          title="Select a team"
+          description="Each team sets its own Chat limits. Open Teams or Account, then come back from Ask AI."
         >
           <a className="app-button secondary" href="/workspace">
-            Open Workspace
+            Open Teams
           </a>
           <a className="app-button secondary" href={withOrgHref("/account", null)}>
             Account

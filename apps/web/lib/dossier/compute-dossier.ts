@@ -122,7 +122,7 @@ export async function computeTeamDossier(
       label: "Sync TBA identity + schedule",
       detail: access.tbaConfigured
         ? "TBA credential or cache available"
-        : "Set TBA_AUTH_KEY or save a TBA credential, then sync.",
+        : "Connect The Blue Alliance or save a team key, then sync.",
       href: withOrgHref("/team/data", orgId),
       done: access.tbaConfigured,
     },
@@ -197,8 +197,8 @@ export async function computeTeamDossier(
     return {
       status: access.tbaConfigured ? "empty" : "setup_required",
       message: access.tbaConfigured
-        ? `Team ${teamNumber} is not in the Neon TBA teams cache yet. Sync reference data, then retry.`
-        : "Team identity cache is empty and TBA is not configured. Set TBA_AUTH_KEY (or a credential), sync, then open the dossier.",
+        ? `Team ${teamNumber} is not in the saved Blue Alliance list yet. Sync under Team → Data, then retry.`
+        : "This team's Blue Alliance page is not saved yet. Connect TBA under Team → Data, sync, then open the profile.",
       steps,
       orgId: row.orgId,
       teamNumber,

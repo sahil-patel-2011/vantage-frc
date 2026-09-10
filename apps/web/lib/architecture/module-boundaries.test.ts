@@ -17,6 +17,8 @@ const FEATURE_DIRS = [
   "drive",
   "onboarding",
   "funding-profile.ts",
+  "season-calendar.ts",
+  "packing.ts",
 ] as const;
 
 const SHARED_PREFIXES = [

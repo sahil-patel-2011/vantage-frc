@@ -111,10 +111,14 @@ describe("help articles", () => {
     }
   });
 
-  it("never ships DEMO fluff in titles or summaries", () => {
+  it("never ships DEMO, PAYG, or BYOK in titles or summaries", () => {
     for (const article of HELP_ARTICLES) {
       expect(article.title).not.toMatch(/\bDEMO\b/);
       expect(article.summary).not.toMatch(/\bDEMO\b/);
+      expect(article.title).not.toMatch(/\bPAYG\b/);
+      expect(article.summary).not.toMatch(/\bPAYG\b/);
+      expect(article.title).not.toMatch(/\bBYOK\b/);
+      expect(article.summary).not.toMatch(/\bBYOK\b/);
     }
   });
 
@@ -215,7 +219,7 @@ describe("help search index", () => {
     expect(searchHelpArticles("venue wifi")[0]?.slug).toBe("offline-at-events");
     expect(searchHelpArticles("packing list")[0]?.slug).toBe("packing-lists");
     expect(searchHelpArticles("battery logs")[0]?.slug).toBe("batteries-at-events");
-    expect(searchHelpArticles("season calendar")[0]?.slug).toBe("calendar-tasks");
+    expect(searchHelpArticles("season calendar")[0]?.slug).toBe("season-calendar");
   });
 
   it("ignores short queries and scores zero for nonsense", () => {

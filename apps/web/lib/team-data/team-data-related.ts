@@ -117,7 +117,7 @@ export function teamDataNextActions(input: {
         {
           id: "team-data",
           label: "Save a TBA key",
-          detail: "Encrypt an org fallback key here, or ask a platform admin for TBA_AUTH_KEY.",
+          detail: "Save a Blue Alliance key here, or ask whoever set up this site to add one in deployment settings.",
           href: withOrgHref("/team/data", orgId),
           primary: true,
         },

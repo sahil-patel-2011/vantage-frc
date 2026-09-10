@@ -212,8 +212,8 @@ export function aiChatNextActions(input: {
     return [
       {
         id: "budgets",
-        label: "Check Budgets",
-        detail: "Kill switch or spend caps can block the assistant before a channel loads.",
+        label: "Check Chat limits",
+        detail: "Pause Chat or a spend limit can block the assistant before a channel loads.",
         href: budgetsHref,
         primary: true,
       },

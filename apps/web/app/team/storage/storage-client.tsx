@@ -239,7 +239,10 @@ export default function StorageNodesClient() {
 
   // Heartbeats land every 60s; refresh at the same cadence so liveness stays honest on screen.
   useEffect(() => {
-    const timer = window.setInterval(load, 60_000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      load();
+    }, 60_000);
     return () => window.clearInterval(timer);
   }, [load]);
 

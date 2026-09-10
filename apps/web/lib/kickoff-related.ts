@@ -67,7 +67,7 @@ export function kickoffNextActions(input: {
     actions.push({
       id: "strategy-seeds",
       label: "Open Strategy (after seeds)",
-      detail: "Design priorities seed into Strategy only from your structured summary — not fixture data.",
+      detail: "Design priorities seed into Strategy only from the summary you paste — empty until you do.",
       href: strategyHref,
     });
     actions.push({

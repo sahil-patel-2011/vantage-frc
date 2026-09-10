@@ -467,7 +467,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   checked={policy.modelAllowlistEnabled}
                   onChange={(e) => setPolicy({ ...policy, modelAllowlistEnabled: e.target.checked })}
                 />
-                Enforce model allowlist
+                Only allow the models I pick
               </label>
               <label className="check-field">
                 <input
@@ -475,7 +475,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   checked={policy.providerAllowlistEnabled}
                   onChange={(e) => setPolicy({ ...policy, providerAllowlistEnabled: e.target.checked })}
                 />
-                Enforce provider allowlist
+                Only allow the providers I pick
               </label>
               <label className="check-field danger">
                 <input

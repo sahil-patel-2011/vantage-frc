@@ -122,7 +122,10 @@ export default function KioskClient() {
 
   useEffect(() => {
     void load();
-    const timer = setInterval(() => void load(), 60_000);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 60_000);
     return () => clearInterval(timer);
   }, [load]);
 

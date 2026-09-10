@@ -115,10 +115,10 @@ const rowStyle: React.CSSProperties = {
 // limit codes like "org.daily_spend" / "member.monthly_tokens". Translate both.
 function denialReasonLabel(reason: string): string {
   const fixed: Record<string, string> = {
-    "org.kill_switch": "Kill switch active",
-    kill_switch: "Kill switch active",
-    "model.not_allowed": "Model not on allowlist",
-    "provider.not_allowed": "Provider not on allowlist",
+    "org.kill_switch": "Chat paused for the team",
+    kill_switch: "Chat paused for the team",
+    "model.not_allowed": "This model is not allowed",
+    "provider.not_allowed": "This provider is not allowed",
     spend_cap: "Overage spend cap reached",
     payg_not_enabled: "Pay-as-you-go disabled",
     insufficient_prepaid_balance: "Insufficient prepaid balance",
@@ -500,7 +500,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               </span>
               <h2>AI calls stopped by policy</h2>
               <p className="app-muted">
-                When a budget limit, allowlist, or kill switch blocks a call, it is recorded here — so a feature that
+                When a spend limit, a model list, or Pause Chat blocks a call, it is recorded here — so a feature that
                 suddenly stops working can be traced to the exact control that caught it. Adjust caps on{" "}
                 <a href={budgetsHref}>Chat limits</a>.
               </p>

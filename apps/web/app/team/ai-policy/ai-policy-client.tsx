@@ -673,17 +673,17 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           </form>
 
           <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
-            <span className="eyebrow">MODEL ALLOWLIST (FROM API BUDGETS)</span>
+            <span className="eyebrow">WHICH MODELS ARE ALLOWED</span>
             <p className="app-muted">
               {budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
-                ? "Model/provider allowlist enforcement is on."
-                : "Model/provider allowlist enforcement is off."}{" "}
+                ? "Only the models you picked are allowed."
+                : "Every model on the plan is allowed."}{" "}
               Edit on <a href={budgetsHref}>Chat limits</a>
-              {budget?.killSwitch ? " · Kill switch is active." : "."}
+              {budget?.killSwitch ? " · Chat is paused for the team." : "."}
             </p>
             {models.length === 0 ? (
               <p className="app-muted">
-                No per-model rules yet — an empty list is honest.
+                No per-model rules yet.
               </p>
             ) : (
               <ul>

@@ -300,7 +300,7 @@ export function retroNextActions(input: {
       detail:
         learnedItemCount > 0
           ? `${learnedItemCount} learned item${learnedItemCount === 1 ? "" : "s"} from real retro rows — send to Season report or Playbook. Nothing is invented.`
-          : "Write start/stop/continue items before handing off — this never invents lessons.",
+          : "Write start/stop/continue items before handing off.",
       href: "#retro-learned",
     },
     {

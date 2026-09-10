@@ -502,7 +502,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "sync_status",
         undefined,
-        "TBA not configured. Set TBA_AUTH_KEY (or save a platform/org TBA credential) before live match/rank sync.",
+        "The Blue Alliance is not connected. Save a key under Team → Data before match and ranking sync.",
       );
       return;
     }

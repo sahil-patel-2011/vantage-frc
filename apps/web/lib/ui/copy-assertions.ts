@@ -21,6 +21,9 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bpre-seeded\b/i, "describes how the table was populated, not what to do"],
   [/\bfixtures?\b/i, "test vocabulary"],
   [/\bhard\s+usage\s+cut[-\s]?offs?\b/i, "billing internals"],
+  [/\bPAYG\b/, 'billing jargon — say "pay-as-you-go"'],
+  [/\bBYOK\b/, 'billing jargon — say "your own keys"'],
+  [/\bkill\s+switch\b/i, 'billing internals — say "pause Chat"'],
   [
     /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|dollars?|hours?|logos?|slots?|lessons?)\b/i,
     "a disclaimer that the data is real",

@@ -338,7 +338,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         title={needsTba ? "Connect TBA" : needsEvent ? "Select an active event" : "Finish Team Data setup"}
         description={
           needsTba
-            ? `Save an encrypted TBA Read API v3 key below, or ask whoever runs this deployment to set TBA_AUTH_KEY (Vercel → Project → Settings → Environment Variables). Get the key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
+            ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
               ? "Team Data syncs only for a real workspace event — Schedule, Event Day, and Strategy stay empty until then."
               : "Finish workspace setup so TBA sync can resolve your organization."
@@ -350,11 +350,10 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       >
         {needsTba ? (
           <section className="app-card soft-panel team-data-panel">
-            <h2>TBA fallback key</h2>
+            <h2>Blue Alliance team key</h2>
             <p className="app-muted">
               Encrypted on save and never shown again. Create one at thebluealliance.com → Account → Read API
-              Keys; the Read API v3 key is the only permission Vantage needs. A platform-wide{" "}
-              <code>TBA_AUTH_KEY</code> set on the deployment covers every team and makes this unnecessary.
+              Keys. A site-wide Blue Alliance key in deployment settings covers every team and makes this unnecessary.
             </p>
             <form className="team-data-key-form" onSubmit={saveFallbackKey}>
               <label>

@@ -336,7 +336,7 @@ export function aiBudgetsNextActions(input: {
     actions.push({
       id: "finish",
       label: "Add a spend or token cap",
-      detail: "Allowlists alone do not hard-stop spend — set a numeric limit or kill switch.",
+      detail: "A model list alone does not stop spend — set a dollar or token limit, or pause Chat.",
       href: "#org-hard-limits",
       primary: true,
     });
@@ -353,7 +353,7 @@ export function aiBudgetsNextActions(input: {
     {
       id: "pricing",
       label: "View pricing",
-      detail: "Buy AI credits, enable PAYG, or upgrade after hosted usage runs out.",
+      detail: "Buy AI credits, turn on pay-as-you-go, or upgrade after hosted usage runs out.",
       href: pricingHref,
     },
     {
@@ -408,14 +408,14 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
       return {
         kind,
         title: "Loading AI usage…",
-        description: "Checking metered calls, funding sources, and denials.",
+        description: "Checking Chat calls, which key paid, and any that were refused.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
         title: "Sign in to view AI usage",
-        description: "Usage ledgers are workspace-scoped. Sign in, then reopen Usage from the AI hub.",
+        description: "Usage is per team. Sign in, then reopen Usage from Ask AI.",
       };
     case "forbidden":
       return {
@@ -429,17 +429,17 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
       return {
         kind,
         badge: "Empty",
-        title: "No metered AI calls yet",
+        title: "No Chat calls billed yet",
         description:
-          "This ledger stays empty until a real Chat or feature call is metered. Totals stay at zeros.",
+          "This list stays empty until someone uses Chat or another billed helper. Totals stay at zero.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup",
-        title: "Select a workspace and plan",
+        title: "Select a team and plan",
         description:
-          "Usage needs an org with entitlements. Open Account or Pricing, then Chat to generate the first real metered call.",
+          "Usage needs a team on a plan. Open Account or Pricing, then send a Chat message to record the first call.",
       };
     case "error":
       return {
@@ -521,7 +521,7 @@ export function aiUsageNextActions(input: {
       {
         id: "budgets",
         label: "Open Budgets",
-        detail: "Hard limits and kill switch live next to Usage on the AI hub.",
+        detail: "Spend limits and Pause Chat live next to Usage under Ask AI.",
         href: budgetsHref,
       },
       {
@@ -563,7 +563,7 @@ export function aiUsageNextActions(input: {
     {
       id: "budgets",
       label: "Open Budgets",
-      detail: "Set hard spend/token caps before more metered calls.",
+      detail: "Set spend and token limits before more Chat calls.",
       href: budgetsHref,
       primary: !actions.some((a) => a.primary),
     },
@@ -611,11 +611,11 @@ export const AI_BUDGETS_SCOPE_CARDS = [
   {
     id: "chat" as const,
     title: "Chat · where it runs",
-    body: "Members hit these caps when they message the assistant. Cut-off banners deep-link back here via hubHref.",
+    body: "Members hit these caps when they message the assistant. Cut-off banners send them back here.",
   },
   {
     id: "pricing" as const,
     title: "Pricing · allowance & credits",
-    body: "Included plan allowance, Usage Credit packs, PAYG, and upgrades. Account holds membership; Budgets holds org hard caps.",
+    body: "Included plan allowance, credit packs, pay-as-you-go, and upgrades. Account holds membership; Chat limits holds the team's caps.",
   },
 ] as const;

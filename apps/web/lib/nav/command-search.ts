@@ -103,7 +103,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:battery-rotation": ["battery", "batteries", "charge", "charging", "packs", "cart"],
 
   // --- Team ---
-  "team:calendar": ["calendar", "schedule", "meetings", "events", "when", "dates", "shop nights", "season calendar", "milestones", "kickoff"],
+  "team:calendar": ["calendar", "schedule", "meetings", "events", "when", "dates", "shop nights", "milestones", "kickoff"],
   "team:messages": ["chat", "message", "dm", "talk", "discuss", "slack", "discord", "inbox"],
   "team:attendance": [
     "attendance", "who is here", "who is coming", "coming tonight", "roster", "present",
@@ -377,7 +377,7 @@ const KEYWORDS: Record<string, string[]> = {
 const STANDALONE: CommandEntry[] = [
   { id: "home", label: "Home", context: "Vantage", href: "/dashboard", kind: "destination", keywords: ["home", "dashboard", "start", "overview"], featured: true },
   { id: "logistics", label: "Logistics", context: "Vantage", href: "/logistics", kind: "destination", keywords: ["travel", "hotel", "rooming", "bus", "trip", "lodging"] },
-  { id: "packing", label: "Packing list", context: "Logistics", href: "/packing", kind: "destination", keywords: ["packing", "load out", "trailer", "what to bring", "cart"] },
+  { id: "season-calendar", label: "Season calendar", context: "Team", href: "/calendar", kind: "destination", keywords: ["season calendar", "kickoff", "milestones", "build season", "bag day", "stop build", "season board"], featured: true },
   { id: "duties", label: "Duties", context: "Logistics", href: "/duties", kind: "destination", keywords: ["duties", "who is on", "assignments", "chaperone"] },
   { id: "visit-invites", label: "Visit invites", context: "Logistics", href: "/visit-invites", kind: "destination", keywords: ["visit", "tour", "demo day", "rsvp"] },
   // Forms is a standalone destination rather than a pillar leaf: the drawer

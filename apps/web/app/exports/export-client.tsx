@@ -100,7 +100,10 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     setEventKey(eventFromUrl());
     setSelected(preselectedFromUrl());
     void load();
-    const timer = setInterval(() => void load(), 3000);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 3000);
     return () => clearInterval(timer);
      
   }, [orgId]);

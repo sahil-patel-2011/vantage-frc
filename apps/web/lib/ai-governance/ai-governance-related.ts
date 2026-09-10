@@ -172,7 +172,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         kind,
         badge: "Sign in",
         title: "Sign in to manage AI governance",
-        description: "Org policy is workspace-scoped. Sign in, then reopen Governance from the AI hub.",
+        description: "Governance is per team. Sign in, then reopen it from Ask AI.",
       };
     case "forbidden":
       return {
@@ -211,7 +211,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         kind: "ready",
         title: "Org AI governance",
         description:
-          "Feature/tool policy, high-cost approvals, and absolute spend alerts live here. Model/provider allowlists and kill switches live under Budgets; shared memory under Memory.",
+          "Which tools Chat may use, who must approve a costly call, and spend alerts live here. Which models are allowed and Pause Chat live under Chat limits; shared memory under Memory.",
       };
   }
 }
@@ -265,13 +265,13 @@ export function aiGovernanceNextActions(input: {
       {
         id: "budgets",
         label: "Open Budgets",
-        detail: "API spend caps and model allowlists are next to Chat — distinct from this governance form.",
+        detail: "Spend limits and which models are allowed live next to Chat — this form is a separate set of gates.",
         href: budgetsHref,
       },
       {
         id: "memory",
         label: "Open Memory",
-        detail: "Team memory injection is a separate admin opt-in from feature/tool allowlists.",
+        detail: "Team memory is a separate admin opt-in from which tools Chat may use.",
         href: memoryHref,
       },
     ];
@@ -307,14 +307,14 @@ export function aiGovernanceNextActions(input: {
     },
     {
       id: "budgets",
-      label: "Open Budgets",
-      detail: "Model/provider allowlists and kill switch live on Budgets, not this form.",
+      label: "Open Chat limits",
+      detail: "Which models and providers are allowed, and Pause Chat, live on Chat limits — not this form.",
       href: budgetsHref,
     },
     {
       id: "memory",
       label: "Open Memory",
-      detail: "Shared team memory injection is opt-in under Memory — separate from tool allowlists.",
+      detail: "Shared team memory is opt-in under Memory — separate from which tools Chat may use.",
       href: memoryHref,
     },
   );
@@ -331,8 +331,8 @@ export const AI_GOVERNANCE_SCOPE_CARDS = [
   },
   {
     id: "budgets" as const,
-    title: "Budgets · models & spend caps",
-    body: "Daily/monthly API caps, model/provider allowlists, warning %, and kill switch. Edit there — this page only mirrors the allowlist state.",
+    title: "Chat limits · models & spend",
+    body: "Daily and monthly spend limits, which models are allowed, a warning percent, and Pause Chat. Edit there — this page only mirrors which models are allowed.",
   },
   {
     id: "memory" as const,

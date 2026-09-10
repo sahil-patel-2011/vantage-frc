@@ -57,7 +57,7 @@ export function prototypeNextActions(input: {
     actions.push({
       id: "kickoff",
       label: "Ground tests in Kickoff priorities",
-      detail: "Pick subsystems from your season priorities before building fixtures.",
+      detail: "Pick subsystems from your season priorities before you start cutting parts.",
       href: hubHref("/build", "kickoff", orgId),
     });
     actions.push({

@@ -76,7 +76,7 @@ export async function GET(request: Request) {
             label: "Sync TBA",
             detail: tbaConfigured
               ? "Platform TBA key is set — open Admin → Live Data to sync if stale"
-              : "Set TBA_AUTH_KEY (or TBA_API_KEY) or save a TBA credential under Team → Data",
+              : "Connect The Blue Alliance under Team → Data, or ask whoever set up this site to add a Blue Alliance key.",
             href: "/team/data",
           },
         ],

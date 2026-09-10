@@ -190,7 +190,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
     return {
       level: "at",
       reason: "org_budget",
-      title: "Org monthly API budget reached",
+      title: "Team monthly Chat limit reached",
       body: "Team spend limits blocked further Chat. Raise the monthly limit under Chat limits, or wait until next month.",
       percent: snapshot.orgMonthlyBudgetPercent,
     };
@@ -209,8 +209,8 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
     candidates.push({
       percent: snapshot.orgMonthlyBudgetPercent,
       reason: "org_budget",
-      title: "Approaching org API budget",
-      body: `${Math.round(snapshot.orgMonthlyBudgetPercent)}% of the org monthly spend limit is used. Metered calls will hard-stop at the limit.`,
+      title: "Approaching team Chat limit",
+      body: `${Math.round(snapshot.orgMonthlyBudgetPercent)}% of the team monthly spend limit is used. Chat will stop at the limit.`,
     });
   }
   if (snapshot.walletBalanceUsd > 0 && snapshot.walletBalanceUsd < 5 && (allowance == null || allowance >= 90)) {
@@ -218,7 +218,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       percent: null,
       reason: "credits",
       title: "AI credits running low",
-      body: `About $${snapshot.walletBalanceUsd.toFixed(2)} prepaid credits remain. Buy another pack before managed calls hard-stop.`,
+      body: `About $${snapshot.walletBalanceUsd.toFixed(2)} prepaid credits remain. Buy another pack before Chat stops.`,
     });
   }
 

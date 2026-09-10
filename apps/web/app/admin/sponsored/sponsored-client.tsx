@@ -163,7 +163,7 @@ export default function SponsoredClient() {
             <div className="intel-actions" style={{ marginTop: "1rem" }}>
               {policy.enabled ? (
                 <button type="button" className="danger-action" onClick={() => void setEnabled(false)}>
-                  Disable sponsored AI (kill switch)
+                  Pause sponsored AI
                 </button>
               ) : (
                 <button type="button" onClick={() => void setEnabled(true)}>

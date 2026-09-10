@@ -148,6 +148,6 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   }
   return {
     title: "Paid · hosted AI",
-    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste your own keys; that traffic does not consume hosted usage.",
+    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or turn on pay-as-you-go when you need more. Credits go further than running the same models on your own keys. You can still paste your own keys; that traffic does not consume hosted usage.",
   };
 }

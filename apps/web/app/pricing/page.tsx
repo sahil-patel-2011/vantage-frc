@@ -63,7 +63,7 @@ export default function PricingPage() {
             </p>
             <p>
               Free teams add keys at <a href="/team/ai-keys">/team/ai-keys</a>, or buy credits for hosted usage. Paid
-              plans include hosted AI; when you need more, buy credits or enable PAYG with an explicit spend cap.
+              plans include hosted AI; when you need more, buy credits or turn on pay-as-you-go with an explicit spend cap.
             </p>
             <p className="pricing-note">{catalogNote}</p>
             <p className="pricing-footnote">

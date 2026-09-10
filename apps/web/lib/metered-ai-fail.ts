@@ -16,19 +16,19 @@ const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
   {
     id: "keys",
     label: "Add an AI provider key",
-    detail: "BYOK OpenAI / Anthropic / Google or a local OpenAI-compatible base URL under Team → AI API keys.",
+    detail: "Paste an OpenAI, Anthropic, or Google key, or a local OpenAI-compatible address, under Team → AI keys.",
     href: "/team/ai-keys",
   },
   {
     id: "budgets",
     label: "Review Chat limits",
-    detail: "Hard spend and token limits apply before every metered call.",
+    detail: "Spend and token limits apply before every Chat message.",
     href: "/ai?tab=budgets",
   },
   {
     id: "governance",
     label: "Check AI governance",
-    detail: "Feature allowlists and approvals may block a call even when a key exists.",
+    detail: "Which tools Chat may use, and who must approve a costly call, can still block a message even when a key exists.",
     href: "/ai?tab=governance",
   },
 ];
