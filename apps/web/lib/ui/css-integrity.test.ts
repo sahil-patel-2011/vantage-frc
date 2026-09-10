@@ -293,4 +293,63 @@ describe("stylesheet integrity", () => {
     for (const root of roots) walk(root);
     expect(offenders, `TS/TSX still uses --app-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
   });
+
+  it("keeps product CSS off --m-* marketing tokens", () => {
+    // Marketing sheets keep a separate copper/paper palette on purpose.
+    // Product chrome must not pick it up or two buttons on the same screen
+    // diverge again. system.css may declare the aliases.
+    const marketingSheet = /(?:^|[/\\])(?:marketing(?:-v3|-showcase)?|legal)\.css$/;
+    const offenders: string[] = [];
+    for (const file of files) {
+      if (file.endsWith(`${sep}system.css`) || file.endsWith("/system.css")) continue;
+      if (marketingSheet.test(file)) continue;
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (/var\(--m-/.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(offenders, `product CSS still consumes --m-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
+
+  it("keeps product TSX off --m-* marketing tokens", () => {
+    const roots = [
+      join(__dirname, "..", "..", "app"),
+      join(__dirname, "..", "..", "components"),
+      join(__dirname, "..", "..", "lib"),
+    ];
+    const marketingTsx = /(?:^|[/\\])pricing-catalog\.tsx$/;
+    const offenders: string[] = [];
+    function walk(dir: string) {
+      let entries: string[];
+      try {
+        entries = readdirSync(dir);
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        let stats;
+        try {
+          stats = statSync(full);
+        } catch {
+          continue;
+        }
+        if (stats.isDirectory()) walk(full);
+        else if (entry.endsWith(".tsx") || entry.endsWith(".ts")) {
+          if (marketingTsx.test(full)) continue;
+          const text = readFileSync(full, "utf8");
+          text.split("\n").forEach((line, index) => {
+            if (/var\(--m-/.test(line)) {
+              offenders.push(`${full}:${index + 1}: ${line.trim().slice(0, 80)}`);
+            }
+          });
+        }
+      }
+    }
+    for (const root of roots) walk(root);
+    expect(offenders, `product TS/TSX still uses --m-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
 });
