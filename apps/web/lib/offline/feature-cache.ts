@@ -28,7 +28,10 @@ export type OfflineFeature =
   | "schedule"
   | "assembly-manual"
   | "chemistry"
-  | "pick-clock";
+  | "pick-clock"
+  | "alliance-desk"
+  | "print-farm"
+  | "inventory";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

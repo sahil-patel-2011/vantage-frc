@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   summarizeInventory,
   type InventoryView,
@@ -26,6 +27,7 @@ import InventoryLabelTools from "./inventory-label-tools";
 import { LocationsPanel } from "./inventory-locations";
 import { BomPanel } from "./inventory-bom";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   INVENTORY_ADD_HREF,
   filterVisibleInventoryItems,
@@ -34,6 +36,23 @@ import {
   type InventoryTab,
 } from "./inventory-model";
 import { InventoryStockPanel } from "./inventory-stock";
+
+function isInventoryView(value: unknown): value is InventoryView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "ready" || status === "setup_required";
+}
+
+async function persistInventorySnapshot(orgHint: string, data: InventoryView): Promise<void> {
+  const cacheOrg = inventoryOrgId(data) || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("inventory", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("inventory", "_", data);
+  } catch {
+    // Live inventory already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function InventoryClient() {
   const [view, setView] = useState<InventoryView | null>(null);
@@ -50,28 +69,59 @@ export default function InventoryClient() {
   const [showArchived, setShowArchived] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<InventoryView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<InventoryView>("inventory", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isInventoryView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/inventory${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+      const response = await fetch(`/api/inventory${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as InventoryView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load inventory.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isInventoryView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh inventory. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load inventory.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistInventorySnapshot(urlOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh inventory. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -88,6 +138,7 @@ export default function InventoryClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -126,7 +177,11 @@ export default function InventoryClient() {
   }).filter((action) => (shell === "empty" ? action.href !== INVENTORY_ADD_HREF : true));
 
   if (shell === "loading") {
-    return <InventoryShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <InventoryShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Inventory" fromCache={fromCache} cachedAt={cachedAt} />
+      </InventoryShell>
+    );
   }
 
   if (shell === "error") {
@@ -138,7 +193,9 @@ export default function InventoryClient() {
         error={error || shellCopy.description}
         errorStatus={errorStatus}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Inventory" fromCache={fromCache} cachedAt={cachedAt} />
+      </InventoryShell>
     );
   }
 
@@ -148,7 +205,9 @@ export default function InventoryClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Inventory" fromCache={fromCache} cachedAt={cachedAt} />
+      </InventoryShell>
     );
   }
 
@@ -210,6 +269,8 @@ export default function InventoryClient() {
         onToggleAdd={() => setShowAdd((value) => !value)}
         onToggleLabels={() => setShowLabels((value) => !value)}
       />
+
+      <OfflineBanner feature="Inventory" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

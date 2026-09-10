@@ -51,6 +51,9 @@ const SHELL_ROUTES = [
   "/my-day",
   "/chemistry",
   "/pick-clock",
+  "/alliance-selection-desk",
+  "/print-farm",
+  "/inventory",
 ];
 
 function isShellPath(pathname) {

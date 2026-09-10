@@ -81,12 +81,14 @@ export function FarmShell({
   kind,
   error,
   onRetry,
+  children,
 }: {
   description: string;
   orgId?: string | null;
   kind: FarmShellKind;
   error?: string;
   onRetry?: () => void;
+  children?: ReactNode;
 }) {
   const buildHref = hubWorkbenchHref("build", "print-farm", orgId);
   return (
@@ -101,6 +103,7 @@ export function FarmShell({
         title="3D Print Farm"
         description={description}
       />
+      {children}
       {farmShellBody({ kind, description, orgId, error, onRetry })}
       <NonGoalsNote />
     </main>

@@ -419,7 +419,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 ) : (
                   <article>
                     <strong>No widgets</strong>
-                    <small>Select a preset or custom widgets</small>
+                    <small>Choose a preset or add widgets</small>
                   </article>
                 )}
               </div>

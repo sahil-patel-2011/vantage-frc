@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -34,7 +35,32 @@ import {
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./alliance-selection-desk.css";
+
+function isAllianceSelectionDeskView(value: unknown): value is AllianceSelectionDeskView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "empty" || status === "live";
+}
+
+async function persistAllianceDeskSnapshot(
+  orgHint: string,
+  sessionHint: string,
+  data: AllianceSelectionDeskView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim()
+      ? data.orgId
+      : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("alliance-desk", cacheOrg, data, sessionHint);
+    if (!orgHint) await putFeatureSnapshot("alliance-desk", "_", data, sessionHint);
+  } catch {
+    // Live board already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<AllianceSelectionDeskView, { status: "live" }>;
 type EmptyView = Extract<AllianceSelectionDeskView, { status: "empty" }>;
@@ -96,6 +122,8 @@ function DeskShell({
   error,
   onRetry,
   children,
+  fromCache = false,
+  cachedAt = null,
 }: {
   description: string;
   orgId?: string | null;
@@ -103,6 +131,8 @@ function DeskShell({
   error?: string;
   onRetry?: () => void;
   children?: ReactNode;
+  fromCache?: boolean;
+  cachedAt?: string | null;
 }) {
   const actions = allianceSelectionDeskNextActions({ orgId, shell });
   const copy = allianceSelectionDeskShellCopy(shell);
@@ -123,6 +153,7 @@ function DeskShell({
       >
         <DeskRelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Alliance selection desk" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading alliance selection desk">
@@ -281,29 +312,70 @@ export default function AllianceSelectionDeskClient() {
   const [busy, setBusy] = useState(false);
   const [sessionName, setSessionName] = useState("Alliance Selection");
   const [exportSnap, setExportSnap] = useState<DeskExportSnapshot | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AllianceSelectionDeskView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((overrideSession?: string | null) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const urlSession = overrideSession ?? params.get("sessionId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (urlSession) query.set("sessionId", urlSession);
-    void fetch(`/api/alliance-selection-desk${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const urlSession = (overrideSession ?? params.get("sessionId") ?? "").trim();
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<AllianceSelectionDeskView>(
+          "alliance-desk",
+          urlOrg || "_",
+          urlSession,
+        );
+        if (!viewRef.current && cached?.data && isAllianceSelectionDeskView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (urlSession) query.set("sessionId", urlSession);
+      try {
+        const response = await fetch(
+          `/api/alliance-selection-desk${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as AllianceSelectionDeskView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isAllianceSelectionDeskView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistAllianceDeskSnapshot(urlOrg, urlSession, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -362,13 +434,15 @@ export default function AllianceSelectionDeskClient() {
           setError("error" in data && data.error ? String(data.error) : "Something went wrong.");
           return null;
         }
-        if ("view" in data && data.view && "status" in data.view) {
+        if ("view" in data && data.view && isAllianceSelectionDeskView(data.view)) {
           setView(data.view);
           if (data.snapshot) setExportSnap(data.snapshot);
+          void persistAllianceDeskSnapshot(orgId, sessionId ?? "", data.view);
           return data;
         }
-        if ("status" in data) {
+        if (isAllianceSelectionDeskView(data)) {
           setView(data);
+          void persistAllianceDeskSnapshot(orgId, sessionId ?? "", data);
           return data;
         }
         setError("Unexpected response.");
@@ -384,7 +458,15 @@ export default function AllianceSelectionDeskClient() {
   );
 
   if (shell === "loading") {
-    return <DeskShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <DeskShell
+        description={shellCopy.description}
+        orgId={null}
+        shell="loading"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
+      />
+    );
   }
 
   if (shell === "error") {
@@ -395,6 +477,8 @@ export default function AllianceSelectionDeskClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -405,6 +489,8 @@ export default function AllianceSelectionDeskClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
       />
     );
   }
@@ -459,6 +545,8 @@ export default function AllianceSelectionDeskClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Alliance selection desk" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p role="alert" className="telemetry-status">
