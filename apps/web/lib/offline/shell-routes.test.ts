@@ -154,6 +154,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/training")).toBe(true);
     expect(pathnameIsOfflineShell("/tool-checkout")).toBe(true);
     expect(pathnameIsOfflineShell("/goals")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad-vault")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad-learn")).toBe(true);
+    expect(pathnameIsOfflineShell("/reimbursements")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -292,6 +295,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/training")).toBe("Training");
     expect(offlineCapableLabel("/tool-checkout")).toBe("Tool checkout");
     expect(offlineCapableLabel("/goals")).toBe("Goals");
+    expect(offlineCapableLabel("/cad-vault")).toBe("CAD Vault");
+    expect(offlineCapableLabel("/cad-learn")).toBe("CAD Learn");
+    expect(offlineCapableLabel("/cad-change-radar")).toBe("CAD Change Radar");
+    expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -425,6 +432,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("training", "org-1")).toBe("training:org-1");
     expect(featureCacheKey("tool-checkout", "org-1")).toBe("tool-checkout:org-1");
     expect(featureCacheKey("goals", "org-1", "2026")).toBe("goals:org-1:2026");
+    expect(featureCacheKey("cad-vault", "org-1", "2026")).toBe("cad-vault:org-1:2026");
+    expect(featureCacheKey("cad-learn", "org-1")).toBe("cad-learn:org-1");
+    expect(featureCacheKey("reimbursements", "org-1")).toBe("reimbursements:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

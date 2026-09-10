@@ -137,7 +137,10 @@ export type OfflineFeature =
   | "learning"
   | "training"
   | "tool-checkout"
-  | "goals";
+  | "goals"
+  | "cad-vault"
+  | "cad-learn"
+  | "reimbursements";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

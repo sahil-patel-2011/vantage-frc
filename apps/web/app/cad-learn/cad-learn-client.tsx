@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   CAD_COMMUNITY_LINKS,
   CAD_REFERENCE,
@@ -9,6 +10,8 @@ import {
   totalCadMinutes,
   type Lesson,
 } from "../../lib/cad-learn/track";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 /**
  * The CAD track page.
@@ -520,26 +523,88 @@ function LessonBody({
   );
 }
 
+function isCadLearnView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { orgId?: unknown; progress?: unknown };
+  return typeof row.orgId === "string" && Array.isArray(row.progress);
+}
+
+async function persistCadLearnSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("cad-learn", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("cad-learn", "_", data);
+  } catch {
+    // Live CAD Learn already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function CadLearnClient() {
   const [view, setView] = useState<View | null>(null);
   const [ready, setReady] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState("");
   const elements = useRef(new Map<string, HTMLElement>());
   const viewed = useRef(new Set<string>());
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch("/api/cad-learn/progress");
-      if (!response.ok) {
-        // Signed out, or no team yet. The curriculum is still worth reading, so
-        // the page renders without progress rather than showing an error.
-        setReady(true);
+      const cached = await getFeatureSnapshot<View>("cad-learn", orgHint || "_");
+      if (!viewRef.current && cached?.data && isCadLearnView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        for (const row of cached.data.progress) viewed.current.add(row.lessonId);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setRefreshError("");
+    try {
+      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+      const response = await fetch(`/api/cad-learn/progress${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         return;
       }
-      const data = (await response.json()) as View;
+      if (!response.ok) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        }
+        return;
+      }
+      const data: unknown = await response.json().catch(() => null);
+      if (!isCadLearnView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        }
+        return;
+      }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       for (const row of data.progress) viewed.current.add(row.lessonId);
+      await persistCadLearnSnapshot(orgHint, data);
     } catch {
-      /* the track is useful without progress; never block on it */
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+      }
     } finally {
       setReady(true);
     }
@@ -600,16 +665,18 @@ export default function CadLearnClient() {
       const isDone = completed.has(lessonId);
       // Optimistic: the checkbox has to feel instant, and a failed write only
       // costs a tick that comes back on reload.
-      setView((previous) => {
-        if (!previous) return previous;
+      const previous = viewRef.current;
+      if (previous) {
         const rows = previous.progress.filter((row) => row.lessonId !== lessonId);
         rows.push({
           lessonId,
           viewedAt: new Date().toISOString(),
           completedAt: isDone ? null : new Date().toISOString(),
         });
-        return { ...previous, progress: rows };
-      });
+        const next = { ...previous, progress: rows };
+        setView(next);
+        void persistCadLearnSnapshot(previous.orgId, next);
+      }
       void post(lessonId, isDone ? "reopen" : "complete");
     },
     [completed, post],
@@ -671,6 +738,12 @@ export default function CadLearnClient() {
               </p>
             ) : null}
           </header>
+          <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
+          {refreshError ? (
+            <p className="cl-muted" role="alert">
+              {refreshError}
+            </p>
+          ) : null}
 
           {CAD_TRACK.map((unit) => (
             <section key={unit.id} className="cl-unit" id={unit.id}>

@@ -141,6 +141,9 @@ export const OFFLINE_SHELL_ROUTES = [
   "/training",
   "/tool-checkout",
   "/goals",
+  "/cad-vault",
+  "/cad-learn",
+  "/reimbursements",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -236,6 +239,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/battery-health-forecast")) return "Battery Health Forecast";
   if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
   if (bare.startsWith("/bin-shelf-locator")) return "Bin/Shelf Locator";
+  if (bare.startsWith("/cad-vault")) return "CAD Vault";
+  if (bare.startsWith("/cad-learn")) return "CAD Learn";
   if (bare.startsWith("/cad-change-radar")) return "CAD Change Radar";
   if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
   if (bare.startsWith("/control-map")) return "Control Map";
@@ -292,6 +297,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/training")) return "Training";
   if (bare.startsWith("/tool-checkout")) return "Tool checkout";
   if (bare.startsWith("/goals")) return "Goals";
+  if (bare.startsWith("/reimbursements")) return "Reimbursements";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";

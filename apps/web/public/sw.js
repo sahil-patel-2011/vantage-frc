@@ -159,6 +159,9 @@ const SHELL_ROUTES = [
   "/training",
   "/tool-checkout",
   "/goals",
+  "/cad-vault",
+  "/cad-learn",
+  "/reimbursements",
 ];
 
 function isShellPath(pathname) {

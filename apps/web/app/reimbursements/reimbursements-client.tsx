@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
   BUDGET_CLOSE_RATIO,
@@ -43,6 +44,8 @@ import {
   downscaleDimensions,
 } from "../../lib/scouting/media-downscale";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./reimbursements.css";
 
 const ACTION_LABELS: Record<ReimbursementAction, string> = {
@@ -107,6 +110,28 @@ async function downscaleReceipt(file: File): Promise<Blob> {
 
 type Status = "loading" | "ready" | "error";
 
+function isReimbursementsView(value: unknown): value is ReimbursementsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function reimbursementsCacheOrg(data: ReimbursementsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistReimbursementsSnapshot(orgHint: string, data: ReimbursementsView): Promise<void> {
+  const cacheOrg = reimbursementsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("reimbursements", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("reimbursements", "_", data);
+  } catch {
+    // Live Reimbursements already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function ReimbursementsClient() {
   const [view, setView] = useState<ReimbursementsView | null>(null);
   const [budget, setBudget] = useState<BudgetVsActualView | null>(null);
@@ -114,6 +139,10 @@ export default function ReimbursementsClient() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ReimbursementsView | null>(null);
+  viewRef.current = view;
 
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -124,32 +153,93 @@ export default function ReimbursementsClient() {
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const params = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : "";
-    setStatus("loading");
-    fetch(`/api/reimbursements${query}`)
-      .then((response) => response.json() as Promise<ReimbursementsView>)
-      .then((next) => {
-        setView(next);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<ReimbursementsView>("reimbursements", orgHint || "_");
+      if (!viewRef.current && cached?.data && isReimbursementsView(cached.data)) {
+        setView(cached.data);
         setStatus("ready");
-        setError(null);
-        if (next.status !== "ready") return null;
-        return fetch(
-          `/api/finance/budget-vs-actual?orgId=${encodeURIComponent(next.orgId)}&seasonYear=${next.seasonYear}`,
-        )
-          .then((response) => response.json() as Promise<BudgetVsActualView>)
-          .then(setBudget)
-          .catch(() => setBudget(null));
-      })
-      .catch((cause: unknown) => {
-        setStatus("error");
-        setError(cause instanceof Error ? cause.message : "Could not load reimbursements.");
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setStatus("loading");
+    try {
+      const response = await fetch(`/api/reimbursements${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
+      const next: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setBudget(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setStatus("error");
+        setError(
+          next && typeof next === "object" && "error" in next && typeof next.error === "string"
+            ? next.error
+            : "Could not load reimbursements.",
+        );
+        return;
+      }
+      if (!response.ok || !isReimbursementsView(next)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setStatus("ready");
+          setError("Could not refresh Reimbursements. Showing the last copy on this device.");
+          return;
+        }
+        setStatus("error");
+        setError(
+          next && typeof next === "object" && "error" in next && typeof next.error === "string"
+            ? next.error
+            : "Could not load reimbursements.",
+        );
+        return;
+      }
+      setView(next);
+      setStatus("ready");
+      setError(null);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistReimbursementsSnapshot(orgHint, next);
+      if (next.status !== "ready") {
+        setBudget(null);
+        return;
+      }
+      try {
+        const budgetResponse = await fetch(
+          `/api/finance/budget-vs-actual?orgId=${encodeURIComponent(next.orgId)}&seasonYear=${next.seasonYear}`,
+          { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+        );
+        const budgetData = (await budgetResponse.json()) as BudgetVsActualView;
+        setBudget(budgetData);
+      } catch {
+        setBudget(null);
+      }
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setStatus("ready");
+        setError("Could not refresh Reimbursements. Showing the last copy on this device.");
+        return;
+      }
+      setStatus("error");
+      setError("Could not load reimbursements.");
+    }
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const pickReceipt = useCallback((file: File | null) => {
     setNotice(null);
@@ -304,6 +394,7 @@ export default function ReimbursementsClient() {
         title="Reimbursements"
         description="Money someone on the team already spent out of their own pocket — filed with a receipt, approved once, paid once, and recorded in the team ledger."
       />
+      <OfflineBanner feature="Reimbursements" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="rb-alert" role="alert">
@@ -316,14 +407,14 @@ export default function ReimbursementsClient() {
         </p>
       ) : null}
 
-      {status === "loading" ? <EmptyState title="Loading reimbursements…" aria-busy /> : null}
+      {status === "loading" && !view ? <EmptyState title="Loading reimbursements…" aria-busy /> : null}
 
-      {status === "error" ? (
+      {status === "error" && !view ? (
         <EmptyState
           title="Could not load reimbursements"
           description={error ?? "Something went wrong."}
         >
-          <button type="button" className="rb-receipt-pick" onClick={load}>
+          <button type="button" className="rb-receipt-pick" onClick={() => void load()}>
             Retry
           </button>
         </EmptyState>

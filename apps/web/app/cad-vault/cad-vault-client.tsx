@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, ProgressMeter, Button } from "../../components/ui";
 import { titleFromFilename } from "../../lib/cad-vault/filenames";
 import { detectCadFormat, type CadFormat } from "../../lib/cad-vault/format-detect";
@@ -24,11 +25,36 @@ import {
   type SubsystemOption,
 } from "../../lib/cad-vault/view";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { LinkOnshapePanel } from "./link-onshape";
 
 const MAX_INLINE_PREVIEW_BYTES = 20 * 1024 * 1024; // above this, use the stored thumbnail
 
 type ReadyView = Extract<CadVaultView, { status: "empty" | "ready" }>;
+
+function isCadVaultView(value: unknown): value is CadVaultView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "empty" || status === "ready";
+}
+
+function cadVaultCacheOrg(data: CadVaultView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCadVaultSnapshot(orgHint: string, seasonHint: string, data: CadVaultView): Promise<void> {
+  const cacheOrg = cadVaultCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("cad-vault", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("cad-vault", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live CAD Vault already painted; IndexedDB is best-effort.
+  }
+}
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -190,10 +216,14 @@ type PendingUpload = {
 export default function CadVaultClient() {
   const [view, setView] = useState<CadVaultView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [seasonYear, setSeasonYear] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const viewRef = useRef<CadVaultView | null>(null);
+  viewRef.current = view;
 
   // Upload panel state — everything stays in this one panel.
   const [pending, setPending] = useState<PendingUpload | null>(null);
@@ -206,28 +236,71 @@ export default function CadVaultClient() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const load = useCallback((season?: number | null) => {
-    setFetchFailed(false);
+  const load = useCallback(async (season?: number | null) => {
     const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (season != null) query.set("seasonYear", String(season));
-    void fetch(`/api/cad-vault${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as CadVaultView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = season != null ? season : (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
+    const seasonHint =
+      seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CadVaultView>("cad-vault", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isCadVaultView(cached.data)) {
+        setView(cached.data);
+        setSeasonYear(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery != null && Number.isFinite(seasonQuery)) query.set("seasonYear", String(seasonQuery));
+      const response = await fetch(`/api/cad-vault${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        return;
+      }
+      if (!response.ok || !isCadVaultView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        if ("seasonYear" in data) setSeasonYear(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        return;
+      }
+      setView(data);
+      setSeasonYear(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistCadVaultSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -349,6 +422,9 @@ export default function CadVaultClient() {
             return;
           }
           setView(data);
+          if ("seasonYear" in data) setSeasonYear(data.seasonYear);
+          setFromCache(false);
+          void persistCadVaultSnapshot(orgId ?? "", String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -385,24 +461,20 @@ export default function CadVaultClient() {
   const description =
     "Versioned storage for STL, STEP, and vendor CAD files — bytes verified by magic numbers, linked to robot subsystems. Not a CAD editor: no Onshape sync and no STEP/IGES tessellation.";
 
-  if (view == null && !fetchFailed) {
+  if (!view) {
     return (
       <main className="module-page cad-vault-page">
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Loading" badgeTone="setup" title="Loading the vault…" description="Fetching your team's documents." aria-busy />
-      </main>
-    );
-  }
-
-  if (fetchFailed || view == null) {
-    return (
-      <main className="module-page cad-vault-page">
-        <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Unavailable" badgeTone="setup" title="Could not load the CAD vault" description="Check your connection and try again.">
-          <Button variant="secondary" type="button" onClick={() => load(seasonYear)}>
-            Retry
-          </Button>
-        </EmptyState>
+        <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
+        {fetchFailed ? (
+          <EmptyState soft badge="Unavailable" badgeTone="setup" title="Could not load the CAD vault" description="Check your connection and try again.">
+            <Button variant="secondary" type="button" onClick={() => void load(seasonYear)}>
+              Retry
+            </Button>
+          </EmptyState>
+        ) : (
+          <EmptyState soft badge="Loading" badgeTone="setup" title="Loading the vault…" description="Fetching your team's documents." aria-busy />
+        )}
       </main>
     );
   }
@@ -411,7 +483,13 @@ export default function CadVaultClient() {
     return (
       <main className="module-page cad-vault-page soft-gate">
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team first" description={view.message}>
+        <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
+        {error ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <EmptyState soft badge="Setup required" badgeTone="setup" title="Choose your team" description={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
               {view.steps[0].label}
@@ -456,6 +534,7 @@ export default function CadVaultClient() {
           <span className="app-badge">{formatBytes(ready?.totalBytes ?? 0)} of 2 GB</span>
         </div>
       </PageHeader>
+      <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
