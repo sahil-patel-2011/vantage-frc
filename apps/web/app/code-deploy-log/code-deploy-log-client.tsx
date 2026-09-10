@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
@@ -35,6 +36,7 @@ import {
 } from "../../lib/code-deploy-log/code-deploy-log-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./code-deploy-log.css";
 
 const statusTone: Record<DeployStatus, BadgeTone> = {
@@ -48,6 +50,33 @@ function pct(value: number): string {
 }
 
 type LiveView = Extract<CodeDeployLogView, { status: "live" }>;
+
+function isCodeDeployLogView(value: unknown): value is CodeDeployLogView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function codeDeployLogCacheOrg(data: CodeDeployLogView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCodeDeployLogSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: CodeDeployLogView,
+): Promise<void> {
+  const cacheOrg = codeDeployLogCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("code-deploy-log", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("code-deploy-log", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Code Deploy Log already painted; IndexedDB is best-effort.
+  }
+}
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = codeDeployLogRelatedLinks(orgId, {
@@ -160,30 +189,75 @@ export default function CodeDeployLogClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CodeDeployLogView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/code-deploy-log${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<CodeDeployLogView>(
+          "code-deploy-log",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isCodeDeployLogView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/code-deploy-log${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as CodeDeployLogView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isCodeDeployLogView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Code Deploy Log. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistCodeDeployLogSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Code Deploy Log. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -227,12 +301,13 @@ export default function CodeDeployLogClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CodeDeployLogView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isCodeDeployLogView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistCodeDeployLogSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -243,7 +318,11 @@ export default function CodeDeployLogClient() {
   );
 
   if (shell === "loading") {
-    return <DeployShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <DeployShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DeployShell>
+    );
   }
 
   if (shell === "error") {
@@ -254,7 +333,9 @@ export default function CodeDeployLogClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DeployShell>
     );
   }
 
@@ -265,12 +346,17 @@ export default function CodeDeployLogClient() {
         orgId={orgId}
         shell="setup"
       >
+        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
       </DeployShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <DeployShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <DeployShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
+      </DeployShell>
+    );
   }
 
   return (
@@ -312,6 +398,7 @@ export default function CodeDeployLogClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

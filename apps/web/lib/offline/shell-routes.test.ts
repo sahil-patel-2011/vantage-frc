@@ -99,6 +99,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/vendor-lead-times")).toBe(true);
     expect(pathnameIsOfflineShell("/bin-shelf-locator")).toBe(true);
     expect(pathnameIsOfflineShell("/build-burndown")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad-change-radar")).toBe(true);
+    expect(pathnameIsOfflineShell("/code-deploy-log")).toBe(true);
+    expect(pathnameIsOfflineShell("/control-map")).toBe(true);
+    expect(pathnameIsOfflineShell("/cross-team-scrim")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -177,6 +181,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/bin-shelf-locator")).toBe("Bin/Shelf Locator");
     expect(offlineCapableLabel("/build-burndown")).toBe("Build Burndown");
     expect(offlineCapableLabel("/build")).toBe("Build");
+    expect(offlineCapableLabel("/cad-change-radar")).toBe("CAD Change Radar");
+    expect(offlineCapableLabel("/code-deploy-log")).toBe("Code Deploy Log");
+    expect(offlineCapableLabel("/control-map")).toBe("Control Map");
+    expect(offlineCapableLabel("/cross-team-scrim")).toBe("Cross-Team Scrims");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -254,6 +262,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("vendor-lead-times", "org-1")).toBe("vendor-lead-times:org-1");
     expect(featureCacheKey("bin-shelf-locator", "org-1")).toBe("bin-shelf-locator:org-1");
     expect(featureCacheKey("build-burndown", "org-1", "2026")).toBe("build-burndown:org-1:2026");
+    expect(featureCacheKey("cad-change-radar", "org-1")).toBe("cad-change-radar:org-1");
+    expect(featureCacheKey("code-deploy-log", "org-1", "2026")).toBe("code-deploy-log:org-1:2026");
+    expect(featureCacheKey("control-map", "org-1", "2026")).toBe("control-map:org-1:2026");
+    expect(featureCacheKey("cross-team-scrim", "org-1", "2026")).toBe("cross-team-scrim:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

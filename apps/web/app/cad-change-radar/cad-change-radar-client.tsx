@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -31,7 +32,26 @@ import {
 } from "../../lib/cad-change-radar/cad-change-radar-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./cad-change-radar.css";
+
+function isCadChangeRadarView(value: unknown): value is CadChangeRadarView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistCadChangeRadarSnapshot(orgHint: string, data: CadChangeRadarView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("cad-change-radar", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("cad-change-radar", "_", data);
+  } catch {
+    // Live CAD Change Radar already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<CadChangeRadarView, { status: "live" }>;
 
@@ -151,27 +171,64 @@ export default function CadChangeRadarClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CadChangeRadarView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/cad-change-radar${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<CadChangeRadarView>("cad-change-radar", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isCadChangeRadarView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/cad-change-radar${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as CadChangeRadarView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isCadChangeRadarView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistCadChangeRadarSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -219,11 +276,12 @@ export default function CadChangeRadarClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CadChangeRadarView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isCadChangeRadarView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistCadChangeRadarSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -234,7 +292,11 @@ export default function CadChangeRadarClient() {
   );
 
   if (shell === "loading") {
-    return <RadarShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <RadarShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+      </RadarShell>
+    );
   }
 
   if (shell === "error") {
@@ -245,7 +307,9 @@ export default function CadChangeRadarClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+      </RadarShell>
     );
   }
 
@@ -256,12 +320,17 @@ export default function CadChangeRadarClient() {
         orgId={orgId}
         shell="setup"
       >
+        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
       </RadarShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <RadarShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <RadarShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
+      </RadarShell>
+    );
   }
 
   return (
@@ -284,6 +353,7 @@ export default function CadChangeRadarClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-status" role="alert">

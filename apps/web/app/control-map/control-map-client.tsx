@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   COMMON_INPUTS,
@@ -21,6 +22,8 @@ import {
   type ControlMapShellKind,
 } from "../../lib/control-map/control-map-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./control-map.css";
@@ -46,6 +49,29 @@ type View =
     };
 
 type ReadyView = Extract<View, { status: "ready" }>;
+
+function isControlMapView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function controlMapCacheOrg(data: View, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistControlMapSnapshot(orgHint: string, seasonHint: string, data: View): Promise<void> {
+  const cacheOrg = controlMapCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "ready" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("control-map", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("control-map", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Control Map already painted; IndexedDB is best-effort.
+  }
+}
 
 const EMPTY_FORM = {
   controller: "driver" as Controller,
@@ -199,27 +225,63 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const urlOrg = orgIdProp?.trim() ?? "";
+    const seasonHint = String(seasonYear);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("control-map", urlOrg || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isControlMapView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setMessage("");
     setErrorStatus(null);
     try {
       const params = new URLSearchParams();
-      params.set("seasonYear", String(seasonYear));
-      if (orgIdProp) params.set("orgId", orgIdProp);
-      const response = await fetch(`/api/control-map?${params.toString()}`);
+      params.set("seasonYear", seasonHint);
+      if (urlOrg) params.set("orgId", urlOrg);
+      const response = await fetch(`/api/control-map?${params.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as View & { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setFetchFailed(true);
-        setErrorStatus(response.status);
-        setMessage(data.error ?? "Failed to load control map");
+      if (!response.ok || !isControlMapView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setErrorStatus(response.status);
+          setMessage(data.error ?? "Failed to load control map");
+        }
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistControlMapSnapshot(urlOrg, seasonHint, data);
     } catch {
-      setFetchFailed(true);
-      setMessage("Network error — please try again.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setMessage("Network error — please try again.");
+      }
     }
   }, [orgIdProp, seasonYear]);
 
@@ -266,6 +328,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId: view.context.orgId, ...body }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as { error?: string };
       setMessage(response.ok ? okMessage : (data.error ?? "Request failed"));
@@ -289,7 +352,9 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         description={shellCopy.description}
         orgId={orgIdProp}
         shell="loading"
-      />
+      >
+        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+      </ControlMapShell>
     );
   }
 
@@ -302,7 +367,9 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         error={message || shellCopy.description}
         errorStatus={errorStatus}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+      </ControlMapShell>
     );
   }
 
@@ -314,13 +381,17 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         }
         orgId={orgIdProp}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+      </ControlMapShell>
     );
   }
 
   if (view?.status !== "ready") {
     return (
-      <ControlMapShell description={shellCopy.description} orgId={orgIdProp} shell="setup" />
+      <ControlMapShell description={shellCopy.description} orgId={orgIdProp} shell="setup">
+        <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
+      </ControlMapShell>
     );
   }
 
@@ -344,6 +415,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className="telemetry-status" role="status">

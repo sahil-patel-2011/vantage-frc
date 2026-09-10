@@ -86,6 +86,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/vendor-lead-times",
   "/bin-shelf-locator",
   "/build-burndown",
+  "/cad-change-radar",
+  "/code-deploy-log",
+  "/control-map",
+  "/cross-team-scrim",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -167,6 +171,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/battery-health-forecast")) return "Battery Health Forecast";
   if (bare.startsWith("/vendor-lead-times")) return "Vendor Lead Times";
   if (bare.startsWith("/bin-shelf-locator")) return "Bin/Shelf Locator";
+  if (bare.startsWith("/cad-change-radar")) return "CAD Change Radar";
+  if (bare.startsWith("/code-deploy-log")) return "Code Deploy Log";
+  if (bare.startsWith("/control-map")) return "Control Map";
+  if (bare.startsWith("/cross-team-scrim")) return "Cross-Team Scrims";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

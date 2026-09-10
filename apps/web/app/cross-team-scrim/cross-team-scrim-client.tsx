@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { scrimDataShareLabel, scrimStatusLabel } from "../../lib/cross-team-scrim";
 import {
@@ -23,6 +24,7 @@ import {
 import type { ScrimDataShareScope, ScrimStatus } from "../../lib/cross-team-scrim/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./cross-team-scrim.css";
 
 function statusTone(status: ScrimStatus): string {
@@ -32,6 +34,33 @@ function statusTone(status: ScrimStatus): string {
 }
 
 type LiveView = Extract<CrossTeamScrimView, { status: "live" }>;
+
+function isCrossTeamScrimView(value: unknown): value is CrossTeamScrimView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function crossTeamScrimCacheOrg(data: CrossTeamScrimView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCrossTeamScrimSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: CrossTeamScrimView,
+): Promise<void> {
+  const cacheOrg = crossTeamScrimCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("cross-team-scrim", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("cross-team-scrim", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Cross-Team Scrims already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScrimRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = crossTeamScrimRelatedLinks(orgId, {
@@ -153,30 +182,75 @@ export default function CrossTeamScrimClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CrossTeamScrimView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/cross-team-scrim${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<CrossTeamScrimView>(
+          "cross-team-scrim",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isCrossTeamScrimView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/cross-team-scrim${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as CrossTeamScrimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isCrossTeamScrimView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistCrossTeamScrimSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -220,12 +294,13 @@ export default function CrossTeamScrimClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CrossTeamScrimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isCrossTeamScrimView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistCrossTeamScrimSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -236,7 +311,11 @@ export default function CrossTeamScrimClient() {
   );
 
   if (shell === "loading") {
-    return <ScrimShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <ScrimShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScrimShell>
+    );
   }
 
   if (shell === "error") {
@@ -247,7 +326,9 @@ export default function CrossTeamScrimClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScrimShell>
     );
   }
 
@@ -257,12 +338,18 @@ export default function CrossTeamScrimClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScrimShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <ScrimShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <ScrimShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScrimShell>
+    );
   }
 
   return (
@@ -304,6 +391,7 @@ export default function CrossTeamScrimClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

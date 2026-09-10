@@ -81,7 +81,11 @@ export type OfflineFeature =
   | "battery-health-forecast"
   | "vendor-lead-times"
   | "bin-shelf-locator"
-  | "build-burndown";
+  | "build-burndown"
+  | "cad-change-radar"
+  | "code-deploy-log"
+  | "control-map"
+  | "cross-team-scrim";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -104,6 +104,10 @@ const SHELL_ROUTES = [
   "/vendor-lead-times",
   "/bin-shelf-locator",
   "/build-burndown",
+  "/cad-change-radar",
+  "/code-deploy-log",
+  "/control-map",
+  "/cross-team-scrim",
 ];
 
 function isShellPath(pathname) {
