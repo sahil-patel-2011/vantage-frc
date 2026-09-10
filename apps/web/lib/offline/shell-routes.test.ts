@@ -83,6 +83,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/award-tracker")).toBe(true);
     expect(pathnameIsOfflineShell("/epa-trend-alerts")).toBe(true);
     expect(pathnameIsOfflineShell("/rankings")).toBe(true);
+    expect(pathnameIsOfflineShell("/grant-report")).toBe(true);
+    expect(pathnameIsOfflineShell("/media-kit")).toBe(true);
+    expect(pathnameIsOfflineShell("/sponsor-wall")).toBe(true);
+    expect(pathnameIsOfflineShell("/sponsor-suite")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -143,6 +147,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
     expect(offlineCapableLabel("/epa-trend-alerts")).toBe("EPA Trend Alerts");
     expect(offlineCapableLabel("/rankings")).toBe("Rankings");
+    expect(offlineCapableLabel("/grant-report")).toBe("Grant Report");
+    expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
+    expect(offlineCapableLabel("/sponsor-wall")).toBe("Sponsor Wall");
+    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -204,6 +212,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("award-tracker", "org-1", "2026")).toBe("award-tracker:org-1:2026");
     expect(featureCacheKey("epa-trend", "org-1")).toBe("epa-trend:org-1");
     expect(featureCacheKey("rankings", "org-1")).toBe("rankings:org-1");
+    expect(featureCacheKey("grant-report", "org-1", "2026")).toBe("grant-report:org-1:2026");
+    expect(featureCacheKey("media-kit", "org-1", "2026")).toBe("media-kit:org-1:2026");
+    expect(featureCacheKey("sponsor-wall", "org-1")).toBe("sponsor-wall:org-1");
+    expect(featureCacheKey("sponsor-suite", "org-1", "2026")).toBe("sponsor-suite:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

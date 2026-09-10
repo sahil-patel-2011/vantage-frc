@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { reminderKindLabel, tierLabel } from "../../lib/sponsor-suite";
@@ -18,8 +19,37 @@ import {
 } from "../../lib/sponsor-suite/sponsor-suite-related";
 import type { SponsorSuiteDeckKind, SponsorSuiteReminderKind } from "../../lib/sponsor-suite/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-suite.css";
+
+function isSponsorSuiteView(value: unknown): value is SponsorSuiteView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function sponsorSuiteCacheOrg(data: SponsorSuiteView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSponsorSuiteSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SponsorSuiteView,
+): Promise<void> {
+  const cacheOrg = sponsorSuiteCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("sponsor-suite", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("sponsor-suite", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Sponsor Suite already painted; IndexedDB is best-effort.
+  }
+}
 
 const DECK_KINDS: SponsorSuiteDeckKind[] = ["pitch", "renewal"];
 const REMINDER_KINDS: SponsorSuiteReminderKind[] = ["thank_you", "renewal"];
@@ -149,28 +179,75 @@ export default function SponsorSuiteClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SponsorSuiteView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery =
-      seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/sponsor-suite${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SponsorSuiteView>(
+          "sponsor-suite",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isSponsorSuiteView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/sponsor-suite${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as SponsorSuiteView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isSponsorSuiteView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSponsorSuiteSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -218,9 +295,10 @@ export default function SponsorSuiteClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SponsorSuiteView | { error?: string; code?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSponsorSuiteView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, data);
           if (cutoff) {
             setCutoffCode(cutoff);
@@ -232,6 +310,7 @@ export default function SponsorSuiteClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistSponsorSuiteSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -242,7 +321,11 @@ export default function SponsorSuiteClient() {
   );
 
   if (shell === "loading") {
-    return <SponsorSuiteShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <SponsorSuiteShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorSuiteShell>
+    );
   }
 
   if (shell === "error") {
@@ -253,7 +336,9 @@ export default function SponsorSuiteClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorSuiteShell>
     );
   }
 
@@ -263,12 +348,18 @@ export default function SponsorSuiteClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorSuiteShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <SponsorSuiteShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <SponsorSuiteShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorSuiteShell>
+    );
   }
 
   return (
@@ -310,6 +401,7 @@ export default function SponsorSuiteClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 

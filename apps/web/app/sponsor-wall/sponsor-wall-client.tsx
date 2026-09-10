@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { SPONSOR_WALL_TIERS, sponsorWallTierLabel } from "../../lib/sponsor-wall";
 import type { SponsorWallView } from "../../lib/sponsor-wall/compute-sponsor-wall";
@@ -17,8 +18,28 @@ import {
 } from "../../lib/sponsor-wall/sponsor-wall-related";
 import type { SponsorWallTheme, SponsorWallTier } from "../../lib/sponsor-wall/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-wall.css";
+
+function isSponsorWallView(value: unknown): value is SponsorWallView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistSponsorWallSnapshot(orgHint: string, data: SponsorWallView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("sponsor-wall", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("sponsor-wall", "_", data);
+  } catch {
+    // Live Sponsor Wall already painted; IndexedDB is best-effort.
+  }
+}
 
 const THEME_LABEL: Record<SponsorWallTheme, string> = {
   light: "Light",
@@ -145,24 +166,64 @@ export default function SponsorWallClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SponsorWallView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/sponsor-wall${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SponsorWallView>("sponsor-wall", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isSponsorWallView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/sponsor-wall${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as SponsorWallView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isSponsorWallView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Sponsor Wall. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSponsorWallSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Sponsor Wall. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -207,13 +268,15 @@ export default function SponsorWallClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SponsorWallView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSponsorWallView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistSponsorWallSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -224,7 +287,11 @@ export default function SponsorWallClient() {
   );
 
   if (shell === "loading") {
-    return <SponsorWallShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <SponsorWallShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorWallShell>
+    );
   }
 
   if (shell === "error") {
@@ -235,7 +302,9 @@ export default function SponsorWallClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorWallShell>
     );
   }
 
@@ -245,12 +314,18 @@ export default function SponsorWallClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorWallShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <SponsorWallShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <SponsorWallShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
+      </SponsorWallShell>
+    );
   }
 
   return (
@@ -273,6 +348,7 @@ export default function SponsorWallClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -65,7 +65,11 @@ export type OfflineFeature =
   | "briefing"
   | "award-tracker"
   | "epa-trend"
-  | "rankings";
+  | "rankings"
+  | "grant-report"
+  | "media-kit"
+  | "sponsor-wall"
+  | "sponsor-suite";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

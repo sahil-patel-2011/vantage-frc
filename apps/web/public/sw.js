@@ -88,6 +88,10 @@ const SHELL_ROUTES = [
   "/award-tracker",
   "/epa-trend-alerts",
   "/rankings",
+  "/grant-report",
+  "/media-kit",
+  "/sponsor-wall",
+  "/sponsor-suite",
 ];
 
 function isShellPath(pathname) {
