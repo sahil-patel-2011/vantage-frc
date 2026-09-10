@@ -11,6 +11,7 @@ import {
   verifyTotp,
   isTotpReplay,
   resolveAuthSecret,
+  hasBetterAuthSessionCookie,
 } from ".";
 import { createOrganizationAsPlatformAdmin } from "./membership";
 import type { PoolClient } from "@neondatabase/serverless";
@@ -212,6 +213,22 @@ describe("waitlist-only auth access policy", () => {
     process.env.VERCEL_URL = previous.vercelUrl;
     process.env.GOOGLE_CLIENT_ID = previous.googleId;
     process.env.GOOGLE_CLIENT_SECRET = previous.googleSecret;
+  });
+
+  it("trusts the local Next and Playwright origins outside production", async () => {
+    const { resolveAuthTrustedOrigins } = await import("./access-policy");
+    const origins = resolveAuthTrustedOrigins("http://localhost:3001");
+    expect(origins).toContain("http://localhost:3001");
+    expect(origins).toContain("http://localhost:3310");
+    expect(origins).toContain("http://127.0.0.1:3310");
+  });
+
+  it("treats only a real Better Auth session cookie as signed in", () => {
+    expect(hasBetterAuthSessionCookie(null)).toBe(false);
+    expect(hasBetterAuthSessionCookie("vantage-e2e-session=authenticated")).toBe(false);
+    expect(hasBetterAuthSessionCookie("better-auth.session_token=")).toBe(false);
+    expect(hasBetterAuthSessionCookie("better-auth.session_token=abc.def")).toBe(true);
+    expect(hasBetterAuthSessionCookie("__Secure-better-auth.session_token=abc.def")).toBe(true);
   });
 });
 

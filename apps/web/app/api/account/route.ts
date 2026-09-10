@@ -2,6 +2,7 @@ import {
   auth,
   emailNotificationsSetupStatus,
   getUserEmailPreferences,
+  hasBetterAuthSessionCookie,
   mergeInAppNotificationPrefs,
   parseDob,
   updateUserEmailPreferences,
@@ -66,7 +67,13 @@ function mergePrefs(raw: unknown): NotificationPrefs {
 }
 
 async function currentSession() {
-  return auth.api.getSession({ headers: await headers() });
+  const requestHeaders = await headers();
+  // The Playwright fixture cookie only walks the proxy. Calling getSession
+  // without a Better Auth token still opens the auth pool against the local
+  // default URL, which hangs when CI has no Postgres and leaves Account on
+  // "Loading account" forever.
+  if (!hasBetterAuthSessionCookie(requestHeaders.get("cookie"))) return null;
+  return auth.api.getSession({ headers: requestHeaders });
 }
 
 type OrgConnectorSnapshot = {

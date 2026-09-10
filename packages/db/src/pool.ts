@@ -10,6 +10,7 @@ import {
 export type SqlPoolOptions = {
   max?: number;
   idleTimeoutMillis?: number;
+  connectionTimeoutMillis?: number;
 };
 
 /**
@@ -24,11 +25,13 @@ export function createRawSqlPool(
   const limits = poolLimitsForUrl(connectionString);
   const max = options?.max ?? limits.max;
   const idleTimeoutMillis = options?.idleTimeoutMillis ?? limits.idleTimeoutMillis;
+  const connectionTimeoutMillis = options?.connectionTimeoutMillis ?? limits.connectionTimeoutMillis;
   if (shouldUseNodePostgres(connectionString)) {
     return new pg.Pool({
       connectionString,
       max,
       idleTimeoutMillis,
+      ...(connectionTimeoutMillis != null ? { connectionTimeoutMillis } : {}),
       ssl: sslOptionForUrl(connectionString),
     });
   }

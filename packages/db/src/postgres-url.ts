@@ -160,9 +160,19 @@ export function assertSafePostgresUrl(connectionString: string): void {
   }
 }
 
-export function poolLimitsForUrl(connectionString: string): { max: number; idleTimeoutMillis: number } {
+export function poolLimitsForUrl(connectionString: string): {
+  max: number;
+  idleTimeoutMillis: number;
+  connectionTimeoutMillis?: number;
+} {
   if (postgresHostKind(connectionString) === "supabase") {
     return { max: 3, idleTimeoutMillis: 10_000 };
+  }
+  // Default local URLs point at localhost:5432. Playwright CI has no Postgres,
+  // and node-postgres's default connectionTimeoutMillis of 0 waits forever on
+  // some IPv6 localhost paths. Fail fast so a missing DB cannot hang a route.
+  if (postgresHostKind(connectionString) === "local") {
+    return { max: 8, idleTimeoutMillis: 30_000, connectionTimeoutMillis: 3_000 };
   }
   return { max: 8, idleTimeoutMillis: 30_000 };
 }

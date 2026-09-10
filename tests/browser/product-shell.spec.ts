@@ -155,6 +155,7 @@ test("account route keeps settings discoverable when the API session is unavaila
   await expect(page.getByRole("navigation", { name: "All settings" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Appearance" })).toBeVisible();
   await expect(page.getByRole("link", { name: "AI usage" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Your session ended" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });

@@ -95,7 +95,21 @@ export function resolveAuthTrustedOrigins(baseURL: string) {
   addOrigin(productionHost);
   addOrigin(runtimeEnv("VERCEL_URL"));
   for (const configured of runtimeEnv("AUTH_TRUSTED_ORIGINS").split(",")) addOrigin(configured.trim());
+  // `next dev` is :3001; Playwright's `dev:test` is :3310. Better Auth logs
+  // "Invalid origin" and rejects CSRF on the suite origin unless both are listed.
+  if (process.env.NODE_ENV !== "production") {
+    addOrigin("http://localhost:3001");
+    addOrigin("http://127.0.0.1:3001");
+    addOrigin("http://localhost:3310");
+    addOrigin("http://127.0.0.1:3310");
+  }
   return [...origins];
+}
+
+/** True when the request carries a Better Auth session token (not the E2E fixture cookie). */
+export function hasBetterAuthSessionCookie(cookieHeader: string | null | undefined): boolean {
+  const match = /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]*)/i.exec(cookieHeader ?? "");
+  return Boolean(match?.[1]?.trim());
 }
 
 export function resolveAuthSecret(

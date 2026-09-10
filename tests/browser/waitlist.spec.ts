@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("a visitor can join the waitlist", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "The workspace your team actually runs." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One place for everything your team does." })).toBeVisible();
   const finalForm = page.locator("#waitlist");
   await finalForm.scrollIntoViewIfNeeded();
   await finalForm.getByLabel("Email").fill(`browser-${Date.now()}@example.com`);

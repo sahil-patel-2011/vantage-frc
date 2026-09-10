@@ -26,7 +26,17 @@ export default defineConfig({
   webServer: {
     command: "npm run dev:test --workspace=@vantage/web",
     url: "http://localhost:3310",
-    env: { ...process.env, E2E_AUTH_FIXTURE: "1" },
+    env: {
+      ...process.env,
+      E2E_AUTH_FIXTURE: "1",
+      AUTH_TRUSTED_ORIGINS: [
+        process.env.AUTH_TRUSTED_ORIGINS,
+        "http://localhost:3310",
+        "http://127.0.0.1:3310",
+      ]
+        .filter(Boolean)
+        .join(","),
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000
   },

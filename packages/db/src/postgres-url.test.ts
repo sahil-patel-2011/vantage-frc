@@ -55,6 +55,11 @@ describe("postgres host detection", () => {
       expect(firstConfiguredEnv("DATABASE_URL", "POSTGRES_URL")).toContain("pooler.supabase.com");
       expect(resolveAppDatabaseUrl()).toContain("pooler.supabase.com");
       expect(poolLimitsForUrl(supabaseUrl)).toEqual({ max: 3, idleTimeoutMillis: 10_000 });
+      expect(poolLimitsForUrl("postgresql://vantage:local@localhost:5432/vantage")).toEqual({
+        max: 8,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 3_000,
+      });
       expect(postgresUsernameLooksLikeSuperuser(supabaseUrl)).toBe(true);
       expect(() => assertSafePostgresUrl(supabaseUrl)).not.toThrow();
       expect(() => assertSafePostgresUrl("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toThrow(

@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("pricing leads with every-feature-every-plan and the hosted AI ladder", async ({ page }) => {
   await page.goto("/pricing");
-  await expect(page.getByRole("heading", { name: "Start free. Buy AI credits when you need them." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Every feature on every plan. You are choosing how much AI you want." }),
+  ).toBeVisible();
   await expect(page.getByText(/Everything is included on every plan/i).first()).toBeVisible();
 
   // The four-plan ladder: Free $0 · Pro $20 · Pro+ $60 · Max $100.
