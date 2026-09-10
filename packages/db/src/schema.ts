@@ -300,6 +300,9 @@ export const organizations = pgTable("organizations", {
   schoolFunded: boolean("school_funded"),
   outsideGrants: boolean("outside_grants"),
   sponsorsAllowed: boolean("sponsors_allowed"),
+  fundingModel: text("funding_model").$type<
+    "self_funded" | "school_funded_no_sponsors" | "sponsored" | "school_related_sponsored" | null
+  >(),
   createdAt: timestamps.createdAt,
 });
 

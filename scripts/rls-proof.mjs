@@ -152,6 +152,36 @@ pass("dossier: a member can read it", r.rowCount === 1);
 r = await asUser(outsider, orgB, `SELECT status FROM team_dossiers WHERE org_id=$1`, [orgA]);
 pass("dossier: another org cannot", r.rowCount === 0);
 
+// ---------------------------------------------------------------- Funding model (0651)
+r = await asUser(owner, orgA, `UPDATE organizations SET funding_model = 'school_funded_no_sponsors' WHERE id = $1`, [orgA]);
+pass("funding: owner can set the model", !r.error, r.error ?? "");
+r = await asUser(outsider, orgB, `SELECT funding_model FROM organizations WHERE id = $1`, [orgA]);
+pass("funding: another org cannot read it via this session", r.rowCount === 0 || r.rows[0]?.funding_model == null);
+
+// ---------------------------------------------------------------- Relay nodes (0652)
+r = await asUser(student, orgA,
+  `INSERT INTO relay_nodes(org_id,paired_by,name,token_hash) VALUES($1,$2,'pi-chat',$3)`, [orgA, student, H("relay-student")]);
+pass("relay: a student cannot pair a node", !!r.error);
+r = await asUser(owner, orgA,
+  `INSERT INTO relay_nodes(org_id,paired_by,name,token_hash) VALUES($1,$2,'shop-pi',$3) RETURNING id`, [orgA, owner, H("relay-owner")]);
+pass("relay: owner pairs a node", !r.error && r.rowCount === 1, r.error ?? "");
+const relayId = r.rows[0]?.id;
+r = await asUser(student, orgA, `SELECT id FROM relay_nodes WHERE id = $1`, [relayId]);
+pass("relay: a member can read it", r.rowCount === 1);
+r = await asUser(outsider, orgB, `SELECT id FROM relay_nodes WHERE id = $1`, [relayId]);
+pass("relay: another org cannot", r.rowCount === 0);
+
+// ---------------------------------------------------------------- Video analysis jobs (0653)
+r = await asUser(student, orgA,
+  `INSERT INTO video_analysis_jobs(org_id,started_by,source_kind,source_ref) VALUES($1,$2,'youtube','https://youtu.be/x')`, [orgA, owner]);
+pass("video: started_by cannot be forged", !!r.error);
+r = await asUser(student, orgA,
+  `INSERT INTO video_analysis_jobs(org_id,started_by,source_kind,source_ref) VALUES($1,$2,'youtube','https://youtu.be/x') RETURNING id`, [orgA, student]);
+pass("video: a member can enqueue a job for themselves", !r.error && r.rowCount === 1, r.error ?? "");
+const videoId = r.rows[0]?.id;
+r = await asUser(outsider, orgB, `SELECT id FROM video_analysis_jobs WHERE id = $1`, [videoId]);
+pass("video: another org cannot see the job", r.rowCount === 0);
+
 // ---------------------------------------------------------------- Assembly manual (0642)
 const cols = `org_id,started_by,onshape_url,document_id,workspace_id,element_id`;
 const vals = `$1,$2,'https://cad.onshape.com/documents/d/w/w/e/e','d','w','e'`;
