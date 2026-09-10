@@ -18,106 +18,32 @@ import {
   teamAdminSetupSteps,
   teamAdminShellCopy,
   shouldShowTeamAdminSummaryTiles,
-  type TeamAdminNextAction,
 } from "../../lib/team/team-admin-related";
 import {
-  formatInviteRowMeta,
   inviteDeliveryBanner,
   inviteSendResultCopy,
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
 import { TeamBrandingPanel } from "../../lib/branding/team-branding-panel";
+import { TeamAdminAccessPanel } from "./team-admin-access";
+import { MembershipNextActionsPanel } from "./team-admin-chrome";
+import { TeamAdminGitHubPanel } from "./team-admin-github";
+import { TeamAdminInvitesPanel } from "./team-admin-invites";
+import {
+  type AccessRequest,
+  type AdminTenure,
+  type CustomProvider,
+  type GitHubConnection,
+  type GitHubRepo,
+  type Invite,
+  type InviteNotice,
+  type Member,
+} from "./team-admin-model";
+import { TeamAdminProvidersPanel } from "./team-admin-providers";
 import { TeamProfilePanel } from "./team-profile-panel";
 import "./github-connection.css";
 import "./team-access-requests.css";
 import "./team-admin.css";
-
-type Invite = {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  expiresAt: string;
-  acceptedAt: string | null;
-  lastSentAt: string;
-};
-
-type Member = {
-  userId: string;
-  name: string;
-  email: string;
-  role: string;
-  joinedAt: string;
-};
-
-type AdminTenure = {
-  orgCreatedAt: string;
-  adminCount: number;
-  bootstrapActive: boolean;
-  daysRemaining: number | null;
-  lastAdminLocked: boolean;
-  inviteHint: string | null;
-};
-
-type AccessRequest = {
-  id: string;
-  userId: string;
-  name: string;
-  email: string;
-  requestedTeamRole: string | null;
-  crewRole: string | null;
-  roleDescription: string | null;
-  primaryFocus: "competition" | "build" | "business" | "leadership";
-  status: "pending" | "approved" | "declined" | "withdrawn";
-  membershipRole: string | null;
-  createdAt: string;
-  reviewedAt: string | null;
-};
-
-type GitHubConnection = {
-  id: string;
-  authMethod: string;
-  label: string;
-  status: string;
-  githubLogin: string | null;
-  defaultRepoFullName: string | null;
-  defaultRepoDefaultBranch: string | null;
-  scopes: string[];
-  lastTestedAt: string | null;
-};
-
-type GitHubRepo = {
-  fullName: string;
-  name: string;
-  private: boolean;
-  defaultBranch: string;
-  description: string | null;
-};
-
-function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section className="app-card soft-panel team-admin-next-actions" aria-label="Membership next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -137,22 +63,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [actingInviteId, setActingInviteId] = useState<string | null>(null);
   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
-  const [inviteNotice, setInviteNotice] = useState<{ tone: "ok" | "warn" | "error"; message: string } | null>(
-    null,
-  );
+  const [inviteNotice, setInviteNotice] = useState<InviteNotice | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<InviteDeliveryMode | null>(null);
-  const [providers, setProviders] = useState<
-    Array<{
-      id: string;
-      label: string;
-      kind: string;
-      localRelay: boolean;
-      enabled: boolean;
-      baseUrl?: string | null;
-      lastTestedAt?: string | null;
-      disabledAt?: string | null;
-    }>
-  >([]);
+  const [providers, setProviders] = useState<CustomProvider[]>([]);
   const [githubOAuthSetupRequired, setGithubOAuthSetupRequired] = useState(false);
   /** Setup copy from the server — names the variables and the callback URL. */
   const [githubOAuthMessage, setGithubOAuthMessage] = useState("");
@@ -777,318 +690,54 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         }}
       />
 
-      <section className="team-access-inbox" aria-labelledby="team-access-title">
-        <header>
-          <div>
-            <span className="eyebrow">VERIFIED ACCESS REQUESTS</span>
-            <h2 id="team-access-title">Approve who enters this team.</h2>
-            <p>Team numbers route requests here; they never grant membership. Approval ends the applicant&apos;s onboarding sessions and emails a fresh sign-in link.</p>
-          </div>
-          <strong>{accessRequests.filter((request) => request.status === "pending").length}</strong>
-        </header>
-        <div className="team-access-list">
-          {accessRequests.filter((request) => request.status === "pending").map((request) => (
-            <article key={request.id}>
-              <div className="team-access-person">
-                <span>{request.name?.slice(0, 1).toUpperCase() || "?"}</span>
-                <div>
-                  <strong>{request.name || "Unnamed applicant"}</strong>
-                  <small>{request.email}</small>
-                </div>
-              </div>
-              <dl>
-                <div><dt>TEAM ROLE</dt><dd>{request.requestedTeamRole ?? "Not specified"}</dd></div>
-                <div><dt>CREW</dt><dd>{request.crewRole ?? "Not specified"}</dd></div>
-                <div><dt>PRIMARY FOCUS</dt><dd>{request.primaryFocus}</dd></div>
-                {request.roleDescription ? (
-                  <div><dt>HOW THEY HELP</dt><dd>{request.roleDescription}</dd></div>
-                ) : null}
-                <div><dt>REQUESTED</dt><dd>{new Date(request.createdAt).toLocaleDateString()}</dd></div>
-              </dl>
-              <div className="team-access-actions">
-                <button type="button" className="approve" onClick={() => void reviewAccess(request.id, "approved", "scout")}>Allow as scout</button>
-                <button type="button" onClick={() => void reviewAccess(request.id, "approved", "viewer")}>Allow view-only</button>
-                <button type="button" className="decline" onClick={() => void reviewAccess(request.id, "declined")}>Decline</button>
-              </div>
-            </article>
-          ))}
-          {!accessRequests.some((request) => request.status === "pending") ? (
-            <div className="team-access-empty"><b>✓</b><div><strong>No access requests waiting</strong><span>New verified requests will appear here for an owner or administrator.</span></div></div>
-          ) : null}
-        </div>
-        {message ? <p className="team-access-message" role="status">{message}</p> : null}
-      </section>
-      <section className="admin-grid team-invite-grid" id="invite-form">
-        <form className="team-invite-form" onSubmit={sendInvite}>
-          <span className="eyebrow">INVITE BY EMAIL</span>
-          <h2>Add a teammate</h2>
-          <p>
-            Send an invite to one email. They sign in with that address and accept the link. Team
-            numbers never grant access.
-          </p>
-          {adminTenure?.inviteHint ? (
-            <p className="app-muted team-admin-tenure-hint" role="note">
-              {adminTenure.inviteHint}
-            </p>
-          ) : null}
-          {deliveryBanner ? (
-            <p
-              className={`team-invite-banner ${deliveryBanner.tone === "setup" ? "setup" : "info"}`}
-              role="note"
-            >
-              <strong>{deliveryBanner.title}</strong>
-              <span>{deliveryBanner.detail}</span>
-            </p>
-          ) : null}
-          <label>
-            Email
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="teammate@example.com"
-            />
-          </label>
-          <label>
-            Role
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="scout">Scout</option>
-              <option value="admin">Admin</option>
-              <option value="viewer">Viewer</option>
-            </select>
-          </label>
-          <button className="primary-action" type="submit" disabled={inviteBusy}>
-            {inviteBusy ? "Sending…" : "Send invite"}
-          </button>
-          {inviteNotice ? (
-            <p className={`team-invite-notice ${inviteNotice.tone}`} role="status">
-              {inviteNotice.message}
-            </p>
-          ) : null}
-        </form>
-        <Panel className="invite-list team-invite-ledger" id="invitation-ledger">
-          <span className="eyebrow">Pending and past invites</span>
-          {!invites.length ? (
-            <EmptyState
-              soft
-              badge="No invitations yet"
-              badgeTone="setup"
-              title="No invites sent yet"
-              description="Send an email on the left. You will get a copyable link even if email is not configured."
-            />
-          ) : (
-            invites.map((inviteRow) => {
-              const link = inviteLinks[inviteRow.id];
-              const pending = inviteRow.status === "pending";
-              return (
-                <article key={inviteRow.id} className={pending ? "pending" : undefined}>
-                  <div>
-                    <strong>{inviteRow.email}</strong>
-                    <small>{formatInviteRowMeta(inviteRow)}</small>
-                  </div>
-                  <time>
-                    {inviteRow.acceptedAt
-                      ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
-                      : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
-                  </time>
-                  {pending ? (
-                    <div className="team-invite-row-actions">
-                      {link ? (
-                        <button
-                          type="button"
-                          onClick={() => void copyInviteLink(inviteRow.id, link)}
-                        >
-                          {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={actingInviteId === inviteRow.id}
-                        onClick={() => void act(inviteRow.id, "resend")}
-                      >
-                        {actingInviteId === inviteRow.id ? "Working…" : link ? "Resend" : "Resend & copy link"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actingInviteId === inviteRow.id}
-                        onClick={() => void act(inviteRow.id, "revoke")}
-                      >
-                        Revoke
-                      </button>
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })
-          )}
-        </Panel>
-      </section>
-      <section className="compare-panel github-panel" id="github-connection">
-        <h2>GitHub</h2>
-        <p className="app-muted">Connect so calendar due dates and code tools can use this team’s repo.</p>
-
-        {githubShell === "loading" || githubShell === "error" ? (
-          <EmptyState
-            soft
-            badge={githubFailure ? "Unavailable" : undefined}
-            badgeTone="setup"
-            title={githubFailure ? githubFailure.title : githubCopy.title}
-            description={githubFailure ? githubFailure.description : githubCopy.description}
-            aria-busy={githubShell === "loading"}
-          >
-            {githubFailure?.primary ? (
-              <Button as="a" variant="primary" href={githubFailure.primary.href}>
-                {githubFailure.primary.label}
-              </Button>
-            ) : null}
-            {githubFailure?.showRetry ? (
-              <Button variant="secondary" type="button" onClick={() => void load()}>
-                Retry
-              </Button>
-            ) : null}
-          </EmptyState>
-        ) : null}
-
-        <div className="admin-grid">
-          <section className="intel-panel">
-            {githubOAuthSetupRequired ? (
-              // Was: "OAuth isn't configured on this server. Save a PAT
-              // instead." — true, and useless: it named no variable and gave no
-              // callback URL, so the admin could not act on it. The setup
-              // message from githubSetupStatus() names both.
-              <p className="app-muted github-oauth-note">
-                {githubOAuthMessage || "OAuth isn’t configured on this server. Save a PAT instead."}{" "}
-                <a href="/connectors">See all connectors</a>
-              </p>
-            ) : null}
-            {githubCredentialRejected ? (
-              <p className="app-muted github-oauth-note" role="status">
-                GitHub refused the stored credential for @{githubCredentialRejected.login ?? "this account"}. The
-                token was revoked, expired, or lost its scopes — Disconnect, then Connect GitHub again to issue a
-                new one. Nothing that reads the repo (deploy log, code review, calendar milestones) works until
-                then.
-              </p>
-            ) : null}
-            {githubConnection ? (
-              <article className="admin-org">
-                <b>LINKED</b>
-                <div>
-                  <strong>@{githubConnection.githubLogin ?? "github"}</strong>
-                  <small>
-                    {githubConnection.authMethod} · {githubConnection.status}
-                    {githubConnection.defaultRepoFullName
-                      ? ` · ${githubConnection.defaultRepoFullName}`
-                      : " · pick a default repo"}
-                  </small>
-                </div>
-              </article>
-            ) : null}
-            <div className="intel-actions">
-              <button
-                type="button"
-                className={githubOAuthSetupRequired ? undefined : "primary-action"}
-                disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
-                onClick={() => void connectGitHubOAuth()}
-              >
-                {githubOAuthSetupRequired
-                  ? "Connect GitHub (OAuth unavailable)"
-                  : githubCredentialRejected
-                    ? "Reconnect GitHub"
-                    : "Connect GitHub"}
-              </button>
-              {/* A rejected credential leaves no `connection` (that loader wants
-                  a spendable token), but the row and its dead token are still
-                  there — so Disconnect has to stay reachable, or the only way to
-                  clear it is a support request. */}
-              {githubConnection || githubCredentialRejected ? (
-                <button type="button" disabled={githubBusy} onClick={() => void disconnectGitHub()}>
-                  Disconnect
-                </button>
-              ) : null}
-            </div>
-          </section>
-          <section className="intel-panel">
-            <form onSubmit={saveGitHubPat}>
-              <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH PAT" : "OR SAVE A PAT"}</span>
-              <label>
-                Personal access token
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={githubPat}
-                  onChange={(e) => setGithubPat(e.target.value)}
-                  placeholder="ghp_… or github_pat_…"
-                  required
-                />
-              </label>
-              <button className="primary-action" disabled={githubBusy}>
-                Save token
-              </button>
-            </form>
-            {githubConnection ? (
-              <form id="github-default-repo" onSubmit={setGitHubDefaultRepo} style={{ marginTop: "1.25rem" }}>
-                <span className="eyebrow">DEFAULT REPO</span>
-                <label>
-                  Repository
-                  <select value={defaultRepo} onChange={(e) => setDefaultRepo(e.target.value)} required>
-                    <option value="">Select a repository…</option>
-                    {githubRepos.map((repo) => (
-                      <option key={repo.fullName} value={repo.fullName}>
-                        {repo.fullName}
-                        {repo.private ? " (private)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {!githubRepos.length ? (
-                  <p className="app-muted">No repositories on this account yet.</p>
-                ) : null}
-                <button className="primary-action" disabled={githubBusy || !defaultRepo}>
-                  Set default repo
-                </button>
-              </form>
-            ) : null}
-          </section>
-        </div>
-      </section>
-      <section className="compare-panel" id="custom-providers">
-        <span className="eyebrow">AI keys</span>
-        <p>
-          OpenAI, Anthropic, and Ollama / LM Studio live on{" "}
-          <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a>
-          — personal or team-wide.
-        </p>
-        {providers.length ? (
-          <section className="intel-panel">
-            <span className="eyebrow">LEFTOVER CUSTOM ENDPOINTS</span>
-            {providers.map((item) => (
-              <article className="admin-org" key={item.id}>
-                <b>{item.localRelay ? "RELAY" : "API"}</b>
-                <div>
-                  <strong>{item.label}</strong>
-                  <small>
-                    {item.kind} · {item.enabled ? "enabled" : "disabled"}
-                    {item.baseUrl ? ` · ${item.baseUrl}` : ""}
-                    {item.lastTestedAt ? ` · tested ${new Date(item.lastTestedAt).toLocaleString()}` : " · not tested"}
-                  </small>
-                  {item.enabled ? (
-                    <div>
-                      <button type="button" onClick={() => void providerAction(item.id, "test")}>
-                        Test
-                      </button>
-                      <button type="button" onClick={() => void providerAction(item.id, "disable")}>
-                        Disable
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </section>
-        ) : null}
-      </section>
+      <TeamAdminAccessPanel
+        accessRequests={accessRequests}
+        message={message}
+        onReview={(requestId, decision, role) => void reviewAccess(requestId, decision, role)}
+      />
+      <TeamAdminInvitesPanel
+        adminTenure={adminTenure}
+        deliveryBanner={deliveryBanner}
+        email={email}
+        setEmail={setEmail}
+        role={role}
+        setRole={setRole}
+        inviteBusy={inviteBusy}
+        inviteNotice={inviteNotice}
+        invites={invites}
+        inviteLinks={inviteLinks}
+        copiedInviteId={copiedInviteId}
+        actingInviteId={actingInviteId}
+        onSend={(event) => void sendInvite(event)}
+        onCopyLink={(id, url) => void copyInviteLink(id, url)}
+        onAct={(inviteId, action) => void act(inviteId, action)}
+      />
+      <TeamAdminGitHubPanel
+        githubShell={githubShell}
+        githubCopy={githubCopy}
+        githubFailure={githubFailure}
+        githubLoading={githubLoading}
+        githubOAuthSetupRequired={githubOAuthSetupRequired}
+        githubOAuthMessage={githubOAuthMessage}
+        githubCredentialRejected={githubCredentialRejected}
+        githubConnection={githubConnection}
+        githubBusy={githubBusy}
+        githubPat={githubPat}
+        setGithubPat={setGithubPat}
+        githubRepos={githubRepos}
+        defaultRepo={defaultRepo}
+        setDefaultRepo={setDefaultRepo}
+        onRetry={() => void load()}
+        onConnectOAuth={() => void connectGitHubOAuth()}
+        onDisconnect={() => void disconnectGitHub()}
+        onSavePat={(event) => void saveGitHubPat(event)}
+        onSetDefaultRepo={(event) => void setGitHubDefaultRepo(event)}
+      />
+      <TeamAdminProvidersPanel
+        orgId={orgId}
+        providers={providers}
+        onAction={(id, action) => void providerAction(id, action)}
+      />
     </main>
   );
 }
