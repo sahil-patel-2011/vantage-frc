@@ -1,6 +1,7 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { AIAttribution, Button } from "../../components/ui";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { AIAttribution, Button, EmptyState } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -9,6 +10,8 @@ import {
   type AiExpandState,
 } from "../../lib/ai-expand";
 import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Debrief = {
@@ -23,71 +26,170 @@ type View =
 const RESULT_LABEL: Record<MatchResult, string> = { win: "Win", loss: "Loss", tie: "Tie", unknown: "—" };
 const EMPTY = { matchLabel: "", eventKey: "", alliance: "unknown", result: "unknown", pointsScored: "", cycleCount: "", drivetrainOk: true, mechanismsOk: true, autoOk: true, whatWorked: "", whatBroke: "", actionItems: "" };
 
+function isMatchDebriefView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function matchDebriefCacheOrg(data: View, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistMatchDebriefSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: View,
+): Promise<void> {
+  const cacheOrg = matchDebriefCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "ready" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("match-debrief", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("match-debrief", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live match debrief already painted; IndexedDB is best-effort.
+  }
+}
+
 export default function MatchDebriefClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
   // Kept so an expired session offers sign-in instead of a dead-end error line.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
   // Optional metered AI coach over the computed takeaways; the computed text
   // always renders and a missing model degrades to it with a setup note.
   const [coach, setCoach] = useState<AiExpandState>(AI_EXPAND_IDLE);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/match-debrief?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
-    const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load match log"); setErrorStatus(response.status); return; }
+    const orgHint = orgId?.trim() ?? "";
+    const seasonHint = String(seasonYear);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("match-debrief", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isMatchDebriefView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
     setErrorStatus(null);
-    setView(data);
+    try {
+      const response = await fetch(
+        `/api/match-debrief?seasonYear=${seasonYear}${orgHint ? `&orgId=${encodeURIComponent(orgHint)}` : ""}`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+      );
+      const data = (await response.json()) as View & { error?: string };
+      if (!response.ok || !isMatchDebriefView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Match debrief. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setMessage("error" in data && data.error ? data.error : "Failed to load match log");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistMatchDebriefSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Match debrief. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
+    }
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
 
   async function post(body: Record<string, unknown>, okMessage: string) {
     if (view?.status !== "ready") return;
-    const response = await fetch("/api/match-debrief", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId: view.context.orgId, ...body }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? okMessage : data.error);
-    if (response.ok) await load();
+    try {
+      const response = await fetch("/api/match-debrief", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: view.context.orgId, ...body }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? okMessage : data.error);
+      if (response.ok) await load();
+    } catch {
+      setMessage("Network error — changes were not saved.");
+    }
   }
 
-  async function addDebrief(event: React.FormEvent) {
+  async function addDebrief(event: FormEvent) {
     event.preventDefault();
     await post({ action: "create_debrief", seasonYear, ...form }, "Match debrief saved.");
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
   if (!view) {
-    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading match log…</p></main>;
-    // The match log never loaded: say why, and offer the action that actually fixes it.
-    const copy = loadFailureCopy(
-      classifyLoadFailure({
-        status: errorStatus,
-        message,
-        online: typeof navigator === "undefined" ? true : navigator.onLine,
-      }),
-      {
-        nextPath:
-          typeof window === "undefined"
-            ? null
-            : `${window.location.pathname}${window.location.search}`,
-        message,
-      },
-    );
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
     return (
       <main className="intel-app">
-        <p className="telemetry-status"><strong>{copy.title}</strong></p>
-        <p className="telemetry-status">{copy.description}</p>
-        {copy.primary ? <Button as="a" variant="primary" href={copy.primary.href}>{copy.primary.label}</Button> : null}
-        {copy.showRetry ? <button type="button" className="primary-action" onClick={() => void load()}>Retry</button> : null}
+        <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading match log…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header">
+          <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div>
+        </header>
+        <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const flag = (ok: boolean, label: string) => (ok ? "" : ` · ${label} issue`);
@@ -100,6 +202,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "coach", orgId: view.context.orgId, seasonYear }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as Record<string, unknown>;
       if (!response.ok) {
@@ -126,6 +229,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
         <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Our match debrief — {seasonYear}</h1></div>
         <nav className="intel-actions"><a href={`/scouting${orgId ? `?orgId=${orgId}` : ""}`}>Scouting</a><a href={`/repairs${orgId ? `?orgId=${orgId}` : ""}`}>Repairs</a><a href="/workspace">Your team →</a></nav>
       </header>
+      <OfflineBanner feature="Match debrief" fromCache={fromCache} cachedAt={cachedAt} />
       {message && <p className="telemetry-status">{message}</p>}
       <p className="telemetry-status">Log how <strong>our</strong> robot performed each match — separate from scouting other teams. Patterns here tell you what to fix before the next match.</p>
 

@@ -1,7 +1,8 @@
 "use client";
-import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button, EmptyState } from "../../components/ui";
 import {
   defaultRobots,
   FIELD_H,
@@ -14,6 +15,8 @@ import {
   type WhiteboardPlay,
   type WhiteboardView,
 } from "../../lib/whiteboard";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -25,6 +28,27 @@ const COLOR_HEX: Record<StrokeColor, string> = {
   green: "#1d9e5f",
   orange: "#e08a1e",
 };
+
+function isWhiteboardView(value: unknown): value is WhiteboardView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function whiteboardCacheOrg(data: WhiteboardView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistWhiteboardSnapshot(orgHint: string, data: WhiteboardView): Promise<void> {
+  const cacheOrg = whiteboardCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("whiteboard", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("whiteboard", "_", data);
+  } catch {
+    // Live whiteboard already painted; IndexedDB is best-effort.
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Field canvas — pointer drawing + draggable robot tokens on an SVG.
@@ -201,25 +225,59 @@ export default function WhiteboardClient() {
   const [tool, setTool] = useState<StrokeTool | "erase" | "move">("pen");
   const [color, setColor] = useState<StrokeColor>("ink");
   const [newTitle, setNewTitle] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<WhiteboardView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/whiteboard${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const cached = await getFeatureSnapshot<WhiteboardView>("whiteboard", orgHint || "_");
+      if (!viewRef.current && cached?.data && isWhiteboardView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/whiteboard${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as WhiteboardView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load the whiteboard.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isWhiteboardView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Whiteboard. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load the whiteboard.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
-      setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistWhiteboardSnapshot(orgHint, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Whiteboard. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -247,6 +305,7 @@ export default function WhiteboardClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string; id?: string };
         if (!response.ok) {
@@ -264,7 +323,23 @@ export default function WhiteboardClient() {
     [],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page wb-page">
         <header className="app-page-header">
@@ -273,44 +348,24 @@ export default function WhiteboardClient() {
             <h1>Strategy Whiteboard</h1>
           </div>
         </header>
-        <div className="app-card wb-empty">
-          {fetchFailed ? (
-            (() => {
-              const copy = loadFailureCopy(
-                classifyLoadFailure({
-                  status: errorStatus,
-                  message: error,
-                  online: typeof navigator === "undefined" ? true : navigator.onLine,
-                }),
-                {
-                  nextPath:
-                    typeof window === "undefined"
-                      ? null
-                      : `${window.location.pathname}${window.location.search}`,
-                  message: error || "Check your connection and try again.",
-                },
-              );
-              return (
-                <>
-                  <strong>{copy.title}</strong>
-                  <p className="app-muted">{copy.description}</p>
-                  {copy.primary ? (
-                    <Button as="a" variant="primary" href={copy.primary.href}>
-                      {copy.primary.label}
-                    </Button>
-                  ) : null}
-                  {copy.showRetry ? (
-                    <Button variant="secondary" type="button" onClick={() => void load()}>
-                      Retry
-                    </Button>
-                  ) : null}
-                </>
-              );
-            })()
-          ) : (
-            <p className="app-muted">Loading whiteboard…</p>
-          )}
-        </div>
+        <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading whiteboard…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -325,13 +380,12 @@ export default function WhiteboardClient() {
             <p>Draw plays over a field diagram and save them for match briefings.</p>
           </div>
         </header>
-        <div className="app-card wb-empty">
-          <strong>Choose your team</strong>
-          <p className="app-muted">{view.message}</p>
+        <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-        </div>
+        </EmptyState>
       </main>
     );
   }
@@ -393,6 +447,7 @@ export default function WhiteboardClient() {
         </div>
       </header>
 
+      <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

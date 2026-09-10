@@ -143,6 +143,9 @@ const SHELL_ROUTES = [
   "/manufacturing",
   "/attendance",
   "/kickoff",
+  "/match-debrief",
+  "/ranking-projection",
+  "/whiteboard",
 ];
 
 function isShellPath(pathname) {

@@ -125,6 +125,9 @@ export const OFFLINE_SHELL_ROUTES = [
   "/manufacturing",
   "/attendance",
   "/kickoff",
+  "/match-debrief",
+  "/ranking-projection",
+  "/whiteboard",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -163,6 +166,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/logistics")) return "Logistics";
   if (bare.startsWith("/build-burndown")) return "Build Burndown";
   if (bare.startsWith("/kickoff")) return "Kickoff";
+  if (bare.startsWith("/whiteboard")) return "Whiteboard";
   if (bare.startsWith("/manufacturing")) return "Manufacturing";
   if (bare.startsWith("/practice")) return "Practice";
   if (bare.startsWith("/attendance")) return "Attendance";
@@ -198,6 +202,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/briefing")) return "Pre-match briefing";
   if (bare.startsWith("/award-tracker")) return "Award Tracker";
   if (bare.startsWith("/epa-trend-alerts")) return "EPA Trend Alerts";
+  if (bare.startsWith("/ranking-projection")) return "Ranking projection";
   if (bare.startsWith("/rankings")) return "Rankings";
   if (bare.startsWith("/grant-report")) return "Grant Report";
   if (bare.startsWith("/media-kit")) return "Media Kit";
@@ -264,6 +269,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";
+  if (bare.startsWith("/match-debrief")) return "Match debrief";
   if (bare.startsWith("/match-copilot")) return "Match Copilot";
   if (bare.startsWith("/event-readiness")) return "Event readiness";
   return null;

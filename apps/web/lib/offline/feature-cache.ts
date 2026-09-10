@@ -121,7 +121,10 @@ export type OfflineFeature =
   | "practice"
   | "manufacturing"
   | "attendance"
-  | "kickoff";
+  | "kickoff"
+  | "match-debrief"
+  | "ranking-projection"
+  | "whiteboard";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

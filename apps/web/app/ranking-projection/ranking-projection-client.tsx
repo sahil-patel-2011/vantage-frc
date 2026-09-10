@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import {
   bestPath,
@@ -17,12 +18,39 @@ import type {
   RankingProjectionWhatIf,
 } from "../../lib/ranking-projection/compute-ranking-projection";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./ranking-projection.css";
 
 const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;
 const allianceLabel = (teamKeys: string[]) =>
   teamKeys.length ? teamKeys.map(teamLabel).join(" ") : "—";
+
+function isRankingProjectionView(value: unknown): value is RankingProjectionView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function rankingProjectionCacheOrg(data: RankingProjectionView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistRankingProjectionSnapshot(
+  orgHint: string,
+  data: RankingProjectionView,
+): Promise<void> {
+  const cacheOrg = rankingProjectionCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("ranking-projection", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("ranking-projection", "_", data);
+  } catch {
+    // Live ranking projection already painted; IndexedDB is best-effort.
+  }
+}
 
 /**
  * Best Path seed planner. Every number below comes from the cached standings and
@@ -307,30 +335,89 @@ export default function RankingProjectionClient() {
   const [error, setError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RankingProjectionView | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback(() => {
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
-    const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-    void fetch(`/api/ranking-projection${query}`)
-      .then(async (response) => {
-        const data = (await response.json()) as RankingProjectionView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+  const load = useCallback(async () => {
+    const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<RankingProjectionView>(
+        "ranking-projection",
+        orgHint || "_",
+      );
+      if (!viewRef.current && cached?.data && isRankingProjectionView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(
+        `/api/ranking-projection${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`,
+        { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+      );
+      const data = (await response.json()) as RankingProjectionView | { error?: string };
+      if (!response.ok || !isRankingProjectionView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
           setError(
             "error" in data && data.error ? data.error : "Could not load ranking projection.",
           );
           setErrorStatus(response.status);
-          return;
+          setFetchFailed(true);
         }
-        setView(data);
-      })
-      .catch(() => setError("Network error — please try again."));
+        return;
+      }
+      setError("");
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRankingProjectionSnapshot(orgHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const failure =
+    !view && fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
 
   return (
     <main className="module-page">
@@ -344,42 +431,35 @@ export default function RankingProjectionClient() {
         title="Ranking projection"
         description="Current TBA rank plus remaining qualification matches from the cache."
       />
+      <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
-      {!view && error
-        ? (() => {
-            const copy = loadFailureCopy(
-              classifyLoadFailure({
-                status: errorStatus,
-                message: error,
-                online: typeof navigator === "undefined" ? true : navigator.onLine,
-              }),
-              {
-                nextPath:
-                  typeof window === "undefined"
-                    ? null
-                    : `${window.location.pathname}${window.location.search}`,
-                message: error,
-              },
-            );
-            return (
-              <EmptyState title={copy.title} description={copy.description}>
-                {copy.primary ? (
-                  <Button as="a" variant="primary" href={copy.primary.href}>
-                    {copy.primary.label}
-                  </Button>
-                ) : null}
-                {copy.showRetry ? (
-                  <Button variant="secondary" type="button" onClick={() => load()}>
-                    Retry
-                  </Button>
-                ) : null}
-              </EmptyState>
-            );
-          })()
-        : null}
-      {!view && !error ? <p className="app-muted">Loading…</p> : null}
+      {!view ? (
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading ranking projection…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
+      ) : null}
       {view?.status === "setup_required" ? (
-        <EmptyState title="Rankings are not ready" description={view.message} />
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          soft
+          title="Rankings are not ready"
+          description={view.message}
+        />
       ) : null}
       {view?.status === "live" ? (
         <>
