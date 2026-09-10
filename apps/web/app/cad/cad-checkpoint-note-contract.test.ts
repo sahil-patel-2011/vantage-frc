@@ -23,7 +23,7 @@ describe("CadCheckpointNote", () => {
   it("never invents DEMO checkpoints", () => {
     expect(source).not.toMatch(/\bDEMO[-_]/);
     expect(source).not.toMatch(/demo[-_]?checkpoint|checkpoint[-_]?demo/i);
-    expect(source).toContain("none are invented");
+    expect(source).not.toMatch(/<>[^<]*(?:none are invented|never invents?)\b/i);
     expect(honestCheckpointId("DEMO-checkpoint-1")).toBeNull();
     expect(honestCheckpointId("mock-checkpoint")).toBeNull();
     expect(honestCheckpointId("fake-id")).toBeNull();
