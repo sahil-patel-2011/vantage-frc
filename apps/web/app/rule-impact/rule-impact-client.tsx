@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
   RULE_CHANGE_CATEGORIES,
@@ -30,6 +31,8 @@ import type {
   SubsystemCategory,
 } from "../../lib/rule-impact/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./rule-impact.css";
 
@@ -46,6 +49,33 @@ function severityTone(severity: RuleChangeSeverity): string {
 }
 
 type LiveView = Extract<RuleImpactView, { status: "live" }>;
+
+function isRuleImpactView(value: unknown): value is RuleImpactView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function ruleImpactCacheOrg(data: RuleImpactView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistRuleImpactSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: RuleImpactView,
+): Promise<void> {
+  const cacheOrg = ruleImpactCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("rule-impact", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("rule-impact", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Rule Impact Analyzer already painted; IndexedDB is best-effort.
+  }
+}
 
 function RuleImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = ruleImpactRelatedLinks(orgId, {
@@ -164,27 +194,75 @@ export default function RuleImpactClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RuleImpactView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/rule-impact${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<RuleImpactView>(
+          "rule-impact",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isRuleImpactView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/rule-impact${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as RuleImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isRuleImpactView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Rule Impact Analyzer. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistRuleImpactSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Rule Impact Analyzer. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -237,14 +315,16 @@ export default function RuleImpactClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as RuleImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isRuleImpactView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistRuleImpactSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -255,7 +335,11 @@ export default function RuleImpactClient() {
   );
 
   if (shell === "loading") {
-    return <RuleImpactShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <RuleImpactShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+      </RuleImpactShell>
+    );
   }
 
   if (shell === "error") {
@@ -266,7 +350,9 @@ export default function RuleImpactClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+      </RuleImpactShell>
     );
   }
 
@@ -276,12 +362,18 @@ export default function RuleImpactClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+      </RuleImpactShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <RuleImpactShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <RuleImpactShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
+      </RuleImpactShell>
+    );
   }
 
   return (
@@ -323,6 +415,8 @@ export default function RuleImpactClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Rule Impact Analyzer" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

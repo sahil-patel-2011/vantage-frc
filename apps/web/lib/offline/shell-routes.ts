@@ -110,6 +110,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/scouting-heat-signals",
   "/scout-data-impact",
   "/scout-disagreements",
+  "/scout-accuracy",
+  "/scout-crossval",
+  "/rule-impact",
+  "/season-planning-workspace",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -215,6 +219,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scout-field-budget")) return "Field-Count Budget";
   if (bare.startsWith("/scout-data-impact")) return "Scout Data Impact";
   if (bare.startsWith("/scout-disagreements")) return "Scout Disagreements";
+  if (bare.startsWith("/scout-accuracy")) return "Scout Accuracy";
+  if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
+  if (bare.startsWith("/rule-impact")) return "Rule Impact Analyzer";
+  if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

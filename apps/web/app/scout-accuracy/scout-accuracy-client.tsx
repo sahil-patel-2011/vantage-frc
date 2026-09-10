@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { scoutAccuracyTierLabel } from "../../lib/scout-accuracy";
@@ -23,6 +24,7 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scout-accuracy.css";
 
 function tierTone(tier: ScoutAccuracyTier): "good" | "setup" | "" {
@@ -32,6 +34,33 @@ function tierTone(tier: ScoutAccuracyTier): "good" | "setup" | "" {
 }
 
 type LiveView = Extract<ScoutAccuracyView, { status: "live" }>;
+
+function isScoutAccuracyView(value: unknown): value is ScoutAccuracyView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function scoutAccuracyCacheOrg(data: ScoutAccuracyView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistScoutAccuracySnapshot(
+  orgHint: string,
+  eventHint: string,
+  data: ScoutAccuracyView,
+): Promise<void> {
+  const cacheOrg = scoutAccuracyCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const eventKey = data.status === "live" && data.eventKey ? data.eventKey : "";
+  try {
+    await putFeatureSnapshot("scout-accuracy", cacheOrg, data, eventHint || eventKey);
+    if (!orgHint) await putFeatureSnapshot("scout-accuracy", "_", data, eventHint || eventKey);
+  } catch {
+    // Live Scout Accuracy already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScoutAccuracyRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutAccuracyRelatedLinks(orgId, {
@@ -180,38 +209,85 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutAccuracyView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback((eventOverride?: string) => {
-    setFetchFailed(false);
-    setFailureStatus(null);
-    setError("");
-    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-    const urlOrg = initialOrgId ?? params.get("orgId");
-    const eventQuery = eventOverride ?? params.get("eventKey");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (eventQuery) query.set("eventKey", eventQuery);
-    void fetch(`/api/scout-accuracy${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
+      const eventHint = (eventOverride ?? params.get("eventKey") ?? "").trim();
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<ScoutAccuracyView>(
+          "scout-accuracy",
+          urlOrg || "_",
+          eventHint,
+        );
+        if (!viewRef.current && cached?.data && isScoutAccuracyView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setFailureStatus(null);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (eventHint) query.set("eventKey", eventHint);
+      try {
+        const response = await fetch(
+          `/api/scout-accuracy${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
           setFetchFailed(true);
           setFailureStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load scout accuracy.");
           return;
         }
+        if (!response.ok || !isScoutAccuracyView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Scout Accuracy. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setFailureStatus(response.status);
+            setError("error" in data && data.error ? data.error : "Could not load scout accuracy.");
+          }
+          return;
+        }
         setView(data);
-        setFetchFailed(false);
-      })
-      .catch(() => {
-        setFetchFailed(true);
-        setError("Network error — please try again.");
-      });
+        setFromCache(false);
+        setCachedAt(null);
+        await persistScoutAccuracySnapshot(urlOrg, eventHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Scout Accuracy. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setError("Network error — please try again.");
+        }
+      }
+    })();
   }, [initialOrgId]);
 
   useEffect(() => {
@@ -231,11 +307,12 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isScoutAccuracyView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistScoutAccuracySnapshot(orgId, data.status === "live" && data.eventKey ? data.eventKey : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -274,7 +351,11 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   const loaded = view?.status === "live";
 
   if (shell === "loading") {
-    return <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutAccuracyShell>
+    );
   }
 
   if (shell === "error") {
@@ -286,7 +367,9 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         error={error || shellCopy.description}
         errorStatus={failureStatus}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutAccuracyShell>
     );
   }
 
@@ -298,12 +381,18 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         }
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutAccuracyShell>
     );
   }
 
   if (shell === "empty" || view?.status !== "live") {
-    return <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+    return (
+      <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutAccuracyShell>
+    );
   }
 
   return (
@@ -327,6 +416,8 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
           ) : null}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout Accuracy" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

@@ -105,7 +105,11 @@ export type OfflineFeature =
   | "scout-field-budget"
   | "scouting-heat-signals"
   | "scout-data-impact"
-  | "scout-disagreements";
+  | "scout-disagreements"
+  | "scout-accuracy"
+  | "scout-crossval"
+  | "rule-impact"
+  | "season-planning-workspace";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

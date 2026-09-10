@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -29,6 +30,7 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scout-crossval.css";
 
 const STATUS_TONE: Record<CrossvalStatus, BadgeTone> = {
@@ -42,6 +44,33 @@ function statusTone(status: CrossvalStatus): BadgeTone {
 }
 
 type LiveView = Extract<ScoutCrossvalView, { status: "live" }>;
+
+function isScoutCrossvalView(value: unknown): value is ScoutCrossvalView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function scoutCrossvalCacheOrg(data: ScoutCrossvalView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistScoutCrossvalSnapshot(
+  orgHint: string,
+  eventHint: string,
+  data: ScoutCrossvalView,
+): Promise<void> {
+  const cacheOrg = scoutCrossvalCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const eventKey = data.status === "live" && data.eventKey ? data.eventKey : "";
+  try {
+    await putFeatureSnapshot("scout-crossval", cacheOrg, data, eventHint || eventKey);
+    if (!orgHint) await putFeatureSnapshot("scout-crossval", "_", data, eventHint || eventKey);
+  } catch {
+    // Live Scout Cross-Validation already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScoutCrossvalRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutCrossvalRelatedLinks(orgId, {
@@ -164,37 +193,85 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutCrossvalView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback(
     (eventOverride?: string) => {
-      setFetchFailed(false);
-      setError("");
-      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-      const urlOrg = initialOrgId ?? params.get("orgId");
-      const eventQuery = eventOverride ?? params.get("eventKey");
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (eventQuery) query.set("eventKey", eventQuery);
-      void fetch(`/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+        const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
+        const eventHint = (eventOverride ?? params.get("eventKey") ?? "").trim();
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<ScoutCrossvalView>(
+            "scout-crossval",
+            urlOrg || "_",
+            eventHint,
+          );
+          if (!viewRef.current && cached?.data && isScoutCrossvalView(cached.data)) {
+            setView(cached.data);
+            if (cached.data.status === "live") setEventKey(cached.data.eventKey);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setError("");
+        const query = new URLSearchParams();
+        if (urlOrg) query.set("orgId", urlOrg);
+        if (eventHint) query.set("eventKey", eventHint);
+        try {
+          const response = await fetch(
+            `/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`,
+            {
+              cache: "no-store",
+              signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+            },
+          );
           const data = (await response.json()) as ScoutCrossvalView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (response.status === 401 || response.status === 403) {
+            setView(null);
+            setFromCache(false);
+            setCachedAt(null);
             setFetchFailed(true);
             setError("error" in data && data.error ? data.error : "Could not load scout cross-validation.");
             return;
           }
+          if (!response.ok || !isScoutCrossvalView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+              setFetchFailed(false);
+            } else {
+              setFetchFailed(true);
+              setError("error" in data && data.error ? data.error : "Could not load scout cross-validation.");
+            }
+            return;
+          }
           setView(data);
-          if ("eventKey" in data) setEventKey(data.eventKey);
-        })
-        .catch(() => {
-          setFetchFailed(true);
-          setError("Network error — please try again.");
-        });
+          if (data.status === "live") setEventKey(data.eventKey);
+          setFromCache(false);
+          setCachedAt(null);
+          await persistScoutCrossvalSnapshot(urlOrg, eventHint, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setError("Network error — please try again.");
+          }
+        }
+      })();
     },
     [initialOrgId],
   );
@@ -216,12 +293,13 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutCrossvalView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isScoutCrossvalView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
-        if ("eventKey" in data) setEventKey(data.eventKey);
+        if (data.status === "live") setEventKey(data.eventKey);
+        void persistScoutCrossvalSnapshot(orgId, eventKey ?? "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -255,7 +333,11 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
   const loaded = view?.status === "live";
 
   if (shell === "loading") {
-    return <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCrossvalShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -265,7 +347,9 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCrossvalShell>
     );
   }
   if (shell === "setup") {
@@ -274,11 +358,17 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCrossvalShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
-    return <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+    return (
+      <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCrossvalShell>
+    );
   }
 
   return (
@@ -297,6 +387,8 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           <ScoutCrossvalRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout Cross-Validation" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

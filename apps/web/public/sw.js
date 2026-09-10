@@ -128,6 +128,10 @@ const SHELL_ROUTES = [
   "/scouting-heat-signals",
   "/scout-data-impact",
   "/scout-disagreements",
+  "/scout-accuracy",
+  "/scout-crossval",
+  "/rule-impact",
+  "/season-planning-workspace",
 ];
 
 function isShellPath(pathname) {

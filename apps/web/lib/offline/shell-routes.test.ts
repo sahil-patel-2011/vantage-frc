@@ -123,6 +123,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/scouting-heat-signals")).toBe(true);
     expect(pathnameIsOfflineShell("/scout-data-impact")).toBe(true);
     expect(pathnameIsOfflineShell("/scout-disagreements")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-accuracy")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-crossval")).toBe(true);
+    expect(pathnameIsOfflineShell("/rule-impact")).toBe(true);
+    expect(pathnameIsOfflineShell("/season-planning-workspace")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -227,6 +231,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/scouting")).toBe("Scouting");
     expect(offlineCapableLabel("/scout-data-impact")).toBe("Scout Data Impact");
     expect(offlineCapableLabel("/scout-disagreements")).toBe("Scout Disagreements");
+    expect(offlineCapableLabel("/scout-accuracy")).toBe("Scout Accuracy");
+    expect(offlineCapableLabel("/scout-crossval")).toBe("Scout Cross-Validation");
+    expect(offlineCapableLabel("/rule-impact")).toBe("Rule Impact Analyzer");
+    expect(offlineCapableLabel("/season-planning-workspace")).toBe("Season Planning");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -328,6 +336,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("scouting-heat-signals", "org-1")).toBe("scouting-heat-signals:org-1");
     expect(featureCacheKey("scout-data-impact", "org-1", "2026txcmp")).toBe("scout-data-impact:org-1:2026txcmp");
     expect(featureCacheKey("scout-disagreements", "org-1", "2026")).toBe("scout-disagreements:org-1:2026");
+    expect(featureCacheKey("scout-accuracy", "org-1", "2026txcmp")).toBe("scout-accuracy:org-1:2026txcmp");
+    expect(featureCacheKey("scout-crossval", "org-1", "2026txcmp")).toBe("scout-crossval:org-1:2026txcmp");
+    expect(featureCacheKey("rule-impact", "org-1", "2026")).toBe("rule-impact:org-1:2026");
+    expect(featureCacheKey("season-planning-workspace", "org-1", "2026")).toBe("season-planning-workspace:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
