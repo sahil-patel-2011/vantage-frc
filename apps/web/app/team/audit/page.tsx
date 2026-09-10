@@ -24,7 +24,7 @@ export default async function TeamAuditPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose your team"
-          description="Audit rows stay on this team. Select the team whose trail you want to read."
+          description="Audit rows stay on this team. Choose your team to read the trail."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

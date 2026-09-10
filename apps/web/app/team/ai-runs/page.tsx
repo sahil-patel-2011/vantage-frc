@@ -24,7 +24,7 @@ export default async function TeamAiRunsPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose your team"
-          description="Runs come from that team’s real usage ledger. Select one and come back."
+          description="Runs come from this team's usage ledger. Choose your team to open them."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

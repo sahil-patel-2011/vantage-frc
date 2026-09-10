@@ -24,7 +24,7 @@ export default async function TeamExportAuditPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose your team"
-          description="Export records are written per team so one team can never read another’s. Select one and come back."
+          description="Export records stay on this team. Choose your team to open the audit."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team

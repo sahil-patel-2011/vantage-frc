@@ -406,4 +406,15 @@ describe("stylesheet integrity", () => {
       `product dark counterparts (use tokens that already flip):\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
+
+  it("does not load marketing stylesheets from the root layout", () => {
+    const layout = readFileSync(join(__dirname, "..", "..", "app", "layout.tsx"), "utf8");
+    expect(layout).not.toMatch(/marketing(?:-v3)?\.css/);
+    const marketingStyles = readFileSync(
+      join(__dirname, "..", "..", "components", "marketing", "marketing-styles.ts"),
+      "utf8",
+    );
+    expect(marketingStyles).toMatch(/marketing\.css/);
+    expect(marketingStyles).toMatch(/marketing-v3\.css/);
+  });
 });

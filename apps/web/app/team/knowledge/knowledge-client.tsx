@@ -398,9 +398,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           </header>
         ) : null}
         <EmptyState soft badge="Setup" badgeTone="setup" title="Choose your team" description={view.message}>
-          <a className="button primary" href="/workspace">
+          <Button as="a" variant="primary" href="/workspace">
             Choose your team
-          </a>
+          </Button>
         </EmptyState>
       </main>
     );
@@ -448,9 +448,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
               placeholder="Search pages…"
               aria-label="Search wiki"
             />
-            <button type="submit" className="button primary" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Search
-            </button>
+            </Button>
           </form>
           {ready.searchQuery && ready.searchHits.length === 0 ? (
             <EmptyState soft title="No matches" description={`Nothing matched “${ready.searchQuery}”.`} />
@@ -555,18 +555,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
           <aside className="kb-side">
             <div className="kb-side-head">
               {ready.pages.length === 0 ? (
-                <button
-                  type="button"
-                  className="button primary"
-                  disabled={busy}
-                  onClick={startSeasonPlaybook}
-                >
+                <Button type="button" variant="primary" disabled={busy} onClick={startSeasonPlaybook}>
                   Start season playbook
-                </button>
+                </Button>
               ) : (
-                <button type="button" className="button primary" disabled={busy} onClick={beginCreate}>
+                <Button type="button" variant="primary" disabled={busy} onClick={beginCreate}>
                   New page
-                </button>
+                </Button>
               )}
               <p className="kb-meta">
                 {ready.pages.length} page{ready.pages.length === 1 ? "" : "s"}
@@ -844,9 +839,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                         onChange={(e) => setLinkNote(e.target.value)}
                         placeholder="Why linked?"
                       />
-                      <button
+                      <Button
                         type="button"
-                        className="button primary"
+                        variant="primary"
                         disabled={busy || !linkTargetId}
                         onClick={() =>
                           void run({
@@ -859,7 +854,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                         }
                       >
                         Link
-                      </button>
+                      </Button>
                     </div>
                   </section>
                 ) : null}
@@ -869,17 +864,12 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             {!creating && !ready.selected ? (
               ready.pages.length === 0 ? (
                 <EmptyState soft title="No pages yet">
-                  <button
-                    type="button"
-                    className="button primary"
-                    disabled={busy}
-                    onClick={startSeasonPlaybook}
-                  >
+                  <Button type="button" variant="primary" disabled={busy} onClick={startSeasonPlaybook}>
                     Start season playbook
-                  </button>
+                  </Button>
                 </EmptyState>
               ) : (
-                <EmptyState soft title="Select a page" />
+                <EmptyState soft title="Choose a page" />
               )
             ) : null}
           </div>

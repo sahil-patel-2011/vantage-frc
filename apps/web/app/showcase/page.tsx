@@ -30,7 +30,7 @@ export default async function ShowcasePage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose your team"
-          description="Showcase renders one team's real season. Select the team and come back."
+          description="Showcase renders one team's real season. Choose your team to open it."
         >
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
