@@ -352,4 +352,24 @@ describe("stylesheet integrity", () => {
     for (const root of roots) walk(root);
     expect(offenders, `product TS/TSX still uses --m-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
   });
+
+  it("does not paint a second dark palette with #0f141a / #171d25", () => {
+    // Dark mode is the designed tokens in system.css (#0c1118 / #151b24).
+    // Sign-in and Event Day used a competing well (#0f141a / #171d25) that
+    // made those screens a different product at night.
+    const competing = /#0f141a|#171d25/i;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      text.split("\n").forEach((line, index) => {
+        if (competing.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      `competing dark hex (use --bg / --surface):\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
+  });
 });

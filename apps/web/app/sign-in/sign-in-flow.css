@@ -504,121 +504,121 @@
 
 html[data-theme="dark"] .signin-page {
   background:
-    radial-gradient(circle at 12% 0, rgba(110, 155, 255, 0.14), transparent 36%),
-    linear-gradient(145deg, #0f141a, #121820);
+    radial-gradient(circle at 12% 0, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),
+    var(--bg);
 }
 
 html[data-theme="dark"] .signin-card {
-  background: #171d25;
-  border-color: #2a3440;
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 html[data-theme="dark"] .signin-method-tabs button {
-  background: #0f141a;
-  border-color: #334155;
-  color: #b7c4d6;
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--muted);
 }
 
 html[data-theme="dark"] .signin-method-tabs button[aria-pressed="true"] {
-  background: #1a2740;
-  border-color: #6e9bff;
-  color: #9bbcff;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 html[data-theme="dark"] .signin-code-box {
-  background: #0f141a;
-  border-color: #334155;
-  color: #edf2f7;
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 html[data-theme="dark"] .signin-code-box.caret {
-  border-color: #6e9bff;
-  box-shadow: 0 0 0 3px rgba(110, 155, 255, 0.22);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 html[data-theme="dark"] .signin-code.invalid .signin-code-box {
-  border-color: #e08276;
+  border-color: var(--critical);
 }
 
 html[data-theme="dark"] .signin-code-target,
 html[data-theme="dark"] .signin-last-used {
-  background: #0f141a;
-  border-color: #334155;
-  color: #b7c4d6;
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--muted);
 }
 
 html[data-theme="dark"] .signin-code-target strong {
-  color: #edf2f7;
+  color: var(--ink);
 }
 
 html[data-theme="dark"] .signin-remembered {
-  color: #94a3b8;
+  color: var(--muted);
 }
 
 html[data-theme="dark"] .signin-invite {
-  border-color: #2f4a7a;
-  background: #131c2c;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: var(--accent-soft);
 }
 
 html[data-theme="dark"] .signin-invite > span {
-  color: #9bbcff;
+  color: var(--accent);
 }
 
 html[data-theme="dark"] .signin-invite strong {
-  color: #dbe7ff;
+  color: var(--ink);
 }
 
 html[data-theme="dark"] .signin-invite p {
-  color: #a8bad6;
+  color: var(--muted);
 }
 
 html[data-theme="dark"] .signin-status.error {
-  border-color: #6b332b;
-  background: #2a1512;
-  color: #f0a99f;
+  border-color: color-mix(in srgb, var(--critical) 40%, var(--line));
+  background: var(--critical-soft);
+  color: var(--critical);
 }
 
 html[data-theme="dark"] .signin-setup-shell {
-  border-color: #8a6a2a;
-  background: #2a2110;
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--warning-soft);
 }
 
 html[data-theme="dark"] .signin-setup-shell strong,
 html[data-theme="dark"] .signin-setup-shell p {
-  color: #f0d9a0;
+  color: var(--warning);
 }
 
 html[data-theme="dark"] .signin-access-note {
-  border-color: #2d5a48;
-  background: #132821;
-  color: #a8d4bf;
+  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
+  background: var(--positive-soft);
+  color: var(--positive);
 }
 
 html[data-theme="dark"] .signin-access-note > span > b {
-  color: #c8f0dc;
+  color: var(--positive);
 }
 
 html[data-theme="dark"] .signin-cta-row a {
-  background: #0f141a;
-  border-color: #334155;
-  color: #9bbcff;
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--accent);
 }
 
 html[data-theme="dark"] .signin-cta-row a.primary {
-  background: #6e9bff;
-  border-color: #6e9bff;
-  color: #071014;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 html[data-theme="dark"] .signin-price-strip {
-  background: #2a3440;
-  border-color: #2a3440;
+  background: var(--surface-2);
+  border-color: var(--line);
 }
 
 html[data-theme="dark"] .signin-price-strip li {
-  background: #0f141a;
+  background: var(--bg);
 }
 
 html[data-theme="dark"] .signin-price-strip strong {
-  color: #edf2f7;
+  color: var(--ink);
 }
