@@ -216,7 +216,7 @@ export function pitRepairTriageNextActions(input: {
       {
         id: "retry",
         label: "Retry Pit Repair Triage",
-        detail: "Reload real triage reports — nothing is invented while this fails.",
+        detail: "Reload real triage reports.",
         href: withOrgHref("/pit-repair-triage", orgId),
         primary: true,
       },

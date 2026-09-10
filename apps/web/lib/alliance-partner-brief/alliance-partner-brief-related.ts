@@ -215,7 +215,7 @@ export function alliancePartnerBriefNextActions(input: {
       {
         id: "retry",
         label: "Retry Alliance-Partner Brief",
-        detail: "Reload real alliance and brief rows — nothing is invented while this fails.",
+        detail: "Reload real alliance and brief rows.",
         href: withOrgHref("/alliance-partner-brief", orgId),
         primary: true,
       },

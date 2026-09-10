@@ -97,7 +97,7 @@ export function codeCoachNextActions(input: {
     actions.push({
       id: "review",
       label: "Run a local risk review",
-      detail: "Pattern matching runs in your browser — no plan credits, no invented AI findings.",
+      detail: "Pattern matching runs in your browser.",
       href: "#cdc-source",
       primary: true,
     });

@@ -90,7 +90,7 @@ export async function loadHandoffStatus(
 }
 
 const NO_ITEMS_MESSAGE =
-  "No learned items to hand off. Add start/stop/continue items first — nothing is invented.";
+  "No learned items to hand off. Add start/stop/continue items first.";
 
 export async function handoffLearnedItems(
   client: PoolClient,

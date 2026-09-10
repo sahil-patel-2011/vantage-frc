@@ -81,19 +81,19 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Presence stays blank until real check-ins exist — no sample headcount.",
+      detail: "Presence stays blank until real check-ins exist.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Clocked hours stay blank until members log shop time — no sample hours.",
+      detail: "Clocked hours stay blank until members log shop time.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
     {
       id: "task-board",
       label: "Open Task board",
-      detail: "Ownership stays empty without real task rows — no sample progress.",
+      detail: "Ownership stays empty without real task rows.",
       href: hubHref("/team", "task-board", orgId),
     },
   ];
@@ -210,7 +210,7 @@ export function busFactorNextActions(input: {
       {
         id: "retry",
         label: "Retry Bus-Factor",
-        detail: "Reload real workload entries — nothing is invented while this fails.",
+        detail: "Reload real workload entries.",
         href: withOrgHref("/bus-factor", orgId),
         primary: true,
       },

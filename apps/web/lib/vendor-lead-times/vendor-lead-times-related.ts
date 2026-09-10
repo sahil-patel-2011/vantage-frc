@@ -218,7 +218,7 @@ export function vendorLeadTimesNextActions(input: {
       {
         id: "retry",
         label: "Retry Vendor Lead Times",
-        detail: "Reload real vendors and reorders — nothing is invented while this fails.",
+        detail: "Reload real vendors and reorders.",
         href: withOrgHref("/vendor-lead-times", orgId),
         primary: true,
       },

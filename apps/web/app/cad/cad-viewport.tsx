@@ -68,7 +68,7 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
           title={setupRequired ? "Onshape setup required" : "No shaded view yet"}
           description={
             setupRequired
-              ? "Connect Onshape before a shaded view can load. The viewport stays empty — nothing is invented."
+              ? "Connect Onshape before a shaded view can load. The viewport stays empty."
               : "No Onshape shaded-view PNG is available. The viewport stays empty until a real render arrives."
           }
           badge={setupRequired ? "Setup" : undefined}

@@ -74,13 +74,13 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Engagement stays blank until real roll-call entries exist — no sample morale.",
+      detail: "Engagement stays blank until real roll-call entries exist.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Shop-time engagement stays blank until members clock in — no sample hours.",
+      detail: "Shop-time engagement stays blank until members clock in.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
   ];
@@ -195,7 +195,7 @@ export function teamHealthNextActions(input: {
       {
         id: "retry",
         label: "Retry Team Health",
-        detail: "Reload real attendance and hour logs — nothing is invented while this fails.",
+        detail: "Reload real attendance and hour logs.",
         href: withOrgHref("/team-health-dashboard", orgId),
         primary: true,
       },

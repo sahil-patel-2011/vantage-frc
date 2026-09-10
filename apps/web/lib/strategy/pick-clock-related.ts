@@ -282,7 +282,7 @@ export function pickClockNextActions(input: {
       {
         id: "retry",
         label: "Retry pick clock",
-        detail: "Reload real event metrics and draft exclusions — nothing is invented while this fails.",
+        detail: "Reload real event metrics and draft exclusions.",
         href: hubHref("/competition", "pick-clock", orgId),
         primary: true,
       },

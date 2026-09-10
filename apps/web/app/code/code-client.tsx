@@ -1052,7 +1052,7 @@ export function CodeClient({
       <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
         <header>
           <h2>Next actions</h2>
-          <p className="app-muted">Setup and cross-links — never placeholder review findings.</p>
+          <p className="app-muted">Setup and cross-links.</p>
         </header>
         <ol>
           {nextActions.map((action) => (

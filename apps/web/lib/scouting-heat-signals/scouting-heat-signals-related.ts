@@ -232,7 +232,7 @@ export function scoutingHeatSignalsNextActions(input: {
       {
         id: "retry",
         label: "Retry Heat Signals",
-        detail: "Reload real observations — nothing is invented while this fails.",
+        detail: "Reload real observations.",
         href: withOrgHref("/scouting-heat-signals", orgId),
         primary: true,
       },

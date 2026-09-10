@@ -234,7 +234,7 @@ export function sponsorRenewalRoiNextActions(input: {
       {
         id: "retry",
         label: "Retry Sponsor Renewal ROI",
-        detail: "Reload real renewal scores — nothing is invented while this fails.",
+        detail: "Reload real renewal scores.",
         href: withOrgHref("/sponsor-renewal-roi", orgId),
         primary: true,
       },

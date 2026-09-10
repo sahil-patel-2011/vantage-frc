@@ -176,7 +176,7 @@ export function driveTeamSignalsNextActions(input: {
       {
         id: "retry",
         label: "Retry Drive-Team Signals",
-        detail: "Reload real signal sheets — nothing is invented while this fails.",
+        detail: "Reload real signal sheets.",
         href: withOrgHref("/drive-team-signals", orgId),
         primary: true,
       },

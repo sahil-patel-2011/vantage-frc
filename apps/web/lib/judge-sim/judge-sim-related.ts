@@ -217,7 +217,7 @@ export function judgeSimNextActions(input: {
       {
         id: "retry",
         label: "Retry Judge-Pitch",
-        detail: "Reload real evidence and session rows — nothing is invented while this fails.",
+        detail: "Reload real evidence and session rows.",
         href: withOrgHref("/judge-sim", orgId),
         primary: true,
       },

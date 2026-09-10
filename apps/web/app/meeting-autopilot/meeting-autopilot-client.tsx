@@ -360,7 +360,7 @@ function MeetingCard({
         {persistedMinutes ? (
           <small className="app-muted">Saved minutes are stored on this calendar event.</small>
         ) : (
-          <small className="app-muted">Minutes stay empty until you write them — nothing is invented.</small>
+          <small className="app-muted">Minutes stay empty until you write them.</small>
         )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button

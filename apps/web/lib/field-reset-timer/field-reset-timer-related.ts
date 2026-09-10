@@ -175,7 +175,7 @@ export function fieldResetTimerNextActions(input: {
       {
         id: "retry",
         label: "Retry Field Reset Timer",
-        detail: "Reload real practice sessions — nothing is invented while this fails.",
+        detail: "Reload real practice sessions.",
         href: withOrgHref("/field-reset-timer", orgId),
         primary: true,
       },

@@ -245,7 +245,7 @@ export function matchDeltaWatcherNextActions(input: {
       {
         id: "retry",
         label: "Retry Match-Delta Watcher",
-        detail: "Reload real scored matches — nothing is invented while this fails.",
+        detail: "Reload real scored matches.",
         href: withOrgHref("/match-delta-watcher", orgId),
         primary: true,
       },

@@ -212,7 +212,7 @@ export function opponentWatchlistNextActions(input: {
       {
         id: "retry",
         label: "Retry Opponent Watchlist",
-        detail: "Reload real watchlist rows — nothing is invented while this fails.",
+        detail: "Reload real watchlist rows.",
         href: withOrgHref("/opponent-watchlist", orgId),
         primary: true,
       },

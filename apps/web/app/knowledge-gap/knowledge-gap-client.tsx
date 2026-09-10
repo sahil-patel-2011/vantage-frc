@@ -384,7 +384,7 @@ function EmptyWorkState({ tracked }: { tracked: number }) {
         badge="No work items"
         badgeTone="setup"
         title="Nothing to scan yet"
-        description="No work items to check — add to-dos, build tasks, or milestones before gaps can appear. Never invented."
+        description="No work items to check — add to-dos, build tasks, or milestones before gaps can appear."
       />
     );
   }

@@ -78,7 +78,7 @@ export function matchChecklistNextActions(input: {
     actions.push({
       id: "next-match",
       label: "Start the next match checklist",
-      detail: "Prior runs stay in history with real elapsed times — nothing is fabricated.",
+      detail: "Prior runs stay in history with real elapsed times.",
       href: hubHref("/competition", "match-checklist", orgId),
       primary: true,
     });

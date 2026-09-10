@@ -216,7 +216,7 @@ export function mediaNextActions(input: {
       {
         id: "retry",
         label: "Retry Media",
-        detail: "Reload real kit and outreach counts — nothing is invented while this fails.",
+        detail: "Reload real kit and outreach counts.",
         href: withOrgHref("/media", orgId),
         primary: true,
       },

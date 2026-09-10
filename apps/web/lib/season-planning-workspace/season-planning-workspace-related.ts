@@ -238,7 +238,7 @@ export function seasonPlanningNextActions(input: {
       {
         id: "retry",
         label: "Retry Season Planning",
-        detail: "Reload real plans — nothing is invented while this fails.",
+        detail: "Reload real plans.",
         href: withOrgHref("/season-planning-workspace", orgId),
         primary: true,
       },

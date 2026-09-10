@@ -460,7 +460,7 @@ function SearchForm({
       <p className="app-muted decision-search-query-hint">
         {documentCount === 0
           ? "Index at least one document below before searching — empty corpora return no matches."
-          : "Matches use term overlap on title, tags, and body. Only indexed text ranks — nothing is invented."}
+          : "Matches use term overlap on title, tags, and body. Only indexed text ranks."}
       </p>
       <FormRow label="What are you looking for?">
         <input

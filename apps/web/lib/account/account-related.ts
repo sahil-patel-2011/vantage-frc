@@ -132,7 +132,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "profile",
       label: "Save a display name",
-      detail: "Your profile stays blank until you set a name — nothing is invented for teammates.",
+      detail: "Your profile stays blank until you set a name.",
       href: "/account?tab=profile",
       primary: true,
     });

@@ -232,7 +232,7 @@ export function scoutFieldBudgetNextActions(input: {
       {
         id: "retry",
         label: "Retry Field-Count Budget",
-        detail: "Reload real schema snapshots — nothing is invented while this fails.",
+        detail: "Reload real schema snapshots.",
         href: withOrgHref("/scout-field-budget", orgId),
         primary: true,
       },

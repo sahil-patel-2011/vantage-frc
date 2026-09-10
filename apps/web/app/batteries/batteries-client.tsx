@@ -447,7 +447,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       {view.packs.length === 0 ? (
         <EmptyState
           title="No batteries yet"
-          description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them — nothing is invented."
+          description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them."
           soft
         >
           <BatteriesRelated orgId={orgId} />

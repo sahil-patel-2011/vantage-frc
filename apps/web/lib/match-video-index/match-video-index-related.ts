@@ -199,7 +199,7 @@ export function matchVideoIndexNextActions(input: {
       {
         id: "retry",
         label: "Retry Match Video Index",
-        detail: "Reload real indexed clips — nothing is invented while this fails.",
+        detail: "Reload real indexed clips.",
         href: withOrgHref("/match-video-index", orgId),
         primary: true,
       },

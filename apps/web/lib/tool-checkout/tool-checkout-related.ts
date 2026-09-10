@@ -177,7 +177,7 @@ export function toolCheckoutNextActions(input: {
       {
         id: "retry",
         label: "Retry Tool Checkout",
-        detail: "Reload real tool loans — nothing is invented while this fails.",
+        detail: "Reload real tool loans.",
         href: withOrgHref("/tool-checkout", orgId),
         primary: true,
       },

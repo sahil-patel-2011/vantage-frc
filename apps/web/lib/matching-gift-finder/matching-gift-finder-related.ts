@@ -234,7 +234,7 @@ export function matchingGiftFinderNextActions(input: {
       {
         id: "retry",
         label: "Retry Matching Gift Finder",
-        detail: "Reload real contacts and programs — nothing is invented while this fails.",
+        detail: "Reload real contacts and programs.",
         href: withOrgHref("/matching-gift-finder", orgId),
         primary: true,
       },

@@ -282,7 +282,7 @@ export function chemistryNextActions(input: {
       {
         id: "retry",
         label: "Retry chemistry",
-        detail: "Reload real event metrics and seats — nothing is invented while this fails.",
+        detail: "Reload real event metrics and seats.",
         href: hubHref("/competition", "chemistry", orgId),
         primary: true,
       },

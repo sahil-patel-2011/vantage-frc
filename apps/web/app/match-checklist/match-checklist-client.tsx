@@ -380,7 +380,7 @@ function RunList({
           badge="No checklists yet"
           badgeTone="setup"
           title="Start your first pre-match checklist"
-          description="Tap through bumper color, battery strap, SB50 lock, tether, and code before every match. Timing and readiness stay blank until you check items — nothing is invented."
+          description="Tap through bumper color, battery strap, SB50 lock, tether, and code before every match. Timing and readiness stay blank until you check items."
         />
       </div>
     );

@@ -218,7 +218,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           : `${window.location.pathname}${window.location.search}`,
       message:
         error ||
-        "A network or server issue prevented loading. Award totals stay blank until real applications are recorded — nothing is fabricated.",
+        "A network or server issue prevented loading. Award totals stay blank until real applications are recorded.",
     });
     return (
       <main className="module-page gwe-page">

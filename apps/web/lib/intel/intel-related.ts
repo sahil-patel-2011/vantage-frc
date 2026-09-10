@@ -268,7 +268,7 @@ export function intelNextActions(input: {
       {
         id: "retry",
         label: "Retry Intel",
-        detail: "Reload the global team index — nothing is invented while this fails.",
+        detail: "Reload the global team index.",
         href: withOrgHref("/intel", orgId),
         primary: true,
       },

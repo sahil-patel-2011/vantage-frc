@@ -181,7 +181,7 @@ export default function GoalsClient() {
         <PageHeader
           breadcrumbs="Team / Goals"
           title="Goals"
-          description="Measurable season objectives with progress from real current values — never demo percentages."
+          description="Measurable season objectives with progress from real current values."
         />
         <EmptyState
           soft
@@ -303,7 +303,7 @@ export default function GoalsClient() {
         <EmptyState
           soft
           title="No season goals yet"
-          description="Add a measurable target above (matches won, outreach hours, dollars raised, a yes/no milestone). Season progress stays blank until then — nothing is invented."
+          description="Add a measurable target above (matches won, outreach hours, dollars raised, a yes/no milestone). Season progress stays blank until then."
         >
           <div className="goals-row-links">
             <a href={withOrgHref("/todos", orgId)}>Todos →</a>

@@ -93,7 +93,7 @@ function NextActions({ view }: { view: BusinessView }) {
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Keep the pipeline moving with real team data</h2>
-        <p>Only contacts, amounts, and dates you already recorded — never fabricated pipeline revenue.</p>
+        <p>Built from the contacts, amounts, and dates you recorded.</p>
       </header>
       <ol>
         {actions.map((action) => (

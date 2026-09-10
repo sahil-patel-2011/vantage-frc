@@ -203,7 +203,7 @@ export function picklistJustifierNextActions(input: {
       {
         id: "retry",
         label: "Retry Pick-list Justifier",
-        detail: "Reload real pick-list slots — nothing is invented while this fails.",
+        detail: "Reload real pick-list slots.",
         href: withOrgHref("/picklist-justifier", orgId),
         primary: true,
       },

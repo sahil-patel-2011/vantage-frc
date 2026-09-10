@@ -234,8 +234,8 @@ function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId
         <h2>Business & purchase dates</h2>
         <p className="app-muted">
           Grant deadlines and purchase <em>needed by</em> dates from{" "}
-          <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a> appear here when set — not invented
-          markers. Season spend lives in <a href={`/costs?orgId=${encodeURIComponent(orgId)}`}>Costs</a>.
+          <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a> appear here once they are set.
+          Season spend lives in <a href={`/costs?orgId=${encodeURIComponent(orgId)}`}>Costs</a>.
         </p>
       </Panel>
     );

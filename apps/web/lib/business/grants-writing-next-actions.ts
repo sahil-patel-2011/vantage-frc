@@ -59,7 +59,7 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
     actions.push({
       id: "impact",
       label: "Log community impact evidence",
-      detail: "Activities and hours appear in provenance only after you record them — never fabricated metrics.",
+      detail: "Activities and hours appear in provenance only after you record them.",
       href: withOrgHref("/impact", orgId),
       primary: actions.length === 0,
     });
@@ -68,7 +68,7 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
   actions.push({
     id: "pipeline",
     label: "Track applications in Business",
-    detail: "Deadlines and awarded amounts come from applications you add — not placeholder dollars.",
+    detail: "Deadlines and awarded amounts come from applications you add.",
     href: hubHref("/business", "grants", orgId),
     primary: actions.length === 0,
   });
@@ -90,7 +90,7 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
   actions.push({
     id: "writer",
     label: "Grant & sponsor writer",
-    detail: "Metered AI pitches and grant answers hard-stop at plan cutoffs — no invented award $.",
+    detail: "Metered AI pitches and grant answers hard-stop at plan cutoffs.",
     href: withOrgHref("/writer", orgId),
   });
 

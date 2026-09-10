@@ -408,7 +408,7 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         description={
           org.workspaceCount > 0
             ? "Your profile prefs still apply to this login. Pick an active team for billing, AI usage, and connectors."
-            : "You are signed in, but no team membership is attached yet. Ask an owner for an invite — nothing is pre-seeded here."
+            : "You are signed in, but you are not on a team yet. Ask an owner to send you an invite."
         }
       >
         <div className="account-empty-actions">

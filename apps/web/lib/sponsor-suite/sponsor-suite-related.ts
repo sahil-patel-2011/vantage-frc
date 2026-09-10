@@ -87,13 +87,13 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     {
       id: "sponsorship",
       label: "Open Sponsorship",
-      detail: "One-pagers stay empty until real packages exist — no sample tiers.",
+      detail: "One-pagers stay empty until real packages exist.",
       href: hubHref("/business", "sponsorship", orgId),
     },
     {
       id: "sponsor-wall",
       label: "Open Sponsor Wall",
-      detail: "Wall shout-outs stay blank until real entries land — no sample logos.",
+      detail: "Wall shout-outs stay blank until real entries land.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
   ];
@@ -235,7 +235,7 @@ export function sponsorSuiteNextActions(input: {
       {
         id: "retry",
         label: "Retry Sponsor Suite",
-        detail: "Reload real sponsors and decks — nothing is invented while this fails.",
+        detail: "Reload real sponsors and decks.",
         href: withOrgHref("/sponsor-suite", orgId),
         primary: true,
       },

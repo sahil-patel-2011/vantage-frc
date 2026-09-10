@@ -283,7 +283,7 @@ export function strategyNextActions(input: {
       {
         id: "retry",
         label: "Retry strategy",
-        detail: "Reload real TBA/Statbotics match context — nothing is invented while this fails.",
+        detail: "Reload real TBA/Statbotics match context.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },

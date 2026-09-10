@@ -81,19 +81,19 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist — no sample rankings.",
+      detail: "Event strategy stays empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — no sample scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "counter-book",
       label: "Open Counter-book",
-      detail: "Opponent tendencies stay blank until scout samples exist — no sample averages.",
+      detail: "Opponent tendencies stay blank until scout samples exist.",
       href: hubHref("/competition", "counter-book", orgId),
     },
   ];
@@ -205,7 +205,7 @@ export function defensePlannerNextActions(input: {
       {
         id: "retry",
         label: "Retry Defense Planner",
-        detail: "Reload real matchups — nothing is invented while this fails.",
+        detail: "Reload real matchups.",
         href: withOrgHref("/defense-planner", orgId),
         primary: true,
       },

@@ -103,7 +103,7 @@ export function signoffNextActions(input: {
     actions.push({
       id: "cad",
       label: "Open CAD briefs",
-      detail: "Design-review gates usually wait on real geometry — not invented checkpoints.",
+      detail: "Design-review gates usually wait on real geometry.",
       href: hubHref("/build", "cad", orgId),
     });
     actions.push({

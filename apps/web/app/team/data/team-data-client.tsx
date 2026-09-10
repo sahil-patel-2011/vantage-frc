@@ -420,7 +420,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             badge="No TBA cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but Neon has no match or team-metric rows yet. Sync pulls real TBA data — nothing is invented.`}
+            description={`Event ${activeEventKey} is selected, but Neon has no match or team-metric rows yet. Sync pulls real TBA data.`}
           >
             <div className="team-data-inline-actions">
               <button type="button" className="app-button" disabled={busy} onClick={() => void syncActiveEvent()}>

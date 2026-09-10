@@ -240,7 +240,7 @@ export function hoursSelfViewNextActions(input: {
       {
         id: "retry",
         label: "Retry My Hours",
-        detail: "Reload your real hour logs — nothing is invented while this fails.",
+        detail: "Reload your real hour logs.",
         href: withOrgHref("/hours-self-view", orgId),
         primary: true,
       },

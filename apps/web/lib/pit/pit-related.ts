@@ -94,19 +94,19 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "match-checklist",
       label: "Open Match checklist",
-      detail: "Timed pit prep stays blank until you check real items — no sample progress.",
+      detail: "Timed pit prep stays blank until you check real items.",
       href: hubHref("/competition", "match-checklist", orgId),
     },
     {
       id: "command",
       label: "Open Event Day",
-      detail: "Active event and match queues stay empty until TBA context syncs — no sample schedules.",
+      detail: "Active event and match queues stay empty until TBA context syncs.",
       href: hubHref("/competition", "command", orgId),
     },
   ];
@@ -256,7 +256,7 @@ export function pitNextActions(input: {
       {
         id: "retry",
         label: "Retry Pit Command",
-        detail: "Reload real issues / batteries / maintenance — nothing is invented while this fails.",
+        detail: "Reload real issues / batteries / maintenance.",
         href: withOrgHref("/pit", orgId),
         primary: true,
       },

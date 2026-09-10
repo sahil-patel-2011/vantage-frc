@@ -234,7 +234,7 @@ export function codeDeployLogNextActions(input: {
       {
         id: "retry",
         label: "Retry Code Deploy Log",
-        detail: "Reload real deploy history — nothing is invented while this fails.",
+        detail: "Reload real deploy history.",
         href: withOrgHref("/code-deploy-log", orgId),
         primary: true,
       },

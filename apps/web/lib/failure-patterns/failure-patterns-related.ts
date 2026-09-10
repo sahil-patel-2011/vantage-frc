@@ -204,7 +204,7 @@ export function failurePatternsNextActions(input: {
       {
         id: "retry",
         label: "Retry Failure Patterns",
-        detail: "Reload real FMEA clusters — nothing is invented while this fails.",
+        detail: "Reload real FMEA clusters.",
         href: withOrgHref("/failure-patterns", orgId),
         primary: true,
       },

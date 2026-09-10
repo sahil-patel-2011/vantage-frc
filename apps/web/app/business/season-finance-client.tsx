@@ -618,7 +618,7 @@ function LiveDesk({
               ))}
               {!view.purchases.length ? (
                 <tr>
-                  <td colSpan={5}>No receipts yet. Log hardware, travel, and reimbursements here — never placeholder spend.</td>
+                  <td colSpan={5}>No receipts yet. Log hardware, travel, and reimbursements here.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -710,7 +710,7 @@ function BalancePanel({ orgId }: { orgId: string }) {
       {balance?.status === "live" && !balance.hasData ? (
         <p className="app-muted">
           No money recorded yet. Log a funding source, sponsor contribution, or purchase and the balance
-          appears here — never a placeholder number.
+          appears here.
         </p>
       ) : null}
 

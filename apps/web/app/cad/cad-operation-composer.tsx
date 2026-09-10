@@ -165,7 +165,7 @@ export function CadOperationComposer({
           {platform === "fusion360"
             ? "Typed millimetre fields match the paired Fusion add-in allowlist. Execution stays on your desktop."
             : platform === "onshape"
-              ? "Edit millimetres and IDs the way Onshape's feature dialog does. Empty fields stay empty — no placeholder plates."
+              ? "Edit millimetres and IDs the way Onshape's feature dialog does. Empty fields stay empty."
               : "Plan native operations with typed millimetre fields. Mock adapters do not create production geometry."}
         </p>
         <div role="group" aria-label="Native operations">

@@ -221,7 +221,7 @@ export function tuningAutopilotNextActions(input: {
       {
         id: "retry",
         label: "Retry Tuning Autopilot",
-        detail: "Reload real tuning sessions — nothing is invented while this fails.",
+        detail: "Reload real tuning sessions.",
         href: withOrgHref("/tuning-autopilot", orgId),
         primary: true,
       },

@@ -291,7 +291,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
           </>
         }
         title="FIRST award submissions"
-        description="Start a catalog award to seed essay prompts, draft responses here, then record wins in Business · Awards for grant writing. Empty means nothing started — not a placeholder scoreboard."
+        description="Start a catalog award to seed essay prompts, draft responses here, then record wins in Business · Awards for grant writing. Empty means nothing started."
       />
 
       <BusinessRelated

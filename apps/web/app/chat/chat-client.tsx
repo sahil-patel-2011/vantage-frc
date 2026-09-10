@@ -384,8 +384,8 @@ export default function ChatClient({
           <span className="breadcrumbs">AI / Assistant</span>
           <h1>FRC Assistant</h1>
           <p>
-            Ask about teams, matchups, and scout evidence. Authorized tools run when you mention teams or matches.
-            Empty Neon/TBA/scout results stay empty — nothing is invented.
+            Ask about teams, matchups, and scout evidence. Tools run when you mention a team or a match, and
+            answer from what your team has actually recorded.
           </p>
         </div>
         <div className="ch-header-actions">

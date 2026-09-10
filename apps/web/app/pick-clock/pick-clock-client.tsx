@@ -601,7 +601,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           description={
             excludedCount
               ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
-              : "Load event metrics or build a pick list on Strategy first — no invented rankings."
+              : "Load event metrics or build a pick list on Strategy first."
           }
           badge="No teams left to recommend"
           badgeTone="setup"

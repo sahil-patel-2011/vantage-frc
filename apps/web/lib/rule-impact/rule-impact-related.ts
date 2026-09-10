@@ -224,7 +224,7 @@ export function ruleImpactNextActions(input: {
       {
         id: "retry",
         label: "Retry Rule Impact",
-        detail: "Reload real rule changes — nothing is invented while this fails.",
+        detail: "Reload real rule changes.",
         href: withOrgHref("/rule-impact", orgId),
         primary: true,
       },

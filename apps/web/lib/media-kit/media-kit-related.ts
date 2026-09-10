@@ -96,13 +96,13 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Pair media assets with real sponsor decks — no sample logos.",
+      detail: "Pair media assets with real sponsor decks.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
     {
       id: "outreach-calendar",
       label: "Open Outreach Calendar",
-      detail: "Outreach stays empty until you schedule real events — no sample reach.",
+      detail: "Outreach stays empty until you schedule real events.",
       href: hubHref("/business", "outreach-calendar", orgId),
     },
   ];
@@ -229,7 +229,7 @@ export function mediaKitNextActions(input: {
       {
         id: "retry",
         label: "Retry Media Kit",
-        detail: "Reload real profile and assets — nothing is invented while this fails.",
+        detail: "Reload real profile and assets.",
         href: withOrgHref("/media-kit", orgId),
         primary: true,
       },

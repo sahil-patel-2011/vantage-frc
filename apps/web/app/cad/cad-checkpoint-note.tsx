@@ -29,7 +29,7 @@ export function CadCheckpointNote({ checkpointId }: CadCheckpointNoteProps) {
       {id ? (
         <>Last stored checkpoint: {id}.</>
       ) : (
-        <>No checkpoint id is shown until a real one is stored — none are invented.</>
+        <>An id appears here once you store a checkpoint.</>
       )}
     </p>
   );

@@ -204,7 +204,7 @@ export function seasonReportNextActions(input: {
       {
         id: "retry",
         label: "Retry Season Report",
-        detail: "Reload real entries and snapshots — nothing is invented while this fails.",
+        detail: "Reload real entries and snapshots.",
         href: withOrgHref("/season-report", orgId),
         primary: true,
       },

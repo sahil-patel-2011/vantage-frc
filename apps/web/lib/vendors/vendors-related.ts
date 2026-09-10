@@ -206,7 +206,7 @@ export function vendorsNextActions(input: {
       {
         id: "retry",
         label: "Retry Vendor Directory",
-        detail: "Reload real suppliers — nothing is invented while this fails.",
+        detail: "Reload real suppliers.",
         href: withOrgHref("/vendors", orgId),
         primary: true,
       },

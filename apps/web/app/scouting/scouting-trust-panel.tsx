@@ -291,8 +291,8 @@ export default function ScoutingTrustPanel({
               ))
             ) : (
               <p className="app-muted">
-                After coaches save a pick list, entries you scouted for listed teams show up here with the exact
-                reason — nothing fabricated.
+                After coaches save a pick list, entries you scouted for listed teams show up here with the
+                exact reason they were picked.
               </p>
             )}
             <a className="app-button secondary" href={`/strategy?orgId=${encodeURIComponent(orgId)}&tab=picks`}>

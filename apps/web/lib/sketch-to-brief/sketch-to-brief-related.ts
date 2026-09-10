@@ -195,7 +195,7 @@ export function sketchToBriefNextActions(input: {
       {
         id: "retry",
         label: "Retry Sketch-to-Brief",
-        detail: "Reload real sketches — nothing is invented while this fails.",
+        detail: "Reload real sketches.",
         href: withOrgHref("/sketch-to-brief", orgId),
         primary: true,
       },

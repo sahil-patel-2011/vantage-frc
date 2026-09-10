@@ -101,19 +101,19 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "battery-health-forecast",
       label: "Open Health Forecast",
-      detail: "Retirement projections stay blank until IR + cycle history exists — no sample EOL dates.",
+      detail: "Retirement projections stay blank until IR + cycle history exists.",
       href: hubHref("/build", "battery-health-forecast", orgId),
     },
     {
       id: "pit",
       label: "Open Pit Command",
-      detail: "Event-day rack status uses the same real pack evidence — no sample volts.",
+      detail: "Event-day rack status uses the same real pack evidence.",
       href: withOrgHref("/pit", orgId),
     },
   ];
@@ -233,7 +233,7 @@ export function batteryRotationNextActions(input: {
       {
         id: "retry",
         label: "Retry Battery Rotation",
-        detail: "Reload real pack / charge plans — nothing is invented while this fails.",
+        detail: "Reload real pack / charge plans.",
         href: withOrgHref("/battery-rotation", orgId),
         primary: true,
       },

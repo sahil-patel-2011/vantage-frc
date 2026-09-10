@@ -199,7 +199,7 @@ export function riskBurndownNextActions(input: {
       {
         id: "retry",
         label: "Retry Risk Burndown",
-        detail: "Reload real risks and burndown series — nothing is invented while this fails.",
+        detail: "Reload real risks and burndown series.",
         href: withOrgHref("/risk-burndown", orgId),
         primary: true,
       },

@@ -252,7 +252,7 @@ export function matchStrategyCardsNextActions(input: {
       {
         id: "retry",
         label: "Retry Match Strategy Cards",
-        detail: "Reload real schedule cards — nothing is invented while this fails.",
+        detail: "Reload real schedule cards.",
         href: withOrgHref("/match-strategy-cards", orgId),
         primary: true,
       },

@@ -85,19 +85,19 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
     {
       id: "calendar",
       label: "Open Calendar",
-      detail: "Confirm practice/event windows before proposing dates — no sample schedules.",
+      detail: "Confirm practice/event windows before proposing dates.",
       href: hubHref("/team", "calendar", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Data-share scopes use real scout sheets only — no sample partners.",
+      detail: "Data-share scopes use real scout sheets only.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm TBA/team context for partner outreach — no sample team numbers.",
+      detail: "Confirm TBA/team context for partner outreach.",
       href: withOrgHref("/team/data", orgId),
     },
   ];

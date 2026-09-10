@@ -322,7 +322,7 @@ export default function CostsClient() {
         <EmptyState
           soft
           title="No season costs logged yet"
-          description="Start with registration and event fees, then add purchases as you go. Totals stay at real $0 until you record them — nothing is invented."
+          description="Start with registration and event fees, then add purchases as you go. Totals stay at real $0 until you record them."
         >
           <div className="costs-row-links">
             <a href={hubHref("/business", "orders", orgId)}>Orders →</a>

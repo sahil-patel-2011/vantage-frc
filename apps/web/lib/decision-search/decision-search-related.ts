@@ -136,7 +136,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         kind: "ready",
         title: "Search indexed decisions",
         description:
-          "Results come only from documents you indexed this season. Term overlap ranks matches — nothing is invented.",
+          "Results come only from documents you indexed this season. Term overlap ranks matches.",
       };
   }
 }
@@ -219,7 +219,7 @@ export function decisionSearchNextActions(input: {
       {
         id: "retry",
         label: "Retry Decision Search",
-        detail: "Reload the real index — nothing is invented while this fails.",
+        detail: "Reload the real index.",
         href: withOrgHref("/decision-search", orgId),
         primary: true,
       },
