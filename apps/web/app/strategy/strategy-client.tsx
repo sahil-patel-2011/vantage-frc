@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
@@ -20,6 +21,7 @@ import {
   type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 import "./strategy.css";
@@ -161,9 +163,9 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
         <header>
           <div>
             <span className="eyebrow">Your team only</span>
-            <h2>Private Edge</h2>
+            <h2>From our scouting</h2>
           </div>
-          <span className="app-badge setup">one engine</span>
+          <span className="app-badge setup">from your notes</span>
         </header>
         <p className="app-muted">
           Your scouting notes, opponent profiles, and pit pings live here. Open this match after
@@ -178,7 +180,7 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
       <header>
         <div>
           <span className="eyebrow">Your team only</span>
-          <h2>Private Edge</h2>
+          <h2>From our scouting</h2>
         </div>
         <span className={`app-badge ${edge.status === "live" ? "good" : "setup"}`}>{edge.status}</span>
       </header>
@@ -189,9 +191,9 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
             <li key={row.teamKey}>
               <strong>{teamNum(row.teamKey)}</strong>
               <span>
-                pEPA {row.pepa.toFixed(1)}{" "}
+                Our scouting {row.pepa.toFixed(1)}{" "}
                 <small>
-                  public {row.publicEpa.toFixed(1)} · scout n={row.scoutSample}
+                  public {row.publicEpa.toFixed(1)} · scouted {row.scoutSample} matches
                 </small>
               </span>
             </li>
@@ -702,15 +704,14 @@ function TbaKeyHint({ view }: { view: StrategyView }) {
     <div className="strategy-reference-hints">
       {access && !access.tbaConfigured ? (
         <p className="telemetry-status" role="status">
-          TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
-          Strategy will stay empty until the Neon TBA cache is synced.
+          The Blue Alliance is not connected. Open Team → Data, connect it, and pick this event.
+          Strategy stays empty until that schedule is in.
         </p>
       ) : null}
       {stat && !stat.cacheHasMetrics ? (
         <p className="telemetry-status" role="status">
-          Statbotics EPA cache is empty ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Sync
-          reference data under Team → Data — Statbotics is public (no key); Vantage will not invent EPA while the
-          cache is empty.
+          Team ratings have not synced yet ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Open
+          Team → Data and sync. Strategy stays empty until those ratings exist.
         </p>
       ) : null}
     </div>
@@ -725,6 +726,8 @@ function StrategyShell({
   error,
   onRetry,
   embedded = false,
+  fromCache = false,
+  cachedAt = null,
   children,
 }: {
   orgId?: string | null;
@@ -732,6 +735,8 @@ function StrategyShell({
   error?: string;
   onRetry?: () => void;
   embedded?: boolean;
+  fromCache?: boolean;
+  cachedAt?: string | null;
   children?: ReactNode;
 }) {
   const actions = strategyNextActions({ orgId, shell });
@@ -758,6 +763,7 @@ function StrategyShell({
         </div>
       </PageHeader>
       )}
+      <OfflineBanner feature="Strategy" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       <EmptyState
         soft
@@ -829,6 +835,8 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const [tab, setTab] = useState<StrategyTab>("matchup");
   const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
   const [recomputing, setRecomputing] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const previewOrgId = (view && "orgId" in view ? view.orgId : null) ?? urlOrgId;
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(previewOrgId);
 
@@ -849,6 +857,15 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         const data = (await response.json()) as StrategyView | { error?: string };
         if (!response.ok || !("status" in data)) {
           const message = "error" in data ? data.error : undefined;
+          if (orgId) {
+            const row = await getFeatureSnapshot<StrategyView>("strategy", orgId);
+            if (row) {
+              setView(row.data);
+              setFromCache(true);
+              setCachedAt(row.cachedAt);
+              return;
+            }
+          }
           if (!message) {
             setFetchFailed(true);
             setView(null);
@@ -873,8 +890,21 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           return;
         }
         setView(data);
+        setFromCache(false);
+        setCachedAt(new Date().toISOString());
+        const persistOrg = "orgId" in data && data.orgId ? data.orgId : orgId;
+        if (persistOrg) await putFeatureSnapshot("strategy", persistOrg, data);
       })
-      .catch(() => {
+      .catch(async () => {
+        if (orgId) {
+          const row = await getFeatureSnapshot<StrategyView>("strategy", orgId);
+          if (row) {
+            setView(row.data);
+            setFromCache(true);
+            setCachedAt(row.cachedAt);
+            return;
+          }
+        }
         setFetchFailed(true);
         setView(null);
       })
@@ -927,7 +957,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
   if (tab !== "picks" && shell !== "ready") {
     return (
-      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded}>
+      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded} fromCache={fromCache} cachedAt={cachedAt}>
         {error && shell !== "error" ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -1000,6 +1030,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         </div>
       </PageHeader>
       )}
+      <OfflineBanner feature="Strategy" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <TabBar

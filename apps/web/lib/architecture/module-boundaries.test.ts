@@ -33,6 +33,7 @@ const SHARED_PREFIXES = [
   "tenant-org-access",
   "storage-node",
   "storage-routing",
+  "perf/",
 ];
 
 function filesUnder(abs: string, acc: string[] = []): string[] {

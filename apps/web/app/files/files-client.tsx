@@ -21,8 +21,10 @@ import {
   type ReactNode,
 } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   drivePreviewKind,
   formatDriveBytes,
@@ -110,9 +112,8 @@ function ScopeNotice() {
       <h2>Who can see what</h2>
       <p>
         <strong>My files is yours.</strong> Nobody else on the team can open it — not other students,
-        not mentors, not the team owner or an admin. That is enforced by the database, not by a
-        setting somebody could change. The only way something leaves your space is a share you create
-        yourself.
+        not mentors, not the team owner. That cannot be turned off. The only way something leaves
+        your space is a share you create yourself.
       </p>
       <p>
         <strong>Team files belong to the team.</strong> Every member can open them. Owners and admins
@@ -144,6 +145,8 @@ export default function FilesClient() {
   const [preview, setPreview] = useState<DriveFile | null>(null);
   const [shareDialog, setShareDialog] = useState<ShareDialogState>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -171,10 +174,23 @@ export default function FilesClient() {
       params.set("scope", railScope(rail));
       if (folderId) params.set("folderId", folderId);
     }
+    const variant = `${rail}:${folderId ?? ""}`;
+    const applyListing = (payload: Listing, cached: boolean, at: string | null) => {
+      setListing(payload);
+      setFromCache(cached);
+      setCachedAt(at);
+    };
     try {
       const response = await fetch(`/api/drive?${params.toString()}`, { cache: "no-store" });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
+        if (orgId) {
+          const row = await getFeatureSnapshot<Listing>("files", orgId, variant);
+          if (row) {
+            applyListing(row.data, true, row.cachedAt);
+            return;
+          }
+        }
         setListing({
           status: "error",
           message: body.error ?? `Could not load your files (HTTP ${response.status}).`,
@@ -189,28 +205,47 @@ export default function FilesClient() {
         | { status: "recent" | "trash"; orgId: string; orgName: string; files: DriveFile[] };
 
       if (payload.status === "setup_required") {
-        setListing({ status: "setup_required", reason: payload.reason });
+        applyListing({ status: "setup_required", reason: payload.reason }, false, null);
         return;
       }
       if (payload.status === "shared") {
-        setListing({ status: "shared", orgId: payload.orgId, orgName: payload.orgName, shares: payload.shares });
+        const next: Listing = {
+          status: "shared",
+          orgId: payload.orgId,
+          orgName: payload.orgName,
+          shares: payload.shares,
+        };
+        applyListing(next, false, new Date().toISOString());
+        await putFeatureSnapshot("files", payload.orgId, next, variant);
         return;
       }
       if (payload.status === "recent" || payload.status === "trash") {
-        setListing({
+        const next: Listing = {
           status: "list",
           orgId: payload.orgId,
           orgName: payload.orgName,
           files: payload.files,
           rail,
-        });
+        };
+        applyListing(next, false, new Date().toISOString());
+        await putFeatureSnapshot("files", payload.orgId, next, variant);
         return;
       }
-      setListing(payload as unknown as Listing);
+      const ready = payload as unknown as Listing;
+      applyListing(ready, false, new Date().toISOString());
       if (!orgId && typeof (payload as { orgId?: string }).orgId === "string") {
         setOrgId((payload as { orgId: string }).orgId);
       }
+      const persistOrg = orgId ?? (typeof (payload as { orgId?: string }).orgId === "string" ? (payload as { orgId: string }).orgId : null);
+      if (persistOrg) await putFeatureSnapshot("files", persistOrg, ready, variant);
     } catch (error) {
+      if (orgId) {
+        const row = await getFeatureSnapshot<Listing>("files", orgId, variant);
+        if (row) {
+          applyListing(row.data, true, row.cachedAt);
+          return;
+        }
+      }
       const copy = loadFailureCopy(
         classifyLoadFailure({ message: error instanceof Error ? error.message : String(error) }),
       );
@@ -356,6 +391,7 @@ export default function FilesClient() {
   return (
     <main className="app-page drive-page">
       {header}
+      <OfflineBanner feature="Files" fromCache={fromCache} cachedAt={cachedAt} />
       <ScopeNotice />
 
       <input

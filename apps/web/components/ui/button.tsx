@@ -15,24 +15,31 @@ type ButtonOwnProps<T extends ElementType> = {
 type ButtonProps<T extends ElementType> = ButtonOwnProps<T> &
   Omit<ComponentPropsWithoutRef<T>, keyof ButtonOwnProps<T>>;
 
-const variantClass: Record<ButtonVariant, string | undefined> = {
-  primary: styles.btnPrimary,
-  secondary: styles.btnSecondary,
-  ghost: styles.btnGhost,
-  danger: styles.btnDanger,
-  icon: styles.btnIcon,
-};
-
-const sizeClass: Record<ButtonSize, string | undefined> = {
-  sm: styles.btnSm,
-  md: styles.btnMd,
-  lg: styles.btnLg,
-};
+function chromeFor(variant: ButtonVariant): string {
+  switch (variant) {
+    case "primary":
+      return "app-button primary is-primary";
+    case "secondary":
+      return "app-button secondary";
+    case "danger":
+      return "app-button danger";
+    case "ghost":
+    case "icon":
+      return "app-button ghost";
+    default: {
+      const _never: never = variant;
+      return _never;
+    }
+  }
+}
 
 /**
- * Shared Button — collapses the app's 15-way class fragmentation into typed variants.
- * Polymorphic like Panel (`as="a"` for links). variant="icon" meets 2.5.8 target size
- * (24px min, 44px on coarse pointers).
+ * Shared Button — one chrome for product pages.
+ *
+ * Variants map onto `.app-button` in system.css / styles.css so a primary
+ * from this component and a leftover className="app-button" are the same
+ * colour and height. variant="primary" also sets `.is-primary` for the R4
+ * Playwright sweep.
  */
 export function Button<T extends ElementType = "button">({
   as,
@@ -44,10 +51,9 @@ export function Button<T extends ElementType = "button">({
 }: ButtonProps<T>) {
   const Tag = (as ?? "button") as ElementType;
   const cls = [
-    styles.btn,
-    variant === "icon" ? undefined : sizeClass[size],
-    variantClass[variant],
-    variant === "primary" ? "is-primary" : undefined,
+    chromeFor(variant),
+    size === "sm" ? "sm" : undefined,
+    variant === "icon" ? styles.btnIcon : size === "lg" ? styles.btnLg : undefined,
     className,
   ]
     .filter(Boolean)

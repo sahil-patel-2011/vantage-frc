@@ -1,5 +1,8 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  DEFAULT_OUTBOX_ADAPTERS,
   enqueueOutboxItem,
   listOutbox,
   nextBackoffMs,
@@ -139,5 +142,30 @@ describe("offline outbox", () => {
     });
     const result = await syncOutbox({ orgId: ORG, online: false });
     expect(result).toEqual({ synced: 0, conflicts: 0, remaining: 1 });
+  });
+
+  it("posts queued writes to product API routes that exist in this repo", () => {
+    const webRoot = join(__dirname, "..", "..");
+    const item = {
+      clientId: "c",
+      feature: "task_tick" as const,
+      orgId: ORG,
+      payload: {},
+      queuedAt: new Date().toISOString(),
+      status: "queued" as const,
+    };
+    for (const adapter of DEFAULT_OUTBOX_ADAPTERS) {
+      const req = adapter.endpoint(item);
+      expect(req.method).toBe("POST");
+      const rel = req.url.replace(/^\//, "");
+      const candidates = [
+        join(webRoot, "app", rel, "route.ts"),
+        join(webRoot, "app", `${rel}.ts`),
+      ];
+      expect(
+        candidates.some((path) => existsSync(path)),
+        `${adapter.feature} → ${req.url} is not a route`,
+      ).toBe(true);
+    }
   });
 });

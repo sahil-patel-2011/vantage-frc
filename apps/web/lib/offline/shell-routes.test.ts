@@ -25,6 +25,7 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/build")).toBe(true);
     expect(pathnameIsOfflineShell("/files")).toBe(true);
     expect(pathnameIsOfflineShell("/docs")).toBe(true);
+    expect(pathnameIsOfflineShell("/strategy")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -41,6 +42,7 @@ describe("offline shell routes", () => {
   it("builds stable feature cache keys", () => {
     expect(featureCacheKey("todos", " org-1 ")).toBe("todos:org-1");
     expect(featureCacheKey("logistics", "")).toBe("logistics:_");
+    expect(featureCacheKey("files", "org-1", "team:")).toBe("files:org-1:team:");
   });
 
   it("falls failed navigations back to the precached shell", () => {

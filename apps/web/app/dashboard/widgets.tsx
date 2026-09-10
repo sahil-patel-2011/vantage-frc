@@ -8,6 +8,7 @@ import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { parseYouTubeEmbed } from "../../lib/youtube";
 import { Icon, type IconName } from "../../components/icon";
 import { Badge, EmptyState } from "../../components/ui";
+import { AskAiWidget } from "./widgets/ask-ai";
 
 type EmptyHint = {
   title: string;
@@ -570,6 +571,20 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
               ) : (
                 <p className="app-muted">No stored prediction for this match yet. Open Strategy after TBA sync.</p>
               )}
+              {typeof data.redPredicted === "number" &&
+              typeof data.bluePredicted === "number" &&
+              Number.isFinite(data.redPredicted) &&
+              Number.isFinite(data.bluePredicted) ? (
+                <p className="app-muted">
+                  About {Math.round(Number(data.redPredicted))}–{Math.round(Number(data.bluePredicted))} points
+                  {typeof data.errorBand === "number" && Number.isFinite(data.errorBand)
+                    ? ` · typical error ±${Math.round(Number(data.errorBand))}`
+                    : ""}
+                </p>
+              ) : null}
+              {typeof data.briefing === "string" && data.briefing ? (
+                <p className="dash-bumper-cue">{data.briefing}</p>
+              ) : null}
               {factors.length ? (
                 <ul className="dash-checklist">
                   {factors.map((factor, index) => (
@@ -1108,25 +1123,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
       const askHref = withOrg(href);
       return (
         <Shell type={type} title="Ask AI" payload={payload} href={askHref} emptyHint={hint} orgId={orgId} preferChildren>
-          <form
-            className="dash-ask-ai"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
-              const next = q
-                ? `${askHref}${askHref.includes("?") ? "&" : "?"}q=${encodeURIComponent(q)}`
-                : askHref;
-              window.location.href = next;
-            }}
-          >
-            <label>
-              Ask your team helper
-              <input name="q" placeholder="Why is this bracket heavy?" />
-            </label>
-            <button className="is-primary" type="submit">
-              Ask
-            </button>
-          </form>
+          <AskAiWidget href={askHref} />
         </Shell>
       );
     }

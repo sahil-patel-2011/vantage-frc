@@ -120,13 +120,13 @@ export type OutboxSyncAdapter = {
 };
 
 export const DEFAULT_OUTBOX_ADAPTERS: OutboxSyncAdapter[] = [
-  { feature: "task_tick", endpoint: (item) => ({ url: "/api/todos", method: "PATCH", body: item.payload }) },
+  { feature: "task_tick", endpoint: (item) => ({ url: "/api/todos", method: "POST", body: item.payload }) },
   { feature: "task_create", endpoint: (item) => ({ url: "/api/todos", method: "POST", body: item.payload }) },
-  { feature: "calendar_rsvp", endpoint: (item) => ({ url: "/api/calendar/rsvp", method: "POST", body: item.payload }) },
-  { feature: "hours_clock", endpoint: (item) => ({ url: "/api/hours/clock", method: "POST", body: item.payload }) },
-  { feature: "match_note", endpoint: (item) => ({ url: "/api/match-notes", method: "POST", body: item.payload }) },
-  { feature: "pit_checklist", endpoint: (item) => ({ url: "/api/pit/checklist", method: "POST", body: item.payload }) },
-  { feature: "chat_message", endpoint: (item) => ({ url: "/api/chat/messages", method: "POST", body: item.payload }) },
+  { feature: "calendar_rsvp", endpoint: (item) => ({ url: "/api/team/calendar", method: "POST", body: item.payload }) },
+  { feature: "hours_clock", endpoint: (item) => ({ url: "/api/hours", method: "POST", body: item.payload }) },
+  { feature: "match_note", endpoint: (item) => ({ url: "/api/match-notes-timeline", method: "POST", body: item.payload }) },
+  { feature: "pit_checklist", endpoint: (item) => ({ url: "/api/match-checklist", method: "POST", body: item.payload }) },
+  { feature: "chat_message", endpoint: (item) => ({ url: "/api/messages", method: "POST", body: item.payload }) },
 ];
 
 export function nextBackoffMs(attempt: number): number {

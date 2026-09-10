@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PIT_BOARD_POLL_MS,
@@ -323,11 +324,25 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     void load();
-    const poll = window.setInterval(() => void load(), PIT_BOARD_POLL_MS);
+    let timer: number | null = null;
+    let cancelled = false;
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        if (document.visibilityState !== "hidden") void load();
+        if (!cancelled) schedule();
+      }, visibilityPollDelay(PIT_BOARD_POLL_MS, document.visibilityState === "hidden"));
+    };
+    schedule();
     const clock = window.setInterval(() => setNow(Date.now()), 1000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      clearInterval(poll);
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
       clearInterval(clock);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [load]);
 

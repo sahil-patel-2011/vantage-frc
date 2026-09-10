@@ -20,6 +20,7 @@ export function useOfflineSnapshot<T>(
   feature: OfflineFeature,
   orgId: string,
   fetcher: () => Promise<T>,
+  variant = "",
 ): OfflineSnapshotState<T> {
   const online = useOnline();
   const [data, setData] = useState<T | null>(null);
@@ -39,20 +40,20 @@ export function useOfflineSnapshot<T>(
         setData(next);
         const at = new Date().toISOString();
         setCachedAt(at);
-        await putFeatureSnapshot(feature, orgId, next);
+        await putFeatureSnapshot(feature, orgId, next, variant);
         setLoading(false);
         return;
       } catch {
         // Fall through to the last snapshot rather than a dead Retry.
       }
     }
-    const row: FeatureSnapshot<T> | null = await getFeatureSnapshot<T>(feature, orgId);
+    const row: FeatureSnapshot<T> | null = await getFeatureSnapshot<T>(feature, orgId, variant);
     if (row) {
       setData(row.data);
       setCachedAt(row.cachedAt);
     }
     setLoading(false);
-  }, [feature, online, orgId]);
+  }, [feature, online, orgId, variant]);
 
   useEffect(() => {
     void refresh();

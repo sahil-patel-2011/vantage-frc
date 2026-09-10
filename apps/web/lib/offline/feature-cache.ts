@@ -16,7 +16,8 @@ export type OfflineFeature =
   | "dashboard"
   | "chat"
   | "video-analysis"
-  | "relays";
+  | "relays"
+  | "strategy";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
@@ -30,9 +31,10 @@ export type FeatureSnapshot<T> = {
   cachedAt: string;
 };
 
-export function featureCacheKey(feature: OfflineFeature, orgId: string): string {
+export function featureCacheKey(feature: OfflineFeature, orgId: string, variant = ""): string {
   const org = orgId.trim() || "_";
-  return `${feature}:${org}`;
+  const extra = variant.trim();
+  return extra ? `${feature}:${org}:${extra}` : `${feature}:${org}`;
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -60,12 +62,13 @@ export async function putFeatureSnapshot<T>(
   feature: OfflineFeature,
   orgId: string,
   data: T,
+  variant = "",
 ): Promise<void> {
   if (typeof indexedDB === "undefined") return;
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
   const row: FeatureSnapshot<T> = {
-    key: featureCacheKey(feature, orgId),
+    key: featureCacheKey(feature, orgId, variant),
     feature,
     orgId: orgId.trim() || "_",
     data,
@@ -77,19 +80,20 @@ export async function putFeatureSnapshot<T>(
 export async function getFeatureSnapshot<T>(
   feature: OfflineFeature,
   orgId: string,
+  variant = "",
 ): Promise<FeatureSnapshot<T> | null> {
   if (typeof indexedDB === "undefined") return null;
   const db = await openDatabase();
   const store = db.transaction(STORE, "readonly").objectStore(STORE);
   const row = await requestValue<FeatureSnapshot<T> | undefined>(
-    store.get(featureCacheKey(feature, orgId)),
+    store.get(featureCacheKey(feature, orgId, variant)),
   );
   return row ?? null;
 }
 
-export async function clearFeatureSnapshot(feature: OfflineFeature, orgId: string): Promise<void> {
+export async function clearFeatureSnapshot(feature: OfflineFeature, orgId: string, variant = ""): Promise<void> {
   if (typeof indexedDB === "undefined") return;
   const db = await openDatabase();
   const store = db.transaction(STORE, "readwrite").objectStore(STORE);
-  await requestValue(store.delete(featureCacheKey(feature, orgId)));
+  await requestValue(store.delete(featureCacheKey(feature, orgId, variant)));
 }

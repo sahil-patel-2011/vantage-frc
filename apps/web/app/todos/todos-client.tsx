@@ -8,6 +8,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../.
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { enqueueOutboxItem, getFeatureSnapshot, newOutboxClientId, putFeatureSnapshot, syncOutbox } from "../../lib/offline";
 import type { WorkItemsView } from "../../lib/work-items/service";
 import {
   TODO_LIST_FILTERS,
@@ -128,8 +129,8 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
 
 export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
-  const [fromCache] = useState(false);
-  const [cachedAt] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TodosView | null>(null);
   const [workView, setWorkView] = useState<LiveWorkView | null>(null);
   const [error, setError] = useState("");
@@ -157,14 +158,38 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       .then(async (response) => {
         const data = (await response.json()) as TodosView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          if (urlOrg) {
+            const row = await getFeatureSnapshot<TodosView>("todos", urlOrg);
+            if (row) {
+              setView(row.data);
+              setFromCache(true);
+              setCachedAt(row.cachedAt);
+              return;
+            }
+          }
           setLoadErrorMessage("error" in data && data.error ? data.error : "");
           setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
         setView(data);
+        setFromCache(false);
+        setCachedAt(new Date().toISOString());
+        const persistOrg = "orgId" in data && data.orgId ? data.orgId : urlOrg;
+        if (persistOrg) await putFeatureSnapshot("todos", persistOrg, data);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(async () => {
+        if (urlOrg) {
+          const row = await getFeatureSnapshot<TodosView>("todos", urlOrg);
+          if (row) {
+            setView(row.data);
+            setFromCache(true);
+            setCachedAt(row.cachedAt);
+            return;
+          }
+        }
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -191,11 +216,38 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     document.getElementById(`todo-${view.focusTodoId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [view]);
 
+  useEffect(() => {
+    if (!orgId) return;
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [orgId, load]);
+
   const mutate = useCallback<Mutate>(
     (payload) => {
       if (!orgId || busy) return;
       if (!navigator.onLine) {
-        setError("You're offline — changes will save when you reconnect.");
+        const action = typeof payload.action === "string" ? payload.action : "";
+        const feature = action === "create-todo" ? "task_create" : "task_tick";
+        void enqueueOutboxItem({
+          clientId: newOutboxClientId(),
+          feature,
+          orgId,
+          payload: { orgId, ...payload },
+        });
+        if (view?.status === "live" && action === "update-todo" && typeof payload.todoId === "string") {
+          setView({
+            ...view,
+            todos: view.todos.map((todo) =>
+              todo.id === payload.todoId && typeof payload.status === "string"
+                ? { ...todo, status: payload.status as TodoStatus }
+                : todo,
+            ),
+          });
+        }
+        setError("Saved on this device. It will upload when you are back online.");
         return;
       }
       setBusy(true);
@@ -216,7 +268,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
     },
-    [orgId, busy],
+    [orgId, busy, view],
   );
 
   const failure = fetchFailed
@@ -264,12 +316,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         </>
       ) : null}
       <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
-
-      {!online ? (
-        <p className="telemetry-status" role="status">
-          You&apos;re offline — browsing last loaded todos only.
-        </p>
-      ) : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -90,4 +90,20 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ["apps/web/lib/dashboard/**/*.{ts,tsx}", "apps/web/lib/offline/**/*.{ts,tsx}", "apps/web/lib/drive/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/lib/scouting/**", "**/lib/messages/**", "**/lib/pit/**", "**/lib/hours/**"],
+              message: "This feature folder may not import another feature's internals. Put shared helpers in lib/ui, lib/nav, or a package.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

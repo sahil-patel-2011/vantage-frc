@@ -39,13 +39,13 @@ Assumption stated: “a new FRC student can do everything from one login without
 | Check | Result | Evidence |
 |---|---|---|
 | `npm ci` | 718 packages, 9s | this session, no lockfile change |
-| `npm test` | **863 files, 8,262 passed, 10 skipped, 55.21s** | `vitest run` this session |
-| `npm run typecheck` | *pending* | |
-| `npx eslint .` | *pending* | |
-| `npm run build --workspace=@vantage/web` | *pending* | zero-warning required |
-| `node scripts/deploy-preflight.mjs` | *pending* | expect FAIL only on `CRON_SECRET` |
-| `npm audit --omit=dev` | *pending* | |
-| `scripts/rls-proof.mjs` | *not run yet* | needs local Postgres (not in this image yet) |
+| `npm test` | **872 files, 8,290 passed, 10 skipped, 60.19s** | `vitest run` this session |
+| `npm run typecheck` | clean across workspaces that changed | this session |
+| `npx eslint .` | clean (exit 0) | this session, 30.7s |
+| `npm run build --workspace=@vantage/web` | compiled, **zero warnings**, `/connectors` `/team/relays` `/video-analysis` in the route table | `next build` this session, 85.7s |
+| `node scripts/deploy-preflight.mjs` | 8 FAIL in this image (no Vercel env). Owner must still set `CRON_SECRET` in the project. | this session |
+| `npm audit --omit=dev` | **0 vulnerabilities** | this session |
+| `scripts/rls-proof.mjs` | *not run* | needs local Postgres (not in this image) |
 | Latest migration | `0654_library_into_drive.sql` | next free number ≥ `0655` |
 
 ### Competitive notes
@@ -57,9 +57,16 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Route | What was wrong | Commit |
 |---|---|---|
 | `/competition` Event day | Duplicate page header when embedded in the hub; poll ran while the tab was hidden | this branch |
-| `/strategy` Private Edge | "pEPA" and "invented" copy a 15-year-old cannot use | this branch |
+| `/strategy` From our scouting | "pEPA" and "Private Edge" were jargon | this branch |
+| `/files` | "enforced by the database" | this branch |
+| `/strategy` pick list | "org pEPA" in the event pool | this branch |
+| `/workflow` | "platform admin", "setup-required", "Private Edge", "BYOK" | this branch |
+| `/features/strategy` | "Private Edge" | this branch |
+| Settings | "My AI keys" duplicated "AI keys" | this branch |
+| Team admin / GitHub related | Connections pointed at a dead Account tab; now `/connectors` | this branch |
 | `/dashboard` | New widgets had no icons; Ask AI had no input; next match hid the stored win-chance band | this branch |
 | `/team/relays` | Connector card only — no list of paired Pis, roles, or queue | this branch |
+| `/todos` `/files` `/strategy` | Offline showed Retry / engineering copy instead of last snapshot | this branch |
 
 ---
 
@@ -68,20 +75,20 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | # | Task | Status | Verification |
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; 8,262 tests |
-| 2 | One design system | in progress | tokens in `system.css`; css-integrity forbids declarations elsewhere; Button + R4 selector; Playwright sweep added. Chrome `.app-button` migration still open. |
-| 3 | Full UI pass | in progress | Event day duplicate header, Strategy jargon, relay list, widget icons. FEATURE_MAP walk unfinished. |
-| 4 | Home widgets | in progress | audience defaults, tap-to-place, Ask AI input, next-match win band. 2200-line client not fully split. |
-| 5 | Offline shell | in progress | outbox + SW version + Competition snapshot cache + hub OfflineBanner. Not every `*-client.tsx` uses `useOfflineSnapshot`. |
+| 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
+| 3 | Full UI pass | in progress | Strategy jargon, Files privacy copy, Settings AI keys, Connectors as the one connections destination. FEATURE_MAP walk unfinished. |
+| 4 | Home widgets | in progress | Ask AI extracted to `widgets/ask-ai.tsx`. Next match shows predicted alliance scores + briefing when EPA exists. 2200-line client not fully split. |
+| 5 | Offline shell | in progress | Outbox adapters now hit real POST routes. Files / Todos / Strategy restore last snapshot. Product outbox drains from the shell. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
-| 8 | Match prediction ±3 | in progress | linear model + fixture backtest + match plan helper. **Not a season ±3 claim.** UI shows stored win % + confidence band when a prediction row exists. |
+| 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
 | 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence (does not merge into scouting). Worker skips without a vision model. No live Pi. |
-| 10 | Connectors | audit (already on main) | catalog includes free-relay; pairing public prefixes added |
-| 11 | Copy sweep | audit (already on main) | help leftover "never invented" rewritten; copy-lint remains the guard |
+| 10 | Connectors | audit (already on main) | related strips now deep-link `/connectors` instead of a dead Account tab |
+| 11 | Copy sweep | audit | Private Edge / pEPA / BYOK / setup-required stripped from student surfaces this pass. copy-lint remains the guard. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
 | 13 | CAD / assembly manual | pending | link-first already on vault; assembly-manual on a real Onshape document still unverified |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
-| 15 | Modular monolith | in progress | `/library` → `/files`; 0654 copies team-wide library rows into Drive; module-boundaries test |
+| 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive vs scouting/messages/pit/hours. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
-| 17 | Performance / cost | in progress | Home + Event day polls back off when the tab is hidden |
+| 17 | Performance / cost | in progress | Home, Event day, and Pit polls back off when the tab is hidden (`visibilityPollDelay`). |
 | 18 | Final verification | pending | |

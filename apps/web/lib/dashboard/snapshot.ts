@@ -10,6 +10,7 @@ import {
 import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
+import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -188,6 +189,46 @@ export async function loadDashboardSnapshot(
       [input.orgId, row.matchKey],
     );
     const stored = pred.rows[0];
+    const year = seasonYearFromEventKey(eventKey);
+    let redPredicted: number | null = null;
+    let bluePredicted: number | null = null;
+    let errorBand: number | null = null;
+    let scoreDrivers: string[] = [];
+    let briefing: string | null = null;
+    if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
+      const epa = await client.query<{
+        teamKey: string;
+        autoEpa: number | null;
+        teleopEpa: number | null;
+        endgameEpa: number | null;
+      }>(
+        `SELECT DISTINCT ON (team_key)
+            team_key AS "teamKey",
+            epa_auto AS "autoEpa",
+            epa_teleop AS "teleopEpa",
+            epa_endgame AS "endgameEpa"
+         FROM team_year_metrics
+         WHERE team_key = ANY($1::text[]) AND year = $2
+         ORDER BY team_key,
+           CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+           synced_at DESC NULLS LAST`,
+        [[...redKeys, ...blueKeys], year],
+      );
+      const card = nextMatchScoreCard({
+        matchKey: row.matchKey,
+        ourAlliance,
+        redKeys,
+        blueKeys,
+        rows: epa.rows,
+      });
+      if (!isNextMatchScoreSkip(card)) {
+        redPredicted = card.redPredicted;
+        bluePredicted = card.bluePredicted;
+        errorBand = card.errorBand;
+        scoreDrivers = card.drivers;
+        briefing = card.briefing;
+      }
+    }
     widgets.next_match = stamp("live", "next_match", {
       ...row,
       ourAlliance,
@@ -207,6 +248,11 @@ export async function loadDashboardSnapshot(
       confidenceHigh: stored?.confidenceHigh ?? null,
       keyFactors: stored?.keyFactors ?? null,
       modelVersion: stored?.modelVersion ?? null,
+      redPredicted,
+      bluePredicted,
+      errorBand,
+      scoreDrivers,
+      briefing,
     } as unknown as Record<string, unknown>);
   }
 

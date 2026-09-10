@@ -21,6 +21,7 @@ import {
 import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
+import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -307,17 +308,22 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       return;
     }
     void load(orgId);
-    const tick = () => {
-      if (document.visibilityState === "hidden") return;
-      void load(orgId);
+    let timer: number | null = null;
+    let cancelled = false;
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        if (document.visibilityState !== "hidden") void load(orgId);
+        if (!cancelled) schedule();
+      }, visibilityPollDelay(POLL_MS, document.visibilityState === "hidden"));
     };
-    const poll = window.setInterval(tick, POLL_MS);
+    schedule();
     const onVisibility = () => {
       if (document.visibilityState === "visible") void load(orgId);
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.clearInterval(poll);
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [orgId, load]);
