@@ -47,6 +47,23 @@ test.describe("one control per destination", () => {
     await expect(main.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   });
 
+  test("inventory offers each related destination once", async ({ page }) => {
+    await page.goto("/inventory");
+    await expect(page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
+    const main = page.locator("main");
+    for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
+      await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+    }
+    if ((await main.getByRole("heading", { name: "Select a team" }).count()) > 0) {
+      await expect(main.getByRole("link", { name: "Choose your team", exact: true })).toHaveCount(1);
+      await expect(main.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    }
+    if ((await main.getByRole("heading", { name: "Add a part before tracking stock" }).count()) > 0) {
+      await expect(main.getByRole("button", { name: "Add a part", exact: true })).toHaveCount(1);
+      await expect(main.getByRole("heading", { name: "Next actions" })).toHaveCount(0);
+    }
+  });
+
   test("logistics offers each related destination once", async ({ page }) => {
     await page.goto("/logistics");
     await expect(page.getByRole("heading", { level: 1, name: "Logistics" })).toBeVisible();

@@ -74,13 +74,32 @@ export type InventoryEmptyCopy = {
 /** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO stock metrics. */
 export type InventorySetupStep = { id: string; label: string; detail: string; href: string };
 
+function inventoryRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    inventoryRelatedLinks(orgId, { include: [...INVENTORY_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = inventoryRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
+/** Empty-card primary on the no-org / setup shells. */
+export function inventoryCardPrimaryHref(orgId?: string | null): string {
+  return orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+}
+
 export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[] {
-  return [
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "workspace",
       label: "Choose your team",
       detail: "Choose your team to open Inventory.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      href: inventoryCardPrimaryHref(orgId),
     },
     {
       id: "vendors",
@@ -100,7 +119,7 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
       detail: "Exhaustion projections stay blank until spare bins exist.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
-  ];
+  ]);
 }
 
 /** Real inventory counts only — never invent DEMO stock totals. */
@@ -173,21 +192,43 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         description:
           "Quantities, reorder thresholds, and on-hand value stay blank until you add a real item. Cross-check Vendors, Orders, and Spare Forecast.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Parts stock & BOM",
         description:
           "On-hand counts and reorder flags use only logged inventory rows.",
       };
+    default: {
+      const _never: never = kind;
+      return _never;
+    }
   }
 }
 
 /**
  * Soft-UI next actions for Inventory empty/setup shells.
- * Points at Vendors / Orders / Spare Forecast — never invents DEMO stock metrics.
+ * Destinations already in the header related strip are omitted so each href
+ * appears once. Never invents DEMO stock metrics.
  */
 export function inventoryNextActions(input: {
+  orgId?: string | null;
+  shell: InventoryShellKind;
+  itemCount?: number;
+  lowStockCount?: number;
+  outOfStockCount?: number;
+}): InventoryNextAction[] {
+  const orgId = input.orgId ?? null;
+  if (!orgId || input.shell === "setup") {
+    // One list, not two: the setup shell offers exactly the setup steps. These
+    // used to be a second hand-written copy of inventorySetupSteps with the same ids and
+    // different wording, so the screen showed the same guided list twice.
+    return setupActionsFrom(inventorySetupSteps(orgId));
+  }
+  return dropRelatedStripDuplicates(orgId, inventoryNextActionCandidates(input));
+}
+
+function inventoryNextActionCandidates(input: {
   orgId?: string | null;
   shell: InventoryShellKind;
   itemCount?: number;
@@ -198,13 +239,6 @@ export function inventoryNextActions(input: {
   const itemCount = input.itemCount ?? 0;
   const lowStockCount = input.lowStockCount ?? 0;
   const outOfStockCount = input.outOfStockCount ?? 0;
-
-  if (!orgId || input.shell === "setup") {
-    // One list, not two: the setup shell offers exactly the setup steps. These
-    // used to be a second hand-written copy of inventorySetupSteps with the same ids and
-    // different wording, so the screen showed the same guided list twice.
-    return setupActionsFrom(inventorySetupSteps(orgId));
-  }
 
   if (input.shell === "error") {
     return [

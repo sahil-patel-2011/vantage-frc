@@ -41,50 +41,47 @@ describe("inventoryRelatedLinks", () => {
 });
 
 describe("inventorySetupSteps", () => {
-  it("points setup at Workspace + Vendors / Orders / Spare Forecast", () => {
+  it("keeps Choose your team; Vendors / Orders / Spare Forecast live on the related strip", () => {
     const steps = inventorySetupSteps("org-1");
-    expect(steps.map((s) => s.id)).toEqual(["workspace", "vendors", "orders", "spare-forecast"]);
-    expect(steps.find((s) => s.id === "vendors")?.href).toBe("/vendors?orgId=org-1");
-    expect(steps.find((s) => s.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
-    expect(steps.find((s) => s.id === "spare-forecast")?.href).toBe(
-      "/build?tab=spare-forecast&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["workspace"]);
+    expect(steps[0]?.href).toBe("/workspace?orgId=org-1");
+    expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(inventorySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
 describe("inventoryNextActions", () => {
-  it("gates on workspace when org is missing", () => {
+  it("gates on workspace when org is missing and does not repeat the related strip", () => {
     const actions = inventoryNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.some((a) => a.id === "vendors")).toBe(true);
-    expect(actions.some((a) => a.id === "orders")).toBe(true);
-    expect(actions.some((a) => a.id === "spare-forecast")).toBe(true);
+    expect(actions.some((a) => a.id === "vendors")).toBe(false);
+    expect(actions.some((a) => a.id === "orders")).toBe(false);
+    expect(actions.some((a) => a.id === "spare-forecast")).toBe(false);
   });
 
-  it("setup with org points at Workspace + Vendors / Orders / Spare Forecast", () => {
+  it("setup with org is only Choose your team", () => {
     const actions = inventoryNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "vendors")).toBe(true);
-    expect(actions.some((a) => a.id === "orders")).toBe(true);
-    expect(actions.some((a) => a.id === "spare-forecast")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions.every((a) => !/\bdemo\b/i.test(`${a.label} ${a.detail}`))).toBe(true);
   });
 
-  it("points empty boards at add-item + Vendors / Orders / Spare Forecast", () => {
+  it("points empty boards at add-item only", () => {
     const actions = inventoryNextActions({
       orgId: "org-1",
       shell: "empty",
       itemCount: 0,
     });
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["add-item", "vendors", "orders", "spare-forecast"]),
-    );
+    expect(actions.map((a) => a.id)).toEqual(["add-item"]);
     expect(actions[0]?.href).toBe("#inventory-add-item");
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
 
-  it("ready boards prioritize low-stock / Orders without DEMO counts", () => {
+  it("ready boards prioritize low-stock without repeating the related strip", () => {
     const actions = inventoryNextActions({
       orgId: "org-1",
       shell: "ready",
@@ -92,11 +89,35 @@ describe("inventoryNextActions", () => {
       lowStockCount: 2,
       outOfStockCount: 0,
     });
-    expect(actions[0]?.id).toBe("reorder");
-    expect(actions.some((a) => a.id === "orders")).toBe(true);
-    expect(actions.some((a) => a.id === "vendors")).toBe(true);
-    expect(actions.some((a) => a.id === "spare-forecast")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["reorder"]);
+    expect(actions.some((a) => a.id === "orders")).toBe(false);
+    expect(actions.some((a) => a.id === "vendors")).toBe(false);
+    expect(actions.some((a) => a.id === "spare-forecast")).toBe(false);
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+  });
+
+  it("does not repeat header related-strip destinations as next actions", () => {
+    const related = new Set(
+      inventoryRelatedLinks("org-1", { include: [...INVENTORY_RELATED_INCLUDE] }).map(
+        (link) => link.href,
+      ),
+    );
+    for (const shell of ["empty", "setup", "error", "ready"] as const) {
+      const actions = inventoryNextActions({
+        orgId: "org-1",
+        shell,
+        itemCount: 4,
+        lowStockCount: 2,
+        outOfStockCount: 0,
+      });
+      expect(actions.every((action) => !related.has(action.href))).toBe(true);
+    }
+    const noOrg = inventoryNextActions({ orgId: null, shell: "setup" });
+    const relatedNoOrg = new Set(
+      inventoryRelatedLinks(null, { include: [...INVENTORY_RELATED_INCLUDE] }).map((link) => link.href),
+    );
+    expect(noOrg.every((action) => !relatedNoOrg.has(action.href))).toBe(true);
+    expect(noOrg.some((action) => action.id === "workspace")).toBe(true);
   });
 });
 
