@@ -62,14 +62,10 @@
 
 .legal-consent-error.legal-consent-error {
   margin: 4px 0 0;
-  color: #a33a32;
+  color: var(--critical);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
-}
-
-html[data-theme="dark"] .legal-consent-error.legal-consent-error {
-  color: #ff9d94;
 }
 
 /* 360px-wide phones: let the label text wrap without shrinking the box. */

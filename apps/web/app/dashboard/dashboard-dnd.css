@@ -174,11 +174,11 @@
 .dash-snap-hud,.dash-drop-coach{
   position:absolute;z-index:4;top:12px;left:50%;transform:translateX(-50%);
   display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:6px 12px;border-radius:var(--radius-pill);
-  background:rgba(15,23,42,.88);color:#fff;font-size:11px;pointer-events:none;
-  box-shadow:0 8px 24px rgba(0,0,0,.25);
+  background:var(--ink);color:var(--bg);font-size:11px;pointer-events:none;
+  box-shadow:var(--shadow-pop);
 }
 .dash-snap-hud strong,.dash-drop-coach strong{font-size:11px}
-.dash-snap-hud b{font:700 11px ui-monospace,monospace;color:#93c5fd}
+.dash-snap-hud b{font:700 11px ui-monospace,monospace;color:var(--accent)}
 .dash-grid-wrap.receiving-widget{outline:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:4px}
 .dash-dock-tidy span{margin-right:4px;opacity:.8}
 /* Device presets stay a step softer than the card, but track the radius token
@@ -268,7 +268,7 @@
   background:color-mix(in srgb,var(--accent) 12%,transparent);
 }
 .dash-drop-slot span{
-  padding:4px 10px;border-radius:var(--radius-pill);background:var(--accent);color:#fff;
+  padding:4px 10px;border-radius:var(--radius-pill);background:var(--accent);color:var(--accent-ink);
   font:700 11px var(--font-source-sans),ui-sans-serif;
 }
 
@@ -279,7 +279,7 @@
   align-content:center;padding:14px 16px;box-sizing:border-box;
   border-radius:var(--radius);background:var(--surface);color:var(--ink);
   border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));
-  box-shadow:0 26px 60px rgba(12,17,24,.34);
+  box-shadow:var(--shadow-pop);
 }
 .dash-drag-proxy i{
   grid-row:1 / span 3;display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius-sm);
@@ -380,14 +380,6 @@
   .dash-home .dash-pgrid>.dash-grid-item,.dash-drop-slot{transition:none}
   .dash-home .dash-grid-item.jiggling{animation:none}
 }
-
-html[data-theme="dark"] .dash-drag-proxy{box-shadow:0 26px 60px rgba(0,0,0,.6)}
-/* The dark lift for the grabbed card now rides --soft-shadow-lift, which dark
-   already redefines — no separate override needed here. */
-html[data-theme="dark"] .dash-widget-palette button.is-unavailable{
-  background:color-mix(in srgb,var(--bg) 80%,var(--surface));
-}
-html[data-theme="dark"] .dash-snap-hud{background:rgba(8,12,18,.92)}
 
 @media (max-width:720px){
   .dash-editor-bar .dash-palette-heading,

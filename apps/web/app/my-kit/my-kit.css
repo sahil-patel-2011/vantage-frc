@@ -1,23 +1,17 @@
 /*
  * My Kit — the per-person view. One column on phones, two on wide screens.
- * Colours come from soft-ui tokens; the four tone accents are declared as local
- * custom properties so the dark override is one block, not one rule per element.
+ * Tones are the canonical --critical / --warning / --positive, which already
+ * flip with the theme.
  */
 .mk-page {
   display: grid;
   gap: var(--space-4, 16px);
 
-  --mk-tone-overdue: #b42318;
-  --mk-tone-due: #b54708;
-  --mk-tone-done: #067647;
+  --mk-tone-overdue: var(--critical);
+  --mk-tone-due: var(--warning);
+  --mk-tone-done: var(--positive);
   --mk-tone-info: var(--accent);
   --mk-tone-neutral: var(--muted);
-}
-
-html[data-theme="dark"] .mk-page {
-  --mk-tone-overdue: #fca5a5;
-  --mk-tone-due: #fcd34d;
-  --mk-tone-done: #86efac;
 }
 
 .mk-related {

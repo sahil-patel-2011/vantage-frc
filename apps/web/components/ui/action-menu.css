@@ -112,7 +112,7 @@
   border: 1px solid var(--line);
   border-radius:var(--radius-sm);
   background: var(--surface);
-  box-shadow: 0 18px 44px color-mix(in srgb, var(--ink) 18%, transparent);
+  box-shadow: var(--shadow-pop);
 }
 .vam-item {
   display: flex;
@@ -177,33 +177,17 @@
 
 /* Destructive rows read as destructive without stealing the eye from the primary action. */
 .vam-item-danger .vam-item-label {
-  color: #dc2626;
+  color: var(--critical);
 }
 .vam-item-danger:hover:not([aria-disabled="true"]),
 .vam-item-danger:focus-visible {
-  background: color-mix(in srgb, #dc2626 12%, var(--surface));
+  background: color-mix(in srgb, var(--critical) 12%, var(--surface));
 }
 .vam-item-confirming {
-  background: color-mix(in srgb, #dc2626 16%, var(--surface));
+  background: color-mix(in srgb, var(--critical) 16%, var(--surface));
 }
 .vam-item-confirming .vam-item-hint {
   color: var(--critical);
-}
-
-/* The app themes via html[data-theme="dark"] (see soft-ui.css) — not prefers-color-scheme. */
-html[data-theme="dark"] .vam-item-danger .vam-item-label,
-html[data-theme="dark"] .vam-item-confirming .vam-item-hint {
-  color: #fca5a5;
-}
-html[data-theme="dark"] .vam-item-danger:hover:not([aria-disabled="true"]),
-html[data-theme="dark"] .vam-item-danger:focus-visible {
-  background: color-mix(in srgb, #f87171 18%, var(--surface));
-}
-html[data-theme="dark"] .vam-item-confirming {
-  background: color-mix(in srgb, #f87171 22%, var(--surface));
-}
-html[data-theme="dark"] .vam-menu {
-  box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
 }
 
 @media (pointer: coarse) {

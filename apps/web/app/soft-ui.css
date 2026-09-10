@@ -2404,12 +2404,12 @@ body.has-app-shell .strategy-demo-optin{
 /* Usage hard cut-off Soft-UI banners (budgets / usage / AI surfaces) */
 .usage-cutoff-banner{
   display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;
-  margin:0 0 16px;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid #f1dfb0;
-  background:#fff8e8;color:#69420a;font:500 13px var(--font-source-sans),ui-sans-serif;line-height:1.45;
+  margin:0 0 16px;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--line));
+  background:var(--warning-soft);color:var(--warning);font:500 13px var(--font-source-sans),ui-sans-serif;line-height:1.45;
 }
 .usage-cutoff-banner.tone-at{
-  border-color:color-mix(in srgb,#b91c1c 40%,var(--line));
-  background:#fff0ee;color:#8f1d1d;
+  border-color:color-mix(in srgb,var(--critical) 40%,var(--line));
+  background:var(--critical-soft);color:var(--critical);
 }
 .usage-cutoff-banner.compact{padding:10px 12px;margin-bottom:12px}
 .usage-cutoff-banner-copy{display:grid;gap:4px;min-width:min(100%,280px);flex:1}
@@ -2422,16 +2422,6 @@ body.has-app-shell .strategy-demo-optin{
 .usage-cutoff-hint{margin:8px 0 0;width:100%;font-size:12px;opacity:.9}
 .budget-page .budget-cutoff-panel{margin:0 0 16px}
 .budget-page .metric-grid{margin-bottom:14px}
-html[data-theme="dark"] .usage-cutoff-banner{
-  background:color-mix(in srgb,#a16207 18%,var(--surface));
-  border-color:color-mix(in srgb,#fbbf24 35%,var(--line));
-  color:#fde68a;
-}
-html[data-theme="dark"] .usage-cutoff-banner.tone-at{
-  background:color-mix(in srgb,#b91c1c 22%,var(--surface));
-  border-color:color-mix(in srgb,#f87171 40%,var(--line));
-  color:#fecaca;
-}
 @media(max-width:700px){
   .usage-cutoff-banner{flex-direction:column}
 }

@@ -1,23 +1,4 @@
-/* Scouted-vs-TBA reconciliation. Tokens only, light + dark, 44px+ targets, 360px safe.
-   soft-ui.css has no review/ok semantic pair, so this surface defines its own and
-   flips them with the theme rather than hard-coding hexes at each use site. */
-
-:root {
-  --recon-review-ink: #8a2f22;
-  --recon-review-line: #e6b4aa;
-  --recon-review-bg: #fdeceb;
-  --recon-ok-ink: #14603c;
-  --recon-ok-line: #a9d8bf;
-  --recon-ok-bg: #e8f6ee;
-}
-html[data-theme="dark"] {
-  --recon-review-ink: #fca5a5;
-  --recon-review-line: #7f2f2f;
-  --recon-review-bg: #331b1b;
-  --recon-ok-ink: #6ee7a8;
-  --recon-ok-line: #235c40;
-  --recon-ok-bg: #14291f;
-}
+/* Scouted-vs-TBA reconciliation. Canonical tokens in light and dark. */
 
 .recon {
   display: grid;
@@ -95,14 +76,14 @@ html[data-theme="dark"] {
   background: transparent;
 }
 .recon-chip.review {
-  color: var(--recon-review-ink);
-  border-color: var(--recon-review-line);
-  background: var(--recon-review-bg);
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 40%, var(--line));
+  background: var(--critical-soft);
 }
 .recon-chip.ok {
-  color: var(--recon-ok-ink);
-  border-color: var(--recon-ok-line);
-  background: var(--recon-ok-bg);
+  color: var(--positive);
+  border-color: color-mix(in srgb, var(--positive) 40%, var(--line));
+  background: var(--positive-soft);
 }
 
 .recon-alliance {

@@ -310,23 +310,13 @@
 }
 
 .cl-warn {
-  border: 1px solid var(--warning, #e4d9c5);
-  background: var(--warning-soft, #faf6ef);
-  color: var(--warning, #6b5a3a);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .cl-warn strong {
-  color: var(--warning, #6b5a3a);
-}
-
-html[data-theme="dark"] .cl-warn {
-  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
-  color: var(--ink);
-}
-
-html[data-theme="dark"] .cl-warn strong {
-  color: var(--warning, #c8922a);
+  color: var(--warning);
 }
 
 /* ---------- links ---------- */
@@ -492,17 +482,13 @@ html[data-theme="dark"] .cl-warn strong {
 }
 
 .cl-band-close {
-  background: color-mix(in srgb, var(--warning, #c8922a) 18%, transparent);
-  color: var(--warning, #8a6a20);
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
 }
 
 .cl-band-off {
-  background: color-mix(in srgb, var(--critical, #b42318) 14%, transparent);
-  color: var(--critical, #b42318);
-}
-
-html[data-theme="dark"] .cl-band-close {
-  color: var(--warning, #c8922a);
+  background: color-mix(in srgb, var(--critical) 14%, transparent);
+  color: var(--critical);
 }
 
 .cl-factors {
@@ -636,15 +622,9 @@ html[data-theme="dark"] .cl-band-close {
 }
 
 .cl-notice-fail {
-  border: 1px solid var(--warning, #e4d9c5);
-  background: var(--warning-soft, #faf6ef);
-  color: var(--warning, #6b5a3a);
-}
-
-html[data-theme="dark"] .cl-notice-fail {
-  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
-  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 /* ---------- folds and tables ---------- */

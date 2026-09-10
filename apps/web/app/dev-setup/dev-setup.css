@@ -311,23 +311,13 @@
 /* A warning here means "painful to undo" — signing up with a school email, or
    re-submitting a student application. Distinct from a tip, not alarming. */
 .ds-warn {
-  border: 1px solid var(--warning, #e4d9c5);
-  background: var(--warning-soft, #faf6ef);
-  color: var(--warning, #6b5a3a);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .ds-warn strong {
-  color: var(--warning, #6b5a3a);
-}
-
-html[data-theme="dark"] .ds-warn {
-  border-color: color-mix(in srgb, var(--warning, #c8922a) 40%, transparent);
-  background: color-mix(in srgb, var(--warning, #c8922a) 12%, transparent);
-  color: var(--ink);
-}
-
-html[data-theme="dark"] .ds-warn strong {
-  color: var(--warning, #c8922a);
+  color: var(--warning);
 }
 
 /* ---------- links ---------- */

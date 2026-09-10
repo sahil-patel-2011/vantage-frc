@@ -1,15 +1,4 @@
-/* Best Path seed planner. Tokens only, light + dark, 44px+ targets, 360px safe.
-   soft-ui.css ships no up/down semantic colour, so this surface defines its own
-   pair of tokens and flips them with the theme rather than hard-coding hexes. */
-
-:root {
-  --bp-up: #1a7f4b;
-  --bp-down: #a23a2c;
-}
-html[data-theme="dark"] {
-  --bp-up: #6ee7a8;
-  --bp-down: #fca5a5;
-}
+/* Best Path seed planner. Canonical tokens in light and dark. */
 
 .bp-planner {
   display: grid;
@@ -43,10 +32,10 @@ html[data-theme="dark"] {
   color: var(--ink);
 }
 .bp-kpis strong.bp-up {
-  color: var(--bp-up);
+  color: var(--positive);
 }
 .bp-kpis strong.bp-down {
-  color: var(--bp-down);
+  color: var(--critical);
 }
 
 .bp-caveats {
@@ -128,7 +117,7 @@ html[data-theme="dark"] {
 .bp-toggle button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .bp-toggle button:focus-visible {
   outline: 2px solid var(--accent);

@@ -386,4 +386,24 @@ describe("stylesheet integrity", () => {
     expect(text).toContain("var(--surface)");
     expect(text).toContain("var(--accent)");
   });
+
+  it("does not reintroduce product html[data-theme=dark] counterparts", () => {
+    // Marketing/legal keep a separate copper palette on purpose. Product chrome
+    // must follow tokens that already flip in system.css.
+    const allow = /(?:^|[/\\])(?:marketing(?:-v3|-showcase)?|legal|system)\.css$/;
+    const offenders: string[] = [];
+    for (const file of files) {
+      if (allow.test(file)) continue;
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (/html\[data-theme=["']dark["']\]/.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      `product dark counterparts (use tokens that already flip):\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
+  });
 });

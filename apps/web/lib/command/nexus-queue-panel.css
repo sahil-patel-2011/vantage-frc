@@ -13,8 +13,8 @@
 }
 
 .nq-panel.is-urgent {
-  border-color: var(--nq-urgent-line, #d94c46);
-  background: var(--nq-urgent-bg, #fff3f2);
+  border-color: var(--critical);
+  background: var(--critical-soft);
 }
 
 .nq-head {
@@ -92,13 +92,13 @@
 
 .nq-cue.cue-queue-soon,
 .nq-cue.cue-queue-now {
-  background: var(--nq-urgent-chip, #d94c46);
-  color: #fff;
+  background: var(--critical-fill);
+  color: var(--accent-ink);
 }
 
 .nq-cue.cue-on-field {
-  background: var(--nq-field-chip, #15803d);
-  color: #fff;
+  background: var(--positive-fill);
+  color: var(--accent-ink);
 }
 
 .nq-countdown-main small {
@@ -142,14 +142,14 @@
 }
 
 .nq-stage.current {
-  color: #fff;
-  background: var(--accent, #1457d9);
-  border-color: var(--accent, #1457d9);
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .nq-panel.is-urgent .nq-stage.current {
-  background: var(--nq-urgent-chip, #d94c46);
-  border-color: var(--nq-urgent-chip, #d94c46);
+  background: var(--critical-fill);
+  border-color: var(--critical-fill);
 }
 
 .nq-upnext {
@@ -233,19 +233,4 @@
   margin: 0;
   font-size: 12px;
   color: var(--muted, #5a6578);
-}
-
-html[data-theme="dark"] .nq-panel.is-urgent {
-  --nq-urgent-line: #f87171;
-  --nq-urgent-bg: color-mix(in srgb, #7f1d1d 26%, var(--surface, #151b24));
-}
-
-html[data-theme="dark"] .nq-cue.cue-queue-soon,
-html[data-theme="dark"] .nq-cue.cue-queue-now,
-html[data-theme="dark"] .nq-panel.is-urgent .nq-stage.current {
-  --nq-urgent-chip: #dc2626;
-}
-
-html[data-theme="dark"] .nq-cue.cue-on-field {
-  --nq-field-chip: #16a34a;
 }
