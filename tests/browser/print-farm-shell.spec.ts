@@ -22,11 +22,10 @@ test("Print Farm still loads after the panel split", async ({ page }) => {
     }
   }
 
-  const queue = page.getByRole("heading", { name: "Queue a print" });
-  const empty = page.getByRole("heading", { name: /No prints queued|Add your first printer|Select a team/i });
-  const setup = page.getByRole("heading", { name: /Select a team|Choose a team/i });
+  const queue = page.getByRole("heading", { name: "Queue a print", exact: true });
+  const setup = page.getByRole("heading", { name: "Select a team", exact: true });
   const unavailable = page.getByRole("heading", { name: /Could not load the Print Farm/i });
-  if (!(await expectHubReadyOrGate(page, queue, empty.or(setup).or(unavailable)))) {
+  if (!(await expectHubReadyOrGate(page, queue, setup.or(unavailable)))) {
     await expect(page.getByRole("tab")).toHaveCount(0);
     if (await setup.isVisible()) {
       await expect(page.getByRole("link", { name: "Choose your team" })).toHaveCount(1);
@@ -36,6 +35,8 @@ test("Print Farm still loads after the panel split", async ({ page }) => {
   }
 
   await expect(page.getByRole("tab")).toHaveCount(0);
-  await expect(page.getByText("nothing here is live machine data", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Printers" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Filament" })).toBeVisible();
+  await expect(page.locator(".pf-nongoals")).toHaveCount(1);
   await page.screenshot({ path: "/opt/cursor/artifacts/print-farm-after-split.png", fullPage: true });
 });
