@@ -212,7 +212,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           <label className="cad-choice">
             <input type="radio" name="brain" checked={brain === "team_byok"} onChange={() => setBrain("team_byok")} />
             <span>
-              <strong>Team / personal BYOK API</strong>
+              <strong>Team / personal keys</strong>
               <small>Official provider API keys only (encrypted in Admin). Consumer subscriptions are not keys.</small>
             </span>
           </label>

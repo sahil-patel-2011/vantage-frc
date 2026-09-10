@@ -1,11 +1,17 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { featureCacheKey } from "./feature-cache";
 import {
+  OFFLINE_SHELL_ROUTES,
   navigationFallbackPath,
   offlineCapableLabel,
   pathnameIsOfflineShell,
   isRscRequest,
 } from "./shell-routes";
+
+const WEB_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 describe("offline shell routes", () => {
   it("matches allowlisted product paths and nested scouting", () => {
@@ -26,6 +32,14 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/files")).toBe(true);
     expect(pathnameIsOfflineShell("/docs")).toBe(true);
     expect(pathnameIsOfflineShell("/strategy")).toBe(true);
+    expect(pathnameIsOfflineShell("/hours")).toBe(true);
+    expect(pathnameIsOfflineShell("/hours/kiosk")).toBe(true);
+    expect(pathnameIsOfflineShell("/messages")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-checklist")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-notes-timeline")).toBe(true);
+    expect(pathnameIsOfflineShell("/pit")).toBe(true);
+    expect(pathnameIsOfflineShell("/video-analysis")).toBe(true);
+    expect(pathnameIsOfflineShell("/assembly-manual")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -37,6 +51,17 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/logistics")).toBe("Logistics");
     expect(offlineCapableLabel("/dashboard")).toBe("Home");
     expect(offlineCapableLabel("/files")).toBe("Files");
+    expect(offlineCapableLabel("/hours")).toBe("Hours");
+    expect(offlineCapableLabel("/messages")).toBe("Chat");
+    expect(offlineCapableLabel("/assembly-manual")).toBe("Assembly manual");
+  });
+
+  it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
+    const sw = readFileSync(join(WEB_ROOT, "public", "sw.js"), "utf8");
+    const block = sw.match(/const SHELL_ROUTES = \[([\s\S]*?)\];/);
+    expect(block, "sw.js is missing SHELL_ROUTES").toBeTruthy();
+    const routes = [...(block?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+    expect([...routes].sort()).toEqual([...OFFLINE_SHELL_ROUTES].sort());
   });
 
   it("builds stable feature cache keys", () => {

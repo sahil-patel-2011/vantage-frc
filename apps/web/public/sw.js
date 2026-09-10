@@ -37,6 +37,14 @@ const SHELL_ROUTES = [
   "/files",
   "/docs",
   "/dashboard",
+  "/strategy",
+  "/hours",
+  "/messages",
+  "/match-checklist",
+  "/match-notes-timeline",
+  "/pit",
+  "/video-analysis",
+  "/assembly-manual",
 ];
 
 function isShellPath(pathname) {

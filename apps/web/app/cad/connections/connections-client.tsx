@@ -355,7 +355,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         <h2>AI provider truth</h2>
         <ul>
           <li>Vantage managed API: billed through plan / credits.</li>
-          <li>Team / personal BYOK: official provider API keys only.</li>
+          <li>Team / personal keys: official provider API keys only.</li>
           <li>Terminal / local CLI (`key_source=local_cli`): no Vantage model charge.</li>
           <li>ChatGPT / Claude consumer subscriptions are not API credentials.</li>
         </ul>

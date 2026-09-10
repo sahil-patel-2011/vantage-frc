@@ -74,6 +74,11 @@ const RULES: readonly Rule[] = [
     why: 'API state name leaking into copy — say what to configure',
   },
   {
+    label: "BYOK",
+    pattern: /\bBYOK\b/,
+    why: 'billing jargon — say "your own keys"',
+  },
+  {
     label: "row-level security",
     pattern: /\brow[-\s]level\s+security\b/i,
     why: "database vocabulary",

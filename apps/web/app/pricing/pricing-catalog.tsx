@@ -55,7 +55,7 @@ const ladder: PlanCard[] = [
     features: [
       pro.hostedNote,
       "No provider account needed — Vantage routes and meters it",
-      "BYOK and local endpoints still unlimited",
+      "Your own keys and local models stay unlimited",
     ],
   },
   {
@@ -66,7 +66,7 @@ const ladder: PlanCard[] = [
     features: [
       proPlus.hostedNote,
       "Room for scouting-night crunches and event weeks",
-      "BYOK and local endpoints still unlimited",
+      "Your own keys and local models stay unlimited",
     ],
   },
   {
@@ -77,7 +77,7 @@ const ladder: PlanCard[] = [
     features: [
       max.hostedNote,
       "Covers heavy CAD, strategy, and code sessions all season",
-      "BYOK and local endpoints still unlimited",
+      "Your own keys and local models stay unlimited",
     ],
   },
 ];

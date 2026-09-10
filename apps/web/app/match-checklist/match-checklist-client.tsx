@@ -4,6 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { OfflineBanner } from "../../components/offline-banner";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+} from "../../lib/offline";
 import { checklistItemLabel, formatElapsed } from "../../lib/match-checklist";
 import type { MatchChecklistView } from "../../lib/match-checklist/compute-match-checklist";
 import {
@@ -26,6 +34,8 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [, forceTick] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
@@ -37,17 +47,30 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/match-checklist${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const cached = urlOrg ? await getFeatureSnapshot<MatchChecklistView>("match-checklist", urlOrg) : null;
+      if (cached?.data) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+      }
+      try {
+        const response = await fetch(`/api/match-checklist${query.toString() ? `?${query.toString()}` : ""}`);
         const data = (await response.json()) as MatchChecklistView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setErrorStatus(response.status);
-          setFetchFailed(true);
+          if (!cached) setFetchFailed(true);
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        const cacheOrg = data.orgId || urlOrg;
+        if (cacheOrg) await putFeatureSnapshot("match-checklist", cacheOrg, data);
+      } catch {
+        if (!cached) setFetchFailed(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -63,6 +86,20 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
+      if (isBrowserOffline()) {
+        const action = typeof payload.action === "string" ? payload.action : "";
+        if (action === "toggle-item" || action === "start-run") {
+          await queueProductWrite({
+            feature: "pit_checklist",
+            orgId,
+            payload: { orgId, ...payload },
+          });
+          setError(QUEUED_ON_DEVICE);
+          return;
+        }
+        setError("You're offline — that change needs a connection.");
+        return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -77,6 +114,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           return;
         }
         setView(data);
+        if (orgId) await putFeatureSnapshot("match-checklist", orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -107,6 +145,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         title="Pre-match checklist"
         description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
       />
+      <OfflineBanner feature="Match checklist" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? (
         <div className="mcl-related">

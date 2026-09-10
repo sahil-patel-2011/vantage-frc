@@ -152,7 +152,7 @@ export default function AdminPartnersClient() {
       <PageHeader
         breadcrumbs="Platform / Partners"
         title="App sponsors & AI partners"
-        description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Partner logos appear on AI surfaces only when status is active. API keys stay in env or BYOK — never here."
+        description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Partner logos appear on AI surfaces only when status is active. API keys stay in env or on the team's own keys page — never here."
       >
         <nav className="admin-related" aria-label="Related admin">
           {related.map((link) => (

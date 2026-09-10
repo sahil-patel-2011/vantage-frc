@@ -69,7 +69,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         const data = (await response.json()) as Payload;
         if (cancelled) return;
         if (!response.ok) {
-          setError(data.error ?? "Could not load BYOK usage");
+          setError(data.error ?? "Could not load your key usage");
           setErrorStatus(response.status);
           setPayload(null);
         } else {
@@ -79,7 +79,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         }
       } catch {
         if (!cancelled) {
-          setError("Could not load BYOK usage");
+          setError("Could not load your key usage");
           setErrorStatus(null);
           setPayload(null);
         }
@@ -100,12 +100,12 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         breadcrumbs={
           <>
             <a href={aiHub}>AI</a>
-            {" / BYOK usage"}
+            {" / Your keys usage"}
           </>
         }
         navPath="/team/ai-usage"
-        title="BYOK usage"
-        description="Real bring-your-own-key and local connector calls from the usage ledger. Estimated $ from public list rates — not an invoice. Empty until BYOK calls exist."
+        title="Your keys usage"
+        description="Calls made with your own API keys or a local connector. Estimated $ from public list rates — not an invoice. Empty until those calls exist."
       />
 
       <nav className="product-hub-related" aria-label="Related">
@@ -184,7 +184,7 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
 
           {payload.empty ? (
             <section className="app-card soft-panel" role="status">
-              <h2>No BYOK calls yet</h2>
+              <h2>No calls with your keys yet</h2>
               <p className="app-muted">
                 Nothing to show until your own API key or a local connector is used. Add a key under AI API keys,
                 then try Chat, Writer, or CAD.

@@ -5,19 +5,10 @@ import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   ACCOUNT_RELATED_INCLUDE,
-  CONNECTIONS_RELATED_INCLUDE,
   accountNextActions,
   accountRelatedLinks,
-  buildConnectionConnectors,
-  classifyConnectionsShell,
-  connectionBadgeLabel,
-  connectionBadgeTone,
-  connectionsEmptyCopy,
-  connectionsNextActions,
-  connectionsRelatedLinks,
   formatAccountOrgLabel,
   formatAccountRole,
-  type ConnectionConnectorStatus,
 } from "../../lib/account";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -63,7 +54,7 @@ type EmailPrefs = {
 type Integration = { status: "available" | "setup_required"; detail: string };
 
 type ConnectorIntegration = {
-  status: ConnectionConnectorStatus;
+  status: "connected" | "available" | "empty" | "setup_required";
   detail: string;
 };
 
@@ -103,7 +94,7 @@ type OrgContext = {
   workspaceCount: number;
 };
 
-type Tab = "profile" | "appearance" | "notifications" | "integrations";
+type Tab = "profile" | "appearance" | "notifications";
 
 const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string }[] = [
   {
@@ -289,68 +280,6 @@ function AccountRelated({ orgId }: { orgId: string | null }) {
   );
 }
 
-function ConnectionsRelated({ orgId }: { orgId: string | null }) {
-  const links = connectionsRelatedLinks(orgId, { include: [...CONNECTIONS_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related connections-related" aria-label="Related connection tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-  );
-}
-
-function ConnectionsNextActions({
-  orgId,
-  googleReady,
-  tbaReady,
-  onshapeStatus,
-  discordStatus,
-  githubStatus,
-  slackStatus,
-}: {
-  orgId: string | null;
-  googleReady: boolean;
-  tbaReady: boolean;
-  onshapeStatus: ConnectionConnectorStatus;
-  discordStatus: ConnectionConnectorStatus;
-  githubStatus: ConnectionConnectorStatus;
-  slackStatus: ConnectionConnectorStatus;
-}) {
-  const actions = connectionsNextActions({
-    orgId,
-    googleReady,
-    tbaReady,
-    onshapeStatus,
-    discordStatus,
-    githubStatus,
-    slackStatus,
-  });
-  return (
-    <section className="account-next-actions app-card soft-panel" aria-label="Connection next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function NextActions({
   orgId,
   hasProfile,
@@ -504,11 +433,15 @@ export default function AccountClient() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get("tab");
+    if (requested === "integrations") {
+      const org = params.get("orgId");
+      window.location.replace(org ? `/connectors?orgId=${encodeURIComponent(org)}` : "/connectors");
+      return;
+    }
     if (
       requested === "profile" ||
       requested === "appearance" ||
-      requested === "notifications" ||
-      requested === "integrations"
+      requested === "notifications"
     ) {
       setTab(requested);
     }
@@ -702,52 +635,10 @@ export default function AccountClient() {
   const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
   const googleReady = account?.integrations?.google.status === "available";
   const tbaReady = account?.integrations?.tba.status === "available";
-  const onshapeStatus: ConnectionConnectorStatus =
-    account?.integrations?.onshape?.status ?? (orgId ? "empty" : "setup_required");
-  const discordStatus: ConnectionConnectorStatus =
-    account?.integrations?.discord?.status ?? (orgId ? "empty" : "setup_required");
-  const githubStatus: ConnectionConnectorStatus =
-    account?.integrations?.github?.status ?? (orgId ? "empty" : "setup_required");
-  const slackStatus: ConnectionConnectorStatus =
-    account?.integrations?.slack?.status ?? (orgId ? "empty" : "setup_required");
-  const connectionCards = buildConnectionConnectors({
-    orgId,
-    google: account?.integrations?.google,
-    tba: account?.integrations?.tba,
-    onshape: account?.integrations?.onshape,
-    discord: account?.integrations?.discord,
-    github: account?.integrations?.github,
-    slack: account?.integrations?.slack,
-  });
-  const connectionsShell = classifyConnectionsShell({
-    orgId,
-    loading,
-    fetchFailed,
-    // Team connectors only — Google is deployment/personal, not a workspace link.
-    connectors: connectionCards.filter((c) => c.id !== "google").map((c) => ({ status: c.status })),
-  });
-  const connectionsCopy = connectionsEmptyCopy(connectionsShell);
-  const showConnectionNextActions =
-    !loading &&
-    !fetchFailed &&
-    account != null &&
-    tab === "integrations" &&
-    (connectionsShell === "setup" ||
-      connectionsShell === "empty" ||
-      !googleReady ||
-      !tbaReady ||
-      onshapeStatus === "setup_required" ||
-      onshapeStatus === "empty" ||
-      discordStatus === "setup_required" ||
-      discordStatus === "empty" ||
-      slackStatus === "setup_required" ||
-      slackStatus === "empty" ||
-      githubStatus === "empty");
   const showNextActions =
     !loading &&
     !fetchFailed &&
     account != null &&
-    tab !== "integrations" &&
     (!orgId || !hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
 
   return (
@@ -907,6 +798,10 @@ export default function AccountClient() {
                   <strong>AI usage</strong>
                   <span>Live metered ledger for this team</span>
                 </a>
+                <a href={withOrgHref("/connectors", orgId)}>
+                  <strong>Connectors</strong>
+                  <span>Google, TBA, Onshape, GitHub, chat bridges</span>
+                </a>
                 <a href={withOrgHref("/team/security", orgId)}>
                   <strong>Team security</strong>
                   <span>Auth policy and delegated powers</span>
@@ -929,7 +824,6 @@ export default function AccountClient() {
               { id: "profile", label: "Profile" },
               { id: "appearance", label: "Appearance" },
               { id: "notifications", label: "Notifications" },
-              { id: "integrations", label: "Connections" },
             ]}
           />
 
@@ -1132,93 +1026,6 @@ export default function AccountClient() {
                 Save preferences
               </button>
             </Panel>
-          ) : null}
-
-          {tab === "integrations" ? (
-            <section className="settings-connections" aria-label="Connections">
-              <ConnectionsRelated orgId={orgId} />
-
-              {connectionsShell === "setup" || connectionsShell === "empty" ? (
-                <EmptyState
-                  soft
-                  badge={connectionsCopy.badge}
-                  badgeTone={connectionsCopy.badgeTone}
-                  title={connectionsCopy.title}
-                  description={connectionsCopy.description}
-                >
-                  <div className="account-empty-actions">
-                    {!orgId ? (
-                      <a className="app-button" href="/workspace">
-                        Open Workspace
-                      </a>
-                    ) : (
-                      <a className="app-button" href={withOrgHref("/cad/connections", orgId)}>
-                        Open CAD Connections
-                      </a>
-                    )}
-                    <a
-                      className="app-button secondary"
-                      href={orgId ? withOrgHref("/team/discord", orgId) : "/support"}
-                    >
-                      {orgId ? "Open Discord" : "Help & Support"}
-                    </a>
-                    {orgId ? (
-                      <a className="app-button secondary" href={withOrgHref("/team/slack", orgId)}>
-                        Open Slack
-                      </a>
-                    ) : null}
-                  </div>
-                </EmptyState>
-              ) : null}
-
-              {showConnectionNextActions ? (
-                <ConnectionsNextActions
-                  orgId={orgId}
-                  googleReady={googleReady}
-                  tbaReady={tbaReady}
-                  onshapeStatus={onshapeStatus}
-                  discordStatus={discordStatus}
-                  githubStatus={githubStatus}
-                  slackStatus={slackStatus}
-                />
-              ) : null}
-
-              <div className="admin-grid settings-connections-grid">
-                {connectionCards.map((card) => (
-                  <Panel as="article" key={card.id} className="settings-connection-card">
-                    <div className="settings-connection-card-top">
-                      <h2>{card.label}</h2>
-                      <span className={`app-badge ${connectionBadgeTone(card.status)}`}>
-                        {connectionBadgeLabel(card.status)}
-                      </span>
-                    </div>
-                    <p>{card.detail}</p>
-                    <a href={card.href}>{card.cta}</a>
-                  </Panel>
-                ))}
-              </div>
-
-              <Panel as="article" className="settings-connection-footer">
-                <h2>Security, keys &amp; usage</h2>
-                <p>
-                  Personal 2FA lives on Security. Workspace AI keys, billing, and usage follow the active team — never
-                  invented spend. Team connectors above stay empty until real links exist.
-                </p>
-                <div className="settings-inline-links">
-                  <a href="/security">Security</a>
-                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a> : null}
-                  {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
-                  {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
-                  {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
-                  {orgId ? <a href={withOrgHref("/cad/setup", orgId)}>Onshape setup</a> : null}
-                  <a href="/account?tab=appearance">Cockpit</a>
-                  {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
-                  <a href="/account?tab=profile">Account</a>
-                  <a href="/whats-new">What’s new</a>
-                  <a href="/support">Support</a>
-                </div>
-              </Panel>
-            </section>
           ) : null}
         </>
       ) : null}

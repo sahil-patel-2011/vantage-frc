@@ -408,7 +408,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "finance", label: "Finance" },
         { id: "ai-keys", label: "API keys", legacyHref: "/team/ai-keys", featured: true },
         { id: "ai-bridge", label: "Subscription bridge", legacyHref: "/team/ai-bridge" },
-        { id: "ai-usage", label: "BYOK usage", legacyHref: "/team/ai-usage" },
+        { id: "ai-usage", label: "Your keys usage", legacyHref: "/team/ai-usage" },
         { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),
       { id: "decisions", label: "Notes", legacyHref: "/decisions" },

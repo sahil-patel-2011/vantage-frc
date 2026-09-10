@@ -26,7 +26,7 @@ export function aiKeysRelatedLinks(
   const all: AiKeysRelatedLink[] = [
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "budgets", label: "API budgets", href: hubHref("/ai", "budgets", orgId) },
-    { id: "byok-usage", label: "BYOK usage", href: withOrgHref("/team/ai-usage", orgId) },
+    { id: "byok-usage", label: "Your keys usage", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "pricing", label: "Pricing", href: withOrgHref("/pricing", orgId) },
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
@@ -89,7 +89,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "SIGN IN REQUIRED",
       title: "Sign in to manage API keys",
-      description: "BYOK keys are your team's and encrypted. Sign in, then open this page from Account or Team setup.",
+      description: "Your keys are encrypted for this team. Sign in, then open this page from Account or Team setup.",
       badge: "Auth required",
     };
   }
@@ -148,6 +148,6 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   }
   return {
     title: "Paid · hosted AI",
-    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste BYOK keys; that traffic does not consume hosted usage.",
+    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste your own keys; that traffic does not consume hosted usage.",
   };
 }

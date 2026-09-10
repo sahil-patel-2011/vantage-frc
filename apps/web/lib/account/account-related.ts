@@ -151,9 +151,9 @@ export function accountNextActions(input: {
   if (input.tbaReady === false) {
     actions.push({
       id: "tba",
-      label: "Configure TBA connectors",
-      detail: "Match alerts stay quiet until a TBA key or Neon cache sync exists.",
-      href: withOrgHref("/team/data", orgId),
+      label: "Connect The Blue Alliance",
+      detail: "Match alerts stay quiet until a TBA key is connected.",
+      href: withOrgHref("/connectors", orgId),
       primary: actions.length === 0,
     });
   }

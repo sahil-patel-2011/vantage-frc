@@ -17,7 +17,10 @@ export type OfflineFeature =
   | "chat"
   | "video-analysis"
   | "relays"
-  | "strategy";
+  | "strategy"
+  | "hours"
+  | "match-checklist"
+  | "match-notes";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

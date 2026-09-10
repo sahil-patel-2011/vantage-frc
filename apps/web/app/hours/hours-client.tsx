@@ -29,6 +29,15 @@ import {
   scanFeedbackMessage,
 } from "../../lib/hours/scan-codes";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { OfflineBanner } from "../../components/offline-banner";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+} from "../../lib/offline";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<BuildHoursView, { status: "ready" }>;
@@ -462,6 +471,8 @@ export default function HoursClient() {
   const [showMyLog, setShowMyLog] = useState(false);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   // Live tick so open-session timers and the leaderboard stay current.
   useEffect(() => {
@@ -473,21 +484,31 @@ export default function HoursClient() {
     setFetchFailed(false);
     setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<BuildHoursView>("hours", orgId) : null;
+    if (cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+    }
     try {
       const response = await fetch(`/api/hours${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as BuildHoursView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load build hours.");
         setErrorStatus(response.status);
-        setFetchFailed(true);
+        if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       setNow(Date.now());
+      const cacheOrg = data.status === "ready" ? data.context.orgId || orgId : orgId;
+      if (cacheOrg) await putFeatureSnapshot("hours", cacheOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (!cached) setFetchFailed(true);
     }
   }, []);
 
@@ -497,6 +518,15 @@ export default function HoursClient() {
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (isBrowserOffline() && (body.action === "clock_in" || body.action === "clock_out") && body.orgId) {
+        await queueProductWrite({
+          feature: "hours_clock",
+          orgId: body.orgId,
+          payload: body,
+        });
+        setError(QUEUED_ON_DEVICE);
+        return true;
+      }
       setBusyKey(key);
       setError("");
       try {
@@ -534,16 +564,22 @@ export default function HoursClient() {
   }, [orgIdForQueue]);
 
   const drain = useCallback(async () => {
-    if (!orgIdForQueue || !offlineQueueSupported()) return;
+    if (!orgIdForQueue) return;
     try {
-      const result = await syncClockOutbox(orgIdForQueue);
-      setPending(result.remaining);
-      if (result.synced > 0) {
-        setError(`Synced ${result.synced} queued scan${result.synced === 1 ? "" : "s"}.`);
-        await load();
-      } else if (result.rejected.length) {
-        setError(result.rejected[0]!.reason);
+      let reload = false;
+      if (offlineQueueSupported()) {
+        const result = await syncClockOutbox(orgIdForQueue);
+        setPending(result.remaining);
+        if (result.synced > 0) {
+          setError(`Synced ${result.synced} queued scan${result.synced === 1 ? "" : "s"}.`);
+          reload = true;
+        } else if (result.rejected.length) {
+          setError(result.rejected[0]!.reason);
+        }
       }
+      const product = await syncOutbox({ orgId: orgIdForQueue });
+      if (product.synced > 0) reload = true;
+      if (reload) await load();
     } catch {
       /* still offline — the queue stays put */
     }
@@ -733,6 +769,8 @@ export default function HoursClient() {
           ) : null}
         </div>
       </header>
+
+      <OfflineBanner feature="Hours" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

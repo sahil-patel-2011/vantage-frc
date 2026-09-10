@@ -38,7 +38,14 @@ import {
   type SchedulerPick,
 } from "../../../lib/calendar-ai/pick";
 import { githubConnectionHref } from "../../../lib/github/github-related";
-import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  useOnline,
+} from "../../../lib/offline";
 import {
   DUTY_KIND_LABELS,
   DUTY_KINDS,
@@ -1642,8 +1649,17 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
-      if (!navigator.onLine) {
-        setError("You're offline — calendar edits will save when you reconnect.");
+      if (isBrowserOffline()) {
+        if (body.action === "set_rsvp" && body.orgId) {
+          await queueProductWrite({
+            feature: "calendar_rsvp",
+            orgId: String(body.orgId),
+            payload: body,
+          });
+          setError(QUEUED_ON_DEVICE);
+          return true;
+        }
+        setError("You're offline — that change needs a connection.");
         return false;
       }
       setBusyKey(key);

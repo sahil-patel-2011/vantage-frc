@@ -635,7 +635,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       }
       setMessage(
         routingDraft.mode === "fixed"
-          ? "Fixed model saved — every BYOK call uses that model."
+          ? "Fixed model saved — every call with your keys uses that model."
           : "Automode saved — CAD/Code use high reasoning; Strategy uses strong mid; light chat uses fast models from your pool.",
       );
       await load();
@@ -712,9 +712,9 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
             <span className="eyebrow">{billing.title}</span>
             <p>{billing.body}</p>
             <p className="app-muted">
-              Track BYOK call estimates on{" "}
-              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>BYOK usage</a>
-              . Hosted 0.75× metering still applies when no BYOK path is configured.
+              Track your-key call estimates on{" "}
+              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>Your keys usage</a>
+              . Hosted 0.75× metering still applies when no team key is configured.
             </p>
           </section>
 

@@ -121,6 +121,7 @@ describe("help articles", () => {
   it("resolves slug lookups and deep links", () => {
     expect(getHelpArticle("edit-home")?.title).toMatch(/Edit Home/i);
     expect(helpArticleHref("byok-automode")).toBe("/help/byok-automode");
+    expect(getHelpArticle("offline-at-events")?.relatedHref).toBe("/competition");
     expect(getHelpArticle("missing")).toBeUndefined();
   });
 });
@@ -211,6 +212,7 @@ describe("help search index", () => {
     );
     expect(searchHelpArticles("my kit")[0]?.slug).toBe("my-kit");
     expect(searchHelpArticles("import notion trello").map((hit) => hit.slug)).toContain("migrate");
+    expect(searchHelpArticles("venue wifi")[0]?.slug).toBe("offline-at-events");
   });
 
   it("ignores short queries and scores zero for nonsense", () => {

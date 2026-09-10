@@ -243,7 +243,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           <h2>Provider setup required</h2>
           <p>
             {error ??
-              "Add a BYOK / managed / sponsored AI key under AI API keys, or configure BRAVE_SEARCH_API_KEY for web search."}
+              "Add your own key, a team key, or a sponsored key under AI API keys, or ask an admin to set up web search."}
           </p>
             <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
             Open AI keys

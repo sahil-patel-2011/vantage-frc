@@ -27,6 +27,15 @@ import {
 } from "../../lib/messages/sync";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { OfflineBanner } from "../../components/offline-banner";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+} from "../../lib/offline";
 import ChatSafetyPanel from "./chat-safety-panel";
 import "./youth-protection.css";
 import "./channels.css";
@@ -197,6 +206,8 @@ export default function MessagesClient({
   const [loading, setLoading] = useState(true);
   const [hasEarlier, setHasEarlier] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
@@ -283,24 +294,49 @@ export default function MessagesClient({
   }, []);
 
   const loadInbox = useCallback(async () => {
-    const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}`);
-    const data = await response.json();
-    if (!response.ok) {
-      const message = data.error || "Could not load conversations.";
-      setLoadError(message);
-      setLoadErrorStatus(response.status);
-      setStatus(message);
+    try {
+      const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}`);
+      const data = await response.json();
+      if (!response.ok) {
+        const cached = await getFeatureSnapshot<{ conversations: Conversation[] }>("chat", orgId);
+        if (cached?.data) {
+          applyInbox(cached.data.conversations);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoadError(null);
+          setLoadErrorStatus(null);
+          return cached.data.conversations;
+        }
+        const message = data.error || "Could not load conversations.";
+        setLoadError(message);
+        setLoadErrorStatus(response.status);
+        setStatus(message);
+        return null;
+      }
+      setLoadError(null);
+      setLoadErrorStatus(null);
+      applyInbox(data.conversations ?? []);
+      setFromCache(false);
+      setCachedAt(null);
+      if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
+      if (typeof data.canManageChannels === "boolean") setCanManageChannels(data.canManageChannels);
+      if (typeof data.channelArchiveSupported === "boolean") {
+        setChannelArchiveSupported(data.channelArchiveSupported);
+      }
+      await putFeatureSnapshot("chat", orgId, { conversations: data.conversations ?? [] });
+      return data.conversations as Conversation[];
+    } catch {
+      const cached = await getFeatureSnapshot<{ conversations: Conversation[] }>("chat", orgId);
+      if (cached?.data) {
+        applyInbox(cached.data.conversations);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoadError(null);
+        return cached.data.conversations;
+      }
+      setLoadError("Could not load conversations.");
       return null;
     }
-    setLoadError(null);
-    setLoadErrorStatus(null);
-    applyInbox(data.conversations ?? []);
-    if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
-    if (typeof data.canManageChannels === "boolean") setCanManageChannels(data.canManageChannels);
-    if (typeof data.channelArchiveSupported === "boolean") {
-      setChannelArchiveSupported(data.channelArchiveSupported);
-    }
-    return data.conversations as Conversation[];
   }, [applyInbox, orgId]);
 
   /** Archived channels are fetched on demand so the default sidebar stays the working list. */
@@ -433,6 +469,16 @@ export default function MessagesClient({
       cancelled = true;
     };
   }, [initialConversationId, loadInbox, loadThread]);
+
+  useEffect(() => {
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then((result) => {
+        if (result.synced > 0) void loadInbox();
+      });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [orgId, loadInbox]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -639,6 +685,26 @@ export default function MessagesClient({
     event.preventDefault();
     if (!activeId || !text.trim() || sending) return;
     if (activeMention && mentionSuggestions.length > 0) return;
+    if (isBrowserOffline()) {
+      await queueProductWrite({
+        feature: "chat_message",
+        orgId,
+        payload: {
+          action: "send",
+          orgId,
+          conversationId: activeId,
+          body: text,
+          mentionedUserIds: active?.kind === "team" ? mentionedUserIds : [],
+          objectLink: active?.kind === "team" ? pendingObjectLink : undefined,
+        },
+      });
+      setText("");
+      setMentionedUserIds([]);
+      setPendingObjectLink(null);
+      setStatus(QUEUED_ON_DEVICE);
+      setSending(false);
+      return;
+    }
     setSending(true);
     setStatus("");
     try {
@@ -788,6 +854,8 @@ export default function MessagesClient({
           </span>
         </div>
       ) : null}
+
+      <OfflineBanner feature="Chat" fromCache={fromCache} cachedAt={cachedAt} />
 
       {loading ? (
         <EmptyState soft title="Loading…" aria-busy />

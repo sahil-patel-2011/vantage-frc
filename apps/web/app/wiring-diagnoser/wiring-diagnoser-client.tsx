@@ -453,7 +453,7 @@ function NewCheckForm({
       <div>
         <strong className="app-muted">Observed circuits (from the board photo)</strong>
         <p className="app-muted" style={{ margin: "4px 0 0" }}>
-          Tick two wires in a PD terminal only after you see it — R618 / Q58. Never invent a stuffed ferrule.
+          Tick two wires in a PD terminal only after you see it — R618 / Q58. Do not assume a stuffed ferrule.
         </p>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {observed.map((row, index) => (

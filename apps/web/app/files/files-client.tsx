@@ -26,6 +26,14 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
+  FILE_BYTES_CAP_LABEL,
+  driveFileOfflineKey,
+  dropOfflineFile,
+  formatOfflineUsage,
+  keepOfflineFile,
+  listOfflineFiles,
+} from "../../lib/offline/file-bytes";
+import {
   drivePreviewKind,
   formatDriveBytes,
   parseShareEmails,
@@ -147,6 +155,8 @@ export default function FilesClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [offlineKeys, setOfflineKeys] = useState<Set<string>>(() => new Set());
+  const [offlineBytes, setOfflineBytes] = useState(0);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -265,6 +275,44 @@ export default function FilesClient() {
     }
     return null;
   }, [orgId, listing]);
+
+  const refreshOffline = useCallback(async () => {
+    if (!activeOrgId) return;
+    const rows = await listOfflineFiles(activeOrgId);
+    setOfflineKeys(new Set(rows.map((row) => row.key)));
+    setOfflineBytes(rows.reduce((sum, row) => sum + row.byteSize, 0));
+  }, [activeOrgId]);
+
+  useEffect(() => {
+    void refreshOffline();
+  }, [refreshOffline, listing]);
+
+  const toggleOffline = useCallback(
+    async (file: DriveFile) => {
+      if (!activeOrgId) return;
+      const key = driveFileOfflineKey(activeOrgId, file.id);
+      if (offlineKeys.has(key)) {
+        await dropOfflineFile(key);
+        setNotice(`${file.name} is no longer kept on this device.`);
+      } else {
+        const result = await keepOfflineFile({
+          key,
+          orgId: activeOrgId,
+          name: file.name,
+          url: `/api/drive/files/${file.id}/content?orgId=${encodeURIComponent(activeOrgId)}&download=1`,
+          contentType: file.contentType,
+          expectedBytes: file.byteSize,
+        });
+        if (!result.ok) {
+          setNotice(result.reason);
+          return;
+        }
+        setNotice(`${file.name} is available on this device even without signal.`);
+      }
+      await refreshOffline();
+    },
+    [activeOrgId, offlineKeys, refreshOffline],
+  );
 
   const canUpload = rail === "my" || rail === "team";
 
@@ -392,6 +440,11 @@ export default function FilesClient() {
     <main className="app-page drive-page">
       {header}
       <OfflineBanner feature="Files" fromCache={fromCache} cachedAt={cachedAt} />
+      {activeOrgId && offlineBytes > 0 ? (
+        <p className="app-muted drive-offline-usage">
+          {formatOfflineUsage(offlineBytes)} of files kept on this device ({FILE_BYTES_CAP_LABEL} max).
+        </p>
+      ) : null}
       <ScopeNotice />
 
       <input
@@ -493,6 +546,8 @@ export default function FilesClient() {
                 `Restored "${file.name}".`,
               );
             }}
+            offlineKeys={offlineKeys}
+            onToggleOffline={toggleOffline}
             onDeleteFolder={async (folder) => {
               if (!activeOrgId) return;
               await act(
@@ -591,6 +646,8 @@ type BodyProps = {
   onDeleteFile: (file: DriveFile) => Promise<void>;
   onRestoreFile: (file: DriveFile) => Promise<void>;
   onDeleteFolder: (folder: DriveFolder) => Promise<void>;
+  offlineKeys: Set<string>;
+  onToggleOffline: (file: DriveFile) => Promise<void>;
 };
 
 function Body(props: BodyProps) {
@@ -675,6 +732,8 @@ function Body(props: BodyProps) {
         onRename={props.onRenameFile}
         onDelete={props.onDeleteFile}
         onRestore={props.onRestoreFile}
+        offlineKeys={props.offlineKeys}
+        onToggleOffline={props.onToggleOffline}
       />
     );
   }
@@ -807,6 +866,8 @@ function Body(props: BodyProps) {
               onRename={props.onRenameFile}
               onDelete={props.onDeleteFile}
               onRestore={props.onRestoreFile}
+              offlineKeys={props.offlineKeys}
+              onToggleOffline={props.onToggleOffline}
             />
           ) : null}
         </>
@@ -865,6 +926,8 @@ type FileGridProps = {
   onRename: (file: DriveFile, name: string) => Promise<void>;
   onDelete: (file: DriveFile) => Promise<void>;
   onRestore: (file: DriveFile) => Promise<void>;
+  offlineKeys: Set<string>;
+  onToggleOffline: (file: DriveFile) => Promise<void>;
 };
 
 function FileGrid(props: FileGridProps) {
@@ -918,6 +981,17 @@ function FileGrid(props: FileGridProps) {
                 <a className="link-button" href={contentHref}>
                   Download
                 </a>
+              ) : null}
+              {file.status === "ready" && orgId ? (
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => void props.onToggleOffline(file)}
+                >
+                  {props.offlineKeys.has(driveFileOfflineKey(orgId, file.id))
+                    ? "Remove from this device"
+                    : "Keep on this device"}
+                </button>
               ) : null}
               {rail === "trash" ? (
                 file.canManage ? (

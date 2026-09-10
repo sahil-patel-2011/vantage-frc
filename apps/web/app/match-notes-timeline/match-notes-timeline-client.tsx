@@ -22,6 +22,14 @@ import {
 import type { MatchNoteCategory, MatchNotePhase } from "../../lib/match-notes-timeline/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { OfflineBanner } from "../../components/offline-banner";
+import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+} from "../../lib/offline";
 import "./match-notes-timeline.css";
 
 type LiveView = Extract<MatchNotesTimelineView, { status: "live" }>;
@@ -161,6 +169,8 @@ export default function MatchNotesTimelineClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -171,17 +181,33 @@ export default function MatchNotesTimelineClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/match-notes-timeline${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const cached = urlOrg ? await getFeatureSnapshot<MatchNotesTimelineView>("match-notes", urlOrg) : null;
+      if (cached?.data) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+      }
+      try {
+        const response = await fetch(
+          `/api/match-notes-timeline${query.toString() ? `?${query.toString()}` : ""}`,
+        );
         const data = (await response.json()) as MatchNotesTimelineView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+          if (!cached) setFetchFailed(true);
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        const cacheOrg = data.status === "live" || data.status === "setup_required" ? data.orgId : urlOrg;
+        if (cacheOrg) await putFeatureSnapshot("match-notes", cacheOrg, data);
+      } catch {
+        if (!cached) setFetchFailed(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -218,6 +244,15 @@ export default function MatchNotesTimelineClient() {
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
+      if (isBrowserOffline()) {
+        await queueProductWrite({
+          feature: "match_note",
+          orgId,
+          payload: { orgId, seasonYear: season ?? undefined, ...payload },
+        });
+        setError(QUEUED_ON_DEVICE);
+        return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -233,6 +268,7 @@ export default function MatchNotesTimelineClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        await putFeatureSnapshot("match-notes", orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -311,6 +347,7 @@ export default function MatchNotesTimelineClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Match notes" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

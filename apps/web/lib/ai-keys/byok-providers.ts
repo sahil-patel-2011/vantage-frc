@@ -22,7 +22,7 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     shortLabel: "OpenAI",
     placeholder: "sk-…",
     docsHint: "Platform API key from platform.openai.com",
-    storageLabel: "OpenAI (BYOK)",
+    storageLabel: "OpenAI (your key)",
   },
   anthropic: {
     id: "anthropic",
@@ -30,7 +30,7 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     shortLabel: "Anthropic",
     placeholder: "sk-ant-…",
     docsHint: "API key from console.anthropic.com",
-    storageLabel: "Anthropic (BYOK)",
+    storageLabel: "Anthropic (your key)",
   },
   google: {
     id: "google",
@@ -38,7 +38,7 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     shortLabel: "Google",
     placeholder: "AIza…",
     docsHint: "Gemini API key from AI Studio / Google AI",
-    storageLabel: "Google Gemini (BYOK)",
+    storageLabel: "Google Gemini (your key)",
   },
   openrouter: {
     id: "openrouter",
@@ -46,7 +46,7 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     shortLabel: "OpenRouter",
     placeholder: "sk-or-v1-…",
     docsHint: "API key from openrouter.ai — routes to free or paid models you choose",
-    storageLabel: "OpenRouter (BYOK)",
+    storageLabel: "OpenRouter (your key)",
   },
 };
 

@@ -66,7 +66,10 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Team admin / GitHub related | Connections pointed at a dead Account tab; now `/connectors` | this branch |
 | `/dashboard` | New widgets had no icons; Ask AI had no input; next match hid the stored win-chance band | this branch |
 | `/team/relays` | Connector card only — no list of paired Pis, roles, or queue | this branch |
-| `/todos` `/files` `/strategy` | Offline showed Retry / engineering copy instead of last snapshot | this branch |
+| `/account` Connections tab | Duplicate of `/connectors`; now redirects | this branch |
+| `/hours` `/messages` `/match-checklist` `/match-notes-timeline` | Offline writes said they would wait, then dropped the change | this branch |
+| `/files` | No way to keep a file on the device | this branch |
+| `/team/ai-keys` `/team/ai-usage` `/pricing` | "BYOK" on student screens | this branch |
 
 ---
 
@@ -76,15 +79,15 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; 8,262 tests |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
-| 3 | Full UI pass | in progress | Strategy jargon, Files privacy copy, Settings AI keys, Connectors as the one connections destination. FEATURE_MAP walk unfinished. |
+| 3 | Full UI pass | in progress | Account Connections tab now redirects to `/connectors`. BYOK stripped from student tsx. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Ask AI extracted to `widgets/ask-ai.tsx`. Next match shows predicted alliance scores + briefing when EPA exists. 2200-line client not fully split. |
-| 5 | Offline shell | in progress | Outbox adapters now hit real POST routes. Files / Todos / Strategy restore last snapshot. Product outbox drains from the shell. |
+| 5 | Offline shell | in progress | Calendar RSVP, hours clock, chat send, match notes, pit checklist queue while offline. Hours/checklist/notes/chat restore last snapshot. Files can be kept on-device (200 MB cap). Assembly PDFs keep themselves. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
 | 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
 | 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
 | 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence (does not merge into scouting). Worker skips without a vision model. No live Pi. |
-| 10 | Connectors | audit (already on main) | related strips now deep-link `/connectors` instead of a dead Account tab |
-| 11 | Copy sweep | audit | Private Edge / pEPA / BYOK / setup-required stripped from student surfaces this pass. copy-lint remains the guard. |
+| 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
+| 11 | Copy sweep | audit | BYOK banned in `copy-lint.test.ts`. Student tsx rewritten to "your keys". Help article title no longer says BYOK. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
 | 13 | CAD / assembly manual | pending | link-first already on vault; assembly-manual on a real Onshape document still unverified |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |

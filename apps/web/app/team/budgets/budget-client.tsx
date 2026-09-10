@@ -460,7 +460,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   checked={policy.enforceByoTokenLimits}
                   onChange={(e) => setPolicy({ ...policy, enforceByoTokenLimits: e.target.checked })}
                 />
-                Apply token limits to BYOK/local
+                Apply token limits to your keys / local
               </label>
               <label className="check-field">
                 <input

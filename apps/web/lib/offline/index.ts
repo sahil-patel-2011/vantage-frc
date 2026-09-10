@@ -27,3 +27,17 @@ export {
   type OutboxItem,
 } from "./outbox";
 export { offlineBannerLabel, useOfflineSnapshot } from "./use-offline-snapshot";
+export { QUEUED_ON_DEVICE, isBrowserOffline, queueProductWrite } from "./queue-write";
+export {
+  FILE_BYTES_CAP,
+  FILE_BYTES_CAP_LABEL,
+  assemblyPdfOfflineKey,
+  driveFileOfflineKey,
+  dropOfflineFile,
+  formatOfflineUsage,
+  getOfflineFile,
+  keepOfflineFile,
+  listOfflineFiles,
+  offlineFileUsageBytes,
+  type OfflineFileMeta,
+} from "./file-bytes";

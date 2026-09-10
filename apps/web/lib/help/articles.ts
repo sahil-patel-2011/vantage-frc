@@ -1225,7 +1225,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "byok-automode",
     slug: "byok-automode",
-    title: "BYOK, AI keys, and Automode",
+    title: "Your AI keys and Automode",
     summary:
       "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use an OpenAI-compatible base URL.",
     category: "ai-models",
@@ -1672,6 +1672,32 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Owners and admins pick the funding model during onboarding or later under Team background.",
           "Budgets, part requests, orders, grants, awards, and outreach stay for every team.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "offline-at-events",
+    slug: "offline-at-events",
+    category: "competition",
+    title: "Using the shop without signal",
+    summary:
+      "Competition, Hours, Chat, Files, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, RSVPs, clock-ins, checklist taps, notes, and chat queue and send when you are back online.",
+    keywords: ["offline", "venue wifi", "outbox", "keep on this device", "hours", "chat"],
+    relatedHref: "/competition",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "A quiet bar says offline and shows the time of the last snapshot. The same screens stay up — there is no dead Retry wall.",
+          "Writes you make (task ticks, calendar RSVP, clock in/out, match notes, pit checks, chat) sit on this device until the network returns.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Open the pages you will need before you lose signal so they cache. On Files, tap Keep on this device for anything you must open in the stands.",
+          "Assembly manuals download their PDF onto this device once a run finishes.",
         ],
       },
     ],

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { assemblyPdfOfflineKey, keepOfflineFile } from "../../lib/offline/file-bytes";
 
 /**
  * The assembly manual surface.
@@ -128,6 +129,22 @@ export default function AssemblyManualClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const orgId = new URLSearchParams(window.location.search).get("orgId");
+    if (!orgId || !overview) return;
+    for (const run of overview.runs) {
+      if (run.status !== "completed" || !run.pdfByteSize) continue;
+      void keepOfflineFile({
+        key: assemblyPdfOfflineKey(orgId, run.id),
+        orgId,
+        name: `${run.assemblyName || "assembly-manual"}.pdf`,
+        url: `/api/assembly-manual/${run.id}/pdf`,
+        contentType: "application/pdf",
+        expectedBytes: run.pdfByteSize,
+      });
+    }
+  }, [overview]);
 
   const hasActive = useMemo(
     () => (overview?.runs ?? []).some((run) => ACTIVE.includes(run.status)),

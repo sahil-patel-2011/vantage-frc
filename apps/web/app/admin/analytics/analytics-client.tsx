@@ -26,7 +26,7 @@ const SOURCE_LABELS: Record<string, string> = {
 
 const GROUP_LABELS: Record<string, string> = {
   hosted: "Hosted",
-  byok: "BYOK",
+  byok: "Your keys",
   local: "Local",
   subscription: "Subscription bridge",
   other: "Other",

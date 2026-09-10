@@ -74,7 +74,7 @@ const graph = {
           name: "Access",
           price: String(c.access.monthlyUsd),
           priceCurrency: "USD",
-          description: "Light plan unlocking managed AI routing; hosted AI cheaper than typical BYOK.",
+          description: "Light plan unlocking managed AI routing; hosted AI cheaper than typical own-key billing.",
         },
         {
           "@type": "Offer",
