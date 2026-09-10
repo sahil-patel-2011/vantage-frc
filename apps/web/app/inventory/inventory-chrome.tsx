@@ -143,7 +143,7 @@ export function InventoryShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={failure ? failure.title : copy.title}
+        title={failure && failure.kind !== "unknown" ? failure.title : copy.title}
         description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >

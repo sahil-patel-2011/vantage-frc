@@ -7,6 +7,7 @@ import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import { formatEventDayMatchCount } from "../../lib/command/event-day-related";
 import type { CommandSnapshot } from "../../lib/command/types";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import {
@@ -42,13 +43,19 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
-    void fetch("/api/me")
+    const fromUrl = readOrgIdFromSearch(window.location.search) ?? "";
+    if (fromUrl) setOrgId(fromUrl);
+    void fetchActiveOrgId()
+      .then((fromMe) => {
+        setOrgId((current) => current || fromMe || fromUrl || "");
+      })
+      .catch(() => {
+        setOrgId((current) => current || fromUrl);
+      });
+    void fetch("/api/me", { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) })
       .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
       .then((data) => {
-        if (!data) return;
-        setMe(data);
-        setOrgId(fromUrl || data.orgId || "");
+        if (data) setMe(data);
       })
       .catch(() => undefined);
   }, []);
@@ -62,7 +69,10 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       return;
     }
     try {
-      const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`);
+      const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       if (!response.ok) {
         const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id);
         if (cached) {

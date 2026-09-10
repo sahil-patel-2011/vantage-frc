@@ -123,7 +123,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/command` | Hub shell was 1082 lines; chrome, event picker, and the painted workbench now live in sibling modules. Shell is 326 lines. `/command` lands on Competition › Event day. Empty keeps one **Check schedule sync** primary. Hub TabBar stays Event day · Scouting · Strategy · Pit. | this commit |
 | `/signin` | Public shell was 1066 lines; chrome, identity, code, and already-signed-in panels now live in sibling modules. Shell is **653** lines. No nested TabBar. One **Email me a sign-in code** primary; waitlist + pricing stay in the footer. Setup copy no longer says "workspace database". | this commit |
 | `/print-farm` | Hub shell was 1057 lines; chrome, queue, printers, filament, and recently finished now live in sibling modules. Shell is **121** lines. No nested TabBar. Setup keeps one **Choose your team** primary. Status stays human-reported — never live telemetry. | this commit |
-| `/batteries` | Hub shell was 1056 lines; chrome, fleet, forms, and assign row now live in sibling modules. Shell is **250** lines. `/batteries` lands on Build › Robot › Batteries. Unmeasured packs stay **Unknown**, never Good. Hub TabBar stays Kickoff · CAD · Code · Robot. | this commit |
+| `/print-farm` `/inventory` `/logistics` `/command` | GHA Playwright hung on loading while Postgres refused connections; Event Day called a missing team "No event linked" | this commit |
 
 ---
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
+  eventDayEmptyTitle,
   eventDayRelatedLinks,
   eventDaySetupSteps,
   eventDayShellCopy,
@@ -92,6 +93,20 @@ describe("classifyEventDayShell", () => {
         matchCount: 3,
       }),
     ).toBe("ready");
+  });
+});
+
+describe("eventDayEmptyTitle", () => {
+  it("asks for a team when none is selected, instead of blaming the event", () => {
+    expect(eventDayEmptyTitle({ shell: "setup", orgId: null })).toBe("Choose a team");
+    expect(eventDayEmptyTitle({ shell: "empty", orgId: null })).toBe("Choose a team");
+    expect(eventDayEmptyTitle({ shell: "setup", orgId: "org-1", hasActiveEvent: false })).toBe(
+      "No event linked",
+    );
+    expect(eventDayEmptyTitle({ shell: "empty", orgId: "org-1", hasActiveEvent: true })).toBe(
+      "No upcoming matches",
+    );
+    expect(eventDayEmptyTitle({ shell: "error", orgId: "org-1" })).toBe("Could not load Command");
   });
 });
 

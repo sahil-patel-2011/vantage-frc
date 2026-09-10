@@ -175,6 +175,21 @@ export function classifyEventDayShell(input: {
   return "ready";
 }
 
+/** Empty-card title. A missing team is not "No event linked". */
+export function eventDayEmptyTitle(input: {
+  shell: EventDayShellKind;
+  orgId?: string | null;
+  hasActiveEvent?: boolean;
+}): string {
+  if (!input.orgId && (input.shell === "setup" || input.shell === "empty")) {
+    return "Choose a team";
+  }
+  if (input.shell === "setup" && !input.hasActiveEvent) {
+    return "No event linked";
+  }
+  return eventDayShellCopy(input.shell).title;
+}
+
 /** Soft-UI empty / setup / error copy. */
 export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
   switch (kind) {

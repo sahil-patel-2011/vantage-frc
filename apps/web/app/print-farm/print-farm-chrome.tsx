@@ -47,7 +47,13 @@ function farmShellBody({
         </div>
       );
     case "error":
-      return <ErrorState message={error ?? "Could not load the Print Farm."} onRetry={onRetry} />;
+      return (
+        <ErrorState
+          title="Could not load the Print Farm"
+          message={error ?? "Could not load the Print Farm."}
+          onRetry={onRetry}
+        />
+      );
     case "setup":
       return (
         <EmptyState

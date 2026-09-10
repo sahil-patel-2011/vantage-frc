@@ -7,6 +7,7 @@
 // runway, failure rate) is null with a named reason below its sample threshold.
 
 import { useCallback, useEffect, useState } from "react";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import type { PrintFarmView } from "../../lib/print-farm/compute-print-farm";
 import {
   FarmShell,
@@ -38,7 +39,10 @@ export default function PrintFarmClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/print-farm${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/print-farm${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as PrintFarmView | { error?: string };
         if (!response.ok || !("status" in data)) {

@@ -21,6 +21,7 @@ import {
 import { LogisticsNextActionsPanel, LogisticsShell } from "./logistics-chrome";
 import { LogisticsDayPanel } from "./logistics-day";
 import { LogisticsManagePanel } from "./logistics-manage";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { canActOnline, type ActionBody } from "./logistics-model";
 import { LogisticsTripsPanel } from "./logistics-trips";
 
@@ -47,7 +48,10 @@ export default function LogisticsClient() {
       setCachedAt(cached.cachedAt);
     }
     try {
-      const response = await fetch(`/api/logistics${qs}`);
+      const response = await fetch(`/api/logistics${qs}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as LogisticsView & { error?: string };
       if (!response.ok) throw new Error(data.error ?? "Could not load logistics");
       setView(data);

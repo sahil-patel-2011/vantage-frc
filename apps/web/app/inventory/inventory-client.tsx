@@ -25,6 +25,7 @@ import { AddItemForm } from "./inventory-items";
 import InventoryLabelTools from "./inventory-label-tools";
 import { LocationsPanel } from "./inventory-locations";
 import { BomPanel } from "./inventory-bom";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
   INVENTORY_ADD_HREF,
   filterVisibleInventoryItems,
@@ -57,7 +58,10 @@ export default function InventoryClient() {
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/inventory${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/inventory${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as InventoryView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load inventory.");

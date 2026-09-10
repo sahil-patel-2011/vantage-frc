@@ -6,6 +6,7 @@ import { CopyShareLink } from "../../components/copy-share-link";
 import {
   EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
+  eventDayEmptyTitle,
   eventDayRelatedLinks,
   eventDaySetupSteps,
   eventDayShellCopy,
@@ -166,7 +167,7 @@ export function EventDayShell({
         className="edc-empty"
         badge={shell === "setup" ? "Setup required" : copy.badge}
         badgeTone="setup"
-        title={shell === "setup" && !hasActiveEvent ? "No event linked" : copy.title}
+        title={eventDayEmptyTitle({ shell, orgId, hasActiveEvent })}
         description={
           error ?? (shell === "setup" ? "Connect TBA and set the active event." : copy.description)
         }

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { expandLegacyRedirects } from "./legacy-redirects";
-import { readOrgIdFromSearch, withPersistedOrgSearch } from "./resolve-org";
+import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch, withPersistedOrgSearch } from "./resolve-org";
+
+describe("FEATURE_API_TIMEOUT_MS", () => {
+  it("stays under the Playwright hub-ready wait so a dead database cannot hang the shell", () => {
+    expect(FEATURE_API_TIMEOUT_MS).toBeGreaterThan(0);
+    expect(FEATURE_API_TIMEOUT_MS).toBeLessThanOrEqual(8_000);
+  });
+});
 
 describe("readOrgIdFromSearch", () => {
   it("reads orgId from a query string", () => {

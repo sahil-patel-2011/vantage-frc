@@ -25,7 +25,13 @@ export default function CompetitionHub() {
   return (
     <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
-        if (tab === "command") return <CommandClient embedded />;
+        if (tab === "command") {
+          return (
+            <HubOrgGate orgId={orgId} label="Event Day">
+              {() => <CommandClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "my-day") return <MyDayClient embedded />;
         if (tab === "strategy") return <StrategyClient embedded />;
         if (tab === "pick-clock") return <PickClockClient embedded />;

@@ -22,7 +22,7 @@ import {
 import { PageHeader, Panel, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   FILE_BYTES_CAP_LABEL,
@@ -94,7 +94,10 @@ export default function FilesClient() {
       setCachedAt(at);
     };
     try {
-      const response = await fetch(`/api/drive?${params.toString()}`, { cache: "no-store" });
+      const response = await fetch(`/api/drive?${params.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (orgId) {
