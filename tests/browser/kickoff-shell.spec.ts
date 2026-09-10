@@ -13,11 +13,11 @@ test("Kickoff hub still loads after the panel split", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const intel = page.getByRole("heading", { name: "Game release intelligence" });
-  const settledEmpty = page.locator(".kick-page .soft-empty:not([aria-busy='true'])");
+  const setup = page.getByRole("heading", { name: "Select a team" });
   const opening = page.getByRole("heading", { name: "Opening your team" });
 
   await expect(opening).toHaveCount(0, { timeout: 20_000 });
-  if (!(await expectHubReadyOrGate(page, intel, settledEmpty))) {
+  if (!(await expectHubReadyOrGate(page, intel, setup))) {
     if (process.env.KICKOFF_SHOT === "1") {
       await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-after-split.png", fullPage: true });
     }
