@@ -22,9 +22,11 @@ function percent(value: number, total: number): number {
 export function FundraisingGlance({
   view,
   onOpenSponsors,
+  sponsorsAllowed = true,
 }: {
   view: BusinessView;
   onOpenSponsors: () => void;
+  sponsorsAllowed?: boolean;
 }) {
   const progress = view.fundraisingProgress;
   const hasGoal = progress.goalCents > 0;
@@ -48,11 +50,19 @@ export function FundraisingGlance({
         className="biz-fundraising-glance"
         badge="Get started"
         title="No season fundraising goal yet"
-        description="Set a budget goal, then add sponsors, grants, or fundraiser events."
+        description={
+          sponsorsAllowed
+            ? "Set a budget goal, then add sponsors, grants, or fundraiser events."
+            : "Set a budget goal, then add grants or fundraiser events."
+        }
       >
         <BusinessRelated
           orgId={view.orgId}
-          include={["budget", "sponsors", "grants", "fundraisers", "orders"]}
+          include={
+            sponsorsAllowed
+              ? ["budget", "sponsors", "grants", "fundraisers", "orders"]
+              : ["budget", "grants", "fundraisers", "orders"]
+          }
           ariaLabel="Fundraising glance setup links"
         />
       </EmptyState>
@@ -95,54 +105,60 @@ export function FundraisingGlance({
         </div>
       ) : (
         <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-          Progress bar appears after you set a fundraising goal on Budget. Actual in only counts recorded sponsor cash
-          and grant awards.
+          Progress bar appears after you set a fundraising goal on Budget. Actual in only counts recorded
+          {sponsorsAllowed ? " sponsor cash and grant awards." : " grant awards and fundraiser cash."}
         </p>
       )}
       <footer className="biz-fundraising-split">
-        <span>{money(progress.actualCashCents)} sponsors</span>
+        {sponsorsAllowed ? <span>{money(progress.actualCashCents)} sponsors</span> : null}
         <span>{money(progress.grantIncomeCents)} grants</span>
-        <span>{money(progress.pledgedPipelineCents)} pledged</span>
+        {sponsorsAllowed ? <span>{money(progress.pledgedPipelineCents)} pledged</span> : null}
       </footer>
 
       <BusinessRelated
         orgId={view.orgId}
-        include={["fundraisers", "sponsors", "grants", "orders"]}
+        include={
+          sponsorsAllowed
+            ? ["fundraisers", "sponsors", "grants", "orders"]
+            : ["fundraisers", "grants", "orders"]
+        }
         ariaLabel="Fundraising glance related links"
       />
 
-      <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
-        <header>
-          <span className="biz-overline">Stage pipeline</span>
-          <Button variant="secondary" type="button" onClick={onOpenSponsors}>
-            Open CRM
-          </Button>
-        </header>
-        {partnerCount === 0 ? (
-          <EmptyState
-            soft
-            title="Sponsor pipeline is empty"
-            description="Partners you add appear by stage. Amounts stay blank until you record ask, pledge, or cash."
-          />
-        ) : (
-          <ol className="biz-stage-strip">
-            {progress.stages.map((stage) => {
-              const bar = Math.max(
-                stage.count > 0 ? 12 : 4,
-                percent(stage.valueCents || stage.count, maxStageValue),
-              );
-              return (
-                <li key={stage.stage} className={stage.count ? "has-partners" : ""}>
-                  <span className="biz-stage-label">{PIPELINE_STAGE_LABELS[stage.stage]}</span>
-                  <span className="biz-stage-count">{stage.count}</span>
-                  <i className="biz-stage-bar" style={{ height: `${bar}%` }} />
-                  <strong>{stage.valueCents > 0 ? money(stage.valueCents) : "—"}</strong>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </div>
+      {sponsorsAllowed ? (
+        <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
+          <header>
+            <span className="biz-overline">Stage pipeline</span>
+            <Button variant="secondary" type="button" onClick={onOpenSponsors}>
+              Open CRM
+            </Button>
+          </header>
+          {partnerCount === 0 ? (
+            <EmptyState
+              soft
+              title="Sponsor pipeline is empty"
+              description="Partners you add appear by stage. Amounts stay blank until you record ask, pledge, or cash."
+            />
+          ) : (
+            <ol className="biz-stage-strip">
+              {progress.stages.map((stage) => {
+                const bar = Math.max(
+                  stage.count > 0 ? 12 : 4,
+                  percent(stage.valueCents || stage.count, maxStageValue),
+                );
+                return (
+                  <li key={stage.stage} className={stage.count ? "has-partners" : ""}>
+                    <span className="biz-stage-label">{PIPELINE_STAGE_LABELS[stage.stage]}</span>
+                    <span className="biz-stage-count">{stage.count}</span>
+                    <i className="biz-stage-bar" style={{ height: `${bar}%` }} />
+                    <strong>{stage.valueCents > 0 ? money(stage.valueCents) : "—"}</strong>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

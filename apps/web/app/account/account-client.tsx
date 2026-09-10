@@ -1,386 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import {
-  ACCOUNT_RELATED_INCLUDE,
-  accountNextActions,
-  accountRelatedLinks,
-  formatAccountOrgLabel,
-  formatAccountRole,
-} from "../../lib/account";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import {
-  readPushClientState,
-  subscribeToPush,
-  unsubscribeFromPush,
-  type PushClientState,
-} from "../../lib/push/client";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { AccountNotificationsPanel } from "./account-notifications-panel";
+import { AccountProfilePanel } from "./account-profile-panel";
+import { AccountRelated, NextActions, OrgContextCard } from "./account-shell";
+import {
+  DEFAULT_EMAIL_PREFS,
+  DEFAULT_NOTIFICATION_PREFS,
+  type AccountView,
+  type EmailPrefs,
+  type NotificationPrefs,
+  type OrgContext,
+  type Tab,
+} from "./account-types";
 import AppearancePanel from "./appearance-panel";
 import "../product-hub.css";
 import "./account.css";
-
-type NotificationPrefs = {
-  matchAlerts: boolean;
-  scoutReminders: boolean;
-  syncFailures: boolean;
-  productUpdates: boolean;
-  todoAssigned: boolean;
-  todoCompleted: boolean;
-  dutyAssigned: boolean;
-  calendarEvents: boolean;
-  sponsorReminders: boolean;
-  teamChat: boolean;
-};
-
-// Mirrors UserEmailPreferences in @vantage/core. Both this tab and
-// /notifications/preferences write through `/api/account`, which merges the
-// patch, so a key missing here is not lost — it is simply invisible, and the
-// two pages then disagree about how many switches the reader has.
-type EmailPrefs = {
-  productUpdates: boolean;
-  coachAssignments: boolean;
-  coachTodos: boolean;
-  coachPracticeReminders: boolean;
-  sponsorReminders: boolean;
-  performanceDigest: boolean;
-  announcements: boolean;
-  duesReminders: boolean;
-  memberOnboarding: boolean;
-};
-
-type Integration = { status: "available" | "setup_required"; detail: string };
-
-type ConnectorIntegration = {
-  status: "connected" | "available" | "empty" | "setup_required";
-  detail: string;
-};
-
-type AccountView = {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  displayName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  dateOfBirth?: string | null;
-  recoveryEmail?: string | null;
-  phoneE164?: string | null;
-  phoneVerified?: boolean;
-  phoneOtp?: { configured: boolean; message: string };
-  themePreference?: "light" | "dark";
-  notificationPrefs?: NotificationPrefs;
-  emailPrefs?: EmailPrefs;
-  emailDelivery?: Integration;
-  unreadNotificationCount?: number;
-  integrations?: {
-    google: Integration;
-    tba: Integration;
-    onshape?: ConnectorIntegration;
-    discord?: ConnectorIntegration;
-    github?: ConnectorIntegration;
-    slack?: ConnectorIntegration;
-  };
-};
-
-type OrgContext = {
-  orgId: string | null;
-  orgName: string | null;
-  teamNumber: number | null;
-  role: string | null;
-  planCode: string | null;
-  workspaceCount: number;
-};
-
-type Tab = "profile" | "appearance" | "notifications";
-
-const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string }[] = [
-  {
-    key: "todoAssigned",
-    title: "Todo assignments",
-    detail: "Inbox when a coach or teammate assigns you a todo.",
-  },
-  {
-    key: "todoCompleted",
-    title: "Todo completions",
-    detail: "Inbox when someone finishes a todo you created or own.",
-  },
-  {
-    key: "dutyAssigned",
-    title: "Duty assignments",
-    detail: "Inbox when you are put on a scouting, pit, drive, or outreach duty.",
-  },
-  {
-    key: "calendarEvents",
-    title: "Calendar events",
-    detail: "Inbox when your subteam (or whole team) gets a new or updated event.",
-  },
-  { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
-  { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your team." },
-  { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
-  { key: "productUpdates", title: "In-app product notes", detail: "Release notes and product updates in the inbox (on by default)." },
-  {
-    key: "sponsorReminders",
-    title: "Sponsor CRM reminders",
-    detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
-  },
-  {
-    key: "teamChat",
-    title: "Team chat",
-    detail: "Inbox when someone posts in Team chat (including Slack-bridged messages) or mentions you.",
-  },
-];
-
-const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
-  {
-    key: "productUpdates",
-    title: "Product updates / changelog",
-    detail: "Release-note emails when a staged release targets your plan. On by default — opt out anytime.",
-  },
-  {
-    key: "coachAssignments",
-    title: "Coach / mentor assignments",
-    detail: "Email when a coach or mentor assigns you work.",
-  },
-  {
-    key: "coachTodos",
-    title: "Coach / mentor todos",
-    detail: "Email when a todo is assigned to you.",
-  },
-  {
-    key: "coachPracticeReminders",
-    title: "Practice reminders",
-    detail: "Email reminders for scheduled driver / team practice.",
-  },
-  {
-    key: "sponsorReminders",
-    title: "Sponsor reminders",
-    detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
-  },
-  {
-    key: "performanceDigest",
-    title: "Daily performance digest",
-    detail:
-      "One email on days your team has real data — match results and tomorrow's schedule. On by default; sends nothing on quiet days.",
-  },
-  {
-    key: "announcements",
-    title: "Urgent team announcements",
-    detail:
-      "Email only for announcements marked urgent or needing acknowledgement. Every announcement still reaches your inbox. On by default.",
-  },
-  {
-    key: "duesReminders",
-    title: "Dues reminders",
-    detail:
-      "Email when your treasurer sends a reminder and your own answer says dues are outstanding. Never sent if you asked for financial assistance. On by default.",
-  },
-  {
-    key: "memberOnboarding",
-    title: "New member onboarding",
-    detail:
-      "A short sequence after you join a team, sent only when you have something outstanding. On by default.",
-  },
-];
-
-/**
- * Web-push registration for THIS browser. Rendered by state, never as a single
- * hopeful button: unsupported / iOS-not-installed / denied / server-unconfigured
- * each show their honest reason as text instead of a dead control.
- */
-function PushDevicePanel({ orgId }: { orgId: string | null }) {
-  const [push, setPush] = useState<PushClientState | null>(null);
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushError, setPushError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    void readPushClientState().then((state) => {
-      if (!cancelled) setPush(state);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function refresh() {
-    setPush(await readPushClientState());
-  }
-
-  async function enable() {
-    setPushBusy(true);
-    setPushError("");
-    try {
-      const result = await subscribeToPush(orgId ?? undefined);
-      if (!result.ok) setPushError(result.reason);
-    } finally {
-      await refresh();
-      setPushBusy(false);
-    }
-  }
-
-  async function disable() {
-    setPushBusy(true);
-    setPushError("");
-    try {
-      await unsubscribeFromPush();
-    } finally {
-      await refresh();
-      setPushBusy(false);
-    }
-  }
-
-  return (
-    <>
-      <h2 className="account-prefs-heading">This device</h2>
-      <p className="app-muted">
-        Push notifications reach this browser even when the tab is closed. Each device is registered
-        separately.
-      </p>
-      {push === null ? <p className="app-muted">Checking this browser…</p> : null}
-      {push && (push.state === "unsupported" || push.state === "ios_needs_home_screen" || push.state === "denied" || push.state === "setup_required") ? (
-        <p className="app-muted">{push.reason}</p>
-      ) : null}
-      {push?.state === "available" ? (
-        <div className="account-actions">
-          <Button variant="primary" type="button" disabled={pushBusy} onClick={() => void enable()}>
-            Turn on push for this device
-          </Button>
-        </div>
-      ) : null}
-      {push?.state === "subscribed" ? (
-        <div className="account-actions">
-          <p style={{ margin: 0 }}>Push is on for this device.</p>
-          <Button variant="secondary" type="button" disabled={pushBusy} onClick={() => void disable()}>
-            Turn off
-          </Button>
-        </div>
-      ) : null}
-      {pushError ? (
-        <p className="app-muted" role="alert">
-          {pushError}
-        </p>
-      ) : null}
-    </>
-  );
-}
-
-function AccountRelated({ orgId }: { orgId: string | null }) {
-  const links = accountRelatedLinks(orgId, { include: [...ACCOUNT_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related account-related" aria-label="Related account tools">
-      {links.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
-      ))}
-    </nav>
-  );
-}
-
-function NextActions({
-  orgId,
-  hasProfile,
-  emailDeliveryReady,
-  googleReady,
-  tbaReady,
-}: {
-  orgId: string | null;
-  hasProfile: boolean;
-  emailDeliveryReady: boolean;
-  googleReady: boolean;
-  tbaReady: boolean;
-}) {
-  const actions = accountNextActions({
-    orgId,
-    hasProfile,
-    emailDeliveryReady,
-    googleReady,
-    tbaReady,
-  });
-  return (
-    <section className="account-next-actions app-card soft-panel" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant="secondary" href={action.href}>
-              Open
-            </Button>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function OrgContextCard({ org }: { org: OrgContext }) {
-  const label = formatAccountOrgLabel(org);
-  const role = formatAccountRole(org.role);
-
-  if (!org.orgId) {
-    return (
-      <EmptyState
-        soft
-        badge="Setup required"
-        badgeTone="setup"
-        title="No team selected"
-        description={
-          org.workspaceCount > 0
-            ? "Your profile prefs still apply to this login. Pick an active team for billing, AI usage, and connectors."
-            : "You are signed in, but you are not on a team yet. Ask an owner to send you an invite."
-        }
-      >
-        <div className="account-empty-actions">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-          <Button as="a" variant="secondary" href="/support">
-            Help & Support
-          </Button>
-        </div>
-      </EmptyState>
-    );
-  }
-
-  return (
-    <Panel className="account-org-context" aria-label="This team">
-      <div className="account-org-context-top">
-        <div>
-          <h2>This team</h2>
-          <p>{label}</p>
-        </div>
-        <div className="account-org-meta">
-          {role ? <span className="app-badge">{role}</span> : null}
-          {org.planCode?.trim() ? (
-            <span className="app-badge good">{org.planCode.trim()}</span>
-          ) : (
-            <span className="app-badge setup">Plan unset</span>
-          )}
-        </div>
-      </div>
-      <p className="app-muted">
-        Display name and notification prefs are personal. AI keys, billing, and connectors follow this team.
-      </p>
-      {/* AI keys / Billing / AI usage are exactly the related strip above this
-          panel, same hrefs in the same order. What belongs here is the one link
-          that is actually about the *active* workspace. */}
-      <div className="settings-inline-links">
-        <a href="/workspace">Switch team</a>
-      </div>
-    </Panel>
-  );
-}
 
 export default function AccountClient() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -400,29 +40,8 @@ export default function AccountClient() {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [phoneE164, setPhoneE164] = useState("");
   const [otpCode, setOtpCode] = useState("");
-  const [prefs, setPrefs] = useState<NotificationPrefs>({
-    matchAlerts: true,
-    scoutReminders: true,
-    syncFailures: true,
-    productUpdates: true,
-    todoAssigned: true,
-    todoCompleted: true,
-    dutyAssigned: true,
-    calendarEvents: true,
-    sponsorReminders: true,
-    teamChat: true,
-  });
-  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>({
-    productUpdates: true,
-    coachAssignments: false,
-    coachTodos: false,
-    coachPracticeReminders: false,
-    sponsorReminders: false,
-    performanceDigest: true,
-    announcements: true,
-    duesReminders: true,
-    memberOnboarding: true,
-  });
+  const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
+  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -526,7 +145,7 @@ export default function AccountClient() {
     void load();
   }, []);
 
-  async function saveProfile(event: React.FormEvent) {
+  async function saveProfile(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
@@ -630,7 +249,6 @@ export default function AccountClient() {
     await signOutAndRedirect("/");
   }
 
-  const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "?").toUpperCase();
   const orgId = org.orgId;
   const hasProfile = Boolean(displayName.trim());
   const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
@@ -829,119 +447,29 @@ export default function AccountClient() {
           />
 
           {tab === "profile" ? (
-            <Panel className="account-panel">
-              <div className="account-identity">
-                {account.image ? (
-                   
-                  <img className="soft-avatar lg" src={account.image} alt="" />
-                ) : (
-                  <span className="soft-avatar lg">{initial}</span>
-                )}
-                <div>
-                  <strong>{displayName || "Signed-in user"}</strong>
-                  <span>{account.email ?? "—"}</span>
-                  <span className="account-identity-scope">
-                    {orgId
-                      ? `Personal account · team ${formatAccountOrgLabel(org) ?? "active"}`
-                      : "Personal account · no team selected"}
-                  </span>
-                </div>
-              </div>
-              <form className="account-form" onSubmit={(event) => void saveProfile(event)}>
-                <label>
-                  Display name
-                  <input
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    maxLength={80}
-                    autoComplete="nickname"
-                    required
-                  />
-                </label>
-                <label>
-                  First name
-                  <input
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    maxLength={60}
-                    autoComplete="given-name"
-                  />
-                </label>
-                <label>
-                  Last name
-                  <input
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    maxLength={60}
-                    autoComplete="family-name"
-                  />
-                </label>
-                <label>
-                  Date of birth
-                  <input
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(event) => setDateOfBirth(event.target.value)}
-                    autoComplete="bday"
-                  />
-                </label>
-                <label>
-                  Sign-in email
-                  <input value={account.email ?? ""} readOnly disabled />
-                </label>
-                <label>
-                  Recovery email
-                  <input
-                    type="email"
-                    value={recoveryEmail}
-                    onChange={(event) => setRecoveryEmail(event.target.value)}
-                    autoComplete="email"
-                    placeholder="A second inbox for account recovery"
-                  />
-                </label>
-                <label>
-                  Phone number for OTP
-                  <input
-                    type="tel"
-                    value={phoneE164}
-                    onChange={(event) => setPhoneE164(event.target.value)}
-                    autoComplete="tel"
-                    placeholder="+15551234567"
-                  />
-                </label>
-                <p className="app-muted">
-                  {account.phoneVerified
-                    ? "Phone is verified for OTP."
-                    : account.phoneOtp?.configured
-                      ? "Save the number, then send a code to verify it."
-                      : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}
-                </p>
-                <div className="account-actions">
-                  <Button variant="secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>
-                    Send phone code
-                  </Button>
-                  <input
-                    value={otpCode}
-                    onChange={(event) => setOtpCode(event.target.value)}
-                    maxLength={6}
-                    inputMode="numeric"
-                    placeholder="6-digit code"
-                    aria-label="Phone OTP code"
-                  />
-                  <Button variant="secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>
-                    Verify phone
-                  </Button>
-                </div>
-                <div className="account-actions">
-                  <button className="primary-action" type="submit" disabled={busy}>
-                    Save profile
-                  </button>
-                  <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>
-                    Sign out
-                  </button>
-                </div>
-              </form>
-            </Panel>
+            <AccountProfilePanel
+              account={account}
+              org={org}
+              displayName={displayName}
+              firstName={firstName}
+              lastName={lastName}
+              dateOfBirth={dateOfBirth}
+              recoveryEmail={recoveryEmail}
+              phoneE164={phoneE164}
+              otpCode={otpCode}
+              busy={busy}
+              onDisplayNameChange={setDisplayName}
+              onFirstNameChange={setFirstName}
+              onLastNameChange={setLastName}
+              onDateOfBirthChange={setDateOfBirth}
+              onRecoveryEmailChange={setRecoveryEmail}
+              onPhoneE164Change={setPhoneE164}
+              onOtpCodeChange={setOtpCode}
+              onSave={saveProfile}
+              onSendPhoneOtp={sendPhoneOtp}
+              onVerifyPhoneOtp={verifyPhoneOtp}
+              onSignOut={signOut}
+            />
           ) : null}
 
           {tab === "appearance" ? (
@@ -951,82 +479,16 @@ export default function AccountClient() {
           ) : null}
 
           {tab === "notifications" ? (
-            <Panel className="account-panel">
-              {account.emailDelivery?.status === "setup_required" ? (
-                <EmptyState
-                  soft
-                  badge="Setup required"
-                  badgeTone="setup"
-                  title="Email delivery not configured"
-                  description={account.emailDelivery.detail}
-                >
-                  <p className="app-muted">
-                    In-app prefs still save. Opt-in email stays quiet until Resend is configured on this deployment.
-                  </p>
-                </EmptyState>
-              ) : null}
-              <h2>In-app notifications</h2>
-              <p className="app-muted">
-                Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
-                It does not create live competition data.{" "}
-                <a href="/notifications">Open inbox</a>
-                {" · "}
-                <a href="/notifications/preferences">Full preference center</a>
-                {" · "}
-                <a href="/whats-new">What’s new</a>
-              </p>
-              <ul className="account-prefs">
-                {PREF_LABELS.map((item) => (
-                  <li key={item.key}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <small>{item.detail}</small>
-                    </div>
-                    <label className="account-switch">
-                      <span className="sr-only">{item.title}</span>
-                      <input
-                        type="checkbox"
-                        checked={prefs[item.key]}
-                        onChange={(event) => setPrefs((current) => ({ ...current, [item.key]: event.target.checked }))}
-                      />
-                    </label>
-                  </li>
-                ))}
-              </ul>
-
-              <PushDevicePanel orgId={orgId} />
-
-              <h2 className="account-prefs-heading">Email opt-ins</h2>
-              <p className="app-muted">
-                Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
-                <a href="/notifications/preferences">Open email preference center</a>
-                {" · "}
-                <a href="/support">Help & Support</a>
-              </p>
-              <ul className="account-prefs">
-                {EMAIL_PREF_LABELS.map((item) => (
-                  <li key={item.key}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <small>{item.detail}</small>
-                    </div>
-                    <label className="account-switch">
-                      <span className="sr-only">{item.title}</span>
-                      <input
-                        type="checkbox"
-                        checked={emailPrefs[item.key]}
-                        onChange={(event) =>
-                          setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
-                        }
-                      />
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              <button className="primary-action" type="button" disabled={busy} onClick={() => void savePrefs()}>
-                Save preferences
-              </button>
-            </Panel>
+            <AccountNotificationsPanel
+              account={account}
+              orgId={orgId}
+              prefs={prefs}
+              emailPrefs={emailPrefs}
+              busy={busy}
+              onPrefsChange={setPrefs}
+              onEmailPrefsChange={setEmailPrefs}
+              onSave={savePrefs}
+            />
           ) : null}
         </>
       ) : null}
