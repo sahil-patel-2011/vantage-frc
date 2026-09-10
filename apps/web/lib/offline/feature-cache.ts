@@ -54,7 +54,11 @@ export type OfflineFeature =
   | "match-sim"
   | "pit-map"
   | "pairwise"
-  | "team-tags";
+  | "team-tags"
+  | "shift-balancer"
+  | "counter-book"
+  | "overnight-intel"
+  | "alliance-brief";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

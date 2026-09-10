@@ -72,6 +72,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/pit-map-planner")).toBe(true);
     expect(pathnameIsOfflineShell("/pairwise")).toBe(true);
     expect(pathnameIsOfflineShell("/team-tags")).toBe(true);
+    expect(pathnameIsOfflineShell("/shift-balancer")).toBe(true);
+    expect(pathnameIsOfflineShell("/counter-book")).toBe(true);
+    expect(pathnameIsOfflineShell("/overnight-intel")).toBe(true);
+    expect(pathnameIsOfflineShell("/alliance-partner-brief")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -121,6 +125,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
     expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");
     expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
+    expect(offlineCapableLabel("/shift-balancer")).toBe("Scout shift balancer");
+    expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
+    expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight Intel");
+    expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Alliance-Partner Brief");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -171,6 +179,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("pit-map", "org-1", "2026")).toBe("pit-map:org-1:2026");
     expect(featureCacheKey("pairwise", "org-1")).toBe("pairwise:org-1");
     expect(featureCacheKey("team-tags", "org-1")).toBe("team-tags:org-1");
+    expect(featureCacheKey("shift-balancer", "org-1")).toBe("shift-balancer:org-1");
+    expect(featureCacheKey("counter-book", "org-1")).toBe("counter-book:org-1");
+    expect(featureCacheKey("overnight-intel", "org-1")).toBe("overnight-intel:org-1");
+    expect(featureCacheKey("alliance-brief", "org-1", "1")).toBe("alliance-brief:org-1:1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

@@ -59,6 +59,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/pit-map-planner",
   "/pairwise",
   "/team-tags",
+  "/shift-balancer",
+  "/counter-book",
+  "/overnight-intel",
+  "/alliance-partner-brief",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -113,6 +117,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/pit-map-planner")) return "Pit Map Planner";
   if (bare.startsWith("/pairwise")) return "Pairwise ranking";
   if (bare.startsWith("/team-tags")) return "Drive-team tags";
+  if (bare.startsWith("/shift-balancer")) return "Scout shift balancer";
+  if (bare.startsWith("/counter-book")) return "Counter-book";
+  if (bare.startsWith("/overnight-intel")) return "Overnight Intel";
+  if (bare.startsWith("/alliance-partner-brief")) return "Alliance-Partner Brief";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

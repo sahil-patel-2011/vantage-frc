@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { AlliancePartnerBriefView } from "../../lib/alliance-partner-brief/compute-alliance-partner-brief";
 import {
@@ -16,8 +17,38 @@ import {
 } from "../../lib/alliance-partner-brief/alliance-partner-brief-related";
 import type { AllianceOption, PartnerAnalysis } from "../../lib/alliance-partner-brief/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./alliance-partner-brief.css";
+
+function isAlliancePartnerBriefView(value: unknown): value is AlliancePartnerBriefView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistAllianceBriefSnapshot(
+  orgHint: string,
+  seedHint: string,
+  data: AlliancePartnerBriefView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const seedKey =
+    data.status === "live" && data.brief ? String(data.brief.allianceSeed) : seedHint;
+  try {
+    await putFeatureSnapshot("alliance-brief", cacheOrg, data, seedKey);
+    await putFeatureSnapshot("alliance-brief", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("alliance-brief", "_", data, seedKey);
+      await putFeatureSnapshot("alliance-brief", "_", data);
+    }
+  } catch {
+    // Live brief already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<AlliancePartnerBriefView, { status: "live" }>;
 
@@ -152,25 +183,70 @@ export default function AlliancePartnerBriefClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AlliancePartnerBriefView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seedOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seedOverride) query.set("allianceSeed", String(seedOverride));
-    void fetch(`/api/alliance-partner-brief${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seedHint = seedOverride ? String(seedOverride) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<AlliancePartnerBriefView>(
+          "alliance-brief",
+          urlOrg || "_",
+          seedHint,
+        );
+        if (!viewRef.current && cached?.data && isAlliancePartnerBriefView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seedHint) query.set("allianceSeed", seedHint);
+      try {
+        const response = await fetch(
+          `/api/alliance-partner-brief${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as AlliancePartnerBriefView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isAlliancePartnerBriefView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Alliance-Partner Brief. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistAllianceBriefSnapshot(urlOrg, seedHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Alliance-Partner Brief. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -216,13 +292,15 @@ export default function AlliancePartnerBriefClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, action: "generate-brief", eventKey, allianceSeed: seed }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as AlliancePartnerBriefView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isAlliancePartnerBriefView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistAllianceBriefSnapshot(orgId, String(seed), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -233,7 +311,11 @@ export default function AlliancePartnerBriefClient() {
   );
 
   if (shell === "loading") {
-    return <BriefShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <BriefShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </BriefShell>
+    );
   }
 
   if (shell === "error") {
@@ -244,7 +326,9 @@ export default function AlliancePartnerBriefClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </BriefShell>
     );
   }
 
@@ -254,12 +338,18 @@ export default function AlliancePartnerBriefClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </BriefShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <BriefShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <BriefShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </BriefShell>
+    );
   }
 
   return (
@@ -282,6 +372,7 @@ export default function AlliancePartnerBriefClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

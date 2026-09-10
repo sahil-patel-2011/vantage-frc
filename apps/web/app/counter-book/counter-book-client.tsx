@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { counterBookFieldLabel } from "../../lib/counter-book";
 import type { CounterBookView } from "../../lib/counter-book/compute-counter-book";
@@ -17,8 +18,28 @@ import {
 } from "../../lib/counter-book/counter-book-related";
 import type { CounterBookReport } from "../../lib/counter-book/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./counter-book.css";
+
+function isCounterBookView(value: unknown): value is CounterBookView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistCounterBookSnapshot(orgHint: string, data: CounterBookView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("counter-book", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("counter-book", "_", data);
+  } catch {
+    // Live counter-book already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<CounterBookView, { status: "live" }>;
 
@@ -142,24 +163,64 @@ export default function CounterBookClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CounterBookView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/counter-book${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<CounterBookView>("counter-book", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isCounterBookView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/counter-book${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as CounterBookView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isCounterBookView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Counter-book. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistCounterBookSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Counter-book. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -195,13 +256,15 @@ export default function CounterBookClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CounterBookView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isCounterBookView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistCounterBookSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -212,7 +275,11 @@ export default function CounterBookClient() {
   );
 
   if (shell === "loading") {
-    return <CounterShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <CounterShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
+      </CounterShell>
+    );
   }
 
   if (shell === "error") {
@@ -223,7 +290,9 @@ export default function CounterBookClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
+      </CounterShell>
     );
   }
 
@@ -234,13 +303,17 @@ export default function CounterBookClient() {
         orgId={orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
       </CounterShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <CounterShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <CounterShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
+      </CounterShell>
+    );
   }
 
   return (
@@ -263,6 +336,7 @@ export default function CounterBookClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

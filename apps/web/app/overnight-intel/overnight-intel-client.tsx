@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { OvernightIntelView } from "../../lib/overnight-intel/compute-overnight-intel";
 import {
@@ -16,8 +17,28 @@ import {
   type OvernightIntelShellKind,
 } from "../../lib/overnight-intel/overnight-intel-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./overnight-intel.css";
+
+function isOvernightIntelView(value: unknown): value is OvernightIntelView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistOvernightIntelSnapshot(orgHint: string, data: OvernightIntelView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("overnight-intel", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("overnight-intel", "_", data);
+  } catch {
+    // Live brief already painted; IndexedDB is best-effort.
+  }
+}
 
 function formatDelta(delta: number | null): string {
   if (delta == null) return "—";
@@ -161,24 +182,64 @@ export default function OvernightIntelClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<OvernightIntelView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/overnight-intel${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<OvernightIntelView>("overnight-intel", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isOvernightIntelView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/overnight-intel${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as OvernightIntelView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isOvernightIntelView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Overnight Intel. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistOvernightIntelSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Overnight Intel. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -227,13 +288,15 @@ export default function OvernightIntelClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, action: "generate-brief" }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as OvernightIntelView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (!response.ok || !isOvernightIntelView(data)) {
         setError("error" in data && data.error ? data.error : "Something went wrong.");
         return;
       }
       setView(data);
+      void persistOvernightIntelSnapshot(orgId, data);
     } catch {
       setError("Network error — please try again.");
     } finally {
@@ -242,7 +305,11 @@ export default function OvernightIntelClient() {
   }, [orgId, busy]);
 
   if (shell === "loading") {
-    return <IntelShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <IntelShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Overnight Intel" fromCache={fromCache} cachedAt={cachedAt} />
+      </IntelShell>
+    );
   }
 
   if (shell === "error") {
@@ -253,7 +320,9 @@ export default function OvernightIntelClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Overnight Intel" fromCache={fromCache} cachedAt={cachedAt} />
+      </IntelShell>
     );
   }
 
@@ -265,13 +334,17 @@ export default function OvernightIntelClient() {
         shell="setup"
         needsActiveEvent={needsActiveEvent}
       >
-        
+        <OfflineBanner feature="Overnight Intel" fromCache={fromCache} cachedAt={cachedAt} />
       </IntelShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <IntelShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <IntelShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Overnight Intel" fromCache={fromCache} cachedAt={cachedAt} />
+      </IntelShell>
+    );
   }
 
   return (
@@ -297,6 +370,7 @@ export default function OvernightIntelClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Overnight Intel" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

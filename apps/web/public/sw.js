@@ -77,6 +77,10 @@ const SHELL_ROUTES = [
   "/pit-map-planner",
   "/pairwise",
   "/team-tags",
+  "/shift-balancer",
+  "/counter-book",
+  "/overnight-intel",
+  "/alliance-partner-brief",
 ];
 
 function isShellPath(pathname) {
