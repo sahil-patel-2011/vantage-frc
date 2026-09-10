@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { mechanismCategoryLabel } from "../../lib/sketch-to-brief";
 import type { SketchToBriefView } from "../../lib/sketch-to-brief/compute-sketch-to-brief";
@@ -16,6 +17,8 @@ import {
 } from "../../lib/sketch-to-brief/sketch-to-brief-related";
 import type { BriefRecord, MechanismCategory, RuleFlagSeverity, SketchRecord } from "../../lib/sketch-to-brief/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sketch-to-brief.css";
 
@@ -26,6 +29,33 @@ const SEVERITY_TONE: Record<RuleFlagSeverity, string> = {
 };
 
 type LiveView = Extract<SketchToBriefView, { status: "live" }>;
+
+function isSketchToBriefView(value: unknown): value is SketchToBriefView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function sketchToBriefCacheOrg(data: SketchToBriefView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSketchToBriefSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SketchToBriefView,
+): Promise<void> {
+  const cacheOrg = sketchToBriefCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("sketch-to-brief", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("sketch-to-brief", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Sketch-to-Brief already painted; IndexedDB is best-effort.
+  }
+}
 
 function SketchRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = sketchToBriefRelatedLinks(orgId, {
@@ -144,27 +174,75 @@ export default function SketchToBriefClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SketchToBriefView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/sketch-to-brief${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SketchToBriefView>(
+          "sketch-to-brief",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isSketchToBriefView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/sketch-to-brief${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as SketchToBriefView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isSketchToBriefView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Sketch-to-Brief. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSketchToBriefSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Sketch-to-Brief. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -214,14 +292,16 @@ export default function SketchToBriefClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SketchToBriefView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSketchToBriefView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistSketchToBriefSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -232,7 +312,11 @@ export default function SketchToBriefClient() {
   );
 
   if (shell === "loading") {
-    return <SketchShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <SketchShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </SketchShell>
+    );
   }
 
   if (shell === "error") {
@@ -243,7 +327,9 @@ export default function SketchToBriefClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </SketchShell>
     );
   }
 
@@ -253,12 +339,18 @@ export default function SketchToBriefClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </SketchShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <SketchShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <SketchShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
+      </SketchShell>
+    );
   }
 
   return (
@@ -300,6 +392,8 @@ export default function SketchToBriefClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Sketch-to-Brief" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

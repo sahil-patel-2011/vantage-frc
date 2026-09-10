@@ -115,6 +115,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/spare-robot-kit")).toBe(true);
     expect(pathnameIsOfflineShell("/sponsor-renewal-roi")).toBe(true);
     expect(pathnameIsOfflineShell("/team-health-dashboard")).toBe(true);
+    expect(pathnameIsOfflineShell("/spare-forecast")).toBe(true);
+    expect(pathnameIsOfflineShell("/sketch-to-brief")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-assisted-count")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-coverage-live")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -208,8 +212,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding Buddy");
     expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");
     expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare Robot Kit");
+    expect(offlineCapableLabel("/spare-forecast")).toBe("Spare Forecast");
     expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
     expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team Health");
+    expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");
+    expect(offlineCapableLabel("/scout-assisted-count")).toBe("Scout-Assisted Count");
+    expect(offlineCapableLabel("/scout-coverage-live")).toBe("Scout Coverage Live");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -303,6 +311,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("spare-robot-kit", "org-1", "2026")).toBe("spare-robot-kit:org-1:2026");
     expect(featureCacheKey("sponsor-renewal-roi", "org-1", "2026")).toBe("sponsor-renewal-roi:org-1:2026");
     expect(featureCacheKey("team-health-dashboard", "org-1", "2026")).toBe("team-health-dashboard:org-1:2026");
+    expect(featureCacheKey("spare-forecast", "org-1", "2026")).toBe("spare-forecast:org-1:2026");
+    expect(featureCacheKey("sketch-to-brief", "org-1", "2026")).toBe("sketch-to-brief:org-1:2026");
+    expect(featureCacheKey("scout-assisted-count", "org-1")).toBe("scout-assisted-count:org-1");
+    expect(featureCacheKey("scout-coverage-live", "org-1")).toBe("scout-coverage-live:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

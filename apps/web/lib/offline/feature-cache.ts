@@ -97,7 +97,11 @@ export type OfflineFeature =
   | "risk-burndown"
   | "spare-robot-kit"
   | "sponsor-renewal-roi"
-  | "team-health-dashboard";
+  | "team-health-dashboard"
+  | "spare-forecast"
+  | "sketch-to-brief"
+  | "scout-assisted-count"
+  | "scout-coverage-live";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -120,6 +120,10 @@ const SHELL_ROUTES = [
   "/spare-robot-kit",
   "/sponsor-renewal-roi",
   "/team-health-dashboard",
+  "/spare-forecast",
+  "/sketch-to-brief",
+  "/scout-assisted-count",
+  "/scout-coverage-live",
 ];
 
 function isShellPath(pathname) {

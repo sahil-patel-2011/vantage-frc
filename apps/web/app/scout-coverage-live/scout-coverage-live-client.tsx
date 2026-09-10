@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -27,8 +28,9 @@ import {
   type ScoutCoverageLiveShellKind,
 } from "../../lib/scout-coverage-live/scout-coverage-live-related";
 import { hubHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scout-coverage-live.css";
 
 const statusToneMap: Record<CoverageStatus, BadgeTone> = {
@@ -48,6 +50,27 @@ function statusLabel(status: CoverageStatus): string {
 }
 
 type LiveView = Extract<ScoutCoverageLiveView, { status: "live" }>;
+
+function isScoutCoverageLiveView(value: unknown): value is ScoutCoverageLiveView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistScoutCoverageLiveSnapshot(
+  orgHint: string,
+  data: ScoutCoverageLiveView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("scout-coverage-live", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("scout-coverage-live", "_", data);
+  } catch {
+    // Live Scout Coverage Live already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutCoverageLiveRelatedLinks(orgId, {
@@ -170,36 +193,75 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [thresholdInput, setThresholdInput] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutCoverageLiveView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-    const urlOrg = initialOrgId ?? params.get("orgId");
-    const urlEvent = params.get("eventKey");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (urlEvent) query.set("eventKey", urlEvent);
-    void fetch(`/api/scout-coverage-live${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
+      const urlEvent = params.get("eventKey");
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<ScoutCoverageLiveView>(
+          "scout-coverage-live",
+          urlOrg || "_",
+        );
+        if (!viewRef.current && cached?.data && isScoutCoverageLiveView(cached.data)) {
+          setView(cached.data);
+          if (cached.data.status === "live") setThresholdInput(String(cached.data.thinThreshold));
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (urlEvent) query.set("eventKey", urlEvent);
+      try {
+        const response = await fetch(
+          `/api/scout-coverage-live${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setError("error" in data && data.error ? data.error : "Could not load scout coverage.");
+        if (!response.ok || !isScoutCoverageLiveView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setError("error" in data && data.error ? data.error : "Could not load scout coverage.");
+          }
           return;
         }
         setView(data);
         if (data.status === "live") setThresholdInput(String(data.thinThreshold));
-      })
-      .catch(() => {
-        setFetchFailed(true);
-        setError("Network error — please try again.");
-      });
+        setFromCache(false);
+        setCachedAt(null);
+        await persistScoutCoverageLiveSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setError("Network error — please try again.");
+        }
+      }
+    })();
   }, [initialOrgId]);
 
   useEffect(() => {
@@ -220,12 +282,13 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isScoutCoverageLiveView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         if (data.status === "live") setThresholdInput(String(data.thinThreshold));
+        void persistScoutCoverageLiveSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -261,7 +324,11 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   const loaded = view?.status === "live";
 
   if (shell === "loading") {
-    return <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCoverageLiveShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -271,7 +338,9 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCoverageLiveShell>
     );
   }
   if (shell === "setup") {
@@ -280,11 +349,17 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCoverageLiveShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
-    return <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+    return (
+      <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutCoverageLiveShell>
+    );
   }
 
   return (
@@ -303,6 +378,8 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
           <ScoutCoverageLiveRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">
