@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   buildOnePagerLines,
@@ -37,6 +40,32 @@ function emptyDraft(title: string, seedWho: string | null, seedNeed: string | nu
     inviteEnabled: false,
     inviteDetails: "",
   };
+}
+
+function isSponsorshipView(value: unknown): value is SponsorshipView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function sponsorshipCacheOrg(data: SponsorshipView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistSponsorshipSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SponsorshipView,
+): Promise<void> {
+  const cacheOrg = sponsorshipCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("sponsorship", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("sponsorship", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live sponsorship already painted; IndexedDB is best-effort.
+  }
 }
 
 function fromPage(page: SponsorshipOnePager): DraftFields {
@@ -97,26 +126,62 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftFields | null>(null);
   const [message, setMessage] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SponsorshipView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number, preferId?: string | null) => {
-    setError("");
-    setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/sponsorship${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orgHint = params.get("orgId")?.trim() ?? "";
+      const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery)
+          ? String(seasonQuery)
+          : String(new Date().getFullYear());
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SponsorshipView>(
+          "sponsorship",
+          orgHint || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isSponsorshipView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setErrorStatus(null);
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/sponsorship${query.toString() ? `?${query.toString()}` : ""}`,
+          { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+        );
         const data = (await response.json()) as SponsorshipView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Could not load sponsorship one-pagers.");
-          setErrorStatus(response.status);
+        if (!response.ok || !isSponsorshipView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Sponsorship. Showing the last copy on this device.");
+          } else {
+            setError("error" in data && data.error ? data.error : "Could not load sponsorship one-pagers.");
+            setErrorStatus(response.status);
+          }
           return;
         }
+        setError("");
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        setCachedAt(null);
         if (data.status === "ready") {
           const preferred =
             (preferId && data.onePagers.find((page) => page.id === preferId)) || data.onePagers[0] || null;
@@ -131,8 +196,16 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                 ),
           );
         }
-      })
-      .catch(() => setError("Network error — please try again."));
+        await persistSponsorshipSnapshot(orgHint, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Sponsorship. Showing the last copy on this device.");
+        } else {
+          setError("Network error — please try again.");
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -165,6 +238,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           seasonYear: season ?? view.seasonYear,
           ...payload,
         }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       if (payload.action === "pdf") {
         if (!response.ok) {
@@ -177,12 +251,14 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         return;
       }
       const data = (await response.json()) as SponsorshipView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (!response.ok || !isSponsorshipView(data)) {
         setError("error" in data && data.error ? data.error : "Something went wrong.");
         return;
       }
       setView(data);
       setSeason(data.seasonYear);
+      const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+      await persistSponsorshipSnapshot(orgHint, String(data.seasonYear), data);
       if (data.status === "ready") {
         const prefer =
           payload.action === "create"
@@ -254,21 +330,27 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           <PageHeader
             navPath="/sponsorship"
             title="Sponsorship one-pagers"
-            description={copy ? copy.title : "Loading…"}
+            description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
-        {copy ? (
-          <>
-            <p className="telemetry-status" role="alert">
-              <strong>{copy.title}</strong> — {copy.description}
-            </p>
-            {copy.primary ? (
-              <Button as="a" variant="primary" href={copy.primary.href}>
-                {copy.primary.label}
-              </Button>
-            ) : null}
-          </>
-        ) : null}
+        <OfflineBanner feature="Sponsorship" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={copy ? copy.title : "Loading sponsorship one-pagers…"}
+          description={copy ? copy.description : undefined}
+          aria-busy={!error}
+        >
+          {copy?.primary ? (
+            <Button as="a" variant="primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </Button>
+          ) : null}
+          {copy?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -283,6 +365,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
             description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
+        <OfflineBanner feature="Sponsorship" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -369,6 +452,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         </div>
       )}
 
+      <OfflineBanner feature="Sponsorship" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}

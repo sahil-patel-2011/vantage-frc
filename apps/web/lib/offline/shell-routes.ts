@@ -132,6 +132,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/my-kit",
   "/part-requests",
   "/recognition",
+  "/subteams",
+  "/budget",
+  "/sponsorship",
+  "/safety",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -211,6 +215,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/grant-report")) return "Grant Report";
   if (bare.startsWith("/media-kit")) return "Media Kit";
   if (bare.startsWith("/media")) return "Media";
+  if (bare.startsWith("/sponsorship")) return "Sponsorship";
   if (bare.startsWith("/sponsor-suite")) return "Sponsor Suite";
   if (bare.startsWith("/sponsor-wall")) return "Sponsor Wall";
   if (bare.startsWith("/outreach-calendar")) return "Outreach Calendar";
@@ -274,6 +279,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/my-kit")) return "My Kit";
   if (bare.startsWith("/part-requests")) return "Part requests";
   if (bare.startsWith("/recognition")) return "Recognition";
+  if (bare.startsWith("/budget")) return "Season budget";
+  if (bare.startsWith("/subteams")) return "Subteam progress";
+  if (bare.startsWith("/safety")) return "Safety";
   if (bare.startsWith("/match-delta-watcher")) return "Match-delta watcher";
   if (bare.startsWith("/match-video-index")) return "Match video index";
   if (bare.startsWith("/match-strategy-cards")) return "Match strategy cards";

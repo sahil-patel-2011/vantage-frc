@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, StatTile, Button } from "../../components/ui";
 import {
   describeBudget,
@@ -8,6 +9,9 @@ import {
   type BudgetSummary,
 } from "../../lib/budget/compute-budget";
 import type { CapabilityGrant, OrgRole } from "../../lib/capabilities/org-capabilities";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Candidate = { userId: string; name: string; email: string; role: OrgRole };
 
@@ -21,6 +25,33 @@ type Payload = {
 };
 
 type Denied = { error: string; reason?: string };
+
+function isBudgetPayload(value: unknown): value is Payload {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { view?: { status?: unknown } }).view?.status;
+  return status === "setup_required" || status === "ready";
+}
+
+function budgetCacheOrg(data: Payload, orgHint: string): string {
+  if (typeof data.view.orgId === "string" && data.view.orgId.trim()) return data.view.orgId;
+  return orgHint;
+}
+
+async function persistBudgetSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: Payload,
+): Promise<void> {
+  const cacheOrg = budgetCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.view.seasonYear);
+  try {
+    await putFeatureSnapshot("budget", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("budget", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live season budget already painted; IndexedDB is best-effort.
+  }
+}
 
 const money = (value: number) =>
   value.toLocaleString(undefined, { style: "currency", currency: "USD" });
@@ -72,26 +103,93 @@ export default function BudgetClient() {
   const [confirmFee, setConfirmFee] = useState(false);
 
   const [grantUserId, setGrantUserId] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const payloadRef = useRef<Payload | null>(null);
+  payloadRef.current = payload;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = params.get("season");
+    const seasonHint =
+      seasonQuery && Number.isFinite(Number(seasonQuery))
+        ? String(Number(seasonQuery))
+        : String(new Date().getFullYear());
+    let hadCache = Boolean(payloadRef.current);
     try {
-      const response = await fetch("/api/budget");
+      const cached = await getFeatureSnapshot<Payload>("budget", orgHint || "_", seasonHint);
+      if (!payloadRef.current && cached?.data && isBudgetPayload(cached.data)) {
+        setPayload(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+        if (cached.data.view.status === "ready") {
+          setBudgetInput(
+            cached.data.view.budget.totalBudgetUsd == null
+              ? ""
+              : String(cached.data.view.budget.totalBudgetUsd),
+          );
+          setBudgetNotes(cached.data.view.budget.notes ?? "");
+        }
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonHint) query.set("season", seasonHint);
+      const response = await fetch(`/api/budget${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as Payload & Denied;
-      if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
         setDenied({ error: data.error ?? "Could not load the budget.", reason: data.reason });
         setPayload(null);
+        setFromCache(false);
+        setCachedAt(null);
+        return;
+      }
+      if (!response.ok || !isBudgetPayload(data)) {
+        if (hadCache || payloadRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season budget. Showing the last copy on this device.");
+          setDenied(null);
+          setFetchFailed(false);
+        } else {
+          setDenied({ error: data.error ?? "Could not load the budget.", reason: data.reason });
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setDenied(null);
+      setError("");
       setPayload(data);
+      setFromCache(false);
+      setCachedAt(null);
       if (data.view.status === "ready") {
         setBudgetInput(
           data.view.budget.totalBudgetUsd == null ? "" : String(data.view.budget.totalBudgetUsd),
         );
         setBudgetNotes(data.view.budget.notes ?? "");
       }
+      await persistBudgetSnapshot(orgHint, seasonHint, data);
     } catch {
-      setDenied({ error: "Could not reach the server." });
+      if (hadCache || payloadRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season budget. Showing the last copy on this device.");
+        setDenied(null);
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -108,14 +206,17 @@ export default function BudgetClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as Payload & Denied;
-      if (!response.ok) {
+      if (!response.ok || !isBudgetPayload(data)) {
         setError(data.error ?? "That did not work.");
         return false;
       }
       setPayload(data);
       setNotice(success);
+      const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+      await persistBudgetSnapshot(orgHint, String(data.view.seasonYear), data);
       return true;
     } catch {
       setError("Could not reach the server. Nothing was saved.");
@@ -125,10 +226,11 @@ export default function BudgetClient() {
     }
   }
 
-  if (denied) {
+  if (denied && !payload) {
     return (
       <main className="module-page budget-page">
         <PageHeader breadcrumbs="Business / Money" title="Season budget" />
+        <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge={denied.reason === "not_budget_manager" ? "Mentors only" : "Not available"}
@@ -152,12 +254,43 @@ export default function BudgetClient() {
   }
 
   if (!payload) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error || denied?.error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || denied?.error,
+          },
+        )
+      : null;
     return (
       <main className="module-page budget-page">
         <PageHeader breadcrumbs="Business / Money" title="Season budget" />
-        <Panel>
-          <p className="app-muted">Loading…</p>
-        </Panel>
+        <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading season budget…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -168,7 +301,18 @@ export default function BudgetClient() {
     return (
       <main className="module-page budget-page">
         <PageHeader breadcrumbs="Business / Money" title="Season budget" />
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Not migrated yet" description={view.message} />
+        <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose your team"
+          description={view.message}
+        >
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
+        </EmptyState>
       </main>
     );
   }
@@ -185,6 +329,7 @@ export default function BudgetClient() {
         title={`Season budget ${view.seasonYear}`}
         description={`${view.orgName} — visible to mentors only.`}
       />
+      <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
 
       {/*
         The brief said to say this plainly rather than let anyone believe a

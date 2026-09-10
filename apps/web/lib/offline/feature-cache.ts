@@ -128,7 +128,11 @@ export type OfflineFeature =
   | "robot"
   | "my-kit"
   | "part-requests"
-  | "recognition";
+  | "recognition"
+  | "subteams"
+  | "budget"
+  | "sponsorship"
+  | "safety";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

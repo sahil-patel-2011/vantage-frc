@@ -1,6 +1,8 @@
 "use client";
-import { Button } from "../../components/ui";
-import { useCallback, useEffect, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button, EmptyState } from "../../components/ui";
 import {
   CERT_TYPE_LABEL,
   CERT_TYPES,
@@ -12,6 +14,8 @@ import {
   type Treatment,
 } from "../../lib/safety";
 import { canDeleteSafetyIncident } from "../../lib/safety/authorization";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Incident = {
@@ -27,6 +31,28 @@ const SEVERITY_LABEL: Record<IncidentSeverity, string> = { near_miss: "Near miss
 const NEXT_STATUS: Record<IncidentStatus, IncidentStatus | null> = { open: "reviewed", reviewed: "closed", closed: null };
 const EXPIRY_LABEL: Record<CertExpiry, string> = { valid: "valid", expiring: "expiring soon", expired: "EXPIRED", no_expiry: "no expiry" };
 
+function isSafetyView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function safetyCacheOrg(data: View, orgHint: string): string {
+  if (data.status === "ready" && data.context.orgId.trim()) return data.context.orgId;
+  return orgHint;
+}
+
+async function persistSafetySnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = safetyCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("safety", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("safety", "_", data);
+  } catch {
+    // Live safety log already painted; IndexedDB is best-effort.
+  }
+}
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -39,87 +65,135 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [incidentForm, setIncidentForm] = useState({ title: "", severity: "near_miss", occurredOn: todayIso(), location: "", injuredPerson: "", treatment: "none", description: "", correctiveAction: "" });
   const [certForm, setCertForm] = useState({ personName: "", certType: "general_safety", completedOn: todayIso(), expiresOn: "", notes: "" });
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const orgHint = orgId?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<View>("safety", orgHint || "_");
+      if (!viewRef.current && cached?.data && isSafetyView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setLoadFailed(false);
     setFailureStatus(null);
     try {
-      const response = await fetch(`/api/safety${orgId ? `?orgId=${orgId}` : ""}`);
+      const response = await fetch(`/api/safety${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setFailureStatus(response.status);
-        setLoadFailed(true);
-        setMessage(data.error ?? "Failed to load safety data");
+      if (!response.ok || !isSafetyView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Safety. Showing the last copy on this device.");
+          setLoadFailed(false);
+        } else {
+          setFailureStatus(response.status);
+          setLoadFailed(true);
+          setMessage("error" in data && data.error ? data.error : "Failed to load safety data");
+        }
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSafetySnapshot(orgHint, data);
     } catch {
-      setLoadFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setMessage("Could not refresh Safety. Showing the last copy on this device.");
+        setLoadFailed(false);
+      } else {
+        setLoadFailed(true);
+      }
     }
   }, [orgId]);
   useEffect(() => { void load(); }, [load]);
 
   async function post(body: Record<string, unknown>, okMessage: string) {
     if (view?.status !== "ready") return;
-    const response = await fetch("/api/safety", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId: view.context.orgId, ...body }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? okMessage : data.error);
-    if (response.ok) await load();
+    try {
+      const response = await fetch("/api/safety", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: view.context.orgId, ...body }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? okMessage : data.error);
+      if (response.ok) await load();
+    } catch {
+      setMessage("Network error — changes were not saved.");
+    }
   }
 
-  async function logIncident(event: React.FormEvent) {
+  async function logIncident(event: FormEvent) {
     event.preventDefault();
     await post({ action: "log_incident", ...incidentForm }, "Incident logged.");
     if (view?.status === "ready") setIncidentForm({ title: "", severity: "near_miss", occurredOn: todayIso(), location: "", injuredPerson: "", treatment: "none", description: "", correctiveAction: "" });
   }
 
-  async function addCert(event: React.FormEvent) {
+  async function addCert(event: FormEvent) {
     event.preventDefault();
     await post({ action: "add_certification", ...certForm }, "Certification recorded.");
     if (view?.status === "ready") setCertForm({ personName: "", certType: "general_safety", completedOn: todayIso(), expiresOn: "", notes: "" });
   }
 
   if (!view) {
-    if (!loadFailed) {
-      return <main className="intel-app"><p className="telemetry-status">{message || "Loading safety…"}</p></main>;
-    }
-    const copy = loadFailureCopy(
-      classifyLoadFailure({
-        status: failureStatus,
-        message,
-        online: typeof navigator === "undefined" ? true : navigator.onLine,
-      }),
-      {
-        nextPath:
-          typeof window === "undefined"
-            ? null
-            : `${window.location.pathname}${window.location.search}`,
-        message,
-      },
-    );
+    const failure = loadFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: failureStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
     return (
       <main className="intel-app">
-        <p className="telemetry-status" role="alert">
-          <strong>{copy.title}</strong> — {copy.description}
-        </p>
-        {copy.primary ? (
-          <Button as="a" variant="primary" href={copy.primary.href}>
-            {copy.primary.label}
-          </Button>
-        ) : null}
-        {copy.showRetry ? (
-          <Button variant="secondary" type="button" onClick={() => void load()}>
-            Retry
-          </Button>
-        ) : null}
+        <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading safety…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!loadFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    return (
+      <main className="intel-app">
+        <header className="intel-header"><div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log</h1></div></header>
+        <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
+          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+        </EmptyState>
+      </main>
+    );
   }
 
   const canDeleteIncidents = canDeleteSafetyIncident(view.context.role);
@@ -130,6 +204,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         <div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log &amp; tool certifications</h1></div>
         <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/pit${orgId ? `?orgId=${orgId}` : ""}`}>Pit</a><a href="/workspace">Your team →</a></nav>
       </header>
+      <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
       {message && <p className="telemetry-status">{message}</p>}
 
       <section className="metric-grid">

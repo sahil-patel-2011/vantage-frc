@@ -150,6 +150,10 @@ const SHELL_ROUTES = [
   "/my-kit",
   "/part-requests",
   "/recognition",
+  "/subteams",
+  "/budget",
+  "/sponsorship",
+  "/safety",
 ];
 
 function isShellPath(pathname) {

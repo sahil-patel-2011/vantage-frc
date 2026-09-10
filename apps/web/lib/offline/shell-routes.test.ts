@@ -145,6 +145,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/my-kit")).toBe(true);
     expect(pathnameIsOfflineShell("/part-requests")).toBe(true);
     expect(pathnameIsOfflineShell("/recognition")).toBe(true);
+    expect(pathnameIsOfflineShell("/subteams")).toBe(true);
+    expect(pathnameIsOfflineShell("/budget")).toBe(true);
+    expect(pathnameIsOfflineShell("/sponsorship")).toBe(true);
+    expect(pathnameIsOfflineShell("/safety")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -273,6 +277,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/my-kit")).toBe("My Kit");
     expect(offlineCapableLabel("/part-requests")).toBe("Part requests");
     expect(offlineCapableLabel("/recognition")).toBe("Recognition");
+    expect(offlineCapableLabel("/subteams")).toBe("Subteam progress");
+    expect(offlineCapableLabel("/budget")).toBe("Season budget");
+    expect(offlineCapableLabel("/sponsorship")).toBe("Sponsorship");
+    expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
+    expect(offlineCapableLabel("/safety")).toBe("Safety");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -397,6 +406,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("my-kit", "org-1")).toBe("my-kit:org-1");
     expect(featureCacheKey("part-requests", "org-1", "2026")).toBe("part-requests:org-1:2026");
     expect(featureCacheKey("recognition", "org-1", "2026")).toBe("recognition:org-1:2026");
+    expect(featureCacheKey("subteams", "org-1")).toBe("subteams:org-1");
+    expect(featureCacheKey("budget", "org-1", "2026")).toBe("budget:org-1:2026");
+    expect(featureCacheKey("sponsorship", "org-1", "2026")).toBe("sponsorship:org-1:2026");
+    expect(featureCacheKey("safety", "org-1")).toBe("safety:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

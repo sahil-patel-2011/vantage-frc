@@ -1,19 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   SUBTEAM_LABELS,
   TEAM_ROLE_LABELS,
   type SubteamMember,
   type SubteamProgress,
 } from "../../lib/subteams/store";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type View = {
+  orgId?: string;
   orgName: string;
   canManage: boolean;
   progress: SubteamProgress | null;
 };
+
+function isSubteamsView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  return typeof (value as { orgName?: unknown }).orgName === "string";
+}
+
+function subteamsCacheOrg(data: View, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSubteamsSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = subteamsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("subteams", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("subteams", "_", data);
+  } catch {
+    // Live subteam progress already painted; IndexedDB is best-effort.
+  }
+}
 
 /**
  * What each person still owes, in words rather than a score.
@@ -87,19 +113,60 @@ function GroupActions({ members }: { members: SubteamMember[] }) {
 export default function SubteamsClient() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch("/api/subteams");
+      const cached = await getFeatureSnapshot<View>("subteams", orgHint || "_");
+      if (!viewRef.current && cached?.data && isSubteamsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/subteams${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load subteams.");
+      if (!response.ok || !isSubteamsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Subteam progress. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load subteams.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
-      setView(data);
       setError("");
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSubteamsSnapshot(orgHint, data);
     } catch {
-      setError("Could not reach the server.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Subteam progress. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -107,22 +174,40 @@ export default function SubteamsClient() {
     void load();
   }, [load]);
 
-  if (error && !view) {
-    return (
-      <main className="module-page subteams-page">
-        <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Subteam progress needs a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
-        </EmptyState>
-      </main>
-    );
-  }
-
   if (!view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page subteams-page">
         <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
-        <Panel><p className="app-muted">Loading…</p></Panel>
+        <OfflineBanner feature="Subteam progress" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          title={failure ? failure.title : "Loading subteam progress…"}
+          description={failure ? failure.description : undefined}
+          aria-busy={!fetchFailed}
+        >
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button>
+          ) : null}
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>Retry</Button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -131,6 +216,7 @@ export default function SubteamsClient() {
     return (
       <main className="module-page subteams-page">
         <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
+        <OfflineBanner feature="Subteam progress" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge="Leads only"
@@ -154,6 +240,8 @@ export default function SubteamsClient() {
         title="Subteam progress"
         description={`Who is on each subteam in ${view.orgName}, and what each of them still owes.`}
       />
+      <OfflineBanner feature="Subteam progress" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? <p className="app-muted">{error}</p> : null}
 
       <Panel className="st-summary">
         <div>
