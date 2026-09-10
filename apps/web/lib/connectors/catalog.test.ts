@@ -258,6 +258,63 @@ describe("describeConnector", () => {
     expect(status.detail).toBe("Webhook saved for this team; the chat bridge is off.");
   });
 
+  // The combination that produced an incoherent card: a stored credential that
+  // GitHub had refused, on a deployment whose OAuth client had since been
+  // rotated away. The old ordering decided "not configured" first, so the badge
+  // said one thing, the paragraph said another, and Disconnect was hidden —
+  // leaving the dead token in the row with no way to clear it.
+  describe("a stored link on a deployment that lost its credentials", () => {
+    const rejected = {
+      linked: true,
+      account: "team3005-bot",
+      expiresAt: 1,
+      refreshable: false,
+      note: "GitHub refused the stored credential for @team3005-bot.",
+    };
+
+    it("reports the link's own state, not the missing variable", () => {
+      const status = describeConnector(connectorById("github"), BASE, rejected);
+      expect(status.state).toBe("token_expired");
+      expect(status.statusLine).toBe("Token expired — reconnect");
+    });
+
+    it("still says which variable is missing, rather than swallowing it", () => {
+      const status = describeConnector(connectorById("github"), BASE, rejected);
+      expect(status.detail).toContain("GitHub refused the stored credential");
+      expect(status.detail).toContain("GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET");
+      expect(status.missingEnv).toEqual(["GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET"]);
+    });
+
+    it("offers Disconnect — the token is real and only this clears it", () => {
+      expect(describeConnector(connectorById("github"), BASE, rejected).canDisconnect).toBe(true);
+    });
+
+    it("refuses Connect, because a new authorisation genuinely cannot start", () => {
+      expect(describeConnector(connectorById("github"), BASE, rejected).canConnect).toBe(false);
+    });
+
+    it("offers both once the credentials are back", () => {
+      const status = describeConnector(
+        connectorById("github"),
+        { ...BASE, GITHUB_OAUTH_CLIENT_ID: "Iv1.x", GITHUB_OAUTH_CLIENT_SECRET: "s" },
+        rejected,
+      );
+      expect(status.canConnect).toBe(true);
+      expect(status.canDisconnect).toBe(true);
+      expect(status.detail).not.toContain("GITHUB_OAUTH_CLIENT_ID");
+    });
+
+    it("mentions the missing variable on a healthy link too, so the next rotation is not a surprise", () => {
+      const status = describeConnector(connectorById("github"), BASE, {
+        linked: true,
+        account: "team3005-bot",
+      });
+      expect(status.state).toBe("connected");
+      expect(status.statusLine).toBe("Connected as team3005-bot");
+      expect(status.detail).toContain("GITHUB_OAUTH_CLIENT_ID");
+    });
+  });
+
   it("gives every catalog entry an actionable detail with no credentials at all", () => {
     for (const def of CONNECTORS as ConnectorDefinition[]) {
       const status = describeConnector(def, {});

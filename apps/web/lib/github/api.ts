@@ -46,6 +46,51 @@ export type GitHubFileSnippet = {
 
 type GitHubHttp = (path: string, init?: RequestInit) => Promise<Response>;
 
+/**
+ * GitHub rejected the stored credential.
+ *
+ * Worth its own type because it is the one GitHub failure a person can fix and
+ * the one the product handled worst: a revoked PAT or a de-authorised OAuth App
+ * makes every call answer 401 "Bad credentials", and the app used to surface
+ * that raw string next to a card still reading "LINKED @octocat". The connector
+ * looked healthy and nothing worked — the complaint, exactly. A caller that
+ * catches this knows to stop saying Connected and to offer a reconnect.
+ *
+ * 403 with `x-ratelimit-remaining: 0` is deliberately NOT this: a rate limit is
+ * a wait, not a revocation, and telling someone to reconnect over one would
+ * make them throw away a working token.
+ */
+export class GitHubCredentialRejectedError extends Error {
+  readonly status: number;
+  constructor(status: number, providerMessage?: string) {
+    super(
+      `GitHub rejected the stored credential (${status}${providerMessage ? `: ${providerMessage}` : ""}). ` +
+        "The token was revoked, expired, or had its scopes removed. Disconnect GitHub and connect again.",
+    );
+    this.name = "GitHubCredentialRejectedError";
+    this.status = status;
+  }
+}
+
+export function isGitHubCredentialRejected(error: unknown): error is GitHubCredentialRejectedError {
+  return error instanceof GitHubCredentialRejectedError;
+}
+
+/**
+ * Turn a non-OK GitHub response into the right error. Call sites keep their own
+ * fallback message for everything that is not a credential problem.
+ */
+function githubFailure(response: Response, providerMessage: string | undefined, fallback: string): Error {
+  if (response.status === 401) return new GitHubCredentialRejectedError(401, providerMessage);
+  // 403 from GitHub is either "you are rate limited" or "this token may not do
+  // that". Only the second is a credential the user should replace, and the
+  // remaining-quota header is what tells them apart.
+  if (response.status === 403 && response.headers.get("x-ratelimit-remaining") !== "0") {
+    return new GitHubCredentialRejectedError(403, providerMessage);
+  }
+  return new Error(providerMessage ?? fallback);
+}
+
 export function createGitHubHttp(accessToken: string, apiBase = GITHUB_API_BASE): GitHubHttp {
   return (path, init = {}) =>
     fetch(`${apiBase}${path.startsWith("/") ? path : `/${path}`}`, {
@@ -64,7 +109,9 @@ export function createGitHubHttp(accessToken: string, apiBase = GITHUB_API_BASE)
 export async function fetchGitHubUser(http: GitHubHttp) {
   const response = await http("/user");
   const data = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) throw new Error(String(data.message ?? "Failed to load GitHub user"));
+  if (!response.ok) {
+    throw githubFailure(response, data.message ? String(data.message) : undefined, "Failed to load GitHub user");
+  }
   return {
     login: String(data.login ?? ""),
     id: data.id != null ? String(data.id) : "",
@@ -79,7 +126,11 @@ export async function listGitHubRepos(http: GitHubHttp, limit = 50): Promise<Git
   );
   const data = (await response.json()) as Array<Record<string, unknown>> | { message?: string };
   if (!response.ok) {
-    throw new Error(String((data as { message?: string }).message ?? "Failed to list GitHub repositories"));
+    throw githubFailure(
+      response,
+      (data as { message?: string }).message,
+      "Failed to list GitHub repositories",
+    );
   }
   return (data as Array<Record<string, unknown>>).slice(0, limit).map((item) => ({
     fullName: String(item.full_name ?? ""),
@@ -154,7 +205,13 @@ export async function fetchGitHubRepoMeta(http: GitHubHttp, fullName: string) {
   const { owner, repo } = parseOwnerRepo(fullName);
   const response = await http(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
   const data = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) throw new Error(String(data.message ?? "Repository not found or inaccessible"));
+  if (!response.ok) {
+    throw githubFailure(
+      response,
+      data.message ? String(data.message) : undefined,
+      "Repository not found or inaccessible",
+    );
+  }
   return {
     fullName: String(data.full_name ?? fullName),
     defaultBranch: String(data.default_branch ?? "main"),

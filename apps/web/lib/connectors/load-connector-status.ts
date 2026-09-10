@@ -63,11 +63,14 @@ export async function loadConnectorProofs(
   const orgId = input.orgId;
 
   const [github, onshape, discord, slack, tba, storage, relay] = await Promise.all([
+    // Any non-disabled row, whatever its status: a row in `error` is a link
+    // whose token GitHub refused, and reporting that as "Not connected" sends
+    // the reader off to create a second OAuth App instead of reconnecting.
     safeRows<{ login: string | null; repo: string | null; status: string; authMethod: string }>(
       client,
       `SELECT github_login AS login, default_repo_full_name AS repo, status, auth_method AS "authMethod"
        FROM github_connections
-       WHERE org_id=$1::uuid AND disabled_at IS NULL AND status='connected'
+       WHERE org_id=$1::uuid AND disabled_at IS NULL
        LIMIT 1`,
       [orgId],
     ),
@@ -121,7 +124,18 @@ export async function loadConnectorProofs(
   ]);
 
   const githubRow = github[0];
-  if (githubRow) {
+  if (githubRow?.status === "error") {
+    // `expiresAt` in the past with no refresh token is how the catalog spells
+    // "this credential is dead" — GitHub OAuth Apps issue no refresh token, so
+    // there is nothing to renew and only a person can fix it.
+    proofs.github = {
+      linked: true,
+      account: githubRow.login,
+      expiresAt: 1,
+      refreshable: false,
+      note: `GitHub refused the stored credential for @${githubRow.login ?? "this account"}. A revoked token, an expired fine-grained PAT, or an OAuth App the account de-authorised all look like this. Disconnect and connect again to issue a new one.`,
+    };
+  } else if (githubRow?.status === "connected") {
     proofs.github = {
       linked: true,
       account: githubRow.login,

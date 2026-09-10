@@ -375,22 +375,30 @@ export function connectorDetail(
   def: ConnectorDefinition,
   input: { state: ConnectorState; missingEnv: readonly string[]; callbackUrl: string | null; note?: string | null },
 ): string {
-  if (input.note?.trim()) return input.note.trim();
-
   const register = input.callbackUrl
     ? ` Register this exact ${def.callbackLabel} on the provider (${def.providerConsole}): ${input.callbackUrl}`
     : ` Create the credential at ${def.providerConsole}.`;
 
-  if (input.state === "not_configured") {
-    return `Set ${joinEnvNames(input.missingEnv)} in your deployment environment (${ENV_LOCATION}), then redeploy.${register}`;
-  }
+  const setupSentence = `Set ${joinEnvNames(input.missingEnv)} in your deployment environment (${ENV_LOCATION}), then redeploy.${register}`;
+
+  // A stored link plus missing platform credentials is a real combination —
+  // someone rotated GITHUB_OAUTH_CLIENT_ID away and the old row is still there
+  // holding a token. Saying only "Not configured" hides the credential; saying
+  // only "reconnect" hides why reconnecting cannot work yet. Say both.
+  const envTail = input.missingEnv.length > 0 ? ` This deployment is also missing ${joinEnvNames(input.missingEnv)} (${ENV_LOCATION}), so a new authorisation cannot be started until that is set.` : "";
+
+  if (input.note?.trim()) return `${input.note.trim()}${envTail}`;
+
+  if (input.state === "not_configured") return setupSentence;
+
   if (input.state === "token_expired") {
-    return `The stored token is past its expiry and could not be refreshed. Disconnect and connect again to issue a new one.${register}`;
+    return `The stored token is past its expiry and could not be refreshed. Disconnect and connect again to issue a new one.${envTail || register}`;
   }
   if (input.state === "connected") {
-    return input.callbackUrl
+    const base = input.callbackUrl
       ? `${def.powers} Registered ${def.callbackLabel}: ${input.callbackUrl}`
       : def.powers;
+    return `${base}${envTail}`;
   }
   if (input.state === "ready") {
     return `Credentials are set on this deployment — finish the link on ${def.managePath}.${register}`;
@@ -413,12 +421,18 @@ export function describeConnector(
   const callbackUrl = connectorCallbackUrl(def, env);
 
   let state: ConnectorState;
-  if (missingEnv.length > 0) {
-    state = "not_configured";
-  } else if (proof.linked) {
+  // A real stored row outranks a missing variable. Deciding "not configured"
+  // first meant that rotating GITHUB_OAUTH_CLIENT_ID away turned a dead
+  // credential into a card that said "Not configured", offered no Disconnect,
+  // and left the token sitting in the row with no way to clear it. The stored
+  // link is the thing the reader has to act on; the missing variable is
+  // appended to the detail, not substituted for it.
+  if (proof.linked) {
     const expired =
       typeof proof.expiresAt === "number" && proof.expiresAt > 0 && proof.expiresAt <= Date.now();
     state = expired && !proof.refreshable ? "token_expired" : "connected";
+  } else if (missingEnv.length > 0) {
+    state = "not_configured";
   } else if (def.scope === "platform") {
     // A platform connector with every variable present IS the connection —
     // there is no second row for a person to create.
@@ -441,7 +455,12 @@ export function describeConnector(
     providerConsole: def.providerConsole,
     permissions: [...def.permissions],
     managePath: def.managePath,
-    canConnect: def.hasConnectAction && state !== "not_configured",
-    canDisconnect: def.hasDisconnectAction && (state === "connected" || state === "token_expired"),
+    // Connect needs live platform credentials — offering it without them is
+    // the "Connect button that reloads the page" this change removes.
+    canConnect: def.hasConnectAction && missingEnv.length === 0,
+    // Disconnect needs only a stored row. Deliberately NOT gated on the
+    // credentials: someone whose deployment rotated the OAuth client away is
+    // exactly the person who still needs to revoke the token Vantage holds.
+    canDisconnect: def.hasDisconnectAction && Boolean(proof.linked),
   };
 }
