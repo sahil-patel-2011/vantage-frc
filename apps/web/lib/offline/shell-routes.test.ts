@@ -85,6 +85,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("calendar", "org-1")).toBe("calendar:org-1");
     expect(featureCacheKey("my-day", "org-1")).toBe("my-day:org-1");
     expect(featureCacheKey("dashboard", "org-1")).toBe("dashboard:org-1");
+    expect(featureCacheKey("assembly-manual", "org-1")).toBe("assembly-manual:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

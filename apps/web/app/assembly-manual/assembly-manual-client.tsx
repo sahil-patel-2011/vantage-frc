@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { assemblyPdfOfflineKey, keepOfflineFile } from "../../lib/offline/file-bytes";
 
 /**
@@ -98,6 +101,12 @@ type StartResult =
 
 const ACTIVE: RunStatus[] = ["queued", "running", "paused"];
 
+function isAssemblyOverview(value: unknown): value is Overview {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.orgName === "string" && Array.isArray(row.runs);
+}
+
 function labelAssemblyRunStatus(status: RunStatus): string {
   switch (status) {
     case "queued":
@@ -134,16 +143,52 @@ export default function AssemblyManualClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const overviewRef = useRef<Overview | null>(null);
+  overviewRef.current = overview;
 
   const load = useCallback(async () => {
+    const orgId = new URLSearchParams(window.location.search).get("orgId") ?? "";
+    let hadCache = Boolean(overviewRef.current);
     try {
-      const response = await fetch("/api/assembly-manual", { cache: "no-store" });
+      const cached = orgId ? await getFeatureSnapshot<Overview>("assembly-manual", orgId) : null;
+      if (!overviewRef.current && cached?.data && isAssemblyOverview(cached.data)) {
+        setOverview(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch("/api/assembly-manual", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const body = (await response.json()) as Overview & { error?: string };
-      if (!response.ok) throw new Error(body.error ?? "Could not load assembly manual runs.");
+      if (!response.ok || !isAssemblyOverview(body)) {
+        throw new Error(typeof body.error === "string" ? body.error : "Could not load assembly manual runs.");
+      }
       setOverview(body);
       setLoadError(null);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Could not load assembly manual runs.");
+      setFromCache(false);
+      setCachedAt(null);
+      if (orgId) {
+        try {
+          await putFeatureSnapshot("assembly-manual", orgId, body);
+        } catch {
+          // Live list already painted; IndexedDB is best-effort.
+        }
+      }
+    } catch {
+      if (hadCache || overviewRef.current) {
+        setFromCache(true);
+        setLoadError("Could not refresh the assembly manual. Showing the last copy on this device.");
+      } else {
+        setLoadError("Could not load assembly manual runs.");
+      }
     }
   }, []);
 
@@ -195,6 +240,8 @@ export default function AssemblyManualClient() {
           <em>&ldquo;confirm &mdash; not specified in CAD&rdquo;</em> rather than guessed.
         </p>
       </header>
+
+      <OfflineBanner feature="Assembly manual" fromCache={fromCache} cachedAt={cachedAt} />
 
       {loadError ? <p className="am-error">{loadError}</p> : null}
 
