@@ -38,7 +38,7 @@ describe("connection badges", () => {
 });
 
 describe("classifyConnectionsShell", () => {
-  it("is setup without a workspace", () => {
+  it("is setup without a team", () => {
     expect(classifyConnectionsShell({ orgId: null })).toBe("setup");
   });
 

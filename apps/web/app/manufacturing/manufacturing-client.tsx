@@ -69,11 +69,11 @@ function ManufacturingShell({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a team workspace"
-          description={message ?? "Select a team workspace to track parts through manufacturing."}
+          title="Select a team"
+          description={message ?? "Select a team to track parts through manufacturing."}
         >
           <a className="app-button" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
         </EmptyState>
       )}

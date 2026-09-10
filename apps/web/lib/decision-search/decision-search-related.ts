@@ -105,7 +105,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
       return {
         kind,
         title: "Loading Decision Search…",
-        description: "Checking workspace membership and the indexed corpus.",
+        description: "Checking which team you are on and the indexed corpus.",
       };
     case "error":
       return {
@@ -119,9 +119,9 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before indexing decisions, design reviews, or notebook entries.",
+          "Select a team before indexing decisions, design reviews, or notebook entries.",
       };
     case "empty":
       return {
@@ -160,7 +160,7 @@ export function decisionSearchNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before searching.",
           href: "/workspace",
           primary: true,
@@ -188,7 +188,7 @@ export function decisionSearchNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Decision Search can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

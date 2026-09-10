@@ -165,9 +165,9 @@ export async function computeSponsorSuiteView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build sponsor decks, ROI reports, and reminders.",
+      message: "Select a team to build sponsor decks, ROI reports, and reminders.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

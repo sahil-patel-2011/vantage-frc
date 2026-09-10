@@ -284,7 +284,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             badge="Setup required"
             badgeTone="setup"
             title={view.message}
-            description="Choose a workspace, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
+            description="Choose a team, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
           >
             <ol className="strategy-setup-steps">
               {view.steps.map((step) => (

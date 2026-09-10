@@ -23,14 +23,14 @@ export default async function ShowcasePage({
           // to name. Spelled out, like every other org-gated screen.
           breadcrumbs="Media / Showcase"
           title="Showcase"
-          description="A shareable season showcase for one team — pick the workspace first."
+          description="A shareable season showcase for one team — pick the team first."
         />
         <EmptyState
           soft
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="Showcase renders one team's real season. Select the workspace and come back."
+          description="Showcase renders one team's real season. Select the team and come back."
         >
           <a className="app-button" href="/workspace">
             Choose team

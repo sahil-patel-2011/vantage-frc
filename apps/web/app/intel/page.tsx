@@ -30,7 +30,7 @@ export default async function IntelPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
           <a className="app-button secondary" href={hubHref("/competition", "strategy", null)}>
             Open Strategy

@@ -257,7 +257,7 @@ export default function RankingsClient() {
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
           <a className="app-button" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
         </div>
       </main>

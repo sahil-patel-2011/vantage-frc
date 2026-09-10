@@ -26,7 +26,7 @@ import type {
 export type DriveMembership = { orgId: string; orgName: string; role: string };
 
 /**
- * Resolve the workspace without demanding a query parameter — the same
+ * Resolve the team without demanding a query parameter — the same
  * fallback the Forms API uses, so opening /files from the nav works for the
  * overwhelmingly common case of one team.
  */

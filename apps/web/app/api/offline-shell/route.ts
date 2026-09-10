@@ -53,7 +53,7 @@ export async function GET(request: Request) {
         status: "setup_required",
         message: "Could not check this phone. Choose a team and try again.",
         steps: [
-          { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
       } satisfies OfflineShellView,

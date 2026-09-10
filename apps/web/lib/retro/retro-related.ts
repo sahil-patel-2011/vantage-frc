@@ -76,8 +76,8 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open retros and postmortems.",
+      label: "Choose your team",
+      detail: "Choose your team to open retros and postmortems.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -118,7 +118,7 @@ export function shouldShowRetroSummaryTiles(input: {
   return input.sessionCount > 0 && (input.itemCount > 0 || input.openActionCount > 0);
 }
 
-/** True when the workspace has no retro sessions yet — Soft-UI empty. */
+/** True when the team has no retro sessions yet — Soft-UI empty. */
 export function isRetroBoardEmpty(input: { sessionCount: number }): boolean {
   return input.sessionCount === 0;
 }
@@ -146,7 +146,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         kind,
         title: "Loading Team Retrospective…",
         description:
-          "Checking workspace membership and real retro sessions.",
+          "Checking which team you are on and real retro sessions.",
       };
     case "error":
       return {
@@ -160,9 +160,9 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before collecting start/stop/continue feedback.",
+          "Join or pick a team before collecting start/stop/continue feedback.",
       };
     case "empty":
       return {

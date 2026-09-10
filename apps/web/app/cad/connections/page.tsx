@@ -18,11 +18,11 @@ export default async function CadConnectionsPage({
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">CAD / Connections</span>
-            <h1>Select a workspace</h1>
-            <p className="app-muted">Connections belong to a team. Choose a workspace to link CAD accounts and devices.</p>
+            <h1>Select a team</h1>
+            <p className="app-muted">Connections belong to a team. Choose a team to link CAD accounts and devices.</p>
           </div>
           <a className="primary-action" href="/workspace">
-            Choose workspace →
+            Choose your team →
           </a>
         </header>
       </main>

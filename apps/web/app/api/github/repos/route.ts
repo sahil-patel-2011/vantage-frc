@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       if (!authToken) {
         return {
           empty: true,
-          emptyReason: "GitHub is not connected for this workspace.",
+          emptyReason: "GitHub is not connected for this team.",
           repos: [] as unknown[],
           defaultRepoFullName: null as string | null,
         };

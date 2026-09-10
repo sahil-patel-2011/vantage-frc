@@ -105,7 +105,7 @@ export async function GET(request: Request) {
         if (requestedOrg) throw new HttpError(403, "Organization access denied");
         return {
           status: "setup_required",
-          message: "Select a team workspace to plan your season calendar.",
+          message: "Select a team to plan your season calendar.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies CalendarView;
       }

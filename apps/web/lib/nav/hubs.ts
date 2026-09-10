@@ -390,7 +390,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/ai",
     label: "AI",
     title: "AI",
-    // Not a workspace any more: "Ask AI" in the top bar opens the chat from
+    // Not a team any more: "Ask AI" in the top bar opens the chat from
     // any page, and the controls (keys, budgets, governance, memory, usage)
     // live under Settings where configuration belongs. The hub page and every
     // /ai?tab= URL keep working.

@@ -18,9 +18,9 @@ export const MODEL_POLICY_MODE_META: Record<
     description: "Members may pick any model in the catalog, or leave it on Auto.",
   },
   allowlist: {
-    label: "Allowlist",
+    label: "Only these models",
     description:
-      "Members only see the models you check below. A pick outside the list quietly falls back to the best allowed model — never an error mid-chat.",
+      "Members only see the models you check below. A pick outside the list quietly uses the best allowed model.",
   },
   force_auto: {
     label: "Auto only",
@@ -47,7 +47,7 @@ export function describeModelPolicy(
 ): string {
   if (mode === "force_auto") return "Auto only — your team lead routes every request.";
   if (mode === "allowlist") {
-    if (allowedCount <= 0) return "Allowlist is empty — Auto routing is used until models are checked.";
+    if (allowedCount <= 0) return "No models are checked — Auto routing is used until you pick some.";
     return allowedCount === 1
       ? "1 model is allowed, plus Auto."
       : `${allowedCount} models are allowed, plus Auto.`;

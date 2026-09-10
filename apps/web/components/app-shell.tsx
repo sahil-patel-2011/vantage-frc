@@ -92,7 +92,7 @@ function formatMembershipLabel(row: MembershipOption): string {
     row.teamNumber != null && Number.isFinite(row.teamNumber) ? `Team ${row.teamNumber}` : null;
   const name = row.orgName?.trim() || null;
   const parts = [team, name].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Team workspace";
+  return parts.length > 0 ? parts.join(" · ") : "Your team";
 }
 
 function formatRolePlanCue(role?: string | null, planCode?: string | null, paidOrg?: boolean): string {
@@ -105,7 +105,7 @@ function formatRolePlanCue(role?: string | null, planCode?: string | null, paidO
   if (roleLabel && planLabel) return `${roleLabel} · ${planLabel}`;
   if (roleLabel) return roleLabel;
   if (planLabel) return planLabel;
-  return "Workspace";
+  return "Your team";
 }
 
 function islandTabIsActive(pathname: string, search: string, tabHref: string): boolean {
@@ -855,7 +855,7 @@ export default function AppShell() {
                   <span className="soft-account-org">{rolePlanCue}</span>
                 </div>
                 {memberships.length > 1 ? (
-                  <div className="soft-account-teams" role="group" aria-label="Switch team workspace">
+                  <div className="soft-account-teams" role="group" aria-label="Switch team">
                     <span className="soft-account-teams-label">Teams</span>
                     {orderedMemberships.map((row) => (
                       <a
@@ -1014,7 +1014,7 @@ export default function AppShell() {
               </span>
             </button>
             {workspaceOpen ? (
-              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Team workspaces">
+              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Your teams">
                 {memberships.length === 0 ? (
                   <p className="soft-workspace-empty">No team yet — open an invite from email.</p>
                 ) : (

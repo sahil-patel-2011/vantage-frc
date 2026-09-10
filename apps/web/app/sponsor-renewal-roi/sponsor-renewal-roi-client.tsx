@@ -145,7 +145,7 @@ function RoiShell({
         >
           {shell === "setup" ? (
             <a className="app-button" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>
-              {orgId ? "Open Sponsor CRM" : "Select workspace"}
+              {orgId ? "Open Sponsor CRM" : "Choose your team"}
             </a>
           ) : null}
           {shell === "empty" ? (

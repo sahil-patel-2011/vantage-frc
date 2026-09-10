@@ -51,7 +51,7 @@ export default async function ScoutDisagreementsPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel scout-disagreements-panel" aria-label="Setup steps">

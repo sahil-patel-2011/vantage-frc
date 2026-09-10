@@ -119,7 +119,7 @@ export function buildScheduleView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Select a team workspace to view the match schedule.",
+      message: input.setupMessage ?? "Select a team to view the match schedule.",
     };
   }
   if (!input.context.eventKey) {

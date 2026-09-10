@@ -216,7 +216,7 @@ async function hydrateSource(
           path,
           content: "",
           provenance: [] as Array<{ type: string; label: string }>,
-          empty: "GitHub is not connected for this workspace.",
+          empty: "GitHub is not connected for this team.",
           filesScanned: 0,
           githubRepo,
           githubRef,
@@ -404,7 +404,7 @@ export async function GET(request: Request) {
         await requireOrgMember(client, orgId, session.user.id);
         const authToken = await getGitHubAccessToken(client, orgId);
         if (!authToken) {
-          return { empty: true as const, emptyReason: "GitHub is not connected for this workspace." };
+          return { empty: true as const, emptyReason: "GitHub is not connected for this team." };
         }
         const fullName = url.searchParams.get("repo")?.trim() || authToken.connection.defaultRepoFullName;
         if (!fullName) {

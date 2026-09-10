@@ -166,7 +166,7 @@ export default function SparesClient() {
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
+          <p className="app-muted">Checking your team.</p>
         </section>
       ) : view.status === "setup_required" ? (
         <section className="app-card soft-panel">
@@ -351,7 +351,7 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
           orgLabel={view.teamNumber != null ? `team-${view.teamNumber}` : null}
           orgId={view.orgId}
           size="sm"
-          provenance="Live shelf counts for this workspace — status is recomputed from on-hand vs reorder point."
+          provenance="Live shelf counts for this team — status is recomputed from on-hand vs reorder point."
         />
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620, marginTop: 12 }}>

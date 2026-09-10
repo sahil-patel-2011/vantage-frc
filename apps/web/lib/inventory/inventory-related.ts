@@ -78,8 +78,8 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Inventory.",
+      label: "Choose your team",
+      detail: "Choose your team to open Inventory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -147,7 +147,7 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
         kind,
         title: "Loading Inventory…",
         description:
-          "Checking workspace membership and real parts stock.",
+          "Checking which team you are on and real parts stock.",
       };
     case "error":
       return {
@@ -161,9 +161,9 @@ export function inventoryShellCopy(kind: InventoryShellKind): InventoryEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before tracking real parts.",
+          "Select a team before tracking real parts.",
       };
     case "empty":
       return {

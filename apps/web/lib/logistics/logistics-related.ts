@@ -73,8 +73,8 @@ export function logisticsSetupSteps(orgId?: string | null): LogisticsSetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Logistics.",
+      label: "Choose your team",
+      detail: "Choose your team to open Logistics.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
       return {
         kind,
         title: "Loading Logistics…",
-        description: "Checking workspace membership and published trips.",
+        description: "Checking which team you are on and published trips.",
       };
     case "error":
       return {
@@ -136,7 +136,7 @@ export function logisticsShellCopy(kind: LogisticsShellKind): LogisticsEmptyCopy
         badge: "Setup required",
         title: "Finish setup for travel plans",
         description:
-          "Pick a workspace and apply the event logistics migration if tables are missing.",
+          "Select a team and apply the event logistics migration if tables are missing.",
       };
     case "empty":
       return {
@@ -175,7 +175,7 @@ export function logisticsShellNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before publishing hotels.",
           href: "/workspace",
           primary: true,
@@ -183,7 +183,7 @@ export function logisticsShellNextActions(input: {
         {
           id: "command",
           label: "Open Event Day",
-          detail: "Field command stays blank until a workspace and trip exist.",
+          detail: "Field command stays blank until a team and trip exist.",
           href: hubHref("/competition", "command", null),
         },
         {
@@ -197,7 +197,7 @@ export function logisticsShellNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership or migration setup so Logistics can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

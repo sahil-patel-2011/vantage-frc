@@ -92,7 +92,7 @@ export async function GET(request: Request) {
         : credentialRejected
           ? `GitHub refused the stored credential for @${state?.githubLogin ?? "this account"}. The token was revoked, expired, or lost its scopes — reconnect to issue a new one.`
           : setup.configured
-            ? "No GitHub account linked for this workspace yet. Owners/admins can Connect GitHub (OAuth) or save a PAT."
+            ? "No GitHub account linked for this team yet. Owners/admins can Connect GitHub (OAuth) or save a PAT."
             : setup.message,
     });
   } catch (error) {
@@ -225,7 +225,7 @@ export async function POST(request: Request) {
 
       if (!result.linked) {
         return Response.json(
-          { ok: false, linked: false, error: "No GitHub connection to verify for this workspace." },
+          { ok: false, linked: false, error: "No GitHub connection to verify for this team." },
           { status: 404 },
         );
       }

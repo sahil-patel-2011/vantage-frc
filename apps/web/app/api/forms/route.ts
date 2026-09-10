@@ -46,7 +46,7 @@ async function requireSession() {
 type Membership = { orgId: string; orgName: string; role: string };
 
 /**
- * Resolve the workspace without demanding a query parameter.
+ * Resolve the team without demanding a query parameter.
  *
  * The scouting form builder gates on `searchParams.orgId` and shows "setup
  * required" forever when you open it from the nav, even with exactly one team.

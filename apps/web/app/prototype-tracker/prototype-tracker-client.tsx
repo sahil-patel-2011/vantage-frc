@@ -212,7 +212,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
         <EmptyState
           soft
           title={copy ? copy.title : "Loading prototype tracker…"}
-          description={copy ? copy.description : "Checking your workspace."}
+          description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (

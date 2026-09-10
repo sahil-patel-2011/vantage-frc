@@ -35,8 +35,8 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Opponent Watchlist.",
+      label: "Choose your team",
+      detail: "Choose your team to open Opponent Watchlist.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -63,7 +63,7 @@ function setupSteps(orgId: string | null): WatchlistSetupStep[] {
 function setupRequiredView(orgId: string | null = null): OpponentWatchlistView {
   return {
     status: "setup_required",
-    message: "Select a team workspace to build an opponent watchlist.",
+    message: "Select a team to build an opponent watchlist.",
     steps: setupSteps(orgId),
     orgId,
   };

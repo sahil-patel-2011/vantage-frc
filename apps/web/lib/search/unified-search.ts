@@ -265,7 +265,7 @@ async function resolveOrg(
  * Run the unified search. Caller must supply a `withRls`-bound client so every
  * source query is subject to the same tenancy context.
  *
- * Help tutorials are static and available even before a workspace is selected.
+ * Help tutorials are static and available even before a team is selected.
  */
 export async function computeUnifiedSearch(
   client: PoolClient,
@@ -303,7 +303,7 @@ export async function computeUnifiedSearch(
     }
     return {
       status: "setup_required",
-      message: "Join or select a team workspace to search across your team's data. App manual topics still work from /docs.",
+      message: "Join or select a team to search across your team's data. App manual topics still work from /docs.",
       orgId: null,
       query: query ?? "",
     };

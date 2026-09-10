@@ -163,8 +163,8 @@ export function attendanceNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before logging who showed up.",
+        label: "Choose your team",
+        detail: "Choose your team before logging who showed up.",
         href: "/workspace",
         primary: true,
       },

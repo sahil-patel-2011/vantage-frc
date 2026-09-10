@@ -52,7 +52,7 @@ export default async function ScoutingFormsPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
           <ol className="sfb-setup-steps">
             {steps.map((step) => (

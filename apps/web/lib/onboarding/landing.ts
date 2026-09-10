@@ -2,7 +2,7 @@
  * Role-aware landing for a finished onboarding.
  *
  * Instead of a bare redirect, a person who completes onboarding *and already has
- * a workspace* sees the first five things worth doing, drawn from the same
+ * a team* sees the first five things worth doing, drawn from the same
  * role-onboarding tracks `/start` will show them — so a scout lands on scouting
  * links and a mentor lands on team-admin links.
  *
@@ -166,7 +166,7 @@ export function buildOnboardingLanding(input: {
     ? { href: "/admin", label: "Open platform admin" }
     : input.orgId
       ? { href: withOrg("/start", input.orgId), label: "Open your full path" }
-      : { href: "/workspace", label: "Open your workspace" };
+      : { href: "/workspace", label: "Choose your team" };
 
   const secondary = input.orgId
     ? {

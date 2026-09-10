@@ -109,7 +109,7 @@ export function assertChannelPermission(
   }
   if (context.isDefault && action !== "create") {
     throw new Error(
-      `The ${DEFAULT_CHANNEL_TITLE} channel is the workspace default and cannot be renamed or archived`,
+      `The ${DEFAULT_CHANNEL_TITLE} channel is the team default and cannot be renamed or archived`,
     );
   }
 }
@@ -304,7 +304,7 @@ export async function renameChannel(
 
   const title = normalizeChannelName(input.title);
   if (isDefaultChannelName(title)) {
-    throw new Error(`"${DEFAULT_CHANNEL_TITLE}" is reserved for the workspace default channel`);
+    throw new Error(`"${DEFAULT_CHANNEL_TITLE}" is reserved for the team default channel`);
   }
   if (sameChannelName(title, channel.title)) return { conversationId: channel.id, title: channel.title };
 

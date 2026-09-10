@@ -244,7 +244,7 @@ export default function SeasonFinanceClient({
         : null}
 
       {view?.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this workspace can read the finance tables.">
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this team can read the finance tables.">
           <div className="season-finance-next">
             {view.steps.map((step) => (
               <a key={step.id} className="app-button secondary" href={step.href}>

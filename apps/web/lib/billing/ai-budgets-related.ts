@@ -261,7 +261,7 @@ export function aiBudgetsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Chat limits are saved per team — pick a team first.",
         href: "/workspace",
         primary: true,
@@ -316,7 +316,7 @@ export function aiBudgetsNextActions(input: {
       {
         id: "account",
         label: "Open Account",
-        detail: "Check your role and workspace membership.",
+        detail: "Check your role and which team you are on.",
         href: accountHref,
       },
     ];
@@ -359,7 +359,7 @@ export function aiBudgetsNextActions(input: {
     {
       id: "account",
       label: "Open Account",
-      detail: "Plan seating and workspace membership live under Account.",
+      detail: "Plan seating and which team you are on live under Account.",
       href: accountHref,
     },
     {
@@ -472,7 +472,7 @@ export function aiUsageNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Pick a team first.",
         href: "/workspace",
         primary: true,
@@ -533,7 +533,7 @@ export function aiUsageNextActions(input: {
       {
         id: "account",
         label: "Open Account",
-        detail: "Check your role and workspace membership.",
+        detail: "Check your role and which team you are on.",
         href: accountHref,
       },
     ];
@@ -582,7 +582,7 @@ export function aiUsageNextActions(input: {
     {
       id: "account",
       label: "Open Account",
-      detail: "Plan seating and workspace membership live under Account.",
+      detail: "Plan seating and which team you are on live under Account.",
       href: accountHref,
     },
   );

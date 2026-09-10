@@ -99,7 +99,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         kind,
         title: "Loading Pick-list Justifier…",
         description:
-          "Checking workspace membership and pick lists.",
+          "Checking which team you are on and pick lists.",
       };
     case "error":
       return {
@@ -113,9 +113,9 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before justifying slots.",
+          "Select a team before justifying slots.",
       };
     case "empty":
       return {
@@ -156,7 +156,7 @@ export function picklistJustifierNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before generating rationales.",
           href: "/workspace",
           primary: true,
@@ -178,7 +178,7 @@ export function picklistJustifierNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Pick-list Justifier can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

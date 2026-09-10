@@ -108,7 +108,7 @@ export async function computeRetroView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to run a retrospective.",
+      message: "Select a team to run a retrospective.",
       steps: retroSetupSteps(null),
       orgId: null,
       seasonYear,

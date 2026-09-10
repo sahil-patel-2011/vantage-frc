@@ -254,9 +254,9 @@ export async function computePrintFarmView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to run the print farm.",
+      message: "Select a team to run the print farm.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };

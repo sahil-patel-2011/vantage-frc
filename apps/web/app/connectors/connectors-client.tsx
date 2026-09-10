@@ -189,8 +189,8 @@ export default function ConnectorsClient() {
 
       {!orgId ? (
         <p className="connector-banner" role="status">
-          You are not in a workspace, so team-linked connectors below show deployment configuration only.{" "}
-          <a href="/workspace">Select a workspace</a> to link GitHub, Discord, Slack or a storage node.
+          You are not in a team, so team-linked connectors below show deployment configuration only.{" "}
+          <a href="/workspace">Select a team</a> to link GitHub, Discord, Slack or a storage node.
         </p>
       ) : null}
 
@@ -246,7 +246,7 @@ export default function ConnectorsClient() {
                     disabled={busy || !orgId || managedByOthers}
                     title={
                       !orgId
-                        ? "Select a workspace first — this link is saved per team."
+                        ? "Select a team first — this link is saved per team."
                         : managedByOthers
                           ? "Only an owner or admin can change this team's link."
                           : undefined

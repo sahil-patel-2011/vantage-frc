@@ -72,8 +72,8 @@ export function matchingGiftFinderSetupSteps(orgId?: string | null): MatchingGif
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open matching gifts.",
+      label: "Choose your team",
+      detail: "Choose your team to open matching gifts.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -132,7 +132,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
       return {
         kind,
         title: "Loading Matching Gift Finder…",
-        description: "Checking workspace membership and household contacts.",
+        description: "Checking which team you are on and household contacts.",
       };
     case "error":
       return {
@@ -146,9 +146,9 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before adding household employers.",
+          "Select a team before adding household employers.",
       };
     case "empty":
       return {
@@ -187,7 +187,7 @@ export function matchingGiftFinderNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before adding contacts.",
           href: "/workspace",
           primary: true,

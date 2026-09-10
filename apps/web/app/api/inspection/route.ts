@@ -68,7 +68,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team workspace to run inspection prep.",
+          message: "Select a team to run inspection prep.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies InspectionView;
       }

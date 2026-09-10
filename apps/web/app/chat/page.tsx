@@ -22,11 +22,11 @@ export default async function ChatPage({
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a team workspace"
-          description="Each team has its own channels and memory. Open Workspace or Account, then return from the AI hub."
+          title="Select a team"
+          description="Each team has its own channels and memory. Choose your team or Account, then return from the AI hub."
         >
           <a className="app-button secondary" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
           <a className="app-button secondary" href={withOrgHref("/account", null)}>
             Account

@@ -162,7 +162,7 @@ function ScoutDataImpactShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? strategyHref : "/workspace"}>
-            {orgId ? "Open Strategy" : "Select workspace"}
+            {orgId ? "Open Strategy" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (

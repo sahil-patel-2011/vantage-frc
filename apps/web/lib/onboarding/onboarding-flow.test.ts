@@ -29,7 +29,7 @@ describe("onboarding Soft-UI flow helpers", () => {
     expect(onboardingProgressLabel("team")).toBe("Step 2 of 3 · Your team");
     expect(onboardingProgressLabel("preferences")).toBe("Step 3 of 3 · Finish");
     expect(onboardingProgressLabel("pending")).toMatch(/waiting for team approval/i);
-    expect(onboardingProgressLabel("done")).toMatch(/workspace is open/i);
+    expect(onboardingProgressLabel("done")).toMatch(/team is open/i);
   });
 
   it("labels every dot in the 3-dot header", () => {

@@ -19,7 +19,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Orient yourself before diving into a subteam path.",
     source: "welcome",
     checks: checks([
-      ["open_workspace", "Open your workspace", "Confirm the right team is active.", "/workspace"],
+      ["open_workspace", "Choose your team", "Confirm the right team is active.", "/workspace"],
       ["join_calendar", "Join a subteam calendar", "Pick the crew you practice with so events show up.", "/team/calendar"],
       ["read_knowledge", "Skim Team Knowledge", "Robot conventions and season notes the AI already reads.", "/team/knowledge"],
       ["try_chat", "Ask the team assistant one real question", "Strategy, packing, or what you should do first.", "/chat"],

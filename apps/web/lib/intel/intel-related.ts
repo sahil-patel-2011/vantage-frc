@@ -84,8 +84,8 @@ export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Intel and research.",
+      label: "Choose your team",
+      detail: "Choose your team to open Intel and research.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -150,7 +150,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         kind,
         title: "Loading Team Intel…",
         description:
-          "Checking workspace membership and the global team index.",
+          "Checking which team you are on and the global team index.",
       };
     case "error":
       return {
@@ -164,9 +164,9 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and sync TBA/Statbotics before metrics or findings appear.",
+          "Select a team and sync TBA/Statbotics before metrics or findings appear.",
       };
     case "empty":
       return {
@@ -209,7 +209,7 @@ export function intelNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before looking up research.",
           href: "/workspace",
           primary: true,

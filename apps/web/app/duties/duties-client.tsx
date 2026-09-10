@@ -122,7 +122,7 @@ export default function DutiesClient() {
               </a>
             ) : null}
             <a className="app-button secondary" href="/workspace">
-              Choose workspace
+              Choose your team
             </a>
           </div>
         </EmptyState>
@@ -148,11 +148,11 @@ export default function DutiesClient() {
           badge="Setup required"
           badgeTone="setup"
           title={view.message}
-          description="Pick a team workspace, then post who is on duty. My Day stays empty until someone is assigned."
+          description="Pick a team, then post who is on duty. My Day stays empty until someone is assigned."
         >
           <div className="soft-btn-row">
             <a className="app-button" href="/workspace">
-              Choose workspace
+              Choose your team
             </a>
             <a className="app-button secondary" href={withOrgHref("/my-day", view.orgId)}>
               My Day

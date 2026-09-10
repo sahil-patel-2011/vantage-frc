@@ -156,7 +156,7 @@ function toInt(value: string | number | null | undefined): number {
 }
 
 /**
- * Soft-UI Media workspace view — fans in real Media Kit, outreach, impact, and
+ * Soft-UI Media team view — fans in real Media Kit, outreach, impact, and
  * sponsor-wall counts. Never invents DEMO metrics; empty boards stay empty.
  */
 export async function computeMediaView(
@@ -169,12 +169,12 @@ export async function computeMediaView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to open the Media workspace.",
+      message: "Select a team to open the Media team.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
-          detail: "Choose your team organization",
+          label: "Choose your team",
+          detail: "Pick which FRC team you are working as.",
           href: "/workspace",
         },
       ],

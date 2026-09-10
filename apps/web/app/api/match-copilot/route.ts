@@ -18,9 +18,9 @@ function trimmedOrNull(value: unknown, max = 64): string | null {
 
 const SETUP_FALLBACK: MatchCopilotView = {
   status: "setup_required",
-  message: "Could not load Match Copilot. Select a workspace and confirm database access.",
+  message: "Could not load Match Copilot. Select a team and confirm database access.",
   steps: [
-    { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+    { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
   ],
   orgId: null,
 };

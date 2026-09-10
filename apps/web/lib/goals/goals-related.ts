@@ -74,8 +74,8 @@ export function goalsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before setting season goals.",
+        label: "Choose your team",
+        detail: "Choose your team before setting season goals.",
         href: "/workspace",
         primary: true,
       },

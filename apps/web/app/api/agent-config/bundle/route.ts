@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     if (!bundle) {
       return Response.json(
-        { error: "No team workspace found for this account", status: "setup_required" },
+        { error: "No team found for this account", status: "setup_required" },
         { status: 404 },
       );
     }

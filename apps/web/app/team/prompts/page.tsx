@@ -17,7 +17,7 @@ export default async function TeamPromptsPage({
         <PageHeader
           breadcrumbs="Team / Prompts"
           title="Prompts"
-          description="The shared prompt library is per team — pick the workspace first."
+          description="The shared prompt library is per team — pick the team first."
         />
         <EmptyState
           soft

@@ -52,7 +52,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
       if (!response.ok || !data.org) {
         setNotice({
           tone: "warn",
-          text: data.error ?? "Branding is unavailable for this workspace right now.",
+          text: data.error ?? "Branding is unavailable for this team right now.",
         });
         setLoaded(true);
         return;
@@ -185,7 +185,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
           <span className="brand-panel-eyebrow">BRANDING</span>
           <h2 id="team-branding-title">Team colour &amp; logo</h2>
           <p>
-            One accent and one logo, applied for every member of this workspace. Members can opt out
+            One accent and one logo, applied for every member of this team. Members can opt out
             individually in Account → Appearance; nobody can be forced into an unreadable colour.
           </p>
         </div>
@@ -305,7 +305,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
               />
               <span>
                 <strong>Show the logo next to the team name</strong>
-                <small>Applies wherever this workspace is identified in-app.</small>
+                <small>Applies wherever this team is identified in-app.</small>
               </span>
             </label>
           </div>

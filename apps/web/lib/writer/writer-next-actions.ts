@@ -27,8 +27,8 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before drafting grants or sponsor emails.",
+        label: "Choose your team",
+        detail: "Choose your team before drafting grants or sponsor emails.",
         href: "/workspace",
         primary: true,
       },

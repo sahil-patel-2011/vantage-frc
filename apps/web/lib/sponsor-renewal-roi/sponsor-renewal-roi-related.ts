@@ -72,8 +72,8 @@ export function sponsorRenewalRoiSetupSteps(orgId?: string | null): SponsorRenew
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open renewal scores.",
+      label: "Choose your team",
+      detail: "Choose your team to open renewal scores.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -132,7 +132,7 @@ export function sponsorRenewalRoiShellCopy(kind: SponsorRenewalRoiShellKind): Sp
       return {
         kind,
         title: "Loading Sponsor Renewal ROI…",
-        description: "Checking workspace membership and sponsor CRM.",
+        description: "Checking which team you are on and sponsor CRM.",
       };
     case "error":
       return {
@@ -187,7 +187,7 @@ export function sponsorRenewalRoiNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before scoring sponsors.",
           href: "/workspace",
           primary: true,

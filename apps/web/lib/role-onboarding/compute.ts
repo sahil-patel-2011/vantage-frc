@@ -142,7 +142,7 @@ export async function loadRoleOnboarding(
   if (!orgId) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to open your onboarding path.",
+      message: "Select a team to open your onboarding path.",
     };
   }
 
@@ -150,7 +150,7 @@ export async function loadRoleOnboarding(
   if (!ctx) {
     return {
       status: "setup_required",
-      message: "Join a team workspace to see role-based onboarding checklists.",
+      message: "Join a team to see role-based onboarding checklists.",
     };
   }
 

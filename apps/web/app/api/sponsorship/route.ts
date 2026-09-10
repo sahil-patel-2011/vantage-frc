@@ -208,7 +208,7 @@ async function buildView(
     return {
       status: "setup_required",
       seasonYear,
-      message: "Select a team workspace to compose sponsorship one-pagers.",
+      message: "Select a team to compose sponsorship one-pagers.",
       context: {
         orgId: null,
         orgName: null,
@@ -260,7 +260,7 @@ async function requirePageInOrg(client: PoolClient, orgId: string, id: string): 
     [orgId, id],
   );
   const row = result.rows[0];
-  if (!row) throw new HttpError(404, "One-pager not found in this workspace");
+  if (!row) throw new HttpError(404, "One-pager not found on this team");
   return mapPage(row);
 }
 

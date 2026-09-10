@@ -27,7 +27,7 @@ describe("describeModelPolicy", () => {
   it("describes each mode honestly", () => {
     expect(describeModelPolicy("allow_all", 0)).toMatch(/All catalog models/);
     expect(describeModelPolicy("force_auto", 5)).toMatch(/Auto only/);
-    expect(describeModelPolicy("allowlist", 0)).toMatch(/empty/);
+    expect(describeModelPolicy("allowlist", 0)).toMatch(/No models/);
     expect(describeModelPolicy("allowlist", 1)).toBe("1 model is allowed, plus Auto.");
     expect(describeModelPolicy("allowlist", 2)).toBe("2 models are allowed, plus Auto.");
   });

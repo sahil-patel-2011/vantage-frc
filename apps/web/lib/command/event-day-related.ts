@@ -78,8 +78,8 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Event Day Command.",
+      label: "Choose your team",
+      detail: "Choose your team to open Event Day Command.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -208,7 +208,7 @@ export function eventDayShellNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team first.",
           href: "/workspace",
           primary: true,
@@ -216,13 +216,13 @@ export function eventDayShellNextActions(input: {
         {
           id: "my-day",
           label: "Open My Day",
-          detail: "Personal next-match glance stays blank until a workspace exists.",
+          detail: "Personal next-match glance stays blank until a team exists.",
           href: hubHref("/competition", "my-day", null),
         },
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Full event boards stay blank until a workspace and TBA sync exist.",
+          detail: "Full event boards stay blank until a team and TBA sync exist.",
           href: withOrgHref("/schedule", null),
         },
         {

@@ -74,8 +74,8 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Bus-Factor.",
+      label: "Choose your team",
+      detail: "Choose your team to open Bus-Factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function shouldShowBusFactorSummaryTiles(entryCount: number): boolean {
   return entryCount > 0;
 }
 
-/** True when the workspace has no workload entries yet — Soft-UI empty. */
+/** True when the team has no workload entries yet — Soft-UI empty. */
 export function isBusFactorBoardEmpty(input: { entryCount: number }): boolean {
   return input.entryCount === 0;
 }
@@ -148,7 +148,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         kind,
         title: "Loading Bus-Factor & Burnout…",
         description:
-          "Checking workspace membership and logged workload entries.",
+          "Checking which team you are on and logged workload entries.",
       };
     case "error":
       return {
@@ -162,9 +162,9 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging weekly workload.",
+          "Select a team before logging weekly workload.",
       };
     case "empty":
       return {

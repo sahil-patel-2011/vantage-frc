@@ -67,8 +67,8 @@ export function matchVideoIndexSetupSteps(orgId?: string | null): MatchVideoInde
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open video indexes.",
+      label: "Choose your team",
+      detail: "Choose your team to open video indexes.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -117,7 +117,7 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
       return {
         kind,
         title: "Loading Match Video Index…",
-        description: "Checking workspace membership and indexed clips.",
+        description: "Checking which team you are on and indexed clips.",
       };
     case "error":
       return {
@@ -131,9 +131,9 @@ export function matchVideoIndexShellCopy(kind: MatchVideoIndexShellKind): MatchV
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before indexing clips.",
+          "Select a team before indexing clips.",
       };
     case "empty":
       return {
@@ -164,7 +164,7 @@ export function matchVideoIndexNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before adding clips.",
           href: "/workspace",
           primary: true,
@@ -180,7 +180,7 @@ export function matchVideoIndexNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Match Video Index can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

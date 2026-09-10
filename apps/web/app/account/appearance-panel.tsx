@@ -235,7 +235,7 @@ export default function AppearancePanel() {
           <p className="app-muted">Loading your team’s branding…</p>
         ) : !org ? (
           <p>
-            You are not in a team workspace yet, so there is no team colour to apply. Vantage stays on
+            You are not in a team yet, so there is no team colour to apply. Vantage stays on
             its default accent.
           </p>
         ) : !org.accentColor ? (
@@ -292,7 +292,7 @@ export default function AppearancePanel() {
               { }
               <img src={logoUrl} alt="" />
             </span>
-            Your team logo appears wherever this workspace is named.
+            Your team logo appears wherever this team is named.
           </p>
         ) : null}
       </section>

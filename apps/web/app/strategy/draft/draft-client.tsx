@@ -208,7 +208,7 @@ function DraftShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? commandHref : "/workspace"}>
-            {orgId ? "Set active event" : "Select workspace"}
+            {orgId ? "Set active event" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (

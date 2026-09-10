@@ -49,8 +49,8 @@ function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Readiness Score.",
+      label: "Choose your team",
+      detail: "Choose your team to open Readiness Score.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -212,7 +212,7 @@ export async function computeReadinessScoreView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to track robot readiness.",
+      message: "Select a team to track robot readiness.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

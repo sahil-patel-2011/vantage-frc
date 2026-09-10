@@ -69,7 +69,7 @@ function fixtureClient(fixture: Fixture = {}): PoolClient {
 }
 
 describe("computeRoadmapView", () => {
-  it("asks for a workspace when the user has no membership", async () => {
+  it("asks for a team when the user has no membership", async () => {
     const view = await computeRoadmapView(fixtureClient({ member: false }), {
       userId: USER,
       requestedOrg: null,
@@ -275,7 +275,7 @@ describe("writes", () => {
 });
 
 describe("setupRequired", () => {
-  it("names the workspace step so the page is never a dead end", () => {
+  it("names the team step so the page is never a dead end", () => {
     const state = setupRequired(null);
     expect(state.steps.length).toBeGreaterThan(0);
     expect(state.steps[0]!.href).toBe("/workspace");

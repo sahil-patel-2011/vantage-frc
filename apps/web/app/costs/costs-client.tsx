@@ -195,7 +195,7 @@ export default function CostsClient() {
         <EmptyState
           soft
           title={failure ? failure.title : "Loading season costs…"}
-          description={failure ? failure.description : "Checking your workspace."}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

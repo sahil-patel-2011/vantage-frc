@@ -92,7 +92,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "admin-owner",
     label: "Admin & owner",
-    blurb: "Running the workspace: provisioning, roles, and team configuration.",
+    blurb: "Running the team: provisioning, roles, and team configuration.",
   },
 ];
 
@@ -157,7 +157,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/team/getting-started",
     sections: [
       {
-        heading: "1 · Get a workspace",
+        heading: "1 · Get a team",
         body: [
           "Access is closed: a platform admin provisions each team and its owner, or — when your FRC team number is not claimed yet — an owner can self-serve it at /claim with a verified email.",
           "Everyone else joins by invite. There is no open sign-up; unknown emails land on the waitlist.",
@@ -234,7 +234,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Playbook",
         body: [
           "Playbook is the team wiki with page history. The Season roadmap, Bring your season importer, and the Team Library are pinned at its front.",
-          "Everything belongs to this team: pick a workspace first, and empty stays empty until someone writes real rows.",
+          "Everything belongs to this team: pick a team first, and empty stays empty until someone writes real rows.",
         ],
       },
     ],
@@ -268,7 +268,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Long-press or right-click the island, or open the menu and tap Customize island.",
           "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
-          "Allowlisted destinations include Home, Compete, Team, Business, Media, Build, AI, Scout, My Day, Logistics, and Messages.",
+          "The island can open Home, Compete, Team, Business, Media, Build, Ask AI, Scout, My Day, Logistics, and Messages.",
         ],
       },
       {
@@ -465,7 +465,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Open Command",
         body: [
           "Competition → Event day, or /command (Vantage Event Day).",
-          "Select a workspace and active event first. Command stays blank until the schedule is saved.",
+          "Select a team and active event first. Command stays blank until the schedule is saved.",
         ],
       },
       {
@@ -806,7 +806,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Any file, plus links",
         body: [
-          "There is no file-type allowlist: STEP/DXF/F3D CAD, PDFs, vendor manuals, images, zips, and code all upload — up to the honest 100 MB in-database cap per file. Bigger files belong on a paired storage node.",
+          "STEP, DXF, F3D CAD, PDFs, vendor manuals, images, zips, and code all upload — up to 100 MB per file in team Drive. Bigger files belong on a paired storage computer.",
           "Links are first-class resources too: save an external URL on its own, or attach links to a file (a vendor page next to its STEP, a video next to a manual).",
           "Files get a title from their name, plus optional notes and tags; duplicates are detected by content hash instead of stored twice.",
         ],
@@ -903,7 +903,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Accepting",
         body: [
           "The recipient opens /invite?token=…, signs in with the invited email, and taps Accept invitation.",
-          "Wrong account? Sign out and switch to the invited address. Team numbers never join a workspace by themselves.",
+          "Wrong account? Sign out and switch to the invited address. Team numbers never join a team by themselves.",
         ],
       },
     ],
@@ -919,7 +919,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "hub access",
       "section access",
       "acl",
-      "allowlist",
+      "section access",
       "restrict tabs",
       "scout access",
       "viewer access",
@@ -936,7 +936,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "How allowlists work",
+        heading: "How section access works",
         body: [
           "With no hubs checked, the member is unrestricted (sees every pillar).",
           "Check a hub to allow it. Leave its tabs unchecked for full access inside that hub.",
@@ -1169,7 +1169,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Update later",
         body: [
           "Owners and admins can change affiliation and funding paths under Team → Background after onboarding.",
-          "Changes apply to navigation immediately for the workspace. Sponsor tools stay hidden until you pick a funding model that includes them.",
+          "Changes apply to navigation immediately for the team. Sponsor tools stay hidden until you pick a funding model that includes them.",
         ],
       },
     ],
@@ -1179,7 +1179,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "media-workspace",
     slug: "media-workspace",
-    title: "Media workspace for press and business",
+    title: "Media team for press and business",
     summary:
       "Top-level Vantage Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
     category: "media",
@@ -1202,7 +1202,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open the Media pillar from the Vantage island, drawer, or Cmd+K — search “Media”.",
           "You can also pin Media as one of your four island apps.",
-          "Pick a team workspace first — Media belongs to this team like the other tools.",
+          "Pick a team first — Media belongs to this team like the other tools.",
         ],
       },
       {
@@ -1603,7 +1603,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "admin-owner",
     title: "Owner & admin guide",
     summary:
-      "Provisioning, roles, the last-admin safeguard, security allowlists, and the team-level configuration only owners and admins touch.",
+      "Roles, the last-admin safeguard, who can open which sections, and the team settings only owners and admins touch.",
     category: "admin-owner",
     keywords: [
       "owner",
@@ -1620,7 +1620,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/team/admin",
     sections: [
       {
-        heading: "Getting and running a workspace",
+        heading: "Getting and running a team",
         body: [
           "Teams are provisioned by a platform admin, or self-served at /claim when the FRC team number is unclaimed and the claimant's email is verified. Membership is closed: exact-email invites only.",
           "A workspace always keeps at least one owner/admin — demoting the last one is blocked. Until a second admin exists (or for the first 14 days), the UI nudges you to invite a co-admin.",
@@ -1637,7 +1637,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Housekeeping",
         body: [
           "Exports (/exports) produce audited CSV/ZIP takeout for this team. Keys are never included.",
-          "Billing belongs to the workspace's billing owner; plans and hosted credits are managed from /pricing and AI → Controls.",
+          "Billing belongs to the team's billing owner; plans and hosted credits are managed from /pricing and AI → Controls.",
         ],
       },
     ],

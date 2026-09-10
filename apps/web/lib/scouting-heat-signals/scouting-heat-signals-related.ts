@@ -71,8 +71,8 @@ export function scoutingHeatSignalsSetupSteps(orgId?: string | null): ScoutingHe
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open heat signals.",
+      label: "Choose your team",
+      detail: "Choose your team to open heat signals.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -131,7 +131,7 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
       return {
         kind,
         title: "Loading Scouting Heat Signals…",
-        description: "Checking workspace membership and logged observations.",
+        description: "Checking which team you are on and logged observations.",
       };
     case "error":
       return {
@@ -145,9 +145,9 @@ export function scoutingHeatSignalsShellCopy(kind: ScoutingHeatSignalsShellKind)
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging rising/falling teams.",
+          "Select a team before logging rising/falling teams.",
       };
     case "empty":
       return {
@@ -185,7 +185,7 @@ export function scoutingHeatSignalsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging trends.",
           href: "/workspace",
           primary: true,
@@ -207,7 +207,7 @@ export function scoutingHeatSignalsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Heat Signals can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

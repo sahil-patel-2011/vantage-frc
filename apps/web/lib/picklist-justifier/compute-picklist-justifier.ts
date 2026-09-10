@@ -42,8 +42,8 @@ function setupSteps(orgId: string | null): PicklistJustifierSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Pick-list Justifier.",
+      label: "Choose your team",
+      detail: "Choose your team to open Pick-list Justifier.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -214,7 +214,7 @@ export async function computePicklistJustifierView(
 ): Promise<PicklistJustifierView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequiredView("Select a team workspace to justify pick-list slots.");
+    return setupRequiredView("Select a team to justify pick-list slots.");
   }
 
   const pickLists = await loadPickLists(client, org.orgId);

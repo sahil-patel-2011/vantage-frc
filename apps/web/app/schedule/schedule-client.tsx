@@ -39,7 +39,7 @@ import {
  * CSV shape of the match board. One row per match with the alliances flattened into
  * six team columns, because that is the shape a strategy spreadsheet pivots on.
  * `teamKey` is threaded through so "our alliance" / "our result" are filled in for
- * the workspace's own team and left blank when no team number is set.
+ * the team's own team and left blank when no team number is set.
  */
 function scheduleCsvColumns(teamKey: string | null): CsvColumn<ScheduleMatch>[] {
   const slot = (side: "red" | "blue", index: number): CsvColumn<ScheduleMatch> => ({
@@ -268,7 +268,7 @@ function ScheduleShell({
           ) : null}
           {shell === "setup" ? (
             <a className="app-button" href={workspaceHref}>
-              Open Workspace
+              Choose your team
             </a>
           ) : null}
           <ScheduleRelated

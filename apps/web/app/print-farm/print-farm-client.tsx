@@ -134,11 +134,11 @@ function FarmShell({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a team workspace"
+          title="Select a team"
           description={description}
         >
           <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Open Workspace
+            Choose your team
           </a>
         </EmptyState>
       )}
@@ -221,7 +221,7 @@ export default function PrintFarmClient() {
   if (view == null || view.status !== "live") {
     return (
       <FarmShell
-        description={view?.status === "setup_required" ? view.message : "Select a team workspace to run the print farm."}
+        description={view?.status === "setup_required" ? view.message : "Select a team to run the print farm."}
         orgId={orgId}
         kind="setup"
       />

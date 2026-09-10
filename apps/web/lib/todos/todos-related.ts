@@ -63,8 +63,8 @@ export function todosNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before sharing todos.",
+        label: "Choose your team",
+        detail: "Choose your team before sharing todos.",
         href: "/workspace",
         primary: true,
       },

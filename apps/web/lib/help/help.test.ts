@@ -233,7 +233,7 @@ describe("help search index", () => {
   });
 
   it("finds hub access, funding profile, and the finance desk", () => {
-    expect(searchHelpArticles("hub access allowlist")[0]?.slug).toBe("hub-access");
+    expect(searchHelpArticles("hub access")[0]?.slug).toBe("hub-access");
     expect(searchHelpArticles("funding profile affiliation")[0]?.slug).toBe("funding-profile");
     expect(searchHelpArticles("purchase log")[0]?.slug).toBe("season-finance");
   });

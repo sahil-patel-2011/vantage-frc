@@ -74,8 +74,8 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Readiness Score.",
+      label: "Choose your team",
+      detail: "Choose your team to open Readiness Score.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function shouldShowReadinessScoreSummaryTiles(subsystemCount: number): bo
   return subsystemCount > 0;
 }
 
-/** True when the workspace has no subsystems yet — Soft-UI empty. */
+/** True when the team has no subsystems yet — Soft-UI empty. */
 export function isReadinessScoreBoardEmpty(input: { subsystemCount: number }): boolean {
   return input.subsystemCount === 0;
 }
@@ -148,7 +148,7 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
         kind,
         title: "Loading Robot Readiness…",
         description:
-          "Checking workspace membership and logged subsystems.",
+          "Checking which team you are on and logged subsystems.",
       };
     case "error":
       return {
@@ -162,9 +162,9 @@ export function readinessScoreShellCopy(kind: ReadinessScoreShellKind): Readines
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging subsystems.",
+          "Select a team before logging subsystems.",
       };
     case "empty":
       return {

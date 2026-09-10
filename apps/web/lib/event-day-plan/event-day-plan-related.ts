@@ -72,8 +72,8 @@ export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open event-day plans.",
+      label: "Choose your team",
+      detail: "Choose your team to open event-day plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -132,7 +132,7 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
       return {
         kind,
         title: "Loading Event-Day Plan…",
-        description: "Checking workspace membership and plan date.",
+        description: "Checking which team you are on and plan date.",
       };
     case "error":
       return {
@@ -146,9 +146,9 @@ export function eventDayPlanShellCopy(kind: EventDayPlanShellKind): EventDayPlan
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before overlaying quals, batteries, and pit windows.",
+          "Select a team before overlaying quals, batteries, and pit windows.",
       };
     case "empty":
       return {
@@ -187,7 +187,7 @@ export function eventDayPlanNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before adding blocks.",
           href: "/workspace",
           primary: true,
@@ -209,7 +209,7 @@ export function eventDayPlanNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Event-Day Plan can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

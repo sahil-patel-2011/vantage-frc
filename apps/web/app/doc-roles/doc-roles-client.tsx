@@ -61,7 +61,7 @@ export default function DocRolesClient() {
     return (
       <main className="module-page doc-roles-page">
         <PageHeader breadcrumbs="Team / Playbook" title="Document roles" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Document roles need a team workspace" description={error}>
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Document roles need a team" description={error}>
           <a className="app-button" href="/workspace">
             Choose team
           </a>

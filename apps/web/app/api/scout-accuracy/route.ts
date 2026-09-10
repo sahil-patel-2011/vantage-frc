@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load scout accuracy. Select a workspace and confirm database access.",
+        message: "Could not load scout accuracy. Select a team and confirm database access.",
         steps: scoutAccuracySetupSteps(null),
         orgId: null,
       } satisfies ScoutAccuracyView,

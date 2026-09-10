@@ -78,8 +78,8 @@ export function crossTeamScrimSetupSteps(orgId?: string | null): CrossTeamScrimS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open scrim invites.",
+      label: "Choose your team",
+      detail: "Choose your team to open scrim invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -119,7 +119,7 @@ export function shouldShowCrossTeamScrimSummaryTiles(input: {
   return input.inviteCount > 0 || input.upcomingCount > 0;
 }
 
-/** True when the workspace has no scrim invites yet — Soft-UI empty. */
+/** True when the team has no scrim invites yet — Soft-UI empty. */
 export function isCrossTeamScrimBoardEmpty(input: { inviteCount: number }): boolean {
   return input.inviteCount === 0;
 }
@@ -147,7 +147,7 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
         kind,
         title: "Loading Cross-Team Scrims…",
         description:
-          "Checking workspace membership and real scrim invites.",
+          "Checking which team you are on and real scrim invites.",
       };
     case "error":
       return {
@@ -161,9 +161,9 @@ export function crossTeamScrimShellCopy(kind: CrossTeamScrimShellKind): CrossTea
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before proposing nearby partners.",
+          "Join or pick a team before proposing nearby partners.",
       };
     case "empty":
       return {

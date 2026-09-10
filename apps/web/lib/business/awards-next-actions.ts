@@ -28,8 +28,8 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before starting FIRST award submissions.",
+        label: "Choose your team",
+        detail: "Choose your team before starting FIRST award submissions.",
         href: "/workspace",
         primary: true,
       },
@@ -87,7 +87,7 @@ export function awardsNextActions(ctx: AwardsNextActionContext): AwardsNextActio
   actions.push({
     id: "grants",
     label: "Open Grants",
-    detail: "Pair award essays with grant applications tracked for this workspace only.",
+    detail: "Pair award essays with grant applications tracked for this team only.",
     href: hubHref("/business", "grants", orgId),
   });
 

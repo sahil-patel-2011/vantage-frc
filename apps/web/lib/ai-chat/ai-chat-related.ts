@@ -98,7 +98,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         title: "Loading assistant…",
-        description: "Checking your team's channels and memory settings for this workspace.",
+        description: "Checking your team's channels and memory settings for this team.",
       };
     case "auth_required":
       return {
@@ -153,7 +153,7 @@ export function aiChatNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Chat channels and memory are saved per org — pick a team first.",
         href: "/workspace",
         primary: true,

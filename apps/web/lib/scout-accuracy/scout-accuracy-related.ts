@@ -75,8 +75,8 @@ export function scoutAccuracySetupSteps(orgId?: string | null): ScoutAccuracySet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open accuracy.",
+      label: "Choose your team",
+      detail: "Choose your team to open accuracy.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -190,7 +190,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         kind,
         title: "Loading scout accuracy…",
         description:
-          "Checking workspace membership and TBA-verified scout rows.",
+          "Checking which team you are on and TBA-verified scout rows.",
       };
     case "error":
       return {
@@ -204,9 +204,9 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before TBA-verified ranks appear.",
+          "Select a team before TBA-verified ranks appear.",
       };
     case "empty":
       return {
@@ -244,7 +244,7 @@ export function scoutAccuracyNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before ranking scouts.",
           href: "/workspace",
           primary: true,

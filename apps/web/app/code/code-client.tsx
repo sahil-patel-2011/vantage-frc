@@ -567,7 +567,7 @@ export function CodeClient({
       return;
     }
     if (!orgId) {
-      setMessage("Choose a workspace before running Bugbot.");
+      setMessage("Choose a team before running Bugbot.");
       return;
     }
     if (useRepo && !githubConnected) {
@@ -981,11 +981,11 @@ export function CodeClient({
           badge="Setup required"
           badgeTone="setup"
           title="Choose a team to coach code"
-          description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a workspace."
+          description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."
           className="product-hub-setup"
         >
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
       ) : (
@@ -1013,7 +1013,7 @@ export function CodeClient({
           <span className="app-badge">Subscription</span>
           <h2>Bugbot on your plan</h2>
           <p>
-            Scan connected GitHub robot-code (or a pasted file) on your workspace allowance / BYO key. Findings must
+            Scan connected GitHub robot-code (or a pasted file) on your team allowance / BYO key. Findings must
             quote the source. Distinct from CAD briefs and chat.
           </p>
           <div className="cdc-billing-actions">
@@ -1372,11 +1372,11 @@ export function CodeClient({
               soft
               badge="Setup required"
               badgeTone="setup"
-              title="Choose a workspace for Bugbot"
+              title="Choose a team for Bugbot"
               description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
             >
               <a className="app-button" href="/workspace">
-                Choose workspace
+                Choose your team
               </a>
             </EmptyState>
           ) : !githubConnected ? (

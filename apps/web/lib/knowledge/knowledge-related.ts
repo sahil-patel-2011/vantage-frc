@@ -55,8 +55,8 @@ export function knowledgeSetupNextActions(orgId?: string | null): KnowledgeSetup
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before opening the wiki.",
+        label: "Choose your team",
+        detail: "Choose your team before opening the wiki.",
         href: "/workspace",
         primary: true,
       },

@@ -80,7 +80,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Rankings banner | "Data source degraded", ETag/Neon | this commit |
 | `/ai` Agent | `setup_required` / `running` shown as pills | this commit |
 | `/offline` `/offline-shell` | "Offline Shell", "precache" | this commit |
-| `/batteries` `/cad` `/display` `/code` | "will not invent" honesty disclaimers | this commit |
+| `/workspace` empty states | "Select a team workspace" / "Open Workspace" | this commit |
+| Chat limits / AI policy / Hub access | "allowlist", "API budget", "FINANCE-IN-AI" | this commit |
 
 ---
 
@@ -90,7 +91,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 |---|---|---|---|
 | 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,314 passed, 10 skipped** (56.4s) |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
-| 3 | Full UI pass | in progress | PAYG / kill switch / BYOK / TBA_AUTH_KEY stripped from Chat limits, Usage, Pricing, Help, Team Data, and related-copy. Season calendar is in Help and ⌘K. FEATURE_MAP walk unfinished. |
+| 3 | Full UI pass | in progress | Workspace jargon replaced with "team". Allowlist / API-budget student copy rewritten. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |
 | 5 | Offline shell | in progress | Season calendar now restores the last snapshot and queues add/tick/edit/delete (`calendar_action`). Seed-season still needs a connection. Packing/batteries/pit/season-tasks already queued. Playwright spec also opens `/calendar` and `/packing`. No signed-in `next start` walk. |
 | 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
@@ -98,7 +99,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 8 | Match prediction ±3 | in progress | Next match widget shows calibrated score + ±band when year EPA exists. **Not a season ±3 claim.** |
 | 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence. Confirmed events now appear on the match-notes timeline as **From video**. Worker skips without a vision model. No live Pi. |
 | 10 | Connectors | audit (already on main) | Account `?tab=integrations` redirects to `/connectors`. TBA next-action from Account goes there too. |
-| 11 | Copy sweep | in progress | `copy-lint.test.ts` now scans related-copy, the in-app manual, usage banners, and dossier setup copy. Bans PAYG and kill switch as well as BYOK. |
+| 11 | Copy sweep | in progress | copy-lint bans allowlist and "open your workspace" / "team workspace"; `/workspace` page says YOUR TEAM. PAYG / kill switch / BYOK already banned. |
 | 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
 | 13 | CAD / assembly manual | in progress | Ask AI plans `cad.vault` for heavy-part / fastener questions; session facts list vault titles and Onshape links (no fabricated kg). Prompt pins "Cite vault documents by title". Assembly manual on a real Onshape document still unverified. |
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |

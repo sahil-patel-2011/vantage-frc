@@ -183,7 +183,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team workspace to re-scout match video.",
+          message: "Select a team to re-scout match video.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null },
         } satisfies RescoutView;
       }

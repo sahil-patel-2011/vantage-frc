@@ -159,7 +159,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
 
   return (
     <Panel className="member-hub-access-panel">
-      <span className="eyebrow">Section allowlists</span>
+      <span className="eyebrow">Who can open what</span>
       <h2>Hub access</h2>
       <p className="app-muted">
         Limit scouts and viewers to specific hubs. Start unrestricted (no hubs checked). Enabling a hub shows
@@ -172,7 +172,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? (
-        <EmptyState soft title="Loading hub access…" description="Pulling members and section allowlists." aria-busy />
+        <EmptyState soft title="Loading hub access…" description="Loading members and which sections they can open." aria-busy />
       ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>

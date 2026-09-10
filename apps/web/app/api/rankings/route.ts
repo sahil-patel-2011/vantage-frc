@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       if (!row) {
         return buildRankingsView({
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
-          setupMessage: "Select a team workspace to view event rankings.",
+          setupMessage: "Select a team to view event rankings.",
         });
       }
 

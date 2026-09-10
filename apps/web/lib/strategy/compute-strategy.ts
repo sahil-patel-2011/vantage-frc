@@ -434,8 +434,8 @@ export async function computeStrategyView(
   const baseSteps = [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization",
+      label: "Choose your team",
+      detail: "Pick which FRC team you are working as.",
       href: "/workspace",
       done: Boolean(row?.orgId),
     },
@@ -473,7 +473,7 @@ export async function computeStrategyView(
   if (!row?.orgId) {
     return setupPayload(access, {
       status: "setup_required",
-      message: "Select a team workspace before running win/loss strategy.",
+      message: "Select a team before running win/loss strategy.",
       steps: baseSteps,
       orgId: null,
       eventKey: null,

@@ -91,7 +91,7 @@ export function summarizePresence(input: PresenceSummaryInput): PresenceSummary 
   const responseRate =
     rosterCount > 0
       ? percent(responded.length, rosterCount, "of the roster answered")
-      : unavailable("No roster members found for this workspace yet.");
+      : unavailable("No roster members found for this team yet.");
 
   return {
     rosterCount,

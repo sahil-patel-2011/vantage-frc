@@ -157,11 +157,11 @@ export async function computeTuningAutopilotView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to log tuning sessions.",
+      message: "Select a team to log tuning sessions.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging gain sets.",
           href: "/workspace",
         },

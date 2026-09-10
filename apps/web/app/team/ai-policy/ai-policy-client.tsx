@@ -327,12 +327,12 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     <main className="intel-app ai-governance-page">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">AI / GOVERNANCE</span>
-          <h1>Org policy for models, tools, and spend</h1>
+          <span className="eyebrow">Chat limits</span>
+          <h1>What Ask AI may use</h1>
           <p className="app-muted">
-            Control which assistant features and tools members may use, set absolute spend alerts, and
-            require admin approval before high-cost runs. Model/provider allowlists live under Budgets;
-            shared memory under Memory; enforcement happens in Chat.
+            Control which Chat features and tools members may use, set spend alerts, and
+            require admin approval before high-cost runs. Which models are allowed lives under Chat limits;
+            shared memory under Memory.
           </p>
         </div>
         <nav className="intel-actions" aria-label="Governance links">
@@ -432,7 +432,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <strong>{formatAiGovernanceCount(pendingCount, metricsLoaded)}</strong>
             </article>
             <article>
-              <span>Model allowlist</span>
+              <span>Allowed models</span>
               <strong>
                 {metricsLoaded
                   ? budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
@@ -474,8 +474,8 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setForm({ ...form, featureAllowlistEnabled: e.target.checked })}
               />
               <span>
-                <strong>Enforce feature allowlist</strong>
-                <small>When on, only checked capabilities may call metered AI.</small>
+                <strong>Only allow these Chat features</strong>
+                <small>When on, only checked features may use Chat credits.</small>
               </span>
             </label>
             <div className="budget-fields" style={{ display: "grid", gap: "0.35rem" }}>
@@ -507,13 +507,13 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setForm({ ...form, toolAllowlistEnabled: e.target.checked })}
               />
               <span>
-                <strong>Enforce tool allowlist</strong>
-                <small>Blocks unauthorized assistant tools before they run.</small>
+                <strong>Only allow these tools</strong>
+                <small>When on, Ask AI can only run the tools you check.</small>
               </span>
             </label>
             <div className="budget-fields" style={{ display: "grid", gap: "0.35rem" }}>
               {tools.length === 0 ? (
-                <p className="app-muted">No tool catalog loaded — leave the allowlist off until catalog returns.</p>
+                <p className="app-muted">No tool list loaded — leave this off until it returns.</p>
               ) : (
                 tools.map((tool) => (
                   <label key={tool} className="check-field">
@@ -531,7 +531,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             </div>
 
             <span className="eyebrow" style={{ marginTop: "1.25rem", display: "block" }}>
-              FINANCE-IN-AI
+              FINANCE IN ASK AI
             </span>
             <label className="state-control">
               <input
@@ -631,7 +631,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 value={form.spendAlertThresholds}
                 onChange={(e) => setForm({ ...form, spendAlertThresholds: e.target.value })}
               />
-              <small>Synced to API budget percentage warnings (e.g. 50,75,90).</small>
+              <small>Same percentages as Chat spend warnings (for example 50, 75, 90).</small>
             </label>
             <div className="budget-fields">
               <label>

@@ -92,7 +92,7 @@ describe("role-aware landing", () => {
       orgId: null,
       orgName: null,
     });
-    expect(view.primary).toEqual({ href: "/workspace", label: "Open your workspace" });
+    expect(view.primary).toEqual({ href: "/workspace", label: "Choose your team" });
     expect(view.secondary).toBeNull();
     expect(view.firstFiveMinutes.every((link) => !link.href.includes("orgId="))).toBe(true);
   });

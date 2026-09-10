@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fundraisersNextActions } from "./fundraisers-next-actions";
 
 describe("fundraisersNextActions", () => {
-  it("asks for a workspace when org is missing", () => {
+  it("asks for a team when org is missing", () => {
     const actions = fundraisersNextActions({});
     expect(actions.map((a) => a.id)).toEqual(["workspace"]);
   });

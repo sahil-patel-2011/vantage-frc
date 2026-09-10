@@ -64,7 +64,7 @@ function setupRequired(
     steps: [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Pick lists are org-scoped — choose your team.",
         href: "/workspace",
       },
@@ -132,7 +132,7 @@ export async function GET(request: Request) {
   try {
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const context = await resolveContext(client, session.user.id, requestedOrg);
-      if (!context) return setupRequired("Select a team workspace to open the pick list.", null);
+      if (!context) return setupRequired("Select a team to open the pick list.", null);
 
       const eventKey = eventKeyParam ?? context.eventKey;
       const lists = await listPickLists(client, { orgId: context.orgId });

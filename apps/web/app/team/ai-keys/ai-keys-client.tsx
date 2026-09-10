@@ -134,7 +134,7 @@ function ShellPanel({
       <p className="app-muted">{copy.description}</p>
       {shell === "empty" ? (
         <a className="app-button primary" href="/workspace">
-          Choose workspace
+          Choose your team
         </a>
       ) : null}
       {shell === "auth_required" ? (
@@ -505,7 +505,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   async function remove(provider: ByokProvider) {
     if (!orgId) return;
-    if (!confirm(`Remove the ${BYOK_PROVIDER_META[provider].label} API key from this workspace?`)) return;
+    if (!confirm(`Remove the ${BYOK_PROVIDER_META[provider].label} API key from this team?`)) return;
     setBusyProvider(provider);
     setMessage("");
     try {

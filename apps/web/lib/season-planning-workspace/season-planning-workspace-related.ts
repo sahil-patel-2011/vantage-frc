@@ -73,14 +73,14 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open season plans.",
+      label: "Choose your team",
+      detail: "Choose your team to open season plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "goals-tracker",
       label: "Open Season Goals",
-      detail: "Lightweight goal tracking pairs with this workspace.",
+      detail: "Lightweight goal tracking pairs with this team.",
       href: hubHref("/team", "goals-tracker", orgId),
     },
     {
@@ -136,7 +136,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         kind,
         title: "Loading Season Planning Workspace…",
         description:
-          "Checking workspace membership and season plans.",
+          "Checking which team you are on and season plans.",
       };
     case "error":
       return {
@@ -150,9 +150,9 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before creating a plan.",
+          "Select a team before creating a plan.",
       };
     case "empty":
       return {
@@ -191,7 +191,7 @@ export function seasonPlanningNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before creating goals.",
           href: "/workspace",
           primary: true,
@@ -213,7 +213,7 @@ export function seasonPlanningNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Season Planning can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
@@ -221,7 +221,7 @@ export function seasonPlanningNextActions(input: {
       {
         id: "goals-tracker",
         label: "Open Season Goals",
-        detail: "Pair lightweight goals with this workspace plan.",
+        detail: "Pair lightweight goals with this team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
       {
@@ -269,7 +269,7 @@ export function seasonPlanningNextActions(input: {
       {
         id: "goals-tracker",
         label: "Open Season Goals",
-        detail: "Track lighter goals alongside the workspace plan.",
+        detail: "Track lighter goals alongside the team plan.",
         href: hubHref("/team", "goals-tracker", orgId),
       },
       {

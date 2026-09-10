@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load support tickets. Confirm your workspace and try again.",
+        message: "Could not load support tickets. Confirm your team and try again.",
         orgId: null,
         orgName: null,
         teamNumber: null,

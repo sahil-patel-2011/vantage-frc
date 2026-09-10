@@ -1,4 +1,4 @@
-/** Pure Media workspace domain types — never DEMO metrics. */
+/** Pure Media team domain types — never DEMO metrics. */
 
 export type MediaAssetPreview = {
   id: string;
@@ -70,7 +70,7 @@ export const MEDIA_CONTENT_PLATFORMS = [
 ] as const;
 export type MediaContentPlatform = (typeof MEDIA_CONTENT_PLATFORMS)[number];
 
-/** Hub tab ids for Soft-UI Media workspace + assertHubTabAccess. */
+/** Hub tab ids for Soft-UI Media team + assertHubTabAccess. */
 export const MEDIA_HUB_TABS = ["calendar", "drafts", "reminders", "kit", "impact"] as const;
 export type MediaHubTab = (typeof MEDIA_HUB_TABS)[number];
 

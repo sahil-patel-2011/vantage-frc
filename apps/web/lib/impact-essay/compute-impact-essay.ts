@@ -25,8 +25,8 @@ function setupStepsFor(orgId: string | null): ImpactEssaySetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Impact Essay.",
+      label: "Choose your team",
+      detail: "Choose your team to open Impact Essay.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -220,7 +220,7 @@ export async function computeImpactEssayView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to draft a grounded FIRST Impact essay.",
+      message: "Select a team to draft a grounded FIRST Impact essay.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

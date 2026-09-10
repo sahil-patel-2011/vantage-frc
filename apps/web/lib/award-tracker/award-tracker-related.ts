@@ -75,8 +75,8 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open award submissions.",
+      label: "Choose your team",
+      detail: "Choose your team to open award submissions.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -122,7 +122,7 @@ export function shouldShowAwardTrackerSummaryTiles(submissionCount: number): boo
   return submissionCount > 0;
 }
 
-/** True when the workspace has no submissions yet — Soft-UI empty. */
+/** True when the team has no submissions yet — Soft-UI empty. */
 export function isAwardTrackerBoardEmpty(input: { submissionCount: number }): boolean {
   return input.submissionCount === 0;
 }
@@ -150,7 +150,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         kind,
         title: "Loading Award Tracker…",
         description:
-          "Checking workspace membership and award submissions.",
+          "Checking which team you are on and award submissions.",
       };
     case "error":
       return {
@@ -164,9 +164,9 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and log real submissions before tracking deadlines.",
+          "Select a team and log real submissions before tracking deadlines.",
       };
     case "empty":
       return {

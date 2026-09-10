@@ -74,8 +74,8 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Defense Planner.",
+      label: "Choose your team",
+      detail: "Choose your team to open Defense Planner.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -115,7 +115,7 @@ export function shouldShowDefensePlannerSummaryTiles(input: {
   return input.matchupCount > 0 || input.hasProfile;
 }
 
-/** True when the workspace has no matchups yet — Soft-UI empty. */
+/** True when the team has no matchups yet — Soft-UI empty. */
 export function isDefensePlannerBoardEmpty(input: { matchupCount: number }): boolean {
   return input.matchupCount === 0;
 }
@@ -143,7 +143,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         kind,
         title: "Loading Defense Planner…",
         description:
-          "Checking workspace membership and logged matchups.",
+          "Checking which team you are on and logged matchups.",
       };
     case "error":
       return {
@@ -157,9 +157,9 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging robot profile or matchups.",
+          "Select a team before logging robot profile or matchups.",
       };
     case "empty":
       return {

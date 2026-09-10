@@ -18,18 +18,18 @@ export default async function TeamSlackPage({
         <PageHeader
           breadcrumbs="Team / Slack"
           title="Slack"
-          description="Connect Slack to Vantage team chat so both sides stay in this workspace only."
+          description="Connect Slack to Vantage team chat so both sides stay on this team only."
         />
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
-          title="Select a workspace"
-          description="Open a team workspace to connect Slack. Team chat still works without Slack."
+          title="Select a team"
+          description="Open a team to connect Slack. Team chat still works without Slack."
           badge="Setup required"
           badgeTone="setup"
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

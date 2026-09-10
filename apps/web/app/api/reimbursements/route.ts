@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Join or select a team workspace to file a reimbursement.",
+          message: "Join or select a team to file a reimbursement.",
           orgId: null,
         } satisfies ReimbursementsView;
       }

@@ -249,7 +249,7 @@ const SETUP_ONLY_WIDGETS = new Set<DashboardWidgetType>(["onboarding_checklist",
 
 /**
  * View-mode Home keeps every user-placed widget, including honest empty
- * states with a destination CTA. Setup-only cards hide once the workspace
+ * states with a destination CTA. Setup-only cards hide once the team
  * is ready. Next match stays a full-width hero.
  */
 export function homeViewLayout(

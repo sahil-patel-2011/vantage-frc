@@ -424,7 +424,7 @@ export async function POST(request: Request) {
       if (action === "append-step") {
         const operation = String(body.operation ?? "");
         if (!CAD_OPERATIONS.includes(operation as (typeof CAD_OPERATIONS)[number])) {
-          throw new Error("Choose an allowlisted CAD operation");
+          throw new Error("Choose a CAD operation this team allows");
         }
         if (operation === "feature_script") {
           throw new Error(

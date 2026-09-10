@@ -18,8 +18,8 @@ function setupSteps(orgId: string | null): BusFactorSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Bus-Factor.",
+      label: "Choose your team",
+      detail: "Choose your team to open Bus-Factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -122,7 +122,7 @@ export async function computeBusFactorView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to see burnout / bus-factor risk.",
+      message: "Select a team to see burnout / bus-factor risk.",
       steps: setupSteps(null),
       orgId: null,
       windowWeeks,

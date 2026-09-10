@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sponsorCrmNextActions } from "./sponsor-crm-next-actions";
 
 describe("sponsorCrmNextActions Soft-UI helpers", () => {
-  it("requires a workspace before CRM setup", () => {
+  it("requires a team before CRM setup", () => {
     const actions = sponsorCrmNextActions({ surface: "sponsors" });
     expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe("workspace");

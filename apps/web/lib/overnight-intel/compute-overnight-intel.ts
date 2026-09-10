@@ -44,8 +44,8 @@ function workspaceSetupSteps(orgId: string | null): OvernightIntelSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Overnight Intel.",
+      label: "Choose your team",
+      detail: "Choose your team to open Overnight Intel.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -195,7 +195,7 @@ export async function computeOvernightIntelView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to view the overnight event-intel brief.",
+      message: "Select a team to view the overnight event-intel brief.",
       steps: workspaceSetupSteps(null),
       orgId: null,
     };

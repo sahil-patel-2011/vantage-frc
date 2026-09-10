@@ -90,8 +90,8 @@ export function githubSetupSteps(orgId?: string | null): GitHubSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open GitHub context.",
+      label: "Choose your team",
+      detail: "Choose your team to open GitHub context.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -131,7 +131,7 @@ export function shouldShowGitHubSummaryTiles(input: {
   return input.connected && input.repoCount > 0;
 }
 
-/** True when the workspace has no GitHub link — Soft-UI empty. */
+/** True when the team has no GitHub link — Soft-UI empty. */
 export function isGitHubBoardEmpty(input: { connected: boolean }): boolean {
   return !input.connected;
 }
@@ -159,7 +159,7 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
         kind,
         title: "Loading GitHub context…",
         description:
-          "Checking workspace membership and real GitHub links.",
+          "Checking which team you are on and real GitHub links.",
       };
     case "error":
       return {
@@ -173,15 +173,15 @@ export function githubShellCopy(kind: GitHubShellKind): GitHubEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before linking OAuth or a PAT.",
+          "Join or pick a team before linking OAuth or a PAT.",
       };
     case "empty":
       return {
         kind,
         badge: "Not connected",
-        title: "Link GitHub for this workspace",
+        title: "Link GitHub for this team",
         description:
           "Repo context stays blank until an owner/admin connects OAuth or saves an encrypted PAT. Cross-check Pair VS Code, Code Coach, and Account Connections.",
       };
@@ -216,7 +216,7 @@ export function githubNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before linking a PAT or OAuth.",
           href: "/workspace",
           primary: true,
@@ -230,7 +230,7 @@ export function githubNextActions(input: {
         {
           id: "pair",
           label: "Pair VS Code",
-          detail: "Editor pairing needs a workspace too.",
+          detail: "Editor pairing needs a team too.",
           href: withOrgHref("/editor/pair", null),
         },
         {
@@ -244,7 +244,7 @@ export function githubNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so GitHub context can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
@@ -352,7 +352,7 @@ export function githubNextActions(input: {
     {
       id: "connections",
       label: "Account Connections",
-      detail: "GitHub Connected reflects this workspace link.",
+      detail: "GitHub Connected reflects this team link.",
       href: "/connectors",
     },
     {

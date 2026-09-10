@@ -112,7 +112,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
         <PageHeader
           navPath="/start"
           title="Your path"
-          description={view?.message ?? error ?? "Select a team workspace to open your path."}
+          description={view?.message ?? error ?? "Select a team to open your path."}
         />
         <TeamOpsNav orgId={orgId} active="start" />
         <div className="start-empty">
@@ -121,7 +121,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
             subteams you join — not a wiki wall.
           </p>
           <a className="start-btn primary" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
         </div>
       </main>

@@ -163,7 +163,7 @@ export default function ReviewsClient() {
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
+          <p className="app-muted">Checking your team.</p>
         </section>
       ) : view.status === "setup_required" ? (
         <section className="app-card soft-panel">

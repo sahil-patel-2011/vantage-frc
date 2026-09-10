@@ -64,7 +64,7 @@ const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string
   {
     key: "scoutReminders",
     title: "Scout reminders",
-    detail: "Assigned scouting form nudges for your workspace.",
+    detail: "Assigned scouting form nudges for your team.",
   },
   {
     key: "syncFailures",

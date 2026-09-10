@@ -110,8 +110,8 @@ export async function computeMatchStrategyCardsView(
   const baseSteps: MatchStrategySetupStep[] = [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization",
+      label: "Choose your team",
+      detail: "Pick which FRC team you are working as.",
       href: "/workspace",
       done: Boolean(context?.orgId),
     },
@@ -134,7 +134,7 @@ export async function computeMatchStrategyCardsView(
   if (!context?.orgId) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build printable match strategy cards.",
+      message: "Select a team to build printable match strategy cards.",
       steps: baseSteps,
       orgId: null,
       eventKey: null,

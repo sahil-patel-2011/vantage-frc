@@ -75,8 +75,8 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open burndown plans.",
+      label: "Choose your team",
+      detail: "Choose your team to open burndown plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -124,7 +124,7 @@ export function shouldShowBuildBurndownSummaryTiles(input: {
   return input.taskCount > 0 || input.hasPlan;
 }
 
-/** True when the workspace has no build tasks yet — Soft-UI empty. */
+/** True when the team has no build tasks yet — Soft-UI empty. */
 export function isBuildBurndownBoardEmpty(input: { taskCount: number }): boolean {
   return input.taskCount === 0;
 }
@@ -152,7 +152,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         kind,
         title: "Loading Build-Season Burndown…",
         description:
-          "Checking workspace membership and real build tasks.",
+          "Checking which team you are on and real build tasks.",
       };
     case "error":
       return {
@@ -166,9 +166,9 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before charting remaining work.",
+          "Join or pick a team before charting remaining work.",
       };
     case "empty":
       return {

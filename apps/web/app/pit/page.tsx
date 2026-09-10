@@ -68,7 +68,7 @@ export default async function PitCommandPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
           <a className="app-button secondary" href="/dashboard">
             Back to dashboard

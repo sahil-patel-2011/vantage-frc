@@ -104,8 +104,8 @@ function setupSteps(orgId: string | null): SeasonPlanSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization",
+      label: "Choose your team",
+      detail: "Pick which FRC team you are working as.",
       href: "/workspace",
     },
     {
@@ -191,7 +191,7 @@ export async function computeSeasonPlanningWorkspaceView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to plan the season.",
+      message: "Select a team to plan the season.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

@@ -74,8 +74,8 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open buddy pairings.",
+      label: "Choose your team",
+      detail: "Choose your team to open buddy pairings.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -87,7 +87,7 @@ export function onboardingBuddySetupSteps(orgId?: string | null): OnboardingBudd
     {
       id: "team-data",
       label: "Open Team Data",
-      detail: "Confirm real TBA/team context for this workspace.",
+      detail: "Confirm real TBA/team context for this team.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -124,7 +124,7 @@ export function shouldShowOnboardingBuddySummaryTiles(input: {
   return input.memberCount > 0 && (input.pairingCount > 0 || input.unpairedCount > 0);
 }
 
-/** True when the workspace has no buddy pairings yet — Soft-UI empty. */
+/** True when the team has no buddy pairings yet — Soft-UI empty. */
 export function isOnboardingBuddyBoardEmpty(input: { pairingCount: number }): boolean {
   return input.pairingCount === 0;
 }
@@ -152,7 +152,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         kind,
         title: "Loading Onboarding Buddy…",
         description:
-          "Checking workspace membership and real buddy pairings.",
+          "Checking which team you are on and real buddy pairings.",
       };
     case "error":
       return {
@@ -166,9 +166,9 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before pairing members.",
+          "Join or pick a team before pairing members.",
       };
     case "empty":
       return {
@@ -208,7 +208,7 @@ export function onboardingBuddyNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before suggesting buddies.",
           href: "/workspace",
           primary: true,
@@ -222,7 +222,7 @@ export function onboardingBuddyNextActions(input: {
         {
           id: "team-data",
           label: "Open Team Data",
-          detail: "Team context stays empty until a workspace and TBA sync exist.",
+          detail: "Team context stays empty until a team and TBA sync exist.",
           href: withOrgHref("/team/data", null),
         },
       ];
@@ -230,7 +230,7 @@ export function onboardingBuddyNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Onboarding Buddy can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
@@ -244,7 +244,7 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "Confirm real team/event context for this workspace.",
+        detail: "Confirm real team/event context for this team.",
         href: withOrgHref("/team/data", orgId),
       },
     ];
@@ -261,7 +261,7 @@ export function onboardingBuddyNextActions(input: {
       },
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Confirm the active team if membership looks wrong.",
         href: withOrgHref("/workspace", orgId),
       },
@@ -301,12 +301,12 @@ export function onboardingBuddyNextActions(input: {
       {
         id: "team-data",
         label: "Open Team Data",
-        detail: "Team context for this workspace.",
+        detail: "Team context for this team.",
         href: withOrgHref("/team/data", orgId),
       },
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Invite or switch teams if membership for this org looks incomplete.",
         href: withOrgHref("/workspace", orgId),
       },
@@ -338,7 +338,7 @@ export function onboardingBuddyNextActions(input: {
     },
     {
       id: "workspace",
-      label: "Open Workspace",
+      label: "Choose your team",
       detail: "Switch or confirm the active organization for these pairings.",
       href: withOrgHref("/workspace", orgId),
     },

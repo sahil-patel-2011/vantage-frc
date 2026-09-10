@@ -124,7 +124,7 @@ function TeamDataShell({
           ) : null}
           {shell === "setup" ? (
             <a className="app-button" href={workspaceHref}>
-              Open Workspace
+              Choose your team
             </a>
           ) : null}
           <TeamDataRelated
@@ -340,8 +340,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           needsTba
             ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
-              ? "Team Data syncs only for a real workspace event — Schedule, Event Day, and Strategy stay empty until then."
-              : "Finish workspace setup so TBA sync can resolve your organization."
+              ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
+              : "Finish team setup so TBA sync can resolve your organization."
         }
         orgId={orgId}
         shell="setup"
@@ -389,7 +389,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Live data</span>
           <h1>Team Data</h1>
           <p>
-            Inventory counts for your workspace, shared TBA cache health, and controlled sync for the active event.
+            Inventory counts for your team, shared TBA cache health, and controlled sync for the active event.
             Schedule, Event Day, and Strategy use this shared copy of The Blue Alliance.
           </p>
         </div>
@@ -439,7 +439,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             Active event: <strong>{activeEventKey ?? "Not set"}</strong>
           </p>
           {inventory.length === 0 ? (
-            <p className="app-muted">Nothing in this workspace yet — counts appear once your team adds data.</p>
+            <p className="app-muted">Nothing on this team yet — counts appear once your team adds data.</p>
           ) : (
             <ul className="team-data-inventory">
               {inventory.map((row) => (

@@ -106,7 +106,7 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
         kind,
         title: "Loading rule impact…",
         description:
-          "Checking workspace membership and logged rule changes.",
+          "Checking which team you are on and logged rule changes.",
       };
     case "error":
       return {
@@ -120,9 +120,9 @@ export function ruleImpactShellCopy(kind: RuleImpactShellKind): RuleImpactEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging game-manual deltas.",
+          "Select a team before logging game-manual deltas.",
       };
     case "empty":
       return {
@@ -165,7 +165,7 @@ export function ruleImpactNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging game-manual deltas.",
           href: "/workspace",
           primary: true,
@@ -193,7 +193,7 @@ export function ruleImpactNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Rule Impact can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

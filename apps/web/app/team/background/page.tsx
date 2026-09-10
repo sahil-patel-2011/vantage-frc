@@ -18,18 +18,18 @@ export default async function TeamBackgroundPage({
         <PageHeader
           breadcrumbs="Team / Background"
           title="Team background"
-          description="Mission, history, demographics, and achievements for sponsorship and grant drafts — scoped to your workspace only."
+          description="Mission, history, demographics, and achievements for sponsorship and grant drafts — scoped to your team only."
         />
         <TeamOpsNav active="admin" />
         <EmptyState
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Select a workspace"
-          description="Open Team background from Team admin so the workspace orgId is included."
+          title="Select a team"
+          description="Open Team background from Team admin so the team is included."
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

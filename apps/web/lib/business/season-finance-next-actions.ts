@@ -30,8 +30,8 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before planning season money.",
+        label: "Choose your team",
+        detail: "Choose your team before planning season money.",
         href: "/workspace",
         primary: true,
       },

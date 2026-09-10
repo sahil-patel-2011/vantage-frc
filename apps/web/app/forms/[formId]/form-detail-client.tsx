@@ -64,7 +64,7 @@ type Mode = "build" | "answer" | "results";
 /**
  * The workspace the shell sent us to. Without it the API resolves the caller's
  * first membership by org name, so a member of two teams could open a form
- * belonging to the workspace they are not currently in.
+ * belonging to the team they are not currently in.
  */
 function orgParam(): string {
   if (typeof window === "undefined") return "";

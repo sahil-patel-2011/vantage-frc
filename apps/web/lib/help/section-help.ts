@@ -427,16 +427,16 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     hub: "team",
     tab: "messages",
     title: "Chat",
-    what: "The team channel plus private messages, scoped to this workspace.",
+    what: "The team channel plus private messages, scoped to this team.",
     why: "Team decisions stay with the team instead of in a personal chat app nobody can search next year.",
     when: "All season.",
     moments: ["preseason", "kickoff", "build", "pre-comp", "comp-day", "after"],
     how: [
-      "Open Chat — your team channel opens with this workspace.",
+      "Open Chat — your team channel opens with this team.",
       "Start a private message for a one-to-one thread.",
       "Invite anyone who is missing under Team admin.",
     ],
-    tips: ["People only appear once they have accepted an invite to this workspace."],
+    tips: ["People only appear once they have accepted an invite to this team."],
     related: [
       { label: "Team admin", href: "/team/admin" },
       { label: "Calendar", href: "/team/calendar" },
@@ -917,7 +917,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Spell out what the sponsor gets at each level.",
       "Export the PDF and send it with a named contact, not a generic address.",
     ],
-    tips: ["Only this team's story is used — nothing is borrowed from other orgs in the workspace."],
+    tips: ["Only this team's story is used — nothing is borrowed from other orgs in the team."],
     related: [
       { label: "Sponsors", href: "/business?tab=sponsors" },
       { label: "Tier calculator", href: "/sponsor-tier-calculator" },
@@ -1042,7 +1042,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Build season, from the first layout onwards.",
     moments: ["kickoff", "build"],
     how: [
-      "Open CAD from your team workspace so the agent stays scoped to the right org.",
+      "Open CAD from your team so the agent stays scoped to the right org.",
       "Connect Onshape under CAD → Setup — the surface says \"configure\" rather than failing when it is not connected.",
       "Watch Change radar for edits that affect other subteams.",
       "Turn a sketch into a written brief when handing work to another student.",
@@ -1335,7 +1335,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "All season, whenever a question needs your own data in the answer.",
     moments: ["preseason", "kickoff", "build", "pre-comp", "comp-day", "after"],
     how: [
-      "Open a team workspace.",
+      "Open a team.",
       "Configure a model or bring your own key under Controls.",
       "Ask, and check the cited context on anything you will act on.",
     ],
@@ -1404,7 +1404,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Set the redaction and consent policy under Governance.",
       "Watch Usage; the included allowance hard-stops unless you buy credits or enable pay-as-you-go.",
     ],
-    tips: ["Open a team workspace first or the page has nothing to write to."],
+    tips: ["Open a team first or the page has nothing to write to."],
     related: [
       { label: "API keys", href: "/team/ai-keys" },
       { label: "Governance", href: "/ai?tab=governance" },

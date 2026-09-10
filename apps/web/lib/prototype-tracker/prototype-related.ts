@@ -35,8 +35,8 @@ export function prototypeNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before logging prototype tests.",
+        label: "Choose your team",
+        detail: "Choose your team before logging prototype tests.",
         href: "/workspace",
         primary: true,
       },

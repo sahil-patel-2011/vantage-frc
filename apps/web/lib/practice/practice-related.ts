@@ -85,8 +85,8 @@ export function practiceNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before scheduling practice.",
+        label: "Choose your team",
+        detail: "Choose your team before scheduling practice.",
         href: "/workspace",
         primary: true,
       },

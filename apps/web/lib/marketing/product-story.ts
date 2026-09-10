@@ -5,7 +5,7 @@
  * members on the way in". AI is a helper inside that — strategy, match
  * prediction, design help — not the product. The four entries in
  * MARKETING_HUBS are the four workspaces a signed-in member sees
- * (lib/nav/hubs.ts NAV_HUBS); keep them in sync by hand when a workspace
+ * (lib/nav/hubs.ts NAV_HUBS); keep them in sync by hand when a team
  * changes.
  */
 

@@ -283,7 +283,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
             description="Compose org-isolated value props for cash, parts, and mentorship."
           />
         ) : null}
-        <EmptyState title="Select a workspace" description={view.message}>
+        <EmptyState title="Select a team" description={view.message}>
           <a className="app-button" href="/workspace">
             Open workspace
           </a>
@@ -407,7 +407,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
       ) : null}
       {message ? <p className="telemetry-status">{message}</p> : null}
       <p className="svp-note">
-        Data stays inside {context.teamNumber != null ? `FRC ${context.teamNumber}` : (context.orgName ?? "this workspace")} —
+        Data stays inside {context.teamNumber != null ? `FRC ${context.teamNumber}` : (context.orgName ?? "this team")} —
         no cross-org stories or stats are pulled in.
       </p>
 

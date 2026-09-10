@@ -67,8 +67,8 @@ function setupSteps(orgId: string | null): MatchingGiftFinderSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Matching Gift Finder.",
+      label: "Choose your team",
+      detail: "Choose your team to open Matching Gift Finder.",
       href: "/workspace",
     },
     {
@@ -221,7 +221,7 @@ export async function computeMatchingGiftFinderView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to find employer matching-gift programs.",
+      message: "Select a team to find employer matching-gift programs.",
       steps: setupSteps(null),
       orgId: null,
     };

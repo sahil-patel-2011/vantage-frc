@@ -81,9 +81,9 @@ export async function computeDriveTeamSignalsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build a drive-team signal board.",
+      message: "Select a team to build a drive-team signal board.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };

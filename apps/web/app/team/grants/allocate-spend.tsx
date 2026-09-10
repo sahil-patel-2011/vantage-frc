@@ -263,7 +263,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           compact
           badge="Admins"
           title="Owner or admin required"
-          description="Linking a named expense to a grant is an admin action. Ask a workspace owner or admin — season totals are never copied in."
+          description="Linking a named expense to a grant is an admin action. Ask a team owner or admin — season totals are never copied in."
         />
       </section>
     );

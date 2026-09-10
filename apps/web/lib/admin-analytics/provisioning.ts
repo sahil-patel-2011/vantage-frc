@@ -101,7 +101,7 @@ export function confirmationLines(confirmation: ProvisionConfirmation): string[]
 export function provisionConflictMessage(errorText: string): string | null {
   const text = errorText.toLowerCase();
   if (!text.includes("duplicate key")) return null;
-  if (text.includes("team_number")) return "That team number already has a workspace";
+  if (text.includes("team_number")) return "That team number already has a team";
   if (text.includes("slug")) return "That workspace slug is already taken";
   return "A workspace with those details already exists";
 }

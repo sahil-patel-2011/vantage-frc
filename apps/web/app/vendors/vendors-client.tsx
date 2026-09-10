@@ -147,7 +147,7 @@ function VendorsShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-            Open Workspace
+            Choose your team
           </a>
         ) : null}
         {shell === "empty" ? (

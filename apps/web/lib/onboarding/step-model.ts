@@ -362,7 +362,7 @@ export function buildOnboardingPendingPlan(input: {
       stages: [
         { key: "profile", title: "Profile saved", detail: "Your name, role, and crew are stored privately.", phase: "done" },
         { key: "invite", title: "Open the invitation email", detail: "Its link finishes the join — this page can't do it for you.", phase: "current" },
-        { key: "in", title: "You're in", detail: "The invite drops you straight into the workspace.", phase: "upcoming" },
+        { key: "in", title: "You're in", detail: "The invite drops you straight into the team.", phase: "upcoming" },
       ],
       meanwhile: MEANWHILE_BASE,
       primaryAction: { kind: "invite", label: "Open my invite" },
@@ -398,8 +398,8 @@ export function buildOnboardingPendingPlan(input: {
           key: "claim",
           title: input.adult ? "Claim the team number" : "Ask a mentor or coach to claim it",
           detail: input.adult
-            ? "Adults on the team can create the workspace and become its first owner."
-            : "Students can't create a workspace. An adult claims it, then invites you.",
+            ? "Adults on the team can create the team and become its first owner."
+            : "Students can't create a team. An adult claims it, then invites you.",
           phase: "current",
         },
         { key: "join", title: "Join once it exists", detail: "You'll get an exact-email invite, or you can request approval again.", phase: "upcoming" },
@@ -433,7 +433,7 @@ export function buildOnboardingPendingPlan(input: {
     stages: [
       { key: "profile", title: "Request sent", detail: "Saved the moment you submitted — you don't need to send it again.", phase: "done" },
       { key: "review", title: "An owner or admin reviews it", detail: "They confirm you actually belong on the team. Only they can approve.", phase: "current" },
-      { key: "email", title: "Approval ends this session", detail: "You'll get an email with a fresh sign-in link into the workspace.", phase: "upcoming" },
+      { key: "email", title: "Approval ends this session", detail: "You'll get an email with a fresh sign-in link into the team.", phase: "upcoming" },
     ],
     meanwhile: MEANWHILE_BASE,
     primaryAction: { kind: "check", label: "Check approval status" },

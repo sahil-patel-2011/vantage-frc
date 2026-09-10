@@ -397,7 +397,7 @@ export async function computeBriefingView(
   if (!row) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to open the pre-match briefing.",
+      message: "Select a team to open the pre-match briefing.",
       context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null, eventName: null },
     };
   }

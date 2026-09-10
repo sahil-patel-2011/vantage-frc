@@ -75,8 +75,8 @@ export function risksNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before building the season risk register.",
+        label: "Choose your team",
+        detail: "Choose your team before building the season risk register.",
         href: "/workspace",
         primary: true,
       },

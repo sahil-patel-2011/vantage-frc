@@ -223,7 +223,7 @@ export const ROADMAP_TASKS: RoadmapTask[] = [
   {
     id: "space-and-tools",
     phaseId: "preseason",
-    title: "Secure a workspace and a basic tool set",
+    title: "Secure a team and a basic tool set",
     why: "You need somewhere you can leave a partly-built robot and somewhere students can safely use tools. Borrowing a shop for two evenings a week is a real constraint on what you can build — decide before kickoff, not during.",
     whenRelativeToKickoff: { startDay: -120, endDay: -30 },
     ownerRole: "lead-mentor",

@@ -83,7 +83,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team workspace to log your matches." };
+      if (!row) return { status: "setup_required" as const, message: "Select a team to log your matches." };
 
       const debriefs = await client.query<DebriefRow>(
         `SELECT ${SELECT_COLS}, u.name AS "byName", d.created_at::text AS "createdAt"

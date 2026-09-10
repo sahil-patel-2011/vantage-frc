@@ -16,7 +16,7 @@ type ExportButtonProps<Row> = {
   feature: string;
   /** Team number / workspace name, folded into the filename so files stay distinguishable. */
   orgLabel?: string | null;
-  /** Deep-links the "full export" tooltip line to this workspace's Export Center. */
+  /** Deep-links the "full export" tooltip line to this team's Export Center. */
   orgId?: string | null;
   label?: string;
   /** Compact variant for a panel header sitting beside an <h2>. */

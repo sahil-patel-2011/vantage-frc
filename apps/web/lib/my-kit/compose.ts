@@ -352,7 +352,7 @@ export function focusLinks(focus: MyKitFocus, orgId: string | null): MyKitQuickL
 export const MY_KIT_SETUP_STEPS: MyKitSetupStep[] = [
   {
     id: "workspace",
-    label: "Select a workspace",
+    label: "Select a team",
     detail: "My Kit reads your own rows inside one team, so it needs to know which team.",
     href: "/workspace",
   },
@@ -360,7 +360,7 @@ export const MY_KIT_SETUP_STEPS: MyKitSetupStep[] = [
 
 export function myKitSetupRequired(
   orgId: string | null = null,
-  message = "Choose a team workspace to open My Kit.",
+  message = "Choose a team to open My Kit.",
 ): Extract<MyKitView, { status: "setup_required" }> {
   return { status: "setup_required", message, steps: MY_KIT_SETUP_STEPS, orgId };
 }

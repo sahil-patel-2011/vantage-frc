@@ -71,7 +71,7 @@ export async function GET(request: Request) {
         return {
           status: "setup_required" as const,
           orgId: "",
-          message: "Join a team workspace to use the knowledge base.",
+          message: "Join a team to use the knowledge base.",
         };
       }
       return loadKnowledgeWikiView(client, {

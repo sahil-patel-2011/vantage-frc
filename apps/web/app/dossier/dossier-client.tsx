@@ -156,7 +156,7 @@ function DossierShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? teamDataHref : "/workspace"}>
-            {orgId ? "Sync Team Data" : "Select workspace"}
+            {orgId ? "Sync Team Data" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (

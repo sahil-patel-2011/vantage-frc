@@ -17,7 +17,7 @@ export default async function TeamPosturePage({
         <PageHeader
           breadcrumbs="Team / Posture"
           title="Security posture"
-          description="Posture is scored from one team’s real settings and members — pick the workspace first."
+          description="Posture is scored from one team’s real settings and members — pick the team first."
         />
         <EmptyState
           soft

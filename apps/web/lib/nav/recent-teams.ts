@@ -1,5 +1,5 @@
 /**
- * MRU team workspaces for the Soft-UI picker — device-local only, never DEMO orgs.
+ * MRU teams for the Soft-UI picker — device-local only, never DEMO orgs.
  */
 
 const STORAGE_KEY = "vantage-recent-orgs";

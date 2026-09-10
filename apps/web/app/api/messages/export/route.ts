@@ -164,7 +164,7 @@ export async function POST(request: Request) {
         exportedBy: session.user.id,
         reason,
         // Named so a reader cannot mistake this for a complete record of the member's
-        // communication — it is this workspace's private messages, nothing else.
+        // communication — it is this team's private messages, nothing else.
         scope: "vantage_org_direct_messages",
         note:
           "Includes messages the sender deleted (deletedAt is set, body retained). Does not " +

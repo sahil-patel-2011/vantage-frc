@@ -160,7 +160,7 @@ function EventDayShell({
       </button>
     ) : (
       <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
-        {orgId ? "Connect TBA" : "Select workspace"}
+        {orgId ? "Connect TBA" : "Choose your team"}
       </a>
     );
 

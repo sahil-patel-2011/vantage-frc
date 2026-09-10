@@ -16,8 +16,8 @@ export default async function ExportsPage({
     return (
       <main className="soft-gate content">
         <span className="eyebrow">Export</span>
-        <h1>Select a workspace</h1>
-        <p>Open Export Center from a team workspace so archives stay scoped to the right organization.</p>
+        <h1>Select a team</h1>
+        <p>Open Export Center from a team so archives stay scoped to the right organization.</p>
         <a href="/dashboard">Go to Home</a>
       </main>
     );

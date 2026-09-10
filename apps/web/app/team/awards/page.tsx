@@ -17,23 +17,23 @@ export default async function AwardsPage({
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Business / Awards workbench</span>
-            <h1>Select a workspace</h1>
+            <h1>Select a team</h1>
             <p className="app-muted">
-              Award submissions and essay prompts belong to one team. Choose a workspace to open the awards workbench.
+              Award submissions and essay prompts belong to one team. Choose a team to open the awards workbench.
             </p>
           </div>
         </header>
         <section className="app-card soft-panel edc-next-actions awards-next-actions" aria-label="Next actions">
           <header>
             <span className="biz-overline">Next actions</span>
-            <h2>Open your team workspace</h2>
+            <h2>Open your team</h2>
             <p>Award essays and win status stay blank until this org starts real submissions.</p>
           </header>
           <ol>
             <li className="primary">
               <div>
-                <strong>Select workspace</strong>
-                <span>Choose your team organization before drafting FIRST award essays.</span>
+                <strong>Choose your team</strong>
+                <span>Choose your team before drafting FIRST award essays.</span>
               </div>
               <a className="app-button secondary" href="/workspace">
                 Open

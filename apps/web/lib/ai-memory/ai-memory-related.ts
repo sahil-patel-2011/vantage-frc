@@ -118,7 +118,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
       return {
         kind,
         title: "Loading team memory…",
-        description: "Checking your team's memory settings for this workspace.",
+        description: "Checking your team's memory settings for this team.",
       };
     case "auth_required":
       return {
@@ -183,7 +183,7 @@ export function aiMemoryNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Team memory settings and counts are saved per org — pick a team first.",
         href: "/workspace",
         primary: true,

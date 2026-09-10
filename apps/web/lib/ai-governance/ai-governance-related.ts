@@ -188,7 +188,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Defaults",
         title: "No org gates yet",
         description:
-          "Platform defaults apply until an admin turns on allowlists, high-cost approval, spend alerts, or finance in Ask AI. Spend and queue totals stay blank until real rows exist.",
+          "Platform defaults apply until an admin turns on approved features and tools, high-cost approval, spend alerts, or finance in Ask AI. Spend and queue totals stay blank until real rows exist.",
       };
     case "setup":
       return {
@@ -196,7 +196,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Setup",
         title: "Finish the policy you started",
         description:
-          "An allowlist or high-cost gate is on but incomplete (no features/tools selected, or no USD threshold).",
+          "A feature list or high-cost gate is on but incomplete (no features or tools selected, or no dollar threshold).",
       };
     case "error":
       return {
@@ -229,7 +229,7 @@ export function aiGovernanceNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "AI governance is saved per org — pick a team first.",
         href: "/workspace",
         primary: true,
@@ -283,7 +283,7 @@ export function aiGovernanceNextActions(input: {
     actions.push({
       id: "configure",
       label: "Set first org gate",
-      detail: "Turn on a feature/tool allowlist, high-cost approval, or spend alert in the policy form.",
+      detail: "Turn on approved features or tools, high-cost approval, or a spend alert in the form below.",
       href: "#ai-governance-policy",
       primary: true,
     });
@@ -327,7 +327,7 @@ export const AI_GOVERNANCE_SCOPE_CARDS = [
   {
     id: "policy" as const,
     title: "This tab · org policy",
-    body: "Feature and tool allowlists, high-cost approval queue, spend alerts, and consent for Ask AI to read finance summaries. Saved per workspace.",
+    body: "Which features and tools members may use, high-cost approval, spend alerts, and consent for Ask AI to read finance summaries. Saved per team.",
   },
   {
     id: "budgets" as const,

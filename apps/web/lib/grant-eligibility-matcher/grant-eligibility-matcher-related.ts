@@ -79,8 +79,8 @@ export function grantEligibilityMatcherSetupSteps(
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open eligibility matches.",
+      label: "Choose your team",
+      detail: "Choose your team to open eligibility matches.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -146,7 +146,7 @@ export function grantEligibilityMatcherShellCopy(
       return {
         kind,
         title: "Loading Grant Eligibility Matcher…",
-        description: "Checking workspace membership and team profile.",
+        description: "Checking which team you are on and team profile.",
       };
     case "error":
       return {
@@ -160,9 +160,9 @@ export function grantEligibilityMatcherShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and complete your team profile.",
+          "Select a team and complete your team profile.",
       };
     case "empty":
       return {
@@ -201,7 +201,7 @@ export function grantEligibilityMatcherNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before matching grants.",
           href: "/workspace",
           primary: true,
@@ -223,7 +223,7 @@ export function grantEligibilityMatcherNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so eligibility matching can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -223,11 +223,11 @@ export async function computeInspectionCopilotView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to predict inspection failures before you travel.",
+      message: "Select a team to predict inspection failures before you travel.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging readiness checks.",
           href: "/workspace",
         },

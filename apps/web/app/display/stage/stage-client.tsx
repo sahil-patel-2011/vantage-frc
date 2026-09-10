@@ -157,7 +157,7 @@ export default function StageClient({
         <p>
           {params.token
             ? "Read-only TV token. If this fails, the token may be revoked or expired."
-            : "Signed-in preview needs a saved board id for this workspace."}
+            : "Signed-in preview needs a saved board id for this team."}
         </p>
         <button type="button" className="stage-btn" onClick={() => void refresh()}>
           Retry

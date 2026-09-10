@@ -75,8 +75,8 @@ export function signoffNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before tracking subsystem gate sign-offs.",
+        label: "Choose your team",
+        detail: "Choose your team before tracking subsystem gate sign-offs.",
         href: "/workspace",
         primary: true,
       },

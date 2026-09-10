@@ -250,7 +250,7 @@ export function dashboardSetupBlurb(shell: DashboardShellKind): string {
     case "tba":
       return "Sync The Blue Alliance for live match data.";
     case "loading":
-      return "Checking your workspace.";
+      return "Checking your team.";
     default:
       return "";
   }

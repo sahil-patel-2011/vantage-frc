@@ -59,8 +59,8 @@ function setupSteps(orgId: string | null): AlliancePartnerBriefSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Alliance-Partner Brief.",
+      label: "Choose your team",
+      detail: "Choose your team to open Alliance-Partner Brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -252,7 +252,7 @@ export async function computeAlliancePartnerBriefView(
 ): Promise<AlliancePartnerBriefView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequiredView("Select a team workspace to generate an alliance-partner brief.", null, null);
+    return setupRequiredView("Select a team to generate an alliance-partner brief.", null, null);
   }
 
   const board = await loadLatestBoard(client, org.orgId, input.eventKey ?? null);
@@ -303,7 +303,7 @@ export async function generateAlliancePartnerBrief(
   input: { orgId: string; userId: string; eventKey?: string | null; allianceSeed: number },
 ): Promise<AlliancePartnerBriefView> {
   const board = await loadLatestBoard(client, input.orgId, input.eventKey ?? null);
-  if (!board) throw new Error("No alliance board found for this workspace");
+  if (!board) throw new Error("No alliance board found for this team");
 
   const slots = normalizeAlliances(board.state);
   const slot = slots.find((s) => s.seed === input.allianceSeed);

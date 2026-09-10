@@ -95,9 +95,14 @@ const RULES: readonly Rule[] = [
     why: 'billing jargon — say "pay-as-you-go"',
   },
   {
-    label: "kill switch",
-    pattern: /\bkill\s+switch\b/i,
-    why: 'billing internals — say "pause Chat"',
+    label: "workspace (as a team picker)",
+    pattern: /\b(open your workspace|more than one workspace|team workspaces|workspace membership|team workspace)\b/i,
+    why: 'say "team" — students pick 6925, not a workspace',
+  },
+  {
+    label: "allowlist",
+    pattern: /\ballowlist(?:s|ed)?\b/i,
+    why: 'say what is allowed — "only these tools", not "allowlist"',
   },
   {
     label: "placeholder/demo data disclaimer",
@@ -123,7 +128,7 @@ function isCopyFile(entry: string): boolean {
   if (entry === "articles.ts") return true;
   if (entry === "metered-ai-fail.ts") return true;
   if (entry === "usage-cutoff.ts") return true;
-  if (entry === "compute-dossier.ts") return true;
+  if (entry === "workspace-join.ts") return true;
   return false;
 }
 
@@ -230,6 +235,8 @@ function looksLikeCode(line: string, match: string, index: number): boolean {
     const closeAt = after.indexOf(opened[1]);
     const whole = `${opened[2]}${match}${closeAt === -1 ? "" : after.slice(0, closeAt)}`;
     if (/^[A-Za-z0-9_./:-]+$/.test(whole) && /[_/]/.test(whole)) return true;
+    // Quoted identifier with no spaces — a union/enum member ("allowlist"), not a sentence.
+    if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(whole)) return true;
   }
   // Property access: foo.fixture
   if (/\.\s*$/.test(before)) return true;

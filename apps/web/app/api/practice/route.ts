@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team workspace to plan practice sessions.",
+          message: "Select a team to plan practice sessions.",
           context: { orgId: null, orgName: null, teamNumber: null, role: null, eventKey: null },
         } satisfies DriverPracticeView;
       }

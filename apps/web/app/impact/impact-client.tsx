@@ -238,7 +238,7 @@ export default function ImpactClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState soft title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <>
           <ImpactNextActions actions={nextActions} />

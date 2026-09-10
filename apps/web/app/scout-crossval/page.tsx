@@ -48,7 +48,7 @@ export default async function ScoutCrossvalPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel scout-crossval-panel" aria-label="Setup steps">

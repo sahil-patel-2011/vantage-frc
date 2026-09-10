@@ -83,8 +83,8 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
   if (!orgId) {
     actions.push({
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization before loading event strategy.",
+      label: "Choose your team",
+      detail: "Choose your team before loading event strategy.",
       href: "/workspace",
       primary: true,
     });
@@ -169,7 +169,7 @@ export function strategyCoverageLinks(
 
 /** Setup copy for pick-clock / draft / chemistry when the surface cannot run yet. */
 export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
-  if (!ctx.orgId) return "Select a team workspace before opening this Competition tool.";
+  if (!ctx.orgId) return "Select a team before opening this Competition tool.";
   if (!ctx.eventKey) {
     return "Select an active event on Event Day. Rankings stay blank until then.";
   }

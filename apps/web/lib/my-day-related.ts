@@ -72,8 +72,8 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open next-match timing.",
+      label: "Choose your team",
+      detail: "Choose your team to open next-match timing.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -159,9 +159,9 @@ export function myDayShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace, set the event, and sync the schedule before a next match appears.",
+          "Select a team, set the event, and sync the schedule before a next match appears.",
       };
     case "empty":
       if (options?.emptyReason === "no_upcoming") {
@@ -207,7 +207,7 @@ export function myDayNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before loading TBA rows.",
           href: "/workspace",
           primary: true,
@@ -215,7 +215,7 @@ export function myDayNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Event boards stay empty until a workspace and schedule sync exist.",
+          detail: "Event boards stay empty until a team and schedule sync exist.",
           href: withOrgHref("/schedule", null),
         },
         {
@@ -258,7 +258,7 @@ export function myDayNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership or event setup so My Day can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

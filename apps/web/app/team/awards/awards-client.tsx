@@ -308,7 +308,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {loading ? (
-        <EmptyState soft title="Loading awards…" description="Opening this workspace’s FIRST submissions." aria-busy />
+        <EmptyState soft title="Loading awards…" description="Opening this team’s FIRST submissions." aria-busy />
       ) : (
         <>
           <AwardsNextActions actions={nextActions} />

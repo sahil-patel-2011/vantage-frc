@@ -30,8 +30,8 @@ export function ordersNextActions(ctx: OrdersNextActionContext): OrdersNextActio
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before submitting or approving purchases.",
+        label: "Choose your team",
+        detail: "Choose your team before submitting or approving purchases.",
         href: "/workspace",
         primary: true,
       },

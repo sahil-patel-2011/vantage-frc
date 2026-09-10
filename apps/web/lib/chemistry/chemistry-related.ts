@@ -76,8 +76,8 @@ export function chemistrySetupSteps(orgId?: string | null): ChemistrySetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open chemistry scores.",
+      label: "Choose your team",
+      detail: "Choose your team to open chemistry scores.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -167,7 +167,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         kind,
         title: "Loading alliance chemistry…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics.",
+          "Checking which team you are on and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -181,9 +181,9 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Alliance chemistry is org- and event-scoped. Pick a workspace and active TBA event before scores appear.",
+          "Alliance chemistry is org- and event-scoped. Select a team and active TBA event before scores appear.",
       };
     case "empty":
       return {
@@ -223,7 +223,7 @@ export function chemistryNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before scoring alliances.",
           href: "/workspace",
           primary: true,

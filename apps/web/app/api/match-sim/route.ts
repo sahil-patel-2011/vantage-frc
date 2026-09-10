@@ -36,7 +36,7 @@ function setupResponse(message: string): MatchSimView {
     status: "setup_required",
     message,
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       { id: "reference", label: "Sync reference data", detail: "Confirm TBA/Statbotics EPA sync has run for your event", href: "/rankings" },
     ],
     orgId: null,
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     return Response.json(view);
   } catch {
     return Response.json(
-      setupResponse("Could not load the match simulator. Select a workspace and confirm database access."),
+      setupResponse("Could not load the match simulator. Select a team and confirm database access."),
       { status: 200 },
     );
   }

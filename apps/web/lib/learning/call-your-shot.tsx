@@ -348,7 +348,7 @@ export function CallYourShot(props: CallYourShotProps) {
         <p className={styles.trendHead}>
           <strong>Your last {Math.max(trend.total, 0) || 5} calls here</strong> —{" "}
           {!orgId
-            ? "join a team workspace to keep a record of your calls."
+            ? "join a team to keep a record of your calls."
             : !trendLoaded
               ? "loading…"
               : trend.headline}

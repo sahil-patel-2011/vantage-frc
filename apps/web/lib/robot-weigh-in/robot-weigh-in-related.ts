@@ -68,8 +68,8 @@ export function robotWeighInSetupSteps(orgId?: string | null): RobotWeighInSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open weigh-ins.",
+      label: "Choose your team",
+      detail: "Choose your team to open weigh-ins.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -118,7 +118,7 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
       return {
         kind,
         title: "Loading Robot Weigh-In…",
-        description: "Checking workspace membership and scale readings.",
+        description: "Checking which team you are on and scale readings.",
       };
     case "error":
       return {
@@ -132,9 +132,9 @@ export function robotWeighInShellCopy(kind: RobotWeighInShellKind): RobotWeighIn
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging real scale readings.",
+          "Select a team before logging real scale readings.",
       };
     case "empty":
       return {

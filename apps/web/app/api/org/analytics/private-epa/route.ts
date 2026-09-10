@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       if (!orgId || !eventKey) {
         return {
           status: "setup_required" as const,
-          message: "Select a workspace and event before reading org-private analytics.",
+          message: "Select a team and event before reading org-private analytics.",
           orgId: orgId ?? null,
           eventKey: eventKey ?? null,
           teams: [],

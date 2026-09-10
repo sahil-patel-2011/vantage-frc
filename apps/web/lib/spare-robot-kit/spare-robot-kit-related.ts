@@ -71,8 +71,8 @@ export function spareRobotKitSetupSteps(orgId?: string | null): SpareRobotKitSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open spare kits.",
+      label: "Choose your team",
+      detail: "Choose your team to open spare kits.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -132,7 +132,7 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
       return {
         kind,
         title: "Loading Spare Robot Kit…",
-        description: "Checking workspace membership, spare bins, and FMEA history.",
+        description: "Checking which team you are on, spare bins, and FMEA history.",
       };
     case "error":
       return {
@@ -146,9 +146,9 @@ export function spareRobotKitShellCopy(kind: SpareRobotKitShellKind): SpareRobot
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before matching spares to FMEA history.",
+          "Select a team before matching spares to FMEA history.",
       };
     case "empty":
       return {
@@ -186,7 +186,7 @@ export function spareRobotKitNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before matching bins to FMEA.",
           href: "/workspace",
           primary: true,
@@ -208,7 +208,7 @@ export function spareRobotKitNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Spare Robot Kit can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -376,7 +376,7 @@ export function buildStrategyFromIntelligence(input: {
       prior.some((capability) => capability.toLowerCase().includes(direction.capability.toLowerCase().slice(0, 24))),
     );
     historicalPatterns.push(
-      `Prior seasons in this workspace emphasized: ${prior.slice(0, 8).join("; ")}.`,
+      `Prior seasons on this team emphasized: ${prior.slice(0, 8).join("; ")}.`,
     );
     if (overlap.length) {
       historicalPatterns.push(

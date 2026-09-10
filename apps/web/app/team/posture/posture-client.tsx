@@ -121,7 +121,7 @@ export default function PostureClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">VANTAGE / SECURITY POSTURE</span>
           <h1>This team&apos;s access at a glance</h1>
           <p className="app-muted">
-            A read-only roll-up of the controls protecting this workspace, with suggestions where a setting could
+            A read-only roll-up of the controls protecting this team, with suggestions where a setting could
             be tightened. Nothing here changes automatically.
           </p>
         </div>

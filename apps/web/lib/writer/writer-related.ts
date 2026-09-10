@@ -80,7 +80,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
       return {
         kind,
         title: "Loading writing assistant…",
-        description: "Checking your workspace and season profile.",
+        description: "Checking your team and season profile.",
       };
     case "error":
       return {
@@ -93,7 +93,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a workspace",
+        title: "Select a team",
         description:
           "Choose a team organization before composing. FRC Assistant needs a provider key; templates work without one.",
       };

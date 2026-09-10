@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Creating a workspace is an entry point: the server re-validates both
+    // Creating a team is an entry point: the server re-validates both
     // consents before anything is written. A client checkbox is not consent.
     assertLegalAccepted({
       termsAccepted: body.termsAccepted,
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   try {
     // withRls runs the callback inside one BEGIN/COMMIT, so the acceptance row
-    // and the workspace are committed together or not at all.
+    // and the team are committed together or not at all.
     const id = await withRls({ userId: session.user.id }, async (client) => {
       await recordLegalAcceptance(client, session.user.id);
       return claimFrcTeamWorkspace(client, session.user.id, {

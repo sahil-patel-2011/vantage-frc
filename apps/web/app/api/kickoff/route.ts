@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team workspace to run kickoff game analysis.",
+          message: "Select a team to run kickoff game analysis.",
           context: {
             orgId: null,
             orgName: null,

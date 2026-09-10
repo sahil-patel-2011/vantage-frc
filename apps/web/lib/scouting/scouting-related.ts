@@ -82,8 +82,8 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Scouting.",
+      label: "Choose your team",
+      detail: "Choose your team to open Scouting.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -191,7 +191,7 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
         badge: "Setup required",
         title: "Choose a team and event",
         description:
-          "Pick a workspace and the event you are at before match and pit forms load.",
+          "Select a team and the event you are at before match and pit forms load.",
       };
     case "empty":
       return {
@@ -230,7 +230,7 @@ export function scoutingNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before caching forms offline.",
           href: "/workspace",
           primary: true,

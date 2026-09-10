@@ -31,8 +31,8 @@ function setupRequired(message: string, steps: MatchCopilotSetupStep[], orgId: s
 function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "event" | "schedule"): MatchCopilotSetupStep[] {
   const workspace: MatchCopilotSetupStep = {
     id: "workspace",
-    label: "Select workspace",
-    detail: "Choose your team organization to open Match Copilot.",
+    label: "Choose your team",
+    detail: "Choose your team to open Match Copilot.",
     href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
   };
   const team: MatchCopilotSetupStep = {
@@ -339,7 +339,7 @@ async function buildContext(
   if (!org) {
     return {
       setup: setupRequired(
-        "Select a team workspace to open Match Copilot.",
+        "Select a team to open Match Copilot.",
         setupStepsFor(null, "workspace"),
         null,
       ),

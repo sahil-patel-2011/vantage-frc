@@ -119,7 +119,7 @@ describe("presentTables", () => {
 });
 
 describe("loadMyKit", () => {
-  it("asks for a workspace when the user has no membership", async () => {
+  it("asks for a team when the user has no membership", async () => {
     const view = await loadMyKit(fixtureClient({ member: false }), { userId: USER, now: NOW });
     expect(view.status).toBe("setup_required");
     if (view.status !== "setup_required") return;

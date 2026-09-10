@@ -79,8 +79,8 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open membership and invites.",
+      label: "Choose your team",
+      detail: "Choose your team to open membership and invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function shouldShowTeamAdminSummaryTiles(input: {
   return input.memberCount > 0 || input.inviteCount > 0;
 }
 
-/** True when the workspace has no real members — Soft-UI empty (never DEMO). */
+/** True when the team has no real members — Soft-UI empty (never DEMO). */
 export function isTeamAdminBoardEmpty(input: { memberCount: number }): boolean {
   return input.memberCount <= 0;
 }
@@ -148,7 +148,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         kind,
         title: "Loading membership…",
         description:
-          "Checking workspace membership and real invites.",
+          "Checking which team you are on and real invites.",
       };
     case "error":
       return {
@@ -162,9 +162,9 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before managing access.",
+          "Join or pick a team before managing access.",
       };
     case "empty":
       return {
@@ -204,7 +204,7 @@ export function teamAdminNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before sending access.",
           href: "/workspace",
           primary: true,
@@ -212,7 +212,7 @@ export function teamAdminNextActions(input: {
         {
           id: "account",
           label: "Account profile",
-          detail: "Display name and notification prefs still save for this login without a workspace.",
+          detail: "Display name and notification prefs still save for this login without a team.",
           href: "/account?tab=profile",
         },
         {
@@ -224,7 +224,7 @@ export function teamAdminNextActions(input: {
         {
           id: "discord",
           label: "Discord",
-          detail: "Guild bridge settings need a workspace too.",
+          detail: "Guild bridge settings need a team too.",
           href: withOrgHref("/team/discord", null),
         },
       ];
@@ -232,7 +232,7 @@ export function teamAdminNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Team admin can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
@@ -252,7 +252,7 @@ export function teamAdminNextActions(input: {
       {
         id: "connections",
         label: "Account Connections",
-        detail: "TBA, Onshape, Discord, and GitHub status for this workspace.",
+        detail: "TBA, Onshape, Discord, and GitHub status for this team.",
         href: "/connectors",
       },
     ];
@@ -282,7 +282,7 @@ export function teamAdminNextActions(input: {
       {
         id: "connections",
         label: "Account Connections",
-        detail: "Workspace connectors stay honest until linked.",
+        detail: "Team connectors stay honest until linked.",
         href: "/connectors",
       },
     ];
@@ -312,7 +312,7 @@ export function teamAdminNextActions(input: {
       {
         id: "connections",
         label: "Account Connections",
-        detail: "Confirm connectors for the workspace these members will use.",
+        detail: "Confirm connectors for the team these members will use.",
         href: "/connectors",
       },
     ];
@@ -371,7 +371,7 @@ export function teamAdminNextActions(input: {
     {
       id: "connections",
       label: "Account Connections",
-      detail: "Workspace connectors stay Connected only from real rows.",
+      detail: "Team connectors stay Connected only from real rows.",
       href: "/connectors",
     },
     {

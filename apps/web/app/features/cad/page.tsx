@@ -39,7 +39,7 @@ export default function CadFeaturePage() {
           <p className="lux-kicker">CAD agent</p>
           <h1>CAD starts with a brief.</h1>
           <p>
-            On the Build hub, you confirm a brief first. Then a metered, allowlisted plan (or a no-model starter plan)
+            On the Build hub, you confirm a brief first. Then a metered plan (or a no-model starter plan)
             runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
             Nothing mutates CAD until a person checks the step.
           </p>

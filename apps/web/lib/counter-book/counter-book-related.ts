@@ -93,7 +93,7 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
         kind,
         title: "Loading Counter-book…",
         description:
-          "Checking workspace membership and generated reports.",
+          "Checking which team you are on and generated reports.",
       };
     case "error":
       return {
@@ -107,9 +107,9 @@ export function counterBookShellCopy(kind: CounterBookShellKind): CounterBookEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before generating reports.",
+          "Select a team before generating reports.",
       };
     case "empty":
       return {
@@ -146,7 +146,7 @@ export function counterBookNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before generating reports.",
           href: "/workspace",
           primary: true,
@@ -168,7 +168,7 @@ export function counterBookNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Counter-book can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -281,7 +281,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               : `${window.location.pathname}${window.location.search}`,
           message:
             loadErrorMessage ||
-            "A network or server issue prevented loading. Select a workspace and try again.",
+            "A network or server issue prevented loading. Select a team and try again.",
         },
       )
     : null;
@@ -343,13 +343,13 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               </button>
             ) : null}
             <a className="app-button secondary" href="/workspace">
-              Choose workspace
+              Choose your team
             </a>
           </div>
           <NextActions orgId={orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : view == null ? (
-        <EmptyState soft title="Loading…" description="Checking your workspace for real todos." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your team for real todos." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">

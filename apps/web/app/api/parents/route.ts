@@ -122,7 +122,7 @@ async function computeParentsView(
     return {
       status: "setup_required",
       orgId: null,
-      message: "Select a team workspace to manage parent contacts.",
+      message: "Select a team to manage parent contacts.",
     };
   }
   if (!isAdmin(org.role)) {
@@ -254,7 +254,7 @@ export async function GET(request: Request) {
         status: "setup_required",
         orgId: null,
         message:
-          "Could not load parent contacts. Select a workspace and confirm database access.",
+          "Could not load parent contacts. Select a team and confirm database access.",
       } satisfies ParentsView,
       { status: 200 },
     );

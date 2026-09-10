@@ -320,7 +320,7 @@ export function messageForCutoffError(
     reason = "sponsored_promo_expired";
     title = "Sponsored AI ended";
     body =
-      "Promotional sponsored AI for team 1111 ended on 2026-10-18. Add your own AI keys or upgrade for hosted AI — the rest of the workspace keeps working.";
+      "Promotional sponsored AI for team 1111 ended on 2026-10-18. Add your own AI keys or upgrade for hosted AI — the rest of the team keeps working.";
   } else if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
     title = "AI routing paused";

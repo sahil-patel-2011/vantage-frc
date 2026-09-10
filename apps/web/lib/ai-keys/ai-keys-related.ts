@@ -82,7 +82,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "AI KEYS",
       title: "Loading encrypted key status…",
-      description: "Checking which first-party providers are configured for this workspace.",
+      description: "Checking which first-party providers are configured for this team.",
     };
   }
   if (kind === "auth_required") {
@@ -97,7 +97,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "CHOOSE A WORKSPACE",
       title: "Select a team to add API keys",
-      description: "Open Workspace, pick your organization, then return here to paste keys for yourself or the team.",
+      description: "Choose your team, then return here to paste keys for yourself or the team.",
       badge: "No workspace",
     };
   }

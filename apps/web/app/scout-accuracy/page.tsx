@@ -51,7 +51,7 @@ export default async function ScoutAccuracyPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel scout-accuracy-panel" aria-label="Setup steps">

@@ -41,7 +41,7 @@ function MessagesTab({ orgId }: { orgId: string }) {
         aria-busy
         badge="Loading"
         title="Opening team chat"
-        description="Loading conversations for this workspace."
+        description="Loading conversations for this team."
       />
     );
   }

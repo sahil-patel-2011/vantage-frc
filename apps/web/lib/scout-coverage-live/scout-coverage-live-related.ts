@@ -70,8 +70,8 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open coverage.",
+      label: "Choose your team",
+      detail: "Choose your team to open coverage.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -161,7 +161,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         kind,
         title: "Loading scout coverage…",
         description:
-          "Checking workspace membership and the real match schedule.",
+          "Checking which team you are on and the real match schedule.",
       };
     case "error":
       return {
@@ -175,9 +175,9 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and active event before zero/thin cells appear.",
+          "Select a team and active event before zero/thin cells appear.",
       };
     case "empty":
       return {
@@ -216,7 +216,7 @@ export function scoutCoverageLiveNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before watching live gaps.",
           href: "/workspace",
           primary: true,

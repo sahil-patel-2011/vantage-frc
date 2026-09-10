@@ -71,8 +71,8 @@ export function hoursSelfViewSetupSteps(orgId?: string | null): HoursSelfViewSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open hour logs.",
+      label: "Choose your team",
+      detail: "Choose your team to open hour logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -139,7 +139,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
       return {
         kind,
         title: "Loading My Hours…",
-        description: "Checking workspace membership and your hour logs.",
+        description: "Checking which team you are on and your hour logs.",
       };
     case "error":
       return {
@@ -153,9 +153,9 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before reading your logged sessions.",
+          "Select a team before reading your logged sessions.",
       };
     case "empty":
       return {
@@ -193,7 +193,7 @@ export function hoursSelfViewNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before reading your sessions.",
           href: "/workspace",
           primary: true,
@@ -215,7 +215,7 @@ export function hoursSelfViewNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so My Hours can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -270,12 +270,12 @@ export async function computePresenceView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to see who is coming and who was here.",
+      message: "Select a team to see who is coming and who was here.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
-          detail: "Choose your team organization",
+          label: "Choose your team",
+          detail: "Pick which FRC team you are working as.",
           href: "/workspace",
         },
       ],

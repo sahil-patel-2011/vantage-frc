@@ -75,8 +75,8 @@ export function codeCoachNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Local pattern review works without a model key. Pairing VS Code and GitHub need a team workspace.",
+        label: "Choose your team",
+        detail: "Local pattern review works without a model key. Pairing VS Code and GitHub need a team.",
         href: "/workspace",
         primary: true,
       },

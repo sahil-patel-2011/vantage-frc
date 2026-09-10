@@ -97,8 +97,8 @@ export function batteryHealthForecastSetupSteps(
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Battery Health Forecast.",
+      label: "Choose your team",
+      detail: "Choose your team to open Battery Health Forecast.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -172,7 +172,7 @@ export function batteryHealthForecastShellCopy(
         kind,
         title: "Loading Battery Health Forecast…",
         description:
-          "Checking workspace membership and real IR / cycle logs.",
+          "Checking which team you are on and real IR / cycle logs.",
       };
     case "error":
       return {
@@ -186,9 +186,9 @@ export function batteryHealthForecastShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before projecting retirement from real logs.",
+          "Select a team before projecting retirement from real logs.",
       };
     case "empty":
       return {

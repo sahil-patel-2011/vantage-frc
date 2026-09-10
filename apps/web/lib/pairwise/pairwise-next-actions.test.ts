@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { pairwiseNextActions } from "./pairwise-next-actions";
 
 describe("pairwise next actions", () => {
-  it("asks for a workspace when none is selected", () => {
+  it("asks for a team when none is selected", () => {
     expect(pairwiseNextActions({})[0]?.id).toBe("workspace");
   });
 

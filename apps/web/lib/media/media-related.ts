@@ -3,7 +3,7 @@ import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 import { isMediaWorkspaceEmpty } from ".";
 
-/** Soft-UI related surfaces for Media workspace (never DEMO metrics). */
+/** Soft-UI related surfaces for Media team (never DEMO metrics). */
 export const MEDIA_RELATED_LINKS = [
   { id: "media-kit", label: "Media Kit", kind: "path" as const, path: "/media-kit" },
   { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
@@ -29,7 +29,7 @@ export const MEDIA_RELATED_INCLUDE: MediaRelatedId[] = [
 ];
 
 /**
- * Soft-UI cross-links from Media workspace → Kit / Outreach / Impact / Wall.
+ * Soft-UI cross-links from Media team → Kit / Outreach / Impact / Wall.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function mediaRelatedLinks(
@@ -82,8 +82,8 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open media tools.",
+      label: "Choose your team",
+      detail: "Choose your team to open media tools.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,9 +152,9 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Media workspace…",
+        title: "Loading Media team…",
         description:
-          "Checking workspace membership and recorded press assets.",
+          "Checking which team you are on and recorded press assets.",
       };
     case "error":
       return {
@@ -162,15 +162,15 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Media",
         description:
-          "A network or server issue blocked the workspace. Retry, or open Media Kit / Outreach while it reloads.",
+          "A network or server issue blocked the team. Retry, or open Media Kit / Outreach while it reloads.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Media is your team's for business and press workflows. Pick a workspace before recording assets or outreach.",
+          "Media is your team's for business and press workflows. Select a team before recording assets or outreach.",
       };
     case "empty":
       return {
@@ -183,7 +183,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
     default:
       return {
         kind: "ready",
-        title: "Media workspace",
+        title: "Media team",
         description:
           "Counts reflect content items, Media Kit, outreach, impact, and sponsor visuals you recorded.",
       };
@@ -223,13 +223,13 @@ export function mediaNextActions(input: {
       {
         id: "media-kit",
         label: "Open Media Kit",
-        detail: "Kit editor stays available while the workspace reloads.",
+        detail: "Kit editor stays available while the team reloads.",
         href: withOrgHref("/media-kit", orgId),
       },
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Impact evidence stays available while the workspace reloads.",
+        detail: "Impact evidence stays available while the team reloads.",
         href: hubHref("/business", "impact", orgId),
       },
     ];

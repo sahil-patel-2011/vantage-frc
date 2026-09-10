@@ -117,7 +117,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       setSaving(false);
       return;
     }
-    setMessage("Team background saved for this workspace only.");
+    setMessage("Team background saved for this team only.");
     setMessageTone("ok");
     setSaving(false);
     await load();
@@ -153,7 +153,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Background"
         title={title}
-        description="Mission, history, demographics, and achievements used by sponsorship one-pagers and grant drafts. Owners and admins edit this workspace only — never imported from another team."
+        description="Mission, history, demographics, and achievements used by sponsorship one-pagers and grant drafts. Owners and admins edit this team only — never imported from another team."
       />
       <TeamOpsNav orgId={orgId} active="admin" />
 
@@ -173,7 +173,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {loading ? (
-        <EmptyState soft title="Loading team background" description="Pulling this workspace’s profile…" />
+        <EmptyState soft title="Loading team background" description="Pulling this team’s profile…" />
       ) : failure ? (
         <EmptyState soft title={failure.title} description={failure.description}>
           {failure.primary ? (
@@ -314,7 +314,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
             <Panel>
               <h2>Sponsor proposal preview seed</h2>
               <p className="app-muted team-background-hint">
-                Draft “who we are” text assembled from this workspace’s fields. Nothing is copied from another team.
+                Draft “who we are” text assembled from this team’s fields. Nothing is copied from another team.
               </p>
               <pre className="team-background-seed">{seedWhoWeAre}</pre>
             </Panel>

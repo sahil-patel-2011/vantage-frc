@@ -74,8 +74,8 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open sponsor walls.",
+      label: "Choose your team",
+      detail: "Choose your team to open sponsor walls.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -112,7 +112,7 @@ export function shouldShowSponsorWallSummaryTiles(entryCount: number): boolean {
   return entryCount > 0;
 }
 
-/** True when the workspace has no wall entries yet — Soft-UI empty. */
+/** True when the team has no wall entries yet — Soft-UI empty. */
 export function isSponsorWallBoardEmpty(input: { entryCount: number }): boolean {
   return input.entryCount === 0;
 }
@@ -140,7 +140,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         kind,
         title: "Loading Sponsor Wall…",
         description:
-          "Checking workspace membership and wall entries.",
+          "Checking which team you are on and wall entries.",
       };
     case "error":
       return {
@@ -154,9 +154,9 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and add real sponsors before publishing.",
+          "Select a team and add real sponsors before publishing.",
       };
     case "empty":
       return {

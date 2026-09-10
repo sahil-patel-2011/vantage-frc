@@ -72,8 +72,8 @@ export function lineupSetupSteps(orgId?: string | null): LineupSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open coverage.",
+      label: "Choose your team",
+      detail: "Choose your team to open coverage.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -284,7 +284,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         kind,
         title: "Loading lineup coverage…",
         description:
-          "Checking workspace membership and live scouting slots.",
+          "Checking which team you are on and live scouting slots.",
       };
     case "error":
       return {
@@ -298,9 +298,9 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Lineup & coverage is org- and event-scoped. Pick a workspace and active TBA event before gaps appear.",
+          "Lineup & coverage is org- and event-scoped. Select a team and active TBA event before gaps appear.",
       };
     case "empty":
       return {
@@ -341,7 +341,7 @@ export function lineupNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before watching live gaps.",
           href: "/workspace",
           primary: true,

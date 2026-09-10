@@ -99,7 +99,7 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
         kind,
         title: "Loading Alliance-Partner Brief…",
         description:
-          "Checking workspace membership and alliance boards.",
+          "Checking which team you are on and alliance boards.",
       };
     case "error":
       return {
@@ -113,9 +113,9 @@ export function alliancePartnerBriefShellCopy(kind: AlliancePartnerBriefShellKin
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and run alliance selection before generating a partner brief.",
+          "Select a team and run alliance selection before generating a partner brief.",
       };
     case "empty":
       return {
@@ -156,7 +156,7 @@ export function alliancePartnerBriefNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before generating roles.",
           href: "/workspace",
           primary: true,
@@ -184,7 +184,7 @@ export function alliancePartnerBriefNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Alliance-Partner Brief can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

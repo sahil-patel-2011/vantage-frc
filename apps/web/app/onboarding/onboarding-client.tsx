@@ -531,7 +531,7 @@ export default function OnboardingClient() {
       }
       hydrate(data);
       if (data.accessStatus === "approved") {
-        setMessage("Approved. Your team access email is on its way — use its sign-in link to enter the workspace.");
+        setMessage("Approved. Your team access email is on its way — use its sign-in link to enter the team.");
       } else if (data.accessStatus === "invited") {
         setMessage("Your team sent an invitation. Open the invitation email to finish joining.");
       } else if (data.accessStatus === "declined") {
@@ -835,7 +835,7 @@ export default function OnboardingClient() {
               <fieldset className="onboarding-team-profile">
                 <legend>Team location</legend>
                 <p className="onboarding-team-profile-hint">
-                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
+                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this team only.
                 </p>
                 <div className="onboarding-row">
                   <label>

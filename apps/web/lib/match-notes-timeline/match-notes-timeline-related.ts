@@ -98,7 +98,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         kind,
         title: "Loading Match Note Timeline…",
         description:
-          "Checking workspace membership and logged notes.",
+          "Checking which team you are on and logged notes.",
       };
     case "error":
       return {
@@ -112,9 +112,9 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging clock-synced notes.",
+          "Select a team before logging clock-synced notes.",
       };
     case "empty":
       return {
@@ -153,7 +153,7 @@ export function matchNotesTimelineNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging clock times.",
           href: "/workspace",
           primary: true,
@@ -181,7 +181,7 @@ export function matchNotesTimelineNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Match Note Timeline can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

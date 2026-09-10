@@ -87,8 +87,8 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Pit Command.",
+      label: "Choose your team",
+      detail: "Choose your team to open Pit Command.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -188,7 +188,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         kind,
         title: "Loading Pit Command…",
         description:
-          "Checking workspace membership and real issues / maintenance / battery logs.",
+          "Checking which team you are on and real issues / maintenance / battery logs.",
       };
     case "error":
       return {
@@ -202,9 +202,9 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging batteries, issues, or maintenance.",
+          "Select a team before logging batteries, issues, or maintenance.",
       };
     case "empty":
       return {

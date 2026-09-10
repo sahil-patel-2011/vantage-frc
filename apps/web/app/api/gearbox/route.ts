@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team workspace to design gearboxes." };
+      if (!row) return { status: "setup_required" as const, message: "Select a team to design gearboxes." };
 
       const gearboxes = await client.query<GearboxRow>(
         `SELECT g.id, g.name, g.subsystem, g.stages, g.motor_free_rpm::float8 AS "motorFreeRpm", g.notes, u.name AS "byName"

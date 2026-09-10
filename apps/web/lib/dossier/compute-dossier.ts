@@ -152,7 +152,7 @@ export async function computeTeamDossier(
   if (!row?.orgId) {
     return {
       status: "setup_required",
-      message: "Select a team workspace before opening a season dossier.",
+      message: "Select a team before opening a season dossier.",
       steps,
       orgId: null,
       teamNumber,

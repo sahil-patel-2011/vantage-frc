@@ -76,8 +76,8 @@ export function pickDeskSetupSteps(orgId?: string | null): PickDeskSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open pick desks.",
+      label: "Choose your team",
+      detail: "Choose your team to open pick desks.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -149,7 +149,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         kind,
         title: "Loading pick desk…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics.",
+          "Checking which team you are on and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -163,9 +163,9 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Pick desk is org- and event-scoped. Pick a workspace and active TBA event before ranks appear.",
+          "Pick desk is org- and event-scoped. Select a team and active TBA event before ranks appear.",
       };
     case "empty":
       return {
@@ -205,7 +205,7 @@ export function pickDeskNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before ranking alliances.",
           href: "/workspace",
           primary: true,

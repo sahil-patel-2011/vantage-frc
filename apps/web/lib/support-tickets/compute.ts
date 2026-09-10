@@ -65,7 +65,7 @@ export async function computeMemberTicketsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a workspace before submitting a support ticket.",
+      message: "Select a team before submitting a support ticket.",
       orgId: null,
       orgName: null,
       teamNumber: null,

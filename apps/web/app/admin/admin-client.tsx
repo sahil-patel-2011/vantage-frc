@@ -193,7 +193,7 @@ function AdminClientInner() {
       <PageHeader
         breadcrumbs="Platform / Global Team Manager"
         title="Global Team Manager"
-        description="Closed membership: provision each real team workspace and seed the first owner by exact verified email."
+        description="Closed membership: provision each real team and seed the first owner by exact verified email."
       >
         <AdminRelated active="teams" />
       </PageHeader>

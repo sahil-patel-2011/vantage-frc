@@ -23,7 +23,7 @@ export type PartFacts = {
   /** documentId:elementId:partId — unique across the whole assembly. */
   key: string;
   documentId: string;
-  /** "w" for a workspace, "m" for a linked document's microversion. */
+  /** "w" for a team, "m" for a linked document's microversion. */
   wvm: "w" | "m" | "v";
   /** Workspace or microversion id, matching `wvm`. */
   workspaceId: string;

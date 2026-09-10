@@ -451,10 +451,10 @@ export default function PackingClient() {
         </header>
         <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card pack-empty">
-          <strong>Select a team workspace</strong>
+          <strong>Select a team</strong>
           <p className="app-muted">{view.message}</p>
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </div>
       </main>

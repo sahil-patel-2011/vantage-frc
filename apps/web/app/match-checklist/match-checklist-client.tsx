@@ -194,7 +194,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
           );
         })()
       ) : view == null ? (
-        <EmptyState soft title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <div className="mcl-stack">
           <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>

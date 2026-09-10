@@ -2,7 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
-// Team transition/onboarding checklist. Aggregates the real state of a workspace
+// Team transition/onboarding checklist. Aggregates the real state of a team
 // so a team moving in can see, at a glance, what is set up and what is left:
 // members invited, subteam calendar, knowledge wiki, logistics, kickoff summary,
 // AI budgets, assistant tried, alumni/Discord. Admin-only signals are gated.

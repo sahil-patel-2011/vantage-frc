@@ -920,8 +920,8 @@ export function formBuilderSetupSteps(orgId?: string | null): FormBuilderSetupSt
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization — published schemas stay your team's.",
+      label: "Choose your team",
+      detail: "Choose your team — published schemas stay your team's.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -987,9 +987,9 @@ export function formBuilderShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Form builder is org- and season-scoped. Pick a workspace and set an active TBA event so the publish year is known.",
+          "Form builder is org- and season-scoped. Select a team and set an active TBA event so the publish year is known.",
       };
     case "empty":
       return {
@@ -1028,7 +1028,7 @@ export function formBuilderNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before publishing schemas.",
           href: "/workspace",
           primary: true,

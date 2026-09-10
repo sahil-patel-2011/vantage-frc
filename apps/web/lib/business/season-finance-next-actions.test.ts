@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { seasonFinanceNextActions } from "./season-finance-next-actions";
 
 describe("season finance next actions", () => {
-  it("asks for a workspace when none is selected", () => {
+  it("asks for a team when none is selected", () => {
     const actions = seasonFinanceNextActions({});
     expect(actions[0]?.id).toBe("workspace");
     expect(actions[0]?.href).toBe("/workspace");

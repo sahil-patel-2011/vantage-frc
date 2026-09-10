@@ -41,8 +41,8 @@ function dateOrNull(value: unknown): string | null {
 
 const SETUP_FALLBACK: SeasonPlanningWorkspaceView = {
   status: "setup_required",
-  message: "Could not load Season Planning Workspace. Select a workspace and confirm database access.",
-  steps: [{ id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" }],
+  message: "Could not load Season Planning Workspace. Select a team and confirm database access.",
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   seasonYear: currentSeasonYear(),
 };
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
           seasonYear: view.seasonYear,
         });
       });
-      if (!ics) return Response.json({ error: "Select a workspace and plan first" }, { status: 400 });
+      if (!ics) return Response.json({ error: "Select a team and plan first" }, { status: 400 });
       return new Response(ics, {
         headers: {
           "content-type": "text/calendar; charset=utf-8",

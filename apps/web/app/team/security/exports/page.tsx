@@ -17,7 +17,7 @@ export default async function TeamExportAuditPage({
         <PageHeader
           breadcrumbs="Security / Exports"
           title="Export audit"
-          description="Who exported what, for one team — pick the workspace first."
+          description="Who exported what, for one team — pick the team first."
         />
         <EmptyState
           soft

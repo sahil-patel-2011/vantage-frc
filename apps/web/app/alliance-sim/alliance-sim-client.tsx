@@ -148,7 +148,7 @@ export default function AllianceSimClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">

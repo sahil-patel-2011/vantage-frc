@@ -156,7 +156,7 @@ export default function SupportTicketsClient() {
         <EmptyState
           soft
           title={failure ? failure.title : "Loading support…"}
-          description={failure ? failure.description : "Checking your workspace."}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (
@@ -180,7 +180,7 @@ export default function SupportTicketsClient() {
         <PageHeader
           navPath="/support"
           title="Support"
-          description="Platform tickets need an active team workspace. Legacy /help redirects here."
+          description="Platform tickets need an active team. Legacy /help redirects here."
         />
         <SupportRelated orgId={view.orgId} />
         <NextActions orgId={view.orgId} ticketCount={0} awaitingReply={0} />
@@ -188,7 +188,7 @@ export default function SupportTicketsClient() {
           soft
           badge="Setup required"
           badgeTone="setup"
-          title={view.message ?? "Select a team workspace first."}
+          title={view.message ?? "Select a team first."}
           description="Choose the organization you need help for, then return here to submit a real ticket."
         >
           <div className="support-tickets-header-actions">

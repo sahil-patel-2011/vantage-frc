@@ -89,7 +89,7 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
         kind,
         title: "Loading Sketch-to-Brief…",
         description:
-          "Checking workspace membership and logged kickoff sketches.",
+          "Checking which team you are on and logged kickoff sketches.",
       };
     case "error":
       return {
@@ -103,9 +103,9 @@ export function sketchToBriefShellCopy(kind: SketchToBriefShellKind): SketchToBr
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging whiteboard sketches.",
+          "Select a team before logging whiteboard sketches.",
       };
     case "empty":
       return {
@@ -148,7 +148,7 @@ export function sketchToBriefNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging whiteboard notes.",
           href: "/workspace",
           primary: true,
@@ -170,7 +170,7 @@ export function sketchToBriefNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Sketch-to-Brief can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -74,8 +74,8 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open sponsor suite.",
+      label: "Choose your team",
+      detail: "Choose your team to open sponsor suite.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -173,7 +173,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         kind,
         title: "Loading Sponsor Suite…",
         description:
-          "Checking workspace membership and recorded sponsors.",
+          "Checking which team you are on and recorded sponsors.",
       };
     case "error":
       return {
@@ -187,9 +187,9 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and log real sponsors before generating decks.",
+          "Select a team and log real sponsors before generating decks.",
       };
     case "empty":
       return {

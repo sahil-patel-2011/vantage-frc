@@ -18,7 +18,7 @@ export default async function TeamAlumniPage({
       <main className="content">
         <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

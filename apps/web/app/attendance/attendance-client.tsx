@@ -582,7 +582,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           badge={fetchFailed ? "Setup" : undefined}
           badgeTone={fetchFailed ? "setup" : undefined}
           title={failure ? failure.title : "Loading attendance…"}
-          description={failure ? failure.description : "Checking your workspace for real roll calls."}
+          description={failure ? failure.description : "Checking your team for real roll calls."}
           aria-busy={!fetchFailed}
         >
           {failure ? (
@@ -598,7 +598,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                 </button>
               ) : null}
               <a className="app-button secondary" href="/workspace">
-                Choose workspace
+                Choose your team
               </a>
             </div>
           ) : null}
@@ -623,9 +623,9 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             <TeamOpsNav active="attendance" />
           </>
         ) : null}
-        <EmptyState soft title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup">
+        <EmptyState soft title="Select a team" description={view.message} badge="Setup" badgeTone="setup">
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
         <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />

@@ -132,7 +132,7 @@ export async function GET(request: Request) {
     });
 
     if (redeemed.status === "missing") {
-      return Response.json({ error: "Unknown handoff code for this workspace" }, { status: 404 });
+      return Response.json({ error: "Unknown handoff code for this team" }, { status: 404 });
     }
     if (redeemed.status === "consumed") {
       return Response.json({ error: "Handoff code already used", status: "consumed" }, { status: 410 });

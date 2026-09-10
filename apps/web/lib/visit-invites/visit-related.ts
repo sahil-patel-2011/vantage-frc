@@ -83,7 +83,7 @@ export function visitNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before scheduling shop tours.",
           href: "/workspace",
           primary: true,
@@ -91,7 +91,7 @@ export function visitNextActions(input: {
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Outreach nights live on Team Calendar once a workspace is selected.",
+          detail: "Outreach nights live on Team Calendar once a team is selected.",
           href: hubHref("/team", "calendar", null),
         },
       ];
@@ -99,7 +99,7 @@ export function visitNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership or migration setup so Visit Invites can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,
@@ -277,8 +277,8 @@ export function visitSetupSteps(orgId?: string | null): VisitSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Visit Invites.",
+      label: "Choose your team",
+      detail: "Choose your team to open Visit Invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -309,7 +309,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
       return {
         kind,
         title: "Loading visit invites…",
-        description: "Checking workspace membership and scheduled shop tours.",
+        description: "Checking which team you are on and scheduled shop tours.",
       };
     case "error":
       return {
@@ -325,7 +325,7 @@ export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
         badge: "Setup required",
         title: "Finish setup for visit invites",
         description:
-          "Pick a workspace and apply the visit invites migration if tables are missing.",
+          "Select a team and apply the visit invites migration if tables are missing.",
       };
     case "empty":
       return {

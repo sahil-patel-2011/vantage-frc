@@ -70,8 +70,8 @@ export function scoutCrossvalSetupSteps(orgId?: string | null): ScoutCrossvalSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open TBA cross-validation.",
+      label: "Choose your team",
+      detail: "Choose your team to open TBA cross-validation.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -161,7 +161,7 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
         kind,
         title: "Loading scout cross-validation…",
         description:
-          "Checking workspace membership and TBA-cached score breakdowns.",
+          "Checking which team you are on and TBA-cached score breakdowns.",
       };
     case "error":
       return {
@@ -175,9 +175,9 @@ export function scoutCrossvalShellCopy(kind: ScoutCrossvalShellKind): ScoutCross
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before agree/conflict badges appear.",
+          "Select a team before agree/conflict badges appear.",
       };
     case "empty":
       return {
@@ -215,7 +215,7 @@ export function scoutCrossvalNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before TBA checks run.",
           href: "/workspace",
           primary: true,

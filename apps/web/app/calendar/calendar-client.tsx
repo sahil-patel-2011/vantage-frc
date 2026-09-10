@@ -431,7 +431,7 @@ export default function CalendarClient() {
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Choose a team" description={view.message}>
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

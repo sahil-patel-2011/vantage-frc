@@ -133,7 +133,7 @@ export async function loadDashboardSnapshot(
 
   async function nextMatch() {
     if (!eventKey || !teamKey) {
-      widgets.next_match = stamp("setup_required", "next_match", undefined, "Select an active event and team workspace.");
+      widgets.next_match = stamp("setup_required", "next_match", undefined, "Select an active event and team.");
       return;
     }
     const match = await client.query<{
@@ -262,7 +262,7 @@ export async function loadDashboardSnapshot(
 
   async function recentResult() {
     if (!eventKey || !teamKey) {
-      widgets.recent_result = stamp("setup_required", "recent_result", undefined, "Select an active event and team workspace.");
+      widgets.recent_result = stamp("setup_required", "recent_result", undefined, "Select an active event and team.");
       return;
     }
     const match = await client.query<{
@@ -311,7 +311,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "competition_snapshot",
         undefined,
-        "Select a team workspace so Statbotics/TBA EPA can load.",
+        "Select a team so Statbotics/TBA EPA can load.",
       );
       return;
     }

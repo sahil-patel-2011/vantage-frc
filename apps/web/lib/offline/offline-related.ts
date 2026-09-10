@@ -144,9 +144,9 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
       return {
         kind,
         badge: "Setup",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Readiness is per team. Pick a workspace first. Device counts stay at zero until then.",
+          "Readiness is per team. Select a team first. Device counts stay at zero until then.",
       };
     case "empty":
       return {
@@ -209,7 +209,7 @@ export function offlineShellNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Readiness and sync logs are saved per team — pick an org first.",
         href: "/workspace",
         primary: true,
@@ -330,7 +330,7 @@ export function offlineBootNextActions(input: {
       ? queued > 0 && input.loaded
         ? `${formatOfflineCount(queued, true)} item(s) waiting in this device's outbox — sync when Wi-Fi returns.`
         : "Match and pit forms stay on this device."
-      : "Open once online from a workspace so the event cache is ready.",
+      : "Open once online from a team so the event cache is ready.",
     href: scoutHref,
     primary: true,
   });

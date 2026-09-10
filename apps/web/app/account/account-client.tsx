@@ -118,7 +118,7 @@ const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string
     detail: "Inbox when your subteam (or whole team) gets a new or updated event.",
   },
   { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
-  { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your workspace." },
+  { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your team." },
   { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
   { key: "productUpdates", title: "In-app product notes", detail: "Release notes and product updates in the inbox (on by default)." },
   {
@@ -342,7 +342,7 @@ function OrgContextCard({ org }: { org: OrgContext }) {
       >
         <div className="account-empty-actions">
           <a className="app-button" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
           <a className="app-button secondary" href="/support">
             Help & Support
@@ -369,7 +369,7 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         </div>
       </div>
       <p className="app-muted">
-        Display name and notification prefs are personal. AI keys, billing, and connectors follow this workspace.
+        Display name and notification prefs are personal. AI keys, billing, and connectors follow this team.
       </p>
       {/* AI keys / Billing / AI usage are exactly the related strip above this
           panel, same hrefs in the same order. What belongs here is the one link
@@ -809,7 +809,7 @@ export default function AccountClient() {
               </>
             ) : (
               <a href="/workspace">
-                <strong>Workspace</strong>
+                <strong>Your team</strong>
                 <span>Choose a team for keys, billing, and usage</span>
               </a>
             )}
@@ -841,8 +841,8 @@ export default function AccountClient() {
                   <span>{account.email ?? "—"}</span>
                   <span className="account-identity-scope">
                     {orgId
-                      ? `Personal account · workspace ${formatAccountOrgLabel(org) ?? "active"}`
-                      : "Personal account · no workspace selected"}
+                      ? `Personal account · team ${formatAccountOrgLabel(org) ?? "active"}`
+                      : "Personal account · no team selected"}
                   </span>
                 </div>
               </div>

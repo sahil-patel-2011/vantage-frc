@@ -160,7 +160,7 @@ function VideoRescoutShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Select workspace"}
+            {orgId ? "Open Scouting" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (

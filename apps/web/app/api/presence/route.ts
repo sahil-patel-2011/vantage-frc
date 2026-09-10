@@ -62,9 +62,9 @@ function setupFallback(presenceDate: string): PresenceView {
   return {
     status: "setup_required",
     message:
-      "Could not load presence. Select a workspace and confirm database access — nothing has been assumed about who was here.",
+      "Could not load presence. Select a team and confirm database access — nothing has been assumed about who was here.",
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       {
         id: "calendar",
         label: "Add a meeting to the calendar",

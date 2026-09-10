@@ -250,7 +250,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   }
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("github") === "connected") setMessage("GitHub connected for this workspace.");
+    if (params.get("github") === "connected") setMessage("GitHub connected for this team.");
     if (params.get("github") === "denied") setMessage("GitHub authorization was denied.");
     if (params.get("github") === "error") setMessage(params.get("error") || "GitHub OAuth failed.");
     void load();
@@ -443,7 +443,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         body: JSON.stringify({ orgId, action: "connect-pat", pat: githubPat }),
       });
       const data = await response.json();
-      setMessage(response.ok ? "GitHub PAT encrypted and saved for this workspace." : data.error);
+      setMessage(response.ok ? "GitHub PAT encrypted and saved for this team." : data.error);
       if (response.ok) {
         setGithubPat("");
         await load();
@@ -472,7 +472,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   }
 
   async function disconnectGitHub() {
-    if (!confirm("Disconnect GitHub for this workspace? AI chat will stop using repo file context.")) return;
+    if (!confirm("Disconnect GitHub for this team? AI chat will stop using repo file context.")) return;
     setGithubBusy(true);
     try {
       const response = await fetch("/api/github", {
@@ -786,7 +786,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <header>
           <div>
             <span className="eyebrow">VERIFIED ACCESS REQUESTS</span>
-            <h2 id="team-access-title">Approve who enters this workspace.</h2>
+            <h2 id="team-access-title">Approve who enters this team.</h2>
             <p>Team numbers route requests here; they never grant membership. Approval ends the applicant&apos;s onboarding sessions and emails a fresh sign-in link.</p>
           </div>
           <strong>{accessRequests.filter((request) => request.status === "pending").length}</strong>

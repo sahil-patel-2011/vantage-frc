@@ -79,8 +79,8 @@ export function allianceSelectionDeskSetupSteps(
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open the desk.",
+      label: "Choose your team",
+      detail: "Choose your team to open the desk.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -117,7 +117,7 @@ export function shouldShowAllianceSelectionDeskSummaryTiles(sessionCount: number
   return sessionCount > 0;
 }
 
-/** True when the workspace has no desk sessions yet — Soft-UI empty. */
+/** True when the team has no desk sessions yet — Soft-UI empty. */
 export function isAllianceSelectionDeskEmpty(input: { sessionCount: number }): boolean {
   return input.sessionCount === 0;
 }
@@ -146,7 +146,7 @@ export function allianceSelectionDeskShellCopy(
         kind,
         title: "Loading Alliance Selection Desk…",
         description:
-          "Checking workspace membership and desk sessions.",
+          "Checking which team you are on and desk sessions.",
       };
     case "error":
       return {
@@ -160,9 +160,9 @@ export function allianceSelectionDeskShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before creating a live board.",
+          "Select a team before creating a live board.",
       };
     case "empty":
       return {
@@ -201,7 +201,7 @@ export function allianceSelectionDeskNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before opening a board.",
           href: "/workspace",
           primary: true,
@@ -223,7 +223,7 @@ export function allianceSelectionDeskNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so the desk can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

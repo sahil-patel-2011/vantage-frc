@@ -3,7 +3,7 @@ import "../cad-setup.css";
 
 export const metadata = {
   title: "CAD Setup",
-  description: "Connect CAD platforms and AI execution modes — allowlisted, approval-gated geometry.",
+  description: "Connect CAD and how AI may edit — shape changes wait for a person to approve.",
 };
 
 export default async function CadSetupPage({
@@ -18,11 +18,11 @@ export default async function CadSetupPage({
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">CAD / Setup</span>
-            <h1>Select a workspace</h1>
-            <p className="app-muted">Connections belong to a team. Choose a workspace to run the setup wizard.</p>
+            <h1>Select a team</h1>
+            <p className="app-muted">Connections belong to a team. Choose a team to run the setup wizard.</p>
           </div>
           <a className="primary-action" href="/workspace">
-            Choose workspace →
+            Choose your team →
           </a>
         </header>
       </main>

@@ -154,7 +154,7 @@ function SeasonReportShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={workspaceHref}>
-            Open Workspace
+            Choose your team
           </a>
         ) : null}
       </EmptyState>

@@ -670,7 +670,7 @@ describe("misc", () => {
     expect(statusLabel("weird_custom_state")).toBe("weird custom state");
   });
 
-  it("offers a workspace step when there is no org", () => {
+  it("offers a team step when there is no org", () => {
     const view = myKitSetupRequired(null);
     expect(view.status).toBe("setup_required");
     expect(view.steps[0]!.href).toBe("/workspace");

@@ -93,9 +93,9 @@ export async function computeDataQualityScorecardView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build the scouting data-quality scorecard.",
+      message: "Select a team to build the scouting data-quality scorecard.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,
@@ -124,7 +124,7 @@ export async function computeDataQualityScorecardView(
     if (seasons.length === 0) {
       return {
         status: "setup_required",
-        message: "No data-quality checks logged yet for this workspace. Log a check to start the scorecard.",
+        message: "No data-quality checks logged yet for this team. Log a check to start the scorecard.",
         steps: [
           {
             id: "log-check",

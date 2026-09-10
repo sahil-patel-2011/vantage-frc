@@ -74,7 +74,7 @@ async function loadView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to plan shop tours and demo days.",
+      message: "Select a team to plan shop tours and demo days.",
       context: { orgId: null, orgName: null },
     };
   }

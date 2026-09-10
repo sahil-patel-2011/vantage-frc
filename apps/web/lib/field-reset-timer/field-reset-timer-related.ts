@@ -68,8 +68,8 @@ export function fieldResetTimerSetupSteps(orgId?: string | null): FieldResetTime
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open reset drills.",
+      label: "Choose your team",
+      detail: "Choose your team to open reset drills.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -118,7 +118,7 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
       return {
         kind,
         title: "Loading Field Reset Timer…",
-        description: "Checking workspace membership and reset-drill sessions.",
+        description: "Checking which team you are on and reset-drill sessions.",
       };
     case "error":
       return {
@@ -132,9 +132,9 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging real practice cycles.",
+          "Select a team before logging real practice cycles.",
       };
     case "empty":
       return {

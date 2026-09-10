@@ -184,11 +184,11 @@ export async function computeRuleImpactView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to analyze rule-change impact against your subsystem library.",
+      message: "Select a team to analyze rule-change impact against your subsystem library.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging game-manual deltas.",
           href: "/workspace",
         },

@@ -243,7 +243,7 @@ export async function GET(request: Request) {
           message:
             data.error === "event_required"
               ? "Select an active event before opening draft day."
-              : "Select a workspace to open the alliance board.",
+              : "Select a team to open the alliance board.",
           orgId: "orgId" in data ? data.orgId : null,
         },
         { status: 200 },

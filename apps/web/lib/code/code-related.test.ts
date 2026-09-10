@@ -12,7 +12,7 @@ describe("codeCoachRelatedLinks", () => {
     expect(codeCoachRelatedLinks()).toEqual([]);
   });
 
-  it("includes CAD, GitHub, and AI chat for a workspace", () => {
+  it("includes CAD, GitHub, and AI chat for a team", () => {
     const links = codeCoachRelatedLinks("org-1");
     expect(links.map((l) => l.id)).toEqual(
       expect.arrayContaining(["cad", "github", "chat", "pair", "usage", "budgets"]),

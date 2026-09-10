@@ -71,8 +71,8 @@ export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWa
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open match deltas.",
+      label: "Choose your team",
+      detail: "Choose your team to open match deltas.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -144,7 +144,7 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
       return {
         kind,
         title: "Loading Match-Delta Watcher…",
-        description: "Checking workspace membership and scored predictions.",
+        description: "Checking which team you are on and scored predictions.",
       };
     case "error":
       return {
@@ -158,9 +158,9 @@ export function matchDeltaWatcherShellCopy(kind: MatchDeltaWatcherShellKind): Ma
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before comparing official results to predictions.",
+          "Select a team before comparing official results to predictions.",
       };
     case "empty":
       return {
@@ -198,7 +198,7 @@ export function matchDeltaWatcherNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before scanning results.",
           href: "/workspace",
           primary: true,
@@ -220,7 +220,7 @@ export function matchDeltaWatcherNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Match-Delta Watcher can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

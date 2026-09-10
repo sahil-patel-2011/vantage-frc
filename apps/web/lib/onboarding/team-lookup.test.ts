@@ -67,7 +67,7 @@ describe("live team-number feedback", () => {
     expect(result.body).toMatch(/nothing joins you automatically/i);
   });
 
-  it("never claims a workspace exists from a guess", () => {
+  it("never claims a team exists from a guess", () => {
     // No server evidence about 1234 — the copy must promise a check, not a result.
     const result = lookupTeamNumber({ ...BASE, raw: "1234" });
     expect(result.kind).toBe("unchecked");

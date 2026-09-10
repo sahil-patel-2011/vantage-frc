@@ -113,7 +113,7 @@ export default function AnnouncementsClient() {
     return (
       <main className="module-page announcements-page">
         <PageHeader breadcrumbs="Team / Announcements" title="Announcements" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Announcements need a team workspace" description={error}>
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Announcements need a team" description={error}>
           <a className="app-button" href="/workspace">Choose team</a>
         </EmptyState>
       </main>

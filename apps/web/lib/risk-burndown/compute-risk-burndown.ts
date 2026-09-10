@@ -18,8 +18,8 @@ function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Risk-Register Burndown.",
+      label: "Choose your team",
+      detail: "Choose your team to open Risk-Register Burndown.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -130,7 +130,7 @@ export async function computeRiskBurndownView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to track your season risk register.",
+      message: "Select a team to track your season risk register.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

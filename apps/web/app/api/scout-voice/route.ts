@@ -38,8 +38,8 @@ function setupRequiredFallback(orgId: string | null, message: string): ScoutVoic
     steps: [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization",
+        label: "Choose your team",
+        detail: "Pick which FRC team you are working as.",
         href: "/workspace",
       },
       {
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
     return Response.json(
       setupRequiredFallback(
         null,
-        "Could not load scouting voice notes. Select a workspace and confirm database access.",
+        "Could not load scouting voice notes. Select a team and confirm database access.",
       ),
       { status: 200 },
     );

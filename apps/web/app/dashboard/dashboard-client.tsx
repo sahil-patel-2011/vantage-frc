@@ -189,7 +189,7 @@ const ROLE_LABEL: Record<OrgRole, string> = {
 /** Why the catalog is holding a widget back — read straight off the entry. */
 function widgetLockReason(entry: WidgetCatalogEntry): string {
   const roles = entry.roles ?? [];
-  if (roles.length === 0) return "Not available on this workspace";
+  if (roles.length === 0) return "Not available on this team";
   const names = roles.map((role) => ROLE_LABEL[role] ?? role);
   if (names.length === 1) return `${names[0]} only`;
   return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]} only`;
@@ -609,7 +609,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
   async function save(activateScope: "personal" | "org" = "personal") {
     if (!orgId) {
       setMessageKind("error");
-      setMessage("Select a team workspace to save a custom layout.");
+      setMessage("Select a team to save a custom layout.");
       return;
     }
     if (activateScope === "org" && !canShareOrg) {
@@ -1438,7 +1438,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
-            {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
+            {me.orgName ?? "Your team"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
             {board && !board.isDefault ? (
               <span className="dash-scope-pill" data-scope={scope}>
                 {scope === "org" ? "Team board" : "Personal board"}
@@ -1455,9 +1455,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
           ) : null}
           <p>
             {!meLoaded
-              ? "Loading your workspace…"
+              ? "Loading your team…"
               : !orgId
-                ? "Select a team workspace to load live data."
+                ? "Select a team to load live data."
                 : tbaConfigured === false
                   ? "Your week — what is next, what is due, and what to learn. Match data arrives once The Blue Alliance is connected below."
                   : setupRequired
@@ -1481,7 +1481,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
           ) : null}
           {!orgId ? (
             <a className="app-button secondary" href="/workspace">
-              Select workspace
+              Choose your team
             </a>
           ) : (setupRequired || tbaConfigured === false) && dashShell === "ready" ? (
             // The first-run banner below already carries this action; showing
@@ -1756,7 +1756,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                 ? canShareOrg
                   ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
                   : " Done saves your personal Home — teammates keep their own layouts."
-                : " Select a workspace to persist."}
+                : " Select a team to save this layout."}
             </span>
           </div>
           <div className="dash-palette-heading">

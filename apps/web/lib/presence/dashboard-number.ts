@@ -122,7 +122,7 @@ function payloadOf(
   const href = resolved === "setup_required" ? "/workspace" : "/presence";
   const message =
     resolved === "setup_required"
-      ? (setupMessage ?? "Select a team workspace to see who is coming tonight.")
+      ? (setupMessage ?? "Select a team to see who is coming tonight.")
       : label;
 
   return {
@@ -135,7 +135,7 @@ function payloadOf(
       parts,
       label,
       href,
-      ctaLabel: resolved === "setup_required" ? "Select workspace" : "Open Presence",
+      ctaLabel: resolved === "setup_required" ? "Choose your team" : "Open Presence",
       userIds,
     },
   };

@@ -165,7 +165,7 @@ export async function GET(request: Request) {
       if (!membership) {
         return {
           status: "setup_required",
-          message: "Join a team workspace to see Call Your Shot activity.",
+          message: "Join a team to see Call Your Shot activity.",
         };
       }
       const mentor = canReadOrgCalls(membership.role);
@@ -273,7 +273,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message:
-          "Could not load learning activity. Select a workspace and confirm database access.",
+          "Could not load learning activity. Select a team and confirm database access.",
       } satisfies LearningOverview,
       { status: 200 },
     );

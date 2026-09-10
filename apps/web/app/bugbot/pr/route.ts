@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       });
 
       const authToken = await getGitHubAccessToken(client, orgId);
-      if (!authToken) throw new Error("GitHub is not connected for this workspace.");
+      if (!authToken) throw new Error("GitHub is not connected for this team.");
       const http = createGitHubHttp(authToken.accessToken);
       const originals = await Promise.all(
         prepared.paths.map(async (path) => {

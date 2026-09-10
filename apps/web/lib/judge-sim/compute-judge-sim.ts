@@ -30,8 +30,8 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Judge-Pitch.",
+      label: "Choose your team",
+      detail: "Choose your team to open Judge-Pitch.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -181,7 +181,7 @@ export async function computeJudgeSimView(
     return {
       status: "setup_required",
       message:
-        "Select a team workspace to practice judge Q&A grounded in your own logged evidence.",
+        "Select a team to practice judge Q&A grounded in your own logged evidence.",
       steps: setupStepsFor(null),
       orgId: null,
       seasonYear,

@@ -72,8 +72,8 @@ export function batteryNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before tracking packs.",
+        label: "Choose your team",
+        detail: "Choose your team before tracking packs.",
         href: "/workspace",
         primary: true,
       },

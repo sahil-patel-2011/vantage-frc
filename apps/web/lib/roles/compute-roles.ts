@@ -107,9 +107,9 @@ export async function computeRolesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to map roles and responsibilities.",
+      message: "Select a team to map roles and responsibilities.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,
@@ -133,7 +133,7 @@ export async function computeRolesView(
     // that something earlier already aborted the transaction. Swallowing that gave
     // an empty roster, which downstream is not "degraded" but wrong: unresolved
     // holder names, and createRole/updateRole rejecting a real member with
-    // "Holder must be a member of this workspace". Let it surface.
+    // "Holder must be a member of this team". Let it surface.
     loadRoster(client, org.orgId),
   ]);
 
@@ -178,7 +178,7 @@ export async function createRole(
   const member = input.holderUserId
     ? roster.find((candidate) => candidate.userId === input.holderUserId)
     : null;
-  if (input.holderUserId && !member) throw new Error("Holder must be a member of this workspace");
+  if (input.holderUserId && !member) throw new Error("Holder must be a member of this team");
   const holderName = member?.name?.trim() || canonicalHolderName(input.holderName, roster);
   await client.query(
     `INSERT INTO team_roles
@@ -217,7 +217,7 @@ export async function updateRole(
   const member = input.holderUserId
     ? roster.find((candidate) => candidate.userId === input.holderUserId)
     : null;
-  if (input.holderUserId && !member) throw new Error("Holder must be a member of this workspace");
+  if (input.holderUserId && !member) throw new Error("Holder must be a member of this team");
   const holderName = member?.name?.trim() || canonicalHolderName(input.holderName ?? null, roster);
   await client.query(
     `UPDATE team_roles SET

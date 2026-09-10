@@ -184,7 +184,7 @@ export async function computeOnboardingBuddyView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to pair new members with a buddy.",
+      message: "Select a team to pair new members with a buddy.",
       steps: onboardingBuddySetupSteps(null),
       orgId: null,
     };

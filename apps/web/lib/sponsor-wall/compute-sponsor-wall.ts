@@ -98,9 +98,9 @@ export async function computeSponsorWallView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build your sponsor thank-you wall.",
+      message: "Select a team to build your sponsor thank-you wall.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };

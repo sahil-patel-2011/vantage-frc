@@ -102,7 +102,7 @@ export function formatWorkspaceOrgLabel(input: {
     input.teamNumber != null && Number.isFinite(input.teamNumber) ? `Team ${input.teamNumber}` : null;
   const name = input.orgName?.trim() || null;
   const parts = [team, name].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Team workspace";
+  return parts.length > 0 ? parts.join(" · ") : "Your team";
 }
 
 export function classifyWorkspaceShell(input: {
@@ -122,9 +122,9 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
     case "loading":
       return {
         kind,
-        eyebrow: "WORKSPACE",
+        eyebrow: "YOUR TEAM",
         title: "Loading…",
-        description: "Checking your team memberships.",
+        description: "Checking which teams you can open.",
       };
     case "setup":
       return {
@@ -139,15 +139,15 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
         kind,
         eyebrow: "TEAMS",
         title: "Choose a team",
-        description: "You belong to more than one workspace.",
+        description: "You belong to more than one team. Pick which one to open.",
         badge: "Multiple teams",
       };
     case "ready":
       return {
         kind,
-        eyebrow: "WORKSPACE",
+        eyebrow: "YOUR TEAM",
         title: "Continue",
-        description: "Open your team workspace.",
+        description: "Open your team.",
       };
     default:
       return {
@@ -181,7 +181,7 @@ export function workspaceSetupSteps(_orgId?: string | null): WorkspaceSetupStep[
     {
       id: "claim",
       label: "Claim FRC team",
-      detail: "Create a workspace for an unused TBA team number.",
+      detail: "Create a team for an unused TBA team number.",
       href: "/claim",
     },
   ];

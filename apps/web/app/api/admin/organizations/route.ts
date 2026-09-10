@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         return { orgId, mode, inviteToken: null as string | null, inviteExpiresAt: null as Date | null };
       }
 
-      // Invited path: create the workspace now; the owner claims it via a
+      // Invited path: create the team now; the owner claims it via a
       // one-time invite link once they sign up with this exact email.
       const org = await client.query<{ id: string }>(
         `INSERT INTO organizations(name, slug, team_number) VALUES($1, $2, $3) RETURNING id`,

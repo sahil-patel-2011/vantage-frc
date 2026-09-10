@@ -121,9 +121,9 @@ export async function computeWriterView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to draft grants and sponsor emails.",
+      message: "Select a team to draft grants and sponsor emails.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

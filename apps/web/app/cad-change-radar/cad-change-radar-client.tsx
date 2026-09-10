@@ -132,7 +132,7 @@ function RadarShell({
         >
           {shell === "setup" ? (
             <a className="app-button" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>
-              {orgId ? "Open CAD" : "Select workspace"}
+              {orgId ? "Open CAD" : "Choose your team"}
             </a>
           ) : null}
           {shell === "empty" ? (

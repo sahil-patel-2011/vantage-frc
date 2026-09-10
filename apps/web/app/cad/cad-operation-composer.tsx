@@ -163,7 +163,7 @@ export function CadOperationComposer({
       <div className="cad-operation-body">
         <p className="app-muted">
           {platform === "fusion360"
-            ? "Typed millimetre fields match the paired Fusion add-in allowlist. Execution stays on your desktop."
+            ? "Typed millimetre fields match what the paired Fusion add-in can run. Execution stays on your desktop."
             : platform === "onshape"
               ? "Edit millimetres and IDs the way Onshape's feature dialog does. Empty fields stay empty."
               : "Plan native operations with typed millimetre fields. Mock adapters do not create production geometry."}

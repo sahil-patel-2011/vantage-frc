@@ -229,9 +229,9 @@ export default function InspectionClient() {
             <p>Self-inspect against the standard checklist before the real inspector arrives.</p>
           </div>
         </header>
-        <EmptyState className="insp-empty" title="Select a team workspace" description={view.message}>
+        <EmptyState className="insp-empty" title="Select a team" description={view.message}>
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

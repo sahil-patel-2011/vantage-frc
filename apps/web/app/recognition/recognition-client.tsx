@@ -144,10 +144,10 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
           badge="Setup required"
           badgeTone="setup"
           title={view.message}
-          description="Choose a workspace, then return here to open nominations. Empty shells stay empty."
+          description="Choose a team, then return here to open nominations. Empty shells stay empty."
         >
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

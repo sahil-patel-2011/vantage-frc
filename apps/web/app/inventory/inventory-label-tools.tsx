@@ -48,7 +48,7 @@ export default function InventoryLabelTools({
       const url = new URL(value.trim(),window.location.origin);
       const locationId = url.searchParams.get("locationId");
       const location = locations.find((row) => row.id === locationId);
-      if (!location) throw new Error("That label is not a location in this workspace.");
+      if (!location) throw new Error("That label is not a location on this team.");
       setMessage(`Found ${location.name} · ${location.itemCount} item${location.itemCount===1?"":"s"}`);
       onLocate(location);
     } catch (error) {

@@ -94,7 +94,7 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
         kind,
         title: "Loading Match Copilot…",
         description:
-          "Checking workspace membership and your next match.",
+          "Checking which team you are on and your next match.",
       };
     case "error":
       return {
@@ -108,9 +108,9 @@ export function matchCopilotShellCopy(kind: MatchCopilotShellKind): MatchCopilot
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace, set an active event, and confirm your next match before a brief appears.",
+          "Select a team, set an active event, and confirm your next match before a brief appears.",
       };
     case "empty":
       return {
@@ -149,7 +149,7 @@ export function matchCopilotNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before fusing the next match.",
           href: "/workspace",
           primary: true,
@@ -177,7 +177,7 @@ export function matchCopilotNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Match Copilot can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

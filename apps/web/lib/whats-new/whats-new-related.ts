@@ -60,7 +60,7 @@ export function whatsNewNextActions(input: {
     actions.push({
       id: "pricing",
       label: "Compare plans on Pricing",
-      detail: "Some notes target paid or Max entitlements — check which unlocks apply to your workspace.",
+      detail: "Some notes target paid or Max entitlements — check which unlocks apply to your team.",
       href: "/pricing",
     });
     actions.push({

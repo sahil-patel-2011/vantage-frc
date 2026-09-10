@@ -186,12 +186,12 @@ export async function computeGrantCalendarView(
     return {
       status: "setup_required",
       message:
-        "Select a team workspace to open the grant calendar. Deadlines and eligibility are scoped to your team.",
+        "Select a team to open the grant calendar. Deadlines and eligibility are scoped to your team.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
-          detail: "Choose your team organization",
+          label: "Choose your team",
+          detail: "Pick which FRC team you are working as.",
           href: "/workspace",
         },
       ],

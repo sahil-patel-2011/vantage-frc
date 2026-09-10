@@ -51,7 +51,7 @@ export default async function ScoutDataImpactPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel scout-data-impact-panel" aria-label="Setup steps">

@@ -94,8 +94,8 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Battery Rotation.",
+      label: "Choose your team",
+      detail: "Choose your team to open Battery Rotation.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -167,7 +167,7 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         kind,
         title: "Loading Battery Rotation…",
         description:
-          "Checking workspace membership and real pack / IR logs.",
+          "Checking which team you are on and real pack / IR logs.",
       };
     case "error":
       return {
@@ -181,9 +181,9 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before scheduling packs from real IR trends.",
+          "Select a team before scheduling packs from real IR trends.",
       };
     case "empty":
       return {

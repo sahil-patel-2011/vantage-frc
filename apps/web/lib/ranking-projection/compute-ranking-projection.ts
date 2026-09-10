@@ -70,7 +70,7 @@ function setup(message: string, orgId: string | null): RankingProjectionView {
     message,
     orgId,
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       {
         id: "event",
         label: "Set active event",
@@ -217,7 +217,7 @@ export async function computeRankingProjectionView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team workspace to project rankings.", null);
+  if (!org) return setup("Select a team to project rankings.", null);
   if (!org.teamNumber) return setup("Set your team number so rankings can find your TBA row.", org.orgId);
 
   const context = await client.query<{ eventKey: string | null }>(

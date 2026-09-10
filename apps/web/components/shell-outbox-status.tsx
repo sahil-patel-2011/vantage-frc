@@ -11,7 +11,7 @@ type ShellOutboxStatusProps = {
 
 /**
  * Outbox pill for the global shell — scout entries plus queued tasks/chat/hours.
- * Shows pending count, last error, and Retry all when online with a workspace.
+ * Shows pending count, last error, and Retry all when online with a team.
  */
 export function ShellOutboxStatus({ orgId }: ShellOutboxStatusProps) {
   const [entries, setEntries] = useState(0);

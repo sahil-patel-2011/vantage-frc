@@ -285,9 +285,9 @@ export async function computeOrdersView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to manage purchase requests.",
+      message: "Select a team to manage purchase requests.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };
@@ -337,7 +337,7 @@ export async function computeOrdersView(
     status: "setup_required",
     message: "Could not load purchase requests. Confirm database migrations have been applied.",
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],
     orgId: org.orgId,
   };

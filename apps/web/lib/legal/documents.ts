@@ -129,10 +129,10 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "Where data lives, how long we keep it, and how to get it out",
       paragraphs: [
         "Your team's data lives in our Postgres database, hosted by Neon. We do not currently offer a choice of hosting region — if that matters for your organization, ask us before you sign up.",
-        "We keep a workspace's data for as long as the workspace is active, and afterwards only as long as we need it for security, legal, billing, or dispute reasons. Chat messages specifically have no automatic deletion, as noted above.",
+        "We keep a team's data for as long as the team is active, and afterwards only as long as we need it for security, legal, billing, or dispute reasons. Chat messages specifically have no automatic deletion, as noted above.",
         "Your team can export its own data at any time from the Exports area — individual areas as CSV, or the whole workspace as a ZIP archive. API keys and encryption material are never included in an export.",
         "When a member leaves a team, their membership is removed and they immediately lose access to that workspace. The work they created — scouting entries, hours, tasks, messages in team channels — stays with the team, because it is the team's operating record rather than personal property. Their Vantage account and their own profile stay with them.",
-        "When a team stops using Vantage, export first. On request we delete the workspace, and deleting an organization removes its rows throughout the database. Ask us at " +
+        "When a team stops using Vantage, export first. On request we delete the team, and deleting an organization removes its rows throughout the database. Ask us at " +
           CONTACT +
           " and tell us the team number.",
         "You can ask us to access, correct, export, or delete your personal information by writing to " +
@@ -147,7 +147,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "Competition venues have terrible Wi-Fi, so parts of Vantage keep a copy of data in your browser so they keep working offline.",
         "This data sits in your browser's storage on that device. It matters most on a shared laptop or tablet in the shop or the pit: the next person to use that device could open the browser and see the cached copy.",
         "To clear it, clear site data for the Vantage site in your browser's settings (in Chrome: Settings → Privacy → Site settings → the Vantage site → Delete data). Signing out does not automatically wipe these caches.",
-        "Some personalisation never leaves the device either. The command palette remembers the few destinations you opened most recently, the team picker remembers the workspaces you switched to, the dashboard remembers how you arranged it, the sign-in page can remember which account you used, and scouting keeps an autosaved draft. Those preferences live in your browser's storage on that device and are not sent to us or synced between your devices — which also means a different browser starts fresh.",
+        "Some personalisation never leaves the device either. The command palette remembers the few destinations you opened most recently, the team picker remembers the teams you switched to, the dashboard remembers how you arranged it, the sign-in page can remember which account you used, and scouting keeps an autosaved draft. Those preferences live in your browser's storage on that device and are not sent to us or synced between your devices — which also means a different browser starts fresh.",
         "We use three necessary cookies, and they are not part of the analytics choice described in the next section: one keeps you signed in, one remembers your light or dark theme, and one remembers the answer you gave about analytics. A necessary cookie is one the product cannot work without — or, in the third case, one that exists only so we can honour a \"no\".",
         "We do not use advertising cookies, session replay, or fingerprinting. That is true whether or not you turn analytics on.",
       ],
@@ -185,9 +185,9 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "Students under 13, and parental consent",
       paragraphs: [
         "FRC teams include middle-school students, so some members are under 13. We ask for date of birth during onboarding, which means we know when that is the case rather than guessing.",
-        "Vantage is not sold to children directly and cannot be joined by one on their own. Access is closed: a school or team organisation is provisioned by us, and its owners and admins invite specific email addresses. A student cannot create a workspace, and cannot join one without being invited by an adult who runs that team.",
+        "Vantage is not sold to children directly and cannot be joined by one on their own. Access is closed: a school or team organisation is provisioned by us, and its owners and admins invite specific email addresses. A student cannot create a team, and cannot join one without being invited by an adult who runs that team.",
         "Where a member is under 13, the team — through its coach or lead mentors, acting for the school or organisation that runs it — is responsible for obtaining any parental consent their jurisdiction requires before inviting that student, and for holding the record of it. We support that rather than replace it: the team controls who is invited, and a parent or guardian may ask the team to remove their child at any time, which removes their access and lets the team delete their data.",
-        "If you are a parent or guardian and want to know what Vantage holds about your child, ask your child's coach or mentors first — they administer the workspace and can show you. If you cannot get an answer that way, write to " + CONTACT + " and we will work with the team to resolve it.",
+        "If you are a parent or guardian and want to know what Vantage holds about your child, ask your child's coach or mentors first — they administer the team and can show you. If you cannot get an answer that way, write to " + CONTACT + " and we will work with the team to resolve it.",
         "We do not use a student's information to advertise to them. We do not sell personal information, and we do not build advertising profiles. There is no advertising in Vantage.",
       ],
     },
@@ -196,7 +196,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: "Parents and guardians",
       paragraphs: [
         "Vantage has a parent view: a team can send a guardian a private link that shows upcoming team events and their own student's RSVP. That link is the entire credential, so treat it like a password and do not forward it.",
-        "The parent view deliberately shows very little. It carries the team name and number, upcoming events, and the linked student's own RSVP. It does not show other students' names, contact details, grades, notes, or anything a mentor has written. A guardian holding one of these links does not get an account and cannot see the rest of the workspace.",
+        "The parent view deliberately shows very little. It carries the team name and number, upcoming events, and the linked student's own RSVP. It does not show other students' names, contact details, grades, notes, or anything a mentor has written. A guardian holding one of these links does not get an account and cannot see the rest of the team.",
         "A team can turn a parent link off at any time, which stops it working immediately.",
       ],
     },
@@ -207,7 +207,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         "You can see and change your own profile in the product at any time, and you can change or turn off every email category from your notification preferences.",
         "You can ask for a copy of what we hold about you, ask us to correct it, or ask us to delete it. Write to " + CONTACT + ". We will ask you to confirm you are who you say you are before acting, because doing otherwise would itself be a privacy failure.",
         "Two limits apply. First, some of what you did is also the team's record — hours you logged, scouting data you collected, a decision you wrote down. Removing your account does not silently rewrite the team's history; where we can, we detach your name from those records rather than destroying the team's work. Second, we keep what the law requires us to keep, such as billing records, for as long as it requires.",
-        "If your team stops using Vantage, its owners can export the team's data and ask us to delete the workspace.",
+        "If your team stops using Vantage, its owners can export the team's data and ask us to delete the team.",
       ],
       list: [
         "See it — your profile and preferences are visible in the product; ask us for anything else",
@@ -300,8 +300,8 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       heading: "Team workspaces and who controls them",
       paragraphs: [
         "Your team owns its content. Scouting entries, photos, messages, hours, documents, tasks, CAD records, and financial records belong to the team. You give us permission to store, process, and display that content to run Vantage for your team, and — for activity that goes through Vantage's AI features — to use the prompts, context, responses, and tool traces to train, fine-tune, and evaluate our own in-house models, as described in the Privacy Policy. We do not sell your content.",
-        "A member's content stays with the team workspace. When someone leaves the team, they lose access, but what they created remains part of the team's record. That is deliberate: a season's scouting data cannot vanish because a senior graduated.",
-        "Your team's rows are separated from every other team's at the database level, so another team cannot open your workspace in the product. No system is perfectly secure and we do not promise that it is.",
+        "A member's content stays with the team. When someone leaves the team, they lose access, but what they created remains part of the team's record. That is deliberate: a season's scouting data cannot vanish because a senior graduated.",
+        "Your team's rows are separated from every other team's at the database level, so another team cannot open your team in the product. No system is perfectly secure and we do not promise that it is.",
         "What owners and admins can do:",
       ],
       list: [
@@ -318,7 +318,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       paragraphs: [
         "Vantage is a tool your whole team relies on. Use it like you would want it used about you.",
         "FIRST's own rules still apply. Nothing here replaces FIRST's Code of Conduct or your school or district's policies — those sit on top of these Terms, and where they are stricter, they win.",
-        "We can suspend an account or a workspace that breaks these rules.",
+        "We can suspend an account or a team that breaks these rules.",
       ],
       list: [
         "No harassment, bullying, threats, sexual content, or targeting anyone. This includes chat, scouting notes, and anything else you can type into the product.",
@@ -367,7 +367,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
         "Your team owns its data. Scouting records, match notes, documents, CAD links, hours, budgets, chat — that is the team's work, and using Vantage does not transfer it to us. We hold it to run the service for you.",
         "We do not sell it, we do not license it to anyone else, and we do not use one team's data to give another team an advantage. Aggregate operational metrics we use to keep the service running — error rates, load, feature usage counts — are not team data and never identify a team's strategy.",
         "Vantage itself — the software, the interface, the name — stays ours.",
-        "Team owners can export their data, and can ask us to delete the workspace when they are done with it.",
+        "Team owners can export their data, and can ask us to delete the team when they are done with it.",
       ],
     },
     {
@@ -376,15 +376,15 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       paragraphs: [
         "Most people using Vantage are high-school students, and some are younger. Accounts are created by invitation from a team's owners or admins — a student cannot sign themselves up.",
         "If you are under 18, a parent, guardian, or the adult who runs your team must agree to these terms on your behalf. By inviting a student, the team confirms it has whatever permission its school or organisation requires.",
-        "A parent, guardian, or coach can have a student removed from a team workspace at any time by asking the team's owners or admins.",
+        "A parent, guardian, or coach can have a student removed from a team at any time by asking the team's owners or admins.",
       ],
     },
     {
       id: "termination",
       heading: "Suspension and ending your use",
       paragraphs: [
-        "You can stop using Vantage at any time. A team owner can cancel the team's plan, export the team's data, and ask us to delete the workspace.",
-        "We can suspend or end access for a violation of these Terms, for a security risk, for non-payment, or where the law requires it. Where a serious safety or security issue is involved we may act immediately and explain afterwards. If we terminate a workspace for a reason other than an emergency, we will give the owner a reasonable chance to export the team's data first.",
+        "You can stop using Vantage at any time. A team owner can cancel the team's plan, export the team's data, and ask us to delete the team.",
+        "We can suspend or end access for a violation of these Terms, for a security risk, for non-payment, or where the law requires it. Where a serious safety or security issue is involved we may act immediately and explain afterwards. If we terminate a team for a reason other than an emergency, we will give the owner a reasonable chance to export the team's data first.",
       ],
     },
     {

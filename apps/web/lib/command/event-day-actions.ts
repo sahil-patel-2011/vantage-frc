@@ -37,8 +37,8 @@ export function eventDayNextActions(
   if (!orgId) {
     actions.push({
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization before loading Event Day.",
+      label: "Choose your team",
+      detail: "Choose your team before loading Event Day.",
       href: "/workspace",
       primary: true,
     });

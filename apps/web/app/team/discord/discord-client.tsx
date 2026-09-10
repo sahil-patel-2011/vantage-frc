@@ -238,7 +238,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         <EmptyState
           soft
           title={failure ? failure.title : "Loading Discord…"}
-          description={failure ? failure.description : "Checking your workspace connection."}
+          description={failure ? failure.description : "Checking your team connection."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

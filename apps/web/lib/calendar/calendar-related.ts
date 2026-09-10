@@ -95,8 +95,8 @@ export function calendarNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before scheduling practices or build sessions.",
+        label: "Choose your team",
+        detail: "Choose your team before scheduling practices or build sessions.",
         href: "/workspace",
         primary: true,
       },

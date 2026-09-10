@@ -221,8 +221,8 @@ function discordIntegration(
     return {
       status: "connected",
       detail: snapshot.discordHasWebhook
-        ? "Discord webhook (or bot + channel) can post for this workspace."
-        : "Discord bot + channel id can post for this workspace.",
+        ? "Discord webhook (or bot + channel) can post for this team."
+        : "Discord bot + channel id can post for this team.",
       platformConfigured: setup.configured,
       canPost: true,
     };
@@ -232,8 +232,8 @@ function discordIntegration(
     return {
       status: setup.configured ? "available" : "setup_required",
       detail: setup.configured
-        ? "Discord bot token is on this deployment. Select a workspace to add a webhook or channel."
-        : "Select a workspace, then add a channel webhook (bot token optional) on Discord settings.",
+        ? "Discord bot token is on this deployment. Select a team to add a webhook or channel."
+        : "Select a team, then add a channel webhook (bot token optional) on Discord settings.",
       platformConfigured: setup.configured,
       canPost: false,
     };
@@ -253,7 +253,7 @@ function discordIntegration(
     status: "empty",
     detail: setup.configured
       ? "Bot token is configured — add a webhook or channel id on Discord settings before posts work."
-      : "Webhook not saved for this workspace yet. Connected only after a valid webhook or bot+channel.",
+      : "Webhook not saved for this team yet. Connected only after a valid webhook or bot+channel.",
     platformConfigured: setup.configured,
     canPost: false,
   };
@@ -272,7 +272,7 @@ function githubIntegration(
   if (connected) {
     return {
       status: "connected",
-      detail: "GitHub is linked for this workspace (OAuth or encrypted PAT).",
+      detail: "GitHub is linked for this team (OAuth or encrypted PAT).",
       oauthConfigured: setup.configured,
       connected: true,
     };
@@ -311,7 +311,7 @@ function slackIntegration(
   if (!orgId) {
     return {
       status: setup.configured ? "available" : "setup_required",
-      detail: "Select a workspace, then paste a Slack incoming webhook on Team → Slack.",
+      detail: "Select a team, then paste a Slack incoming webhook on Team → Slack.",
     };
   }
   return {

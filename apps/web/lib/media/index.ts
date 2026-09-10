@@ -1,4 +1,4 @@
-// Pure, unit-testable Media workspace helpers. No I/O, no framework imports.
+// Pure, unit-testable Media team helpers. No I/O, no framework imports.
 
 export * from "./types";
 export {
@@ -17,7 +17,7 @@ import type {
   MediaSponsorWallSummary,
 } from "./types";
 
-/** True when the Media workspace has nothing recorded yet — Soft-UI empty. */
+/** True when the Media team has nothing recorded yet — Soft-UI empty. */
 export function isMediaWorkspaceEmpty(input: {
   kit: Pick<MediaKitSummary, "assetCount" | "documentCount" | "readinessScore">;
   outreach: Pick<MediaOutreachSummary, "upcomingCount" | "mediaCategoryCount">;
@@ -38,7 +38,7 @@ export function isMediaWorkspaceEmpty(input: {
   );
 }
 
-/** Hide zeroed summary tiles when the workspace is empty — avoids DEMO counters. */
+/** Hide zeroed summary tiles when the team is empty — avoids DEMO counters. */
 export function shouldShowMediaSummaryTiles(input: {
   kit: Pick<MediaKitSummary, "assetCount" | "documentCount" | "readinessScore">;
   outreach: Pick<MediaOutreachSummary, "upcomingCount" | "mediaCategoryCount">;

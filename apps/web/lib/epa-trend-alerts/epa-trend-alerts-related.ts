@@ -96,7 +96,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         kind,
         title: "Loading EPA Trend Alerts…",
         description:
-          "Checking workspace membership and watched teams.",
+          "Checking which team you are on and watched teams.",
       };
     case "error":
       return {
@@ -110,9 +110,9 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before watching teams.",
+          "Select a team before watching teams.",
       };
     case "empty":
       return {
@@ -151,7 +151,7 @@ export function epaTrendAlertsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before tracking EPA swings.",
           href: "/workspace",
           primary: true,
@@ -173,7 +173,7 @@ export function epaTrendAlertsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so EPA Trend Alerts can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

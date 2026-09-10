@@ -20,7 +20,7 @@ const facts = [
   },
   {
     title: "Same product, locked down",
-    copy: "No second database, no demo workspace. Navigation is allowlisted to Vantage and its sign-in/billing hosts; other links open in your browser. vantage-frc:// links deep-link into the app.",
+    copy: "No second database. The window only opens Vantage and its sign-in and billing pages; other links open in your browser. vantage-frc:// links open the app.",
   },
   {
     title: "Windows first, unsigned",

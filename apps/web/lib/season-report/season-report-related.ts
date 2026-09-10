@@ -102,7 +102,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
       return {
         kind,
         title: "Loading Season Report…",
-        description: "Checking workspace membership and logged season entries.",
+        description: "Checking which team you are on and logged season entries.",
       };
     case "error":
       return {
@@ -116,9 +116,9 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging build, results, budget, or outreach notes.",
+          "Select a team before logging build, results, budget, or outreach notes.",
       };
     case "empty":
       return {
@@ -157,7 +157,7 @@ export function seasonReportNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging entries.",
           href: "/workspace",
           primary: true,
@@ -179,7 +179,7 @@ export function seasonReportNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Season Report can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

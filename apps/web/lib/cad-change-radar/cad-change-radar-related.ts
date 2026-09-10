@@ -72,8 +72,8 @@ export function cadChangeRadarSetupSteps(orgId?: string | null): CadChangeRadarS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open change radar.",
+      label: "Choose your team",
+      detail: "Choose your team to open change radar.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
       return {
         kind,
         title: "Loading CAD Change Impact Radar…",
-        description: "Checking workspace membership and Onshape connection.",
+        description: "Checking which team you are on and the Onshape connection.",
       };
     case "error":
       return {
@@ -193,7 +193,7 @@ export function cadChangeRadarNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before tracking parts.",
           href: "/workspace",
           primary: true,

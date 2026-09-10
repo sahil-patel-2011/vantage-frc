@@ -70,8 +70,8 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open where-your-data-went.",
+      label: "Choose your team",
+      detail: "Choose your team to open where-your-data-went.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -162,7 +162,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         kind,
         title: "Loading scout data impact…",
         description:
-          "Checking workspace membership and logged alliance picks.",
+          "Checking which team you are on and logged alliance picks.",
       };
     case "error":
       return {
@@ -176,9 +176,9 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before pick credit appears.",
+          "Select a team before pick credit appears.",
       };
     case "empty":
       return {
@@ -216,7 +216,7 @@ export function scoutDataImpactNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging picks.",
           href: "/workspace",
           primary: true,

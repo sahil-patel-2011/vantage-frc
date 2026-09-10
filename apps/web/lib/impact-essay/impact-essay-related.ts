@@ -106,7 +106,7 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
         kind,
         title: "Loading Impact Essay…",
         description:
-          "Checking workspace membership and logged outreach records.",
+          "Checking which team you are on and logged outreach records.",
       };
     case "error":
       return {
@@ -120,9 +120,9 @@ export function impactEssayShellCopy(kind: ImpactEssayShellKind): ImpactEssayEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and log real outreach before drafting.",
+          "Select a team and log real outreach before drafting.",
       };
     case "empty":
       return {
@@ -163,7 +163,7 @@ export function impactEssayNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging outreach.",
           href: "/workspace",
           primary: true,
@@ -191,7 +191,7 @@ export function impactEssayNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Impact Essay can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

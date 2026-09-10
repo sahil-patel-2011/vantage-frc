@@ -98,7 +98,7 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
         kind,
         title: "Loading Opponent Watchlist…",
         description:
-          "Checking workspace membership and watched opponents.",
+          "Checking which team you are on and watched opponents.",
       };
     case "error":
       return {
@@ -112,9 +112,9 @@ export function opponentWatchlistShellCopy(kind: OpponentWatchlistShellKind): Op
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before watching opponents.",
+          "Select a team before watching opponents.",
       };
     case "empty":
       return {
@@ -153,7 +153,7 @@ export function opponentWatchlistNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before tracking opponents.",
           href: "/workspace",
           primary: true,
@@ -181,7 +181,7 @@ export function opponentWatchlistNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Opponent Watchlist can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

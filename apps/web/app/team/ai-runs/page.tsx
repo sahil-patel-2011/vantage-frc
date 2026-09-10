@@ -17,7 +17,7 @@ export default async function TeamAiRunsPage({
         <PageHeader
           breadcrumbs="Team / AI Runs"
           title="AI Runs"
-          description="Every metered AI call is recorded against one team — pick the workspace first."
+          description="Every metered AI call is recorded against one team — pick the team first."
         />
         <EmptyState
           soft

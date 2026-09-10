@@ -67,8 +67,8 @@ export function scoutAssistedCountSetupSteps(orgId?: string | null): ScoutAssist
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open tap sessions.",
+      label: "Choose your team",
+      detail: "Choose your team to open tap sessions.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -117,7 +117,7 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
       return {
         kind,
         title: "Loading Scout-Assisted Count…",
-        description: "Checking workspace membership and tap sessions.",
+        description: "Checking which team you are on and tap sessions.",
       };
     case "error":
       return {
@@ -131,9 +131,9 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before starting sessions.",
+          "Select a team before starting sessions.",
       };
     case "empty":
       return {
@@ -166,7 +166,7 @@ export function scoutAssistedCountNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before counting.",
           href: "/workspace",
           primary: true,
@@ -182,7 +182,7 @@ export function scoutAssistedCountNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Scout-Assisted Count can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

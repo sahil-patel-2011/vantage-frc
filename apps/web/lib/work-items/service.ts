@@ -6,7 +6,7 @@
  * that the owning feature does not already write.
  *
  * Every table read is individually tolerant of being absent: these three features shipped at
- * different times and a workspace that has run only some migrations should still see the trackers
+ * different times and a team that has run only some migrations should still see the trackers
  * it does have, not a hard failure.
  */
 
@@ -199,12 +199,12 @@ export async function computeWorkItemsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to see todos, build tasks, and season milestones together.",
+      message: "Select a team to see todos, build tasks, and season milestones together.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
-          detail: "Choose your team organization",
+          label: "Choose your team",
+          detail: "Pick which FRC team you are working as.",
           href: "/workspace",
         },
       ],

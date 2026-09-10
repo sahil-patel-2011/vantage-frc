@@ -28,8 +28,8 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before logging community outreach.",
+        label: "Choose your team",
+        detail: "Choose your team before logging community outreach.",
         href: "/workspace",
         primary: true,
       },

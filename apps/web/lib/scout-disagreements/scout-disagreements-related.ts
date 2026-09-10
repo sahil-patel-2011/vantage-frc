@@ -75,8 +75,8 @@ export function scoutDisagreementsSetupSteps(orgId?: string | null): ScoutDisagr
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open disagreement review.",
+      label: "Choose your team",
+      detail: "Choose your team to open disagreement review.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -153,7 +153,7 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
         kind,
         title: "Loading scout disagreements…",
         description:
-          "Checking workspace membership and real conflict rows.",
+          "Checking which team you are on and real conflict rows.",
       };
     case "error":
       return {
@@ -167,9 +167,9 @@ export function scoutDisagreementsShellCopy(kind: ScoutDisagreementsShellKind): 
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before the resolution queue appears.",
+          "Select a team before the resolution queue appears.",
       };
     case "empty":
       return {
@@ -207,7 +207,7 @@ export function scoutDisagreementsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before resolving conflicts.",
           href: "/workspace",
           primary: true,

@@ -70,8 +70,8 @@ export function displaySetupNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Pit TV boards are saved per team — choose a workspace before creating a layout.",
+        label: "Choose your team",
+        detail: "Pit TV boards are saved per team — choose a team before creating a layout.",
         href: "/workspace",
         primary: true,
       },

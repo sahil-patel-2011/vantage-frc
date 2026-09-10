@@ -35,7 +35,7 @@ export default async function ScoutingPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
           <nav className="product-hub-related scout-related" aria-label="Related competition tools">
             {links.map((link) => (

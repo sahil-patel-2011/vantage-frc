@@ -22,8 +22,8 @@ function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Vendor Directory.",
+      label: "Choose your team",
+      detail: "Choose your team to open Vendor Directory.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -115,7 +115,7 @@ export async function computeVendorsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to keep a vendor directory.",
+      message: "Select a team to keep a vendor directory.",
       steps: setupStepsFor(null),
       orgId: null,
     };

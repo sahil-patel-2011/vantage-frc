@@ -107,8 +107,8 @@ export function supportNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Support tickets are saved to your active team — choose a workspace first.",
+        label: "Choose your team",
+        detail: "Support tickets are saved to your active team — choose a team first.",
         href: "/workspace",
         primary: true,
       },

@@ -82,8 +82,8 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open pairing.",
+      label: "Choose your team",
+      detail: "Choose your team to open pairing.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         kind,
         title: "Loading Pair VS Code…",
         description:
-          "Checking workspace membership and real paired editors.",
+          "Checking which team you are on and real paired editors.",
       };
     case "error":
       return {
@@ -162,9 +162,9 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Join or pick a workspace before approving a VS Code code.",
+          "Join or pick a team before approving a VS Code code.",
       };
     case "empty":
       return {

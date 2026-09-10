@@ -36,8 +36,8 @@ export function sponsorCrmNextActions(ctx: SponsorCrmNextActionContext): Sponsor
   if (!orgId) {
     actions.push({
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization before loading sponsors or packages.",
+      label: "Choose your team",
+      detail: "Choose your team before loading sponsors or packages.",
       href: "/workspace",
       primary: true,
     });

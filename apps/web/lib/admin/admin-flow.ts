@@ -188,7 +188,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
     eyebrow: "PLATFORM ADMIN",
     title: "Team provisioning",
     description:
-      "Closed membership: provision each team workspace and seed the first owner. Launch interest lives on the waitlist surface.",
+      "Closed membership: provision each team and seed the first owner. Launch interest lives on the waitlist surface.",
   };
 }
 

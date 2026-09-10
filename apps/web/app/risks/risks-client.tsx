@@ -179,7 +179,7 @@ export default function RisksClient() {
         <EmptyState
           soft
           title={copy ? copy.title : "Loading risk register…"}
-          description={copy ? copy.description : "Checking your workspace."}
+          description={copy ? copy.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {copy?.primary ? (

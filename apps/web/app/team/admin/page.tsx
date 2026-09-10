@@ -35,7 +35,7 @@ export default async function TeamAdminPage({
         <PageHeader
           breadcrumbs="Team / Admin"
           title="Team admin"
-          description="Membership, invites, and GitHub context belong to one team. Choose a workspace to continue."
+          description="Membership, invites, and GitHub context belong to one team. Choose a team to continue."
         >
           <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
             {related.map((link) => (
@@ -54,7 +54,7 @@ export default async function TeamAdminPage({
           badgeTone="setup"
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <Panel className="team-admin-membership" aria-label="Setup steps">
@@ -96,7 +96,7 @@ export default async function TeamAdminPage({
           </ol>
         </section>
         <p className="app-muted" style={{ marginTop: "1rem" }}>
-          After you pick a workspace, open{" "}
+          After you pick a team, open{" "}
           <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to manage real members and invites.
         </p>
       </main>

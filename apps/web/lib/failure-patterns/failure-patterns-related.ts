@@ -70,8 +70,8 @@ export function failurePatternsSetupSteps(orgId?: string | null): FailurePattern
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open failure clusters.",
+      label: "Choose your team",
+      detail: "Choose your team to open failure clusters.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
       return {
         kind,
         title: "Loading Repeat Failure Patterns…",
-        description: "Checking workspace membership and FMEA history.",
+        description: "Checking which team you are on and FMEA history.",
       };
     case "error":
       return {
@@ -134,9 +134,9 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before clustering.",
+          "Select a team before clustering.",
       };
     case "empty":
       return {
@@ -169,7 +169,7 @@ export function failurePatternsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
@@ -185,7 +185,7 @@ export function failurePatternsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so failure patterns can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

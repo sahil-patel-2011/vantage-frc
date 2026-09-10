@@ -342,10 +342,10 @@ export default function KioskClient() {
         <div className="app-card hours-empty">
           {view?.status === "setup_required" ? (
             <>
-              <strong>Select a team workspace</strong>
+              <strong>Select a team</strong>
               <p className="app-muted">{view.message}</p>
               <a className="app-button" href="/workspace">
-                Choose workspace
+                Choose your team
               </a>
             </>
           ) : fetchFailed ? (
@@ -570,7 +570,7 @@ export default function KioskClient() {
               </li>
             ))}
           </ul>
-          {board.length === 0 ? <p className="app-muted">No members in this workspace yet.</p> : null}
+          {board.length === 0 ? <p className="app-muted">No members on this team yet.</p> : null}
           {board.length > 12 ? (
             <p className="app-muted kiosk-help">Showing 12 of {board.length} members.</p>
           ) : null}
@@ -646,7 +646,7 @@ export default function KioskClient() {
 
       <p className="app-muted kiosk-help">
         Cards are stored as codes, never as emails, and only the last four characters are ever shown on this
-        screen. {nameById.size} member{nameById.size === 1 ? "" : "s"} in this workspace.
+        screen. {nameById.size} member{nameById.size === 1 ? "" : "s"} on this team.
       </p>
     </main>
   );

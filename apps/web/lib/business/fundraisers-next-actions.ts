@@ -30,8 +30,8 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before planning fundraiser events.",
+        label: "Choose your team",
+        detail: "Choose your team before planning fundraiser events.",
         href: "/workspace",
         primary: true,
       },

@@ -11,7 +11,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("mediaKitRelatedLinks", () => {
-  it("builds Media workspace / Sponsor Suite / Outreach / Impact cross-links", () => {
+  it("builds Media team / Sponsor Suite / Outreach / Impact cross-links", () => {
     const links = mediaKitRelatedLinks("org-1", {
       include: [...MEDIA_KIT_RELATED_INCLUDE],
     });

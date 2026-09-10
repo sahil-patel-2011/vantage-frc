@@ -74,8 +74,8 @@ export function picklistCollabSetupSteps(orgId?: string | null): PicklistCollabS
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open pick lists.",
+      label: "Choose your team",
+      detail: "Choose your team to open pick lists.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -131,7 +131,7 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
       return {
         kind,
         title: "Loading Collaborative Pick List…",
-        description: "Checking workspace membership and pick lists.",
+        description: "Checking which team you are on and pick lists.",
       };
     case "error":
       return {
@@ -145,9 +145,9 @@ export function picklistCollabShellCopy(kind: PicklistCollabShellKind): Picklist
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before ranking teams.",
+          "Select a team before ranking teams.",
       };
     case "empty":
       return {

@@ -69,8 +69,8 @@ export function driveTeamSignalsSetupSteps(orgId?: string | null): DriveTeamSign
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open signal sheets.",
+      label: "Choose your team",
+      detail: "Choose your team to open signal sheets.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -119,7 +119,7 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
       return {
         kind,
         title: "Loading Drive-Team Signals…",
-        description: "Checking workspace membership and signal sheets.",
+        description: "Checking which team you are on and signal sheets.",
       };
     case "error":
       return {
@@ -133,9 +133,9 @@ export function driveTeamSignalsShellCopy(kind: DriveTeamSignalsShellKind): Driv
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before defining real callouts.",
+          "Select a team before defining real callouts.",
       };
     case "empty":
       return {

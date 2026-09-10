@@ -20,8 +20,8 @@ export function pairwiseNextActions(ctx: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before ranking robots.",
+        label: "Choose your team",
+        detail: "Choose your team before ranking robots.",
         href: "/workspace",
         primary: true,
       },

@@ -49,7 +49,7 @@ async function resolveOrg(client: PoolClient, userId: string, requested: string 
   if (requested) {
     const match = memberships.rows.find((row) => row.orgId === requested);
     if (match) return match;
-    // Asked for a workspace they are not in — do not silently answer for another team.
+    // Asked for a team they are not in — do not silently answer for another team.
     return null;
   }
   return memberships.rows[0]!;

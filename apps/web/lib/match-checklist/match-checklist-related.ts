@@ -34,8 +34,8 @@ export function matchChecklistNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before starting timed checklists.",
+        label: "Choose your team",
+        detail: "Choose your team before starting timed checklists.",
         href: "/workspace",
         primary: true,
       },

@@ -29,8 +29,8 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before composing grant narratives.",
+        label: "Choose your team",
+        detail: "Choose your team before composing grant narratives.",
         href: "/workspace",
         primary: true,
       },
@@ -83,7 +83,7 @@ export function grantsWritingNextActions(ctx: GrantsWritingNextActionContext): G
   actions.push({
     id: "fundraisers",
     label: "Open fundraisers",
-    detail: "Campaign tracking stays alongside grants for this workspace only.",
+    detail: "Campaign tracking stays alongside grants for this team only.",
     href: withOrgHref("/fundraisers", orgId),
   });
 

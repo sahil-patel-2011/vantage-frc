@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       summary: summarizeConnectors(connectors),
       connectors,
       degraded:
-        "Could not read this workspace's stored links, so only deployment-level configuration is shown. Anything linked per team is not reflected below.",
+        "Could not read this team's stored links, so only deployment-level configuration is shown. Anything linked per team is not reflected below.",
     });
   }
 }

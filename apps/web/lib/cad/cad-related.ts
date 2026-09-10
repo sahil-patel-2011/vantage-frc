@@ -76,8 +76,8 @@ export function cadNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before starting engineering briefs.",
+        label: "Choose your team",
+        detail: "Choose your team before starting engineering briefs.",
         href: "/workspace",
         primary: true,
       },

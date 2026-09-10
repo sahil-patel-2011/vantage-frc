@@ -16,8 +16,8 @@ function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Vendor Lead Times.",
+      label: "Choose your team",
+      detail: "Choose your team to open Vendor Lead Times.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -143,7 +143,7 @@ export async function computeVendorLeadTimesView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to track vendor lead times and reorders.",
+      message: "Select a team to track vendor lead times and reorders.",
       steps: setupStepsFor(null),
       orgId: null,
     };

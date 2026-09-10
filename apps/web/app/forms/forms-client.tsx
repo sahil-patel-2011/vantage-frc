@@ -5,9 +5,9 @@ import { Badge, EmptyState, PageHeader, Panel, type BadgeTone } from "../../comp
 import { PURPOSE_LABELS, type FormPurpose, type FormSummary } from "../../lib/forms/types";
 
 /**
- * Carry the workspace into the link.
+ * Carry the team into the link.
  *
- * The detail route re-resolves the workspace on its own, and with no hint it
+ * The detail route re-resolves the team on its own, and with no hint it
  * takes the caller's alphabetically first membership. For anyone who belongs to
  * two teams — a mentor with a sister team, a student who moved — that meant
  * every form in the second team answered "Form not found", from a list that had
@@ -121,7 +121,7 @@ export default function FormsClient() {
     return (
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Forms" description="Ask your team something, and read what the answers mean." />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team workspace" description={error}>
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Forms need a team" description={error}>
           <a className="app-button" href="/workspace">Choose team</a>
         </EmptyState>
       </main>

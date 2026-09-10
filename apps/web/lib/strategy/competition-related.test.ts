@@ -82,7 +82,7 @@ describe("competition-related Soft-UI helpers", () => {
   });
 
   it("writes honest pick-surface setup messages", () => {
-    expect(pickSurfaceSetupMessage({})).toMatch(/workspace/i);
+    expect(pickSurfaceSetupMessage({})).toMatch(/Select a team/);
     expect(pickSurfaceSetupMessage({ orgId: "o" })).toMatch(/active event/i);
     expect(
       pickSurfaceSetupMessage({ orgId: "o", eventKey: "2026a", tbaConfigured: false, hasMetrics: false }),

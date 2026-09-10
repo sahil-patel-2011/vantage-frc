@@ -66,8 +66,8 @@ export function knowledgeGapSetupSteps(orgId?: string | null): KnowledgeGapSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open gap scans.",
+      label: "Choose your team",
+      detail: "Choose your team to open gap scans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -117,7 +117,7 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
       return {
         kind,
         title: "Loading Knowledge-gap detective…",
-        description: "Checking workspace membership and wiki coverage.",
+        description: "Checking which team you are on and wiki coverage.",
       };
     case "error":
       return {
@@ -131,9 +131,9 @@ export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGap
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before scanning.",
+          "Select a team before scanning.",
       };
     case "empty":
       return {
@@ -167,7 +167,7 @@ export function knowledgeGapNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before running a scan.",
           href: "/workspace",
           primary: true,
@@ -183,7 +183,7 @@ export function knowledgeGapNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Knowledge-gap can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -64,7 +64,7 @@ function setup(message: string, orgId: string | null, seasonYear: number): Pairw
     orgId,
     seasonYear,
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose your team.", href: "/workspace" },
       {
         id: "migrate",
         label: "Apply pairwise tables",
@@ -102,7 +102,7 @@ export async function computePairwiseView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team workspace to rank robots by qualitative taps.", null, seasonYear);
+  if (!org) return setup("Select a team to rank robots by qualitative taps.", null, seasonYear);
 
   try {
     for (const criterion of DEFAULT_CRITERIA) {

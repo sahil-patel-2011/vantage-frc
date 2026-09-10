@@ -112,7 +112,7 @@ export async function GET(request: Request) {
       if (!membership) {
         return {
           status: "setup_required" as const,
-          message: "Join a team workspace to keep a record of your calls.",
+          message: "Join a team to keep a record of your calls.",
         };
       }
       const tier = roleTier(membership.role);

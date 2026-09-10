@@ -249,9 +249,9 @@ export async function computeSpareForecastView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to forecast spare-parts exhaustion.",
+      message: "Select a team to forecast spare-parts exhaustion.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         {
           id: "inventory",
           label: "Stock spare parts",

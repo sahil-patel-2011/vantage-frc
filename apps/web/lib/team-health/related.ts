@@ -67,8 +67,8 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Team Health.",
+      label: "Choose your team",
+      detail: "Choose your team to open Team Health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
       return {
         kind,
         title: "Loading Team Health…",
-        description: "Checking workspace membership and attendance / hour logs.",
+        description: "Checking which team you are on and attendance / hour logs.",
       };
     case "error":
       return {
@@ -150,9 +150,9 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before reading attendance and hour logs.",
+          "Select a team before reading attendance and hour logs.",
       };
     case "empty":
       return {

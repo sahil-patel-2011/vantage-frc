@@ -59,7 +59,7 @@ type DataTableProps<Row> = {
   exportFeature?: string;
   /** Team number / workspace name folded into the filename. */
   exportOrgLabel?: string | null;
-  /** Deep-links the tooltip's "full export" line to this workspace's Export Center. */
+  /** Deep-links the tooltip's "full export" line to this team's Export Center. */
   exportOrgId?: string | null;
   /** One line naming where these rows came from, shown in the tooltip. */
   exportProvenance?: string;

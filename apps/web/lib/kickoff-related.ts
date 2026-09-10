@@ -43,8 +43,8 @@ export function kickoffNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before ingesting kickoff materials.",
+        label: "Choose your team",
+        detail: "Choose your team before ingesting kickoff materials.",
         href: "/workspace",
         primary: true,
       },

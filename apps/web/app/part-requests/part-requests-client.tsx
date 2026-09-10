@@ -140,7 +140,7 @@ export default function PartRequestsClient() {
     return (
       <main className="module-page part-requests-page">
         <PageHeader breadcrumbs="Business / Money" title="Part requests" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Part requests need a team workspace" description={error}>
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Part requests need a team" description={error}>
           <a className="app-button" href="/workspace">
             Choose team
           </a>

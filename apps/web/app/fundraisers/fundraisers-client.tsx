@@ -224,7 +224,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
             <span className="breadcrumbs">Business / Fundraisers</span>
             <h1>Fundraisers</h1>
             <p className="app-muted">
-              Team-run events for this workspace. Proceeds post to finance once you record them.
+              Team-run events for this team. Proceeds post to finance once you record them.
             </p>
           </div>
         </header>

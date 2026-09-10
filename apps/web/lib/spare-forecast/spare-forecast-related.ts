@@ -110,7 +110,7 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
         kind,
         title: "Loading spare forecast…",
         description:
-          "Checking workspace membership and real spare-category inventory.",
+          "Checking which team you are on and real spare-category inventory.",
       };
     case "error":
       return {
@@ -124,9 +124,9 @@ export function spareForecastShellCopy(kind: SpareForecastShellKind): SpareForec
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before projecting exhaustion from real bins.",
+          "Select a team before projecting exhaustion from real bins.",
       };
     case "empty":
       return {
@@ -178,7 +178,7 @@ export function spareForecastNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before projecting spare exhaustion.",
           href: "/workspace",
           primary: true,
@@ -206,7 +206,7 @@ export function spareForecastNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Spare Forecast can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

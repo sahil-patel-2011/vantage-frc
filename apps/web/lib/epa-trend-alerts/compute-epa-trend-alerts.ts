@@ -67,8 +67,8 @@ function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open EPA Trend Alerts.",
+      label: "Choose your team",
+      detail: "Choose your team to open EPA Trend Alerts.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -89,7 +89,7 @@ function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
 function setupRequiredView(orgId: string | null = null): EpaTrendAlertsView {
   return {
     status: "setup_required",
-    message: "Select a team workspace to build an EPA trend watchlist.",
+    message: "Select a team to build an EPA trend watchlist.",
     steps: setupSteps(orgId),
     orgId,
   };

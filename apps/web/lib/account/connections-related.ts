@@ -118,7 +118,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
     return {
       badge: "Setup required",
       badgeTone: "setup",
-      title: "Connectors need a workspace",
+      title: "Connectors need a team",
       description:
         "Google sign-in is personal to this deployment. TBA, Onshape, Discord, and GitHub are saved per active team — nothing shows Connected until a real link exists.",
     };
@@ -151,7 +151,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
   return {
     badge: "Connections",
     badgeTone: "good",
-    title: "Workspace connectors",
+    title: "Team connectors",
     description: "Honest setup and link status for TBA, Onshape, Google, Discord, and GitHub.",
   };
 }
@@ -175,7 +175,7 @@ export function connectionsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select a workspace",
+        label: "Select a team",
         detail: "Pick a team before linking.",
         href: "/workspace",
         primary: true,
@@ -183,13 +183,13 @@ export function connectionsNextActions(input: {
       {
         id: "account",
         label: "Account profile",
-        detail: "Display name and notification prefs still save for this login without a workspace.",
+        detail: "Display name and notification prefs still save for this login without a team.",
         href: "/account?tab=profile",
       },
       {
         id: "support",
         label: "Help & Support",
-        detail: "Ask for team access if you expected membership and don’t see a workspace.",
+        detail: "Ask for team access if you expected membership and don’t see a team.",
         href: "/support",
       },
     ];
@@ -331,7 +331,7 @@ export function buildConnectionConnectors(input: {
       status: tbaStatus,
       detail: input.tba?.detail ?? "Checking TBA configuration…",
       href: orgId ? withOrgHref("/team/data", orgId) : "/workspace",
-      cta: orgId ? "Open TBA connectors" : "Select workspace",
+      cta: orgId ? "Open TBA connectors" : "Choose your team",
     },
     {
       id: "onshape",
@@ -339,7 +339,7 @@ export function buildConnectionConnectors(input: {
       status: input.onshape?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.onshape?.detail ?? "Checking Onshape OAuth…",
       href: orgId ? withOrgHref("/cad/connections", orgId) : "/workspace",
-      cta: orgId ? "Open CAD Connections" : "Select workspace",
+      cta: orgId ? "Open CAD Connections" : "Choose your team",
     },
     {
       id: "discord",
@@ -347,7 +347,7 @@ export function buildConnectionConnectors(input: {
       status: input.discord?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.discord?.detail ?? "Checking Discord bridge…",
       href: orgId ? withOrgHref("/team/discord", orgId) : "/workspace",
-      cta: orgId ? "Open Discord" : "Select workspace",
+      cta: orgId ? "Open Discord" : "Choose your team",
     },
     {
       id: "slack",
@@ -355,7 +355,7 @@ export function buildConnectionConnectors(input: {
       status: input.slack?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.slack?.detail ?? "Checking Slack bridge…",
       href: orgId ? withOrgHref("/team/slack", orgId) : "/workspace",
-      cta: orgId ? "Open Slack" : "Select workspace",
+      cta: orgId ? "Open Slack" : "Choose your team",
     },
     {
       id: "github",
@@ -363,7 +363,7 @@ export function buildConnectionConnectors(input: {
       status: input.github?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.github?.detail ?? "Checking GitHub link…",
       href: orgId ? githubConnectionHref(orgId) : "/workspace",
-      cta: orgId ? "Open Team admin" : "Select workspace",
+      cta: orgId ? "Open Team admin" : "Choose your team",
     },
   ];
 }

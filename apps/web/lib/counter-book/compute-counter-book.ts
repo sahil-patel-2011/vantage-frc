@@ -26,8 +26,8 @@ function setupSteps(orgId: string | null): CounterBookSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Counter-book.",
+      label: "Choose your team",
+      detail: "Choose your team to open Counter-book.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -116,7 +116,7 @@ export async function computeCounterBookView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to generate opponent counter-books.",
+      message: "Select a team to generate opponent counter-books.",
       steps: setupSteps(null),
       orgId: null,
     };

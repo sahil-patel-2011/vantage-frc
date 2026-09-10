@@ -71,8 +71,8 @@ export function scoutFieldBudgetSetupSteps(orgId?: string | null): ScoutFieldBud
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open field budgets.",
+      label: "Choose your team",
+      detail: "Choose your team to open field budgets.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -131,7 +131,7 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
       return {
         kind,
         title: "Loading Field-Count Budget…",
-        description: "Checking workspace membership and schema snapshots.",
+        description: "Checking which team you are on and schema snapshots.",
       };
     case "error":
       return {
@@ -145,9 +145,9 @@ export function scoutFieldBudgetShellCopy(kind: ScoutFieldBudgetShellKind): Scou
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before linting schema phases.",
+          "Select a team before linting schema phases.",
       };
     case "empty":
       return {
@@ -185,7 +185,7 @@ export function scoutFieldBudgetNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before linting schemas.",
           href: "/workspace",
           primary: true,
@@ -207,7 +207,7 @@ export function scoutFieldBudgetNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Field-Count Budget can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

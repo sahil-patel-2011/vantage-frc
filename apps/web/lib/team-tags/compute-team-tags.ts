@@ -58,7 +58,7 @@ function setup(message: string, orgId: string | null, seasonYear: number): TeamT
     orgId,
     seasonYear,
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Choose your team.", href: "/workspace" },
       {
         id: "migrate",
         label: "Apply tag tables",
@@ -89,8 +89,8 @@ export function teamTagsNextActions(ctx: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before tagging robots.",
+        label: "Choose your team",
+        detail: "Choose your team before tagging robots.",
         href: "/workspace",
         primary: true,
       },
@@ -168,7 +168,7 @@ export async function computeTeamTagsView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team workspace to tag robots for the drive team.", null, seasonYear);
+  if (!org) return setup("Select a team to tag robots for the drive team.", null, seasonYear);
 
   try {
     for (const tag of DEFAULT_TEAM_TAGS) {

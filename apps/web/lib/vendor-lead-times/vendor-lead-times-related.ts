@@ -102,7 +102,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         kind,
         title: "Loading Vendor Lead Times…",
         description:
-          "Checking workspace membership and real vendor / reorder rows.",
+          "Checking which team you are on and real vendor / reorder rows.",
       };
     case "error":
       return {
@@ -116,9 +116,9 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging real vendors and reorders.",
+          "Select a team before logging real vendors and reorders.",
       };
     case "empty":
       return {
@@ -159,7 +159,7 @@ export function vendorLeadTimesNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging vendors.",
           href: "/workspace",
           primary: true,
@@ -187,7 +187,7 @@ export function vendorLeadTimesNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Vendor Lead Times can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

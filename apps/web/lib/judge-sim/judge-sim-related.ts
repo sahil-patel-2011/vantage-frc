@@ -103,7 +103,7 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
         kind,
         title: "Loading Judge-Pitch Simulator…",
         description:
-          "Checking workspace membership and logged evidence.",
+          "Checking which team you are on and logged evidence.",
       };
     case "error":
       return {
@@ -117,9 +117,9 @@ export function judgeSimShellCopy(kind: JudgeSimShellKind): JudgeSimEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and log real evidence before grading answers.",
+          "Select a team and log real evidence before grading answers.",
       };
     case "empty":
       return {
@@ -158,7 +158,7 @@ export function judgeSimNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging evidence.",
           href: "/workspace",
           primary: true,
@@ -186,7 +186,7 @@ export function judgeSimNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Judge-Pitch can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

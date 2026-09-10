@@ -117,8 +117,8 @@ function setupRequired(
 
 const WORKSPACE_STEP: CoverageSetupStep = {
   id: "workspace",
-  label: "Select workspace",
-  detail: "Choose your team organization.",
+  label: "Choose your team",
+  detail: "Choose your team.",
   href: "/workspace",
 };
 
@@ -194,7 +194,7 @@ export async function computeScoutingCoverageView(
 ): Promise<ScoutingCoverageView> {
   const org = await resolveScoutOrg(client, input.userId, input.requestedOrg);
   if (!org) {
-    return setupRequired("Select a team workspace to see lineup coverage.", null, [
+    return setupRequired("Select a team to see lineup coverage.", null, [
       WORKSPACE_STEP,
       EVENT_STEP,
     ]);

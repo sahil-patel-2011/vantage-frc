@@ -90,9 +90,9 @@ async function resolveOrg(
 function setupRequired(orgId: string | null): SchemaAbView {
   return {
     status: "setup_required",
-    message: "Select a team workspace to compare scouting schema versions.",
+    message: "Select a team to compare scouting schema versions.",
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],
     orgId,
   };

@@ -78,8 +78,8 @@ export function grantReportSetupSteps(orgId?: string | null): GrantReportSetupSt
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open grant reports.",
+      label: "Choose your team",
+      detail: "Choose your team to open grant reports.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -131,7 +131,7 @@ export function shouldShowGrantReportSummaryTiles(input: {
   return input.eligibleCount > 0 || input.reportCount > 0;
 }
 
-/** True when the workspace has no awarded grants and no reports — Soft-UI empty. */
+/** True when the team has no awarded grants and no reports — Soft-UI empty. */
 export function isGrantReportBoardEmpty(input: {
   eligibleCount: number;
   reportCount: number;
@@ -168,7 +168,7 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
         kind,
         title: "Loading Grant Report…",
         description:
-          "Checking workspace membership and awarded grants.",
+          "Checking which team you are on and awarded grants.",
       };
     case "error":
       return {
@@ -182,9 +182,9 @@ export function grantReportShellCopy(kind: GrantReportShellKind): GrantReportEmp
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and mark real awards before generating.",
+          "Select a team and mark real awards before generating.",
       };
     case "empty":
       return {

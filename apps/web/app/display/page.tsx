@@ -17,13 +17,13 @@ export default async function DisplayPage({
     return (
       <main className="module-page display-setup display-gate">
         <span className="eyebrow">VANTAGE / DISPLAY</span>
-        <h1>Select a workspace</h1>
+        <h1>Select a team</h1>
         <p>
-          Pit TV boards are saved per team. Select a workspace before creating a display layout.
+          Pit TV boards are saved per team. Select a team before creating a display layout.
         </p>
         <div className="disp-gate-actions">
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
           <a className="app-button secondary" href="/competition?tab=command">
             Event Day

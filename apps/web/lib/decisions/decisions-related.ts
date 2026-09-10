@@ -97,7 +97,7 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
       return {
         kind,
         title: "Loading Decision Log…",
-        description: "Checking workspace membership and logged decisions.",
+        description: "Checking which team you are on and logged decisions.",
       };
     case "error":
       return {
@@ -111,9 +111,9 @@ export function decisionsShellCopy(kind: DecisionsShellKind): DecisionsEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before recording engineering or strategy calls.",
+          "Select a team before recording engineering or strategy calls.",
       };
     case "empty":
       return {
@@ -152,7 +152,7 @@ export function decisionsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging calls.",
           href: "/workspace",
           primary: true,
@@ -180,7 +180,7 @@ export function decisionsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Decision Log can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -106,7 +106,7 @@ export function accountNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select a workspace",
+        label: "Select a team",
         detail: "AI keys, billing, and team connectors need an active team — profile prefs still save for this login.",
         href: "/workspace",
         primary: true,
@@ -114,7 +114,7 @@ export function accountNextActions(input: {
       {
         id: "support",
         label: "Help & Support",
-        detail: "Ask for team access if you expected a membership and don’t see a workspace yet.",
+        detail: "Ask for team access if you expected a membership and don’t see a team yet.",
         href: "/support",
       },
       {
@@ -178,7 +178,7 @@ export function accountNextActions(input: {
     {
       id: "billing",
       label: "Open billing & budgets",
-      detail: "API spend caps and Usage Credits for this workspace — figures come from the live ledger only.",
+      detail: "API spend caps and Usage Credits for this team — figures come from the live ledger only.",
       href: hubHref("/ai", "budgets", orgId),
     },
     {

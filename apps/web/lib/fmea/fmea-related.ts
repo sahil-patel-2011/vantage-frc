@@ -86,8 +86,8 @@ export function fmeaNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
-        detail: "Choose your team organization before logging failures.",
+        label: "Choose your team",
+        detail: "Choose your team before logging failures.",
         href: "/workspace",
         primary: true,
       },

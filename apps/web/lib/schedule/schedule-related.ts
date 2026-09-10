@@ -76,7 +76,7 @@ export function scheduleNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before loading TBA rows.",
           href: "/workspace",
           primary: true,
@@ -115,7 +115,7 @@ export function scheduleNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership or event setup so the schedule API can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -51,7 +51,7 @@ export default async function ScoutCoverageLivePage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel scout-coverage-live-panel" aria-label="Setup steps">

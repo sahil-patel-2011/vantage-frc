@@ -97,7 +97,7 @@ function setup(message: string, orgId: string | null): MigrateView {
     message,
     orgId,
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Claim or join a team before importing.", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Claim or join a team before importing.", href: "/workspace" },
       {
         id: "admin",
         label: "Owner or admin",
@@ -121,7 +121,7 @@ export async function computeMigrateView(
     [input.userId, input.requestedOrg],
   );
   const org = membership.rows[0];
-  if (!org) return setup("Select a team workspace to import Notion, calendars, or scouting CSVs.", null);
+  if (!org) return setup("Select a team to import Notion, calendars, or scouting CSVs.", null);
 
   const [connections, feeds] = await Promise.all([
     client.query<ImportConnectionRow>(

@@ -789,7 +789,7 @@ function StrategyShell({
         ) : null}
         {shell === "setup" ? (
           <a className="app-button" href={orgId ? commandHref : workspaceHref}>
-            {orgId ? "Set active event" : "Select workspace"}
+            {orgId ? "Set active event" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (
@@ -874,7 +874,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           setError(message);
           setView({
             status: "setup_required",
-            message: "Select a team workspace before running win/loss strategy.",
+            message: "Select a team before running win/loss strategy.",
             steps: strategyShellSetupSteps(null).map((step) => ({
               id: step.id,
               label: step.label,

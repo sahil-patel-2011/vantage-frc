@@ -76,8 +76,8 @@ export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open pick clock.",
+      label: "Choose your team",
+      detail: "Choose your team to open pick clock.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -166,7 +166,7 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         kind,
         title: "Loading pick clock…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics.",
+          "Checking which team you are on and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -180,9 +180,9 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Pick clock is org- and event-scoped. Pick a workspace and active TBA event before recommendations appear.",
+          "Pick clock is org- and event-scoped. Select a team and active TBA event before recommendations appear.",
       };
     case "empty":
       return {
@@ -223,7 +223,7 @@ export function pickClockNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before ranking alliances.",
           href: "/workspace",
           primary: true,

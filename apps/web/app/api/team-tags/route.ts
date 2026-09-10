@@ -12,8 +12,8 @@ import {
 
 const FALLBACK: TeamTagsView = {
   status: "setup_required",
-  message: "Could not load drive-team tags. Select a workspace and confirm database access.",
-  steps: [{ id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" }],
+  message: "Could not load drive-team tags. Select a team and confirm database access.",
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
   seasonYear: currentTeamTagsSeason(),
 };

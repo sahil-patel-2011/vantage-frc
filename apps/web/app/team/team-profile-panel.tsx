@@ -63,7 +63,7 @@ export function TeamProfilePanel({ orgId }: { orgId: string }) {
         return;
       }
       setView(data);
-      setMessage("Team profile saved for this workspace.");
+      setMessage("Team profile saved for this team.");
     } finally {
       setBusy(false);
     }

@@ -111,7 +111,7 @@ export default function SubteamsClient() {
     return (
       <main className="module-page subteams-page">
         <PageHeader breadcrumbs="Team / Subteam progress" title="Subteam progress" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Subteam progress needs a team workspace" description={error}>
+        <EmptyState soft badge="Not available" badgeTone="setup" title="Subteam progress needs a team" description={error}>
           <a className="app-button" href="/workspace">Choose team</a>
         </EmptyState>
       </main>

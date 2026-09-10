@@ -26,8 +26,8 @@ function setupSteps(orgId: string | null): SketchToBriefSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Sketch-to-Brief.",
+      label: "Choose your team",
+      detail: "Choose your team to open Sketch-to-Brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -125,7 +125,7 @@ export async function computeSketchToBriefView(
 
   if (!org) {
     return setupRequired(
-      "Select a team workspace to turn kickoff sketches into CAD briefs.",
+      "Select a team to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       seasonYear,
@@ -205,7 +205,7 @@ export async function generateBriefFromSketch(
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
     return setupRequired(
-      "Select a team workspace to turn kickoff sketches into CAD briefs.",
+      "Select a team to turn kickoff sketches into CAD briefs.",
       setupSteps(null),
       null,
       currentSeasonYear(),

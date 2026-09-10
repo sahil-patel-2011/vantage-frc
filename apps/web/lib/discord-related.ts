@@ -82,7 +82,7 @@ export function discordNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Discord guild links and the object-linked chat bridge are saved per team.",
         href: "/workspace",
         primary: true,

@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Media Kit (never DEMO asset counts). */
 export const MEDIA_KIT_RELATED_LINKS = [
-  { id: "media", label: "Media workspace", kind: "path" as const, path: "/media" },
+  { id: "media", label: "Media team", kind: "path" as const, path: "/media" },
   { id: "media-library", label: "Media library", kind: "path" as const, path: "/media-library" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
@@ -20,7 +20,7 @@ export type MediaKitRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Media workspace / Suite / Outreach / Impact. */
+/** Focused Soft-UI strip — Media team / Suite / Outreach / Impact. */
 export const MEDIA_KIT_RELATED_INCLUDE: MediaKitRelatedId[] = [
   "media",
   "media-library",
@@ -83,8 +83,8 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open media kits.",
+      label: "Choose your team",
+      detail: "Choose your team to open media kits.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -167,7 +167,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         kind,
         title: "Loading Media Kit…",
         description:
-          "Checking workspace membership and recorded assets.",
+          "Checking which team you are on and recorded assets.",
       };
     case "error":
       return {
@@ -181,9 +181,9 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and record real profile fields before generating one-pagers.",
+          "Select a team and record real profile fields before generating one-pagers.",
       };
     case "empty":
       return {

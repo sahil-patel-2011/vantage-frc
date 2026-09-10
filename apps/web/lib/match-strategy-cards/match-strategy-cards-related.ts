@@ -81,8 +81,8 @@ export function matchStrategyCardsSetupSteps(
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open strategy cards.",
+      label: "Choose your team",
+      detail: "Choose your team to open strategy cards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -144,7 +144,7 @@ export function matchStrategyCardsShellCopy(
         kind,
         title: "Loading Match Strategy Cards…",
         description:
-          "Checking workspace membership and scheduled matches.",
+          "Checking which team you are on and scheduled matches.",
       };
     case "error":
       return {
@@ -158,9 +158,9 @@ export function matchStrategyCardsShellCopy(
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and active event before drafting plans.",
+          "Select a team and active event before drafting plans.",
       };
     case "empty":
       return {
@@ -205,7 +205,7 @@ export function matchStrategyCardsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before drafting plans.",
           href: "/workspace",
           primary: true,
@@ -227,7 +227,7 @@ export function matchStrategyCardsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Match Strategy Cards can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

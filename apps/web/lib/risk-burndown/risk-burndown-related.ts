@@ -95,7 +95,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         kind,
         title: "Loading Risk-Register Burndown…",
         description:
-          "Checking workspace membership and real risk rows.",
+          "Checking which team you are on and real risk rows.",
       };
     case "error":
       return {
@@ -109,9 +109,9 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging real season risks.",
+          "Select a team before logging real season risks.",
       };
     case "empty":
       return {
@@ -152,7 +152,7 @@ export function riskBurndownNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging season risks.",
           href: "/workspace",
           primary: true,
@@ -174,7 +174,7 @@ export function riskBurndownNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Risk Burndown can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

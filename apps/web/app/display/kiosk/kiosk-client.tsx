@@ -86,7 +86,7 @@ export default function KioskClient({
             ? mode === "pit"
               ? "Pit display token. If this fails, the token may be revoked or expired."
               : "Using read-only TV token. If this fails, the token may be revoked or expired."
-            : "Signed-in kiosk needs a saved board id for this workspace."}
+            : "Signed-in kiosk needs a saved board id for this team."}
         </p>
         <button type="button" onClick={() => void refresh()}>
           Retry

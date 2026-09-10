@@ -149,8 +149,8 @@ function setupSteps(orgId: string | null, eventKey: string | null): DeskSetupSte
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization",
+      label: "Choose your team",
+      detail: "Pick which FRC team you are working as.",
       href: "/workspace",
       done: Boolean(orgId),
     },
@@ -233,7 +233,7 @@ export async function computeAllianceSelectionDeskView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to run Alliance Selection Desk.",
+      message: "Select a team to run Alliance Selection Desk.",
       steps: setupSteps(null, null),
       orgId: null,
       eventKey: null,

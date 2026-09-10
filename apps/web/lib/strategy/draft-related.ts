@@ -72,8 +72,8 @@ export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open draft boards.",
+      label: "Choose your team",
+      detail: "Choose your team to open draft boards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -159,7 +159,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         kind,
         title: "Loading draft board…",
         description:
-          "Checking workspace membership and event alliance board.",
+          "Checking which team you are on and event alliance board.",
       };
     case "error":
       return {
@@ -173,9 +173,9 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Select a team and event",
         description:
-          "Draft day is org- and event-scoped. Pick a workspace and active TBA event before alliance slots appear.",
+          "Draft day is org- and event-scoped. Select a team and active TBA event before alliance slots appear.",
       };
     case "empty":
       return {
@@ -216,7 +216,7 @@ export function draftNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before alliance selection.",
           href: "/workspace",
           primary: true,

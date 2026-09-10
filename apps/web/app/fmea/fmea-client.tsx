@@ -197,7 +197,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <EmptyState
           soft
           title={failure ? failure.title : "Loading failure log…"}
-          description={failure ? failure.description : "Checking your workspace."}
+          description={failure ? failure.description : "Checking your team."}
           aria-busy={!fetchFailed}
         >
           {failure?.primary ? (

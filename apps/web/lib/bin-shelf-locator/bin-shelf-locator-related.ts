@@ -72,8 +72,8 @@ export function binShelfLocatorSetupSteps(orgId?: string | null): BinShelfLocato
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open bin locations.",
+      label: "Choose your team",
+      detail: "Choose your team to open bin locations.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -126,7 +126,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
       return {
         kind,
         title: "Loading Bin/Shelf Locator…",
-        description: "Checking workspace membership and mapped locations.",
+        description: "Checking which team you are on and mapped locations.",
       };
     case "error":
       return {
@@ -140,9 +140,9 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before mapping bins.",
+          "Select a team before mapping bins.",
       };
     case "empty":
       return {
@@ -180,7 +180,7 @@ export function binShelfLocatorNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before mapping bins.",
           href: "/workspace",
           primary: true,

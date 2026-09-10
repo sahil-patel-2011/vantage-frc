@@ -85,9 +85,9 @@ export async function computeAutonPathLibraryView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to build your autonomous path library.",
+      message: "Select a team to build your autonomous path library.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

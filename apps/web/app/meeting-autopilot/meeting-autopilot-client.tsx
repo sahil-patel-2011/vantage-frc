@@ -144,7 +144,7 @@ export default function MeetingAutopilotClient() {
           );
         })()
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" || view.status === "empty" ? (
         <SetupOrEmpty view={view} />
       ) : (

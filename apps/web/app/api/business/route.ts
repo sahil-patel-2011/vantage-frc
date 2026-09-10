@@ -709,7 +709,7 @@ export async function POST(request: Request) {
           const goal = text(body.goal, 2_000) ?? "support our robotics season";
           const sponsorName = text(body.sponsorName, 240);
           const loaded = await loadBusinessView(client, { userId: session.user.id, requestedOrg: orgId, seasonYear });
-          if (loaded.status !== "live") throw new Error("Team workspace is not ready");
+          if (loaded.status !== "live") throw new Error("Your team is not ready");
           const generated = generateEvidenceDraft({
             type: documentType,
             teamName: loaded.orgName,

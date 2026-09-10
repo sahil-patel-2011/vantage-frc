@@ -102,7 +102,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         kind,
         title: "Loading Vendor Directory…",
         description:
-          "Checking workspace membership and real supplier rows.",
+          "Checking which team you are on and real supplier rows.",
       };
     case "error":
       return {
@@ -116,9 +116,9 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before adding real suppliers.",
+          "Select a team before adding real suppliers.",
       };
     case "empty":
       return {
@@ -159,7 +159,7 @@ export function vendorsNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before adding suppliers.",
           href: "/workspace",
           primary: true,
@@ -181,7 +181,7 @@ export function vendorsNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Vendor Directory can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

@@ -96,7 +96,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
       return {
         kind,
         title: "Loading control map…",
-        description: "Checking workspace membership and saved bindings.",
+        description: "Checking which team you are on and saved bindings.",
       };
     case "error":
       return {
@@ -110,9 +110,9 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before mapping driver and operator inputs.",
+          "Select a team before mapping driver and operator inputs.",
       };
     case "empty":
       return {
@@ -153,7 +153,7 @@ export function controlMapNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before mapping controls.",
           href: "/workspace",
           primary: true,
@@ -181,7 +181,7 @@ export function controlMapNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Control Map can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

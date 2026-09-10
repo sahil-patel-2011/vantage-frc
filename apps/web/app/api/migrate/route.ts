@@ -63,8 +63,8 @@ function readColumnMap(raw: unknown): Record<string, ColumnGuess> {
 
 const FALLBACK: MigrateView = {
   status: "setup_required",
-  message: "Could not load the switching kit. Select a workspace first.",
-  steps: [{ id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" }],
+  message: "Could not load the switching kit. Select a team first.",
+  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
   orgId: null,
 };
 

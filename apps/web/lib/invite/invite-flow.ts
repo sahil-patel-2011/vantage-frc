@@ -106,7 +106,7 @@ export function formatInviteTeamIdentity(
   const name = preview.orgName?.trim() || null;
   const role = formatInviteRole(preview.role);
   const parts = [team, name, role].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Team workspace";
+  return parts.length > 0 ? parts.join(" · ") : "Your team";
 }
 
 /**
@@ -304,7 +304,7 @@ export function inviteNextActions(input: {
       {
         id: "workspace",
         label: "Open workspace",
-        detail: "Continue in the team workspace you already joined.",
+        detail: "Continue in the team you already joined.",
         href: workspaceHref,
         primary: true,
       },

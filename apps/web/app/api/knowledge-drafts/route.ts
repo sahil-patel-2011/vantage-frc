@@ -35,12 +35,12 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message:
-          "Could not load capture drafts. Select a workspace and confirm database access.",
+          "Could not load capture drafts. Select a team and confirm database access.",
         steps: [
           {
             id: "workspace",
-            label: "Select workspace",
-            detail: "Choose your team organization",
+            label: "Choose your team",
+            detail: "Pick which FRC team you are working as.",
             href: "/workspace",
           },
         ],

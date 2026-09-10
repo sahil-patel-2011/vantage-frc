@@ -82,7 +82,7 @@ async function loadView(client: PoolClient, userId: string, requestedOrg: string
     [userId, requestedOrg],
   );
   const row = membership.rows[0];
-  if (!row) return { status: "setup_required", message: "Select a team workspace to view lodging and travel.", context: {} };
+  if (!row) return { status: "setup_required", message: "Select a team to view lodging and travel.", context: {} };
 
   const orgId = row.orgId;
   const [tripRows, hotelRows, roomRows, legRows, checklistRows, contactRows, memberRows, onDutyRows, mySubteamIds] =

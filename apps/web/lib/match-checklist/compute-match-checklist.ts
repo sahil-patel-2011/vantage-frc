@@ -193,12 +193,12 @@ export async function computeMatchChecklistView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to start pre-match checklists.",
+      message: "Select a team to start pre-match checklists.",
       steps: [
         {
           id: "workspace",
-          label: "Select workspace",
-          detail: "Choose your team organization — checklist history stays your team's.",
+          label: "Choose your team",
+          detail: "Choose your team — checklist history stays your team's.",
           href: "/workspace",
         },
         {

@@ -3,7 +3,7 @@ import { teamTagsNextActions, teamTagsPickReasonsPayload, type TeamTagsView } fr
 import type { TeamTagAssignment } from "./group";
 
 describe("team-tags next actions", () => {
-  it("asks for a workspace when none is selected", () => {
+  it("asks for a team when none is selected", () => {
     expect(teamTagsNextActions({})[0]?.id).toBe("workspace");
   });
 
@@ -66,7 +66,7 @@ describe("teamTagsPickReasonsPayload", () => {
   it("returns an empty payload until the board is live", () => {
     const payload = teamTagsPickReasonsPayload({
       status: "setup_required",
-      message: "Select a workspace",
+      message: "Select a team",
       steps: [],
       orgId: null,
       seasonYear: 2026,

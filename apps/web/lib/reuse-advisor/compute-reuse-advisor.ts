@@ -141,9 +141,9 @@ export async function computeReuseAdvisorView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to get cross-season subsystem reuse recommendations.",
+      message: "Select a team to get cross-season subsystem reuse recommendations.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         {
           id: "subsystems",
           label: "Log robot subsystems",

@@ -58,7 +58,7 @@ export type TeamLookupInput = {
   raw: string;
   /** "I don't have a team number yet" is ticked. */
   noTeam: boolean;
-  /** Field is not editable because an invite/request already bound a workspace. */
+  /** Field is not editable because an invite/request already bound a team. */
   locked?: boolean;
   lockedTeamNumber?: number | null;
   lockedOrgName?: string | null;
@@ -72,7 +72,7 @@ export type TeamLookupInput = {
 export const TEAM_NUMBER_MIN = 1;
 export const TEAM_NUMBER_MAX = 99999;
 
-/** Roles that may create a workspace for a team that has none yet. */
+/** Roles that may create a team for a team that has none yet. */
 export function isAdultRole(teamRole: string | null | undefined): boolean {
   return teamRole === "mentor" || teamRole === "coach" || teamRole === "parent";
 }
@@ -198,7 +198,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       title: `No Vantage workspace for Team ${parsed} yet`,
       body: input.adult
         ? "Nobody has set this team up. As a mentor, coach, or parent you can claim the number and become its first owner."
-        : "Nobody has set this team up yet. Ask a mentor or coach to claim it — students can't create a workspace.",
+        : "Nobody has set this team up yet. Ask a mentor or coach to claim it — students can't create a team.",
       ok: true,
       action: claimAction(input.adult),
     };

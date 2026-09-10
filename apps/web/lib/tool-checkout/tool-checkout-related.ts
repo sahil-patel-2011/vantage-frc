@@ -70,8 +70,8 @@ export function toolCheckoutSetupSteps(orgId?: string | null): ToolCheckoutSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open tool loans.",
+      label: "Choose your team",
+      detail: "Choose your team to open tool loans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
       return {
         kind,
         title: "Loading Tool Checkout…",
-        description: "Checking workspace membership and tool loans.",
+        description: "Checking which team you are on and tool loans.",
       };
     case "error":
       return {
@@ -134,9 +134,9 @@ export function toolCheckoutShellCopy(kind: ToolCheckoutShellKind): ToolCheckout
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before registering real shop tools.",
+          "Select a team before registering real shop tools.",
       };
     case "empty":
       return {

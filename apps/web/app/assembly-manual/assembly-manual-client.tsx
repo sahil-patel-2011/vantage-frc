@@ -306,7 +306,7 @@ function StartPanel({ overview, onStarted }: { overview: Overview; onStarted: (r
       <section className="am-card">
         <h2>Starting a run</h2>
         <p className="am-muted">
-          A run spends Onshape API budget for the whole team, so owners and admins start them. Ask a lead, or
+          A run uses the team&apos;s Onshape connection, so owners and admins start them. Ask a lead, or
           open a finished run below.
         </p>
       </section>

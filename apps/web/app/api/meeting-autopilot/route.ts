@@ -52,9 +52,9 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load the meeting-agenda autopilot. Select a workspace and confirm database access.",
+        message: "Could not load the meeting-agenda autopilot. Select a team and confirm database access.",
         steps: [
-          { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
         ],
         orgId: null,
         seasonYear: seasonYear ?? currentSeasonYear(),

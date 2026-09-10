@@ -8,7 +8,7 @@ export const SCOUT_VOICE_STT_FEATURE = "scout_voice_stt";
 export const SCOUT_VOICE_CONSENT_COPY = {
   title: "Voice notes privacy consent",
   summary:
-    "Voice notes record conversation near the scout while an entry is open. Transcripts are stored with your team workspace as notes attached to that entry — they do not fill or replace scouting form fields.",
+    "Voice notes record conversation near the scout while an entry is open. Transcripts are stored with your team as notes attached to that entry — they do not fill or replace scouting form fields.",
   bullets: [
     "Only enable when people who may be recorded have consented (teammates, pit visitors, mentors).",
     "Audio may be kept with the note for audit; cloud speech-to-text sends audio to a configured STT provider and is metered as AI usage.",

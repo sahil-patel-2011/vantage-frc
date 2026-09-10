@@ -229,7 +229,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
                 {policy.financeInAiAckVersion ? ` · ack ${policy.financeInAiAckVersion}` : ""}.
               </p>
             ) : (
-              <p className="app-muted">No risk acknowledgement on file yet for this workspace.</p>
+              <p className="app-muted">No risk acknowledgement on file yet for this team.</p>
             )}
           </div>
 

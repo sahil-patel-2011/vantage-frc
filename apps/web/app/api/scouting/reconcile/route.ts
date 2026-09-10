@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     // No database (or schema not migrated yet): honest setup state, never a crash.
     return Response.json(
       setupRequired(
-        "Reconciliation needs the team database. Confirm the workspace is provisioned, then set an active event in Event Day.",
+        "Reconciliation needs the team database. Confirm the team is provisioned, then set an active event in Event Day.",
       ),
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );

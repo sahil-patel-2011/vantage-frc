@@ -28,7 +28,7 @@ import { metresToMm } from "./units";
 
 export type PartStudioRef = {
   documentId: string;
-  /** "w" for a workspace, "m" for a microversion (linked documents). */
+  /** "w" for a team, "m" for a microversion (linked documents). */
   wvm: "w" | "m" | "v";
   wvmId: string;
   elementId: string;
@@ -616,7 +616,7 @@ export async function ingestAssembly(input: IngestInput): Promise<IngestResult> 
   };
 }
 
-/** Element list for a workspace, used to name the assembly and offer a picker. */
+/** Element list for a team, used to name the assembly and offer a picker. */
 export async function listAssemblyElements(
   http: OnshapeHttp,
   documentId: string,

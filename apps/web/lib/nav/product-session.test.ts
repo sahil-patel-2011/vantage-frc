@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchProductSession, invalidateProductSession, productSessionUrl } from "./product-session";
 
 describe("productSessionUrl", () => {
-  it("scopes the session to a workspace when one is known", () => {
+  it("scopes the session to a team when one is known", () => {
     expect(productSessionUrl()).toBe("/api/me");
     expect(productSessionUrl(" org-1 ")).toBe("/api/me?orgId=org-1");
   });

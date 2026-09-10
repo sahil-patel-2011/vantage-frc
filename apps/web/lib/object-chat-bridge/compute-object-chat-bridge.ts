@@ -118,9 +118,9 @@ export async function computeObjectChatBridgeView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to link chat threads to subsystems, orders, and incidents.",
+      message: "Select a team to link chat threads to subsystems, orders, and incidents.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

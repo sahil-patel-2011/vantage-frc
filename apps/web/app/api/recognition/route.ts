@@ -53,7 +53,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team workspace to run team awards." };
+      if (!row) return { status: "setup_required" as const, message: "Select a team to run team awards." };
 
       const [awards, noms, votes] = await Promise.all([
         client.query<AwardRow>(

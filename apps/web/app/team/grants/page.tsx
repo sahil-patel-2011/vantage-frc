@@ -24,11 +24,11 @@ export default async function GrantsPage({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a workspace"
-          description="Grant narratives belong to one team. Choose a workspace to open the writing workbench — award amounts stay blank until you record them."
+          title="Select a team"
+          description="Grant narratives belong to one team. Choose a team to open the writing workbench — award amounts stay blank until you record them."
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

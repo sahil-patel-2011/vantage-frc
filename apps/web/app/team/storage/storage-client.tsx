@@ -91,11 +91,11 @@ function StorageShell({
           soft
           badge="Setup required"
           badgeTone="setup"
-          title="Select a team workspace"
-          description={message ?? "Select a team workspace to manage self-hosted storage."}
+          title="Select a team"
+          description={message ?? "Select a team to manage self-hosted storage."}
         >
           <a className="app-button" href="/workspace">
-            Open Workspace
+            Choose your team
           </a>
         </EmptyState>
       )}

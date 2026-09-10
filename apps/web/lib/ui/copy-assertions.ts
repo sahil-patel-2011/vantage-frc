@@ -24,6 +24,8 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bPAYG\b/, 'billing jargon — say "pay-as-you-go"'],
   [/\bBYOK\b/, 'billing jargon — say "your own keys"'],
   [/\bkill\s+switch\b/i, 'billing internals — say "pause Chat"'],
+  [/\ballowlist(?:s|ed)?\b/i, 'say what is allowed, not "allowlist"'],
+  [/\b(open your workspace|more than one workspace|team workspaces|workspace membership|team workspace)\b/i, 'say "team"'],
   [
     /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|dollars?|hours?|logos?|slots?|lessons?)\b/i,
     "a disclaimer that the data is real",

@@ -68,8 +68,8 @@ export function equipmentMaintenanceSetupSteps(orgId?: string | null): Equipment
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open equipment logs.",
+      label: "Choose your team",
+      detail: "Choose your team to open equipment logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -118,7 +118,7 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
       return {
         kind,
         title: "Loading Equipment Maintenance…",
-        description: "Checking workspace membership and service logs.",
+        description: "Checking which team you are on and service logs.",
       };
     case "error":
       return {
@@ -132,9 +132,9 @@ export function equipmentMaintenanceShellCopy(kind: EquipmentMaintenanceShellKin
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before registering real shop machines.",
+          "Select a team before registering real shop machines.",
       };
     case "empty":
       return {

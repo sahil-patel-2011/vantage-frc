@@ -111,7 +111,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         kind,
         title: "Loading Overnight Intel…",
         description:
-          "Checking workspace membership and active event.",
+          "Checking which team you are on and active event.",
       };
     case "error":
       return {
@@ -127,7 +127,7 @@ export function overnightIntelShellCopy(kind: OvernightIntelShellKind): Overnigh
         badge: "Setup required",
         title: "Finish workspace and event setup",
         description:
-          "Overnight Intel needs an org and active event. Pick a workspace and set your event.",
+          "Overnight Intel needs an org and active event. Select a team and set your event.",
       };
     case "empty":
       return {
@@ -167,7 +167,7 @@ export function overnightIntelNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before compiling digests.",
           href: "/workspace",
           primary: true,
@@ -212,7 +212,7 @@ export function overnightIntelNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Overnight Intel can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

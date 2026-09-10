@@ -15,8 +15,8 @@ function setupSteps(orgId: string | null): TeamHealthSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Team Health.",
+      label: "Choose your team",
+      detail: "Choose your team to open Team Health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -115,7 +115,7 @@ export async function computeTeamHealthDashboardView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to see engagement from attendance and hour logs.",
+      message: "Select a team to see engagement from attendance and hour logs.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

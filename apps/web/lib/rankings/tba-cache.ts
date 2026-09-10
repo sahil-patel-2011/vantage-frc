@@ -168,7 +168,7 @@ export function buildRankingsView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Select a team workspace to view event rankings.",
+      message: input.setupMessage ?? "Select a team to view event rankings.",
     };
   }
   if (!input.context.eventKey) {

@@ -105,7 +105,7 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
         kind,
         title: "Loading inspection copilot…",
         description:
-          "Checking workspace membership and logged readiness checks.",
+          "Checking which team you are on and logged readiness checks.",
       };
     case "error":
       return {
@@ -119,9 +119,9 @@ export function inspectionCopilotShellCopy(kind: InspectionCopilotShellKind): In
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before comparing limits to measured robot values.",
+          "Select a team before comparing limits to measured robot values.",
       };
     case "empty":
       return {
@@ -162,7 +162,7 @@ export function inspectionCopilotNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before predicting inspection failures.",
           href: "/workspace",
           primary: true,
@@ -190,7 +190,7 @@ export function inspectionCopilotNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Inspection Copilot can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

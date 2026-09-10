@@ -83,7 +83,7 @@ export function buildOnboardingStepMeta(current: OnboardingFlowStep): Onboarding
 /** One-line progress for screen readers and Soft-UI clarity. */
 export function onboardingProgressLabel(current: OnboardingFlowStep): string {
   if (current === "done") {
-    return "All three steps done — your workspace is open";
+    return "All three steps done — your team is open";
   }
   if (current === "pending") {
     return "Profile submitted — waiting for team approval";
@@ -202,6 +202,6 @@ export function onboardingMembershipNote(
   }
   return {
     title: "Closed membership",
-    body: "Entering a team number only requests that team's approval. If the workspace already exists, their owners decide — members still also join by exact-email invite. Team heads can claim an unused TBA number at /claim.",
+    body: "Entering a team number only requests that team's approval. If the team already exists, their owners decide — members still also join by exact-email invite. Team heads can claim an unused TBA number at /claim.",
   };
 }

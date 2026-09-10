@@ -44,7 +44,7 @@ describe("snapshotPollWidgetTypes", () => {
     ).toEqual(["next_match", "alerts"]);
   });
 
-  it("keeps setup widgets while the workspace is still configuring", () => {
+  it("keeps setup widgets while the team is still configuring", () => {
     expect(
       snapshotPollWidgetTypes([{ type: "onboarding_checklist" }, { type: "next_match" }], { shell: "setup" }),
     ).toEqual(["onboarding_checklist", "next_match"]);

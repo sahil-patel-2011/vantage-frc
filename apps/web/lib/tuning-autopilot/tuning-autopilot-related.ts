@@ -105,7 +105,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         kind,
         title: "Loading tuning autopilot…",
         description:
-          "Checking workspace membership and logged tuning sessions.",
+          "Checking which team you are on and logged tuning sessions.",
       };
     case "error":
       return {
@@ -119,9 +119,9 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging gain sets and test results.",
+          "Select a team before logging gain sets and test results.",
       };
     case "empty":
       return {
@@ -162,7 +162,7 @@ export function tuningAutopilotNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging gain sets.",
           href: "/workspace",
           primary: true,
@@ -190,7 +190,7 @@ export function tuningAutopilotNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Tuning Autopilot can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

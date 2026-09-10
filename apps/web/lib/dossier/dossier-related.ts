@@ -76,8 +76,8 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open dossiers.",
+      label: "Choose your team",
+      detail: "Choose your team to open dossiers.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -155,7 +155,7 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
         kind,
         title: "Loading season dossier…",
         description:
-          "Checking workspace membership and TBA/Statbotics caches.",
+          "Checking which team you are on and TBA/Statbotics caches.",
       };
     case "error":
       return {
@@ -169,9 +169,9 @@ export function dossierShellCopy(kind: DossierShellKind): DossierEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and sync TBA/Statbotics before cited facts appear.",
+          "Select a team and sync TBA/Statbotics before cited facts appear.",
       };
     case "empty":
       return {
@@ -210,7 +210,7 @@ export function dossierNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before loading facts.",
           href: "/workspace",
           primary: true,

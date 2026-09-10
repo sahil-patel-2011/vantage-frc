@@ -81,8 +81,8 @@ export function qrHandoffSetupSteps(orgId?: string | null): QrHandoffSetupStep[]
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open QR handoff.",
+      label: "Choose your team",
+      detail: "Choose your team to open QR handoff.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -206,7 +206,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
       return {
         kind,
         title: "Loading QR handoff…",
-        description: "Checking workspace membership and this device’s outbox.",
+        description: "Checking which team you are on and this device’s outbox.",
       };
     case "error":
       return {
@@ -222,7 +222,7 @@ export function qrHandoffShellCopy(kind: QrHandoffShellKind): QrHandoffEmptyCopy
         badge: "Setup required",
         title: "Publish a scouting form first",
         description:
-          "QR handoff merges into a published match or pit schema. Select a workspace and publish a form before scanning.",
+          "QR handoff merges into a published match or pit schema. Select a team and publish a form before scanning.",
       };
     case "empty":
       return {
@@ -261,7 +261,7 @@ export function qrHandoffNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before sharing outbox rows.",
           href: "/workspace",
           primary: true,

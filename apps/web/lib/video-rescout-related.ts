@@ -75,8 +75,8 @@ export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetup
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open video re-scout.",
+      label: "Choose your team",
+      detail: "Choose your team to open video re-scout.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,7 +152,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         kind,
         title: "Loading video re-scout…",
         description:
-          "Checking workspace membership and saved match reviews.",
+          "Checking which team you are on and saved match reviews.",
       };
     case "error":
       return {
@@ -166,9 +166,9 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before match reviews appear.",
+          "Select a team before match reviews appear.",
       };
     case "empty":
       return {
@@ -207,7 +207,7 @@ export function videoRescoutNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before saving reviews.",
           href: "/workspace",
           primary: true,

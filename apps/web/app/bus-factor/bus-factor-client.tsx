@@ -139,7 +139,7 @@ function BusFactorShell({
         >
           {shell === "setup" ? (
             <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
-              Open Workspace
+              Choose your team
             </a>
           ) : null}
           {shell === "empty" ? (
@@ -563,7 +563,7 @@ function LogEntryForm({
         description="Bus-Factor needs org members to attribute hours."
       >
         <a className="app-button" href={withOrgHref("/workspace", view.orgId)}>
-          Open Workspace
+          Choose your team
         </a>
       </EmptyState>
     );

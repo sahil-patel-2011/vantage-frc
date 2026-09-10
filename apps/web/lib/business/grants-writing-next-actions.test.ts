@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { grantsWritingNextActions } from "./grants-writing-next-actions";
 
 describe("grantsWritingNextActions", () => {
-  it("requires a workspace when org is missing", () => {
+  it("requires a team when org is missing", () => {
     const actions = grantsWritingNextActions({});
     expect(actions).toEqual([
       expect.objectContaining({

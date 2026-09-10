@@ -84,7 +84,7 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
       return {
         kind,
         title: "Loading alumni…",
-        description: "Checking workspace membership and persisted alumni rows.",
+        description: "Checking which team you are on and persisted alumni rows.",
       };
     case "error":
       return {
@@ -98,9 +98,9 @@ export function alumniShellCopy(kind: AlumniShellKind): AlumniEmptyCopy {
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before adding graduates.",
+          "Select a team before adding graduates.",
       };
     case "empty":
       return {
@@ -130,7 +130,7 @@ export function alumniNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Select workspace",
+        label: "Choose your team",
         detail: "Pick a team before recording graduates.",
         href: "/workspace",
         primary: true,

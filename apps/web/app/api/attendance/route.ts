@@ -126,7 +126,7 @@ export async function GET(request: Request) {
       if (!row) {
         return {
           status: "setup_required",
-          message: "Select a team workspace to track practice and meeting attendance.",
+          message: "Select a team to track practice and meeting attendance.",
           context: {
             orgId: null,
             orgName: null,
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
               )
             : null;
           if (action.userId && !linkedMember?.rowCount) {
-            throw new HttpError(400, "Member is not part of this workspace");
+            throw new HttpError(400, "Member is not part of this team");
           }
           const personName = linkedMember?.rows[0]?.name?.trim() || action.personName;
           if (!personName) throw new HttpError(400, "Name is required");

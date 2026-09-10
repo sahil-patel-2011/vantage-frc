@@ -113,7 +113,7 @@ export async function loadPickDesk(
   if (!row?.orgId) {
     return {
       status: "setup_required",
-      message: "Select a team workspace before building pick lists.",
+      message: "Select a team before building pick lists.",
       orgId: null,
       eventKey: null,
     };

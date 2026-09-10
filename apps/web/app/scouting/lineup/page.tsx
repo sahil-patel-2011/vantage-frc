@@ -48,7 +48,7 @@ export default async function ScoutingLineupPage({
           description={copy.description}
         >
           <a className="app-button" href="/workspace">
-            Select workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="app-card soft-panel lineup-panel" aria-label="Setup steps">

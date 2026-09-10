@@ -253,8 +253,8 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           <p className="aa-eyebrow">Autonomous agent</p>
           <h1>Goal → tools → answer</h1>
           <p>
-            ReAct-style loop with allowlisted web fetch and optional search. Org facts and tool
-            results are injected each step. Metered via feature=agent.
+            Plan → tools → answer. Web fetch only hits sites your team allows. Team facts and tool
+            results are added each step.
           </p>
         </div>
         <div className="aa-header-actions">
@@ -276,7 +276,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           Search: {webSearchConfigured ? "ready" : "not set"}
         </div>
         <div className={webBrowseEnabled ? "aa-pill ok" : "aa-pill warn"}>
-          Browse: {webBrowseEnabled ? "allowlisted HTTPS" : "disabled"}
+          Browse: {webBrowseEnabled ? "allowed sites only" : "disabled"}
         </div>
       </section>
 

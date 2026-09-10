@@ -74,7 +74,7 @@ export function teamDataNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before connecting credentials or an event.",
           href: "/workspace",
           primary: true,
@@ -82,7 +82,7 @@ export function teamDataNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match boards stay empty until a workspace and active event sync real TBA rows.",
+          detail: "Match boards stay empty until a team and active event sync real TBA rows.",
           href: withOrgHref("/schedule", null),
         },
       ];
@@ -139,7 +139,7 @@ export function teamDataNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership or event setup so Team Data can resolve your org.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

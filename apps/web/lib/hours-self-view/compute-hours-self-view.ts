@@ -127,9 +127,9 @@ export async function computeHoursSelfViewView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to view your own hours.",
+      message: "Select a team to view your own hours.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
     };

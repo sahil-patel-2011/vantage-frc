@@ -20,8 +20,8 @@ function setupSteps(orgId: string | null): DefensePlannerSetupStep[] {
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Defense Planner.",
+      label: "Choose your team",
+      detail: "Choose your team to open Defense Planner.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -160,7 +160,7 @@ export async function computeDefensePlannerView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to plan defensive matchups.",
+      message: "Select a team to plan defensive matchups.",
       steps: setupSteps(null),
       orgId: null,
       seasonYear,

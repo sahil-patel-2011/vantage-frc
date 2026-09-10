@@ -70,8 +70,8 @@ export function pitRepairTriageSetupSteps(orgId?: string | null): PitRepairTriag
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open triage reports.",
+      label: "Choose your team",
+      detail: "Choose your team to open triage reports.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -130,7 +130,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
       return {
         kind,
         title: "Loading Pit Repair Triage…",
-        description: "Checking workspace membership, FMEA history, and spares.",
+        description: "Checking which team you are on, FMEA history, and spares.",
       };
     case "error":
       return {
@@ -144,9 +144,9 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before logging failures.",
+          "Select a team before logging failures.",
       };
     case "empty":
       return {
@@ -181,7 +181,7 @@ export function pitRepairTriageNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
@@ -197,7 +197,7 @@ export function pitRepairTriageNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Pit Repair Triage can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

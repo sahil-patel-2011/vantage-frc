@@ -96,7 +96,7 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     setMessage(
       draft.sponsorsAllowed
         ? "Funding profile saved. Sponsor tools stay visible."
-        : "Funding profile saved. Sponsor tools are hidden for this workspace.",
+        : "Funding profile saved. Sponsor tools are hidden for this team.",
     );
     setMessageTone("ok");
     setSaving(false);

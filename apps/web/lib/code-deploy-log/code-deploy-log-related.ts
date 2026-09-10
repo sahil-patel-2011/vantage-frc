@@ -72,8 +72,8 @@ export function codeDeployLogSetupSteps(orgId?: string | null): CodeDeployLogSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open deploy logs.",
+      label: "Choose your team",
+      detail: "Choose your team to open deploy logs.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -132,7 +132,7 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
       return {
         kind,
         title: "Loading Code Deploy Log…",
-        description: "Checking workspace membership and deploy history.",
+        description: "Checking which team you are on and deploy history.",
       };
     case "error":
       return {
@@ -146,9 +146,9 @@ export function codeDeployLogShellCopy(kind: CodeDeployLogShellKind): CodeDeploy
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace before recording firmware builds.",
+          "Select a team before recording firmware builds.",
       };
     case "empty":
       return {
@@ -187,7 +187,7 @@ export function codeDeployLogNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Pick a team before recording builds.",
           href: "/workspace",
           primary: true,
@@ -209,7 +209,7 @@ export function codeDeployLogNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open Workspace",
+        label: "Choose your team",
         detail: "Finish membership setup so Code Deploy Log can resolve your organization.",
         href: withOrgHref("/workspace", orgId),
         primary: true,

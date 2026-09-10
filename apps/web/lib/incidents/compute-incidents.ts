@@ -110,9 +110,9 @@ export async function computeIncidentsView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to keep a safety incident log.",
+      message: "Select a team to keep a safety incident log.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
       ],
       orgId: null,
       seasonYear,

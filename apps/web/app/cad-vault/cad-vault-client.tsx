@@ -426,7 +426,7 @@ export default function CadVaultClient() {
     return (
       <main className="module-page cad-vault-page soft-gate">
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team workspace first" description={view.message}>
+        <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team first" description={view.message}>
           {view.steps.map((step) => (
             <a key={step.id} className="app-button" href={step.href}>
               {step.label}

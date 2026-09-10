@@ -157,7 +157,7 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Team / Slack"
         title="Slack"
-        description="Keep Vantage team chat and Slack on the same thread. Messages stay in this workspace only."
+        description="Keep Vantage team chat and Slack on the same thread. Messages stay on this team only."
       />
       <TeamOpsNav active="admin" />
       <nav className="product-hub-related team-discord-related" aria-label="Related team tools">

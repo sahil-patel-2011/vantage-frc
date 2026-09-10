@@ -76,8 +76,8 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open Strategy.",
+      label: "Choose your team",
+      detail: "Choose your team to open Strategy.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -157,7 +157,7 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
         badge: "Setup required",
         title: "Choose a team and event",
         description:
-          "Pick a workspace, set the event you are at, then sync match data. This screen stays empty until then.",
+          "Select a team, set the event you are at, then sync match data. This screen stays empty until then.",
       };
     case "empty":
       return {
@@ -195,7 +195,7 @@ export function strategyNextActions(input: {
       return [
         {
           id: "workspace",
-          label: "Select workspace",
+          label: "Choose your team",
           detail: "Choose a team before loading event predictions.",
           href: "/workspace",
           primary: true,

@@ -367,9 +367,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         />
         {!embed ? <TeamOpsNav active="batteries" /> : null}
         <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup" soft>
+        <EmptyState title="Select a team" description={view.message} badge="Setup" badgeTone="setup" soft>
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose your team
           </a>
         </EmptyState>
         <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
@@ -969,7 +969,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           >
             <h3>Log an event</h3>
             {view.packs.length === 0 ? (
-              <EmptyState soft title="Add a pack first" description="Events attach to a labeled pack in this workspace." />
+              <EmptyState soft title="Add a pack first" description="Events attach to a labeled pack on this team." />
             ) : (
               <>
                 <p className="app-muted batt-form-hint">

@@ -89,11 +89,11 @@ export default function LearningClient() {
           </button>
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <p className="app-muted">
-            Calls come from the calculators: once you belong to a team workspace, every committed call on{" "}
+            Calls come from the calculators: once you belong to a team, every committed call on{" "}
             <a href="/gearbox">Gearbox</a>, <a href="/power-budget">Power budget</a> or{" "}
             <a href="/shooter-table">Shooter table</a> is recorded here.
           </p>

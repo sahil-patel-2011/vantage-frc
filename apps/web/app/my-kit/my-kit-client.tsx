@@ -167,7 +167,7 @@ export default function MyKitClient() {
             soft
             badge="Setup required"
             badgeTone="setup"
-            title={view?.status === "setup_required" ? view.message : "Choose a team workspace"}
+            title={view?.status === "setup_required" ? view.message : "Choose a team"}
             description="My Kit reads only your own rows inside one team."
           >
             <SetupChecklist

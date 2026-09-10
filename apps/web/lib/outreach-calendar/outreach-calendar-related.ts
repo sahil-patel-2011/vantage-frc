@@ -74,8 +74,8 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
   return [
     {
       id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization to open outreach plans.",
+      label: "Choose your team",
+      detail: "Choose your team to open outreach plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -112,7 +112,7 @@ export function shouldShowOutreachCalendarSummaryTiles(eventCount: number): bool
   return eventCount > 0;
 }
 
-/** True when the workspace has no outreach events yet — Soft-UI empty. */
+/** True when the team has no outreach events yet — Soft-UI empty. */
 export function isOutreachCalendarBoardEmpty(input: { eventCount: number }): boolean {
   return input.eventCount === 0;
 }
@@ -140,7 +140,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         kind,
         title: "Loading Outreach Calendar…",
         description:
-          "Checking workspace membership and scheduled events.",
+          "Checking which team you are on and scheduled events.",
       };
     case "error":
       return {
@@ -154,9 +154,9 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace",
+        title: "Select a team",
         description:
-          "Pick a workspace and schedule real events before projecting hours.",
+          "Select a team and schedule real events before projecting hours.",
       };
     case "empty":
       return {

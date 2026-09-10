@@ -104,7 +104,7 @@ export async function computeBatteryHealthForecastView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to forecast battery end-of-life.",
+      message: "Select a team to forecast battery end-of-life.",
       steps: batteryHealthForecastSetupSteps(null),
       orgId: null,
     };

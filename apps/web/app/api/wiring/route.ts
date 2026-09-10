@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         [session.user.id, requestedOrg],
       );
       const row = membership.rows[0];
-      if (!row) return { status: "setup_required" as const, message: "Select a team workspace to map your wiring." };
+      if (!row) return { status: "setup_required" as const, message: "Select a team to map your wiring." };
 
       const devices = await client.query<DeviceRow>(
         `SELECT d.id, d.name, d.device_type AS "deviceType", d.can_id AS "canId", d.can_bus AS "canBus",

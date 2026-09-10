@@ -1015,7 +1015,7 @@ export default function MessagesClient({
               <EmptyState
                 soft
                 title="No conversations yet"
-                description="Your team channel opens with this workspace."
+                description="Your team channel opens with this team."
               />
             ) : null}
             {/* Visible to every member, not just admins: the people the rule applies to are the

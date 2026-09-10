@@ -82,7 +82,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">CAD / Setup</span>
           <h1>Connect CAD + AI brain</h1>
           <p>
-            Pick a CAD path and an AI execution mode. Geometry mutations stay allowlisted and approval-gated. This is not
+            Pick a CAD path and how AI may edit. Shape changes wait for a person to approve. This is not
             certified engineering software.
           </p>
         </div>

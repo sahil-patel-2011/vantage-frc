@@ -76,9 +76,9 @@ async function resolveOrg(
 function setupRequiredView(orgId: string | null = null): ScoutingHeatSignalsView {
   return {
     status: "setup_required",
-    message: "Select a team workspace to track scouting heat signals.",
+    message: "Select a team to track scouting heat signals.",
     steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+      { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
     ],
     orgId,
   };
