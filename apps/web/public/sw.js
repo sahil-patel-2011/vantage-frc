@@ -116,6 +116,10 @@ const SHELL_ROUTES = [
   "/knowledge-gap",
   "/matching-gift-finder",
   "/onboarding-buddy",
+  "/risk-burndown",
+  "/spare-robot-kit",
+  "/sponsor-renewal-roi",
+  "/team-health-dashboard",
 ];
 
 function isShellPath(pathname) {

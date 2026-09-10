@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -28,10 +29,38 @@ import {
 } from "../../lib/sponsor-renewal-roi/sponsor-renewal-roi-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./sponsor-renewal-roi.css";
 
 type LiveView = Extract<SponsorRenewalRoiView, { status: "live" }>;
 type SponsorSummary = LiveView["sponsors"][number];
+
+function isSponsorRenewalRoiView(value: unknown): value is SponsorRenewalRoiView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function sponsorRenewalRoiCacheOrg(data: SponsorRenewalRoiView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSponsorRenewalRoiSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SponsorRenewalRoiView,
+): Promise<void> {
+  const cacheOrg = sponsorRenewalRoiCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("sponsor-renewal-roi", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("sponsor-renewal-roi", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Sponsor Renewal ROI already painted; IndexedDB is best-effort.
+  }
+}
 
 function tierTone(tier: SponsorRenewalRiskTier): BadgeTone {
   if (tier === "low") return "good";
@@ -164,30 +193,75 @@ export default function SponsorRenewalRoiClient() {
   const [busy, setBusy] = useState<string | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SponsorRenewalRoiView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/sponsor-renewal-roi${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SponsorRenewalRoiView>(
+          "sponsor-renewal-roi",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isSponsorRenewalRoiView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/sponsor-renewal-roi${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as SponsorRenewalRoiView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isSponsorRenewalRoiView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Sponsor Renewal ROI. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSponsorRenewalRoiSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Sponsor Renewal ROI. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -233,7 +307,7 @@ export default function SponsorRenewalRoiClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SponsorRenewalRoiView | { error?: string; code?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSponsorRenewalRoiView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, data);
           if (cutoff) {
             setCutoffCode(cutoff);
@@ -245,6 +319,7 @@ export default function SponsorRenewalRoiClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistSponsorRenewalRoiSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -255,7 +330,11 @@ export default function SponsorRenewalRoiClient() {
   );
 
   if (shell === "loading") {
-    return <RoiShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <RoiShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+      </RoiShell>
+    );
   }
 
   if (shell === "error") {
@@ -266,7 +345,9 @@ export default function SponsorRenewalRoiClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+      </RoiShell>
     );
   }
 
@@ -277,12 +358,17 @@ export default function SponsorRenewalRoiClient() {
         orgId={orgId}
         shell={shell === "empty" ? "empty" : "setup"}
       >
+        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <RoiShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <RoiShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+      </RoiShell>
+    );
   }
 
   return (
@@ -324,6 +410,8 @@ export default function SponsorRenewalRoiClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-muted" role="alert">

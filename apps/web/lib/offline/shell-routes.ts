@@ -98,6 +98,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/knowledge-gap",
   "/matching-gift-finder",
   "/onboarding-buddy",
+  "/risk-burndown",
+  "/spare-robot-kit",
+  "/sponsor-renewal-roi",
+  "/team-health-dashboard",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -191,6 +195,10 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/knowledge-gap")) return "Knowledge-gap detective";
   if (bare.startsWith("/matching-gift-finder")) return "Matching Gift Finder";
   if (bare.startsWith("/onboarding-buddy")) return "Onboarding Buddy";
+  if (bare.startsWith("/risk-burndown")) return "Risk-Register Burndown";
+  if (bare.startsWith("/spare-robot-kit")) return "Spare Robot Kit";
+  if (bare.startsWith("/sponsor-renewal-roi")) return "Sponsor Renewal ROI";
+  if (bare.startsWith("/team-health-dashboard")) return "Team Health";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

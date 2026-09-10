@@ -93,7 +93,11 @@ export type OfflineFeature =
   | "hours-self-view"
   | "knowledge-gap"
   | "matching-gift-finder"
-  | "onboarding-buddy";
+  | "onboarding-buddy"
+  | "risk-burndown"
+  | "spare-robot-kit"
+  | "sponsor-renewal-roi"
+  | "team-health-dashboard";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

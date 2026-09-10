@@ -111,6 +111,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/knowledge-gap")).toBe(true);
     expect(pathnameIsOfflineShell("/matching-gift-finder")).toBe(true);
     expect(pathnameIsOfflineShell("/onboarding-buddy")).toBe(true);
+    expect(pathnameIsOfflineShell("/risk-burndown")).toBe(true);
+    expect(pathnameIsOfflineShell("/spare-robot-kit")).toBe(true);
+    expect(pathnameIsOfflineShell("/sponsor-renewal-roi")).toBe(true);
+    expect(pathnameIsOfflineShell("/team-health-dashboard")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -202,6 +206,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge-gap detective");
     expect(offlineCapableLabel("/matching-gift-finder")).toBe("Matching Gift Finder");
     expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding Buddy");
+    expect(offlineCapableLabel("/risk-burndown")).toBe("Risk-Register Burndown");
+    expect(offlineCapableLabel("/spare-robot-kit")).toBe("Spare Robot Kit");
+    expect(offlineCapableLabel("/sponsor-renewal-roi")).toBe("Sponsor Renewal ROI");
+    expect(offlineCapableLabel("/team-health-dashboard")).toBe("Team Health");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -291,6 +299,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("knowledge-gap", "org-1", "2026")).toBe("knowledge-gap:org-1:2026");
     expect(featureCacheKey("matching-gift-finder", "org-1")).toBe("matching-gift-finder:org-1");
     expect(featureCacheKey("onboarding-buddy", "org-1")).toBe("onboarding-buddy:org-1");
+    expect(featureCacheKey("risk-burndown", "org-1", "2026")).toBe("risk-burndown:org-1:2026");
+    expect(featureCacheKey("spare-robot-kit", "org-1", "2026")).toBe("spare-robot-kit:org-1:2026");
+    expect(featureCacheKey("sponsor-renewal-roi", "org-1", "2026")).toBe("sponsor-renewal-roi:org-1:2026");
+    expect(featureCacheKey("team-health-dashboard", "org-1", "2026")).toBe("team-health-dashboard:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
