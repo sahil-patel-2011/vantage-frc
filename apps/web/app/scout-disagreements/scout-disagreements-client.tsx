@@ -20,6 +20,7 @@ import {
 } from "../../lib/scout-disagreements/scout-disagreements-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scout-disagreements.css";
 
 function statusTone(status: ScoutDisagreement["status"]): string {
@@ -98,7 +99,7 @@ function ScoutDisagreementsShell({
   const actions = scoutDisagreementsNextActions({ orgId, shell });
   const copy = scoutDisagreementsShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? scoutDisagreementsSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? scoutDisagreementsSetupSteps(orgId)[0] : null;
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -159,35 +160,16 @@ function ScoutDisagreementsShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={scoutingHref}>Log scout entries</Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="scout-disagreements-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-disagreements-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-disagreements-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ScoutDisagreementsNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <ScoutDisagreementsNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -215,7 +197,10 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
       const query = new URLSearchParams();
       if (urlOrg) query.set("orgId", urlOrg);
       if (seasonQuery) query.set("season", String(seasonQuery));
-      void fetch(`/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`)
+      void fetch(`/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
         .then(async (response) => {
           const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
           if (!response.ok || !("status" in data)) {
@@ -250,6 +235,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
         if (!response.ok || !("status" in data)) {

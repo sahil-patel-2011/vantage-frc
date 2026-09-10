@@ -65,27 +65,41 @@ export type DriveTeamSignalsSetupStepLink = {
   href: string;
 };
 
+function driveTeamSignalsRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    driveTeamSignalsRelatedLinks(orgId, {
+      include: [...DRIVE_TEAM_SIGNALS_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = driveTeamSignalsRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function driveTeamSignalsSetupSteps(orgId?: string | null): DriveTeamSignalsSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open signal sheets.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open signal sheets.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — callouts stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "checklist",
-      label: "Open Match Checklist",
-      detail: "Pair pre-match cues with the same drive-crew language.",
-      href: hubHref("/competition", "match-checklist", orgId),
-    },
-    {
-      id: "cards",
-      label: "Open Strategy Cards",
-      detail: "Match plans reference the same callouts as your signal board.",
-      href: hubHref("/competition", "match-strategy-cards", orgId),
-    },
-  ];
+  ]);
 }
 
 export function formatDriveTeamSignalsMetric(value: unknown, loaded: boolean): string {

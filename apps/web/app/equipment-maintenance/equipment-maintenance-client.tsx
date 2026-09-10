@@ -34,7 +34,7 @@ import {
   type EquipmentMaintenanceShellKind,
 } from "../../lib/equipment-maintenance/equipment-maintenance-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./equipment-maintenance.css";
 
 const STATUS_LABEL: Record<EquipmentStatus, string> = {
@@ -110,7 +110,7 @@ function MaintenanceShell({
   const actions = equipmentMaintenanceNextActions({ orgId, shell });
   const copy = equipmentMaintenanceShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "equipment-maintenance", orgId);
-  const steps = shell === "setup" ? equipmentMaintenanceSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? equipmentMaintenanceSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page em-page soft-gate">
@@ -140,36 +140,17 @@ function MaintenanceShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={hubHref("/team", "tool-checkout", orgId)}>Open Tool Checkout</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="em-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="em-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted em-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -187,7 +168,10 @@ export default function EquipmentMaintenanceClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/equipment-maintenance${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/equipment-maintenance${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as EquipmentMaintenanceView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -236,6 +220,7 @@ export default function EquipmentMaintenanceClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as EquipmentMaintenanceView | { error?: string };
         if (!response.ok || !("status" in data)) {

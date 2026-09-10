@@ -5,6 +5,7 @@ import {
   formatPitRepairTriageMetric,
   pitRepairTriageNextActions,
   pitRepairTriageRelatedLinks,
+  pitRepairTriageSetupSteps,
   pitRepairTriageShellCopy,
   shouldShowPitRepairTriageSummaryTiles,
 } from "./pit-repair-triage-related";
@@ -26,10 +27,29 @@ describe("pitRepairTriageRelatedLinks", () => {
   });
 });
 
+describe("pitRepairTriageSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(pitRepairTriageSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Open Inventory; Command / FMEA / Spare Kit live on the related strip", () => {
+    const steps = pitRepairTriageSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["inventory"]);
+    expect(steps[0]?.href).toBe("/inventory?orgId=org-1");
+  });
+});
+
 describe("pitRepairTriageNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = pitRepairTriageNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
+  });
+
+  it("setup with a team points at Inventory", () => {
+    const actions = pitRepairTriageNextActions({ orgId: "org-1", shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["inventory"]);
   });
 
   it("points empty boards at log-failure", () => {

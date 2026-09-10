@@ -27,7 +27,7 @@ import {
   type SponsorRenewalRoiShellKind,
 } from "../../lib/sponsor-renewal-roi/sponsor-renewal-roi-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./sponsor-renewal-roi.css";
 
 type LiveView = Extract<SponsorRenewalRoiView, { status: "live" }>;
@@ -111,7 +111,7 @@ function RoiShell({
   const actions = sponsorRenewalRoiNextActions({ orgId, shell });
   const copy = sponsorRenewalRoiShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "sponsor-renewal-roi", orgId);
-  const steps = shell === "setup" ? sponsorRenewalRoiSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? sponsorRenewalRoiSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page srr-page soft-gate">
@@ -142,36 +142,17 @@ function RoiShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? hubHref("/business", "sponsors", orgId) : "/workspace"}>{orgId ? "Open Sponsor CRM" : "Choose your team"}</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Add a sponsor</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="srr-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="srr-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted srr-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -193,7 +174,10 @@ export default function SponsorRenewalRoiClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/sponsor-renewal-roi${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/sponsor-renewal-roi${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as SponsorRenewalRoiView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -246,6 +230,7 @@ export default function SponsorRenewalRoiClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SponsorRenewalRoiView | { error?: string; code?: string };
         if (!response.ok || !("status" in data)) {
@@ -292,21 +277,6 @@ export default function SponsorRenewalRoiClient() {
         orgId={orgId}
         shell={shell === "empty" ? "empty" : "setup"}
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href.startsWith("/") ? (orgId ? withOrgHref(step.href, orgId) : step.href) : step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </RoiShell>
     );
   }

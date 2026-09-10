@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Match Video Index (never DEMO clip packs). */
 export const MATCH_VIDEO_INDEX_RELATED_LINKS = [
@@ -63,27 +64,41 @@ export type MatchVideoIndexSetupStepLink = {
   href: string;
 };
 
+function matchVideoIndexRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    matchVideoIndexRelatedLinks(orgId, {
+      include: [...MATCH_VIDEO_INDEX_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = matchVideoIndexRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function matchVideoIndexSetupSteps(orgId?: string | null): MatchVideoIndexSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open video indexes.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open video indexes.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — clips stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Match keys from real scout entries pair cleanly with indexed clips.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "notes",
-      label: "Open Match Notes",
-      detail: "Timeline notes sit beside the same match keys as your videos.",
-      href: hubHref("/competition", "match-notes-timeline", orgId),
-    },
-  ];
+  ]);
 }
 
 export function formatMatchVideoIndexMetric(value: unknown, loaded: boolean): string {
@@ -160,38 +175,7 @@ export function matchVideoIndexNextActions(input: {
   const videoCount = input.videoCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before adding clips.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Match keys stay blank until your team scouts.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Match Video Index can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Use real match keys when indexing clips.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
+    return setupActionsFrom(matchVideoIndexSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

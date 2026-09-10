@@ -28,6 +28,7 @@ import {
 } from "../../lib/scout-crossval/scout-crossval-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scout-crossval.css";
 
 const STATUS_TONE: Record<CrossvalStatus, BadgeTone> = {
@@ -104,7 +105,7 @@ function ScoutCrossvalShell({
   const actions = scoutCrossvalNextActions({ orgId, shell });
   const copy = scoutCrossvalShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? scoutCrossvalSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? scoutCrossvalSetupSteps(orgId)[0] : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   return (
@@ -142,36 +143,17 @@ function ScoutCrossvalShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={scoutingHref}>Log scout entries</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="scout-crossval-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-crossval-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-crossval-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ScoutCrossvalNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <ScoutCrossvalNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -195,7 +177,10 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
       const query = new URLSearchParams();
       if (urlOrg) query.set("orgId", urlOrg);
       if (eventQuery) query.set("eventKey", eventQuery);
-      void fetch(`/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`)
+      void fetch(`/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
         .then(async (response) => {
           const data = (await response.json()) as ScoutCrossvalView | { error?: string };
           if (!response.ok || !("status" in data)) {
@@ -228,6 +213,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, eventKey: eventKey ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutCrossvalView | { error?: string };
         if (!response.ok || !("status" in data)) {

@@ -5,6 +5,7 @@ import {
   formatFieldResetTimerMetric,
   fieldResetTimerNextActions,
   fieldResetTimerRelatedLinks,
+  fieldResetTimerSetupSteps,
   fieldResetTimerShellCopy,
   shouldShowFieldResetTimerSummaryTiles,
 } from "./field-reset-timer-related";
@@ -29,11 +30,24 @@ describe("fieldResetTimerRelatedLinks", () => {
   });
 });
 
+describe("fieldResetTimerSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(fieldResetTimerSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Practice / Tryouts / Signals live on the related strip", () => {
+    const steps = fieldResetTimerSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("fieldResetTimerNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = fieldResetTimerNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((a) => a.id === "practice")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
   });
 
   it("points empty boards at create-session", () => {

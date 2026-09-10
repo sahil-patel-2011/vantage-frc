@@ -35,7 +35,7 @@ import {
   type PitRepairTriageShellKind,
 } from "../../lib/pit-repair-triage/pit-repair-triage-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./pit-repair-triage.css";
 
 const DECISION_TONE: Record<TriageDecision, BadgeTone> = {
@@ -115,7 +115,7 @@ function TriageShell({
   const actions = pitRepairTriageNextActions({ orgId, shell });
   const copy = pitRepairTriageShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "pit-repair-triage", orgId);
-  const steps = shell === "setup" ? pitRepairTriageSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? pitRepairTriageSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page prt-page soft-gate">
@@ -146,36 +146,17 @@ function TriageShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#pit-repair-triage-log">Log a pit failure</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="prt-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="prt-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted prt-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -196,7 +177,10 @@ export default function PitRepairTriageClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/pit-repair-triage${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/pit-repair-triage${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as PitRepairTriageView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -255,6 +239,7 @@ export default function PitRepairTriageClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PitRepairTriageView | { error?: string };
         if (!response.ok || !("status" in data)) {

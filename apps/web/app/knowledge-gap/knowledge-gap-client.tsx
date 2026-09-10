@@ -27,7 +27,7 @@ import {
   type KnowledgeGapShellKind,
 } from "../../lib/knowledge-gap/knowledge-gap-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./knowledge-gap.css";
 
 const STATUS_TONE: Record<KnowledgeGapStatus, BadgeTone> = {
@@ -109,7 +109,7 @@ function GapShell({
   const actions = knowledgeGapNextActions({ orgId, shell });
   const copy = knowledgeGapShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "knowledge-gap", orgId);
-  const steps = shell === "setup" ? knowledgeGapSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? knowledgeGapSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page kg-page soft-gate">
@@ -140,36 +140,17 @@ function GapShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#knowledge-gap-scan">Run scan</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="kg-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="kg-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted kg-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -190,7 +171,10 @@ export default function KnowledgeGapClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/knowledge-gap${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/knowledge-gap${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as KnowledgeGapView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -242,6 +226,7 @@ export default function KnowledgeGapClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as KnowledgeGapView | { error?: string };
         if (!response.ok || !("status" in data)) {

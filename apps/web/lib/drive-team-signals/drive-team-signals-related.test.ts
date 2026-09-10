@@ -5,6 +5,7 @@ import {
   formatDriveTeamSignalsMetric,
   driveTeamSignalsNextActions,
   driveTeamSignalsRelatedLinks,
+  driveTeamSignalsSetupSteps,
   driveTeamSignalsShellCopy,
   shouldShowDriveTeamSignalsSummaryTiles,
 } from "./drive-team-signals-related";
@@ -32,11 +33,24 @@ describe("driveTeamSignalsRelatedLinks", () => {
   });
 });
 
+describe("driveTeamSignalsSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(driveTeamSignalsSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Checklist / Cards / Briefing live on the related strip", () => {
+    const steps = driveTeamSignalsSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("driveTeamSignalsNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = driveTeamSignalsNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((a) => a.id === "checklist")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
   });
 
   it("points empty boards at create-sheet", () => {

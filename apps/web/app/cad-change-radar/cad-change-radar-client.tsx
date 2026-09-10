@@ -29,7 +29,8 @@ import {
   type CadChangeRadarNextAction,
   type CadChangeRadarShellKind,
 } from "../../lib/cad-change-radar/cad-change-radar-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./cad-change-radar.css";
 
 type LiveView = Extract<CadChangeRadarView, { status: "live" }>;
@@ -99,7 +100,7 @@ function RadarShell({
   const actions = cadChangeRadarNextActions({ orgId, shell });
   const copy = cadChangeRadarShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "cad-change-radar", orgId);
-  const steps = shell === "setup" ? cadChangeRadarSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? cadChangeRadarSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page ccr-page soft-gate">
@@ -130,36 +131,17 @@ function RadarShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? hubHref("/build", "cad", orgId) : "/workspace"}>{orgId ? "Open CAD" : "Choose your team"}</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#cad-change-radar-snapshot">Record the first snapshot</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="ccr-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="ccr-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted ccr-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -177,7 +159,10 @@ export default function CadChangeRadarClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/cad-change-radar${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/cad-change-radar${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as CadChangeRadarView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -231,6 +216,7 @@ export default function CadChangeRadarClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CadChangeRadarView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -270,19 +256,6 @@ export default function CadChangeRadarClient() {
         orgId={orgId}
         shell="setup"
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </RadarShell>
     );
   }

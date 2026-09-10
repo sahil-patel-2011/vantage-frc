@@ -28,8 +28,8 @@ import {
   type RobotWeighInNextAction,
   type RobotWeighInShellKind,
 } from "../../lib/robot-weigh-in/robot-weigh-in-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./robot-weigh-in.css";
 
 type LiveView = Extract<RobotWeighInView, { status: "live" }>;
@@ -104,7 +104,7 @@ function WeighShell({
   const actions = robotWeighInNextActions({ orgId, shell });
   const copy = robotWeighInShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "robot-weigh-in", orgId);
-  const steps = shell === "setup" ? robotWeighInSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? robotWeighInSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page rwi-page soft-gate">
@@ -134,36 +134,19 @@ function WeighShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "readiness-score", orgId)}>Open Readiness</Button>
+            <Button as="a" variant="primary" href="#robot-weigh-in-form">
+              Log a weigh-in
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="rwi-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="rwi-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted rwi-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -184,7 +167,10 @@ export default function RobotWeighInClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/robot-weigh-in${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/robot-weigh-in${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as RobotWeighInView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -234,6 +220,7 @@ export default function RobotWeighInClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as RobotWeighInView | { error?: string };
         if (!response.ok || !("status" in data)) {

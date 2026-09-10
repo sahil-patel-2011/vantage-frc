@@ -20,6 +20,7 @@ import {
 import type { RetroActionStatus, RetroHandoffTarget, RetroItemKind } from "../../lib/retro/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./retro.css";
 
 export type { RetroView };
@@ -97,7 +98,7 @@ function RetroShell({
   const actions = retroNextActions({ orgId, shell });
   const copy = retroShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "retro", orgId);
-  const steps = shell === "setup" ? retroSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? retroSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page retro-page soft-gate">
@@ -135,35 +136,16 @@ function RetroShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
-        ) : null}
+        {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href="#retro-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="retro-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="retro-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted retro-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <RetroNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <RetroNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -187,7 +169,10 @@ export default function RetroClient() {
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
     if (sessionQuery) query.set("sessionId", sessionQuery);
-    void fetch(`/api/retro${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/retro${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as RetroView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -255,6 +240,7 @@ export default function RetroClient() {
             sessionId: sessionId ?? undefined,
             ...payload,
           }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as RetroView | { error?: string };
         if (!response.ok || !("status" in data)) {

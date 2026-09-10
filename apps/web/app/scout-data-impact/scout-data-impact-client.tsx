@@ -25,6 +25,7 @@ import {
 } from "../../lib/scout-data-impact/scout-data-impact-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scout-data-impact.css";
 
 type LiveView = Extract<ScoutDataImpactView, { status: "live" }>;
@@ -96,7 +97,7 @@ function ScoutDataImpactShell({
   const actions = scoutDataImpactNextActions({ orgId, shell });
   const copy = scoutDataImpactShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? scoutDataImpactSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? scoutDataImpactSetupSteps(orgId)[0] : null;
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -114,7 +115,6 @@ function ScoutDataImpactShell({
           },
         )
       : null;
-  const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
     <main className="module-page scout-data-impact-page soft-gate">
@@ -157,36 +157,17 @@ function ScoutDataImpactShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? strategyHref : "/workspace"}>{orgId ? "Open Strategy" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href="#log-alliance-pick">Log an alliance pick</Button>
         ) : null}
       </EmptyState>
       {shell === "empty" || shell === "setup" ? logPick : null}
-      {steps.length > 0 ? (
-        <Panel className="scout-data-impact-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-data-impact-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-data-impact-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ScoutDataImpactNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <ScoutDataImpactNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -213,7 +194,10 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
       const query = new URLSearchParams();
       if (urlOrg) query.set("orgId", urlOrg);
       if (eventQuery) query.set("eventKey", eventQuery);
-      void fetch(`/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`)
+      void fetch(`/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
         .then(async (response) => {
           const data = (await response.json()) as ScoutDataImpactView | { error?: string };
           if (!response.ok || !("status" in data)) {
@@ -247,6 +231,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, eventKey: eventKey ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutDataImpactView | { error?: string };
         if (!response.ok || !("status" in data)) {

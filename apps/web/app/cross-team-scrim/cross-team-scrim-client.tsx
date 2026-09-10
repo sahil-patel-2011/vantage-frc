@@ -22,7 +22,7 @@ import {
 } from "../../lib/cross-team-scrim/cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimStatus } from "../../lib/cross-team-scrim/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./cross-team-scrim.css";
 
 function statusTone(status: ScrimStatus): string {
@@ -95,7 +95,7 @@ function ScrimShell({
   const actions = crossTeamScrimNextActions({ orgId, shell });
   const copy = crossTeamScrimShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
-  const steps = shell === "setup" ? crossTeamScrimSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? crossTeamScrimSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page cross-team-scrim-page soft-gate">
@@ -133,35 +133,16 @@ function ScrimShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
-        ) : null}
+        {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href="#cross-team-scrim-propose">Propose a scrim</Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="cross-team-scrim-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="cross-team-scrim-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted cross-team-scrim-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ScrimNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <ScrimNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -182,7 +163,10 @@ export default function CrossTeamScrimClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/cross-team-scrim${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/cross-team-scrim${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as CrossTeamScrimView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -233,6 +217,7 @@ export default function CrossTeamScrimClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as CrossTeamScrimView | { error?: string };
         if (!response.ok || !("status" in data)) {

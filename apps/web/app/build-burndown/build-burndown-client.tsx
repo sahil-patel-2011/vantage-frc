@@ -19,7 +19,7 @@ import {
 } from "../../lib/build-burndown/build-burndown-related";
 import type { BuildTaskCategory, BuildTaskStatus } from "../../lib/build-burndown/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./build-burndown.css";
 
 function paceLabel(paceSignal: number): { text: string; tone: string } {
@@ -94,7 +94,7 @@ function BurndownShell({
   const actions = buildBurndownNextActions({ orgId, shell });
   const copy = buildBurndownShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "build-burndown", orgId);
-  const steps = shell === "setup" ? buildBurndownSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? buildBurndownSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page build-burndown-page soft-gate">
@@ -132,35 +132,16 @@ function BurndownShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
-        ) : null}
+        {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href="#build-burndown-plan">Set kickoff plan</Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="build-burndown-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="build-burndown-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted build-burndown-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <BurndownNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <BurndownNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -181,7 +162,10 @@ export default function BuildBurndownClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/build-burndown${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/build-burndown${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as BuildBurndownView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -234,6 +218,7 @@ export default function BuildBurndownClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as BuildBurndownView | { error?: string };
         if (!response.ok || !("status" in data)) {

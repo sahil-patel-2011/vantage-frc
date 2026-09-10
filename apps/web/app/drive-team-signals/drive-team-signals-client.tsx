@@ -32,8 +32,8 @@ import {
   type DriveTeamSignalsNextAction,
   type DriveTeamSignalsShellKind,
 } from "../../lib/drive-team-signals/drive-team-signals-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./drive-team-signals.css";
 
 type LiveView = Extract<DriveTeamSignalsView, { status: "live" }>;
@@ -101,7 +101,7 @@ function SignalsShell({
   const actions = driveTeamSignalsNextActions({ orgId, shell });
   const copy = driveTeamSignalsShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "drive-team-signals", orgId);
-  const steps = shell === "setup" ? driveTeamSignalsSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? driveTeamSignalsSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page dts-page soft-gate">
@@ -131,36 +131,19 @@ function SignalsShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/competition", "match-checklist", orgId)}>Open Match Checklist</Button>
+            <Button as="a" variant="primary" href="#drive-team-signals-new">
+              Create a signal sheet
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="dts-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="dts-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted dts-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -178,7 +161,10 @@ export default function DriveTeamSignalsClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/drive-team-signals${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/drive-team-signals${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as DriveTeamSignalsView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -226,6 +212,7 @@ export default function DriveTeamSignalsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as DriveTeamSignalsView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -276,7 +263,7 @@ export default function DriveTeamSignalsClient() {
           </>
         }
         title="Drive-Team Signal Board"
-        description="Standardized driver/human-player comms cheat-sheets."
+        description="Hand signals, radio codes, and field markers your drive crew actually uses."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>

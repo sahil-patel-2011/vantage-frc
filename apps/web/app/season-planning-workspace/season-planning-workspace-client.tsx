@@ -36,7 +36,7 @@ import {
 } from "../../lib/season-planning-workspace/season-planning-workspace-related";
 import type { GoalCategory, SeasonGoal, WorkItemStatus } from "../../lib/season-planning-workspace/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./season-planning-workspace.css";
 
 type LiveView = Extract<SeasonPlanningWorkspaceView, { status: "live" }>;
@@ -111,7 +111,7 @@ function PlanShell({
   const actions = seasonPlanningNextActions({ orgId, shell });
   const copy = seasonPlanningShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "season-planning-workspace", orgId);
-  const steps = shell === "setup" ? seasonPlanningSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? seasonPlanningSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page season-plan-page soft-gate">
@@ -142,33 +142,14 @@ function PlanShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="season-plan-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="season-plan-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted season-plan-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -331,7 +312,10 @@ export default function SeasonPlanningWorkspaceClient() {
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
     if (planQuery) query.set("planId", planQuery);
-    void fetch(`/api/season-planning-workspace${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/season-planning-workspace${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as SeasonPlanningWorkspaceView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -385,6 +369,7 @@ export default function SeasonPlanningWorkspaceClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, planId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SeasonPlanningWorkspaceView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -432,19 +417,6 @@ export default function SeasonPlanningWorkspaceClient() {
         orgId={orgId}
         shell="setup"
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </PlanShell>
     );
   }

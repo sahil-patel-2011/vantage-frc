@@ -64,27 +64,41 @@ export type RobotWeighInSetupStepLink = {
   href: string;
 };
 
+function robotWeighInRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    robotWeighInRelatedLinks(orgId, {
+      include: [...ROBOT_WEIGH_IN_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = robotWeighInRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function robotWeighInSetupSteps(orgId?: string | null): RobotWeighInSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open weigh-ins.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open weigh-ins.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — event weigh-ins stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "readiness",
-      label: "Open Readiness Score",
-      detail: "Weight margin feeds competition readiness.",
-      href: hubHref("/build", "readiness-score", orgId),
-    },
-    {
-      id: "inspection",
-      label: "Open Inspection Copilot",
-      detail: "Event weigh-ins sit beside inspection readiness checks.",
-      href: hubHref("/build", "inspection-copilot", orgId),
-    },
-  ];
+  ]);
 }
 
 export function formatRobotWeighInMetric(value: unknown, loaded: boolean): string {

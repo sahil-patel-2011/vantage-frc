@@ -26,7 +26,7 @@ import {
   type MatchDeltaWatcherShellKind,
 } from "../../lib/match-delta-watcher/match-delta-watcher-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./match-delta-watcher.css";
 
 const severityTone: Record<string, BadgeTone | undefined> = {
@@ -96,7 +96,7 @@ function WatcherShell({
   const actions = matchDeltaWatcherNextActions({ orgId, shell });
   const copy = matchDeltaWatcherShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "match-delta-watcher", orgId);
-  const steps = shell === "setup" ? matchDeltaWatcherSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? matchDeltaWatcherSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page mdw-page soft-gate">
@@ -127,36 +127,19 @@ function WatcherShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>Open Strategy</Button>
+            <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>
+              Score predictions
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="mdw-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="mdw-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted mdw-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -177,7 +160,10 @@ export default function MatchDeltaWatcherClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (eventQuery) query.set("eventKey", eventQuery);
-    void fetch(`/api/match-delta-watcher${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/match-delta-watcher${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as MatchDeltaWatcherView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -226,6 +212,7 @@ export default function MatchDeltaWatcherClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, eventKey: eventKey ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchDeltaWatcherView | { error?: string };
         if (!response.ok || !("status" in data)) {

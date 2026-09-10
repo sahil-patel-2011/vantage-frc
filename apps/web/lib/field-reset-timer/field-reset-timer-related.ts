@@ -64,27 +64,41 @@ export type FieldResetTimerSetupStepLink = {
   href: string;
 };
 
+function fieldResetTimerRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    fieldResetTimerRelatedLinks(orgId, {
+      include: [...FIELD_RESET_TIMER_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = fieldResetTimerRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function fieldResetTimerSetupSteps(orgId?: string | null): FieldResetTimerSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open reset drills.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open reset drills.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — reset drills stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "practice",
-      label: "Open Practice",
-      detail: "Schedule driver practice sessions that feed real reset cycles.",
-      href: hubHref("/team", "practice", orgId),
-    },
-    {
-      id: "signals",
-      label: "Open Drive-Team Signals",
-      detail: "Align reset callouts with the same drive crew language.",
-      href: hubHref("/competition", "drive-team-signals", orgId),
-    },
-  ];
+  ]);
 }
 
 export function formatFieldResetTimerMetric(value: unknown, loaded: boolean): string {

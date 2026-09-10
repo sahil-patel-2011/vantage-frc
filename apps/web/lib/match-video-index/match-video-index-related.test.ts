@@ -5,6 +5,7 @@ import {
   formatMatchVideoIndexMetric,
   matchVideoIndexNextActions,
   matchVideoIndexRelatedLinks,
+  matchVideoIndexSetupSteps,
   matchVideoIndexShellCopy,
   shouldShowMatchVideoIndexSummaryTiles,
 } from "./match-video-index-related";
@@ -25,10 +26,24 @@ describe("matchVideoIndexRelatedLinks", () => {
   });
 });
 
+describe("matchVideoIndexSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(matchVideoIndexSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Scouting / Notes / Match-Delta live on the related strip", () => {
+    const steps = matchVideoIndexSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("matchVideoIndexNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = matchVideoIndexNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
   });
 
   it("points empty boards at add-video", () => {

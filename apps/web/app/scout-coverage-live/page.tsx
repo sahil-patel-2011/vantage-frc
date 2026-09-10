@@ -24,7 +24,7 @@ export default async function ScoutCoverageLivePage({
     const related = scoutCoverageLiveRelatedLinks(null, {
       include: [...SCOUT_COVERAGE_LIVE_RELATED_INCLUDE],
     });
-    const steps = scoutCoverageLiveSetupSteps(null);
+    const setup = scoutCoverageLiveSetupSteps(null)[0];
     return (
       <main className="module-page scout-coverage-live-page soft-gate">
         <PageHeader
@@ -50,29 +50,10 @@ export default async function ScoutCoverageLivePage({
           title={copy.title}
           description={copy.description}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
+            {setup?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
-        <section className="app-card soft-panel scout-coverage-live-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-coverage-live-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-coverage-live-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
         <p className="app-muted scout-coverage-live-footer-links">
           Also see <a href={withOrgHref("/scouting/lineup", null)}>Lineup</a>
         </p>

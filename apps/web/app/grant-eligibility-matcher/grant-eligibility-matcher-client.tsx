@@ -24,7 +24,7 @@ import {
   type GrantEligibilityMatcherShellKind,
 } from "../../lib/grant-eligibility-matcher/grant-eligibility-matcher-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./grant-eligibility-matcher.css";
 
 type LiveView = Extract<GrantEligibilityView, { status: "live" }>;
@@ -106,7 +106,7 @@ function MatcherShell({
   const actions = grantEligibilityMatcherNextActions({ orgId, shell });
   const copy = grantEligibilityMatcherShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "grant-eligibility-matcher", orgId);
-  const steps = shell === "setup" ? grantEligibilityMatcherSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? grantEligibilityMatcherSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page gem-page soft-gate">
@@ -137,36 +137,17 @@ function MatcherShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#grant-eligibility-profile">Complete team profile</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="gem-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="gem-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted gem-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -185,7 +166,10 @@ export default function GrantEligibilityMatcherClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/grant-eligibility-matcher${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/grant-eligibility-matcher${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as GrantEligibilityView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -237,6 +221,7 @@ export default function GrantEligibilityMatcherClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as GrantEligibilityView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -276,19 +261,6 @@ export default function GrantEligibilityMatcherClient() {
         orgId={orgId}
         shell="setup"
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </MatcherShell>
     );
   }

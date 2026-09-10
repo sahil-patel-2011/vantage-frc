@@ -31,6 +31,7 @@ import {
 import type { BusFactorArea, RiskLevel } from "../../lib/bus-factor/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./bus-factor.css";
 
 function riskTone(level: RiskLevel): BadgeTone {
@@ -105,7 +106,7 @@ function BusFactorShell({
   const actions = busFactorNextActions({ orgId, shell });
   const copy = busFactorShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "bus-factor", orgId);
-  const steps = shell === "setup" ? busFactorSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? busFactorSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page bus-factor-page soft-gate">
@@ -136,36 +137,17 @@ function BusFactorShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#bus-factor-log">Log a workload entry</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="bus-factor-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="bus-factor-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted bus-factor-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <BusFactorNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <BusFactorNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -186,7 +168,10 @@ export default function BusFactorClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (weeksQuery) query.set("weeks", String(weeksQuery));
-    void fetch(`/api/bus-factor${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/bus-factor${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as BusFactorView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -237,6 +222,7 @@ export default function BusFactorClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, windowWeeks: windowWeeks ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as BusFactorView | { error?: string };
         if (!response.ok || !("status" in data)) {

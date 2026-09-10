@@ -5,6 +5,7 @@ import {
   formatRobotWeighInMetric,
   robotWeighInNextActions,
   robotWeighInRelatedLinks,
+  robotWeighInSetupSteps,
   robotWeighInShellCopy,
   shouldShowRobotWeighInSummaryTiles,
 } from "./robot-weigh-in-related";
@@ -28,11 +29,24 @@ describe("robotWeighInRelatedLinks", () => {
   });
 });
 
+describe("robotWeighInSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(robotWeighInSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Readiness / Inspection / Spare Kit live on the related strip", () => {
+    const steps = robotWeighInSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("robotWeighInNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = robotWeighInNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((a) => a.id === "readiness")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
   });
 
   it("points empty boards at log-weigh-in", () => {

@@ -6,6 +6,7 @@ import {
   formatMatchDeltaWatcherRate,
   matchDeltaWatcherNextActions,
   matchDeltaWatcherRelatedLinks,
+  matchDeltaWatcherSetupSteps,
   matchDeltaWatcherShellCopy,
   shouldShowMatchDeltaWatcherSummaryTiles,
 } from "./match-delta-watcher-related";
@@ -29,11 +30,24 @@ describe("matchDeltaWatcherRelatedLinks", () => {
   });
 });
 
+describe("matchDeltaWatcherSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(matchDeltaWatcherSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Sync Team Data; Strategy / Pick List / Command live on the related strip", () => {
+    const steps = matchDeltaWatcherSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
+  });
+});
+
 describe("matchDeltaWatcherNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = matchDeltaWatcherNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
   });
 
   it("points empty boards at Strategy + Command", () => {

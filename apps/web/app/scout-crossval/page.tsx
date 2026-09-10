@@ -24,7 +24,7 @@ export default async function ScoutCrossvalPage({
     const related = scoutCrossvalRelatedLinks(null, {
       include: [...SCOUT_CROSSVAL_RELATED_INCLUDE],
     });
-    const steps = scoutCrossvalSetupSteps(null);
+    const setup = scoutCrossvalSetupSteps(null)[0];
     return (
       <main className="module-page scout-crossval-page soft-gate">
         <PageHeader
@@ -47,29 +47,10 @@ export default async function ScoutCrossvalPage({
           title={copy.title}
           description={copy.description}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
+            {setup?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
-        <section className="app-card soft-panel scout-crossval-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-crossval-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-crossval-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
         <p className="app-muted scout-crossval-footer-links">
           Also see <a href={withOrgHref("/scout-coverage-live", null)}>Coverage Live</a>
         </p>

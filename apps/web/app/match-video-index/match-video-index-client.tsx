@@ -29,7 +29,7 @@ import {
   type MatchVideoIndexShellKind,
 } from "../../lib/match-video-index/match-video-index-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./match-video-index.css";
 
 type LiveView = Extract<MatchVideoIndexView, { status: "live" }>;
@@ -93,7 +93,7 @@ function IndexShell({
   const actions = matchVideoIndexNextActions({ orgId, shell });
   const copy = matchVideoIndexShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "match-video-index", orgId);
-  const steps = shell === "setup" ? matchVideoIndexSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? matchVideoIndexSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page mvi-page soft-gate">
@@ -124,36 +124,17 @@ function IndexShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#match-video-index-add">Add a match video</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="mvi-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="mvi-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted mvi-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -171,7 +152,10 @@ export default function MatchVideoIndexClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/match-video-index${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/match-video-index${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as MatchVideoIndexView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -218,6 +202,7 @@ export default function MatchVideoIndexClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchVideoIndexView | { error?: string };
         if (!response.ok || !("status" in data)) {

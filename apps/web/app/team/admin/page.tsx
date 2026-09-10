@@ -1,9 +1,7 @@
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   TEAM_ADMIN_RELATED_INCLUDE,
-  teamAdminCardPrimaryHref,
-  teamAdminNextActions,
   teamAdminRelatedLinks,
   teamAdminSetupSteps,
   teamAdminShellCopy,
@@ -26,14 +24,10 @@ export default async function TeamAdminPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = teamAdminShellCopy("setup");
-    const cardPrimaryHref = teamAdminCardPrimaryHref(null);
-    const steps = teamAdminSetupSteps(null).filter((step) => step.href !== cardPrimaryHref);
+    const setup = teamAdminSetupSteps(null)[0];
     const related = teamAdminRelatedLinks(null, {
       include: [...TEAM_ADMIN_RELATED_INCLUDE],
     });
-    const actions = teamAdminNextActions({ orgId: null, shell: "setup" }).filter(
-      (action) => action.href !== cardPrimaryHref,
-    );
     return (
       <main className="module-page team-admin-page soft-gate">
         <PageHeader
@@ -57,52 +51,10 @@ export default async function TeamAdminPage({
           badge="Setup required"
           badgeTone="setup"
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
+            {setup?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
-        {steps.length > 0 ? (
-          <Panel className="team-admin-membership" aria-label="Setup steps">
-            <header>
-              <h2>Setup steps</h2>
-              <p className="app-muted">Finish these once and this page fills in.</p>
-            </header>
-            <ul className="team-admin-setup-steps">
-              {steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <p className="app-muted team-admin-tip">{step.detail}</p>
-                  </div>
-                  <Button as="a" variant="secondary" href={step.href}>
-                    Open
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
-        {actions.length > 0 ? (
-          <section className="app-card soft-panel team-admin-next-actions" aria-label="Next actions">
-            <header>
-              <h2>Next actions</h2>
-              <p className="app-muted">Each one opens the page where you finish the work.</p>
-            </header>
-            <ol>
-              {actions.map((action) => (
-                <li key={action.id} className={action.primary ? "primary" : undefined}>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.detail}</span>
-                  </div>
-                  <Button as="a" variant="secondary" href={action.href}>
-                    Open
-                  </Button>
-                </li>
-              ))}
-            </ol>
-          </section>
-        ) : null}
         <p className="app-muted" style={{ marginTop: "1rem" }}>
           After you pick a team, open{" "}
           <a href={withOrgHref("/team/admin", null)}>Team admin</a> again to manage real members and invites.

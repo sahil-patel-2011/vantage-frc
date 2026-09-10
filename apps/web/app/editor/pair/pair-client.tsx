@@ -15,7 +15,7 @@ import {
   type PairShellKind,
 } from "../../../lib/editor/pair-related";
 import { hubHref } from "../../../lib/nav/hubs";
-import { withOrgHref } from "../../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import "./pair.css";
 
 export type PairOrganization = { id: string; name: string; role: string };
@@ -85,7 +85,7 @@ function PairShell({
   const actions = pairNextActions({ orgId, shell });
   const copy = pairShellCopy(shell);
   const buildHref = hubHref("/build", "code", orgId);
-  const steps = shell === "setup" ? pairSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? pairSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page pair-page soft-gate">
@@ -117,32 +117,13 @@ function PairShell({
         title={copy.title}
         description={copy.description}
       >
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
-        ) : null}
+        {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="pair-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="pair-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted pair-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      <PairNextActionsPanel actions={actions} />
+      {shell === "ready" ? <PairNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -214,6 +195,7 @@ export default function PairClient({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code, orgId }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as {
         machineName?: string;

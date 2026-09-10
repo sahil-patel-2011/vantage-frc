@@ -26,7 +26,7 @@ import {
   type SpareRobotKitShellKind,
 } from "../../lib/spare-robot-kit/spare-robot-kit-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./spare-robot-kit.css";
 
 const PRIORITY_TONE: Record<KitPriority, BadgeTone | undefined> = {
@@ -101,7 +101,7 @@ function KitShell({
   const actions = spareRobotKitNextActions({ orgId, shell });
   const copy = spareRobotKitShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "spare-robot-kit", orgId);
-  const steps = shell === "setup" ? spareRobotKitSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? spareRobotKitSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page srk-page soft-gate">
@@ -132,36 +132,17 @@ function KitShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="srk-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="srk-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted srk-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -182,7 +163,10 @@ export default function SpareRobotKitClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/spare-robot-kit${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/spare-robot-kit${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as SpareRobotKitView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -232,6 +216,7 @@ export default function SpareRobotKitClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as SpareRobotKitView | { error?: string };
         if (!response.ok || !("status" in data)) {

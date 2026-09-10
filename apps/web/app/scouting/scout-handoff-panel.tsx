@@ -96,7 +96,7 @@ function QrHandoffShell({
 }) {
   const actions = qrHandoffNextActions({ orgId, shell });
   const copy = qrHandoffShellCopy(shell);
-  const steps = shell === "setup" ? qrHandoffSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? qrHandoffSetupSteps(orgId)[0] : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const offlineHref = withOrgHref("/offline", orgId);
 
@@ -135,9 +135,9 @@ function QrHandoffShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Choose your team"}
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
@@ -151,27 +151,6 @@ function QrHandoffShell({
           </>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="scout-qr-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-qr-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
       <QrHandoffNextActionsPanel actions={actions} />
     </div>
   );

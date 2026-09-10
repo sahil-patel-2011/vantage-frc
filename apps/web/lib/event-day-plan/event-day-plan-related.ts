@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Event-Day Stress Planner (never DEMO schedule blocks). */
 export const EVENT_DAY_PLAN_RELATED_LINKS = [
@@ -68,33 +69,41 @@ export type EventDayPlanSetupStepLink = {
   href: string;
 };
 
+function eventDayPlanRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    eventDayPlanRelatedLinks(orgId, {
+      include: [...EVENT_DAY_PLAN_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = eventDayPlanRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function eventDayPlanSetupSteps(orgId?: string | null): EventDayPlanSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open event-day plans.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open event-day plans.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "team-data",
+      label: "Sync Team Data",
+      detail: "Pull the match schedule from The Blue Alliance so the day plan can fill in.",
+      href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Confirm the active event and match schedule.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "battery-rotation",
-      label: "Open Battery Rotation",
-      detail: "Charge windows overlay on the same hourly plan.",
-      href: hubHref("/competition", "battery-rotation", orgId),
-    },
-    {
-      id: "pit-repair-triage",
-      label: "Open Pit Repair Triage",
-      detail: "Repair windows stay blank until real pit work is logged.",
-      href: hubHref("/competition", "pit-repair-triage", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real block / conflict counts only — never invent DEMO totals. */
@@ -183,50 +192,7 @@ export function eventDayPlanNextActions(input: {
   const conflictCount = input.conflictCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before adding blocks.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "command",
-          label: "Open Command",
-          detail: "Event Day stays blank until real schedule data exists.",
-          href: hubHref("/competition", "command", null),
-        },
-        {
-          id: "battery-rotation",
-          label: "Open Battery Rotation",
-          detail: "Charge planners stay empty until real batteries exist.",
-          href: hubHref("/competition", "battery-rotation", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Event-Day Plan can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "command",
-        label: "Open Command",
-        detail: "Confirm active event before overlaying the day.",
-        href: hubHref("/competition", "command", orgId),
-      },
-      {
-        id: "battery-rotation",
-        label: "Open Battery Rotation",
-        detail: "Align charge windows with the hourly plan.",
-        href: hubHref("/competition", "battery-rotation", orgId),
-      },
-    ];
+    return setupActionsFrom(eventDayPlanSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

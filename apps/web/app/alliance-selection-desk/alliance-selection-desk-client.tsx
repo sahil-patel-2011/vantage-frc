@@ -405,21 +405,7 @@ export default function AllianceSelectionDeskClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-      </DeskShell>
+      />
     );
   }
 

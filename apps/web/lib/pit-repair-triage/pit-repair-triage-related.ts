@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Pit Repair Triage (never DEMO fix/swap calls). */
 export const PIT_REPAIR_TRIAGE_RELATED_LINKS = [
@@ -66,33 +67,41 @@ export type PitRepairTriageSetupStepLink = {
   href: string;
 };
 
+function pitRepairTriageRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    pitRepairTriageRelatedLinks(orgId, {
+      include: [...PIT_REPAIR_TRIAGE_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = pitRepairTriageRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function pitRepairTriageSetupSteps(orgId?: string | null): PitRepairTriageSetupStepLink[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open triage reports.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
-    {
-      id: "fmea",
-      label: "Open FMEA",
-      detail: "Prior failure history grounds fix-vs-swap calls.",
-      href: hubHref("/build", "fmea", orgId),
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open triage reports.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "inventory",
       label: "Open Inventory",
       detail: "Spare stock on hand drives swap recommendations.",
       href: withOrgHref("/inventory", orgId),
     },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Match countdown informs minutes-until-next-match triage.",
-      href: hubHref("/competition", "command", orgId),
-    },
-  ];
+  ]);
 }
 
 export function formatPitRepairTriageMetric(value: unknown, loaded: boolean): string {
@@ -177,38 +186,7 @@ export function pitRepairTriageNextActions(input: {
   const openCount = input.openCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before logging failures.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "fmea",
-          label: "Open FMEA",
-          detail: "Prior failure history stays blank until modes are logged.",
-          href: hubHref("/build", "fmea", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Pit Repair Triage can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "fmea",
-        label: "Open FMEA",
-        detail: "Log subsystem failures that ground triage.",
-        href: hubHref("/build", "fmea", orgId),
-      },
-    ];
+    return setupActionsFrom(pitRepairTriageSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

@@ -28,7 +28,7 @@ import {
   type HoursSelfViewShellKind,
 } from "../../lib/hours-self-view/hours-self-view-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./hours-self-view.css";
 
 type LiveView = Extract<HoursSelfViewView, { status: "live" }>;
@@ -102,7 +102,7 @@ function HoursShell({
   const actions = hoursSelfViewNextActions({ orgId, shell });
   const copy = hoursSelfViewShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "hours-self-view", orgId);
-  const steps = shell === "setup" ? hoursSelfViewSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? hoursSelfViewSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page hsv-page soft-gate">
@@ -133,36 +133,17 @@ function HoursShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={hubHref("/team", "attendance", orgId)}>Open Attendance</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="hsv-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="hsv-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted hsv-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -180,7 +161,10 @@ export default function HoursSelfViewClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/hours-self-view${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/hours-self-view${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as HoursSelfViewView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -228,6 +212,7 @@ export default function HoursSelfViewClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as HoursSelfViewView | { error?: string };
         if (!response.ok || !("status" in data)) {

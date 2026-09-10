@@ -26,8 +26,8 @@ import {
   type FieldResetTimerNextAction,
   type FieldResetTimerShellKind,
 } from "../../lib/field-reset-timer/field-reset-timer-related";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./field-reset-timer.css";
 
 function tierTone(tier: FieldResetTimerTier): BadgeTone {
@@ -101,7 +101,7 @@ function TimerShell({
   const actions = fieldResetTimerNextActions({ orgId, shell });
   const copy = fieldResetTimerShellCopy(shell);
   const teamHref = hubWorkbenchHref("team", "field-reset-timer", orgId);
-  const steps = shell === "setup" ? fieldResetTimerSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? fieldResetTimerSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page frt-page soft-gate">
@@ -132,36 +132,19 @@ function TimerShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/team", "practice", orgId)}>Open Practice</Button>
+            <Button as="a" variant="primary" href="#field-reset-new-session">
+              Create a practice session
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="frt-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="frt-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted frt-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -183,7 +166,10 @@ export default function FieldResetTimerClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/field-reset-timer${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/field-reset-timer${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as FieldResetTimerView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -232,6 +218,7 @@ export default function FieldResetTimerClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as FieldResetTimerView | { error?: string };
         if (!response.ok || !("status" in data)) {

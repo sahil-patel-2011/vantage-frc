@@ -34,8 +34,8 @@ import {
   type BinShelfLocatorShellKind,
 } from "../../lib/bin-shelf-locator/bin-shelf-locator-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { cameraScanSupported, openRearCamera, renderQrDataUrl, scanQrFromCamera } from "../../lib/scouting/qr-camera";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./bin-shelf-locator.css";
 
 type LiveView = Extract<BinShelfLocatorView, { status: "live" }>;
@@ -99,7 +99,7 @@ function LocatorShell({
   const actions = binShelfLocatorNextActions({ orgId, shell });
   const copy = binShelfLocatorShellCopy(shell);
   const buildHref = hubWorkbenchHref("build", "bin-shelf-locator", orgId);
-  const steps = shell === "setup" ? binShelfLocatorSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? binShelfLocatorSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page bsl-page soft-gate">
@@ -130,36 +130,17 @@ function LocatorShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#bin-shelf-locations">Map the first location</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="bsl-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="bsl-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted bsl-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -177,7 +158,10 @@ export default function BinShelfLocatorClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/bin-shelf-locator${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/bin-shelf-locator${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as BinShelfLocatorView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -231,6 +215,7 @@ export default function BinShelfLocatorClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as BinShelfLocatorView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -270,21 +255,6 @@ export default function BinShelfLocatorClient() {
         orgId={orgId}
         shell="setup"
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href.startsWith("/") ? (orgId ? withOrgHref(step.href, orgId) : step.href) : step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </LocatorShell>
     );
   }
@@ -677,8 +647,7 @@ function ScanToFind({ orgId }: { orgId: string }) {
         setScanError("Scanned code isn't a Bin/Shelf Locator item label.");
         return;
       }
-      const response = await fetch(
-        `/api/bin-shelf-locator?orgId=${encodeURIComponent(orgId)}&findItem=${encodeURIComponent(decoded.id)}`,
+      const response = await fetch(`/api/bin-shelf-locator?orgId=${encodeURIComponent(orgId)}&findItem=${encodeURIComponent(decoded.id)}`,
       );
       const data = (await response.json()) as BinShelfFindResult | { error?: string };
       if (!response.ok || !("itemId" in data)) {

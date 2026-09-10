@@ -30,7 +30,7 @@ import {
   type EventDayPlanShellKind,
 } from "../../lib/event-day-plan/event-day-plan-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./event-day-plan.css";
 
 type LiveView = Extract<EventDayPlanView, { status: "live" }>;
@@ -120,7 +120,7 @@ function PlanShell({
   const actions = eventDayPlanNextActions({ orgId, shell });
   const copy = eventDayPlanShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "event-day-plan", orgId);
-  const steps = shell === "setup" ? eventDayPlanSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? eventDayPlanSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page edp-page soft-gate">
@@ -151,36 +151,17 @@ function PlanShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#event-day-plan-add">Add the first block</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="edp-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="edp-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted edp-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -204,7 +185,10 @@ export default function EventDayPlanClient() {
     const nextEvent = overrides?.eventKey ?? eventKey;
     if (nextDate) query.set("planDate", nextDate);
     if (nextEvent) query.set("eventKey", nextEvent);
-    void fetch(`/api/event-day-plan${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/event-day-plan${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as EventDayPlanView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -263,6 +247,7 @@ export default function EventDayPlanClient() {
             eventKey: eventKey ?? undefined,
             ...payload,
           }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as EventDayPlanView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -303,21 +288,7 @@ export default function EventDayPlanClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-      </PlanShell>
+      />
     );
   }
 

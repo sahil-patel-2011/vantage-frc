@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Match-Delta Watcher (never DEMO upset %). */
 export const MATCH_DELTA_WATCHER_RELATED_LINKS = [
@@ -67,33 +68,41 @@ export type MatchDeltaWatcherSetupStepLink = {
   href: string;
 };
 
+function matchDeltaWatcherRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    matchDeltaWatcherRelatedLinks(orgId, {
+      include: [...MATCH_DELTA_WATCHER_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = matchDeltaWatcherRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function matchDeltaWatcherSetupSteps(orgId?: string | null): MatchDeltaWatcherSetupStepLink[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open match deltas.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open match deltas.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "team-data",
+      label: "Sync Team Data",
+      detail: "Pull official results from The Blue Alliance so deltas can appear.",
+      href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Score real predictions so official results have something to diverge from.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "picklist-collab",
-      label: "Open Pick List",
-      detail: "Priorities stay blank until your team ranks real alliance targets.",
-      href: hubHref("/competition", "picklist-collab", orgId),
-    },
-    {
-      id: "command",
-      label: "Open Command",
-      detail: "Confirm the active event so TBA results can land against predictions.",
-      href: hubHref("/competition", "command", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real watched-match / alert counts only — never invent DEMO totals. */
@@ -194,50 +203,7 @@ export function matchDeltaWatcherNextActions(input: {
   const unacknowledgedCount = input.unacknowledgedCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before scanning results.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Predictions stay blank until your team scores real matches.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "command",
-          label: "Open Command",
-          detail: "Event Day stays blank until a real event is pinned.",
-          href: hubHref("/competition", "command", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so Match-Delta Watcher can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Score predictions before official results can diverge.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "picklist-collab",
-        label: "Open Pick List",
-        detail: "Alliance priorities feed pick-list upset alerts.",
-        href: hubHref("/competition", "picklist-collab", orgId),
-      },
-    ];
+    return setupActionsFrom(matchDeltaWatcherSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

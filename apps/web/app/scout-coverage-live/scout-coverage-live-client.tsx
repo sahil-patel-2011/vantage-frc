@@ -28,6 +28,7 @@ import {
 } from "../../lib/scout-coverage-live/scout-coverage-live-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scout-coverage-live.css";
 
 const statusToneMap: Record<CoverageStatus, BadgeTone> = {
@@ -110,7 +111,7 @@ function ScoutCoverageLiveShell({
   const actions = scoutCoverageLiveNextActions({ orgId, shell });
   const copy = scoutCoverageLiveShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? scoutCoverageLiveSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? scoutCoverageLiveSetupSteps(orgId)[0] : null;
   const commandHref = hubHref("/competition", "command", orgId);
 
   return (
@@ -148,36 +149,17 @@ function ScoutCoverageLiveShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href={commandHref}>Sync event schedule</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="scout-coverage-live-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-coverage-live-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-coverage-live-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ScoutCoverageLiveNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <ScoutCoverageLiveNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -200,7 +182,10 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (urlEvent) query.set("eventKey", urlEvent);
-    void fetch(`/api/scout-coverage-live${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/scout-coverage-live${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -232,6 +217,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, eventKey, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
         if (!response.ok || !("status" in data)) {

@@ -24,7 +24,7 @@ export default async function ScoutAccuracyPage({
     const related = scoutAccuracyRelatedLinks(null, {
       include: [...SCOUT_ACCURACY_RELATED_INCLUDE],
     });
-    const steps = scoutAccuracySetupSteps(null);
+    const setup = scoutAccuracySetupSteps(null)[0];
     return (
       <main className="module-page scout-accuracy-page soft-gate">
         <PageHeader
@@ -50,29 +50,10 @@ export default async function ScoutAccuracyPage({
           title={copy.title}
           description={copy.description}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
+            {setup?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
-        <section className="app-card soft-panel scout-accuracy-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-accuracy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-accuracy-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
         <p className="app-muted scout-accuracy-footer-links">
           Also see <a href={withOrgHref("/scouting/lineup", null)}>Coverage</a>
         </p>

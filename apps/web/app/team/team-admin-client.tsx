@@ -16,7 +16,6 @@ import {
   teamAdminCardPrimaryHref,
   teamAdminNextActions,
   teamAdminRelatedLinks,
-  teamAdminSetupSteps,
   teamAdminShellCopy,
   shouldShowTeamAdminSummaryTiles,
 } from "../../lib/team/team-admin-related";
@@ -460,12 +459,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const membershipRelated = teamAdminRelatedLinks(orgId, {
     include: [...TEAM_ADMIN_RELATED_INCLUDE],
   });
-  const membershipSteps =
-    membershipShell === "setup"
-      ? teamAdminSetupSteps(orgId).filter(
-          (step) => !membershipCardPrimary || step.href !== membershipCardPrimary,
-        )
-      : [];
   const showMembershipTiles = shouldShowTeamAdminSummaryTiles({
     memberCount: members.length,
     inviteCount: invites.length,
@@ -614,29 +607,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </EmptyState>
         ) : null}
 
-        {membershipSteps.length > 0 ? (
-          <Panel className="team-admin-membership" aria-label="Membership setup steps">
-            <header>
-              <h2>Setup steps</h2>
-              <p className="app-muted">Finish these once and this page fills in.</p>
-            </header>
-            <ul className="team-admin-setup-steps">
-              {membershipSteps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <p className="app-muted team-admin-tip">{step.detail}</p>
-                  </div>
-                  <Button as="a" variant="secondary" href={step.href}>
-                    Open
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+        {membershipShell === "ready" ? (
+          <MembershipNextActionsPanel actions={membershipActions} />
         ) : null}
-
-        <MembershipNextActionsPanel actions={membershipActions} />
 
         {showMembershipTiles ? (
           <div className="team-admin-metrics" aria-label="Membership metrics">

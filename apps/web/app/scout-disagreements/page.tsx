@@ -24,7 +24,7 @@ export default async function ScoutDisagreementsPage({
     const related = scoutDisagreementsRelatedLinks(null, {
       include: [...SCOUT_DISAGREEMENTS_RELATED_INCLUDE],
     });
-    const steps = scoutDisagreementsSetupSteps(null);
+    const setup = scoutDisagreementsSetupSteps(null)[0];
     return (
       <main className="module-page scout-disagreements-page soft-gate">
         <PageHeader
@@ -50,29 +50,10 @@ export default async function ScoutDisagreementsPage({
           title={copy.title}
           description={copy.description}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
+            {setup?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
-        <section className="app-card soft-panel scout-disagreements-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="scout-disagreements-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted scout-disagreements-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
         <p className="app-muted scout-disagreements-footer-links">
           Also see <a href={withOrgHref("/scout-accuracy", null)}>Accuracy</a>
           {" · "}

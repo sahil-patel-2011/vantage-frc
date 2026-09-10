@@ -30,7 +30,7 @@ import {
   type ScoutingHeatSignalsShellKind,
 } from "../../lib/scouting-heat-signals/scouting-heat-signals-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scouting-heat-signals.css";
 
 const directionToneMap: Record<HeatDirection, BadgeTone> = {
@@ -110,7 +110,7 @@ function HeatShell({
   const actions = scoutingHeatSignalsNextActions({ orgId, shell });
   const copy = scoutingHeatSignalsShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "scouting-heat-signals", orgId);
-  const steps = shell === "setup" ? scoutingHeatSignalsSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? scoutingHeatSignalsSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page shs-page soft-gate">
@@ -141,36 +141,17 @@ function HeatShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#scouting-heat-log">Log a heat signal</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="shs-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="shs-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted shs-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -188,7 +169,10 @@ export default function ScoutingHeatSignalsClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/scouting-heat-signals${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/scouting-heat-signals${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as ScoutingHeatSignalsView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -236,6 +220,7 @@ export default function ScoutingHeatSignalsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutingHeatSignalsView | { error?: string };
         if (!response.ok || !("status" in data)) {

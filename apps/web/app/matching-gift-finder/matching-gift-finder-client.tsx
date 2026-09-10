@@ -32,7 +32,7 @@ import {
   type MatchingGiftFinderShellKind,
 } from "../../lib/matching-gift-finder/matching-gift-finder-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./matching-gift-finder.css";
 
 type LiveView = Extract<MatchingGiftFinderView, { status: "live" }>;
@@ -96,7 +96,7 @@ function GiftShell({
   const actions = matchingGiftFinderNextActions({ orgId, shell });
   const copy = matchingGiftFinderShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "matching-gift-finder", orgId);
-  const steps = shell === "setup" ? matchingGiftFinderSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? matchingGiftFinderSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page mgf-page soft-gate">
@@ -127,36 +127,17 @@ function GiftShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
           ) : null}
           {shell === "empty" ? (
             <Button as="a" variant="primary" href="#matching-gift-contacts">Add a household contact</Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="mgf-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="mgf-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted mgf-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <NextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <NextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -175,7 +156,10 @@ export default function MatchingGiftFinderClient() {
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/matching-gift-finder${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/matching-gift-finder${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as MatchingGiftFinderView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -226,6 +210,7 @@ export default function MatchingGiftFinderClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchingGiftFinderView | { error?: string; code?: string };
         if (!response.ok || !("status" in data)) {
@@ -271,21 +256,6 @@ export default function MatchingGiftFinderClient() {
         orgId={orgId}
         shell="setup"
       >
-        {view?.status === "setup_required" && view.steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href.startsWith("/") ? (orgId ? withOrgHref(step.href, orgId) : step.href) : step.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </GiftShell>
     );
   }
