@@ -44,6 +44,8 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/packing")).toBe(true);
     expect(pathnameIsOfflineShell("/batteries")).toBe(true);
     expect(pathnameIsOfflineShell("/my-day")).toBe(true);
+    expect(pathnameIsOfflineShell("/chemistry")).toBe(true);
+    expect(pathnameIsOfflineShell("/pick-clock")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -64,6 +66,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/my-day")).toBe("My Day");
     expect(offlineCapableLabel("/schedule")).toBe("Schedule");
     expect(offlineCapableLabel("/command")).toBe("Event Day");
+    expect(offlineCapableLabel("/chemistry")).toBe("Chemistry");
+    expect(offlineCapableLabel("/pick-clock")).toBe("Pick clock");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -86,6 +90,8 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("my-day", "org-1")).toBe("my-day:org-1");
     expect(featureCacheKey("dashboard", "org-1")).toBe("dashboard:org-1");
     expect(featureCacheKey("assembly-manual", "org-1")).toBe("assembly-manual:org-1");
+    expect(featureCacheKey("chemistry", "org-1")).toBe("chemistry:org-1");
+    expect(featureCacheKey("pick-clock", "org-1")).toBe("pick-clock:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

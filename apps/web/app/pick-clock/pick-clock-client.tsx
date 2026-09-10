@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PICK_CLOCK_RELATED_INCLUDE,
@@ -24,6 +25,7 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./pick-clock.css";
 
 type PickClockView =
@@ -63,6 +65,12 @@ type PickClockView =
       orgId: string | null;
       eventKey: string | null;
     };
+
+function isPickClockView(value: unknown): value is PickClockView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return row.status === "ready" || row.status === "setup_required";
+}
 
 function teamDisplay(rec: PickClockRecommendation): string {
   if (rec.teamNumber != null) return String(rec.teamNumber);
@@ -132,6 +140,8 @@ function PickClockShell({
   error,
   errorStatus,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
   children,
 }: {
   orgId?: string | null;
@@ -140,6 +150,8 @@ function PickClockShell({
   /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
   children?: ReactNode;
 }) {
   const copy = pickClockShellCopy(shell);
@@ -173,6 +185,7 @@ function PickClockShell({
       >
         <PickClockRelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Pick clock" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       <EmptyState
         soft
@@ -227,6 +240,10 @@ export default function PickClockClient({
   const [writing, setWriting] = useState(false);
   const [pickMessage, setPickMessage] = useState("");
   const [conflict, setConflict] = useState<{ message: string } | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PickClockView | null>(null);
+  viewRef.current = view;
 
   useEffect(() => {
     const seeded = initialOrgId?.trim() || readOrgIdFromSearch(window.location.search) || "";
@@ -249,7 +266,20 @@ export default function PickClockClient({
       setFetchFailed(false);
       return;
     }
-    setLoading(true);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<PickClockView>("pick-clock", id);
+      if (!viewRef.current && cached?.data && isPickClockView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoading(false);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setLoading(true);
     setFetchFailed(false);
     setErrorStatus(null);
     try {
@@ -260,11 +290,17 @@ export default function PickClockClient({
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PickClockView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load pick clock.");
-        setErrorStatus(response.status);
-        setView(null);
-        setFetchFailed(true);
+      if (!response.ok || !("status" in data) || !isPickClockView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Pick clock. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load pick clock.");
+          setErrorStatus(response.status);
+          setView(null);
+          setFetchFailed(true);
+        }
         setLoading(false);
         return;
       }
@@ -272,12 +308,25 @@ export default function PickClockClient({
       setView(data);
       setFetchFailed(false);
       setSkipOffset(0);
+      setFromCache(false);
+      setCachedAt(null);
       if (data.status === "ready" && data.orgId) setOrgId(data.orgId);
       if (data.status === "setup_required" && data.orgId) setOrgId(data.orgId);
+      try {
+        await putFeatureSnapshot("pick-clock", id, data);
+      } catch {
+        // Live Pick clock already painted; IndexedDB is best-effort.
+      }
     } catch {
-      setError("Could not reach the pick clock API.");
-      setView(null);
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Pick clock. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setError("Could not load pick clock.");
+        setView(null);
+        setFetchFailed(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -333,7 +382,7 @@ export default function PickClockClient({
         setStartedAt(null);
         await load(orgId);
       } catch {
-        setPickMessage("Could not reach the pick clock API — the pick was not recorded.");
+        setPickMessage("Could not record the pick. Check your connection and try again.");
       } finally {
         setWriting(false);
       }
@@ -375,6 +424,8 @@ export default function PickClockClient({
         }
         shell={shell}
         errorStatus={errorStatus}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         error={
           shell === "error"
             ? error || "Could not load pick clock."
@@ -415,6 +466,8 @@ export default function PickClockClient({
       <PickClockShell
         orgId={resolvedOrgId}
         shell="empty"
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         error={
           excludedCount > 0
             ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
@@ -445,6 +498,8 @@ export default function PickClockClient({
           Refresh
         </Button>
       </PageHeader>
+
+      <OfflineBanner feature="Pick clock" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {pickMessage ? (

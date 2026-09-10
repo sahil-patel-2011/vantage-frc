@@ -26,7 +26,9 @@ export type OfflineFeature =
   | "pit"
   | "season-tasks"
   | "schedule"
-  | "assembly-manual";
+  | "assembly-manual"
+  | "chemistry"
+  | "pick-clock";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

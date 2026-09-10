@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../../components/icon";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 import {
@@ -20,7 +21,18 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./chemistry.css";
+
+function isChemistryView(value: unknown): value is ChemistryView {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    (row.status === "live" || row.status === "setup_required" || row.status === "empty") &&
+    typeof row.orgId === "string" &&
+    Array.isArray(row.teamKeys)
+  );
+}
 
 function ChemistryRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = chemistryRelatedLinks(orgId, {
@@ -72,6 +84,8 @@ function ChemistryShell({
   error,
   errorStatus,
   onRetry,
+  fromCache = false,
+  cachedAt = null,
   children,
 }: {
   orgId?: string | null;
@@ -80,6 +94,8 @@ function ChemistryShell({
   /** HTTP status of the failed load, so an expired session offers sign-in over Retry. */
   errorStatus?: number | null;
   onRetry?: () => void;
+  fromCache?: boolean;
+  cachedAt?: string | null;
   children?: ReactNode;
 }) {
   const copy = chemistryShellCopy(shell);
@@ -112,6 +128,7 @@ function ChemistryShell({
       >
         <ChemistryRelatedStrip orgId={orgId} />
       </PageHeader>
+      <OfflineBanner feature="Chemistry" fromCache={fromCache} cachedAt={cachedAt} />
       {children}
       <EmptyState
         soft
@@ -165,6 +182,10 @@ export default function ChemistryClient({
   const [saving, setSaving] = useState<string>("");
   const [saveMessage, setSaveMessage] = useState("");
   const [savedPickListId, setSavedPickListId] = useState<string>("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ChemistryView | null>(null);
+  viewRef.current = view;
 
   useEffect(() => {
     const teams = new URLSearchParams(window.location.search).get("teams") ?? "";
@@ -190,10 +211,26 @@ export default function ChemistryClient({
         setFetchFailed(false);
         return;
       }
-      setLoading(true);
+      const list = (teams ?? draft).trim();
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<ChemistryView>("chemistry", id, list);
+        if (!viewRef.current && cached?.data && isChemistryView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          setLoading(false);
+          hadCache = true;
+          if (!list && cached.data.teamKeys.length) {
+            setDraft(cached.data.teamKeys.map((key) => key.replace(/^frc/i, "")).join(", "));
+          }
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      if (!hadCache) setLoading(true);
       setFetchFailed(false);
       const params = new URLSearchParams({ orgId: id });
-      const list = (teams ?? draft).trim();
       if (list) params.set("teams", list);
       try {
         const response = await fetch(`/api/chemistry?${params}`, {
@@ -201,14 +238,23 @@ export default function ChemistryClient({
         });
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
-          setError(body.error ?? "Could not load chemistry");
-          setErrorStatus(response.status);
-          setView(null);
-          setFetchFailed(true);
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh alliance chemistry. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setError(typeof body.error === "string" ? body.error : "Could not load alliance chemistry.");
+            setErrorStatus(response.status);
+            setView(null);
+            setFetchFailed(true);
+          }
           setLoading(false);
           return;
         }
         const data = (await response.json()) as ChemistryView;
+        if (!isChemistryView(data)) {
+          throw new Error("Could not load alliance chemistry.");
+        }
         setView(data);
         if (!list && data.teamKeys.length) {
           setDraft(data.teamKeys.map((key) => key.replace(/^frc/i, "")).join(", "));
@@ -216,11 +262,24 @@ export default function ChemistryClient({
         setError("");
         setErrorStatus(null);
         setFetchFailed(false);
+        setFromCache(false);
+        setCachedAt(null);
+        try {
+          await putFeatureSnapshot("chemistry", id, data, list);
+        } catch {
+          // Live chemistry already painted; IndexedDB is best-effort.
+        }
       } catch {
-        setError("Could not load chemistry");
-        setErrorStatus(null);
-        setView(null);
-        setFetchFailed(true);
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh alliance chemistry. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("Could not load alliance chemistry.");
+          setErrorStatus(null);
+          setView(null);
+          setFetchFailed(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -310,6 +369,8 @@ export default function ChemistryClient({
         orgId={view?.orgId ?? (orgId || null)}
         shell={shell}
         errorStatus={errorStatus}
+        fromCache={fromCache}
+        cachedAt={cachedAt}
         error={
           shell === "error"
             ? error || "Could not load alliance chemistry."
@@ -352,6 +413,8 @@ export default function ChemistryClient({
       >
         <ChemistryRelatedStrip orgId={orgId} />
       </PageHeader>
+
+      <OfflineBanner feature="Chemistry" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {saveMessage ? (

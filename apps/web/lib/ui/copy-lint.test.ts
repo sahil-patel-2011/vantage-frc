@@ -156,6 +156,11 @@ const RULES: readonly Rule[] = [
     why: 'say "Choose a page"',
   },
   {
+    label: "Select a run",
+    pattern: /\bSelect a run\b/,
+    why: 'say "Choose a run"',
+  },
+  {
     // "Set the real build-season window — no sample timelines." The em-dash
     // clause is the tell: everything before it is the instruction, everything
     // after it is the product promising it did not make the data up. Lower-case
@@ -252,6 +257,7 @@ const SELECT_RULES = RULES.filter((rule) =>
     "Select one and come back",
     "Select the team",
     "Select a page",
+    "Select a run",
   ].includes(
     rule.label,
   ),

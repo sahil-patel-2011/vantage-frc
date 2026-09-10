@@ -49,6 +49,8 @@ const SHELL_ROUTES = [
   "/packing",
   "/batteries",
   "/my-day",
+  "/chemistry",
+  "/pick-clock",
 ];
 
 function isShellPath(pathname) {

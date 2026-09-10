@@ -31,6 +31,8 @@ export const OFFLINE_SHELL_ROUTES = [
   "/packing",
   "/batteries",
   "/my-day",
+  "/chemistry",
+  "/pick-clock",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -78,6 +80,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";
   if (bare.startsWith("/my-day")) return "My Day";
+  if (bare.startsWith("/chemistry")) return "Chemistry";
+  if (bare.startsWith("/pick-clock")) return "Pick clock";
   return null;
 }
 

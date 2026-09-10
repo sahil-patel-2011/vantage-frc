@@ -364,7 +364,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             <p>Tools used, truncated results, and the final answer.</p>
           </header>
           {!selectedRun ? (
-            <p className="aa-muted">Select a run or start a new goal.</p>
+            <p className="aa-muted">Choose a run or start a new goal.</p>
           ) : (
             <>
               <div className="aa-status-row">
