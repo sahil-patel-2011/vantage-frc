@@ -93,6 +93,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/command` | Event Day not on the service-worker shell list | this commit |
 | Product CSS | leaf sheets still consumed `--soft-*` color aliases | this commit |
 | `/code` Bugbot | scan time unprinted; "BYO key" / `feature=coding` on student chrome | this commit |
+| Fixture walk | `/` `/dashboard` `/bugbot` `/connectors` `/offline` under `E2E_AUTH_FIXTURE` | this commit |
 
 ---
 
