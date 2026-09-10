@@ -3,6 +3,7 @@
 import { Badge, Button } from "../../components/ui";
 import {
   dashboardSetupBannerLabel,
+  dashboardSetupBannerPrimary,
   dashboardSetupBlurb,
   dashboardSetupTitle,
   type DashboardNextAction,
@@ -20,10 +21,7 @@ export function DashboardSetupBanner({
   setupSteps: DashboardSetupStep[];
 }) {
   if (shell === "ready") return null;
-  const primary =
-    nextActions.find((action) => action.primary) ??
-    setupSteps.find((step) => step.state === "current") ??
-    null;
+  const primary = dashboardSetupBannerPrimary(shell, nextActions, setupSteps);
   const href = primary && "href" in primary ? primary.href : "#";
   const label = primary ? dashboardSetupBannerLabel(primary) : null;
 

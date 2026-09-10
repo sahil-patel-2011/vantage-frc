@@ -1,3 +1,5 @@
+import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
+
 /** One in-flight /api/me read shared by AppShell, Home, and other product pages. */
 
 export type ProductSession = {
@@ -51,7 +53,10 @@ export function fetchProductSession(orgId?: string | null): Promise<ProductSessi
     return cache.data !== undefined ? Promise.resolve(cache.data) : cache.promise;
   }
 
-  const promise = fetch(productSessionUrl(key), { cache: "no-store" })
+  const promise = fetch(productSessionUrl(key), {
+    cache: "no-store",
+    signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+  })
     .then(async (response) => (response.ok ? ((await response.json()) as ProductSession) : null))
     .then((data) => {
       if (cache?.promise === promise) {

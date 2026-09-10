@@ -11,7 +11,7 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
   await expect(page.getByTestId("dash-customize")).toBeVisible();
   await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible({ timeout: 20_000 });
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {

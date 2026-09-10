@@ -454,7 +454,7 @@ export function DashboardHomeView(props: {
         />
       ) : null}
 
-      {meLoaded && dashShell !== "ready" ? (
+      {dashShell !== "ready" ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} />
       ) : null}
 

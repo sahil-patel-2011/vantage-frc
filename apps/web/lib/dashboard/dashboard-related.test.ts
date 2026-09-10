@@ -5,6 +5,7 @@ import {
   dashboardHubLinks,
   dashboardNextActions,
   dashboardSetupBannerLabel,
+  dashboardSetupBannerPrimary,
   dashboardSetupSteps,
 } from "./dashboard-related";
 
@@ -99,6 +100,14 @@ describe("dashboard Soft-UI related", () => {
       hasAiProvider: true,
     });
     expect(actions).toEqual([]);
+  });
+
+  it("holds the First-run region during a hung session without an invite CTA", () => {
+    const steps = dashboardSetupSteps({ orgId: null });
+    expect(dashboardSetupBannerPrimary("loading", [], steps)).toBeNull();
+    expect(dashboardSetupBannerPrimary("ready", [], steps)).toBeNull();
+    const noOrg = dashboardNextActions({ orgId: null, shell: "no_org" });
+    expect(dashboardSetupBannerPrimary("no_org", noOrg, steps)?.id).toBe("invite");
   });
 
   it("uses student words for the first-run banner CTA", () => {

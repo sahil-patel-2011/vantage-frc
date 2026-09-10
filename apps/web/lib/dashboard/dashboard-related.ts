@@ -236,8 +236,12 @@ export function dashboardSetupTitle(shell: DashboardShellKind): string {
       return "Connect TBA";
     case "loading":
       return "Loading…";
-    default:
+    case "ready":
       return "Home";
+    default: {
+      const _exhaustive: never = shell;
+      return _exhaustive;
+    }
   }
 }
 
@@ -251,8 +255,40 @@ export function dashboardSetupBlurb(shell: DashboardShellKind): string {
       return "Sync The Blue Alliance for live match data.";
     case "loading":
       return "Checking your team.";
-    default:
+    case "ready":
       return "";
+    default: {
+      const _exhaustive: never = shell;
+      return _exhaustive;
+    }
+  }
+}
+
+/**
+ * Invite/TBA CTAs wait until /api/me resolves. A hung session must still paint
+ * the First-run region (Loading… / Checking your team) so Home is never blank.
+ */
+export function dashboardSetupBannerPrimary(
+  shell: DashboardShellKind,
+  nextActions: DashboardNextAction[],
+  setupSteps: DashboardSetupStep[],
+): DashboardNextAction | DashboardSetupStep | null {
+  switch (shell) {
+    case "loading":
+    case "ready":
+      return null;
+    case "no_org":
+    case "setup":
+    case "tba":
+      return (
+        nextActions.find((action) => action.primary) ??
+        setupSteps.find((step) => step.state === "current") ??
+        null
+      );
+    default: {
+      const _exhaustive: never = shell;
+      return _exhaustive;
+    }
   }
 }
 
