@@ -51,7 +51,7 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
  * read as the allowlist and teams conclude their endpoint is not welcome.
  */
 export const PAGE_DESCRIPTION =
-  "Point Vantage at any OpenAI-compatible endpoint — OpenAI, Anthropic, Google, OpenRouter, Groq, or a model running in your shop via Ollama or LM Studio. Every AI feature runs through whichever you configure. Fixed model or Automode by task toughness. Never DEMO usage totals.";
+  "Point Vantage at any OpenAI-compatible endpoint — OpenAI, Anthropic, Google, OpenRouter, Groq, or a model running in your shop via Ollama or LM Studio. Every AI feature runs through whichever you configure. Fixed model or Automode by task toughness.";
 
 /** The headline promise. One sentence, no hedging. */
 export const ANY_ENDPOINT_HEADLINE =

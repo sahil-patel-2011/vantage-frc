@@ -113,7 +113,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Setup required",
         title: "AI provider not configured",
         description:
-          "Configure a platform or BYO key before messaging. Empty Neon/TBA/scout tools stay empty — nothing is invented.",
+          "Configure a platform or BYO key before messaging. Empty Neon/TBA/scout tools stay empty.",
       };
     case "empty":
       return {
@@ -232,7 +232,7 @@ export function aiChatNextActions(input: {
     actions.push({
       id: "new-private",
       label: "Start a private chat",
-      detail: "Create a private channel in the sidebar — nothing is invented for empty tools.",
+      detail: "Create a private channel in the sidebar.",
       href: "#ch-channels",
       primary: true,
     });

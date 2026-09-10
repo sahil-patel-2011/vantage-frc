@@ -421,7 +421,7 @@ function SponsorRiskCard({
           badge="Setup required"
           badgeTone="setup"
           title="No linked activity for this sponsor yet"
-          description="Log a sponsor interaction, contribution, or community-impact mention naming this sponsor to compute a renewal-risk score — never a fabricated placeholder score."
+          description="Log a sponsor interaction, contribution, or community-impact mention naming this sponsor to compute a renewal-risk score."
         />
       ) : (
         <>

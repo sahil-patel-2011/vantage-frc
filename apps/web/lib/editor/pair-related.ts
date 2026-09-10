@@ -89,13 +89,13 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
     {
       id: "code",
       label: "Open Code Coach",
-      detail: "Local pattern review stays blank until you paste real robot source — no sample findings.",
+      detail: "Local pattern review stays blank until you paste real robot source.",
       href: hubHref("/build", "code", orgId),
     },
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Optional repo context stays disconnected until you link it — no sample repos.",
+      detail: "Optional repo context stays disconnected until you link it.",
       href: githubConnectionHref(orgId),
     },
     {

@@ -248,7 +248,7 @@ export function allianceSelectionDeskNextActions(input: {
       {
         id: "retry",
         label: "Retry Alliance Selection Desk",
-        detail: "Reload real sessions — nothing is invented while this fails.",
+        detail: "Reload real sessions.",
         href: withOrgHref("/alliance-selection-desk", orgId),
         primary: true,
       },

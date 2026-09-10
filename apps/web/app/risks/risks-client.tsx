@@ -174,7 +174,7 @@ export default function RisksClient() {
         <PageHeader
           breadcrumbs="Team / Risk Register"
           title="Risk Register"
-          description="Proactive season risks scored with real likelihood × impact — never demo scores. Distinct from FMEA failure logging."
+          description="Proactive season risks scored with real likelihood × impact. Distinct from FMEA failure logging."
         />
         <EmptyState
           soft
@@ -242,8 +242,7 @@ export default function RisksClient() {
         description={
           <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
-            driver availability. Score each by likelihood × impact from real entries only — never demo
-            numbers. For things that already broke, use FMEA.
+            driver availability. Score each by likelihood × impact. For things that already broke, use FMEA.
           </>
         }
       >
@@ -303,7 +302,7 @@ export default function RisksClient() {
         <EmptyState
           soft
           title="No season risks logged yet"
-          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then — nothing is invented. FMEA is for failures that already happened."
+          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. FMEA is for failures that already happened."
         >
           <div className="risks-row-links">
             <a href={hubHref("/team", "fmea", orgId)}>FMEA →</a>

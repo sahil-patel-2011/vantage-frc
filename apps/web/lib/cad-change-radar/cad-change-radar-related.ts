@@ -240,7 +240,7 @@ export function cadChangeRadarNextActions(input: {
       {
         id: "retry",
         label: "Retry CAD Change Radar",
-        detail: "Reload real revision diffs — nothing is invented while this fails.",
+        detail: "Reload real revision diffs.",
         href: withOrgHref("/cad-change-radar", orgId),
         primary: true,
       },

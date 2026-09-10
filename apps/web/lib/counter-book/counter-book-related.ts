@@ -193,7 +193,7 @@ export function counterBookNextActions(input: {
       {
         id: "retry",
         label: "Retry Counter-book",
-        detail: "Reload real reports — nothing is invented while this fails.",
+        detail: "Reload real reports.",
         href: withOrgHref("/counter-book", orgId),
         primary: true,
       },

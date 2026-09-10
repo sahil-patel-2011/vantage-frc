@@ -233,7 +233,7 @@ export function spareRobotKitNextActions(input: {
       {
         id: "retry",
         label: "Retry Spare Robot Kit",
-        detail: "Reload real FMEA × inventory matches — nothing is invented while this fails.",
+        detail: "Reload real FMEA × inventory matches.",
         href: withOrgHref("/spare-robot-kit", orgId),
         primary: true,
       },

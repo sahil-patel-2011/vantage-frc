@@ -202,7 +202,7 @@ export function sponsorWallNextActions(input: {
       {
         id: "retry",
         label: "Retry Sponsor Wall",
-        detail: "Reload real wall entries — nothing is invented while this fails.",
+        detail: "Reload real wall entries.",
         href: withOrgHref("/sponsor-wall", orgId),
         primary: true,
       },

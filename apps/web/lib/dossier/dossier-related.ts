@@ -269,7 +269,7 @@ export function dossierNextActions(input: {
       {
         id: "retry",
         label: "Retry dossier",
-        detail: "Reload real TBA/Statbotics/scout facts — nothing is invented while this fails.",
+        detail: "Reload real TBA/Statbotics/scout facts.",
         href: withOrgHref("/dossier", orgId),
         primary: true,
       },

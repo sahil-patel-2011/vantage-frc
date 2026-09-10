@@ -237,7 +237,7 @@ export function overnightIntelNextActions(input: {
       {
         id: "retry",
         label: "Retry Overnight Intel",
-        detail: "Reload real overnight signals — nothing is invented while this fails.",
+        detail: "Reload real overnight signals.",
         href: withOrgHref("/overnight-intel", orgId),
         primary: true,
       },

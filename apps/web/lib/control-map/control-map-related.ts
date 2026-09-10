@@ -127,7 +127,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         kind: "ready",
         title: "Driver control map",
         description:
-          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and FMEA — nothing is invented.",
+          "Bindings come only from inputs your drive team recorded this season. Keep them in sync with robot code, Subsystems, and FMEA.",
       };
   }
 }
@@ -212,7 +212,7 @@ export function controlMapNextActions(input: {
       {
         id: "retry",
         label: "Retry Control Map",
-        detail: "Reload real bindings — nothing is invented while this fails.",
+        detail: "Reload real bindings.",
         href: withOrgHref("/control-map", orgId),
         primary: true,
       },

@@ -234,7 +234,7 @@ export function eventDayPlanNextActions(input: {
       {
         id: "retry",
         label: "Retry Event-Day Plan",
-        detail: "Reload real schedule blocks — nothing is invented while this fails.",
+        detail: "Reload real schedule blocks.",
         href: withOrgHref("/event-day-plan", orgId),
         primary: true,
       },

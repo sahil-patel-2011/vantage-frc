@@ -102,7 +102,7 @@ export function goalsNextActions(input: {
     actions.push({
       id: "practice",
       label: "Log Practice sessions",
-      detail: "Drive and field goals often update from real session reps — not invented attendance %.",
+      detail: "Drive and field goals often update from real session reps.",
       href: withOrgHref("/practice", orgId),
     });
     actions.push({

@@ -81,13 +81,13 @@ export function readinessScoreSetupSteps(orgId?: string | null): ReadinessScoreS
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Open failure modes stay blank until real rows exist — no sample RPN.",
+      detail: "Open failure modes stay blank until real rows exist.",
       href: hubHref("/build", "fmea", orgId),
     },
     {
       id: "inspection-copilot",
       label: "Open Inspection Copilot",
-      detail: "Weight / frame / wiring readiness stays blank until measurements exist — no sample risk.",
+      detail: "Weight / frame / wiring readiness stays blank until measurements exist.",
       href: hubHref("/build", "inspection-copilot", orgId),
     },
     {
@@ -210,7 +210,7 @@ export function readinessScoreNextActions(input: {
       {
         id: "retry",
         label: "Retry Readiness Score",
-        detail: "Reload real subsystems — nothing is invented while this fails.",
+        detail: "Reload real subsystems.",
         href: withOrgHref("/readiness-score", orgId),
         primary: true,
       },

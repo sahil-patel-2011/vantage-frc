@@ -85,19 +85,19 @@ export function inventorySetupSteps(orgId?: string | null): InventorySetupStep[]
     {
       id: "vendors",
       label: "Open Vendors",
-      detail: "Supplier contacts stay blank until you add them — no sample directory rows.",
+      detail: "Supplier contacts stay blank until you add them.",
       href: withOrgHref("/vendors", orgId),
     },
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Purchase orders stay empty until drafted — no sample PO totals.",
+      detail: "Purchase orders stay empty until drafted.",
       href: hubHref("/business", "orders", orgId),
     },
     {
       id: "spare-forecast",
       label: "Open Spare Forecast",
-      detail: "Exhaustion projections stay blank until spare bins exist — no sample rates.",
+      detail: "Exhaustion projections stay blank until spare bins exist.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
   ];
@@ -211,7 +211,7 @@ export function inventoryNextActions(input: {
       {
         id: "retry",
         label: "Retry Inventory",
-        detail: "Reload real parts stock — nothing is invented while this fails.",
+        detail: "Reload real parts stock.",
         href: withOrgHref("/inventory", orgId),
         primary: true,
       },

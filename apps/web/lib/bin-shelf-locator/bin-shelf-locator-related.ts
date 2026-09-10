@@ -227,7 +227,7 @@ export function binShelfLocatorNextActions(input: {
       {
         id: "retry",
         label: "Retry Bin/Shelf Locator",
-        detail: "Reload real locations — nothing is invented while this fails.",
+        detail: "Reload real locations.",
         href: withOrgHref("/bin-shelf-locator", orgId),
         primary: true,
       },

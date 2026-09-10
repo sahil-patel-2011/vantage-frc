@@ -152,7 +152,7 @@ export default function RoadmapClient() {
           </>
         }
         title="Season roadmap"
-        description="Kickoff to first event, in the order it actually has to happen. Every date is calculated from the kickoff date you enter — nothing here is a FIRST deadline we invented."
+        description="Kickoff to first event, in the order it actually has to happen. Every date is calculated from the kickoff date you enter."
       />
 
       {error ? (

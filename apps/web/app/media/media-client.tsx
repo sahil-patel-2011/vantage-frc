@@ -506,7 +506,7 @@ function DraftsPanel({
             badge="No drafts"
             badgeTone="setup"
             title="Start a draft"
-            description="Titles and captions stay blank until you write them — nothing is pre-seeded."
+            description="Titles and captions stay blank until you write them."
           />
         )}
       </Panel>

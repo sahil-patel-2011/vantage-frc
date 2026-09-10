@@ -81,7 +81,16 @@ const RULES: readonly Rule[] = [
   {
     label: "placeholder/demo data disclaimer",
     pattern: /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|copy|content)\b/i,
-    why: 'a disclaimer that the data is real tells the reader nothing to do',
+    why: "a disclaimer that the data is real tells the reader nothing to do",
+  },
+  {
+    // "Set the real build-season window — no sample timelines." The em-dash
+    // clause is the tell: everything before it is the instruction, everything
+    // after it is the product promising it did not make the data up. Lower-case
+    // "demo" is a real FRC word (a demo event), so only this shape is banned.
+    label: "trailing 'and this is not fake' clause",
+    pattern: /[—–-]\s*(?:and\s+)?(?:never|no|not|nothing|none|zero)\b[^.]{0,70}?\b(?:demo|samples?|placeholder|fake|mock|dummy|synthetic|invented|fabricated|pre-seeded)\b/i,
+    why: "say what the reader should do; the clause after the dash says only that the data is real",
   },
 ] as const;
 

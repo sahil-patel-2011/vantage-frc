@@ -43,7 +43,7 @@ export function pairwiseNextActions(ctx: {
     actions.push({
       id: "event",
       label: "Set the active event",
-      detail: "Event teams fill the picker from the TBA cache — no invented field list.",
+      detail: "Event teams fill the picker from the TBA cache.",
       href: hubHref("/competition", "command", orgId),
     });
   }

@@ -6,7 +6,7 @@ import "./chat.css";
 
 export const metadata = {
   title: "FRC Assistant",
-  description: "Ask about teams, matchups, and scout evidence with authorized tools — nothing invented.",
+  description: "Ask about teams, matchups, and scout evidence with authorized tools.",
 };
 
 export default async function ChatPage({

@@ -202,7 +202,7 @@ export function knowledgeGapNextActions(input: {
       {
         id: "retry",
         label: "Retry Knowledge-gap",
-        detail: "Reload real wiki diffs — nothing is invented while this fails.",
+        detail: "Reload real wiki diffs.",
         href: withOrgHref("/knowledge-gap", orgId),
         primary: true,
       },

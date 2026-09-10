@@ -230,7 +230,7 @@ export function grantReportNextActions(input: {
       {
         id: "retry",
         label: "Retry Grant Report",
-        detail: "Reload real awarded grants and reports — nothing is invented while this fails.",
+        detail: "Reload real awarded grants and reports.",
         href: withOrgHref("/grant-report", orgId),
         primary: true,
       },

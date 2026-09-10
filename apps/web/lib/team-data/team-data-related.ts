@@ -117,7 +117,7 @@ export function teamDataNextActions(input: {
         {
           id: "team-data",
           label: "Save a TBA key",
-          detail: "Encrypt an org fallback key here, or ask a platform admin for TBA_AUTH_KEY — no invented metrics.",
+          detail: "Encrypt an org fallback key here, or ask a platform admin for TBA_AUTH_KEY.",
           href: withOrgHref("/team/data", orgId),
           primary: true,
         },

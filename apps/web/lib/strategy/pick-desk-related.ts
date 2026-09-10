@@ -264,7 +264,7 @@ export function pickDeskNextActions(input: {
       {
         id: "retry",
         label: "Retry pick desk",
-        detail: "Reload real event metrics and saved lists — nothing is invented while this fails.",
+        detail: "Reload real event metrics and saved lists.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },

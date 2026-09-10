@@ -211,7 +211,7 @@ export function decisionsNextActions(input: {
       {
         id: "retry",
         label: "Retry Decision Log",
-        detail: "Reload real decision records — nothing is invented while this fails.",
+        detail: "Reload real decision records.",
         href: withOrgHref("/decisions", orgId),
         primary: true,
       },

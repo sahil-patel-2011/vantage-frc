@@ -77,7 +77,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Work the pre-match briefing before each match, and the pre-match checklist in the pit.",
     ],
     tips: [
-      "Blank cards mean the schedule is not synced yet — nothing here is placeholder data.",
+      "Blank cards mean the schedule is not synced yet.",
       "Keep the event selected all weekend; switching events resets the board's scope.",
     ],
     related: [
@@ -125,7 +125,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Filter to upcoming matches for queueing, or played matches to review.",
       "Hand the surrounding matches to scouting so shift coverage lines up.",
     ],
-    tips: ["Matches appear only after the schedule is posted and synced — no placeholder brackets."],
+    tips: ["Matches appear only after the schedule is posted and synced."],
     related: [
       { label: "Event day", href: "/command" },
       { label: "Scout shifts", href: "/shift-balancer" },
@@ -1488,7 +1488,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Set remind_at when you schedule or draft an item.",
       "Check reminders the morning of an event day.",
     ],
-    tips: ["Alert counts stay at zero until real reminders exist — none are invented."],
+    tips: ["Alert counts stay at zero until real reminders exist."],
     related: [{ label: "Media calendar", href: "/media?tab=calendar" }],
   },
   {

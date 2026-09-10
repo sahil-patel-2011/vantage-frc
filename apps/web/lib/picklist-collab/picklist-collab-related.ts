@@ -81,13 +81,13 @@ export function picklistCollabSetupSteps(orgId?: string | null): PicklistCollabS
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist — no sample rankings.",
+      detail: "Event strategy stays empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — no sample scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];
@@ -195,7 +195,7 @@ export function picklistCollabNextActions(input: {
       {
         id: "retry",
         label: "Retry Collaborative Pick List",
-        detail: "Reload real lists — nothing is invented while this fails.",
+        detail: "Reload real lists.",
         href: withOrgHref("/picklist-collab", orgId),
         primary: true,
       },

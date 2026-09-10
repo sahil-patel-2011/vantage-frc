@@ -21,7 +21,7 @@ export default function FeaturesPage() {
           <p className="lux-kicker">Product</p>
           <h1>What you open after sign-in.</h1>
           <p>
-            Six hubs. Each one is the same software mentors and students use — not a brochure with sample scores.
+            Six hubs. Each one is the same software mentors and students use on a build night.
             Related tools sit as tabs inside the hub.
           </p>
           <div className="actions">

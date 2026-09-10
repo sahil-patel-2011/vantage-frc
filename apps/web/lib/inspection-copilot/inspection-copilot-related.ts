@@ -221,7 +221,7 @@ export function inspectionCopilotNextActions(input: {
       {
         id: "retry",
         label: "Retry Inspection Copilot",
-        detail: "Reload real readiness checks — nothing is invented while this fails.",
+        detail: "Reload real readiness checks.",
         href: withOrgHref("/inspection-copilot", orgId),
         primary: true,
       },

@@ -75,7 +75,7 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
     actions.push({
       id: "event-goals",
       label: "Set event goals",
-      detail: "Attainment % appears only after you enter a goal on an event — not a placeholder bar.",
+      detail: "Attainment % appears only after you enter a goal on an event.",
       href: withOrgHref("/fundraisers", orgId),
       primary: actions.length === 0,
     });

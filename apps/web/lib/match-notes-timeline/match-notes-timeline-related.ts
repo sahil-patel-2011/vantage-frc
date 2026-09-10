@@ -212,7 +212,7 @@ export function matchNotesTimelineNextActions(input: {
       {
         id: "retry",
         label: "Retry Match Note Timeline",
-        detail: "Reload real note rows — nothing is invented while this fails.",
+        detail: "Reload real note rows.",
         href: withOrgHref("/match-notes-timeline", orgId),
         primary: true,
       },

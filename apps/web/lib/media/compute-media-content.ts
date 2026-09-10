@@ -303,7 +303,7 @@ export async function suggestMediaPostDraft(
     return {
       status: "setup_required",
       message:
-        "Add a title or notes before suggesting a caption — nothing is invented without real input.",
+        "Add a title or notes before suggesting a caption.",
     };
   }
 

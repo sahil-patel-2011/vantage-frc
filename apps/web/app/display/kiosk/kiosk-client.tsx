@@ -161,7 +161,7 @@ export default function KioskClient({
               <strong className={bumper === "red" ? "alliance-red" : bumper === "blue" ? "alliance-blue" : undefined}>
                 {bumperBanner(bumper)}
               </strong>
-              <small>{match.scheduledTime ? "From TBA alliance lists — not invented" : "No TBA time; bumper still from alliance lists"}</small>
+              <small>{match.scheduledTime ? "From TBA alliance lists" : "No TBA time; bumper still from alliance lists"}</small>
             </article>
             <article>
               <span>ALLIANCES</span>

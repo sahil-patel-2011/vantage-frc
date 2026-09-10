@@ -192,7 +192,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <PageHeader
           breadcrumbs={crumbs}
           title="Failure Log (FMEA)"
-          description="Capture in-match and pit failures with real O×S×D scores — never demo RPN."
+          description="Capture in-match and pit failures with real O×S×D scores."
         />
         <EmptyState
           soft
@@ -323,7 +323,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         <EmptyState
           soft
           title="No failures logged yet"
-          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then — nothing is invented."
+          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then."
         >
           <div className="fmea-risk-links">
             <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
@@ -349,7 +349,7 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
   return (
     <Panel className="fmea-panel">
       <h2>Battery reliability → FMEA</h2>
-      <p>Derived from logged pack measurements — not invented. Promote into the failure log when you confirm a mode.</p>
+      <p>Derived from your logged pack measurements. Promote one into the failure log when you confirm a mode.</p>
       <ul className="fmea-battery-signals">
         {view.batterySignals.map((signal) => (
           <li key={signal.id}>

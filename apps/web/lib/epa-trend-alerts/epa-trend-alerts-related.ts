@@ -198,7 +198,7 @@ export function epaTrendAlertsNextActions(input: {
       {
         id: "retry",
         label: "Retry EPA Trend Alerts",
-        detail: "Reload real watchlist rows — nothing is invented while this fails.",
+        detail: "Reload real watchlist rows.",
         href: withOrgHref("/epa-trend-alerts", orgId),
         primary: true,
       },

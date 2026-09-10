@@ -212,7 +212,7 @@ export function awardTrackerNextActions(input: {
       {
         id: "retry",
         label: "Retry Award Tracker",
-        detail: "Reload real submissions and deadlines — nothing is invented while this fails.",
+        detail: "Reload real submissions and deadlines.",
         href: withOrgHref("/award-tracker", orgId),
         primary: true,
       },

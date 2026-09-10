@@ -75,7 +75,7 @@ export function robotWeighInSetupSteps(orgId?: string | null): RobotWeighInSetup
     {
       id: "readiness",
       label: "Open Readiness Score",
-      detail: "Weight margin feeds competition readiness — never fabricated.",
+      detail: "Weight margin feeds competition readiness.",
       href: hubHref("/build", "readiness-score", orgId),
     },
     {
@@ -177,7 +177,7 @@ export function robotWeighInNextActions(input: {
       {
         id: "retry",
         label: "Retry Robot Weigh-In",
-        detail: "Reload real scale readings — nothing is invented while this fails.",
+        detail: "Reload real scale readings.",
         href: withOrgHref("/robot-weigh-in", orgId),
         primary: true,
       },

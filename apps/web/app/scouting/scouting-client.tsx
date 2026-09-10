@@ -1463,7 +1463,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                   </ul>
                 </>
               ) : (
-                <p className="app-muted">No entries yet for this event — nothing is fabricated.</p>
+                <p className="app-muted">No entries yet for this event.</p>
               )}
             </Panel>
 

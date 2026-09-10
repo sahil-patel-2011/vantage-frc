@@ -149,7 +149,7 @@ export function alumniNextActions(input: {
       {
         id: "retry",
         label: "Retry alumni",
-        detail: "Reload persisted rows — nothing is invented while this fails.",
+        detail: "Reload persisted rows.",
         href: withOrgHref("/team/alumni", orgId),
         primary: true,
       },

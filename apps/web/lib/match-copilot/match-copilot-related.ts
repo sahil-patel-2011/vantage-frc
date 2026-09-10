@@ -208,7 +208,7 @@ export function matchCopilotNextActions(input: {
       {
         id: "retry",
         label: "Retry Match Copilot",
-        detail: "Reload real match and brief rows — nothing is invented while this fails.",
+        detail: "Reload real match and brief rows.",
         href: withOrgHref("/match-copilot", orgId),
         primary: true,
       },

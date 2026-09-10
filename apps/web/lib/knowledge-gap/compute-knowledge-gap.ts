@@ -284,7 +284,7 @@ export async function runKnowledgeGapScan(
       buildTaskCount: counts.buildTasks,
       milestoneCount: counts.milestones,
       pageCount: pages.length,
-      note: "Deterministic wiki vs work-items diff — no external model call, no invented gaps",
+      note: "Deterministic wiki vs work-items diff",
     },
     invoke: async () => {
       const gaps = findKnowledgeGaps({ workItems, pages, seasonYear: input.seasonYear });

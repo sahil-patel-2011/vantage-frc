@@ -82,19 +82,19 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     {
       id: "kickoff",
       label: "Open Kickoff",
-      detail: "Set the real build-season window from kickoff materials — no sample timelines.",
+      detail: "Set the real build-season window from kickoff materials.",
       href: hubHref("/build", "kickoff", orgId),
     },
     {
       id: "task-board",
       label: "Open Task board",
-      detail: "Day-to-day build tasks stay blank until real work is logged — no sample progress.",
+      detail: "Day-to-day build tasks stay blank until real work is logged.",
       href: hubHref("/team", "task-board", orgId),
     },
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Risk work sits beside the burndown — no sample readiness.",
+      detail: "Risk work sits beside the burndown.",
       href: hubHref("/build", "fmea", orgId),
     },
   ];

@@ -237,7 +237,7 @@ export function spareForecastNextActions(input: {
       {
         id: "retry",
         label: "Retry Spare Forecast",
-        detail: "Reload real inventory and FMEA cadence — nothing is invented while this fails.",
+        detail: "Reload real inventory and FMEA cadence.",
         href: withOrgHref("/spare-forecast", orgId),
         primary: true,
       },

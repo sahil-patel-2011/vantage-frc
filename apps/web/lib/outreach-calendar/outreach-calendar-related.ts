@@ -87,13 +87,13 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Logged impact stays empty until real evidence lands — no sample hours.",
+      detail: "Logged impact stays empty until real evidence lands.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "media-kit",
       label: "Open Media Kit",
-      detail: "Media assets stay blank until you record them — no sample logos.",
+      detail: "Media assets stay blank until you record them.",
       href: hubHref("/business", "media-kit", orgId),
     },
   ];
@@ -200,7 +200,7 @@ export function outreachCalendarNextActions(input: {
       {
         id: "retry",
         label: "Retry Outreach Calendar",
-        detail: "Reload real scheduled events — nothing is invented while this fails.",
+        detail: "Reload real scheduled events.",
         href: withOrgHref("/outreach-calendar", orgId),
         primary: true,
       },

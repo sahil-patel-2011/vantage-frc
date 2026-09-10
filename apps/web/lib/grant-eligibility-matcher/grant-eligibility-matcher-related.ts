@@ -248,7 +248,7 @@ export function grantEligibilityMatcherNextActions(input: {
       {
         id: "retry",
         label: "Retry Grant Eligibility Matcher",
-        detail: "Reload real eligibility matches — nothing is invented while this fails.",
+        detail: "Reload real eligibility matches.",
         href: withOrgHref("/grant-eligibility-matcher", orgId),
         primary: true,
       },

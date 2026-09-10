@@ -104,19 +104,19 @@ export function batteryHealthForecastSetupSteps(
     {
       id: "battery-rotation",
       label: "Open Battery Rotation",
-      detail: "Match assignments stay blank until packs exist — no sample charge plans.",
+      detail: "Match assignments stay blank until packs exist.",
       href: hubHref("/competition", "battery-rotation", orgId),
     },
     {
       id: "batteries",
       label: "Open Batteries",
-      detail: "IR, voltage, and cycles stay blank until you log them — no sample health scores.",
+      detail: "IR, voltage, and cycles stay blank until you log them.",
       href: hubHref("/team", "batteries", orgId),
     },
     {
       id: "pit",
       label: "Open Pit Command",
-      detail: "Event-day rack status uses the same real pack evidence — no sample volts.",
+      detail: "Event-day rack status uses the same real pack evidence.",
       href: withOrgHref("/pit", orgId),
     },
   ];
@@ -240,7 +240,7 @@ export function batteryHealthForecastNextActions(input: {
       {
         id: "retry",
         label: "Retry Battery Health Forecast",
-        detail: "Reload real IR / cycle forecasts — nothing is invented while this fails.",
+        detail: "Reload real IR / cycle forecasts.",
         href: withOrgHref("/battery-health-forecast", orgId),
         primary: true,
       },

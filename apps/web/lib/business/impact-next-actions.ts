@@ -58,7 +58,7 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
     actions.push({
       id: "hours",
       label: "Add duration on logged activities",
-      detail: "Readiness uses recorded minutes only — never placeholder community hours.",
+      detail: "Readiness uses recorded minutes only.",
       href: withSeason(impactHref),
       primary: true,
     });

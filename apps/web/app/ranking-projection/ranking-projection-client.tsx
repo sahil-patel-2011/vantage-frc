@@ -353,7 +353,7 @@ export default function RankingProjectionClient() {
           </>
         }
         title="Ranking projection"
-        description="Current TBA rank plus remaining qualification matches from the cache — never an invented future rank."
+        description="Current TBA rank plus remaining qualification matches from the cache."
       />
       {error && view ? <p className="app-muted">{error}</p> : null}
       {!view && error

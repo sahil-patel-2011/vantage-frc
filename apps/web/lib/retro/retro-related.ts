@@ -83,19 +83,19 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
     {
       id: "messages",
       label: "Open Messages",
-      detail: "Team chat stays blank until real threads exist — no sample feedback.",
+      detail: "Team chat stays blank until real threads exist.",
       href: hubHref("/team", "messages", orgId),
     },
     {
       id: "fmea",
       label: "Open FMEA",
-      detail: "Season postmortems pull real FMEA rows only — no sample failures.",
+      detail: "Season postmortems pull real FMEA rows only.",
       href: hubHref("/team", "fmea", orgId),
     },
     {
       id: "decisions",
       label: "Open Decisions",
-      detail: "Postmortems cite logged decisions only — no sample decision counts.",
+      detail: "Postmortems cite logged decisions only.",
       href: withOrgHref("/decisions", orgId),
     },
   ];

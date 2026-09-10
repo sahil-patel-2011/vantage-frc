@@ -606,7 +606,7 @@ export const AI_BUDGETS_SCOPE_CARDS = [
   {
     id: "usage" as const,
     title: "Usage · real ledger",
-    body: "Metered calls, funding source, denials, and member/model breakdowns. Empty ledgers stay empty — nothing is invented for blank Neon rows.",
+    body: "Metered calls, funding source, denials, and member/model breakdowns. Empty ledgers stay empty.",
   },
   {
     id: "chat" as const,

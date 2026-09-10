@@ -201,7 +201,7 @@ export function scoutAssistedCountNextActions(input: {
       {
         id: "retry",
         label: "Retry Scout-Assisted Count",
-        detail: "Reload real tap sessions — nothing is invented while this fails.",
+        detail: "Reload real tap sessions.",
         href: withOrgHref("/scout-assisted-count", orgId),
         primary: true,
       },

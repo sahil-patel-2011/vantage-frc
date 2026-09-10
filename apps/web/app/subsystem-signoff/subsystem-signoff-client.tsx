@@ -283,7 +283,7 @@ export default function SubsystemSignoffClient() {
         description={
           <>
             Walk each subsystem through design, fabrication, assembly, wiring, programming, and field
-            test. Readiness reflects only recorded gate decisions — never a demo percentage.
+            test. Readiness reflects the gate decisions your team has recorded.
           </>
         }
       >

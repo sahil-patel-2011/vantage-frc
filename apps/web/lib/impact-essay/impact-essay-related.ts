@@ -222,7 +222,7 @@ export function impactEssayNextActions(input: {
       {
         id: "retry",
         label: "Retry Impact Essay",
-        detail: "Reload real grounded records and drafts — nothing is invented while this fails.",
+        detail: "Reload real grounded records and drafts.",
         href: withOrgHref("/impact-essay", orgId),
         primary: true,
       },

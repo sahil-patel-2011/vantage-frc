@@ -175,7 +175,7 @@ export function equipmentMaintenanceNextActions(input: {
       {
         id: "retry",
         label: "Retry Equipment Maintenance",
-        detail: "Reload real service logs — nothing is invented while this fails.",
+        detail: "Reload real service logs.",
         href: withOrgHref("/equipment-maintenance", orgId),
         primary: true,
       },
