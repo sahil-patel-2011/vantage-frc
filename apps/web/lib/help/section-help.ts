@@ -8,7 +8,7 @@
  *
  * Rules for entries:
  * - Describe only what the surface actually does today. No roadmap, no invented
- *   capabilities, no fabricated metrics (the product itself never invents data,
+ *   capabilities, no fabricated metrics (the product itself does not fill in data,
  *   and neither does its help).
  * - `id` is `${hub}.${tabId}` so duplicate tab ids across hubs (impact, code,
  *   batteries, fmea…) stay distinct.
@@ -255,6 +255,27 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       { label: "Pick list", href: "/picklist-collab" },
       { label: "Alliance desk", href: "/alliance-selection-desk" },
       { label: "EPA alerts", href: "/epa-trend-alerts" },
+    ],
+  },
+  {
+    id: "competition.video-analysis",
+    hub: "competition",
+    tab: "video-analysis",
+    title: "Analyze video",
+    what: "Queue a match or pit video for the video Pi. You get a timeline with timestamps and confidence. Scouted numbers do not change until a person confirms.",
+    why: "Film review should land on the match notes as 'from video', not silently rewrite what a scout typed.",
+    when: "Competition day and the night after, as soon as match video exists.",
+    moments: ["comp-day", "after"],
+    how: [
+      "Pair a Pi with the video role at Team → AI relays.",
+      "Paste a YouTube, TBA, uploaded file, or pit camera link.",
+      "Wait for the timeline. Each event shows its confidence.",
+      "Tap Confirm to keep it as video evidence. That does not overwrite scout counts.",
+    ],
+    tips: ["If no video Pi is online the job stays queued and the page says so."],
+    related: [
+      { label: "AI relays", href: "/team/relays" },
+      { label: "Match notes", href: "/match-notes-timeline" },
     ],
   },
   {
@@ -607,30 +628,30 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Commit the import, then dual-run both tools until you are confident.",
       "Turn the old tool off only after a full week of dual-running.",
     ],
-    tips: ["Preview never invents events or titles — an empty preview means the source had nothing to read."],
+    tips: ["Preview does not fill in events or titles — an empty preview means the source had nothing to read."],
     related: [
       { label: "Playbook", href: "/team/knowledge" },
       { label: "Team data", href: "/team/data" },
     ],
   },
   {
-    id: "team.library",
+    id: "team.files",
     hub: "team",
-    tab: "library",
-    title: "Team Library",
-    what: "The team's shared shelf — any file (CAD STEP/DXF, PDFs, manuals, images), nestable folders, and external links, shared team-wide or to specific people.",
-    why: "It ends the 'who has the STEP file' hunt: one place where files, their links, and who may see them live together.",
+    tab: "files",
+    title: "Files",
+    what: "One file space for the team and for you: folders, share-by-link or email, and Media Library / CAD Vault / older Team Library as folders inside it.",
+    why: "It ends the hunt across Google Drive, a USB stick, and someone's phone. New files go here; old Library links still show as a folder.",
     when: "All season, from the first vendor manual to the last season export.",
     moments: ["preseason", "kickoff", "build", "pre-comp", "after"],
     how: [
-      "Drop files in — any type uploads, up to the 100 MB per-file database cap.",
-      "Make folders (they nest) and move resources into them.",
-      "Add links on their own, or attach a link to a file (vendor page next to its STEP).",
-      "Leave items team-wide, or switch one to 'Only specific members' and pick people.",
+      "Open Team → Files. Team space is shared; Personal is only yours.",
+      "Make folders and drop files in. Paste an Onshape or web link as a file if that is what you have.",
+      "Share a file with a link or an email when a parent, sponsor, or another team needs it.",
+      "Mark a file available offline when you will need it in the stands.",
     ],
     tips: [
-      "Restricted items always stay visible to the creator and team owners/admins — the sharing panel says exactly who.",
-      "Files over the cap belong on a paired storage node, not the database.",
+      "Files over the hosted cap belong on a paired storage node, not the cloud database.",
+      "The old Team Library still lists inside Files until those rows are copied into Team files.",
     ],
     related: [
       { label: "Storage node", href: "/team/storage" },
@@ -658,8 +679,31 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "The node refuses writes past its disk quota instead of filling the card.",
     ],
     related: [
-      { label: "Team Library", href: "/library" },
+      { label: "Files", href: "/files" },
       { label: "Media library", href: "/media-library" },
+    ],
+  },
+  {
+    id: "team.team-relays",
+    hub: "team",
+    tab: "team-relays",
+    title: "AI relays",
+    what: "Raspberry Pis that run Ask AI, Bugbot, assembly manuals, and video analysis. Pair with a code the installer prints — never a website cookie.",
+    why: "The shop's own computers answer first so chats stay fast and cheap, then the team's keys, then hosted keys as a last resort.",
+    when: "Set up before build season; it runs unattended after that.",
+    moments: ["preseason", "build", "comp-day"],
+    how: [
+      "Install the relay worker on a Pi. It prints an 8-character code.",
+      "An owner or admin types that code at Team → AI relays.",
+      "Give the Pi a role: chat, agent, or video. When the video Pi is idle it can run agent jobs too.",
+      "Watch the card: online means a heartbeat in the last two minutes.",
+    ],
+    tips: [
+      "Do not paste a Freebuff website cookie. That is not allowed. Paste the relay endpoint and token, or approve the pairing code.",
+    ],
+    related: [
+      { label: "Connectors", href: "/connectors" },
+      { label: "Analyze video", href: "/video-analysis" },
     ],
   },
   {
@@ -1406,7 +1450,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
       "Say what you chose and why, including what you gave up.",
       "Search past decisions before re-opening an old argument.",
     ],
-    tips: ["Entries stay empty until you write them — the log never invents history."],
+    tips: ["Entries stay empty until you write them — the log does not fill in history."],
     related: [
       { label: "Search decisions", href: "/decision-search" },
       { label: "Playbook", href: "/team/knowledge" },

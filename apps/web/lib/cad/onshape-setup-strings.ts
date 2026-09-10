@@ -23,7 +23,7 @@ export const ONSHAPE_LOCAL_PLAYWRIGHT_HINT =
   "The local path still works: run `vantage-cad login` and use the CAD tools through the Playwright Onshape window without API keys.";
 
 export const ONSHAPE_NO_INVENTED_EXPORTS =
-  "Vantage does not invent Onshape documents or STL/STEP/GLTF exports. Those appear only after a real connected run.";
+  "Onshape documents and STL, STEP, or GLTF exports appear only after a real connected run. Empty CAD stays empty until then.";
 
 export const ONSHAPE_PLATFORM_HINT_UNCONFIGURED =
   "Run `vantage-cad login` for the local Playwright path (no API keys). Hosted CAD needs Onshape OAuth — server keys are not a hosted connection.";

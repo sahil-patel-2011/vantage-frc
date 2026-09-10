@@ -1,6 +1,6 @@
 /**
- * In-app Help / Docs — static tutorials for Soft-UI surfaces.
- * Short, scannable, accurate to real UI. Never DEMO metrics.
+ * In-app Help / Docs — static tutorials for Vantage surfaces.
+ * Short, scannable, accurate to real UI. Empty until you add real numbers.
  *
  * Accuracy rules:
  * - Every article maps to something a member can actually reach (deep-link
@@ -220,7 +220,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Calendar and Chat",
         body: [
           "Calendar holds practices, build sessions, and deadlines, scoped by subteam, with repeat rules for recurring meetings.",
-          "Chat is the org-scoped team channel plus private messages — people appear once they accept an invite.",
+          "Chat is the team's channel plus private messages — people appear once they accept an invite.",
         ],
       },
       {
@@ -234,7 +234,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Playbook",
         body: [
           "Playbook is the team wiki with page history. The Season roadmap, Bring your season importer, and the Team Library are pinned at its front.",
-          "Everything is org-scoped: pick a team workspace first, and empty stays empty until someone writes real rows.",
+          "Everything belongs to this team: pick a workspace first, and empty stays empty until someone writes real rows.",
         ],
       },
     ],
@@ -375,7 +375,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Preview, then commit",
         body: [
-          "Every source shows the real rows it parsed before anything is written. An empty preview means the file had nothing readable — nothing is invented.",
+          "Every source shows the real rows it parsed before anything is written. An empty preview means the file had nothing readable.",
           "Rows the parser declined are always listed with the reason; a silent drop is treated as a bug.",
           "Notion OAuth pull stays setup-required until the server env is configured — the page says so instead of failing.",
         ],
@@ -422,7 +422,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Offline and sync",
         body: [
           "Entries and media queue in this device’s org-isolated outbox when the network drops.",
-          "The Online/Offline pill and Sync now button show real outbox counts — never DEMO entries.",
+          "The Online/Offline pill and Sync now button show real outbox counts.",
           "Use Offline Shell (/offline-shell) or the cold /offline boot page to reopen scouting after a prior visit.",
         ],
       },
@@ -457,7 +457,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Open Command",
         body: [
-          "Competition → Event day, or /command (Soft-UI Event Day).",
+          "Competition → Event day, or /command (Vantage Event Day).",
           "Select a workspace and active event first — Command will not invent a schedule.",
         ],
       },
@@ -501,7 +501,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
           "Use the live 8-alliance pick board, attach scout evidence, and watch TBA conflict flags against real team_event_metrics.",
-          "Drive-team export/print is available when you have a real board — ranks are never DEMO.",
+          "Drive-team export/print is available when you have a real board — ranks come from that board.",
         ],
       },
       {
@@ -872,7 +872,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "hub-access",
     title: "Limit hub access for scouts and viewers",
     summary:
-      "Owners and admins restrict Soft-UI pillars and tabs per member from Team security — unrestricted by default.",
+      "Owners and admins restrict Vantage pillars and tabs per member from Team security — unrestricted by default.",
     category: "account-access",
     keywords: [
       "hub access",
@@ -990,7 +990,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Sync into Claude Code and Cursor",
         body: [
           "Run `vantage-cad agent sync` in your repo. For Claude Code it writes .claude/agents, .claude/skills, a team-rules import inside marked lines of CLAUDE.md, and vantage-prefixed .mcp.json entries — idempotent, never touching your own files.",
-          "The same sync writes Cursor's native formats: .cursor/rules/vantage/*.mdc, .cursor/skills/vantage/, and vantage-prefixed .cursor/mcp.json entries. Subagents and permissions have no Cursor equivalent, so they are reported as skipped rather than invented.",
+          "The same sync writes Cursor's native formats: .cursor/rules/vantage/*.mdc, .cursor/skills/vantage/, and vantage-prefixed .cursor/mcp.json entries. Subagents and permissions have no Cursor equivalent, so they are reported as skipped.",
           "Permissions are a security change, so they land as a suggested file plus an instruction — never merged into settings automatically.",
         ],
       },
@@ -1036,13 +1036,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Log receipts and cash buys on the purchase log. Amazon / buy-link approvals stay under Orders.",
           "Money a member fronted personally goes through Reimbursements (/reimbursements) — only a claim marked paid counts in the ledger.",
-          "Paid Season Costs and awarded grants still count in the rollup so you do not need a second invented ledger.",
+          "Paid Season Costs and awarded grants still count in the rollup so you do not need a second ledger.",
         ],
       },
       {
         heading: "What stays empty",
         body: [
-          "KPIs stay at $0 or — until someone records a real source or receipt. Vantage never fills DEMO dollars.",
+          "KPIs stay at $0 or — until someone records a real source or receipt.",
           "Card and bank numbers are stripped from finance writes. Link a receipt URL instead of pasting account details.",
         ],
       },
@@ -1096,7 +1096,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "funding-profile",
     title: "Team funding profile and sponsor tools",
     summary:
-      "Affiliation and funding paths shape Business Soft-UI — teams that disallow sponsors hide sponsor destinations.",
+      "Affiliation and funding paths shape Business Vantage — teams that disallow sponsors hide sponsor destinations.",
     category: "business",
     keywords: [
       "funding",
@@ -1118,7 +1118,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "What changes in Soft-UI",
+        heading: "What changes in Vantage",
         body: [
           "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor Wall, Suite, Matching Gift Finder, and related tools stay hidden.",
           "Grants, budget, awards, and Media stay available when those funding paths apply.",
@@ -1128,7 +1128,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Update later",
         body: [
           "Owners and admins can change affiliation and funding paths under Team → Background after onboarding.",
-          "Changes apply to navigation immediately for the workspace — no DEMO sponsor rows are invented either way.",
+          "Changes apply to navigation immediately for the workspace. Sponsor tools stay hidden until you pick a funding model that includes them.",
         ],
       },
     ],
@@ -1140,7 +1140,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "media-workspace",
     title: "Media workspace for press and business",
     summary:
-      "Top-level Soft-UI Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
+      "Top-level Vantage Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
     category: "media",
     keywords: [
       "media",
@@ -1159,9 +1159,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Open Media",
         body: [
-          "Open the Media pillar from the Soft-UI island, drawer, or Cmd+K — search “Media”.",
+          "Open the Media pillar from the Vantage island, drawer, or Cmd+K — search “Media”.",
           "You can also pin Media as one of your four island apps.",
-          "Pick a team workspace first — Media is org-scoped like other Soft-UI tools.",
+          "Pick a team workspace first — Media belongs to this team like the other tools.",
         ],
       },
       {
@@ -1170,7 +1170,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
           "Kit readiness and asset counts come from Media Kit profile fields and uploaded URLs.",
           "Upcoming outreach and “tagged media” come from calendar events you scheduled.",
           "Media impact and people reached come only from Community Impact rows with category media.",
-          "Content items are drafts and posts you created here — never invented logos or reach.",
+          "Content items are drafts and posts you created here. Reach stays empty until you log it.",
         ],
       },
       {
@@ -1179,7 +1179,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
           "Use Calendar for press days and demos; Drafts for captions and AI-assisted posts (metered).",
           "Use Kit for bios, logos, and one-pagers; Impact to review logged media outreach.",
           "Your actual photos and videos live in the Media library (/media-library), nested under Kit.",
-          "Empty states stay empty until you add real data — Vantage never invents DEMO media metrics.",
+          "Empty states stay empty until you add real data — Vantage does not fill in made-up media metrics.",
         ],
       },
     ],
@@ -1267,7 +1267,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Usage and hosting",
         body: [
-          "BYOK call estimates live under BYOK usage (/team/ai-usage) — never DEMO totals. BYOK and local calls are metered for visibility but never debited by Vantage.",
+          "BYOK call estimates live under BYOK usage (/team/ai-keys). BYOK and local calls are metered for visibility but never debited by Vantage.",
           "With no BYOK path configured, calls use your plan's hosted allowance or purchased credits — see Billing & plans.",
           "A teammate's Claude Pro/Max or ChatGPT subscription can also serve the team at $0 API cost — see the subscription bridge article.",
         ],
@@ -1395,7 +1395,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "The ladder",
         body: [
           LADDER_LINE,
-          "Nothing on Vantage is feature-gated by plan — no locked hubs, no plan-only tools. All paid plans are team-wide (org-scoped billing).",
+          "Nothing on Vantage is feature-gated by plan — no locked hubs, no plan-only tools. All paid plans are team-wide billing.",
           `A ${TEAM_TRIAL_DAYS}-day team trial exists too: admin-granted, $${P.team_trial.includedAllowanceUsd} hosted allowance, never auto-charged.`,
         ],
       },
@@ -1452,7 +1452,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "What Free does not invent",
+        heading: "What Free does not include",
         body: [
           "On Free with nothing configured, hosted calls run on the budget-class pool until its allowance is spent, then features show a clear cutoff state — never fabricated results.",
           "Adding your own key or a local model at /team/ai-keys removes the ceiling entirely; Vantage never bills BYOK or local calls.",
@@ -1595,8 +1595,83 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Housekeeping",
         body: [
-          "Exports (/exports) produce audited CSV/ZIP takeout — org-scoped, keys never included.",
-          "Billing is org-scoped to the workspace's billing owner; plans and hosted credits are managed from /pricing and AI → Controls.",
+          "Exports (/exports) produce audited CSV/ZIP takeout for this team. Keys are never included.",
+          "Billing belongs to the workspace's billing owner; plans and hosted credits are managed from /pricing and AI → Controls.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "ai-relays",
+    slug: "ai-relays",
+    category: "integrations",
+    title: "Pair an AI relay (Raspberry Pi)",
+    summary: "A Pi on the team network runs Ask AI, Bugbot, assembly manuals, and video analysis. Pair it with a code — never a website cookie.",
+    keywords: ["relay", "raspberry pi", "freebuff", "deepseek", "pair"],
+    relatedHref: "/team/relays",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Team → AI relays lists whether a Pi is paired and when it last checked in.",
+          "Approve the 8-character code the installer prints. That is the same pattern as the storage node.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "On the Pi, run the relay installer. It prints a code. An owner or admin types that code here.",
+          "Do not paste a Freebuff website cookie. That is not allowed. The Pi uses the team's own endpoint and token.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "analyze-video",
+    slug: "analyze-video",
+    category: "competition",
+    title: "Analyze a match or pit video",
+    summary: "Queue a video for the video Pi. You get a timeline with timestamps. Scouted numbers do not change until a person confirms.",
+    keywords: ["video", "match video", "pit camera", "youtube"],
+    relatedHref: "/video-analysis",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Paste a YouTube, TBA, uploaded file, or pit camera link. Jobs show queued, running, or finished, and how many minutes behind live they are.",
+          "Each event is labelled with a confidence. Nothing is merged into scouting until someone confirms it.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Pair a Pi with the video role first (Team → AI relays). Then queue a video from Competition → Analyze video.",
+          "If no Pi is paired, the job stays queued and the page says so.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "funding-model",
+    slug: "funding-model",
+    category: "business",
+    title: "How the team is funded",
+    summary: "Pick one: you pay, the school pays with no sponsors, you have sponsors, or the school plus sponsors. Business tools match that choice.",
+    keywords: ["funding", "sponsors", "school funded", "dues"],
+    relatedHref: "/team/background",
+    sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Onboarding and Team background ask four radios, in plain words.",
+          "A school that cannot have sponsors will not see sponsor packages, the sponsor wall, or matching-gift tools. They are gone, not locked.",
+        ],
+      },
+      {
+        heading: "What to do",
+        body: [
+          "Owners and admins pick the funding model during onboarding or later under Team background.",
+          "Budgets, part requests, orders, grants, awards, and outreach stay for every team.",
         ],
       },
     ],

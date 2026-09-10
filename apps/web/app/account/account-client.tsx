@@ -1073,7 +1073,7 @@ export default function AccountClient() {
               <h2>In-app notifications</h2>
               <p className="app-muted">
                 Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
-                It does not invent live competition data.{" "}
+                It does not create live competition data.{" "}
                 <a href="/notifications">Open inbox</a>
                 {" · "}
                 <a href="/notifications/preferences">Full preference center</a>

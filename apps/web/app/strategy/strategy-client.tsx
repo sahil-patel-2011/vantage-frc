@@ -166,8 +166,8 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
           <span className="app-badge setup">one engine</span>
         </header>
         <p className="app-muted">
-          pEPA, scout-calibrated why-we-win/lose, opponent profiles, and pit pings live here — not ten
-          extra tools. Open this match after scouting; nothing is invented from public scores alone.
+          Your scouting notes, opponent profiles, and pit pings live here. Open this match after
+          you have scouted it; public scores alone do not fill the why-we-win line.
         </p>
       </Panel>
     );

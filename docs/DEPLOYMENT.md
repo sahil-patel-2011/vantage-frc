@@ -191,6 +191,21 @@ is the most common cause of `redirect_uri_mismatch` an hour later.
 | Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (optional `DATABASE_BILLING_URL`) | Endpoint URL: `https://<your-domain>/api/stripe/webhook` | Secret key: dashboard.stripe.com → Developers → **API keys**. Signing secret: Developers → **Webhooks** → Add endpoint | Events `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed` |
 | Team storage node | `DATABASE_CAD_RELAY_URL` (the `vantage_pairing` role; may point at `DATABASE_URL` until a dedicated role exists) | **none** — the node polls `/api/storage-node/pair/poll` | Run the storage-node agent on the team machine; it prints a pairing code | A pairing code approved by an owner or admin, at `/team/storage` |
 | Fusion 360 relay | `FUSION_RELAY_SIGNING_SECRET`, `DATABASE_CAD_RELAY_URL` | **none** | Install the Vantage Fusion add-in on the laptop | A pairing code approved by an owner or admin, at `/cad/connections` |
+| Free relay (Pi) | `DATABASE_CAD_RELAY_URL` (pairing pool), plus on the Pi: `FREE_RELAY_BASE_URL`, `FREE_RELAY_API_KEY`, `FREE_RELAY_MODEL` | **none** — the Pi polls `/api/relay/pair/poll` | Pair at `/team/relays`. Do not paste a Freebuff website cookie. | Owner/admin pairing code. Chat / agent / video roles. See `docs/FREEBUFF.md` |
+
+## 4c. Desktop installers and auto-update
+
+`GET /api/desktop/release` is public. It reads `latest.json` from GitHub Releases (`desktop-v*` tags).
+When no release exists it returns 503 with an empty download set and an honest message — it never
+invents a URL.
+
+CI: `.github/workflows/desktop.yml` on tag `desktop-v*`. Windows job: NSIS + MSI + portable. macOS
+job: universal DMG + zip. The release job attaches artifacts and writes `latest.json` with
+`downloads.win_msi`, `win_nsis`, `mac_dmg`. macOS builds cannot run in this Linux image.
+
+Unsigned until the owner sets signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, and for macOS `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`). The NSIS license (`apps/desktop/build/UNSIGNED.txt`)
+says the build is unsigned. Details: `docs/DESKTOP.md`.
 
 Notes that cost time when they are missed:
 

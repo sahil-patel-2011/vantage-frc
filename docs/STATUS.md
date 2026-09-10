@@ -46,7 +46,7 @@ Assumption stated: “a new FRC student can do everything from one login without
 | `node scripts/deploy-preflight.mjs` | *pending* | expect FAIL only on `CRON_SECRET` |
 | `npm audit --omit=dev` | *pending* | |
 | `scripts/rls-proof.mjs` | *not run yet* | needs local Postgres (not in this image yet) |
-| Latest migration | `0650_profile_theme_chosen.sql` | next free number ≥ `0651` |
+| Latest migration | `0654_library_into_drive.sql` | next free number ≥ `0655` |
 
 ### Competitive notes
 
@@ -56,7 +56,10 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | Route | What was wrong | Commit |
 |---|---|---|
-| *(started after design-system tokens)* | | |
+| `/competition` Event day | Duplicate page header when embedded in the hub; poll ran while the tab was hidden | this branch |
+| `/strategy` Private Edge | "pEPA" and "invented" copy a 15-year-old cannot use | this branch |
+| `/dashboard` | New widgets had no icons; Ask AI had no input; next match hid the stored win-chance band | this branch |
+| `/team/relays` | Connector card only — no list of paired Pis, roles, or queue | this branch |
 
 ---
 
@@ -64,21 +67,21 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | in progress | this file + `COMPETITIVE_NOTES.md` |
-| 2 | One design system | pending | |
-| 3 | Full UI pass | pending | |
-| 4 | Home widgets | pending | |
-| 5 | Offline shell | pending | |
-| 6 | Desktop installers + auto-update | pending | |
-| 7 | freebuff Pi fleet | pending | |
-| 8 | Match prediction ±3 | pending | |
-| 9 | Video analysis | pending | |
-| 10 | Connectors | audit (already on main) | |
-| 11 | Copy sweep | audit (already on main) | |
-| 12 | Bugbot / agents | pending | |
-| 13 | CAD / assembly manual | pending | |
-| 14 | Business funding models | pending | |
-| 15 | Modular monolith | pending | |
-| 16 | Supabase readiness | pending | |
-| 17 | Performance / cost | pending | |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; 8,262 tests |
+| 2 | One design system | in progress | tokens in `system.css`; css-integrity forbids declarations elsewhere; Button + R4 selector; Playwright sweep added. Chrome `.app-button` migration still open. |
+| 3 | Full UI pass | in progress | Event day duplicate header, Strategy jargon, relay list, widget icons. FEATURE_MAP walk unfinished. |
+| 4 | Home widgets | in progress | audience defaults, tap-to-place, Ask AI input, next-match win band. 2200-line client not fully split. |
+| 5 | Offline shell | in progress | outbox + SW version + Competition snapshot cache + hub OfflineBanner. Not every `*-client.tsx` uses `useOfflineSnapshot`. |
+| 6 | Desktop installers + auto-update | in progress | `/api/desktop/release`, NSIS+MSI+DMG workflow, unsigned license. macOS artifacts cannot be built in this image. |
+| 7 | freebuff Pi fleet | in progress | `docs/FREEBUFF.md`, pairing API, `/team/relays` node list, compact+prompt. TTFT unmeasured (no Pi). |
+| 8 | Match prediction ±3 | in progress | linear model + fixture backtest + match plan helper. **Not a season ±3 claim.** UI shows stored win % + confidence band when a prediction row exists. |
+| 9 | Video analysis | in progress | schema + queue UI + confirm-as-evidence (does not merge into scouting). Worker skips without a vision model. No live Pi. |
+| 10 | Connectors | audit (already on main) | catalog includes free-relay; pairing public prefixes added |
+| 11 | Copy sweep | audit (already on main) | help leftover "never invented" rewritten; copy-lint remains the guard |
+| 12 | Bugbot / agents | in progress | quotes required (existing); prompt now forbids push/PR; compact wired in HTTP adapter. Scan time unprinted. |
+| 13 | CAD / assembly manual | pending | link-first already on vault; assembly-manual on a real Onshape document still unverified |
+| 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
+| 15 | Modular monolith | in progress | `/library` → `/files`; 0654 copies team-wide library rows into Drive; module-boundaries test |
+| 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
+| 17 | Performance / cost | in progress | Home + Event day polls back off when the tab is hidden |
 | 18 | Final verification | pending | |

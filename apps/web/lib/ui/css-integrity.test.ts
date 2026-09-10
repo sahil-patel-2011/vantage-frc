@@ -135,6 +135,21 @@ describe("stylesheet integrity", () => {
     expect(text).toContain(".tc-mode {");
   });
 
+  it("never writes a custom-property name that would close a CSS comment", () => {
+    // `--app-*/` inside `/* ... */` is parsed as the end of the comment.
+    // Next then tries to parse the leftover as CSS and the whole sheet fails
+    // the production build (layout.tsx imports system.css).
+    const footgun = /--[A-Za-z0-9-]*\*\//;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      if (footgun.test(text)) {
+        offenders.push(file);
+      }
+    }
+    expect(offenders, "custom-property names must not contain a comment-ender").toEqual([]);
+  });
+
   it("declares --soft-*/--app-*/--m-* tokens only in system.css", () => {
     // Three competing palettes is how two secondary buttons on the same
     // screen ended up different colours. Canonical names live in system.css;

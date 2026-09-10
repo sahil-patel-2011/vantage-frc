@@ -157,7 +157,7 @@ describe("hosted Onshape setup copy", () => {
       }).message
     }`;
     expect(spoken).not.toMatch(/demo stl|sample document|placeholder export|invented geometry/i);
-    expect(ONSHAPE_NO_INVENTED_EXPORTS).toMatch(/does not invent/i);
+    expect(ONSHAPE_NO_INVENTED_EXPORTS).toMatch(/appear only after a real connected run/i);
     expect(ONSHAPE_LOCAL_PLAYWRIGHT_HINT).toMatch(/Playwright/);
   });
 });

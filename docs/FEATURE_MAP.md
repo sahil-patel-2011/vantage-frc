@@ -107,6 +107,11 @@
 | Assembly manual | `/assembly-manual` (Build › CAD, featured) | Queued relay job (`assembly_manual_runs`, leased + checkpointed) turning an Onshape assembly into a step book: build order derived twice and reconciled, per-step Onshape shaded views, cut/drill/tap from real features, dependency-free PDF. Every unsupported line prints "confirm — not specified in CAD"; a failed render is a labelled placeholder — never a stand-in picture or an invented drill size. Engine `apps/web/lib/assembly-manual`, queue `packages/free-relay/src/assembly-manual.ts`, docs `docs/ASSEMBLY_MANUAL.md` |
 | District Advancement | `/district-advancement` | Wires `district-trajectory-sim` compute to a Competition page; EPA cache only — never DEMO qualification odds |
 | Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
+| Connectors | `/connectors` (Settings) | One page for Google, GitHub, TBA, Onshape, Discord, Slack, email, Stripe, storage node, Fusion relay, and the Pi free relay. Status is Connected only from a stored row. Missing env names the variables and the callback URL to register. |
+| AI relays | `/team/relays` (Team) | Pair a Raspberry Pi with a code. Chat / agent / video roles. Heartbeat shows online. Freebuff website cookies are refused. |
+| Analyze video | `/video-analysis` | Queue a match or pit video for the video Pi. Results are a timeline with confidence; a person confirms before scouted numbers change. |
+| Funding model | `/team/background` + onboarding | Four radios: self-funded, school-funded no sponsors, sponsored, school-related sponsored. Business hub hides sponsor tools when sponsors are not allowed; dues/fundraisers first for self-funded. |
+| Desktop shell | `/desktop` + `apps/desktop` | Same UI as the web. Windows NSIS + MSI + portable; macOS DMG on tag `desktop-v*`. Auto-update via `GET /api/desktop/release`. Unsigned until the owner pastes signing certs. |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 

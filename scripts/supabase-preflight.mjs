@@ -469,6 +469,32 @@ if (okApp) {
   report("SKIP", "RLS smoke", "DATABASE_URL unreachable");
 }
 
+const secondaryPaid = env("SUPABASE_PAID_DATABASE_URL");
+const secondaryFree = env("SUPABASE_FREE_DATABASE_URL");
+if (secondaryPaid || secondaryFree) {
+  if (secondaryPaid) registerSecrets(secondaryPaid);
+  if (secondaryFree) registerSecrets(secondaryFree);
+  report("INFO", "secondary profiles", "checking paid + free connection strings; nothing is switched over");
+  if (secondaryPaid) {
+    await checkConnectivity("SUPABASE_PAID_DATABASE_URL", secondaryPaid);
+    checkPoolerMode("SUPABASE_PAID_DATABASE_URL", secondaryPaid, { isAdmin: false });
+  } else {
+    report("SKIP", "SUPABASE_PAID_DATABASE_URL", "not set — paste when the owner creates the paid project");
+  }
+  if (secondaryFree) {
+    await checkConnectivity("SUPABASE_FREE_DATABASE_URL", secondaryFree);
+    checkPoolerMode("SUPABASE_FREE_DATABASE_URL", secondaryFree, { isAdmin: false });
+  } else {
+    report("SKIP", "SUPABASE_FREE_DATABASE_URL", "not set — paste when the owner creates the free project");
+  }
+} else {
+  report(
+    "SKIP",
+    "Supabase redundancy",
+    "SUPABASE_PAID_DATABASE_URL and SUPABASE_FREE_DATABASE_URL are unset. Identity stays Better Auth + withRls. Do not put anon/service_role keys here.",
+  );
+}
+
 console.log("");
 if (failures > 0) {
   console.log(`RESULT: ${failures} check(s) FAILED — do not cut over. See docs/SUPABASE_CUTOVER.md.`);

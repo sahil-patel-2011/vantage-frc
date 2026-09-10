@@ -15,7 +15,7 @@ export type HomeStripItem = {
   detail: string;
   href: string;
   tone: "neutral" | "ok" | "warn";
-  /** Real schedule ISO for a live Soft-UI countdown — omit when unknown (never DEMO). */
+  /** Real schedule ISO for a live Vantage countdown — omit when unknown (does not fill made-up). */
   at?: string | null;
 };
 
@@ -24,7 +24,7 @@ export type MentorHomeStripInput = {
   needsAssignment: number;
   lodgingGaps: number;
   unsignedChecklists: number;
-  /** Scheduled/draft visits missing a host — never DEMO invite counts. */
+  /** Scheduled/draft visits missing a host — does not fill made-up invite counts. */
   visitHostGaps?: number;
 };
 
@@ -34,7 +34,7 @@ export type StudentHomeStripInput = {
   nextPracticeAt: string | null;
   hotelName: string | null;
   roomLabel: string | null;
-  /** Next published travel leg title/when — never DEMO departures. */
+  /** Next published travel leg title/when — does not fill made-up departures. */
   nextTravelLabel?: string | null;
   nextTravelAt?: string | null;
   mineOpenTodos: number;
@@ -60,7 +60,7 @@ export function formatStripWhen(iso: string | null | undefined): string | null {
   });
 }
 
-/** Lodging clarity for Soft-UI strips — real hotel/room only. */
+/** Lodging clarity for Vantage strips — real hotel/room only. */
 export function formatHomeLodgingDetail(
   hotelName: string | null | undefined,
   roomLabel: string | null | undefined,

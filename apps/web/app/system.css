@@ -349,7 +349,7 @@ html[data-theme="dark"] .marketing-lux {
       horizontal overflow, focus rings, and text that cannot wrap.
 
    Palette, radius, type and spacing tokens are declared in this file.
-   Leaf sheets consume them; they do not redeclare --soft-*/--app-*/--m-*.
+   Leaf sheets consume them; they do not redeclare --soft-*, --app-*, or --m-* tokens.
    ========================================================================== */
 
 /* --- Focus. One ring, every route ------------------------------------------
