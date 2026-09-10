@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
@@ -31,9 +32,37 @@ import {
   pickDefaultSession,
   type AttendanceListFilter,
 } from "../../lib/attendance/attendance-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./attendance.css";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isAttendanceView(value: unknown): value is AttendanceView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function attendanceCacheOrg(data: AttendanceView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistAttendanceSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: AttendanceView,
+): Promise<void> {
+  const cacheOrg = attendanceCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "ready" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("attendance", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("attendance", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Attendance already painted; IndexedDB is best-effort.
+  }
+}
 
 function fmtDate(ymd: string): string {
   const date = new Date(`${ymd}T12:00:00`);
@@ -478,29 +507,70 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const [query, setQuery] = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AttendanceView | null>(null);
+  viewRef.current = view;
+
   const load = useCallback(async (year = seasonYear) => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgHint = params.get("orgId")?.trim() ?? "";
     const focusEventId = params.get("eventId");
     const focusOccurredOn = params.get("occurredOn");
     const focusSeason = params.get("seasonYear");
     const yearToLoad = focusSeason && Number.isInteger(Number(focusSeason)) ? Number(focusSeason) : year;
+    const seasonHint = String(yearToLoad);
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<AttendanceView>("attendance", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isAttendanceView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+        if (cached.data.status === "ready") {
+          const ready = cached.data;
+          setSeasonYear(ready.seasonYear);
+          setSelectedId((current) =>
+            pickDefaultSession(ready.events, {
+              eventId: focusEventId,
+              occurredOn: focusOccurredOn,
+              currentId: current,
+            }),
+          );
+        }
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
     try {
       const search = new URLSearchParams();
-      if (orgId) search.set("orgId", orgId);
-      search.set("seasonYear", String(yearToLoad));
-      const response = await fetch(`/api/attendance?${search}`);
+      if (orgHint) search.set("orgId", orgHint);
+      search.set("seasonYear", seasonHint);
+      const response = await fetch(`/api/attendance?${search}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as AttendanceView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load attendance.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isAttendanceView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Attendance. Showing the last copy on this device.");
+          setErrorStatus(null);
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load attendance.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
       if (data.status === "ready") {
         setSeasonYear(data.seasonYear);
         setSelectedId((current) =>
@@ -511,9 +581,17 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           }),
         );
       }
+      await persistAttendanceSnapshot(orgHint, seasonHint, data);
     } catch {
-      setErrorStatus(null);
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Attendance. Showing the last copy on this device.");
+        setErrorStatus(null);
+        setFetchFailed(false);
+      } else {
+        setErrorStatus(null);
+        setFetchFailed(true);
+      }
     }
   }, [seasonYear]);
 
@@ -530,6 +608,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string; id?: string };
         if (!response.ok) {
@@ -551,7 +630,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     [load, selectedId],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -577,6 +656,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             <TeamOpsNav active="attendance" />
           </>
         ) : null}
+        <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge={fetchFailed ? "Setup" : undefined}
@@ -585,25 +665,15 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           description={failure ? failure.description : "Checking your team for real roll calls."}
           aria-busy={!fetchFailed}
         >
-          {failure ? (
-            <div className="att-empty-actions">
-              {failure.primary ? (
-                <Button as="a" variant="primary" href={failure.primary.href}>
-                  {failure.primary.label}
-                </Button>
-              ) : null}
-              {failure.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => void load()}>
-                  Retry
-                </Button>
-              ) : null}
-              <Button as="a" variant="secondary" href="/workspace">
-                Choose your team
-              </Button>
-            </div>
+          {failure?.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
           ) : null}
-          {fetchFailed ? (
-            <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />
+          {failure?.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
           ) : null}
         </EmptyState>
       </main>
@@ -623,12 +693,12 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             <TeamOpsNav active="attendance" />
           </>
         ) : null}
+        <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Choose your team" description={view.message} badge="Setup" badgeTone="setup">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
         </EmptyState>
-        <NextActions orgId={null} eventCount={0} emptyRollCount={0} canManage={false} />
       </main>
     );
   }
@@ -704,6 +774,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       ) : (
         headerActions
       )}
+      <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
       {!embedded ? (
         <>
           <TeamOpsNav orgId={orgId} active="attendance" />

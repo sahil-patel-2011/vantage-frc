@@ -4,7 +4,10 @@ import { Button } from "../../components/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { OfflineBanner } from "../../components/offline-banner";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   actionBreakdown,
@@ -28,6 +31,27 @@ import "./practice.css";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<DriverPracticeView, { status: "ready" }>;
+
+function isDriverPracticeView(value: unknown): value is DriverPracticeView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function practiceCacheOrg(data: DriverPracticeView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistPracticeSnapshot(orgHint: string, data: DriverPracticeView): Promise<void> {
+  const cacheOrg = practiceCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("practice", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("practice", "_", data);
+  } catch {
+    // Live Practice already painted; IndexedDB is best-effort.
+  }
+}
 
 function fmtDate(iso: string): string {
   const date = new Date(iso.length <= 10 ? `${iso}T00:00:00` : iso);
@@ -404,23 +428,58 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DriverPracticeView | null>(null);
+  viewRef.current = view;
+
   const load = useCallback(async () => {
+    const orgHint = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<DriverPracticeView>("practice", orgHint || "_");
+      if (!viewRef.current && cached?.data && isDriverPracticeView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
     try {
-      const response = await fetch(`/api/practice${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/practice${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as DriverPracticeView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load practice planner.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isDriverPracticeView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Practice. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load practice planner.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistPracticeSnapshot(orgHint, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Practice. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -434,6 +493,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as { error?: string; id?: string };
       if (!response.ok) {
@@ -451,7 +511,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
     }
   }, [load]);
 
-  if (fetchFailed || !view) {
+  if (!view) {
     return (
       <main className="practice-page">
         <TeamOpsNav active="practice" />
@@ -462,6 +522,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             <p>Sessions, goals, and cycle times for the drive team.</p>
           </div>
         </header>
+        <OfflineBanner feature="Practice" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="practice-panel practice-empty">
           {fetchFailed ? (
             (() => {
@@ -505,7 +566,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   }
 
   if (view.status === "setup_required") {
-    const setupActions = practiceNextActions({ sessions: [], attendanceEventCount: 0 });
     return (
       <main className="practice-page">
         <TeamOpsNav active="practice" />
@@ -516,12 +576,12 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
             <p>Log drive-team sessions, set goals, and track cycle times against real attendance and build work.</p>
           </div>
         </header>
+        <OfflineBanner feature="Practice" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="practice-panel practice-empty">
           <strong>Choose your team</strong>
           <p className="practice-muted">{view.message}</p>
           <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
         </div>
-        <PracticeNextActions actions={setupActions} />
       </main>
     );
   }
@@ -547,6 +607,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
           <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
         </>
       ) : null}
+      <OfflineBanner feature="Practice" fromCache={fromCache} cachedAt={cachedAt} />
       <header className="practice-hero">
         <div>
           {!embedded ? (

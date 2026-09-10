@@ -139,6 +139,10 @@ const SHELL_ROUTES = [
   "/impact",
   "/orders",
   "/team/grants",
+  "/practice",
+  "/manufacturing",
+  "/attendance",
+  "/kickoff",
 ];
 
 function isShellPath(pathname) {

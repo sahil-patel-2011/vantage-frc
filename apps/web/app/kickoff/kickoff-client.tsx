@@ -1,11 +1,14 @@
 "use client";
 
 import { packForYear } from "@vantage/game-year";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { kickoffSummary, type KickoffView } from "../../lib/kickoff";
 import { KICKOFF_BUILD_RELATED_INCLUDE, shouldShowKickoffSummaryTiles } from "../../lib/kickoff-related";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { NextActionsPanel, useHubEmbed } from "./kickoff-chrome";
 import { IntelligenceSection } from "./kickoff-intelligence";
@@ -13,6 +16,27 @@ import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
 import { RulesSection } from "./kickoff-rules";
 import { ScoringSection } from "./kickoff-scoring";
+
+function isKickoffView(value: unknown): value is KickoffView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function kickoffCacheOrg(data: KickoffView, orgHint: string): string {
+  return data.context.orgId?.trim() || orgHint;
+}
+
+async function persistKickoffSnapshot(orgHint: string, data: KickoffView): Promise<void> {
+  const cacheOrg = kickoffCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("kickoff", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("kickoff", "_", data);
+  } catch {
+    // Live Kickoff already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
@@ -27,26 +51,61 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   const [hasIntelligence, setHasIntelligence] = useState(false);
   const [cadJobId, setCadJobId] = useState<string | null>(null);
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<KickoffView | null>(null);
+  viewRef.current = view;
+
   const crumbs = embed === "build" ? "Build / Kickoff" : "Season / Kickoff";
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<KickoffView>("kickoff", orgHint || "_");
+      if (!viewRef.current && cached?.data && isKickoffView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/kickoff${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/kickoff${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as KickoffView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load kickoff analysis.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isKickoffView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Kickoff. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load kickoff analysis.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistKickoffSnapshot(orgHint, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Kickoff. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -68,6 +127,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -84,7 +144,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
     [load],
   );
 
-  if (fetchFailed || !view) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -104,6 +164,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
     return (
       <main className="module-page kick-page">
         <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
+        <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading kickoff analysis…"}
@@ -134,18 +195,12 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
         />
         <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+        <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState badge="Setup required" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
         </EmptyState>
-        <NextActionsPanel
-          seasonYear={new Date().getUTCFullYear()}
-          hasIntelligence={false}
-          actionCount={0}
-          priorityCount={0}
-          openRuleCount={0}
-        />
       </main>
     );
   }
@@ -189,6 +244,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
       </PageHeader>
 
       <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+      <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
       {(() => {
         const pack = packForYear(year);
         return (

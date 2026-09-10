@@ -117,7 +117,11 @@ export type OfflineFeature =
   | "fundraisers"
   | "impact"
   | "orders"
-  | "grants-writing";
+  | "grants-writing"
+  | "practice"
+  | "manufacturing"
+  | "attendance"
+  | "kickoff";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
