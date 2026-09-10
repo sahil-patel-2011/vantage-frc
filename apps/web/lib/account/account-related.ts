@@ -86,7 +86,7 @@ export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   const name = input.orgName?.trim() || null;
   const role = formatAccountRole(input.role);
   const parts = [team, name, role].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Active workspace";
+  return parts.length > 0 ? parts.join(" · ") : "This team";
 }
 
 /**

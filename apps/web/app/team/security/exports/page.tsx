@@ -24,7 +24,7 @@ export default async function TeamExportAuditPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="Export records are written per workspace so one team can never read another’s. Select one and come back."
+          description="Export records are written per team so one team can never read another’s. Select one and come back."
         >
           <a className="app-button" href="/workspace">
             Choose team

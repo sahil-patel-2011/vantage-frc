@@ -25,7 +25,7 @@ export default async function TeamGettingStartedPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="Each step is ticked from that workspace’s own data, so it needs a team before it can say anything true."
+          description="Each step is ticked from that team’s own data, so it needs a team before it can say anything true."
         >
           <a className="app-button" href="/workspace">
             Choose team

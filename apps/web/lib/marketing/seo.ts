@@ -95,7 +95,7 @@ export function organizationSoftwareJsonLd() {
         operatingSystem: "Web",
         url: SITE_URL,
         description:
-          "Invite-only FRC workspace: scouting, event day, strategy, alliance selection, season planning, CAD agent, Code Coach, and metered assistant. Screens stay empty until real TBA, scout, or connector data exists.",
+          "Invite-only FRC app: scouting, event day, strategy, alliance selection, season planning, CAD agent, Code Coach, and metered assistant. Screens stay empty until real TBA, scout, or connector data exists.",
         offers: {
           "@type": "Offer",
           price: "0",

@@ -163,7 +163,7 @@ describe("searchCommands multi-word and stemming (audit regressions)", () => {
     expect(results[0]?.href).toBe("/competition?tab=shift-balancer");
   });
 
-  it("spreads the empty state across workspaces instead of one hub", () => {
+  it("spreads the empty state across hubs instead of one hub", () => {
     const results = searchCommands("", catalog, { limit: 10 });
     const workspaces = new Set(results.map((hit) => hit.context.split("›")[0]!.trim()));
     expect(workspaces.size).toBeGreaterThanOrEqual(4);

@@ -20,7 +20,7 @@ import "./settings-bar.css";
 type SettingsBarProps = {
   /** Raw org role from the page's own data ("owner" | "admin" | "scout" | …, or null). */
   role: string | null | undefined;
-  /** Active workspace, so team links keep their ?orgId= context. */
+  /** This team, so team links keep their ?orgId= context. */
   orgId?: string | null;
   /** Current route path, e.g. "/account". */
   pathname: string;

@@ -69,7 +69,7 @@ describe("accountNextActions", () => {
     expect(actions.every((a) => !/demo/i.test(a.label))).toBe(true);
   });
 
-  it("points at AI keys, billing, and usage for a live workspace", () => {
+  it("points at AI keys, billing, and usage for a live app", () => {
     const actions = accountNextActions({
       orgId: "org-1",
       hasProfile: true,

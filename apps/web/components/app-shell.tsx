@@ -595,7 +595,7 @@ export default function AppShell() {
   const orgLabel =
     me.teamNumber != null
       ? `Team ${me.teamNumber}${me.orgName ? ` · ${me.orgName}` : ""}`
-      : (me.orgName ?? (orgId ? "Active workspace" : "No workspace selected"));
+      : (me.orgName ?? (orgId ? "This team" : "No team selected"));
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
 
   const crumbHint = breadcrumbForPath(pathname);

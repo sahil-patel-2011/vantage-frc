@@ -30,7 +30,7 @@ async function requireSession() {
 }
 
 /**
- * Branding follows the same "active workspace" rule as /api/me: the requested org
+ * Branding follows the same "this team" rule as /api/me: the requested org
  * when the caller is a member of it, otherwise their first membership. Returning
  * null (rather than throwing) keeps the shell usable for a signed-in user with no
  * team yet.

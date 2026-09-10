@@ -401,7 +401,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
             </form>
 
             <section className="app-card soft-panel awards-list" aria-label="Award submissions">
-              <span className="biz-overline">This workspace</span>
+              <span className="biz-overline">This team</span>
               <h2>Submissions</h2>
               {submissions.length === 0 ? (
                 <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>

@@ -145,7 +145,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       tone: "good",
       teamNumber: parsed,
       title: `${input.lockedOrgName ?? "That workspace"} · Team ${parsed}`,
-      body: "This account is already tied to that workspace through an invitation or an open request, so the number can't change here.",
+      body: "This account is already tied to that team through an invitation or an open request, so the number can't change here.",
       ok: true,
       action: null,
     };
@@ -209,7 +209,7 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     tone: "info",
     teamNumber: parsed,
     title: `This requests Team ${parsed}'s approval`,
-    body: "Every owner and admin of that workspace gets a notification when you submit. Vantage looks the team up then — if no workspace exists yet, it will say so.",
+    body: "Every owner and admin of that team gets a notification when you submit. Vantage looks the team up then — if no workspace exists yet, it will say so.",
     ok: true,
     action: null,
   };

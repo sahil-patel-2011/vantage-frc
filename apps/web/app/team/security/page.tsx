@@ -26,7 +26,7 @@ export default async function TeamSecurityPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="These controls change who can do what inside one workspace, so they need a team before they mean anything."
+          description="These controls change who can do what inside one team, so they need a team before they mean anything."
         >
           <a className="app-button" href="/workspace">
             Choose team

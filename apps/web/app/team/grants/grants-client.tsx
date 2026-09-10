@@ -415,7 +415,7 @@ function GrantWritingWorkspace({
   onMutate: (payload: Record<string, unknown>, okMessage?: string) => Promise<void>;
 }) {
   const teamLabel =
-    view.teamNumber != null ? `FRC ${view.teamNumber}` : view.orgName ?? "This workspace";
+    view.teamNumber != null ? `FRC ${view.teamNumber}` : view.orgName ?? "This team";
 
   const nextActions = grantsWritingNextActions({
     orgId: view.orgId,

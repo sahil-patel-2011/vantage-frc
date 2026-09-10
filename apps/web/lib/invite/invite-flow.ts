@@ -303,7 +303,7 @@ export function inviteNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Open workspace",
+        label: "Choose your team",
         detail: "Continue in the team you already joined.",
         href: workspaceHref,
         primary: true,

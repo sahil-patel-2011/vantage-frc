@@ -285,7 +285,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         ) : null}
         <EmptyState title="Select a team" description={view.message}>
           <a className="app-button" href="/workspace">
-            Open workspace
+            Choose your team
           </a>
         </EmptyState>
       </main>

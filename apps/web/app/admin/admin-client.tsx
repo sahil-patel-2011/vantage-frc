@@ -252,7 +252,7 @@ function AdminClientInner() {
 
       <section className="admin-grid">
         <Panel as="form" onSubmit={create}>
-          <span className="eyebrow">Create workspace</span>
+          <span className="eyebrow">Create a team</span>
           <label>
             Team number
             <input

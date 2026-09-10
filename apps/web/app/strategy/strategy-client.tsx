@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, ToolStrip } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { hubHref } from "../../lib/nav/hubs";
@@ -1033,11 +1033,11 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       <OfflineBanner feature="Strategy" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      <TabBar
+      <ToolStrip
         aria-label="Strategy sections"
         value={tab}
         onChange={(id) => setTab(id as StrategyTab)}
-        tabs={[
+        items={[
           { id: "matchup", label: "Matchup" },
           { id: "picks", label: "Pick lists" },
         ]}

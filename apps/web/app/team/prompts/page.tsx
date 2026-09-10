@@ -24,7 +24,7 @@ export default async function TeamPromptsPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="Prompts are written and reused inside one workspace and never leak between teams. Select one and come back."
+          description="Prompts are written and reused inside one team and never leak between teams. Select one and come back."
         >
           <a className="app-button" href="/workspace">
             Choose team

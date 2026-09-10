@@ -99,7 +99,7 @@ export default function TeamProfileClient() {
           description={
             view.teamNumber
               ? `Looking up team ${view.teamNumber} on The Blue Alliance and Statbotics. This takes a few seconds and happens once; it refreshes weekly after that.`
-              : "This workspace has no team number, so there is nothing to look up. Set it on the Team settings page."
+              : "This team has no team number, so there is nothing to look up. Set it on the Team settings page."
           }
         >
           {view.canBuild && view.orgId && view.status === "none" ? (

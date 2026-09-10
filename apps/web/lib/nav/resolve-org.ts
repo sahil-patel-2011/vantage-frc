@@ -16,7 +16,7 @@ export function withPersistedOrgSearch(search: string, orgId: string): string {
   return `?${params.toString()}`;
 }
 
-/** Keep the current tab/filters; stamp the active workspace onto the URL. */
+/** Keep the current tab/filters; stamp the this team onto the URL. */
 export function persistOrgIdInUrl(orgId: string): void {
   const id = orgId.trim();
   if (!id || typeof window === "undefined") return;

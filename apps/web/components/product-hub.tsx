@@ -261,7 +261,7 @@ export function ProductHubShell({
                 soft
                 aria-busy
                 badge="Loading"
-                title="Opening workspace"
+                title="Opening your team"
                 description={`Loading ${hub.label} for your team.`}
               />
             );

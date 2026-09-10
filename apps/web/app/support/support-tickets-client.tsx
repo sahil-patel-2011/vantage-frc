@@ -193,7 +193,7 @@ export default function SupportTicketsClient() {
         >
           <div className="support-tickets-header-actions">
             <a className="app-button" href="/workspace">
-              Open workspace
+              Choose your team
             </a>
             <a className="app-button secondary" href="/account">
               Account
@@ -210,7 +210,7 @@ export default function SupportTicketsClient() {
       ? `Team ${view.teamNumber}${view.orgName ? ` · ${view.orgName}` : ""}`
       : view.orgName
         ? view.orgName
-        : "your active workspace";
+        : "your team";
 
   return (
     <main className="module-page support-tickets-page">

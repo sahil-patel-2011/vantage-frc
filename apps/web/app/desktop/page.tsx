@@ -5,14 +5,14 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Desktop app — Vantage",
   description:
-    "Windows desktop shell for the Vantage FRC workspace. Account required: same invite-only product, native window, persistent sign-in, and local CAD relay.",
+    "Windows desktop shell for the Vantage FRC app. Account required: same invite-only product, native window, persistent sign-in, and local CAD relay.",
   path: "/desktop",
 });
 
 const facts = [
   {
     title: "Account required",
-    copy: "The desktop app is the hosted workspace in a native window — it only works signed in. Signed out, it shows a sign-in screen and blocks everything else. Access stays invite-only.",
+    copy: "The desktop app is the hosted app in a native window — it only works signed in. Signed out, it shows a sign-in screen and blocks everything else. Access stays invite-only.",
   },
   {
     title: "Stays signed in",
@@ -41,7 +41,7 @@ export default function DesktopPage() {
           <p className="lux-kicker">Desktop</p>
           <h1>Vantage on the desktop.</h1>
           <p>
-            A native Windows window around the live workspace — scouting, CAD, and Bugbot included. Not a separate
+            A native Windows window around the live app — scouting, CAD, and Bugbot included. Not a separate
             cloud, and not usable without a Vantage account: the app gates itself to the sign-in flow until you are in.
           </p>
           <div className="actions">

@@ -20,7 +20,7 @@ import {
 } from "@vantage/scouting/trust";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
@@ -1027,11 +1027,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         </Panel>
       ) : null}
 
-      <TabBar
+      <ToolStrip
         aria-label="Scouting views"
         value={tab}
         onChange={onTabChange}
-        tabs={[
+        items={[
           { id: "match", label: "Match" },
           { id: "pit", label: "Pit" },
           { id: "handoff", label: "QR handoff" },

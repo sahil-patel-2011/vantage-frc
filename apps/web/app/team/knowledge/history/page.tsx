@@ -24,7 +24,7 @@ export default async function TeamKnowledgeHistoryPage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="History replays the edits a single workspace actually made. Select one and come back."
+          description="History replays the edits a single team actually made. Select one and come back."
         >
           <a className="app-button" href="/workspace">
             Choose team

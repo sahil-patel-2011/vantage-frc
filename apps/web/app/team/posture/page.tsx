@@ -24,7 +24,7 @@ export default async function TeamPosturePage({
           badge="Team needed"
           badgeTone="setup"
           title="Choose a team"
-          description="Every check reads that workspace’s own configuration, so it needs a team before it can score anything."
+          description="Every check reads that team’s own configuration, so it needs a team before it can score anything."
         >
           <a className="app-button" href="/workspace">
             Choose team

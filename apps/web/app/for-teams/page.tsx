@@ -7,7 +7,7 @@ import "../marketing-showcase.css";
 export const metadata: Metadata = marketingPageMetadata({
   title: "For FRC teams — Vantage",
   description:
-    "How mentors, drive team, scouts, and business leads share one invite-only FRC workspace: Competition, Team, Business, Build, AI, and Media.",
+    "How mentors, drive team, scouts, and business leads share one invite-only FRC app: Competition, Team, Business, Build, AI, and Media.",
   path: "/for-teams",
 });
 

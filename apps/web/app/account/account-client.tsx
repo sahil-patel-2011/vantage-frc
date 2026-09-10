@@ -333,7 +333,7 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         soft
         badge="Setup required"
         badgeTone="setup"
-        title="No workspace selected"
+        title="No team selected"
         description={
           org.workspaceCount > 0
             ? "Your profile prefs still apply to this login. Pick an active team for billing, AI usage, and connectors."
@@ -353,10 +353,10 @@ function OrgContextCard({ org }: { org: OrgContext }) {
   }
 
   return (
-    <Panel className="account-org-context" aria-label="Active workspace">
+    <Panel className="account-org-context" aria-label="This team">
       <div className="account-org-context-top">
         <div>
-          <h2>Active workspace</h2>
+          <h2>This team</h2>
           <p>{label}</p>
         </div>
         <div className="account-org-meta">
@@ -375,7 +375,7 @@ function OrgContextCard({ org }: { org: OrgContext }) {
           panel, same hrefs in the same order. What belongs here is the one link
           that is actually about the *active* workspace. */}
       <div className="settings-inline-links">
-        <a href="/workspace">Switch workspace</a>
+        <a href="/workspace">Switch team</a>
       </div>
     </Panel>
   );
@@ -646,7 +646,7 @@ export default function AccountClient() {
       <PageHeader
         breadcrumbs="Account / Settings"
         title="Your settings"
-        description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your active workspace."
+        description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your team."
       >
         {/* "Support" used to sit here pointing at /support, while the related
             strip one line below called the same page "Help & Support". Two
@@ -680,7 +680,7 @@ export default function AccountClient() {
           badge="Loading"
           badgeTone="setup"
           title="Loading account"
-          description="Pulling your profile, workspace context, and preferences…"
+          description="Loading your profile, team, and preferences…"
           aria-busy
         />
       ) : null}
