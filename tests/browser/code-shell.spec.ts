@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectHubReadyOrGate } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -12,15 +13,7 @@ test("Code Coach hub still loads after the panel split", async ({ page }) => {
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const coach = page.getByRole("heading", { name: "Code Coach pattern review" });
-  // GHA Playwright has no Postgres. Fixture cookie is not a Better Auth
-  // session, so HubOrgGate never mounts CodeClient. "Choose a team" is the
-  // honest no-org gate — not a shell regression.
-  const teamGate = page.getByRole("heading", { name: /choose (a|your) team/i });
-  await expect(coach.or(teamGate)).toBeVisible({ timeout: 20_000 });
-  if ((await coach.count()) === 0) {
-    await expect(teamGate).toBeVisible();
-    return;
-  }
+  if (!(await expectHubReadyOrGate(page, coach))) return;
 
   await expect(page.getByRole("heading", { name: "AI Bugbot" })).toBeVisible();
   const modes = page.getByRole("group", { name: "Bugbot billing mode" });

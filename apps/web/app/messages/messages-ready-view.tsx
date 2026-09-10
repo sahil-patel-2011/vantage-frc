@@ -36,6 +36,43 @@ import {
   type Message,
 } from "./messages-model";
 
+function MessagesLoadError({
+  loadError,
+  loadErrorStatus,
+  onRetry,
+}: {
+  loadError: string;
+  loadErrorStatus: number | null;
+  onRetry: () => void;
+}) {
+  const copy = loadFailureCopy(
+    classifyLoadFailure({
+      status: loadErrorStatus,
+      message: loadError,
+      online: typeof navigator === "undefined" ? true : navigator.onLine,
+    }),
+    {
+      nextPath:
+        typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+      message: loadError,
+    },
+  );
+  return (
+    <EmptyState title={copy.title} description={copy.description} badge="Setup" badgeTone="setup">
+      {copy.primary ? (
+        <Button as="a" variant="primary" href={copy.primary.href}>
+          {copy.primary.label}
+        </Button>
+      ) : null}
+      {copy.showRetry ? (
+        <Button variant="secondary" type="button" onClick={onRetry}>
+          Retry
+        </Button>
+      ) : null}
+    </EmptyState>
+  );
+}
+
 function MessageBody({
   body,
   mentions = [],
@@ -223,41 +260,11 @@ export function MessagesReadyView({
       {loading ? (
         <EmptyState soft title="Loading…" aria-busy />
       ) : loadError ? (
-        (() => {
-          const copy = loadFailureCopy(
-            classifyLoadFailure({
-              status: loadErrorStatus,
-              message: loadError,
-              online: typeof navigator === "undefined" ? true : navigator.onLine,
-            }),
-            {
-              nextPath:
-                typeof window === "undefined"
-                  ? null
-                  : `${window.location.pathname}${window.location.search}`,
-              message: loadError,
-            },
-          );
-          return (
-            <EmptyState
-              title={copy.title}
-              description={copy.description}
-              badge="Setup"
-              badgeTone="setup"
-            >
-              {copy.primary ? (
-                <Button as="a" variant="primary" href={copy.primary.href}>
-                  {copy.primary.label}
-                </Button>
-              ) : null}
-              {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => void reloadMessages()}>
-                  Retry
-                </Button>
-              ) : null}
-            </EmptyState>
-          );
-        })()
+        <MessagesLoadError
+          loadError={loadError}
+          loadErrorStatus={loadErrorStatus}
+          onRetry={() => void reloadMessages()}
+        />
       ) : (
         <div className="messages-layout">
           <aside className="chat-sidebar">

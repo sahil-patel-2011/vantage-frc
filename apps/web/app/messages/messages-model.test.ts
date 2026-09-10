@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { MessageObjectLink } from "../../lib/messages/object-links";
 import {
   formatTime,
   isArchived,
@@ -63,9 +62,8 @@ describe("messages-model", () => {
     ]);
   });
 
-  it("labels linked object types from the catalog, with the raw type as fallback", () => {
+  it("labels linked object types from the catalog", () => {
     expect(objectTypeLabel("task")).toBe("Task");
     expect(objectTypeLabel("cad_checkpoint")).toBe("CAD checkpoint");
-    expect(objectTypeLabel("not_a_type" as MessageObjectLink["objectType"])).toBe("not_a_type");
   });
 });

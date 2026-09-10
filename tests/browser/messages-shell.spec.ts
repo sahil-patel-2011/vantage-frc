@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectHubReadyOrGate } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
 
 test.beforeEach(async ({ context }) => {
@@ -13,15 +14,7 @@ test("Team chat still loads after the panel split", async ({ page }) => {
 
   const newMessage = page.getByRole("button", { name: "New Message" });
   const recovery = page.getByRole("button", { name: "Retry" });
-  // GHA Playwright has no Postgres. Fixture cookie is not a Better Auth
-  // session, so HubOrgGate never mounts MessagesClient. "Choose a team" is
-  // the honest no-org gate — not a shell regression.
-  const teamGate = page.getByRole("heading", { name: /choose (a|your) team/i });
-  await expect(newMessage.or(recovery).or(teamGate)).toBeVisible({ timeout: 20_000 });
-  if ((await newMessage.count()) === 0) {
-    await expect(teamGate.or(recovery)).toBeVisible();
-    return;
-  }
+  if (!(await expectHubReadyOrGate(page, newMessage, recovery))) return;
 
   await expect(page.getByText("Channels", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Message settings" })).toBeVisible();
@@ -33,6 +26,7 @@ test("Team chat still loads after the panel split", async ({ page }) => {
   }
 
   await newMessage.click();
-  await expect(page.getByRole("complementary", { name: "Start private message" })).toBeVisible();
-  await page.getByRole("button", { name: "Close" }).click();
+  const picker = page.getByRole("complementary", { name: "Start private message" });
+  await expect(picker).toBeVisible();
+  await picker.getByRole("button", { name: "Close" }).click();
 });
