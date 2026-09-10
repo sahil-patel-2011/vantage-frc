@@ -73,7 +73,11 @@ export type OfflineFeature =
   | "outreach-calendar"
   | "visit-invites"
   | "judge-sim"
-  | "impact-essay";
+  | "impact-essay"
+  | "battery-rotation"
+  | "vendors"
+  | "season-report"
+  | "media";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

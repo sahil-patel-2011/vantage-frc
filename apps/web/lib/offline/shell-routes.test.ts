@@ -91,6 +91,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/visit-invites")).toBe(true);
     expect(pathnameIsOfflineShell("/judge-sim")).toBe(true);
     expect(pathnameIsOfflineShell("/impact-essay")).toBe(true);
+    expect(pathnameIsOfflineShell("/battery-rotation")).toBe(true);
+    expect(pathnameIsOfflineShell("/vendors")).toBe(true);
+    expect(pathnameIsOfflineShell("/season-report")).toBe(true);
+    expect(pathnameIsOfflineShell("/media")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -159,6 +163,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
     expect(offlineCapableLabel("/judge-sim")).toBe("Judge-Pitch Simulator");
     expect(offlineCapableLabel("/impact-essay")).toBe("Impact Essay");
+    expect(offlineCapableLabel("/battery-rotation")).toBe("Battery Rotation");
+    expect(offlineCapableLabel("/vendors")).toBe("Vendors");
+    expect(offlineCapableLabel("/season-report")).toBe("Season Report");
+    expect(offlineCapableLabel("/media")).toBe("Media");
+    expect(offlineCapableLabel("/media-kit")).toBe("Media Kit");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -228,6 +237,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("visit-invites", "org-1")).toBe("visit-invites:org-1");
     expect(featureCacheKey("judge-sim", "org-1", "2026")).toBe("judge-sim:org-1:2026");
     expect(featureCacheKey("impact-essay", "org-1", "2026")).toBe("impact-essay:org-1:2026");
+    expect(featureCacheKey("battery-rotation", "org-1")).toBe("battery-rotation:org-1");
+    expect(featureCacheKey("vendors", "org-1")).toBe("vendors:org-1");
+    expect(featureCacheKey("season-report", "org-1", "2026")).toBe("season-report:org-1:2026");
+    expect(featureCacheKey("media", "org-1", "2026")).toBe("media:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

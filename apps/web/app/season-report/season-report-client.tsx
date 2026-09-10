@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import {
@@ -12,6 +13,8 @@ import {
   type AiExpandState,
 } from "../../lib/ai-expand";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   SEASON_REPORT_CATEGORIES,
@@ -38,6 +41,33 @@ function sentimentTone(sentiment: SeasonReportSentiment): string {
   if (sentiment === "positive") return "good";
   if (sentiment === "negative") return "demo";
   return "setup";
+}
+
+function isSeasonReportView(value: unknown): value is SeasonReportView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function seasonReportCacheOrg(data: SeasonReportView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSeasonReportSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SeasonReportView,
+): Promise<void> {
+  const cacheOrg = seasonReportCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("season-report", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("season-report", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Season Report already painted; IndexedDB is best-effort.
+  }
 }
 
 type LiveView = Extract<SeasonReportView, { status: "live" }>;
@@ -173,30 +203,78 @@ export default function SeasonReportClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SeasonReportView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const loading = view == null && !fetchFailed;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/season-report${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<SeasonReportView>(
+          "season-report",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isSeasonReportView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/season-report${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as SeasonReportView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isSeasonReportView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Season Report. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistSeasonReportSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season Report. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -214,11 +292,12 @@ export default function SeasonReportClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as
           | SeasonReportView
           | { error?: string; code?: string; reason?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isSeasonReportView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, {
             code: "code" in data ? data.code : undefined,
             reason: "reason" in data ? data.reason : undefined,
@@ -234,6 +313,7 @@ export default function SeasonReportClient() {
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistSeasonReportSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -271,7 +351,9 @@ export default function SeasonReportClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="loading"
-      />
+      >
+        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+      </SeasonReportShell>
     );
   }
 
@@ -284,7 +366,9 @@ export default function SeasonReportClient() {
         shell="error"
         error={error}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+      </SeasonReportShell>
     );
   }
 
@@ -296,7 +380,7 @@ export default function SeasonReportClient() {
         orgId={view.orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
       </SeasonReportShell>
     );
   }
@@ -308,7 +392,9 @@ export default function SeasonReportClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+      </SeasonReportShell>
     );
   }
 
@@ -319,7 +405,9 @@ export default function SeasonReportClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
+      </SeasonReportShell>
     );
   }
 
@@ -362,6 +450,7 @@ export default function SeasonReportClient() {
           ) : null}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

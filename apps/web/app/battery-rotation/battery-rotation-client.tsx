@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { batteryStatusLabel, irTrendLabel } from "../../lib/battery-rotation";
 import {
@@ -21,6 +22,8 @@ import {
   type BatteryRotationShellKind,
 } from "../../lib/battery-rotation/battery-rotation-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 function statusTone(status: BatteryStatus): string {
@@ -28,6 +31,24 @@ function statusTone(status: BatteryStatus): string {
   if (status === "retired") return "";
   if (status === "active") return "good";
   return "setup";
+}
+
+function isBatteryRotationView(value: unknown): value is BatteryRotationView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistBatteryRotationSnapshot(orgHint: string, data: BatteryRotationView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("battery-rotation", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("battery-rotation", "_", data);
+  } catch {
+    // Live Battery Rotation already painted; IndexedDB is best-effort.
+  }
 }
 
 type LiveView = Extract<BatteryRotationView, { status: "live" }>;
@@ -150,24 +171,64 @@ export default function BatteryRotationClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<BatteryRotationView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/battery-rotation${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<BatteryRotationView>("battery-rotation", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isBatteryRotationView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/battery-rotation${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as BatteryRotationView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isBatteryRotationView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Battery Rotation. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistBatteryRotationSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Battery Rotation. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -211,14 +272,16 @@ export default function BatteryRotationClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as BatteryRotationView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isBatteryRotationView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
+          void persistBatteryRotationSnapshot(orgId, data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -227,7 +290,11 @@ export default function BatteryRotationClient() {
   );
 
   if (shell === "loading") {
-    return <BatteryRotationShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <BatteryRotationShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+      </BatteryRotationShell>
+    );
   }
 
   if (shell === "error") {
@@ -238,7 +305,9 @@ export default function BatteryRotationClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={load}
-      />
+      >
+        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+      </BatteryRotationShell>
     );
   }
 
@@ -249,13 +318,17 @@ export default function BatteryRotationClient() {
         orgId={orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
       </BatteryRotationShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <BatteryRotationShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <BatteryRotationShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
+      </BatteryRotationShell>
+    );
   }
 
   return (
@@ -278,6 +351,7 @@ export default function BatteryRotationClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

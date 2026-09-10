@@ -96,6 +96,10 @@ const SHELL_ROUTES = [
   "/visit-invites",
   "/judge-sim",
   "/impact-essay",
+  "/battery-rotation",
+  "/vendors",
+  "/season-report",
+  "/media",
 ];
 
 function isShellPath(pathname) {

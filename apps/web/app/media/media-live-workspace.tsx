@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { PageHeader, Panel, TabBar, ToolStrip } from "../../components/ui";
 import {
@@ -34,6 +34,7 @@ export function LiveMediaWorkspace({
   cutoffCode,
   draftMeta,
   mutate,
+  banner,
 }: {
   view: LiveView;
   tab: Tab;
@@ -44,6 +45,7 @@ export function LiveMediaWorkspace({
   cutoffCode: string | null;
   draftMeta: { feature: string; generatedAt: string } | null;
   mutate: (payload: Record<string, unknown>, method?: "POST" | "PATCH" | "DELETE") => Promise<boolean>;
+  banner?: ReactNode;
 }) {
   const orgId = view.orgId;
   const showTiles = shouldShowMediaSummaryTiles({
@@ -91,6 +93,7 @@ export function LiveMediaWorkspace({
           <MediaRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+      {banner}
 
       <TabBar
         aria-label="Media sections"

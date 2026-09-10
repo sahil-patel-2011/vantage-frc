@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
+import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import type { MediaView } from "../../lib/media/compute-media";
@@ -17,6 +18,8 @@ import {
   filterTabsByHubAccess,
 } from "../../lib/nav/hub-access-filter";
 import { hubById, hubPrimaryTabs } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -32,6 +35,29 @@ const TABS: Array<{ id: Tab; label: string }> = PRIMARY_TABS.map((tab) => ({
   id: tab.id as Tab,
   label: tab.label,
 }));
+
+function isMediaView(value: unknown): value is MediaView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function mediaCacheOrg(data: MediaView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistMediaSnapshot(orgHint: string, seasonHint: string, data: MediaView): Promise<void> {
+  const cacheOrg = mediaCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("media", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("media", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Media already painted; IndexedDB is best-effort.
+  }
+}
 
 function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
   if (!actions.length) return null;
@@ -157,6 +183,10 @@ export default function MediaClient() {
   const [tab, setTab] = useState<Tab>("calendar");
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [draftMeta, setDraftMeta] = useState<{ feature: string; generatedAt: string } | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MediaView | null>(null);
+  viewRef.current = view;
 
   const visibleTabs = useMemo(
     () => filterTabsByHubAccess(TABS, access.hubAccess, "media"),
@@ -165,38 +195,74 @@ export default function MediaClient() {
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "media");
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setAccessDenied(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = params.get("season") ? Number(params.get("season")) : null;
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    const currentTab = readTabFromUrl();
-    if (currentTab !== "calendar") query.set("tab", currentTab);
-    void fetch(`/api/media${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery = params.get("season") ? Number(params.get("season")) : null;
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MediaView>("media", urlOrg || "_", seasonHint);
+        if (!viewRef.current && cached?.data && isMediaView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setErrorStatus(null);
+      setAccessDenied(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      const currentTab = readTabFromUrl();
+      if (currentTab !== "calendar") query.set("tab", currentTab);
+      try {
+        const response = await fetch(
+          `/api/media${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as MediaView | { error?: string };
         if (response.status === 403) {
           setAccessDenied(true);
           setError("error" in data && data.error ? data.error : "You do not have access to this tab");
           return;
         }
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
-          setError("error" in data && data.error ? data.error : "Could not load Media");
+        if (!response.ok || !isMediaView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Media. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setErrorStatus(response.status);
+            setFetchFailed(true);
+            setError("error" in data && data.error ? data.error : "Could not load Media");
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => {
-        setFetchFailed(true);
-        setError("Could not load Media");
-      });
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMediaSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Media. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+          setError("Could not load Media");
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -232,6 +298,7 @@ export default function MediaClient() {
             seasonYear: view.seasonYear,
             ...payload,
           }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as
           | LiveWithDraft
@@ -254,6 +321,7 @@ export default function MediaClient() {
         if (live.draft?.status === "setup_required") {
           setError(live.draft.message);
           setView(live);
+          void persistMediaSnapshot(view.orgId, String(view.seasonYear), live);
           return false;
         }
         if (
@@ -278,20 +346,24 @@ export default function MediaClient() {
               caption: live.draft.caption,
               dueAt: live.draft.dueAt,
             }),
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
           });
           const created = (await createResponse.json()) as MediaView | { error?: string };
           if (!createResponse.ok || !("status" in created) || created.status !== "live") {
             setError("error" in created && created.error ? created.error : "Could not save AI draft");
             setView(live);
+            void persistMediaSnapshot(view.orgId, String(view.seasonYear), live);
             return false;
           }
           setView(created);
+          void persistMediaSnapshot(view.orgId, String(view.seasonYear), created);
           return true;
         }
         if (live.draft?.status === "live") {
           setDraftMeta({ feature: live.draft.feature, generatedAt: live.draft.generatedAt });
         }
         setView(live);
+        void persistMediaSnapshot(view.orgId, String(view.seasonYear), live);
         return true;
       } catch {
         setError("Media update failed");
@@ -352,6 +424,7 @@ export default function MediaClient() {
         cutoffCode={cutoffCode}
         draftMeta={draftMeta}
         mutate={mutate}
+        banner={<OfflineBanner feature="Media" fromCache={fromCache} cachedAt={cachedAt} />}
       />
     );
   }
@@ -364,6 +437,8 @@ export default function MediaClient() {
       error={error || undefined}
       errorStatus={errorStatus}
       onRetry={load}
-    />
+    >
+      <OfflineBanner feature="Media" fromCache={fromCache} cachedAt={cachedAt} />
+    </MediaShell>
   );
 }
