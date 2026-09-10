@@ -36,7 +36,7 @@ describe("urgency vocabulary", () => {
     for (const urgency of ALL_URGENCIES) {
       const tone = URGENCY_TONES[urgency];
       expect(tone).toBeTruthy();
-      expect(toneColor(tone)).toMatch(/^var\(--app-[a-z-]+\)$/);
+      expect(toneColor(tone)).toMatch(/^var\(--(?:critical|warning|accent|muted|positive)\)$/);
     }
   });
 

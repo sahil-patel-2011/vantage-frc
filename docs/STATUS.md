@@ -99,7 +99,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | Competition Scouting strip | Accuracy and seven other meta jobs left the strip; Field value + Data quality stay | this commit |
 | Product CSS `--app-*` | leaf sheets still consumed `--app-*` color aliases; now canonical `--accent` / `--surface` / `--positive-fill` / `--critical-fill` / `--accent-hover` | this commit |
 | Next match error band | placeholder `DEFAULT_ERROR_BAND = 8` replaced with fixture MAE **90** (`typical error ±90 (last measured set)`) | this commit |
-| FEATURE_MAP fixture walk | parser yields **143** visit-able routes; Chromium compiling all of them hung `next dev` (API calls sat at 31s). HTTP walk with the fixture cookie: **138 OK, 5 404 (`/admin` + children — fixture is not a platform admin), 0 500** in 20.7s | this commit |
+| Product CSS `--m-*` | product chrome must not use the marketing paper palette; css-integrity allows `--m-*` only in marketing/legal sheets | this commit |
 
 ---
 
