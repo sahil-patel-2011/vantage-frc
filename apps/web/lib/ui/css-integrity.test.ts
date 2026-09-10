@@ -154,12 +154,10 @@ describe("stylesheet integrity", () => {
     expect(offenders, "custom-property names must not contain a comment-ender").toEqual([]);
   });
 
-  it("declares --soft-*/--app-*/--m-* tokens only in system.css", () => {
+  it("declares leftover --m-* marketing tokens only in system.css", () => {
     // Three competing palettes is how two secondary buttons on the same
-    // screen ended up different colours. Canonical names live in system.css.
-    // Leaf sheets must not redeclare --soft-*/--app-*/--m-* tokens. Color,
-    // type, space, radius, and shadow consumption is locked to the canonical
-    // names; --soft-* remains only as alias declarations in system.css.
+    // screen ended up different colours. Canonical product names live in
+    // system.css. Leaf sheets must not redeclare --soft-*/--app-*/--m-* tokens.
     const tokenDecl = /--(?:soft|app|m)-[A-Za-z0-9-]+\s*:/;
     const offenders: string[] = [];
     for (const file of files) {
@@ -174,6 +172,23 @@ describe("stylesheet integrity", () => {
     expect(
       offenders,
       `token declarations outside system.css:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
+  });
+
+  it("does not keep leftover --soft-* or --app-* alias declarations", () => {
+    const tokenDecl = /--(?:soft|app)-[A-Za-z0-9-]+\s*:/;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (tokenDecl.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      `leftover --soft-* / --app-* alias declarations:\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
 
@@ -221,8 +236,8 @@ describe("stylesheet integrity", () => {
   it("consumes canonical color tokens instead of --soft-* color aliases", () => {
     // Competing palettes is how two secondary buttons on the same screen ended
     // up different colours. Leaf sheets must use --bg/--surface/--ink/--accent
-    // (and the other canonical names). --soft-* aliases remain declared in
-    // system.css for back-compat only; product CSS must not consume them.
+    // (and the other canonical names). Leftover --soft-* aliases are not
+    // declared anywhere — product chrome has one token family.
     const colorAlias =
       /var\(--soft-(?:bg|card|ink|muted|line(?:-soft)?|accent(?:-soft|-ink)?|warning(?:-soft)?|danger(?:-soft)?|success(?:-soft)?|surface-2|panel|border|brand|ring|radius(?:-xs|-sm|-lg|-pill)?|shadow(?:-lift|-pop)?)(?=[,)])/;
     const offenders: string[] = [];
@@ -241,7 +256,6 @@ describe("stylesheet integrity", () => {
   });
 
   it("never consumes --app-* tokens in product CSS", () => {
-    // Color aliases stay declared in system.css (--app-accent: var(--accent)).
     // Leaf sheets must use the canonical names; a second palette is how two
     // secondary buttons on the same screen ended up different colours.
     const offenders: string[] = [];

@@ -62,7 +62,7 @@ function readStoredPreference(): ThemePreference {
   return storedPreference() ?? "light";
 }
 
-/** Keep the OS browser chrome on the same colour as --soft-bg. */
+/** Keep the OS browser chrome on the same colour as --bg. */
 function syncBrowserColor(theme: Theme) {
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
     .forEach((meta) => { meta.content = theme === "dark" ? "#0c1118" : "#eef2f7"; });

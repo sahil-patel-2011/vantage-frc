@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCENT_CONTRAST_TARGET,
+  ACCENT_VARIABLE_NAMES,
   DEFAULT_ACCENT,
+  LEGACY_ACCENT_ALIASES,
   SOFT_CARD_SURFACE,
   accentCssVariables,
   buildAccentPlan,
@@ -150,22 +152,29 @@ describe("accent plan", () => {
     const plan = buildAccentPlan("#1457d9")!;
     const light = accentCssVariables(plan, "light");
     const dark = accentCssVariables(plan, "dark");
-    expect(light["--soft-brand"]).toBe("#1457d9");
-    expect(dark["--soft-brand"]).toBe("#1457d9");
-    expect(light["--accent"]).toBe(light["--soft-accent"]);
-    expect(light["--accent-soft"]).toBe(light["--soft-accent-soft"]);
+    expect(light["--accent"]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(dark["--accent"]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(light["--accent-soft"]).toMatch(/^#[0-9a-f]{6}$/);
     expect(light["--accent-ink"]).toMatch(/^#[0-9a-f]{6}$/);
     expect(light["--accent-hover"]).toMatch(/^#[0-9a-f]{6}$/);
-    expect(light["--accent-hover"]).toBe(light["--app-accent-hover"]);
+    expect(light["--soft-accent"]).toBeUndefined();
+    expect(light["--app-accent"]).toBeUndefined();
     // Text accent differs by theme because the card underneath differs.
-    expect(light["--soft-accent"]).not.toBe(dark["--soft-accent"]);
     expect(light["--accent"]).not.toBe(dark["--accent"]);
-    expect(contrastRatio(light["--soft-accent"]!, SOFT_CARD_SURFACE.light)).toBeGreaterThanOrEqual(
+    expect(contrastRatio(light["--accent"]!, SOFT_CARD_SURFACE.light)).toBeGreaterThanOrEqual(
       ACCENT_CONTRAST_TARGET,
     );
-    expect(contrastRatio(dark["--soft-accent"]!, SOFT_CARD_SURFACE.dark)).toBeGreaterThanOrEqual(
+    expect(contrastRatio(dark["--accent"]!, SOFT_CARD_SURFACE.dark)).toBeGreaterThanOrEqual(
       ACCENT_CONTRAST_TARGET,
     );
     for (const value of Object.values(light)) expect(value).toMatch(/^#[0-9a-f]{6}$/);
+    expect([...ACCENT_VARIABLE_NAMES]).toEqual([
+      "--accent",
+      "--accent-soft",
+      "--accent-ink",
+      "--accent-hover",
+    ]);
+    expect(LEGACY_ACCENT_ALIASES).toContain("--soft-accent");
+    expect(LEGACY_ACCENT_ALIASES).toContain("--app-accent");
   });
 });

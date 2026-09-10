@@ -2634,10 +2634,10 @@ body.has-app-shell .command-dialog [role="option"].is-active>small{color:var(--a
    Customization plumbing (additive — nothing above this line is restyled).
 
    Three knobs land here:
-     1. Team brand tokens. AppearanceRuntime writes --soft-accent / --soft-brand
+     1. Team brand tokens. AppearanceRuntime writes --accent / --accent-soft
         inline on <html>; these defaults keep every rule below valid when a team
-        has not chosen a colour. --soft-accent is always contrast-guarded, so the
-        team's literal hex is exposed separately as --soft-brand for NON-TEXT use.
+        has not chosen a colour. --accent is always contrast-guarded. The team's
+        literal hex is stored on data-brand-accent for non-text marks.
      2. --data-density → the --space-* ramp (mirrored by densityTokens()).
      3. --data-motion  → the JS-driven animations that a media query cannot reach.
    ========================================================================= */

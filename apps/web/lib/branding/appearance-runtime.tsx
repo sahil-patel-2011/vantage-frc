@@ -9,14 +9,14 @@ import {
   type AppearancePrefs,
 } from "./appearance";
 import { accentIsActive, type OrgBrandingView } from "./branding";
-import { ACCENT_VARIABLE_NAMES, accentCssVariables, buildAccentPlan } from "./colors";
+import { ACCENT_VARIABLE_NAMES, LEGACY_ACCENT_ALIASES, accentCssVariables, buildAccentPlan } from "./colors";
 
 /**
  * Applies the team accent and the member's appearance preferences to <html>.
  *
  * Mounted once by ThemeProvider on product routes, alongside the existing theme
  * bootstrap. Everything is applied as inline custom properties on the document
- * element so it wins over the token defaults in soft-ui.css without touching a
+ * element so it wins over the token defaults in system.css without touching a
  * single existing rule, and so it survives client-side navigation.
  */
 
@@ -39,6 +39,7 @@ function currentTheme(): "light" | "dark" {
 
 function applyAccent(accentColor: string | null, enabled: boolean) {
   const root = document.documentElement;
+  for (const name of LEGACY_ACCENT_ALIASES) root.style.removeProperty(name);
   const plan = enabled && accentColor ? buildAccentPlan(accentColor) : null;
   if (!plan) {
     for (const name of ACCENT_VARIABLE_NAMES) root.style.removeProperty(name);

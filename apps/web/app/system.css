@@ -1,6 +1,6 @@
 /* =============================================================================
    Canonical tokens. This is the only stylesheet allowed to DECLARE
-   --bg/--surface/--ink and the legacy --soft-* / --app-* / --m-* aliases.
+   --bg/--surface/--ink and the marketing --m-* palette.
 
    Light: navy ink on cool paper, one house blue. Dark: surfaces step UP in
    lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows become
@@ -65,28 +65,6 @@
   --tone-plate-mix: 10%;
   --tone-ink-mix: 100%;
 
-  --soft-bg: var(--bg);
-  --soft-card: var(--surface);
-  --soft-ink: var(--ink);
-  --soft-muted: var(--muted);
-  --soft-line: var(--line);
-  --soft-accent: var(--accent);
-  --soft-accent-soft: var(--accent-soft);
-  --soft-accent-ink: var(--accent-ink);
-  --soft-warning: var(--warning);
-  --soft-danger: var(--critical);
-  --soft-success: var(--positive);
-  --soft-warning-soft: var(--warning-soft);
-  --soft-danger-soft: var(--critical-soft);
-  --soft-success-soft: var(--positive-soft);
-  --soft-surface-2: var(--surface-2);
-  --soft-line-soft: var(--line-soft);
-  --soft-radius-xs: var(--radius-xs);
-  --soft-radius-sm: var(--radius-sm);
-  --soft-radius: var(--radius);
-  --soft-radius-lg: var(--radius-lg);
-  --soft-radius-pill: var(--radius-pill);
-
   --font-sans: var(--font-source-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --text-2xs: 11px;
@@ -125,82 +103,6 @@
   --space-4: calc(16px * var(--density));
   --space-5: calc(20px * var(--density));
   --space-6: calc(24px * var(--density));
-
-  --soft-font: var(--font-sans);
-  --soft-font-mono: var(--font-mono);
-  --soft-text-2xs: var(--text-2xs);
-  --soft-text-xs: var(--text-xs);
-  --soft-text-sm: var(--text-sm);
-  --soft-text: var(--text-md);
-  --soft-text-lg: var(--text-lg);
-  --soft-title-4: var(--title-4);
-  --soft-title-3: var(--title-3);
-  --soft-title-2: var(--title-2);
-  --soft-title-1: var(--title-1);
-  --soft-display: var(--title-display);
-  --soft-tracking-tight: var(--tracking-tight);
-  --soft-tracking-display: var(--tracking-display);
-  --soft-tracking-kicker: var(--tracking-kicker);
-  --soft-control-h: var(--control-h);
-  --soft-control-h-sm: var(--control-h-sm);
-  --soft-control-pad: var(--control-pad);
-  --soft-control-pad-sm: var(--control-pad-sm);
-  --soft-measure: var(--measure);
-  --soft-measure-prose: var(--measure-prose);
-  --soft-measure-narrow: var(--measure-narrow);
-  --soft-gutter: var(--gutter);
-  --soft-shadow: var(--shadow);
-  --soft-shadow-lift: var(--shadow-lift);
-  --soft-shadow-pop: var(--shadow-pop);
-  --soft-ring: var(--ring);
-  --soft-island: var(--island);
-  --soft-safe-bottom: var(--safe-bottom);
-  --soft-island-clearance: var(--island-clearance);
-  --soft-glyph-warning: var(--glyph-warning);
-  --soft-glyph-check: var(--glyph-check);
-  --soft-glow: var(--glow);
-  --soft-panel: var(--surface);
-  --soft-border: var(--line);
-  --soft-brand: var(--accent);
-  --soft-brand-ink: var(--accent-ink);
-  --soft-density: var(--density);
-  --soft-motion: var(--motion);
-  --soft-space-1: var(--space-1);
-  --soft-space-2: var(--space-2);
-  --soft-space-3: var(--space-3);
-  --soft-space-4: var(--space-4);
-  --soft-space-5: var(--space-5);
-  --soft-space-6: var(--space-6);
-
-  --app-bg: var(--bg);
-  --app-canvas: var(--bg);
-  --app-surface: var(--surface);
-  --app-surface-2: var(--surface-2);
-  --app-surface-muted: var(--surface-2);
-  --app-soft: var(--surface-2);
-  --app-ink: var(--ink);
-  --app-fg: var(--ink);
-  --app-text: var(--ink);
-  --app-navy: var(--ink);
-  --app-muted: var(--muted);
-  --app-line: var(--line);
-  --app-border: var(--line);
-  --app-accent: var(--accent);
-  --app-accent-ink: var(--accent-ink);
-  --app-on-accent: var(--accent-ink);
-  --app-accent-hover: var(--accent-hover);
-  --app-radius: var(--radius-sm);
-  --app-shadow: var(--shadow);
-  --app-warn: var(--warning);
-  --app-warning: var(--warning);
-  --app-warn-bg: var(--warning-soft);
-  --app-danger: var(--critical);
-  --app-critical: var(--critical);
-  --app-good: var(--positive);
-  --app-success: var(--positive);
-  --app-positive: var(--positive);
-  --app-positive-fill: var(--positive-fill);
-  --app-critical-fill: var(--critical-fill);
 
   --border-soft: var(--line);
   --hairline: var(--line);
@@ -403,6 +305,8 @@ html[data-theme="dark"] .marketing-lux {
 
    Palette, radius, type and spacing tokens are declared in this file.
    Leaf sheets consume them; they do not redeclare --soft-*, --app-*, or --m-* tokens.
+   Product chrome has one token family: --bg/--surface/--ink/--accent.
+   Marketing keeps --m-* on purpose.
    ========================================================================== */
 
 /* --- Focus. One ring, every route ------------------------------------------

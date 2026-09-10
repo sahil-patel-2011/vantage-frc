@@ -6,18 +6,18 @@
  * jobs (coloured *text* like links and active tabs, versus *fills* like the
  * primary button and the island indicator).
  *
- * `--accent` (and the `--soft-accent` alias) is contrast-guarded against the
- * card so no team can pick a colour that makes their own UI unreadable. The
- * team's literal hex is `--soft-brand` and is used only for non-text accents.
- * When the two diverge, Team admin is told why.
+ * `--accent` is contrast-guarded against the card so no team can pick a colour
+ * that makes their own UI unreadable. The team's literal hex is stored on
+ * `data-brand-accent` for non-text marks. When the two diverge, Team admin is
+ * told why.
  */
 
 export const ACCENT_CONTRAST_TARGET = 4.5;
 
-/** Mirrors the `--soft-card` values in app/soft-ui.css. */
+/** Mirrors the `--surface` values in app/system.css. */
 export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#151b24" } as const;
 
-/** Mirrors the stock `--soft-accent` values in app/soft-ui.css. */
+/** Mirrors the stock `--accent` values in app/system.css. */
 export const DEFAULT_ACCENT = { light: "#1457d9", dark: "#6e9bff" } as const;
 
 export type ThemeKey = "light" | "dark";
@@ -169,9 +169,9 @@ export type AccentPlanTheme = {
   brand: string;
   /** Readable ink for text placed on top of `brand`. */
   brandInk: string;
-  /** Contrast-guarded accent for text and existing `--soft-accent` rules. */
+  /** Contrast-guarded accent for text and existing `--accent` rules. */
   accent: string;
-  /** Tinted background companion for `--soft-accent-soft`. */
+  /** Tinted background companion for `--accent-soft`. */
   accentSoft: string;
   guard: AccentGuard;
 };
@@ -244,12 +244,6 @@ export function accentCssVariables(plan: AccentPlan, theme: ThemeKey): Record<st
     "--accent-soft": side.accentSoft,
     "--accent-ink": readableInkOn(side.accent),
     "--accent-hover": hover,
-    "--soft-accent": side.accent,
-    "--soft-accent-soft": side.accentSoft,
-    "--soft-brand": side.brand,
-    "--soft-brand-ink": side.brandInk,
-    "--app-accent": side.accent,
-    "--app-accent-hover": hover,
   };
 }
 
@@ -259,6 +253,13 @@ export const ACCENT_VARIABLE_NAMES = [
   "--accent-soft",
   "--accent-ink",
   "--accent-hover",
+] as const;
+
+/**
+ * Leftover `--soft-*` / `--app-*` names a previous visit may have stamped on
+ * `<html>`. Strip them so a returning browser cannot keep a second palette.
+ */
+export const LEGACY_ACCENT_ALIASES = [
   "--soft-accent",
   "--soft-accent-soft",
   "--soft-brand",

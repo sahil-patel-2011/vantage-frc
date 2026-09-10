@@ -30,7 +30,7 @@ const ibmMono = IBM_Plex_Mono({
 export const metadata: Metadata = rootMarketingMetadata();
 
 export const viewport: Viewport = {
-  // Matches --soft-bg in both themes, so the OS browser chrome does not paint a
+  // Matches --bg in both themes, so the OS browser chrome does not paint a
   // different shade than the page behind it.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#eef2f7" },
