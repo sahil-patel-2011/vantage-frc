@@ -2,6 +2,9 @@ name: Web PR CI
 
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -38,6 +41,9 @@ jobs:
 
   browser:
     name: Playwright
+    # Private-repo Actions minutes: skip Chromium on draft pushes.
+    # Full suite runs when the PR is marked ready, or via workflow_dispatch.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

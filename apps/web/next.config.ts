@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
 
 const config: NextConfig = {
+  // Vercel Preview Comments cannot patch Next 16.3 immutable static output
+  // (IMMUTABLE_STATIC_PATCH_PREVIEW_COMMENTS). Restore the default after
+  // Preview Comments are off on the project.
+  supportsImmutableAssets: false,
   serverExternalPackages: ["pg"],
   transpilePackages: [
     "@vantage/agent",

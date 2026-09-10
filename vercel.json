@@ -4,6 +4,9 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build --workspace=@vantage/web",
   "outputDirectory": "apps/web/.next",
+  "github": {
+    "silent": true
+  },
   "crons": [
     {
       "path": "/api/cron/tba-sync?mode=event-day",
