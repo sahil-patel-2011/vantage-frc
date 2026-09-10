@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { PicklistJustifierView } from "../../lib/picklist-justifier/compute-picklist-justifier";
 import { picklistTierLabel } from "../../lib/picklist-justifier";
@@ -16,8 +17,38 @@ import {
   type PicklistJustifierShellKind,
 } from "../../lib/picklist-justifier/picklist-justifier-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./picklist-justifier.css";
+
+function isPicklistJustifierView(value: unknown): value is PicklistJustifierView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistPicklistJustifierSnapshot(
+  orgHint: string,
+  listHint: string,
+  data: PicklistJustifierView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const listKey =
+    data.status === "live" && data.selectedPickListId ? data.selectedPickListId : listHint;
+  try {
+    await putFeatureSnapshot("picklist-justifier", cacheOrg, data, listKey);
+    await putFeatureSnapshot("picklist-justifier", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("picklist-justifier", "_", data, listKey);
+      await putFeatureSnapshot("picklist-justifier", "_", data);
+    }
+  } catch {
+    // Live justifier already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<PicklistJustifierView, { status: "live" }>;
 
@@ -138,25 +169,70 @@ export default function PicklistJustifierClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PicklistJustifierView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((pickListIdOverride?: string) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (pickListIdOverride) query.set("pickListId", pickListIdOverride);
-    void fetch(`/api/picklist-justifier${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const listHint = pickListIdOverride?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<PicklistJustifierView>(
+          "picklist-justifier",
+          urlOrg || "_",
+          listHint,
+        );
+        if (!viewRef.current && cached?.data && isPicklistJustifierView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (listHint) query.set("pickListId", listHint);
+      try {
+        const response = await fetch(
+          `/api/picklist-justifier${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as PicklistJustifierView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isPicklistJustifierView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Pick-list Justifier. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistPicklistJustifierSnapshot(urlOrg, listHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Pick-list Justifier. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -201,13 +277,15 @@ export default function PicklistJustifierClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PicklistJustifierView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isPicklistJustifierView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistPicklistJustifierSnapshot(orgId, "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -218,7 +296,11 @@ export default function PicklistJustifierClient() {
   );
 
   if (shell === "loading") {
-    return <JustifierShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <JustifierShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+      </JustifierShell>
+    );
   }
 
   if (shell === "error") {
@@ -229,7 +311,9 @@ export default function PicklistJustifierClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+      </JustifierShell>
     );
   }
 
@@ -240,13 +324,17 @@ export default function PicklistJustifierClient() {
         orgId={orgId}
         shell="setup"
       >
-        
+        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
       </JustifierShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <JustifierShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <JustifierShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
+      </JustifierShell>
+    );
   }
 
   return (
@@ -284,6 +372,7 @@ export default function PicklistJustifierClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

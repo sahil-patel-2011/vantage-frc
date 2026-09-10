@@ -81,6 +81,10 @@ const SHELL_ROUTES = [
   "/counter-book",
   "/overnight-intel",
   "/alliance-partner-brief",
+  "/picklist-justifier",
+  "/opponent-watchlist",
+  "/alliance-sim",
+  "/briefing",
 ];
 
 function isShellPath(pathname) {

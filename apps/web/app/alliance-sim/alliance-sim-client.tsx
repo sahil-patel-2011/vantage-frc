@@ -1,11 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ALLIANCE_SIM_ROLE_DEFS, allianceSimRoleLabel } from "../../lib/alliance-sim";
 import type { AllianceSimView } from "../../lib/alliance-sim/compute-alliance-sim";
 import type { AllianceSimRole } from "../../lib/alliance-sim/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+
+function isAllianceSimView(value: unknown): value is AllianceSimView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistAllianceSimSnapshot(
+  orgHint: string,
+  scenarioHint: string,
+  data: AllianceSimView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const scenarioKey =
+    data.status === "live" && data.selectedScenarioId ? data.selectedScenarioId : scenarioHint;
+  try {
+    await putFeatureSnapshot("alliance-sim", cacheOrg, data, scenarioKey);
+    await putFeatureSnapshot("alliance-sim", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("alliance-sim", "_", data, scenarioKey);
+      await putFeatureSnapshot("alliance-sim", "_", data);
+    }
+  } catch {
+    // Live simulator already painted; IndexedDB is best-effort.
+  }
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -21,36 +52,80 @@ export default function AllianceSimClient() {
   const [loadStatus, setLoadStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<AllianceSimView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((scenarioOverride?: string | null) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const scenarioQuery = scenarioOverride !== undefined ? scenarioOverride : params.get("scenarioId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (scenarioQuery) query.set("scenarioId", scenarioQuery);
-    void fetch(`/api/alliance-sim${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const scenarioQuery =
+        scenarioOverride !== undefined ? scenarioOverride : params.get("scenarioId");
+      const scenarioHint = scenarioQuery?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<AllianceSimView>(
+          "alliance-sim",
+          urlOrg || "_",
+          scenarioHint,
+        );
+        if (!viewRef.current && cached?.data && isAllianceSimView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (scenarioHint) query.set("scenarioId", scenarioHint);
+      try {
+        const response = await fetch(
+          `/api/alliance-sim${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as AllianceSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+        if (!response.ok || !isAllianceSimView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Alliance Sim. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setLoadStatus(response.status);
+            setLoadError("error" in data && data.error ? data.error : "");
+            setFetchFailed(true);
+          }
           return;
         }
         setLoadStatus(null);
         setLoadError("");
         setView(data);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
-        setFetchFailed(true);
-      });
+        setFromCache(false);
+        setCachedAt(null);
+        await persistAllianceSimSnapshot(urlOrg, scenarioHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Alliance Sim. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setLoadStatus(null);
+          setLoadError("");
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -67,13 +142,15 @@ export default function AllianceSimClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as AllianceSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isAllianceSimView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistAllianceSimSnapshot(orgId, "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -111,6 +188,7 @@ export default function AllianceSimClient() {
           </label>
         ) : null}
       </PageHeader>
+      <OfflineBanner feature="Alliance Sim" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

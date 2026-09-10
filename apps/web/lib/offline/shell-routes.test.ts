@@ -76,6 +76,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/counter-book")).toBe(true);
     expect(pathnameIsOfflineShell("/overnight-intel")).toBe(true);
     expect(pathnameIsOfflineShell("/alliance-partner-brief")).toBe(true);
+    expect(pathnameIsOfflineShell("/picklist-justifier")).toBe(true);
+    expect(pathnameIsOfflineShell("/opponent-watchlist")).toBe(true);
+    expect(pathnameIsOfflineShell("/alliance-sim")).toBe(true);
+    expect(pathnameIsOfflineShell("/briefing")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -129,6 +133,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/counter-book")).toBe("Counter-book");
     expect(offlineCapableLabel("/overnight-intel")).toBe("Overnight Intel");
     expect(offlineCapableLabel("/alliance-partner-brief")).toBe("Alliance-Partner Brief");
+    expect(offlineCapableLabel("/picklist-justifier")).toBe("Pick-list Justifier");
+    expect(offlineCapableLabel("/opponent-watchlist")).toBe("Opponent Watchlist");
+    expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance Sim");
+    expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -183,6 +191,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("counter-book", "org-1")).toBe("counter-book:org-1");
     expect(featureCacheKey("overnight-intel", "org-1")).toBe("overnight-intel:org-1");
     expect(featureCacheKey("alliance-brief", "org-1", "1")).toBe("alliance-brief:org-1:1");
+    expect(featureCacheKey("picklist-justifier", "org-1", "list-1")).toBe("picklist-justifier:org-1:list-1");
+    expect(featureCacheKey("opponent-watchlist", "org-1")).toBe("opponent-watchlist:org-1");
+    expect(featureCacheKey("alliance-sim", "org-1", "scen-1")).toBe("alliance-sim:org-1:scen-1");
+    expect(featureCacheKey("briefing", "org-1", "2026onto_qm1")).toBe("briefing:org-1:2026onto_qm1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

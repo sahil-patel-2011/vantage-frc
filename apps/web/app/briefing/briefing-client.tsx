@@ -1,7 +1,8 @@
 "use client";
-import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button } from "../../components/ui";
 import {
   briefingChecklist,
   matchLabel,
@@ -12,6 +13,8 @@ import { capabilityLabel } from "../../lib/briefing/plan-sections";
 import { briefingWinProbability, includeStoredBriefingSections } from "../../lib/briefing/stored-sections";
 import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
 import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
 import {
   formatPredictionWinDisplay,
@@ -20,6 +23,32 @@ import {
 } from "../../lib/strategy/prediction-display";
 import { fmtTimestamp } from "../../lib/video-review";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+
+function isFullBriefingView(value: unknown): value is FullBriefingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistBriefingSnapshot(
+  orgHint: string,
+  matchHint: string,
+  data: FullBriefingView,
+): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  const matchKey = data.status === "ready" ? data.match.matchKey : matchHint;
+  try {
+    await putFeatureSnapshot("briefing", cacheOrg, data, matchKey);
+    await putFeatureSnapshot("briefing", cacheOrg, data);
+    if (!orgHint) {
+      await putFeatureSnapshot("briefing", "_", data, matchKey);
+      await putFeatureSnapshot("briefing", "_", data);
+    }
+  } catch {
+    // Live briefing already painted; IndexedDB is best-effort.
+  }
+}
 
 /** Where each checklist row sends the coach to fix the gap. */
 const CHECKLIST_HREFS: Record<string, string> = {
@@ -201,33 +230,72 @@ export default function BriefingClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const selectedRef = useRef<string | null>(null);
+  const viewRef = useRef<FullBriefingView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async (matchKey: string | null, options?: { refresh?: boolean }) => {
     selectedRef.current = matchKey;
     const pageParams = new URLSearchParams(window.location.search);
-    const orgId = pageParams.get("orgId");
+    const urlOrg = pageParams.get("orgId")?.trim() ?? "";
+    const matchHint = matchKey?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<FullBriefingView>(
+        "briefing",
+        urlOrg || "_",
+        matchHint,
+      );
+      if (!viewRef.current && cached?.data && isFullBriefingView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     const query = new URLSearchParams();
-    if (orgId) query.set("orgId", orgId);
-    if (matchKey) query.set("matchKey", matchKey);
+    if (urlOrg) query.set("orgId", urlOrg);
+    if (matchHint) query.set("matchKey", matchHint);
     if (options?.refresh) query.set("refresh", "1");
     const suffix = query.toString();
     try {
-      const response = await fetch(`/api/briefing${suffix ? `?${suffix}` : ""}`);
+      const response = await fetch(`/api/briefing${suffix ? `?${suffix}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as FullBriefingView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load the pre-match briefing.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isFullBriefingView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Pre-match briefing. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load the pre-match briefing.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistBriefingSnapshot(urlOrg, matchHint, data);
     } catch {
-      setErrorStatus(null);
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Pre-match briefing. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setErrorStatus(null);
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -251,6 +319,7 @@ export default function BriefingClient() {
             <h1>Pre-match briefing</h1>
           </div>
         </header>
+        <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card brief-empty">
           {fetchFailed ? (
             (() => {
@@ -303,6 +372,7 @@ export default function BriefingClient() {
             <p>One briefing per match — prediction, plan, opponent notes, scouted tendencies, and film.</p>
           </div>
         </header>
+        <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card brief-empty">
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
@@ -394,6 +464,7 @@ export default function BriefingClient() {
           </Button>
         </div>
       </header>
+      <OfflineBanner feature="Pre-match briefing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {fetchFailed ? (
         <p className="telemetry-status" role="alert">

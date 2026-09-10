@@ -58,7 +58,11 @@ export type OfflineFeature =
   | "shift-balancer"
   | "counter-book"
   | "overnight-intel"
-  | "alliance-brief";
+  | "alliance-brief"
+  | "picklist-justifier"
+  | "opponent-watchlist"
+  | "alliance-sim"
+  | "briefing";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
