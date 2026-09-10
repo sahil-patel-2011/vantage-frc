@@ -248,11 +248,18 @@ describe("user-facing copy", () => {
     expect(files.length).toBeGreaterThan(100);
   });
 
-  it("prints no internal engineering vocabulary", () => {
-    const findings = files.flatMap((file) => scan(file));
-    const report = findings
-      .map((f) => `apps/web/${f.file}:${f.line}  [${f.label}] ${f.why}\n    ${f.text}`)
-      .join("\n");
-    expect(report, `\n${findings.length} banned phrase(s) in user-visible copy:\n${report}\n`).toBe("");
-  });
+  it(
+    "prints no internal engineering vocabulary",
+    () => {
+      const findings = files.flatMap((file) => scan(file));
+      const report = findings
+        .map((f) => `apps/web/${f.file}:${f.line}  [${f.label}] ${f.why}\n    ${f.text}`)
+        .join("\n");
+      expect(report, `\n${findings.length} banned phrase(s) in user-visible copy:\n${report}\n`).toBe("");
+    },
+    // Reads and regex-scans every .tsx under app/ and components/ (~1,500
+    // files). Under 3 s alone; it hit 8.8 s with a typecheck and a build
+    // running beside it, and the 5 s default turned that into a red run.
+    60_000,
+  );
 });
