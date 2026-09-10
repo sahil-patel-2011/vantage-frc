@@ -127,7 +127,7 @@ export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrend
         kind: "ready",
         title: "EPA swings on watched teams",
         description:
-          "Alerts use only Neon reference EPA between events for teams you watch.",
+          "Alerts use stored EPA between events for teams you watch.",
       };
   }
 }

@@ -55,7 +55,10 @@ export default function KioskClient({
   useEffect(() => {
     void refresh();
     const clock = setInterval(() => setNow(Date.now()), 1000);
-    const live = setInterval(() => void refresh(), 30_000);
+    const live = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void refresh();
+    }, 30_000);
     const status = () => setOnline(navigator.onLine);
     status();
     addEventListener("online", status);
@@ -174,8 +177,8 @@ export default function KioskClient({
             <span>NEXT MATCH</span>
             <h2>No upcoming team match</h2>
             <p>
-              Set an active event and sync TBA matches. This board only shows matches that include team #
-              {data.organization.teamNumber} — it will not invent a queue time.
+              Set an active event and sync The Blue Alliance. This board only shows matches that include team #
+              {data.organization.teamNumber}. Queue time stays blank until those matches exist.
             </p>
           </section>
         ))}

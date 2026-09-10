@@ -41,7 +41,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       >
         <nav className="settings-inline-links" aria-label="Related settings">
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
-          <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
+          <a href={`/team/budgets?orgId=${orgId}`}>Chat limits</a>
           <a href={`/team?orgId=${orgId}#custom-providers`}>API keys</a>
           <a href="/security">Personal 2FA</a>
         </nav>

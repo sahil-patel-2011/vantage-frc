@@ -119,6 +119,6 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch {
-    return Response.json({ error: "Could not recompute strategy from the Neon cache." }, { status: 400 });
+    return Response.json({ error: "Could not refresh this match plan from saved rankings." }, { status: 400 });
   }
 }

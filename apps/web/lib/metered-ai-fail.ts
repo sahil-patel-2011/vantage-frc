@@ -21,7 +21,7 @@ const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
   },
   {
     id: "budgets",
-    label: "Review API budgets",
+    label: "Review Chat limits",
     detail: "Hard spend and token limits apply before every metered call.",
     href: "/ai?tab=budgets",
   },

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyCalendarLocalWrite,
   daysUntil,
   getSeasonTemplate,
   groupByMonth,
+  isCalendarQueueableAction,
   listSeasonTemplates,
   meetingProvider,
   milestoneWorkflowLinks,
@@ -13,6 +15,7 @@ import {
   SEASON_TEMPLATES,
   seasonProgress,
   seedFromKickoff,
+  type CalendarView,
   type Milestone,
 } from "./season-calendar";
 
@@ -330,5 +333,49 @@ describe("parseCalendarAction", () => {
       id: ID,
     });
     expect(() => parseCalendarAction({ action: "delete_milestone", orgId: ORG, id: "not-a-uuid" })).toThrow(/invalid/);
+  });
+});
+
+describe("offline calendar writes", () => {
+  const ready = (): CalendarView => ({
+    status: "ready",
+    context: { orgId: ORG, orgName: "6925", teamNumber: 6925, role: "member" },
+    milestones: [milestone({ id: ID, title: "Drivetrain rolling", done: false })],
+    linkedDeadlines: [],
+    templates: [],
+  });
+
+  it("queues ticks, edits, and deletes, but not a season seed", () => {
+    expect(isCalendarQueueableAction("toggle_done")).toBe(true);
+    expect(isCalendarQueueableAction("add_milestone")).toBe(true);
+    expect(isCalendarQueueableAction("seed_season")).toBe(false);
+  });
+
+  it("ticks a date on the last snapshot so the checkbox does not snap back", () => {
+    const next = applyCalendarLocalWrite(
+      ready(),
+      { action: "toggle_done", id: ID, done: true },
+      "2027-01-09T12:00:00.000Z",
+    );
+    expect(next.status).toBe("ready");
+    if (next.status !== "ready") return;
+    expect(next.milestones[0]?.done).toBe(true);
+    expect(next.milestones[0]?.doneAt).toBe("2027-01-09T12:00:00.000Z");
+  });
+
+  it("adds a local row, then drops a deleted one", () => {
+    const added = applyCalendarLocalWrite(
+      ready(),
+      { action: "add_milestone", title: "Practice night", kind: "practice", startsOn: "2027-02-01" },
+      "2027-01-09T12:00:00.000Z",
+      "33333333-3333-4333-8333-333333333333",
+    );
+    expect(added.status).toBe("ready");
+    if (added.status !== "ready") return;
+    expect(added.milestones.map((row) => row.title)).toContain("Practice night");
+    const deleted = applyCalendarLocalWrite(added, { action: "delete_milestone", id: ID });
+    expect(deleted.status).toBe("ready");
+    if (deleted.status !== "ready") return;
+    expect(deleted.milestones.map((row) => row.id)).toEqual(["33333333-3333-4333-8333-333333333333"]);
   });
 });

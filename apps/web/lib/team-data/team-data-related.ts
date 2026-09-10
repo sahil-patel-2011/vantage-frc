@@ -130,7 +130,7 @@ export function teamDataNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss desks stay blank until Neon holds real TBA/Statbotics rows.",
+          detail: "Win/loss stays blank until rankings from The Blue Alliance and Statbotics are saved.",
           href: withOrgHref("/strategy", orgId),
         },
       ];
@@ -153,7 +153,7 @@ export function teamDataNextActions(input: {
       {
         id: "schedule",
         label: "Open Schedule",
-        detail: "Match timing reads the Neon TBA cache filled from this sync surface.",
+        detail: "Match times come from the schedule this page saves.",
         href: withOrgHref("/schedule", orgId),
       },
     ];
@@ -164,14 +164,14 @@ export function teamDataNextActions(input: {
       {
         id: "retry",
         label: "Retry Team Data",
-        detail: "Reload real inventory and TBA cache health.",
+        detail: "Reload inventory and ranking health.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
       {
         id: "schedule",
         label: "Open Schedule",
-        detail: "Last-good match rows may still load if Neon already has an event cache.",
+        detail: "Last saved matches may still load if this event was synced before.",
         href: withOrgHref("/schedule", orgId),
       },
       {
@@ -188,7 +188,7 @@ export function teamDataNextActions(input: {
       {
         id: "sync",
         label: "Sync active event",
-        detail: "Pull TBA matches and team metrics into Neon.",
+        detail: "Pull matches and team numbers from The Blue Alliance.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -230,7 +230,7 @@ export function teamDataNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Win/loss and pick desks read the same Neon TBA/Statbotics metrics.",
+      detail: "Win/loss and pick desks read the same saved rankings.",
       href: withOrgHref("/strategy", orgId),
     },
     {
@@ -272,7 +272,7 @@ export function referenceCount(
 }
 
 /**
- * Whether TBA ingest can run: org credential present, or Neon already has a
+ * Whether TBA ingest can run: org credential present, or already has a
  * last-good cache, or platform health recorded a real (non-unknown) status.
  * Never treats missing config as "ready with DEMO data".
  */

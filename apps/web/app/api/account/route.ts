@@ -425,8 +425,8 @@ export async function GET() {
           detail: tbaReady
             ? "Platform TBA Read API key (env or encrypted credential) is configured for reference ingest."
             : profile.tba.cacheHasSync
-              ? "Neon TBA cache has prior sync data; configure TBA_AUTH_KEY or a connector to refresh."
-              : "Set TBA_AUTH_KEY (or TBA_API_KEY) or save a TBA credential in Admin → Live Data.",
+              ? "Saved rankings from an earlier sync. Connect The Blue Alliance to refresh."
+              : "Connect The Blue Alliance under Connectors, or ask an admin to set the platform key.",
         },
         onshape,
         discord,

@@ -138,7 +138,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     };
     setHttpStatus(response.status);
     if (!response.ok) {
-      setLoadError(data.error ?? "Unable to load API budgets");
+      setLoadError(data.error ?? "Unable to load Chat limits");
       setMessage("");
       setLoading(false);
       return;
@@ -242,9 +242,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   return (
     <main className="module-page budget-page ai-budgets-page">
       <PageHeader
-        breadcrumbs="AI / API budgets"
-        title="API budgets"
-        description="Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG — no silent overage."
+        breadcrumbs="Chat / Limits"
+        title="Chat limits"
+        description="Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
           {headerLinks
@@ -370,9 +370,8 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             <span className="eyebrow">Hard cut-offs</span>
             <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After hosted AI runs out</h2>
             <p className="app-muted" style={{ marginTop: 0 }}>
-              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted AI usage hard-stops at 100%. Resume with AI
-              credits (hosted debit ~25% less than typical own-key rates), explicit PAYG + spend cap, or a higher plan.
-              Your own keys / local do not consume hosted usage.
+              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted Chat stops at 100%. Resume with credits,
+              pay-as-you-go with a spend cap, or a higher plan. Your own keys and local models do not use hosted allowance.
             </p>
             <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
               <UsageCutoffQuickActions

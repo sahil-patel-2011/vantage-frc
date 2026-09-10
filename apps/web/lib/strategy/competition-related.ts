@@ -105,7 +105,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     actions.push({
       id: "tba",
       label: "Configure TBA sync",
-      detail: "Set TBA_AUTH_KEY or save a TBA credential under Team → Data. No fabricated schedule while sync is missing.",
+      detail: "Connect The Blue Alliance under Connectors, then sync under Team → Data.",
       href: withOrg("/team/data", orgId),
       primary: !ctx.eventKey ? false : true,
     });
@@ -115,7 +115,7 @@ export function strategySetupNextActions(ctx: StrategySetupContext): StrategyNex
     actions.push({
       id: "metrics",
       label: "Sync reference metrics",
-      detail: "Pull TBA/Statbotics rows into Neon — Strategy never invents EPA or win probability.",
+      detail: "Pull rankings from The Blue Alliance and Statbotics.",
       href: withOrg("/team/data", orgId),
       primary: Boolean(ctx.eventKey) && ctx.tbaConfigured !== false,
     });
@@ -171,13 +171,13 @@ export function strategyCoverageLinks(
 export function pickSurfaceSetupMessage(ctx: StrategySetupContext): string {
   if (!ctx.orgId) return "Select a team workspace before opening this Competition tool.";
   if (!ctx.eventKey) {
-    return "Select an active event on Event Day Command. No demo alliances or invented pick rankings.";
+    return "Select an active event on Event Day. Rankings stay blank until then.";
   }
   if (ctx.tbaConfigured === false && ctx.hasMetrics === false) {
-    return "TBA is not configured and no event metrics are cached. Sync under Team → Data — Vantage will not invent EPA.";
+    return "Connect The Blue Alliance, then sync under Team → Data.";
   }
   if (ctx.hasMetrics === false) {
-    return "No team_event_metrics for this event yet. Sync TBA/Statbotics under Team → Data before ranking picks.";
+    return "No team numbers for this event yet. Sync under Team → Data before ranking picks.";
   }
-  return "Setup required before this surface can run on real event data.";
+  return "Finish setup so this page can use your event.";
 }

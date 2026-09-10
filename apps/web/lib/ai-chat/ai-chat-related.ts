@@ -113,7 +113,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Setup required",
         title: "AI provider not configured",
         description:
-          "Configure a platform or BYO key before messaging. Empty Neon/TBA/scout tools stay empty.",
+          "Configure a platform or BYO key before messaging. Chat stays empty until a key is set; rankings and scouting stay empty until those exist.",
       };
     case "empty":
       return {

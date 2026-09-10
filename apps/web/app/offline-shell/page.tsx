@@ -1,7 +1,7 @@
 import OfflineShellClient from "./offline-shell-client";
 
 export const metadata = {
-  title: "Offline Shell",
+  title: "This phone",
 };
 
 export default function OfflineShellPage() {

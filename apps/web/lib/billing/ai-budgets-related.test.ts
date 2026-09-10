@@ -104,7 +104,7 @@ describe("classifyAiBudgetsShell + copy", () => {
     for (const kind of ["empty", "setup", "forbidden", "ready"] as const) {
       const copy = aiBudgetsShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|Chat|Pricing|Account|Neon|hard/i);
+      expect(copy.description).toMatch(/Chat|Pricing|Account|limit/i);
     }
     expectPlainCopy(aiBudgetsShellCopy("empty").description);
   });

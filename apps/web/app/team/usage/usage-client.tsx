@@ -333,7 +333,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           <p className="app-muted">
             A transparent record of every metered AI call — the model, the feature, the member, and which key funded it.
             Set hard limits on{" "}
-            <a href={budgetsHref}>API budgets</a>. Resume cut-offs via{" "}
+            <a href={budgetsHref}>Chat limits</a>. Resume cut-offs via{" "}
             <a href={pricingHref}>Pricing</a> or <a href={accountHref}>Account</a>.
           </p>
         </div>
@@ -502,7 +502,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <p className="app-muted">
                 When a budget limit, allowlist, or kill switch blocks a call, it is recorded here — so a feature that
                 suddenly stops working can be traced to the exact control that caught it. Adjust caps on{" "}
-                <a href={budgetsHref}>API budgets</a>.
+                <a href={budgetsHref}>Chat limits</a>.
               </p>
               {!!denials.byReason.length && (
                 <div className="tag-row" style={{ margin: "0.5rem 0 1rem" }}>

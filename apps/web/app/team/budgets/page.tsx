@@ -3,7 +3,7 @@ import { withOrgHref } from "../../../lib/nav/product-nav";
 import BudgetClient from "./budget-client";
 
 export const metadata = {
-  title: "API budgets",
+  title: "Chat limits",
 };
 
 export default async function BudgetPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {

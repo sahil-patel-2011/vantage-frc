@@ -450,12 +450,12 @@ export async function computeStrategyView(
       id: "tba",
       label: "Sync TBA",
       detail: access.platformEnvKey
-        ? "Platform TBA_AUTH_KEY configured — reference cache can sync"
+        ? "The Blue Alliance key is set — rankings can sync"
         : access.credentialAvailable
-          ? "Org/platform TBA credential saved — sync fills Neon cache"
+          ? "The Blue Alliance key is saved — tap Sync under Team → Data"
           : access.cacheHasSync
-            ? "Neon TBA cache has prior sync data"
-            : "Set TBA_AUTH_KEY or save a TBA credential, then sync",
+            ? "Saved rankings from an earlier sync"
+            : "Connect The Blue Alliance under Connectors, then sync",
       href: dataHref,
       done: access.tbaConfigured,
     },
@@ -463,8 +463,8 @@ export async function computeStrategyView(
       id: "statbotics",
       label: "Cache Statbotics EPA",
       detail: access.statbotics.cacheHasMetrics
-        ? `Neon has ${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year Statbotics rows`
-        : "No Statbotics EPA in Neon yet — run reference sync (public API; no key). Strategy can still use TBA OPR/EPA when present.",
+        ? `${access.statbotics.eventMetricRows} event + ${access.statbotics.yearMetricRows} year Statbotics rows saved`
+        : "No Statbotics numbers saved yet — tap Sync under Team → Data (no key needed). Strategy can still use The Blue Alliance numbers when they exist.",
       href: dataHref,
       done: access.statbotics.cacheHasMetrics,
     },
@@ -536,7 +536,7 @@ export async function computeStrategyView(
   const upcoming = match.rows[0];
   if (!upcoming) {
     const message = !access.tbaConfigured
-      ? "No match schedule in Neon yet, and TBA is not configured. Set TBA_AUTH_KEY (or save a TBA credential under Team → Data), then sync."
+      ? "No match schedule saved yet, and The Blue Alliance is not connected. Open Connectors, then Team → Data to sync."
       : "No prediction yet — need a match schedule for your team at this event from TBA, plus team metrics.";
     return setupPayload(access, {
       status: access.tbaConfigured ? "empty" : "setup_required",
@@ -672,8 +672,8 @@ export async function computeStrategyView(
       message: hasAnyReference
         ? access.statbotics.cacheHasMetrics
           ? "No prediction yet — need event/year EPA covering enough alliance robots (and optional scouting) before the model can run."
-          : "No prediction yet — Statbotics EPA cache is empty. Sync reference data so event/year metrics land in Neon, or wait for TBA metric rows."
-        : "Team metrics are missing and TBA is not configured. Set TBA_AUTH_KEY or a TBA credential, then sync the event (Statbotics EPA syncs with the worker).",
+          : "No prediction yet — Statbotics numbers are missing. Sync under Team → Data, or wait for The Blue Alliance numbers."
+        : "Team numbers are missing and The Blue Alliance is not connected. Open Connectors, then sync the event.",
       steps: baseSteps,
       orgId: row.orgId,
       eventKey: row.eventKey,

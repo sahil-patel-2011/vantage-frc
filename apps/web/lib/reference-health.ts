@@ -77,7 +77,7 @@ function bannerCopy(
   cacheHasRows: boolean,
   sources: ReferenceSourceHealth[],
 ): { bannerTitle: string; bannerDetail: string } {
-  const names = sources.map((s) => s.source.toUpperCase()).join(" / ") || "TBA";
+  const names = sources.map((s) => (s.source === "tba" ? "The Blue Alliance" : s.source === "statbotics" ? "Statbotics" : s.source)).join(" / ") || "The Blue Alliance";
   const lastError = sources.map((s) => s.lastError).find(Boolean) ?? null;
   const lastSuccess = sources
     .map((s) => s.lastSuccessAt)
@@ -88,32 +88,32 @@ function bannerCopy(
 
   if (mode === "ok") {
     return {
-      bannerTitle: "Reference data sources healthy",
-      bannerDetail: `${names} ingest is healthy. Strategy uses the Neon reference cache.`,
+      bannerTitle: "Rankings and schedule are up to date",
+      bannerDetail: `${names} is up to date. Strategy uses the last saved rankings and schedule.`,
     };
   }
 
   if (mode === "unavailable" && !cacheHasRows) {
     return {
-      bannerTitle: "Data source unavailable",
+      bannerTitle: "Could not reach The Blue Alliance",
       bannerDetail: lastError
-        ? `${names} is down (${lastError}). No last-good Neon cache yet — sync under Team → Data when the API recovers.`
-        : `${names} is down and no last-good Neon cache is available yet.`,
+        ? `${names} is down (${lastError}). Nothing is saved on this team yet — sync under Team → Data when it is back.`
+        : `${names} is down and this team has no saved rankings yet.`,
     };
   }
 
   if (mode === "stale") {
     return {
-      bannerTitle: "Data source may be stale",
-      bannerDetail: `No recent successful ${names} sync (last success ${successLabel}). Strategy is using the last-good Neon cache — not live TBA.`,
+      bannerTitle: "Rankings may be out of date",
+      bannerDetail: `No recent successful ${names} update (last success ${successLabel}). Strategy is using the last saved rankings, not a live pull.`,
     };
   }
 
   return {
-    bannerTitle: "Data source degraded",
+    bannerTitle: "Could not refresh rankings",
     bannerDetail: lastError
-      ? `${names} ingest is degraded (${lastError}). Strategy keeps working from the last-good Neon cache (synced ${successLabel}).`
-      : `${names} ingest is degraded. Strategy keeps working from the last-good Neon cache (last success ${successLabel}).`,
+      ? `${names} is having trouble (${lastError}). Strategy still uses the last saved rankings (updated ${successLabel}).`
+      : `${names} is having trouble. Strategy still uses the last saved rankings (last success ${successLabel}).`,
   };
 }
 

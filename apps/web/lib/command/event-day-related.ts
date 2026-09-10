@@ -85,7 +85,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA schedule rows into Neon.",
+      detail: "Pull the match schedule from The Blue Alliance.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -272,7 +272,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "team-data",
         label: "Sync Team Data",
-        detail: "Pull TBA schedules into Neon.",
+        detail: "Pull the match schedule from The Blue Alliance.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },

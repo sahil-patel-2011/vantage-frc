@@ -581,7 +581,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
         </a>
         <a href={withOrgHref("/team/budgets", orgId)}>
-          <strong>API budgets</strong>
+          <strong>Chat limits</strong>
           <span>Spend and token hard limits</span>
         </a>
         <a href={withOrgHref("/team/ai-policy", orgId)}>

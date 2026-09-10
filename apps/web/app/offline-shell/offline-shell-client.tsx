@@ -161,16 +161,16 @@ export default function OfflineShellClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Offline Shell"}
+            {" / This phone"}
           </>
         }
-        title="Offline Shell"
-        description="Track service-worker precache readiness so Scouting and schedule shells still cold-launch with no signal. Scores use logged sync events only."
+        title="This phone without signal"
+        description="See whether Scouting and the schedule stay on this device when venue Wi-Fi dies. Counts come from visits you already made."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
 
-      <OfflineBanner feature="Offline Shell" fromCache={false} />
+      <OfflineBanner feature="This phone" fromCache={false} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -224,7 +224,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
       <header className="offline-shell-readiness-header">
         <div>
           <span className={`app-badge ${tone}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
-          <h2>Offline-shell precache readiness</h2>
+          <h2>Saved on this phone</h2>
           <small className="app-muted">
             {formatOfflineCount(view.summary.deviceCount, true)} device(s) reporting ·{" "}
             {formatOfflineCount(view.summary.offlineVerifiedCount, true)} verified offline — from logged syncs only
@@ -276,7 +276,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
           </div>
         ))}
       </div>
-      <p className="app-muted offline-shell-tiles-note">Blank or zero until teammates log a real precache sync.</p>
+      <p className="app-muted offline-shell-tiles-note">Blank or zero until someone opens Scouting on this device while online.</p>
     </Panel>
   );
 }
@@ -379,7 +379,7 @@ function LogCacheEventForm({
       }}
       className="offline-shell-log-form"
     >
-      <h2 className="offline-shell-panel-title">Log a precache sync</h2>
+      <h2 className="offline-shell-panel-title">Mark this phone ready</h2>
       <p className="app-muted">Record each device once you have warmed it up and checked it works.</p>
       <FormGrid min={160}>
         <FormRow label="Device">

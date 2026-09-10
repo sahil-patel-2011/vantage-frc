@@ -792,7 +792,7 @@ export default function AccountClient() {
                 </a>
                 <a href={withOrgHref("/ai?tab=budgets", orgId)}>
                   <strong>Billing</strong>
-                  <span>API budgets and Usage Credits</span>
+                  <span>Chat limits and credits</span>
                 </a>
                 <a href={withOrgHref("/team/usage", orgId)}>
                   <strong>AI usage</strong>

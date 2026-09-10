@@ -333,7 +333,7 @@ export function strategyNextActions(input: {
       {
         id: "pick-desk",
         label: "Open Pick desk",
-        detail: "Pick tiers wait on the same Neon reference rows.",
+        detail: "Pick tiers wait on the same reference rows.",
         href: withOrgHref("/strategy?tab=picks", orgId),
       },
       {

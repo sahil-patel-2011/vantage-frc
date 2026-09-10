@@ -118,7 +118,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
       return {
         kind,
         title: "Loading team memory…",
-        description: "Checking your team's Neon memory settings for this workspace.",
+        description: "Checking your team's memory settings for this workspace.",
       };
     case "auth_required":
       return {
@@ -141,7 +141,7 @@ export function aiMemoryShellCopy(kind: AiMemoryShellKind): AiMemoryEmptyCopy {
         badge: "Empty",
         title: "No team memory yet",
         description:
-          "Shared team memory stays empty until an admin enables injection and someone promotes a real Chat reply. Nothing is invented for empty Neon rows.",
+          "Shared team memory stays empty until an admin enables injection and someone promotes a real Chat reply. Nothing is invented for empty rows.",
       };
     case "setup":
       return {

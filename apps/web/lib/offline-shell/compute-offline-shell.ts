@@ -82,7 +82,7 @@ export async function computeOfflineShellView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to track offline-shell precache readiness.",
+      message: "Choose a team to see whether Scouting stays on this phone.",
       steps: [
         { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
       ],

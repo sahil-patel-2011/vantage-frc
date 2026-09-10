@@ -297,7 +297,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
           <h1>What the assistant remembers</h1>
           <p className="app-muted">
             Private memories stay yours in Chat. Team-shared memory is admin opt-in only and fills prompts from
-            real promoted messages — empty Neon memory stays empty.
+            real promoted messages — if nothing has been saved, the assistant has nothing extra.
           </p>
         </div>
         <nav className="intel-actions" aria-label="AI Memory shortcuts">

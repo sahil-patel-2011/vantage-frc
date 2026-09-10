@@ -38,7 +38,7 @@ export function offlineRelatedLinks(
   const include = options?.include ? new Set(options.include) : null;
   const all: OfflineRelatedLink[] = [
     { id: "scouting", label: "Scouting", href: withOrgHref("/scouting", orgId) },
-    { id: "offline-shell", label: "Offline Shell", href: withOrgHref("/offline-shell", orgId) },
+    { id: "offline-shell", label: "This phone", href: withOrgHref("/offline-shell", orgId) },
     { id: "schedule", label: "Schedule", href: withOrgHref("/schedule", orgId) },
     { id: "offline", label: "Cold offline boot", href: withOrgHref("/offline", orgId) },
     { id: "calendar", label: "Team calendar", href: withOrgHref("/team/calendar", orgId) },
@@ -137,8 +137,8 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Offline Shell…",
-        description: "Checking logged precache syncs for this workspace — counts stay blank until Neon answers.",
+        title: "Checking this phone…",
+        description: "Checking whether Scouting and the schedule are saved on this device.",
       };
     case "setup":
       return {
@@ -152,9 +152,9 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
       return {
         kind,
         badge: "Not ready",
-        title: "No precache syncs logged yet",
+        title: "Nothing saved on this phone yet",
         description:
-          "Open Scouting once online, try a cold launch offline, then log the device here. Empty stays empty.",
+          "Open Scouting once while you have signal. Empty stays empty until then.",
       };
     case "partial":
       return {
@@ -168,7 +168,7 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Offline Shell",
+        title: "Could not check this phone",
         description: "A network or server issue blocked status. Retry, or open Scouting if this device already cached forms.",
       };
     case "offline_cold":
@@ -183,9 +183,9 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
       return {
         kind: "ready",
         badge: "Ready",
-        title: "Offline shell ready",
+        title: "This phone is ready",
         description:
-          "Precache syncs show recent coverage. Keep opening Scouting after deploys so a cold no-signal load still works.",
+          "Pages you opened while online stay available. Open Scouting after each deploy so a cold no-signal load still works.",
       };
   }
 }
@@ -217,7 +217,7 @@ export function offlineShellNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Match and pit forms + IndexedDB outbox work once a workspace caches an event.",
+        detail: "Match and pit forms keep working on this device once you open them while online.",
         href: "/scouting",
       },
     ];
@@ -227,8 +227,8 @@ export function offlineShellNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Offline Shell",
-        detail: "Reload real sync events from Neon.",
+        label: "Retry this phone",
+        detail: "Reload the last recorded syncs.",
         href: shellHref,
         primary: true,
       },
@@ -251,15 +251,15 @@ export function offlineShellNextActions(input: {
     });
     actions.push({
       id: "log-sync",
-      label: "Log a precache sync",
-      detail: "After verification, record the device below — scores stay 0 until a real event exists.",
+      label: "Mark this phone ready",
+      detail: "After you open Scouting once, record this device below.",
       href: "#offline-shell-log",
     });
   } else if (input.shell === "partial") {
     actions.push({
       id: "scouting",
-      label: "Finish Scouting precache",
-      detail: input.recommendations?.[0] ?? "Cover missing shell routes and verify offline on another scout tablet.",
+      label: "Finish opening Scouting",
+      detail: input.recommendations?.[0] ?? "Open Scouting on this phone once while you have signal.",
       href: scoutHref,
       primary: true,
     });
@@ -329,7 +329,7 @@ export function offlineBootNextActions(input: {
     detail: orgId
       ? queued > 0 && input.loaded
         ? `${formatOfflineCount(queued, true)} item(s) waiting in this device's outbox — sync when Wi-Fi returns.`
-        : "Match and pit forms + IndexedDB outbox on this device."
+        : "Match and pit forms stay on this device."
       : "Open once online from a workspace so the event cache is ready.",
     href: scoutHref,
     primary: true,
@@ -339,7 +339,7 @@ export function offlineBootNextActions(input: {
     actions.push({
       id: "stay",
       label: "Keep this page open when sync returns",
-      detail: "Queued entries upload with retry/backoff. Counts come from IndexedDB.",
+      detail: "Queued entries upload when Wi-Fi returns. Counts come from this device.",
       href: scoutHref,
     });
   }
@@ -347,8 +347,8 @@ export function offlineBootNextActions(input: {
   actions.push(
     {
       id: "offline-shell",
-      label: "Check Offline Shell readiness",
-      detail: "See which devices logged a real precache sync for cold launches.",
+      label: "Check this phone",
+      detail: "See which devices saved Scouting for a no-signal load.",
       href: shellHref,
     },
     {

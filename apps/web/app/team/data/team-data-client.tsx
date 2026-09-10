@@ -300,7 +300,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     return (
       <TeamDataShell
         title="Loading…"
-        description="Checking workspace event, TBA credentials, and Neon reference cache."
+        description="Checking your event and The Blue Alliance connection."
         orgId={orgId}
         shell="loading"
       />
@@ -391,7 +391,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <h1>Team Data</h1>
           <p>
             Inventory counts for your workspace, shared TBA cache health, and controlled sync for the active event.
-            Schedule, Event Day, and Strategy read this Neon cache.
+            Schedule, Event Day, and Strategy use this shared copy of The Blue Alliance.
           </p>
         </div>
         <div className="team-data-header-actions">
@@ -420,7 +420,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             badge="No TBA cache yet"
             badgeTone="setup"
             title="Sync the active event"
-            description={`Event ${activeEventKey} is selected, but Neon has no match or team-metric rows yet. Sync pulls real TBA data.`}
+            description={`Event ${activeEventKey} is selected, but there are no match or ranking rows yet. Sync pulls real The Blue Alliance data.`}
           >
             <div className="team-data-inline-actions">
               <button type="button" className="app-button" disabled={busy} onClick={() => void syncActiveEvent()}>
@@ -533,7 +533,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                   <strong>{dataSourceHealth.mode}</strong>
                 </li>
                 <li>
-                  <span>Last-good Neon cache</span>
+                  <span>Last saved copy</span>
                   <strong>
                     {dataSourceHealth.usingLastGoodCache
                       ? "in use"
@@ -546,7 +546,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                   <li key={source.source}>
                     <span>
                       {source.source.toUpperCase()}
-                      {source.etagResources ? ` · ${source.etagResources} ETags` : ""}
+                      {source.etagResources ? ` · ${source.etagResources} saved copies` : ""}
                       {source.erroredResources ? ` · ${source.erroredResources} cursor errors` : ""}
                     </span>
                     <strong>{source.status}</strong>

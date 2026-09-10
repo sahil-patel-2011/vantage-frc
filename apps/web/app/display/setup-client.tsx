@@ -322,7 +322,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               badge="Setup"
               badgeTone="setup"
               title="No active event yet"
-              description="Set an Event Day active event so next-match and coverage widgets can read real TBA rows. Boards will not invent a schedule."
+              description="Set an Event Day event so next-match and coverage can read The Blue Alliance. Boards stay blank until then."
             >
               <a className="app-button" href={hubHref("/competition", "command", orgId)}>
                 Open Event Day
@@ -339,7 +339,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
               badge="No boards yet"
               badgeTone="setup"
               title="Create your first display board"
-              description="Choose a preset below and save. Vantage will not invent match countdowns, ranks, or predictions for an empty board."
+              description="Choose a preset below and save. Countdowns, ranks, and predictions stay blank until this board has an event."
             />
           ) : null}
 

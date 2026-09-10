@@ -86,9 +86,9 @@ describe("competition-related Soft-UI helpers", () => {
     expect(pickSurfaceSetupMessage({ orgId: "o" })).toMatch(/active event/i);
     expect(
       pickSurfaceSetupMessage({ orgId: "o", eventKey: "2026a", tbaConfigured: false, hasMetrics: false }),
-    ).toMatch(/will not invent EPA/i);
+    ).toMatch(/Connect The Blue Alliance/i);
     expect(
       pickSurfaceSetupMessage({ orgId: "o", eventKey: "2026a", tbaConfigured: true, hasMetrics: false }),
-    ).toMatch(/team_event_metrics/i);
+    ).toMatch(/Team → Data/i);
   });
 });

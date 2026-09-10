@@ -1350,7 +1350,7 @@ export default function CadWorkspace({
               </a>
               {!state?.onshapeConfigured ? (
                 <p className="cad-agent-hint">
-                  Server setup still required for OAuth. Until then this page will not invent geometry.
+                  Connect Onshape is not set up on this deployment. Until then paste a document link or upload a STEP/STL.
                 </p>
               ) : null}
             </div>

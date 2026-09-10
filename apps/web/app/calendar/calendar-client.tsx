@@ -1,16 +1,23 @@
 "use client";
 
-import { useOnline } from "../../lib/offline";
-
-import { OfflineBanner } from "../../components/offline-banner";
-
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
+  QUEUED_ON_DEVICE,
+  getFeatureSnapshot,
+  isBrowserOffline,
+  putFeatureSnapshot,
+  queueProductWrite,
+  syncOutbox,
+  useOnline,
+} from "../../lib/offline";
+import {
+  applyCalendarLocalWrite,
   daysUntil,
   groupByMonth,
+  isCalendarQueueableAction,
   KIND_LABELS,
   meetingProvider,
   milestoneWorkflowLinks,
@@ -23,6 +30,7 @@ import {
   type MilestoneKind,
   type SeasonTemplateId,
 } from "../../lib/season-calendar";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<CalendarView, { status: "ready" }>;
@@ -262,8 +270,8 @@ function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId
 
 export default function CalendarClient() {
   const online = useOnline();
-  const [fromCache] = useState(false);
-  const [cachedAt] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<CalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -282,23 +290,32 @@ export default function CalendarClient() {
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
+    const cached = orgId ? await getFeatureSnapshot<CalendarView>("calendar", orgId) : null;
+    if (cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
+    }
     try {
       const response = await fetch(`/api/calendar${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as CalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the season calendar.");
         setErrorStatus(response.status);
-        setFetchFailed(true);
+        if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
-      setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = ("context" in data && data.context.orgId) || orgId;
+      if (cacheOrg) await putFeatureSnapshot("calendar", cacheOrg, data);
     } catch {
-      setErrorStatus(null);
-      setFetchFailed(true);
+      if (!cached) setFetchFailed(true);
     }
   }, []);
 
@@ -306,10 +323,31 @@ export default function CalendarClient() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("orgId") ?? "";
+    if (!orgId) return;
+    const onOnline = () => {
+      void syncOutbox({ orgId }).then(() => load());
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [load]);
+
   const run = useCallback(
     async (body: ActionBody, key: string) => {
-      if (!navigator.onLine) {
-        setError("You're offline — calendar edits will save when you reconnect.");
+      if (isBrowserOffline() && body.action === "seed_season") {
+        setError("Adding a season template needs a connection. Ticking dates still saves on this device.");
+        return;
+      }
+      if (isBrowserOffline() && isCalendarQueueableAction(body.action) && body.orgId) {
+        await queueProductWrite({
+          feature: "calendar_action",
+          orgId: body.orgId,
+          payload: body,
+        });
+        setView((current) => (current ? applyCalendarLocalWrite(current, body, new Date().toISOString()) : current));
+        setError(QUEUED_ON_DEVICE);
         return;
       }
       setBusyKey(key);
@@ -327,6 +365,16 @@ export default function CalendarClient() {
         }
         await load();
       } catch {
+        if (isBrowserOffline() && isCalendarQueueableAction(body.action) && body.orgId) {
+          await queueProductWrite({
+            feature: "calendar_action",
+            orgId: body.orgId,
+            payload: body,
+          });
+          setView((current) => (current ? applyCalendarLocalWrite(current, body, new Date().toISOString()) : current));
+          setError(QUEUED_ON_DEVICE);
+          return;
+        }
         setError("Network error — changes were not saved.");
       } finally {
         setBusyKey(null);
@@ -338,8 +386,8 @@ export default function CalendarClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page cal-page">
-        <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
-      <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
+        <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         {fetchFailed ? (
           (() => {
             const copy = loadFailureCopy(
@@ -379,7 +427,8 @@ export default function CalendarClient() {
   if (view.status === "setup_required") {
     return (
       <main className="module-page cal-page">
-        <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
+        <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
+        <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Choose a team" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
@@ -389,12 +438,41 @@ export default function CalendarClient() {
     );
   }
 
-  return <ReadyCalendar view={view} error={error} busyKey={busyKey} editingId={editingId} setEditingId={setEditingId} run={run} kickoff={kickoff} setKickoff={setKickoff} templateId={templateId} setTemplateId={setTemplateId} title={title} setTitle={setTitle} kind={kind} setKind={setKind} startsOn={startsOn} setStartsOn={setStartsOn} endsOn={endsOn} setEndsOn={setEndsOn} notes={notes} setNotes={setNotes} meetingUrl={meetingUrl} setMeetingUrl={setMeetingUrl} />;
+  return (
+    <ReadyCalendar
+      view={view}
+      error={error}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
+      busyKey={busyKey}
+      editingId={editingId}
+      setEditingId={setEditingId}
+      run={run}
+      kickoff={kickoff}
+      setKickoff={setKickoff}
+      templateId={templateId}
+      setTemplateId={setTemplateId}
+      title={title}
+      setTitle={setTitle}
+      kind={kind}
+      setKind={setKind}
+      startsOn={startsOn}
+      setStartsOn={setStartsOn}
+      endsOn={endsOn}
+      setEndsOn={setEndsOn}
+      notes={notes}
+      setNotes={setNotes}
+      meetingUrl={meetingUrl}
+      setMeetingUrl={setMeetingUrl}
+    />
+  );
 }
 
 function ReadyCalendar({
   view,
   error,
+  fromCache,
+  cachedAt,
   busyKey,
   editingId,
   setEditingId,
@@ -418,6 +496,8 @@ function ReadyCalendar({
 }: {
   view: ReadyView;
   error: string;
+  fromCache: boolean;
+  cachedAt: string | null;
   busyKey: string | null;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
@@ -473,7 +553,8 @@ function ReadyCalendar({
 
   return (
     <main className="module-page cal-page">
-      <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
+      <PageHeader breadcrumbs="Team / Calendar" title="Season calendar" />
+      <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -32,7 +32,7 @@ export function offlineShellNetworkStatusLabel(status: OfflineShellNetworkStatus
   const labels: Record<OfflineShellNetworkStatus, string> = {
     online: "Online",
     offline: "Offline (no signal)",
-    degraded: "Degraded",
+    degraded: "Spotty",
   };
   return labels[status];
 }
@@ -119,7 +119,7 @@ export function computeOfflineShellReadiness(
       tier: "not_ready",
       components: { routeCoverage: 0, deviceCoverage: 0, recency: 0, offlineVerified: 0 },
       recommendations: [
-        "Precache the shell on at least one device and record a sync — this is the evidence trail for offline readiness.",
+        "Open Scouting on this phone once while you have signal, then mark it ready below.",
       ],
     };
   }
@@ -149,21 +149,21 @@ export function computeOfflineShellReadiness(
   const recommendations: string[] = [];
   if (components.routeCoverage < 1) {
     const missing = OFFLINE_SHELL_TARGET_ROUTES.filter((route) => !summary.routesCovered.includes(route));
-    recommendations.push(`Precache missing shell route(s): ${missing.join(", ")}.`);
+    recommendations.push(`Open these pages once while online: ${missing.join(", ")}.`);
   }
   if (components.deviceCoverage < 0.5) {
     recommendations.push(
-      `Sync more scouting devices — ${summary.deviceCount} of ${t.deviceTarget} target device(s) reporting.`,
+      `Open Scouting on more phones — ${summary.deviceCount} of ${t.deviceTarget} so far.`,
     );
   }
   if (components.recency < 0.5) {
-    recommendations.push("Re-sync soon — the last recorded cache build is getting stale.");
+    recommendations.push("Open Scouting again soon — the last visit is getting old.");
   }
   if (components.offlineVerified < 0.5) {
-    recommendations.push("Verify a cold launch with radios off, then log it as an offline-network sync.");
+    recommendations.push("Turn on airplane mode, reopen Scouting, then mark this phone ready.");
   }
   if (recommendations.length === 0) {
-    recommendations.push("Shell is precached and recently verified offline — keep syncing after each deploy.");
+    recommendations.push("This phone is ready. Open Scouting after each deploy so it stays saved.");
   }
 
   return { score, tier: tierFor(score), components, recommendations };

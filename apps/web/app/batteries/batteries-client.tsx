@@ -652,7 +652,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                       </div>
                       {!measured ? (
                         <small className="app-muted">
-                          Log a resistance test or voltage so health is evidence-based — Vantage will not invent IR.
+                          Log a resistance test or voltage. Health stays blank until someone measures it.
                         </small>
                       ) : pack.health.reasons.length > 0 || pack.readiness.reasons.length > 0 ? (
                         <small className="app-muted">

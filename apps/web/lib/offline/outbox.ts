@@ -19,6 +19,7 @@ export const OUTBOX_FEATURES = [
   "batteries_action",
   "season_task",
   "pit_board",
+  "calendar_action",
 ] as const;
 
 export type OutboxFeature = (typeof OUTBOX_FEATURES)[number];
@@ -135,6 +136,7 @@ export const DEFAULT_OUTBOX_ADAPTERS: OutboxSyncAdapter[] = [
   { feature: "batteries_action", endpoint: (item) => ({ url: "/api/batteries", method: "POST", body: item.payload }) },
   { feature: "season_task", endpoint: (item) => ({ url: "/api/tasks", method: "POST", body: item.payload }) },
   { feature: "pit_board", endpoint: (item) => ({ url: "/api/pit", method: "POST", body: item.payload }) },
+  { feature: "calendar_action", endpoint: (item) => ({ url: "/api/calendar", method: "POST", body: item.payload }) },
 ];
 
 export function nextBackoffMs(attempt: number): number {

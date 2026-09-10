@@ -243,7 +243,7 @@ function SourcesPanel({ view }: { view: LiveView }) {
       </ul>
       <p className="app-muted" style={{ marginTop: 10 }}>
         {health.usingLastGoodCache
-          ? "Currently serving the last-good Neon reference cache."
+          ? "Showing the last saved rankings and schedule."
           : health.cacheHasRows
             ? "Live sync is healthy."
             : "No reference cache rows are available yet."}

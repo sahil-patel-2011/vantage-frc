@@ -314,7 +314,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
           badge="Setup"
           badgeTone="setup"
           title="No named expenses yet"
-          description="Log a purchase or other outbound ledger row first. This control will not invent a season total to allocate."
+          description="Log a purchase or other spend first. There is nothing to allocate yet."
         >
           <a className="app-button secondary" href={seasonFinanceHref(orgId)}>
             Open Season Finance

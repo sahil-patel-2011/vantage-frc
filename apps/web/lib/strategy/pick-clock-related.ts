@@ -89,7 +89,7 @@ export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[]
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon.",
+      detail: "Pull rankings from The Blue Alliance and Statbotics.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -328,7 +328,7 @@ export function pickClockNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Win/loss waits on the same Neon reference rows.",
+        detail: "Win/loss waits on the same reference rows.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {

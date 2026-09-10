@@ -112,7 +112,7 @@ describe("offline outbox", () => {
     expect(await listOutbox(ORG)).toEqual([]);
   });
 
-  it("routes packing, batteries, pit, and season-task writes to their product APIs", () => {
+  it("routes packing, batteries, pit, season-task, and calendar writes to their product APIs", () => {
     const webRoot = join(__dirname, "..", "..");
     const item = {
       clientId: "c",
@@ -123,9 +123,11 @@ describe("offline outbox", () => {
       status: "queued" as const,
     };
     const extra = DEFAULT_OUTBOX_ADAPTERS.filter((adapter) =>
-      ["packing_action", "batteries_action", "season_task", "pit_board"].includes(adapter.feature),
+      ["packing_action", "batteries_action", "season_task", "pit_board", "calendar_action"].includes(
+        adapter.feature,
+      ),
     );
-    expect(extra).toHaveLength(4);
+    expect(extra).toHaveLength(5);
     for (const adapter of extra) {
       const req = adapter.endpoint(item);
       const rel = req.url.replace(/^\//, "");

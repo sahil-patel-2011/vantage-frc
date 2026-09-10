@@ -67,8 +67,8 @@ describe("evaluateDataSourceHealth", () => {
     expect(view.degraded).toBe(true);
     expect(view.mode).toBe("degraded");
     expect(view.usingLastGoodCache).toBe(true);
-    expect(view.bannerTitle).toBe("Data source degraded");
-    expect(view.bannerDetail).toMatch(/last-good Neon cache/i);
+    expect(view.bannerTitle).toBe("Could not refresh rankings");
+    expect(view.bannerDetail).toMatch(/last saved rankings/i);
     expect(view.bannerDetail).toMatch(/503/);
   });
 
@@ -89,7 +89,7 @@ describe("evaluateDataSourceHealth", () => {
     });
     expect(view.mode).toBe("unavailable");
     expect(view.usingLastGoodCache).toBe(false);
-    expect(view.bannerTitle).toBe("Data source unavailable");
+    expect(view.bannerTitle).toBe("Could not reach The Blue Alliance");
   });
 
   it("marks stale when last success aged out but cache still usable", () => {

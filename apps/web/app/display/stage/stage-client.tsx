@@ -97,7 +97,10 @@ export default function StageClient({
   useEffect(() => {
     void refresh();
     const clock = setInterval(() => setNow(Date.now()), 1_000);
-    const live = setInterval(() => void refresh(), 30_000);
+    const live = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void refresh();
+    }, 30_000);
     const advance = setInterval(() => setTick((value) => value + 1), DISPLAY_SCREEN_HOLD_MS);
     const status = () => setOnline(navigator.onLine);
     status();

@@ -431,7 +431,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Entries and media queue in this device’s org-isolated outbox when the network drops.",
           "The Online/Offline pill and Sync now button show real outbox counts.",
-          "Use Offline Shell (/offline-shell) or the cold /offline boot page to reopen scouting after a prior visit.",
+          "Open This phone (/offline-shell) or the cold /offline page to reopen Scouting after a prior visit.",
         ],
       },
       {
@@ -466,7 +466,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Open Command",
         body: [
           "Competition → Event day, or /command (Vantage Event Day).",
-          "Select a workspace and active event first — Command will not invent a schedule.",
+          "Select a workspace and active event first. Command stays blank until the schedule is saved.",
         ],
       },
       {
@@ -592,7 +592,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     summary:
       "Tasks with a due date sit on the calendar and can be ticked off there. Find a time suggests meeting slots from when your team actually turns up.",
     category: "team",
-    keywords: ["calendar", "tasks", "todo", "due", "find a time", "schedule", "meeting", "build night", "attendance"],
+    keywords: ["calendar", "tasks", "todo", "due", "find a time", "schedule", "meeting", "build night", "attendance", "season calendar"],
     relatedHref: "/team?tab=calendar",
     sections: [
       {
@@ -600,6 +600,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Open tasks with a due date appear in the all-day row, in month cells, and in the list. Tick the box to mark one done; it goes through the same task list as Work.",
           "Quick add switches between Event and Task, so a deadline can be written down where you noticed it.",
+          "If venue Wi-Fi dies, the last calendar stays on screen. Ticking a date or adding one saves on this phone and uploads when you are back online. Seeding a whole season template still needs a connection.",
         ],
       },
       {
@@ -1741,7 +1742,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     category: "competition",
     title: "Using the shop without signal",
     summary:
-      "Competition, Hours, Chat, Files, Packing, Batteries, Pit, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, RSVPs, clock-ins, packing checks, battery logs, checklist taps, notes, and chat queue and send when you are back online.",
+      "Competition, Hours, Chat, Files, Packing, Batteries, Pit, Calendar, and Match notes keep working on this device. Your last snapshot stays on screen. Ticks, dates, RSVPs, clock-ins, packing checks, battery logs, checklist taps, notes, and chat queue and send when you are back online.",
     keywords: ["offline", "venue wifi", "outbox", "keep on this device", "hours", "chat"],
     relatedHref: "/competition",
     sections: [
@@ -1749,7 +1750,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "What you see",
         body: [
           "A quiet bar says offline and shows the time of the last snapshot. The same screens stay up — there is no dead Retry wall.",
-          "Writes you make (task ticks, calendar RSVP, clock in/out, packing checks, battery logs, match notes, pit checks, chat) sit on this device until the network returns.",
+          "Writes you make (task ticks, calendar dates, RSVPs, clock in/out, packing checks, battery logs, match notes, pit checks, chat) sit on this device until the network returns.",
         ],
       },
       {

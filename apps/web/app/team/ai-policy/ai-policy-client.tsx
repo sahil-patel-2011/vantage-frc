@@ -464,7 +464,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           >
             <span className="eyebrow">FEATURE &amp; TOOL POLICY</span>
             <p className="app-muted ai-governance-policy-lead">
-              Org gates for metered AI capabilities. Empty Neon spend and empty approval queues stay empty. Model allowlists are edited on{" "}
+              What the assistant can do. Empty spend and empty approval queues stay empty. Model lists are edited on{" "}
               <a href={budgetsHref}>Budgets</a>.
             </p>
             <label className="state-control">
@@ -678,7 +678,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               {budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
                 ? "Model/provider allowlist enforcement is on."
                 : "Model/provider allowlist enforcement is off."}{" "}
-              Edit on <a href={budgetsHref}>API budgets</a>
+              Edit on <a href={budgetsHref}>Chat limits</a>
               {budget?.killSwitch ? " · Kill switch is active." : "."}
             </p>
             {models.length === 0 ? (

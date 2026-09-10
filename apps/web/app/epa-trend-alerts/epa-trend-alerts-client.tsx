@@ -408,7 +408,7 @@ function WatchTeamForm({
     >
       <h2 style={{ margin: 0 }}>Add a team to the watchlist</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use only Neon reference EPA between events for teams you watch.
+        Alerts use stored EPA between events for teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team number">

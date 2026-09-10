@@ -58,7 +58,7 @@ export function computeDegradedFallbacks(
     {
       id: "team-data",
       label: "Team → Data",
-      detail: "Review the last-good Neon reference cache and trigger a manual resync when the API recovers.",
+      detail: "Review the last saved rankings and schedule, then sync again when The Blue Alliance is back.",
       href: `/team/data${org}`,
     },
   ];

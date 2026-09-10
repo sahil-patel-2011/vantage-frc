@@ -11,14 +11,6 @@ type Props = {
 export function DataSourceDegradedBanner({ health, compact = false }: Props) {
   if (!health?.degraded) return null;
 
-  const etagBits = health.sources
-    .filter((source) => source.etagResources > 0 || source.erroredResources > 0)
-    .map((source) => {
-      const parts = [`${source.source.toUpperCase()} ETags ${source.etagResources}`];
-      if (source.erroredResources > 0) parts.push(`${source.erroredResources} cursor error(s)`);
-      return parts.join(" · ");
-    });
-
   return (
     <aside
       className={`data-source-degraded-banner${compact ? " compact" : ""} mode-${health.mode}`}
@@ -26,12 +18,11 @@ export function DataSourceDegradedBanner({ health, compact = false }: Props) {
       aria-live="polite"
     >
       <div>
-        <span className="app-badge setup">Data source {health.mode}</span>
+        <span className="app-badge setup">{health.mode === "stale" ? "May be out of date" : "Using saved copy"}</span>
         <strong>{health.bannerTitle}</strong>
         <p>{health.bannerDetail}</p>
-        {etagBits.length ? <small>{etagBits.join(" · ")}</small> : null}
         {health.usingLastGoodCache ? (
-          <small className="data-source-cache-note">Serving last-good Neon reference cache — strategy continues.</small>
+          <small className="data-source-cache-note">Showing the last saved rankings and schedule. Strategy still works.</small>
         ) : null}
       </div>
       <a className="app-button secondary" href={health.teamDataHref}>

@@ -70,7 +70,7 @@ export function eventDayNextActions(
     actions.push({
       id: "schedule",
       label: "Check schedule sync",
-      detail: "No upcoming match in Neon cache yet — refresh TBA after the event posts.",
+      detail: "No upcoming match in saved rankings cache yet — refresh TBA after the event posts.",
       href: snap.links.schedule ?? withOrgHref("/schedule", orgId),
       primary: snap.tbaConfigured !== false,
     });

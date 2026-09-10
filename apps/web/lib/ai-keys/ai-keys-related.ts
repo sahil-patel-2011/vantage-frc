@@ -25,7 +25,7 @@ export function aiKeysRelatedLinks(
   const include = options?.include ? new Set(options.include) : null;
   const all: AiKeysRelatedLink[] = [
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
-    { id: "budgets", label: "API budgets", href: hubHref("/ai", "budgets", orgId) },
+    { id: "budgets", label: "Chat limits", href: hubHref("/ai", "budgets", orgId) },
     { id: "byok-usage", label: "Your keys usage", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "pricing", label: "Pricing", href: withOrgHref("/pricing", orgId) },

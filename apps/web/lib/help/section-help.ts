@@ -310,7 +310,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Competition day, during alliance selection itself.",
     moments: ["comp-day"],
     how: [
-      "Have a pick list and scout data in place — the clock will not invent picks.",
+      "Have a pick list and scout data in place. The clock stays blank until those exist.",
       "Open Pick clock at the table when selection begins.",
       "Read the next pick and its why, then confirm with the desk.",
     ],

@@ -130,8 +130,8 @@ export async function computeTeamDossier(
       id: "statbotics",
       label: "Cache Statbotics season EPA",
       detail: access.statbotics.cacheHasMetrics
-        ? `Neon has ${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event Statbotics rows`
-        : "No Statbotics EPA cached yet — run reference sync (public API).",
+        ? `${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event Statbotics rows saved`
+        : "No Statbotics numbers saved yet — tap Sync under Team → Data (no key needed).",
       href: withOrgHref("/team/data", orgId),
       done: access.statbotics.cacheHasMetrics,
     },
@@ -313,7 +313,7 @@ export async function computeTeamDossier(
     return {
       status: "setup_required",
       message:
-        "No cited TBA/Statbotics/scout facts yet. Sync reference data so season EPA and event records land in Neon.",
+        "No cited facts yet. Sync The Blue Alliance and Statbotics, then add scout notes.",
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,
@@ -326,7 +326,7 @@ export async function computeTeamDossier(
       status: "empty",
       message: access.statbotics.cacheHasMetrics
         ? `Team ${team.teamNumber} is in cache, but this team has no season EPA, event records, or scout notes to cite yet.`
-        : `Team ${team.teamNumber} identity is cached, but Statbotics EPA cache is empty for this team. Sync reference data — Vantage will not invent EPA.`,
+        : `Team ${team.teamNumber} is saved, but Statbotics numbers for this team are missing. Sync under Team → Data.`,
       steps,
       orgId: row.orgId,
       teamNumber: team.teamNumber,

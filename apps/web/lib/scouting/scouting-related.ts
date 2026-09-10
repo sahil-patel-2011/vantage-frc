@@ -7,7 +7,7 @@ export const SCOUTING_RELATED_LINKS = [
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "offline", label: "Offline", kind: "path" as const, path: "/offline" },
-  { id: "offline-shell", label: "Offline Shell", kind: "path" as const, path: "/offline-shell" },
+  { id: "offline-shell", label: "This phone", kind: "path" as const, path: "/offline-shell" },
   { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
   { id: "handoff", label: "QR handoff", kind: "hub" as const, tab: "scouting" },
 ] as const;
@@ -121,7 +121,7 @@ export function formatScoutingMetric(value: unknown, loaded: boolean): string {
   return Math.floor(n).toLocaleString();
 }
 
-/** Hide zeroed recent-entry lists until real Neon rows exist — avoids DEMO entries. */
+/** Hide zeroed recent-entry lists until real rows exist — avoids DEMO entries. */
 export function shouldShowScoutingRecentEntries(entryCount: number): boolean {
   return entryCount > 0;
 }

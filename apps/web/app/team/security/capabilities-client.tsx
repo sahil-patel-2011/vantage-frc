@@ -27,7 +27,7 @@ type AdminTenure = {
 const LABELS: Record<OrgCapability, { title: string; hint: string }> = {
   manage_api_keys: {
     title: "Manage API keys / connectors",
-    hint: "Your AI keys, TBA, and API budgets",
+    hint: "Your AI keys, TBA, and Chat limits",
   },
   manage_team_settings: {
     title: "Manage team settings",

@@ -133,7 +133,7 @@ export function displaySetupNextActions(input: {
     {
       id: "team-data",
       label: "Sync team data",
-      detail: "Pull TBA / Statbotics into Neon when ranks or matches are missing from display snapshots.",
+      detail: "Pull rankings when ranks or matches are missing from the display.",
       href: withOrgHref("/team/data", orgId),
     },
   );

@@ -76,6 +76,7 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("batteries", "org-1")).toBe("batteries:org-1");
     expect(featureCacheKey("pit", "org-1")).toBe("pit:org-1");
     expect(featureCacheKey("season-tasks", "org-1", "2026")).toBe("season-tasks:org-1:2026");
+    expect(featureCacheKey("calendar", "org-1")).toBe("calendar:org-1");
   });
 
   it("falls failed navigations back to the precached shell", () => {

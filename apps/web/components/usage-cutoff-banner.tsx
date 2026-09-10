@@ -74,7 +74,7 @@ function BannerShell({
       if (url) window.location.href = url;
       else setHint("Checkout is not configured yet — open Pricing to continue.");
     } catch {
-      setHint("Checkout unavailable. Open Pricing or API budgets instead.");
+      setHint("Checkout unavailable. Open Pricing or Chat limits instead.");
     } finally {
       setBusy(null);
     }

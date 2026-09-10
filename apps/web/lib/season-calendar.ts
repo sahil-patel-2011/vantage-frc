@@ -603,3 +603,96 @@ export function parseCalendarAction(input: unknown): CalendarAction {
       throw new Error("Unsupported calendar action");
   }
 }
+
+/** Writes that already carry enough fields to replay against `/api/calendar`. */
+export const CALENDAR_QUEUEABLE_ACTIONS = [
+  "add_milestone",
+  "update_milestone",
+  "toggle_done",
+  "delete_milestone",
+] as const;
+
+export function isCalendarQueueableAction(action: string): boolean {
+  return (CALENDAR_QUEUEABLE_ACTIONS as readonly string[]).includes(action);
+}
+
+/**
+ * Apply a queued write to the last snapshot so a ticked date does not snap back
+ * when venue Wi-Fi dies. `seed_season` stays online-only (many new rows).
+ */
+export function applyCalendarLocalWrite(
+  view: CalendarView,
+  body: Record<string, unknown>,
+  nowIso = "1970-01-01T00:00:00.000Z",
+  localId = "00000000-0000-4000-8000-000000000001",
+): CalendarView {
+  if (view.status !== "ready") return view;
+  const action = typeof body.action === "string" ? body.action : "";
+  switch (action) {
+    case "toggle_done": {
+      if (typeof body.id !== "string") return view;
+      const done = Boolean(body.done);
+      return {
+        ...view,
+        milestones: view.milestones.map((row) =>
+          row.id === body.id
+            ? { ...row, done, doneAt: done ? nowIso : null, doneByName: done ? row.doneByName : null }
+            : row,
+        ),
+      };
+    }
+    case "delete_milestone": {
+      if (typeof body.id !== "string") return view;
+      return { ...view, milestones: view.milestones.filter((row) => row.id !== body.id) };
+    }
+    case "update_milestone": {
+      if (typeof body.id !== "string") return view;
+      const patch =
+        body.patch && typeof body.patch === "object" && !Array.isArray(body.patch)
+          ? (body.patch as MilestonePatch)
+          : {};
+      return {
+        ...view,
+        milestones: view.milestones.map((row) =>
+          row.id === body.id
+            ? {
+                ...row,
+                ...(patch.title !== undefined ? { title: patch.title } : {}),
+                ...(patch.kind !== undefined ? { kind: patch.kind } : {}),
+                ...(patch.startsOn !== undefined ? { startsOn: patch.startsOn } : {}),
+                ...(patch.endsOn !== undefined ? { endsOn: patch.endsOn ?? null } : {}),
+                ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+                ...(patch.meetingUrl !== undefined ? { meetingUrl: patch.meetingUrl ?? null } : {}),
+              }
+            : row,
+        ),
+      };
+    }
+    case "add_milestone": {
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      if (!title) return view;
+      const kind = MILESTONE_KINDS.includes(body.kind as MilestoneKind)
+        ? (body.kind as MilestoneKind)
+        : "other";
+      const startsOn = typeof body.startsOn === "string" ? body.startsOn : nowIso.slice(0, 10);
+      const extra: Milestone = {
+        id: localId,
+        title,
+        kind,
+        startsOn,
+        endsOn: typeof body.endsOn === "string" ? body.endsOn : null,
+        notes: typeof body.notes === "string" ? body.notes : "",
+        meetingUrl: typeof body.meetingUrl === "string" ? body.meetingUrl : null,
+        done: false,
+        doneAt: null,
+        doneByName: null,
+        createdByName: "On this device",
+      };
+      return { ...view, milestones: [...view.milestones, extra] };
+    }
+    case "seed_season":
+      return view;
+    default:
+      return view;
+  }
+}

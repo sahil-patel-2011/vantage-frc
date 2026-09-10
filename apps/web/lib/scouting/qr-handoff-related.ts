@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const QR_HANDOFF_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "offline", label: "Offline", kind: "path" as const, path: "/offline" },
-  { id: "offline-shell", label: "Offline Shell", kind: "path" as const, path: "/offline-shell" },
+  { id: "offline-shell", label: "This phone", kind: "path" as const, path: "/offline-shell" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "disagreements", label: "Disagreements", kind: "path" as const, path: "/scout-disagreements" },
 ] as const;
@@ -99,8 +99,8 @@ export function qrHandoffSetupSteps(orgId?: string | null): QrHandoffSetupStep[]
     },
     {
       id: "offline-shell",
-      label: "Open Offline Shell",
-      detail: "Log real precache syncs so a no-signal load still reaches Scouting.",
+      label: "Open this phone",
+      detail: "Open Scouting once while you have signal so a no-signal load still works.",
       href: withOrgHref("/offline-shell", orgId),
     },
   ];
@@ -296,8 +296,8 @@ export function qrHandoffNextActions(input: {
       },
       {
         id: "offline-shell",
-        label: "Open Offline Shell",
-        detail: "Log real precache syncs.",
+        label: "Open this phone",
+        detail: "Record that this device saved Scouting.",
         href: withOrgHref("/offline-shell", orgId),
       },
     ];
@@ -344,8 +344,8 @@ export function qrHandoffNextActions(input: {
       },
       {
         id: "offline-shell",
-        label: "Open Offline Shell",
-        detail: "Log a real precache sync after Scouting loads once online.",
+        label: "Open this phone",
+        detail: "Record this device after Scouting loads once online.",
         href: withOrgHref("/offline-shell", orgId),
       },
     ];

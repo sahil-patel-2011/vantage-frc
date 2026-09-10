@@ -2,7 +2,7 @@ import CalendarClient from "./calendar-client";
 import "./calendar.css";
 
 export const metadata = {
-  title: "Season Calendar",
+  title: "Season calendar",
   description: "Opt-in FRC season milestone templates — kickoff, stop-build, events, ship deadlines, outreach — with editable markers.",
 };
 

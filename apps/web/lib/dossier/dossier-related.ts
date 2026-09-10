@@ -83,7 +83,7 @@ export function dossierSetupSteps(orgId?: string | null): DossierSetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA identity + Statbotics EPA into Neon.",
+      detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -307,7 +307,7 @@ export function dossierNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Win/loss waits on the same Neon reference rows.",
+        detail: "Win/loss waits on the same reference rows.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {

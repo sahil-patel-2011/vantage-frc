@@ -177,7 +177,7 @@ export function scheduleNextActions(input: {
       {
         id: "team-data",
         label: "Sync team data",
-        detail: "Pull TBA schedules into Neon when the event is posted and still empty here.",
+        detail: "Pull the match schedule from The Blue Alliance when the event is posted.",
         href: withOrgHref("/team/data", orgId),
       },
     ].slice(0, 4);

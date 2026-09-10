@@ -342,6 +342,6 @@ export const AI_GOVERNANCE_SCOPE_CARDS = [
   {
     id: "chat" as const,
     title: "Chat · where it runs",
-    body: "Members hit these rules when they message the assistant. Empty Neon spend stays at real zeros.",
+    body: "Members hit these rules when they message the assistant. Empty spend stays at zero until someone uses Chat.",
   },
 ] as const;

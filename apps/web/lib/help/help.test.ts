@@ -215,6 +215,7 @@ describe("help search index", () => {
     expect(searchHelpArticles("venue wifi")[0]?.slug).toBe("offline-at-events");
     expect(searchHelpArticles("packing list")[0]?.slug).toBe("packing-lists");
     expect(searchHelpArticles("battery logs")[0]?.slug).toBe("batteries-at-events");
+    expect(searchHelpArticles("season calendar")[0]?.slug).toBe("calendar-tasks");
   });
 
   it("ignores short queries and scores zero for nonsense", () => {

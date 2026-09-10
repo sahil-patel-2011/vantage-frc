@@ -84,6 +84,11 @@ const RULES: readonly Rule[] = [
     why: "database vocabulary",
   },
   {
+    label: "will not invent",
+    pattern: /\bwill\s+not\s+invent\b/i,
+    why: "honesty disclaimer — say what is missing and what to do",
+  },
+  {
     label: "placeholder/demo data disclaimer",
     pattern: /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|copy|content)\b/i,
     why: "a disclaimer that the data is real tells the reader nothing to do",

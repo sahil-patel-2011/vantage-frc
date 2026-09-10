@@ -911,7 +911,7 @@ export function CodeClient({
         setProposal(null);
         setMessage(
           nextReview.risks.length
-            ? `Matched ${nextReview.risks.length} pattern${nextReview.risks.length === 1 ? "" : "s"} — coach will not invent a unified diff for this source. Mentors write the change after reading the teaching notes.`
+            ? `Matched ${nextReview.risks.length} pattern${nextReview.risks.length === 1 ? "" : "s"}. Open the notes — a mentor writes the change after reading them.`
             : "No matched patterns and no grounded sample diff — nothing to propose.",
         );
         return;

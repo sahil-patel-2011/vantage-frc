@@ -333,7 +333,7 @@ export function myDayNextActions(input: {
         label: noUpcoming ? "Open Event Day" : "Open Schedule",
         detail: noUpcoming
           ? "Day-of queues share the same event once alliances post."
-          : "Full event board stays blank until TBA rows land in Neon.",
+          : "The event board stays blank until the schedule is saved.",
         href: noUpcoming
           ? hubHref("/competition", "command", orgId)
           : withOrgHref("/schedule", orgId),
@@ -347,7 +347,7 @@ export function myDayNextActions(input: {
       {
         id: "team-data",
         label: "Sync team data",
-        detail: "Pull TBA schedules into Neon when the event is posted and still empty here.",
+        detail: "Pull the match schedule from The Blue Alliance when the event is posted.",
         href: withOrgHref("/team/data", orgId),
       },
     ].slice(0, 4);

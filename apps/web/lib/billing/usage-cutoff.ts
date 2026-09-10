@@ -144,7 +144,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       level: "at",
       reason: "kill_switch",
       title: "AI routing paused",
-      body: "The organization kill switch is on. Managed AI calls hard-stop until an admin turns it off on API budgets.",
+      body: "An admin paused Chat. They can turn it back on under Chat limits.",
       percent: null,
     };
   }
@@ -158,7 +158,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
         level: "at",
         reason: "allowance",
         title: "Hosted AI usage exhausted",
-        body: "Managed AI hard-stopped for this period. Buy AI credits, enable PAYG with a spend cap, or upgrade — there is no silent overage.",
+        body: "Hosted Chat for this period is used up. Buy credits, turn on pay-as-you-go with a spend cap, or upgrade.",
         percent: allowance,
       };
     }
@@ -191,7 +191,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       level: "at",
       reason: "org_budget",
       title: "Org monthly API budget reached",
-      body: "Team hard limits blocked further metered calls. Raise the monthly spend limit on API budgets, or wait until the next month.",
+      body: "Team spend limits blocked further Chat. Raise the monthly limit under Chat limits, or wait until next month.",
       percent: snapshot.orgMonthlyBudgetPercent,
     };
   }
@@ -247,7 +247,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
   }
 
   if (alert.reason === "kill_switch" || alert.reason === "org_budget") {
-    ctas.push({ id: "budgets", label: "Open API budgets", href: budgetsHref });
+    ctas.push({ id: "budgets", label: "Open Chat limits", href: budgetsHref });
   }
 
   if (alert.reason === "allowance" || alert.reason === "payg_required" || alert.reason === "credits") {
@@ -288,7 +288,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
   }
 
   if (!ctas.some((c) => c.id === "budgets")) {
-    ctas.push({ id: "budgets", label: "API budgets", href: budgetsHref });
+    ctas.push({ id: "budgets", label: "Chat limits", href: budgetsHref });
   }
 
   if (!ctas.some((c) => c.id === "pricing")) {
@@ -312,9 +312,9 @@ export function messageForCutoffError(
   const match = (needle: string) => lower.includes(needle);
 
   let reason: CutoffReason = "allowance";
-  let title = "Managed AI hard-stopped";
+  let title = "Chat paused";
   let body =
-    "This workspace hit a usage hard cut-off. Buy AI credits, enable PAYG with a spend cap, or upgrade — Vantage does not silently overage.";
+    "This team hit a usage limit. Buy credits, turn on pay-as-you-go with a spend cap, or upgrade.";
 
   if (match("sponsored_promo_expired") || match("promotional sponsored ai")) {
     reason = "sponsored_promo_expired";
@@ -324,7 +324,7 @@ export function messageForCutoffError(
   } else if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
     title = "AI routing paused";
-    body = "The organization kill switch blocked this call. An admin can clear it on API budgets.";
+    body = "An admin paused Chat. They can turn it back on under Chat limits.";
   } else if (match("spend_cap") || match("overage spend")) {
     reason = "spend_cap";
     title = "PAYG spend cap reached";
@@ -342,11 +342,11 @@ export function messageForCutoffError(
   } else if (match("managed_allowance") || match("sponsored_allowance") || match("allowance")) {
     reason = "allowance";
     title = "Hosted AI usage exhausted";
-    body = "Managed AI hard-stopped for this period. Buy AI credits or upgrade — no silent overage.";
+    body = "Hosted Chat for this period is used up. Buy credits or upgrade.";
   } else if (match("budget") || match("daily_spend") || match("monthly_spend") || match("daily_tokens") || match("monthly_tokens")) {
     reason = "org_budget";
-    title = "Org API budget limit reached";
-    body = "A team hard limit blocked this call. Adjust limits on API budgets.";
+    title = "Team spend limit reached";
+    body = "A team spend limit blocked this call. Adjust limits under Chat limits.";
   }
 
   const alert: UsageCutoffAlert = { level: "at", reason, title, body, percent: null };
@@ -359,7 +359,7 @@ export function messageForCutoffError(
         ]
       : [
           { id: "pricing" as const, label: "View pricing", href: pricingHref },
-          { id: "budgets" as const, label: "API budgets", href: budgetsHref },
+          { id: "budgets" as const, label: "Chat limits", href: budgetsHref },
           { id: "chat" as const, label: "Chat", href: cutoffChatHref(null) },
           { id: "account" as const, label: "Account", href: cutoffAccountHref(null) },
         ];

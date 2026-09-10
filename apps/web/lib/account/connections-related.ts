@@ -201,7 +201,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "tba",
       label: "Configure TBA",
-      detail: "Match sync stays quiet until a TBA key or Neon cache exists.",
+      detail: "Match sync stays quiet until a TBA key or saved rankings exist.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     });

@@ -196,31 +196,31 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
     case "loading":
       return {
         kind,
-        title: "Loading API budgets…",
-        description: "Checking your team's hard limits, allowlists, and included allowance.",
+        title: "Loading Chat limits…",
+        description: "Checking your team's spend limits and included allowance.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
-        title: "Sign in to manage API budgets",
-        description: "Spend caps and kill switches are workspace-scoped. Sign in, then reopen Budgets from the AI hub.",
+        title: "Sign in to manage Chat limits",
+        description: "Spend limits are per team. Sign in, then reopen Budgets from Chat.",
       };
     case "forbidden":
       return {
         kind,
         badge: "Admins only",
-        title: "API budgets need an admin",
+        title: "Chat limits need an admin",
         description:
-          "Owners and admins set hard spend/token caps and model allowlists. Members still use Chat under existing caps — open Pricing or Account if you need plan access.",
+          "Owners and admins set spend limits. Members still use Chat under existing limits — open Pricing or Account if you need plan access.",
       };
     case "empty":
       return {
         kind,
         badge: "Defaults",
-        title: "No org hard limits yet",
+        title: "No extra spend limits yet",
         description:
-          "Platform included allowance still hard-stops at 100%. Set daily/monthly spend or token caps below — ledger totals stay at real Neon zeros.",
+          "The included allowance stops at 100%. Set daily or monthly limits below — totals stay at zero until someone uses Chat.",
       };
     case "setup":
       return {
@@ -228,22 +228,22 @@ export function aiBudgetsShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy
         badge: "Setup",
         title: "Finish budget setup",
         description:
-          "Finish workspace selection or add a real spend/token hard cap next to any allowlist toggle. Chat, Pricing, and Account stay one hop away.",
+          "Finish choosing a team or add a spend limit next to any model list. Chat, Pricing, and Account stay one hop away.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load API budgets",
+        title: "Could not load Chat limits",
         description:
           "A network or server issue blocked budget policy. Retry, or open Chat / Pricing / Account while it reloads.",
       };
     default:
       return {
         kind: "ready",
-        title: "API budgets",
+        title: "Chat limits",
         description:
-          "Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG.",
+          "Spend and token limits are checked before every Chat message. The included allowance stops unless you buy credits or turn on pay-as-you-go.",
       };
   }
 }
@@ -262,7 +262,7 @@ export function aiBudgetsNextActions(input: {
       {
         id: "workspace",
         label: "Select workspace",
-        detail: "API budgets are saved per org — pick a team first.",
+        detail: "Chat limits are saved per team — pick a team first.",
         href: "/workspace",
         primary: true,
       },
@@ -431,7 +431,7 @@ export function aiUsageShellCopy(kind: AiBudgetsShellKind): AiBudgetsEmptyCopy {
         badge: "Empty",
         title: "No metered AI calls yet",
         description:
-          "This ledger stays empty until a real Chat or feature call is metered. Totals stay at Neon zeros.",
+          "This ledger stays empty until a real Chat or feature call is metered. Totals stay at zeros.",
       };
     case "setup":
       return {
@@ -570,7 +570,7 @@ export function aiUsageNextActions(input: {
     {
       id: "chat",
       label: "Open Chat",
-      detail: "Metered Chat calls populate this ledger from Neon only.",
+      detail: "Chat usage shows here after a real message.",
       href: chatHref,
     },
     {
@@ -601,7 +601,7 @@ export const AI_BUDGETS_SCOPE_CARDS = [
   {
     id: "limits" as const,
     title: "This tab · hard limits",
-    body: "Daily/monthly spend and token caps, model/provider allowlists, warning %, kill switch, and prompt caching. Saved to Neon per workspace.",
+    body: "Daily and monthly spend limits, which models are allowed, a warning percent, and a pause switch. Saved for this team.",
   },
   {
     id: "usage" as const,

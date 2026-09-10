@@ -206,7 +206,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             />
             <span>
               <strong>Vantage managed API</strong>
-              <small>Meters Vantage credits / org limits as usual. See Prompt caching under API budgets.</small>
+              <small>Uses your team's Chat credits as usual. See Prompt caching under Chat limits.</small>
             </span>
           </label>
           <label className="cad-choice">

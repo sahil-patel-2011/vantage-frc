@@ -52,6 +52,55 @@ function classifyShell(input: {
   return "ready";
 }
 
+function labelAgentRunStatus(status: string): string {
+  switch (status) {
+    case "running":
+      return "Working";
+    case "completed":
+      return "Finished";
+    case "failed":
+      return "Stopped with an error";
+    case "setup_required":
+      return "Needs setup";
+    case "cancelled":
+      return "Stopped";
+    default:
+      return status.replaceAll("_", " ");
+  }
+}
+
+function labelAgentStepStatus(status: string): string {
+  switch (status) {
+    case "ok":
+      return "Done";
+    case "empty":
+      return "Nothing found";
+    case "setup_required":
+      return "Needs setup";
+    case "error":
+      return "Error";
+    default:
+      return status.replaceAll("_", " ");
+  }
+}
+
+function labelAgentStepKind(kind: string): string {
+  switch (kind) {
+    case "plan":
+      return "Plan";
+    case "tool":
+      return "Looked up";
+    case "observe":
+      return "Checked";
+    case "generation":
+      return "Wrote";
+    case "error":
+      return "Error";
+    default:
+      return kind.replaceAll("_", " ");
+  }
+}
+
 export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -271,7 +320,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         />
         <div className="aa-compose-actions">
           <button type="button" className="app-button" onClick={() => void onRun()} disabled={busy || !goal.trim()}>
-            {busy ? "Running…" : "Run autonomous agent"}
+            {busy ? "Running…" : "Run this goal"}
           </button>
           <button type="button" className="app-button secondary" onClick={() => void loadRuns()} disabled={busy}>
             Refresh history
@@ -283,11 +332,11 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         <section className="aa-history app-card soft-panel" aria-label="Past runs">
           <header>
             <h2>Past runs</h2>
-            <p>Persisted in Neon with truncated step logs.</p>
+            <p>Persisted in saved rankings with truncated step logs.</p>
           </header>
           {loading ? <p className="aa-muted">Loading…</p> : null}
           {empty ? (
-            <p className="aa-muted">No autonomous runs yet for this workspace.</p>
+            <p className="aa-muted">No runs yet for this team.</p>
           ) : (
             <ul className="aa-run-list">
               {runs.map((run) => (
@@ -299,7 +348,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   >
                     <strong>{run.goal.slice(0, 80)}{run.goal.length > 80 ? "…" : ""}</strong>
                     <span>
-                      {run.status} · {run.stepCount} steps
+                      {labelAgentRunStatus(run.status)} · {run.stepCount} steps
                       {run.provider ? ` · ${run.provider}` : ""}
                     </span>
                   </button>
@@ -319,7 +368,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           ) : (
             <>
               <div className="aa-status-row">
-                <span className={`aa-status aa-status--${selectedRun.status}`}>{selectedRun.status}</span>
+                <span className={`aa-status aa-status--${selectedRun.status}`}>
+                  {labelAgentRunStatus(selectedRun.status)}
+                </span>
               </div>
               {/* Which endpoint actually ran this goal. Sits above the step log so a
                   small-model notice is visible even when the run errored before an
@@ -329,7 +380,9 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
               />
               {selectedRun.errorMessage ? (
                 <p className="aa-error" role="status">
-                  {selectedRun.errorClass ? `${selectedRun.errorClass}: ` : ""}
+                  {selectedRun.errorClass && selectedRun.errorClass !== "setup_required"
+                    ? `${labelAgentStepStatus(selectedRun.errorClass)}: `
+                    : ""}
                   {selectedRun.errorMessage}
                 </p>
               ) : null}
@@ -338,10 +391,10 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
                   <li key={`${step.sequence}-${step.kind}-${step.toolName ?? ""}`}>
                     <div className="aa-step-head">
                       <strong>
-                        #{step.sequence} {step.kind}
+                        #{step.sequence} {labelAgentStepKind(step.kind)}
                         {step.toolName ? ` · ${step.toolName}` : ""}
                       </strong>
-                      <span>{step.status}</span>
+                      <span>{labelAgentStepStatus(step.status)}</span>
                     </div>
                     {step.argsSummary ? <pre className="aa-pre">{step.argsSummary}</pre> : null}
                     {step.resultSummary ? <p>{step.resultSummary}</p> : null}

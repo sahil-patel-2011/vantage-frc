@@ -62,7 +62,7 @@ export default function OfflineClient() {
       <h1>{online ? "Ready when the Wi-Fi drops" : copy.title}</h1>
       <p className="offline-shell-lead">
         {online
-          ? "This shell is precached for venue Wi-Fi drops. Open Scouting once while online so a cold no-signal load still works — outbox counts come from this device only."
+          ? "Pages you open while online stay on this phone. Open Scouting once before you lose signal — queued scout counts come from this device only."
           : copy.description}
       </p>
       <p className="offline-shell-status" role="status">
@@ -98,8 +98,8 @@ export default function OfflineClient() {
       </nav>
 
       <p className="offline-shell-hint">
-        Tip: open Scouting, Schedule, and Offline Shell once while online at the event so a cold launch still
-        works with no signal. Scout data never leaves this device until sync.
+        Tip: open Scouting, Schedule, and This phone once while online at the event so a cold launch still
+        works with no signal. Scout data stays on this device until sync.
       </p>
     </main>
   );
