@@ -11,6 +11,7 @@ import {
   onboardingBuddyShellCopy,
   shouldShowOnboardingBuddySummaryTiles,
 } from "./onboarding-buddy-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("onboardingBuddyRelatedLinks", () => {
   it("builds Workspace / Onboarding / Team Data via withOrgHref", () => {
@@ -107,7 +108,7 @@ describe("onboardingBuddyShellCopy", () => {
       const copy = onboardingBuddyShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(onboardingBuddyShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(onboardingBuddyShellCopy("empty").description);
     expect(onboardingBuddyShellCopy("setup").badge).toBe("Setup required");
   });
 });

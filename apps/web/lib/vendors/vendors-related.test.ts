@@ -8,6 +8,7 @@ import {
   vendorsRelatedLinks,
   vendorsShellCopy,
 } from "./vendors-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("vendorsRelatedLinks", () => {
   it("builds Orders / Vendor Lead Times cross-links via hubHref / withOrgHref", () => {
@@ -118,10 +119,10 @@ describe("vendorsShellCopy + formatVendorsMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = vendorsShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(vendorsShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(vendorsShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(vendorsShellCopy("empty").description);
+    expectPlainCopy(vendorsShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

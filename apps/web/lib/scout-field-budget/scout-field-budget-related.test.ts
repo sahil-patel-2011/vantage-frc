@@ -8,6 +8,7 @@ import {
   scoutFieldBudgetShellCopy,
   shouldShowScoutFieldBudgetSummaryTiles,
 } from "./scout-field-budget-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutFieldBudgetRelatedLinks", () => {
   it("builds Forms / Scouting / Schema A/B cross-links", () => {
@@ -89,9 +90,7 @@ describe("classifyScoutFieldBudgetShell + helpers", () => {
   it("copy never invents DEMO field totals", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = scoutFieldBudgetShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

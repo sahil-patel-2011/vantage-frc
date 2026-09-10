@@ -8,6 +8,7 @@ import {
   picklistCollabShellCopy,
   shouldShowPicklistCollabSummaryTiles,
 } from "./picklist-collab-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("picklistCollabRelatedLinks", () => {
   it("builds Strategy / Justifier / Pick clock cross-links", () => {
@@ -79,7 +80,7 @@ describe("picklistCollabShellCopy", () => {
   it("never invents DEMO ranks", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = picklistCollabShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

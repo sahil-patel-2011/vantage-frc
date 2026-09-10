@@ -8,6 +8,7 @@ import {
   toolCheckoutShellCopy,
   shouldShowToolCheckoutSummaryTiles,
 } from "./tool-checkout-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("toolCheckoutRelatedLinks", () => {
   it("builds Equipment / Training / Checklist / Safety cross-links", () => {
@@ -95,9 +96,7 @@ describe("classifyToolCheckoutShell + helpers", () => {
   it("copy never invents DEMO loan ledgers", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = toolCheckoutShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

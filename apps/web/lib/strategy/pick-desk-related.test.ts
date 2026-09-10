@@ -10,6 +10,7 @@ import {
   pickDeskShellCopy,
   shouldShowPickDeskSummaryTiles,
 } from "./pick-desk-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("pickDeskRelatedLinks", () => {
   it("builds Strategy / Scouting / Coverage via hubHref / withOrgHref", () => {
@@ -95,7 +96,7 @@ describe("pickDeskShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(pickDeskShellCopy("empty").badge).toBe("No event metrics yet");
-    expect(pickDeskShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(pickDeskShellCopy("empty").description);
     expect(pickDeskShellCopy("setup").badge).toBe("Setup required");
   });
 });

@@ -9,6 +9,7 @@ import {
   hoursSelfViewShellCopy,
   shouldShowHoursSelfViewSummaryTiles,
 } from "./hours-self-view-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("hoursSelfViewRelatedLinks", () => {
   it("builds Attendance / Mentor Hours / Team Health cross-links", () => {
@@ -93,9 +94,7 @@ describe("classifyHoursSelfViewShell + helpers", () => {
   it("copy never invents DEMO hour totals", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = hoursSelfViewShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

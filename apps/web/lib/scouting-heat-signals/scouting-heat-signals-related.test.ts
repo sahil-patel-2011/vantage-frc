@@ -8,6 +8,7 @@ import {
   scoutingHeatSignalsShellCopy,
   shouldShowScoutingHeatSignalsSummaryTiles,
 } from "./scouting-heat-signals-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutingHeatSignalsRelatedLinks", () => {
   it("builds Scouting / Watchlist / Pick List cross-links", () => {
@@ -91,9 +92,7 @@ describe("classifyScoutingHeatSignalsShell + helpers", () => {
   it("copy never invents DEMO trend arrows", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = scoutingHeatSignalsShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

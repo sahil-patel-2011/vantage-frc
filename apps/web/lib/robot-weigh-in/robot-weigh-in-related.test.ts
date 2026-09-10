@@ -8,6 +8,7 @@ import {
   robotWeighInShellCopy,
   shouldShowRobotWeighInSummaryTiles,
 } from "./robot-weigh-in-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("robotWeighInRelatedLinks", () => {
   it("builds Readiness / Inspection / Spare Kit cross-links", () => {
@@ -104,9 +105,7 @@ describe("classifyRobotWeighInShell + helpers", () => {
   it("copy never invents DEMO weigh-ins", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = robotWeighInShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

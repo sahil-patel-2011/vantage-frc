@@ -8,6 +8,7 @@ import {
   matchStrategyCardsShellCopy,
   shouldShowMatchStrategyCardsSummaryTiles,
 } from "./match-strategy-cards-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchStrategyCardsRelatedLinks", () => {
   it("builds Strategy / Checklist / Command cross-links", () => {
@@ -100,7 +101,7 @@ describe("matchStrategyCardsShellCopy", () => {
   it("never invents DEMO game plans", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = matchStrategyCardsShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

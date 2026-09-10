@@ -5,6 +5,7 @@ import {
   kickoffPipelineLinks,
   shouldShowKickoffSummaryTiles,
 } from "./kickoff-related";
+import { expectPlainCopy } from "./ui/copy-assertions";
 
 describe("kickoff-related Soft-UI helpers", () => {
   it("focuses Build related include on CAD / FMEA / prototypes / competition", () => {
@@ -24,7 +25,7 @@ describe("kickoff-related Soft-UI helpers", () => {
     expect(actions[0]?.id).toBe("upload-materials");
     expect(actions.some((a) => a.id === "strategy-seeds")).toBe(true);
     expect(actions.some((a) => a.id === "cad-brief")).toBe(true);
-    expect(actions.find((a) => a.id === "upload-materials")?.detail).toMatch(/nothing invents DEMO game rules/i);
+    expectPlainCopy(actions.find((a) => a.id === "upload-materials")?.detail);
     expect(actions.every((a) => !/DEMO\s+\d|fabricated EPA|fake OPR|demo score/i.test(`${a.label} ${a.detail}`))).toBe(
       true,
     );
@@ -58,7 +59,7 @@ describe("kickoff-related Soft-UI helpers", () => {
     expect(actions[0]?.id).toBe("review-strategy");
     expect(actions.some((a) => a.id === "open-cad-brief")).toBe(true);
     expect(actions.some((a) => a.id === "rules-qa")).toBe(true);
-    expect(actions.find((a) => a.id === "rules-qa")?.detail).toMatch(/never invent DEMO rulings/i);
+    expectPlainCopy(actions.find((a) => a.id === "rules-qa")?.detail);
   });
 
   it("builds pipeline links to Strategy seeds and CAD", () => {

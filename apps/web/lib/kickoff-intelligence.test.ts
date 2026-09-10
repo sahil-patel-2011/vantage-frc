@@ -8,6 +8,7 @@ import {
   sourceChecksum,
   structureGameIntelligence,
 } from "./kickoff-intelligence";
+import { expectPlainCopy } from "./ui/copy-assertions";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ID = "22222222-2222-4222-8222-222222222222";
@@ -87,7 +88,7 @@ describe("structureGameIntelligence", () => {
     expect(summary.designDirections.every((direction) => direction.adviceLabel === KICKOFF_ADVICE_LABEL)).toBe(true);
     expect(summary.provenance.provider).toBe("local");
     expect(summary.provenance.sourceKinds).toEqual(expect.arrayContaining(["manual", "transcript"]));
-    expect(summary.provenance.disclaimer).toMatch(/not DEMO/i);
+    expectPlainCopy(summary.provenance.disclaimer);
   });
 
   it("does not invent point values when the source omits them", () => {

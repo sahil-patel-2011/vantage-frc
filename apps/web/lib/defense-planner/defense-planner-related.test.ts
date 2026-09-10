@@ -8,6 +8,7 @@ import {
   formatDefensePlannerMetric,
   shouldShowDefensePlannerSummaryTiles,
 } from "./defense-planner-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("defensePlannerRelatedLinks", () => {
   it("builds Strategy / Scouting / Counter-book cross-links", () => {
@@ -111,9 +112,7 @@ describe("classifyDefensePlannerShell + copy", () => {
   it("copy never invents DEMO defense metrics", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = defensePlannerShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|nothing is pre-seeded|scout|matchup/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
       expect(`${copy.title} ${copy.description}`.toLowerCase()).not.toMatch(/\binvented demo\b/);
     }
   });

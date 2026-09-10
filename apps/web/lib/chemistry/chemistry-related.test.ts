@@ -10,6 +10,7 @@ import {
   chemistryShellCopy,
   shouldShowChemistrySummaryTiles,
 } from "./chemistry-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("chemistryRelatedLinks", () => {
   it("builds Strategy / Pick desk / Draft via hubHref / withOrgHref", () => {
@@ -119,9 +120,9 @@ describe("chemistryShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(chemistryShellCopy("empty").badge).toBe("No chemistry score yet");
-    expect(chemistryShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(chemistryShellCopy("empty").description);
     expect(chemistryShellCopy("setup").badge).toBe("Setup required");
-    expect(chemistryShellCopy("ready").description).toMatch(/never DEMO/i);
+    expectPlainCopy(chemistryShellCopy("ready").description);
   });
 });
 

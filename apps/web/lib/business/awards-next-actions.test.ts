@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { awardsNextActions } from "./awards-next-actions";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("awardsNextActions Soft-UI helpers", () => {
   it("routes missing workspace to /workspace", () => {
@@ -39,6 +40,6 @@ describe("awardsNextActions Soft-UI helpers", () => {
       wonCount: 0,
     });
     expect(actions[0]?.id).toBe("status");
-    expect(actions[0]?.detail).toMatch(/actually receives|not invented/i);
+    expectPlainCopy(actions[0]?.detail);
   });
 });

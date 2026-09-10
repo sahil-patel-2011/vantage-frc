@@ -10,6 +10,7 @@ import {
   scoutDisagreementsShellCopy,
   shouldShowScoutDisagreementsSummaryTiles,
 } from "./scout-disagreements-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutDisagreementsRelatedLinks", () => {
   it("builds Scouting / Accuracy / Coverage via hubHref / withOrgHref", () => {
@@ -104,7 +105,7 @@ describe("scoutDisagreementsShellCopy", () => {
       const copy = scoutDisagreementsShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(scoutDisagreementsShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(scoutDisagreementsShellCopy("empty").description);
     expect(scoutDisagreementsShellCopy("setup").badge).toBe("Setup required");
   });
 });

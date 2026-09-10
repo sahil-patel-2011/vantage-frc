@@ -10,6 +10,7 @@ import {
   isCrossTeamScrimBoardEmpty,
   shouldShowCrossTeamScrimSummaryTiles,
 } from "./cross-team-scrim-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("crossTeamScrimRelatedLinks", () => {
   it("builds Calendar / Scouting / Team Data via hubHref / withOrgHref", () => {
@@ -83,7 +84,7 @@ describe("crossTeamScrimShellCopy", () => {
       const copy = crossTeamScrimShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(crossTeamScrimShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(crossTeamScrimShellCopy("empty").description);
     expect(crossTeamScrimShellCopy("setup").badge).toBe("Setup required");
   });
 });

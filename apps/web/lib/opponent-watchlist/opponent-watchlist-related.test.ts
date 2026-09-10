@@ -8,6 +8,7 @@ import {
   opponentWatchlistShellCopy,
   shouldShowOpponentWatchlistSummaryTiles,
 } from "./opponent-watchlist-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("opponentWatchlistRelatedLinks", () => {
   it("builds Strategy / EPA Trend Alerts / Scouting cross-links", () => {
@@ -126,10 +127,10 @@ describe("opponentWatchlistShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = opponentWatchlistShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|watch|reference/i);
+      expectPlainCopy(copy.description);
     }
-    expect(opponentWatchlistShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(opponentWatchlistShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(opponentWatchlistShellCopy("empty").description);
+    expectPlainCopy(opponentWatchlistShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

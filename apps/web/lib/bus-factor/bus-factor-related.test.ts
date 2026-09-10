@@ -9,6 +9,7 @@ import {
   formatBusFactorPercent,
   shouldShowBusFactorSummaryTiles,
 } from "./bus-factor-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("busFactorRelatedLinks", () => {
   it("builds Attendance / My Hours / Task board cross-links", () => {
@@ -100,9 +101,7 @@ describe("classifyBusFactorShell + copy", () => {
   it("copy never invents DEMO risk metrics", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = busFactorShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|nothing is pre-seeded|workload|risk/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
       expect(`${copy.title} ${copy.description}`.toLowerCase()).not.toMatch(/\binvented demo\b/);
     }
   });

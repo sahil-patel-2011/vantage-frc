@@ -11,6 +11,7 @@ import {
   scoutCoverageLiveShellCopy,
   shouldShowScoutCoverageLiveSummaryTiles,
 } from "./scout-coverage-live-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutCoverageLiveRelatedLinks", () => {
   it("builds Scouting / Lineup / Cross-Validation via hubHref / withOrgHref", () => {
@@ -73,7 +74,7 @@ describe("Scout Coverage Live Soft-UI metrics", () => {
       "ready",
     );
     expect(scoutCoverageLiveShellCopy("empty").title).not.toMatch(/\bDEMO\b/);
-    expect(scoutCoverageLiveShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(scoutCoverageLiveShellCopy("empty").description);
   });
 
   it("next actions point at real hubs", () => {

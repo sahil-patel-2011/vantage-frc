@@ -10,6 +10,7 @@ import {
   teamAdminSetupSteps,
   teamAdminShellCopy,
 } from "./team-admin-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("teamAdminRelatedLinks", () => {
   it("builds Account / Discord / Connections via withOrgHref", () => {
@@ -84,7 +85,7 @@ describe("teamAdminShellCopy", () => {
       const copy = teamAdminShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(teamAdminShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(teamAdminShellCopy("empty").description);
     expect(teamAdminShellCopy("setup").badge).toBe("Setup required");
   });
 });

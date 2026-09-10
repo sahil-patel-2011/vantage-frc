@@ -8,6 +8,7 @@ import {
   riskBurndownShellCopy,
   shouldShowRiskBurndownSummaryTiles,
 } from "./risk-burndown-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("riskBurndownRelatedLinks", () => {
   it("builds Risks / FMEA cross-links via hubHref / withOrgHref", () => {
@@ -115,10 +116,10 @@ describe("riskBurndownShellCopy + formatRiskBurndownMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = riskBurndownShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(riskBurndownShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(riskBurndownShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(riskBurndownShellCopy("empty").description);
+    expectPlainCopy(riskBurndownShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

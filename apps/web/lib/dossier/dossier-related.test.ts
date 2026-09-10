@@ -10,6 +10,7 @@ import {
   dossierShellCopy,
   shouldShowDossierSummaryTiles,
 } from "./dossier-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("dossierRelatedLinks", () => {
   it("builds Strategy / Scouting / Pick desk via hubHref / withOrgHref", () => {
@@ -122,9 +123,9 @@ describe("dossierShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(dossierShellCopy("empty").badge).toBe("No facts yet");
-    expect(dossierShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(dossierShellCopy("empty").description);
     expect(dossierShellCopy("setup").badge).toBe("Setup required");
-    expect(dossierShellCopy("ready").description).toMatch(/never DEMO/i);
+    expectPlainCopy(dossierShellCopy("ready").description);
   });
 });
 

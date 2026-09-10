@@ -8,6 +8,7 @@ import {
   formatEventDayPlanMetric,
   shouldShowEventDayPlanSummaryTiles,
 } from "./event-day-plan-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("eventDayPlanRelatedLinks", () => {
   it("builds Command / Battery / Pit cross-links", () => {
@@ -91,9 +92,7 @@ describe("classifyEventDayPlanShell + helpers", () => {
   it("copy never invents DEMO schedule blocks", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = eventDayPlanShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

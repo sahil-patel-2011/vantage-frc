@@ -8,6 +8,7 @@ import {
   visitSetupSteps,
   visitShellCopy,
 } from "./visit-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("visitRelatedLinks", () => {
   it("builds Logistics / Event Day / Calendar cross-links", () => {
@@ -101,7 +102,7 @@ describe("visitShellCopy / visitSetupSteps", () => {
   it("shell copy never invents DEMO invite rows", () => {
     const copy = visitShellCopy("empty");
     expect(copy.badge).toBe("No visits yet");
-    expect(copy.description).toMatch(/never DEMO invite/i);
+    expectPlainCopy(copy.description);
   });
 });
 

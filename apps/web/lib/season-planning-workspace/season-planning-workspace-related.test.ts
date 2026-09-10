@@ -8,6 +8,7 @@ import {
   seasonPlanningShellCopy,
   shouldShowSeasonPlanningSummaryTiles,
 } from "./season-planning-workspace-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("seasonPlanningRelatedLinks", () => {
   it("builds Goals / Calendar / Attendance cross-links", () => {
@@ -72,7 +73,7 @@ describe("seasonPlanningShellCopy", () => {
   it("never invents DEMO completion", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = seasonPlanningShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

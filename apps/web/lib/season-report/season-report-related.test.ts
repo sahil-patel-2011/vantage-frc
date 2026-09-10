@@ -8,6 +8,7 @@ import {
   seasonReportRelatedLinks,
   seasonReportShellCopy,
 } from "./season-report-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("seasonReportRelatedLinks", () => {
   it("builds Strategy / Impact / Decision Search cross-links", () => {
@@ -116,10 +117,10 @@ describe("seasonReportShellCopy + metrics", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = seasonReportShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|logged|metered/i);
+      expectPlainCopy(copy.description);
     }
-    expect(seasonReportShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(seasonReportShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(seasonReportShellCopy("empty").description);
+    expectPlainCopy(seasonReportShellCopy("setup").description);
   });
 
   it("formats metrics from real counts only", () => {

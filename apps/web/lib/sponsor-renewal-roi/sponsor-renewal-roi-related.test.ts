@@ -8,6 +8,7 @@ import {
   sponsorRenewalRoiRelatedLinks,
   sponsorRenewalRoiShellCopy,
 } from "./sponsor-renewal-roi-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("sponsorRenewalRoiRelatedLinks", () => {
   it("builds CRM / Suite / Impact cross-links", () => {
@@ -88,9 +89,7 @@ describe("classifySponsorRenewalRoiShell + helpers", () => {
   it("copy never invents DEMO churn scores", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = sponsorRenewalRoiShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

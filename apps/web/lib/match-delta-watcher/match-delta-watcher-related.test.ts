@@ -9,6 +9,7 @@ import {
   matchDeltaWatcherShellCopy,
   shouldShowMatchDeltaWatcherSummaryTiles,
 } from "./match-delta-watcher-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchDeltaWatcherRelatedLinks", () => {
   it("builds Strategy / Pick List / Command cross-links", () => {
@@ -94,9 +95,7 @@ describe("classifyMatchDeltaWatcherShell + helpers", () => {
   it("copy never invents DEMO upset alerts", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = matchDeltaWatcherShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

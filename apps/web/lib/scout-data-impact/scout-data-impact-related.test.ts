@@ -11,6 +11,7 @@ import {
   scoutDataImpactShellCopy,
   shouldShowScoutDataImpactSummaryTiles,
 } from "./scout-data-impact-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutDataImpactRelatedLinks", () => {
   it("builds Scouting / Strategy / Accuracy via hubHref / withOrgHref", () => {
@@ -77,7 +78,7 @@ describe("Scout Data Impact Soft-UI metrics", () => {
       "ready",
     );
     expect(scoutDataImpactShellCopy("empty").title).not.toMatch(/\bDEMO\b/);
-    expect(scoutDataImpactShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(scoutDataImpactShellCopy("empty").description);
   });
 
   it("next actions point at real hubs", () => {

@@ -11,6 +11,7 @@ import {
   pitShellCopy,
   shouldShowPitSummaryTiles,
 } from "./pit-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("pitRelatedLinks", () => {
   it("builds Batteries / Match checklist / Event Day cross-links via hubHref / withOrgHref", () => {
@@ -157,10 +158,10 @@ describe("pitShellCopy + metrics", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = pitShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(pitShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(pitShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(pitShellCopy("empty").description);
+    expectPlainCopy(pitShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

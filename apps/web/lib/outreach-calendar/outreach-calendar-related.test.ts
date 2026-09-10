@@ -8,6 +8,7 @@ import {
   outreachCalendarShellCopy,
   shouldShowOutreachCalendarSummaryTiles,
 } from "./outreach-calendar-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("outreachCalendarRelatedLinks", () => {
   it("builds Impact / Media Kit / Fundraisers cross-links", () => {
@@ -71,7 +72,7 @@ describe("classifyOutreachCalendarShell", () => {
 
 describe("outreachCalendarShellCopy + format helpers", () => {
   it("refuses invented DEMO reach metrics", () => {
-    expect(outreachCalendarShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(outreachCalendarShellCopy("empty").description);
     expect(formatOutreachCalendarMetric(12, true)).toBe("12");
     expect(shouldShowOutreachCalendarSummaryTiles(0)).toBe(false);
     expect(shouldShowOutreachCalendarSummaryTiles(1)).toBe(true);

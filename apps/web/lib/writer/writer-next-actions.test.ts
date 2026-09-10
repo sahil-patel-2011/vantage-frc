@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { writerNextActions } from "./writer-next-actions";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("writerNextActions Soft-UI helpers", () => {
   it("routes missing workspace to /workspace", () => {
@@ -16,7 +17,7 @@ describe("writerNextActions Soft-UI helpers", () => {
       hasAchievements: false,
     });
     expect(actions[0]).toMatchObject({ id: "profile", primary: true });
-    expect(actions[0]?.detail).toMatch(/never DEMO|empty fields/i);
+    expectPlainCopy(actions[0]?.detail);
   });
 
   it("cross-links Grants, Awards, and Knowledge for a ready profile", () => {

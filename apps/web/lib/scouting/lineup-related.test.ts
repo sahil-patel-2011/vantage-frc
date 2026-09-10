@@ -17,6 +17,7 @@ import {
   lineupShellCopy,
   shouldShowLineupSummaryTiles,
 } from "./lineup-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("lineupRelatedLinks", () => {
   it("builds Scouting / Strategy / Form builder via hubHref", () => {
@@ -107,7 +108,7 @@ describe("lineupShellCopy", () => {
       const copy = lineupShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(lineupShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(lineupShellCopy("empty").description);
     expect(lineupShellCopy("setup").badge).toBe("Setup required");
   });
 });

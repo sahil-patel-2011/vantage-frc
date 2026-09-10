@@ -8,6 +8,7 @@ import {
   fieldResetTimerShellCopy,
   shouldShowFieldResetTimerSummaryTiles,
 } from "./field-reset-timer-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("fieldResetTimerRelatedLinks", () => {
   it("builds Practice / Tryouts / Signals cross-links", () => {
@@ -91,9 +92,7 @@ describe("classifyFieldResetTimerShell + helpers", () => {
   it("copy never invents DEMO drill times", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = fieldResetTimerShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

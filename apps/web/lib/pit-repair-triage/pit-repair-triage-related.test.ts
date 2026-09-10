@@ -8,6 +8,7 @@ import {
   pitRepairTriageShellCopy,
   shouldShowPitRepairTriageSummaryTiles,
 } from "./pit-repair-triage-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("pitRepairTriageRelatedLinks", () => {
   it("builds Command / FMEA / Spare Kit cross-links", () => {
@@ -100,9 +101,7 @@ describe("classifyPitRepairTriageShell + helpers", () => {
   it("copy never invents DEMO triage calls", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = pitRepairTriageShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

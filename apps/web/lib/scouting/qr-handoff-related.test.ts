@@ -11,6 +11,7 @@ import {
   qrHandoffSetupSteps,
   qrHandoffShellCopy,
 } from "./qr-handoff-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("qrHandoffRelatedLinks", () => {
   it("builds Scouting / Offline via hubHref / withOrgHref", () => {
@@ -125,7 +126,7 @@ describe("qrHandoffShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(qrHandoffShellCopy("empty").badge).toBe("Queue clear");
-    expect(qrHandoffShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(qrHandoffShellCopy("empty").description);
     expect(qrHandoffShellCopy("setup").badge).toBe("Setup required");
   });
 });

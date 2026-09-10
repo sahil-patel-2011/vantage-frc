@@ -7,6 +7,7 @@ import {
   controlMapShellCopy,
   formatControlMapMetric,
 } from "./control-map-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("controlMapRelatedLinks", () => {
   it("builds Subsystems / FMEA / Practice cross-links", () => {
@@ -137,10 +138,10 @@ describe("controlMapShellCopy + formatControlMapMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = controlMapShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|recorded|binding/i);
+      expectPlainCopy(copy.description);
     }
-    expect(controlMapShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(controlMapShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(controlMapShellCopy("empty").description);
+    expectPlainCopy(controlMapShellCopy("setup").description);
   });
 
   it("formats real counts only", () => {

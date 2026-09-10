@@ -9,6 +9,7 @@ import {
   impactEssayShellCopy,
   shouldShowImpactEssaySummaryTiles,
 } from "./impact-essay-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("impactEssayRelatedLinks", () => {
   it("builds Community Impact / Awards / Writer cross-links", () => {
@@ -124,12 +125,10 @@ describe("impactEssayShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = impactEssayShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(
-        /never|empty|org-scoped|real|blank|invent|metrics|pre-seeded/i,
-      );
+      expectPlainCopy(copy.description);
     }
-    expect(impactEssayShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(impactEssayShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(impactEssayShellCopy("empty").description);
+    expectPlainCopy(impactEssayShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

@@ -11,6 +11,7 @@ import {
   scoutCrossvalShellCopy,
   shouldShowScoutCrossvalSummaryTiles,
 } from "./scout-crossval-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutCrossvalRelatedLinks", () => {
   it("builds Scouting / Coverage Live / Accuracy via hubHref / withOrgHref", () => {
@@ -75,7 +76,7 @@ describe("Scout Crossval Soft-UI metrics", () => {
       "ready",
     );
     expect(scoutCrossvalShellCopy("empty").title).not.toMatch(/\bDEMO\b/);
-    expect(scoutCrossvalShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(scoutCrossvalShellCopy("empty").description);
   });
 
   it("next actions point at real hubs", () => {

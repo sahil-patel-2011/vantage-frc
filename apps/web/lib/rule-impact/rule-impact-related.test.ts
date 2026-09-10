@@ -8,6 +8,7 @@ import {
   ruleImpactRelatedLinks,
   ruleImpactShellCopy,
 } from "./rule-impact-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("ruleImpactRelatedLinks", () => {
   it("builds Kickoff / CAD / Subsystems cross-links", () => {
@@ -122,10 +123,10 @@ describe("ruleImpactShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = ruleImpactShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|logged/i);
+      expectPlainCopy(copy.description);
     }
-    expect(ruleImpactShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(ruleImpactShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(ruleImpactShellCopy("empty").description);
+    expectPlainCopy(ruleImpactShellCopy("setup").description);
   });
 
   it("formats real counts and blanks confidence until a signal exists", () => {

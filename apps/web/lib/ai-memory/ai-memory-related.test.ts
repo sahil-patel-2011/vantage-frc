@@ -8,6 +8,7 @@ import {
   classifyAiMemoryShell,
   formatAiMemoryMetric,
 } from "./ai-memory-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("aiMemoryRelatedLinks", () => {
   it("returns empty without org", () => {
@@ -65,8 +66,8 @@ describe("classifyAiMemoryShell + copy", () => {
       expect(copy.description).toMatch(/never|not|empty|admin/i);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(aiMemoryShellCopy("empty").description).toMatch(/invented|empty Neon/i);
-    expect(aiMemoryShellCopy("setup").description).toMatch(/never DEMO/i);
+    expectPlainCopy(aiMemoryShellCopy("empty").description);
+    expectPlainCopy(aiMemoryShellCopy("setup").description);
   });
 });
 

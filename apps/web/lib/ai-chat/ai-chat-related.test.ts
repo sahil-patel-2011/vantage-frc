@@ -7,6 +7,7 @@ import {
   aiChatShellCopy,
   classifyAiChatShell,
 } from "./ai-chat-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("aiChatRelatedLinks", () => {
   it("returns empty without org", () => {
@@ -72,8 +73,8 @@ describe("classifyAiChatShell + copy", () => {
       const copy = aiChatShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(aiChatShellCopy("empty").description).toMatch(/never invent|authorized/i);
-    expect(aiChatShellCopy("setup").description).toMatch(/never|empty|invented/i);
+    expectPlainCopy(aiChatShellCopy("empty").description);
+    expectPlainCopy(aiChatShellCopy("setup").description);
   });
 });
 

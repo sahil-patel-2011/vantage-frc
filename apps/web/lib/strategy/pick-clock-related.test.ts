@@ -10,6 +10,7 @@ import {
   pickClockShellCopy,
   shouldShowPickClockSummaryTiles,
 } from "./pick-clock-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("pickClockRelatedLinks", () => {
   it("builds Strategy / Pick desk / Chemistry via hubHref / withOrgHref", () => {
@@ -113,9 +114,9 @@ describe("pickClockShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(pickClockShellCopy("empty").badge).toBe("No teams left to recommend");
-    expect(pickClockShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(pickClockShellCopy("empty").description);
     expect(pickClockShellCopy("setup").badge).toBe("Setup required");
-    expect(pickClockShellCopy("ready").description).toMatch(/never DEMO/i);
+    expectPlainCopy(pickClockShellCopy("ready").description);
   });
 });
 

@@ -9,6 +9,7 @@ import {
   awardTrackerShellCopy,
   shouldShowAwardTrackerSummaryTiles,
 } from "./award-tracker-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("awardTrackerRelatedLinks", () => {
   it("builds Awards / Awards workbench / Impact essay cross-links", () => {
@@ -121,12 +122,10 @@ describe("awardTrackerShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = awardTrackerShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(
-        /never|empty|org-scoped|real|blank|invent|win rates|pre-seeded|deadlines|submissions/i,
-      );
+      expectPlainCopy(copy.description);
     }
-    expect(awardTrackerShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(awardTrackerShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(awardTrackerShellCopy("empty").description);
+    expectPlainCopy(awardTrackerShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

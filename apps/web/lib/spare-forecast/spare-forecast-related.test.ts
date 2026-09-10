@@ -7,6 +7,7 @@ import {
   spareForecastRelatedLinks,
   spareForecastShellCopy,
 } from "./spare-forecast-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("spareForecastRelatedLinks", () => {
   it("builds Batteries / Orders / Subsystems cross-links", () => {
@@ -168,10 +169,10 @@ describe("spareForecastShellCopy + formatSpareForecastMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready", "no_risk"] as const) {
       const copy = spareForecastShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(spareForecastShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(spareForecastShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(spareForecastShellCopy("empty").description);
+    expectPlainCopy(spareForecastShellCopy("setup").description);
   });
 
   it("formats real counts only", () => {

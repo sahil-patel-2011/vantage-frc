@@ -8,6 +8,7 @@ import {
   formatAllianceSelectionDeskMetric,
   shouldShowAllianceSelectionDeskSummaryTiles,
 } from "./alliance-selection-desk-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("allianceSelectionDeskRelatedLinks", () => {
   it("builds Strategy / Pick list / Pick clock cross-links", () => {
@@ -78,7 +79,7 @@ describe("allianceSelectionDeskShellCopy", () => {
   it("explicitly rejects DEMO rankings in shell copy", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = allianceSelectionDeskShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

@@ -8,6 +8,7 @@ import {
   matchCopilotShellCopy,
   shouldShowMatchCopilotSummaryTiles,
 } from "./match-copilot-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchCopilotRelatedLinks", () => {
   it("builds Strategy / Command / FMEA cross-links", () => {
@@ -132,10 +133,10 @@ describe("matchCopilotShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = matchCopilotShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|metrics|pre-seeded/i);
+      expectPlainCopy(copy.description);
     }
-    expect(matchCopilotShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(matchCopilotShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(matchCopilotShellCopy("empty").description);
+    expectPlainCopy(matchCopilotShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

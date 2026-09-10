@@ -8,6 +8,7 @@ import {
   formatAlliancePartnerBriefMetric,
   shouldShowAlliancePartnerBriefSummaryTiles,
 } from "./alliance-partner-brief-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("alliancePartnerBriefRelatedLinks", () => {
   it("builds Strategy / Alliance board / Scouting cross-links", () => {
@@ -135,10 +136,10 @@ describe("alliancePartnerBriefShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = alliancePartnerBriefShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|finalize|metrics/i);
+      expectPlainCopy(copy.description);
     }
-    expect(alliancePartnerBriefShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(alliancePartnerBriefShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(alliancePartnerBriefShellCopy("empty").description);
+    expectPlainCopy(alliancePartnerBriefShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

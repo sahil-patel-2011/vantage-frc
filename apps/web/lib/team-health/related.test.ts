@@ -8,6 +8,7 @@ import {
   teamHealthRelatedLinks,
   teamHealthShellCopy,
 } from "./related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("teamHealthRelatedLinks", () => {
   it("builds Attendance / My Hours cross-links", () => {
@@ -75,6 +76,6 @@ describe("team health shell", () => {
     expect(shouldShowTeamHealthSummaryTiles(true)).toBe(true);
     expect(formatTeamHealthRate(null, true)).toBe("—");
     expect(formatTeamHealthRate(0.5, true)).toBe("50%");
-    expect(teamHealthShellCopy("empty").description).toMatch(/never DEMO morale/i);
+    expectPlainCopy(teamHealthShellCopy("empty").description);
   });
 });

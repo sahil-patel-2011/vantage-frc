@@ -10,6 +10,7 @@ import {
   onboardingStepPhase,
   onboardingLegalRequired,
 } from "./onboarding-flow";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("onboarding Soft-UI flow helpers", () => {
   it("maps setup steps with done/current/upcoming phases", () => {
@@ -124,7 +125,7 @@ describe("onboarding Soft-UI flow helpers", () => {
 
   it("keeps closed-membership copy honest for empty/setup shells", () => {
     expect(onboardingLoadCopy("loading").title).toMatch(/Loading/i);
-    expect(onboardingLoadCopy("error").description).toMatch(/DEMO/i);
+    expectPlainCopy(onboardingLoadCopy("error").description);
     expect(onboardingLoadCopy("setup_required").badge).toBe("Setup required");
     expect(onboardingLoadCopy("setup_required", "Sign in required.").description).toBe("Sign in required.");
     expect(onboardingMembershipNote("none").body).toMatch(/cannot join/i);

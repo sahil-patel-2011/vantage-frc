@@ -8,6 +8,7 @@ import {
   matchVideoIndexShellCopy,
   shouldShowMatchVideoIndexSummaryTiles,
 } from "./match-video-index-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchVideoIndexRelatedLinks", () => {
   it("builds Scouting / Match Notes / Match-Delta cross-links", () => {
@@ -76,9 +77,7 @@ describe("classifyMatchVideoIndexShell + helpers", () => {
   it("copy never invents DEMO clip packs", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = matchVideoIndexShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

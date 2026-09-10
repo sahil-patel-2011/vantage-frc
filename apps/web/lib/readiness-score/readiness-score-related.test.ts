@@ -9,6 +9,7 @@ import {
   readinessScoreShellCopy,
   shouldShowReadinessScoreSummaryTiles,
 } from "./readiness-score-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("readinessScoreRelatedLinks", () => {
   it("builds FMEA / Inspection / Code cross-links", () => {
@@ -108,9 +109,7 @@ describe("classifyReadinessScoreShell + copy", () => {
   it("copy never invents DEMO readiness metrics", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = readinessScoreShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|nothing is pre-seeded|subsystem|readiness/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
       expect(`${copy.title} ${copy.description}`.toLowerCase()).not.toMatch(/\binvented demo\b/);
     }
   });

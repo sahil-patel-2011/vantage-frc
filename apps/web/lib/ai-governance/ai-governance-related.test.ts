@@ -12,6 +12,7 @@ import {
   isAiGovernanceLaissezFaire,
   type AiGovernancePolicySnapshot,
 } from "./ai-governance-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const laissez: AiGovernancePolicySnapshot = {
   featureAllowlistEnabled: false,
@@ -108,8 +109,8 @@ describe("classifyAiGovernanceShell + copy", () => {
       expect(copy.description).toMatch(/never|not|admin|Budgets|Memory/i);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(aiGovernanceShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(aiGovernanceShellCopy("setup").description).toMatch(/DEMO/i);
+    expectPlainCopy(aiGovernanceShellCopy("empty").description);
+    expectPlainCopy(aiGovernanceShellCopy("setup").description);
   });
 });
 

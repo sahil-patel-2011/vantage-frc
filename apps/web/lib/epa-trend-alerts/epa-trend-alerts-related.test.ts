@@ -8,6 +8,7 @@ import {
   formatEpaTrendMetric,
   shouldShowEpaTrendSummaryTiles,
 } from "./epa-trend-alerts-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("epaTrendAlertsRelatedLinks", () => {
   it("builds Strategy / Opponent Watchlist cross-links", () => {
@@ -120,10 +121,10 @@ describe("epaTrendAlertsShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = epaTrendAlertsShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|watch|reference/i);
+      expectPlainCopy(copy.description);
     }
-    expect(epaTrendAlertsShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(epaTrendAlertsShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(epaTrendAlertsShellCopy("empty").description);
+    expectPlainCopy(epaTrendAlertsShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {
