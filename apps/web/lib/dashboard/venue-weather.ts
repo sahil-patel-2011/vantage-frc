@@ -70,3 +70,44 @@ export function venueForecastFromResponse(wx: {
     summary: weatherSummaryForCode(typeof code === "number" ? code : undefined),
   };
 }
+
+/** Minimal fetch used by the widget so tests can stub Open-Meteo without a browser. */
+export type VenueWeatherFetcher = (url: string) => Promise<{ json: () => Promise<unknown> }>;
+
+export async function loadVenueForecast(
+  city: string,
+  country?: string | null,
+  fetchImpl: VenueWeatherFetcher = (url) => fetch(url),
+): Promise<VenueForecast | null> {
+  const geo = (await (await fetchImpl(venueGeocodeUrl(city, country || null))).json()) as {
+    results?: Array<{ latitude?: unknown; longitude?: unknown }>;
+  };
+  const place = venueCoordsFromGeocode(geo);
+  if (!place) return null;
+  const wx = (await (await fetchImpl(venueForecastUrl(place.latitude, place.longitude))).json()) as {
+    current?: { temperature_2m?: unknown; weather_code?: unknown };
+  };
+  return venueForecastFromResponse(wx);
+}
+
+export type VenueWeatherCopyKind = "forecast" | "failed" | "loading" | "off";
+
+export function venueWeatherCopy(input: {
+  isEventDay: boolean;
+  forecast: VenueForecast | null;
+  failed: boolean;
+}): { kind: VenueWeatherCopyKind; text: string } {
+  if (input.isEventDay && input.forecast) {
+    return { kind: "forecast", text: `${input.forecast.tempC}°C · ${input.forecast.summary}` };
+  }
+  if (input.isEventDay && input.failed) {
+    return {
+      kind: "failed",
+      text: "Forecast did not load. Check the venue city on the event.",
+    };
+  }
+  if (input.isEventDay) {
+    return { kind: "loading", text: "Loading the public forecast…" };
+  }
+  return { kind: "off", text: "Forecast shows on event day." };
+}

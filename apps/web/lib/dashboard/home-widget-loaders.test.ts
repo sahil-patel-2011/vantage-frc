@@ -130,7 +130,32 @@ describe("home widget loaders", () => {
     );
     expect(withCity.status).toBe("live");
     expect(withCity.data?.city).toBe("Houston");
+    expect(withCity.data?.isEventDay).toBe(false);
     expect(withCity.data).not.toHaveProperty("tempC");
+  });
+
+  it("marks event day from the event window and still never invents a temperature", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const result = await loadHomeWidget(
+      fakeClient({
+        "home-widget:weather_venue": [
+          {
+            city: "Houston",
+            stateProv: "TX",
+            country: "USA",
+            startDate: today,
+            endDate: today,
+            name: "Event",
+          },
+        ],
+      }),
+      "weather_venue",
+      ctx,
+      stamp,
+    );
+    expect(result.status).toBe("live");
+    expect(result.data).toMatchObject({ city: "Houston", isEventDay: true });
+    expect(result.data).not.toHaveProperty("tempC");
   });
 
   it("shows files, chat, and budget only from real rows", async () => {

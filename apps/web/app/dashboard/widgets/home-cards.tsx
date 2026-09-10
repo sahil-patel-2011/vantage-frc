@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
-  venueCoordsFromGeocode,
-  venueForecastFromResponse,
-  venueForecastUrl,
-  venueGeocodeUrl,
+  loadVenueForecast,
+  venueWeatherCopy,
 } from "../../../lib/dashboard/venue-weather";
 import { DEV_SETUP_DONE_KEY } from "../../../lib/dev-setup/track";
 import { LiveCountdown } from "./live-countdown";
@@ -384,16 +382,12 @@ export function WeatherVenueLive({ data }: { data: Record<string, unknown> }) {
     let cancelled = false;
     void (async () => {
       try {
-        const geo = (await (await fetch(venueGeocodeUrl(city, country || null))).json()) as {
-          results?: Array<{ latitude?: unknown; longitude?: unknown }>;
-        };
-        const place = venueCoordsFromGeocode(geo);
-        if (!place || cancelled) return;
-        const wx = (await (await fetch(venueForecastUrl(place.latitude, place.longitude))).json()) as {
-          current?: { temperature_2m?: unknown; weather_code?: unknown };
-        };
-        const next = venueForecastFromResponse(wx);
-        if (!next || cancelled) return;
+        const next = await loadVenueForecast(city, country || null);
+        if (cancelled) return;
+        if (!next) {
+          setFailed(true);
+          return;
+        }
         setForecast(next);
       } catch {
         if (!cancelled) setFailed(true);
@@ -404,23 +398,30 @@ export function WeatherVenueLive({ data }: { data: Record<string, unknown> }) {
     };
   }, [city, isEventDay, country]);
 
+  const copy = venueWeatherCopy({ isEventDay, forecast, failed });
+  let forecastLine: ReactNode;
+  switch (copy.kind) {
+    case "forecast":
+      forecastLine = <p>{copy.text}</p>;
+      break;
+    case "failed":
+    case "loading":
+    case "off":
+      forecastLine = <p className="app-muted">{copy.text}</p>;
+      break;
+    default: {
+      const _exhaustive: never = copy.kind;
+      forecastLine = _exhaustive;
+    }
+  }
+
   return (
     <div>
       <p>
         <strong>{city}</strong>
         {typeof data.name === "string" ? <span className="app-muted"> · {data.name}</span> : null}
       </p>
-      {isEventDay && forecast ? (
-        <p>
-          {forecast.tempC}°C · {forecast.summary}
-        </p>
-      ) : isEventDay && failed ? (
-        <p className="app-muted">Forecast did not load. Check the venue city on the event.</p>
-      ) : isEventDay ? (
-        <p className="app-muted">Loading the public forecast…</p>
-      ) : (
-        <p className="app-muted">Forecast shows on event day.</p>
-      )}
+      {forecastLine}
     </div>
   );
 }

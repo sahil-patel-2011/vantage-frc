@@ -60,6 +60,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/assembly-manual")).toBe("Assembly manual");
     expect(offlineCapableLabel("/packing")).toBe("Packing");
     expect(offlineCapableLabel("/batteries")).toBe("Batteries");
+    expect(offlineCapableLabel("/pit")).toBe("Pit");
     expect(offlineCapableLabel("/my-day")).toBe("My Day");
     expect(offlineCapableLabel("/schedule")).toBe("Schedule");
     expect(offlineCapableLabel("/command")).toBe("Event Day");

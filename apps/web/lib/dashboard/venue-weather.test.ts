@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  loadVenueForecast,
   venueCoordsFromGeocode,
   venueForecastFromResponse,
   venueForecastUrl,
   venueGeocodeUrl,
+  venueWeatherCopy,
   weatherSummaryForCode,
+  type VenueWeatherFetcher,
 } from "./venue-weather";
 
 describe("venue weather URLs", () => {
@@ -43,7 +46,67 @@ describe("venue weather URLs", () => {
     expect(
       venueForecastFromResponse({ current: { temperature_2m: 31.6, weather_code: 2 } }),
     ).toEqual({ tempC: 32, summary: "Partly cloudy" });
+    expect(venueForecastFromResponse({ current: { temperature_2m: 26.1, weather_code: 0 } })).toEqual({
+      tempC: 26,
+      summary: "Clear",
+    });
     expect(venueForecastFromResponse({ current: { weather_code: 0 } })).toBeNull();
     expect(venueForecastFromResponse({})).toBeNull();
+  });
+});
+
+describe("venue weather copy", () => {
+  it("prints the measured forecast only on event day", () => {
+    expect(
+      venueWeatherCopy({
+        isEventDay: true,
+        forecast: { tempC: 26, summary: "Clear" },
+        failed: false,
+      }),
+    ).toEqual({ kind: "forecast", text: "26°C · Clear" });
+    expect(venueWeatherCopy({ isEventDay: false, forecast: { tempC: 26, summary: "Clear" }, failed: false })).toEqual({
+      kind: "off",
+      text: "Forecast shows on event day.",
+    });
+  });
+
+  it("does not invent a temperature while loading or after a failed public fetch", () => {
+    expect(venueWeatherCopy({ isEventDay: true, forecast: null, failed: false })).toEqual({
+      kind: "loading",
+      text: "Loading the public forecast…",
+    });
+    expect(venueWeatherCopy({ isEventDay: true, forecast: null, failed: true })).toEqual({
+      kind: "failed",
+      text: "Forecast did not load. Check the venue city on the event.",
+    });
+  });
+});
+
+describe("loadVenueForecast", () => {
+  it("reads Houston 26.1 °C / code 0 as 26°C Clear from the same URLs the card builds", async () => {
+    const fetchImpl: VenueWeatherFetcher = async (url) => {
+      if (url.startsWith("https://geocoding-api.open-meteo.com/")) {
+        expect(url).toBe(venueGeocodeUrl("Houston", "USA"));
+        return {
+          json: async () => ({ results: [{ latitude: 29.76328, longitude: -95.36327 }] }),
+        };
+      }
+      if (url.startsWith("https://api.open-meteo.com/")) {
+        expect(url).toBe(venueForecastUrl(29.76328, -95.36327));
+        return {
+          json: async () => ({ current: { temperature_2m: 26.1, weather_code: 0 } }),
+        };
+      }
+      throw new Error(`unexpected Open-Meteo URL ${url}`);
+    };
+    await expect(loadVenueForecast("Houston", "USA", fetchImpl)).resolves.toEqual({
+      tempC: 26,
+      summary: "Clear",
+    });
+  });
+
+  it("returns null when geocode has no usable coordinates", async () => {
+    const fetchImpl: VenueWeatherFetcher = async () => ({ json: async () => ({ results: [] }) });
+    await expect(loadVenueForecast("Nowhere", null, fetchImpl)).resolves.toBeNull();
   });
 });
