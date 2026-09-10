@@ -62,7 +62,10 @@ export type OfflineFeature =
   | "picklist-justifier"
   | "opponent-watchlist"
   | "alliance-sim"
-  | "briefing";
+  | "briefing"
+  | "award-tracker"
+  | "epa-trend"
+  | "rankings";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

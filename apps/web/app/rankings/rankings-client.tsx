@@ -1,7 +1,8 @@
 "use client";
-import { Button } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -20,6 +21,25 @@ import {
   rankingsCacheRequiredCopy,
   shouldRefreshRankings,
 } from "../../lib/rankings/tba-cache";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+
+function isRankingsView(value: unknown): value is RankingsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistRankingsSnapshot(orgHint: string, data: RankingsView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("rankings", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("rankings", "_", data);
+  } catch {
+    // Live rankings already painted; IndexedDB is best-effort.
+  }
+}
 
 function fmtEpa(value: number | null): string {
   return value == null ? "—" : value.toFixed(1);
@@ -125,28 +145,62 @@ export default function RankingsClient() {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [tab, setTab] = useState<"rankings" | "playoffs">("rankings");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const viewRef = useRef<RankingsView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/rankings${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const cached = await getFeatureSnapshot<RankingsView>("rankings", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isRankingsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(`/api/rankings${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as RankingsView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load event rankings.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isRankingsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Rankings. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load event rankings.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRankingsSnapshot(urlOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Rankings. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     } finally {
       inFlightRef.current = false;
     }
@@ -202,6 +256,7 @@ export default function RankingsClient() {
             <h1>Rankings & playoffs</h1>
           </div>
         </header>
+        <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card rank-empty">
           {fetchFailed ? (
             (() => {
@@ -254,6 +309,7 @@ export default function RankingsClient() {
             <p>Every team at your active event ranked, plus the elimination bracket as it unfolds.</p>
           </div>
         </header>
+        <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card rank-empty">
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
@@ -297,10 +353,11 @@ export default function RankingsClient() {
           </Button>
         </div>
       </header>
+      <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {fetchFailed ? (
+      {error ? (
         <p className="telemetry-status" role="alert">
-          {error || "Auto-refresh failed — showing the last loaded rankings."}
+          {error}
         </p>
       ) : null}
 

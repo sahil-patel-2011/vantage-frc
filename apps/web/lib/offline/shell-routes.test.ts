@@ -80,6 +80,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/opponent-watchlist")).toBe(true);
     expect(pathnameIsOfflineShell("/alliance-sim")).toBe(true);
     expect(pathnameIsOfflineShell("/briefing")).toBe(true);
+    expect(pathnameIsOfflineShell("/award-tracker")).toBe(true);
+    expect(pathnameIsOfflineShell("/epa-trend-alerts")).toBe(true);
+    expect(pathnameIsOfflineShell("/rankings")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -137,6 +140,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/opponent-watchlist")).toBe("Opponent Watchlist");
     expect(offlineCapableLabel("/alliance-sim")).toBe("Alliance Sim");
     expect(offlineCapableLabel("/briefing")).toBe("Pre-match briefing");
+    expect(offlineCapableLabel("/award-tracker")).toBe("Award Tracker");
+    expect(offlineCapableLabel("/epa-trend-alerts")).toBe("EPA Trend Alerts");
+    expect(offlineCapableLabel("/rankings")).toBe("Rankings");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -195,6 +201,9 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("opponent-watchlist", "org-1")).toBe("opponent-watchlist:org-1");
     expect(featureCacheKey("alliance-sim", "org-1", "scen-1")).toBe("alliance-sim:org-1:scen-1");
     expect(featureCacheKey("briefing", "org-1", "2026onto_qm1")).toBe("briefing:org-1:2026onto_qm1");
+    expect(featureCacheKey("award-tracker", "org-1", "2026")).toBe("award-tracker:org-1:2026");
+    expect(featureCacheKey("epa-trend", "org-1")).toBe("epa-trend:org-1");
+    expect(featureCacheKey("rankings", "org-1")).toBe("rankings:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

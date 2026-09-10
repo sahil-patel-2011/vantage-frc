@@ -85,6 +85,9 @@ const SHELL_ROUTES = [
   "/opponent-watchlist",
   "/alliance-sim",
   "/briefing",
+  "/award-tracker",
+  "/epa-trend-alerts",
+  "/rankings",
 ];
 
 function isShellPath(pathname) {

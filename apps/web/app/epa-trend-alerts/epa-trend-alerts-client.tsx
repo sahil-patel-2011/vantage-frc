@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { directionLabel, severityLabel } from "../../lib/epa-trend-alerts";
 import type { EpaTrendAlertsView } from "../../lib/epa-trend-alerts/compute-epa-trend-alerts";
@@ -16,8 +17,28 @@ import {
   type EpaTrendAlertsShellKind,
 } from "../../lib/epa-trend-alerts/epa-trend-alerts-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./epa-trend-alerts.css";
+
+function isEpaTrendAlertsView(value: unknown): value is EpaTrendAlertsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistEpaTrendSnapshot(orgHint: string, data: EpaTrendAlertsView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("epa-trend", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("epa-trend", "_", data);
+  } catch {
+    // Live EPA Trend Alerts already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<EpaTrendAlertsView, { status: "live" }>;
 
@@ -148,24 +169,64 @@ export default function EpaTrendAlertsClient() {
   const [busy, setBusy] = useState(false);
   const [teamNumber, setTeamNumber] = useState("");
   const [note, setNote] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<EpaTrendAlertsView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/epa-trend-alerts${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<EpaTrendAlertsView>("epa-trend", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isEpaTrendAlertsView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/epa-trend-alerts${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as EpaTrendAlertsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isEpaTrendAlertsView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh EPA Trend Alerts. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistEpaTrendSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh EPA Trend Alerts. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -208,13 +269,15 @@ export default function EpaTrendAlertsClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as EpaTrendAlertsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isEpaTrendAlertsView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistEpaTrendSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -225,7 +288,11 @@ export default function EpaTrendAlertsClient() {
   );
 
   if (shell === "loading") {
-    return <EpaShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <EpaShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+      </EpaShell>
+    );
   }
 
   if (shell === "error") {
@@ -236,7 +303,9 @@ export default function EpaTrendAlertsClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+      </EpaShell>
     );
   }
 
@@ -246,12 +315,18 @@ export default function EpaTrendAlertsClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+      </EpaShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <EpaShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <EpaShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
+      </EpaShell>
+    );
   }
 
   return (
@@ -274,6 +349,7 @@ export default function EpaTrendAlertsClient() {
           ))}
         </div>
       </PageHeader>
+      <OfflineBanner feature="EPA Trend Alerts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
