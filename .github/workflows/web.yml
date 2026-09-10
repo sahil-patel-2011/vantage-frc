@@ -104,6 +104,13 @@ jobs:
         run: npm run test:db:integration
         env:
           TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+      - name: Prove newest org-scoped tables as vantage_app
+        env:
+          RLS_PROOF_SUPERUSER_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+          RLS_PROOF_APP_URL: postgresql://vantage_ci_app:app@127.0.0.1:5432/vantage_ci
+        run: |
+          node scripts/rls-proof-prepare-app-login.mjs
+          node scripts/rls-proof.mjs
       - name: Upload migration failure log
         if: failure()
         uses: actions/upload-artifact@v4

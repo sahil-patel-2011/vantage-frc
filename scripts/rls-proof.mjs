@@ -6,6 +6,7 @@
 // Usage (against a scratch database that has had every migration applied):
 //   RLS_PROOF_SUPERUSER_URL=postgres://postgres:...@host/db \
 //   RLS_PROOF_APP_URL=postgres://app_login:...@host/db \
+//   node scripts/rls-proof-prepare-app-login.mjs \
 //   node scripts/rls-proof.mjs
 //
 // `app_login` must be `LOGIN` with `GRANT vantage_app` and `ALTER ROLE ... SET
