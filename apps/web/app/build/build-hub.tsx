@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import "../product-hub.css";
 import "../code/code.css";
+import "../kickoff/kickoff.css";
 
 const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false });
 const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false });
