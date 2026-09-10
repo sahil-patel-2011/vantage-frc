@@ -9,7 +9,7 @@
  * These checks catch that shape of breakage without needing a browser.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOTS = [join(__dirname, "..", "..", "app"), join(__dirname, "..", "..", "components")];
@@ -133,5 +133,26 @@ describe("stylesheet integrity", () => {
     expect(calendar).toBeDefined();
     const text = readFileSync(calendar!, "utf8");
     expect(text).toContain(".tc-mode {");
+  });
+
+  it("declares --soft-*/--app-*/--m-* tokens only in system.css", () => {
+    // Three competing palettes is how two secondary buttons on the same
+    // screen ended up different colours. Canonical names live in system.css;
+    // every other sheet may *consume* var(--soft-*) but must not redeclare it.
+    const tokenDecl = /--(?:soft|app|m)-[A-Za-z0-9-]+\s*:/;
+    const offenders: string[] = [];
+    for (const file of files) {
+      if (file.endsWith(`${sep}system.css`) || file.endsWith("/system.css")) continue;
+      const text = scrub(readFileSync(file, "utf8"));
+      text.split("\n").forEach((line, index) => {
+        if (tokenDecl.test(line)) {
+          offenders.push(`${file}:${index + 1}: ${line.trim().slice(0, 80)}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      `token declarations outside system.css:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
   });
 });

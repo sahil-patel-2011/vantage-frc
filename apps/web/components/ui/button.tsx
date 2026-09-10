@@ -1,8 +1,8 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 import styles from "./ui.module.css";
 
-type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "icon";
-type ButtonSize = "sm" | "md";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "icon";
+type ButtonSize = "sm" | "md" | "lg";
 
 type ButtonOwnProps<T extends ElementType> = {
   as?: T;
@@ -18,9 +18,15 @@ type ButtonProps<T extends ElementType> = ButtonOwnProps<T> &
 const variantClass: Record<ButtonVariant, string | undefined> = {
   primary: styles.btnPrimary,
   secondary: styles.btnSecondary,
-  danger: styles.btnDanger,
   ghost: styles.btnGhost,
+  danger: styles.btnDanger,
   icon: styles.btnIcon,
+};
+
+const sizeClass: Record<ButtonSize, string | undefined> = {
+  sm: styles.btnSm,
+  md: styles.btnMd,
+  lg: styles.btnLg,
 };
 
 /**
@@ -39,8 +45,9 @@ export function Button<T extends ElementType = "button">({
   const Tag = (as ?? "button") as ElementType;
   const cls = [
     styles.btn,
-    variant === "icon" ? undefined : size === "sm" ? styles.btnSm : styles.btnMd,
+    variant === "icon" ? undefined : sizeClass[size],
     variantClass[variant],
+    variant === "primary" ? "is-primary" : undefined,
     className,
   ]
     .filter(Boolean)

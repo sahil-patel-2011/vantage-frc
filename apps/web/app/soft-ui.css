@@ -1,223 +1,8 @@
-/** Soft-card product UI shared by Home, Account, and Admin. */
-
-/* ---- Brand constants -------------------------------------------------------
-   The one place the Vantage navy, blue and papers are written down.
-
-   This app runs two colour systems on purpose: the product's `--soft-*`, which
-   flips for dark, and the marketing site's `--m-*`, which is an editorial scale
-   that stays on paper. What was NOT on purpose is that both spelled the same
-   four brand values as their own literals — #14243a, #1457d9, #eef2f7, #ffffff
-   appear in both sheets — plus a fifth pair, #e4ecfc and #e3ecfb, that are the
-   same tint typed twice. Declared once here and consumed by both, so "the
-   Vantage blue" has a single definition and a rebrand is a one-line edit.
-
-   What deliberately does NOT unify, and why: marketing keeps its own type
-   scale (82px editorial headlines against the product's 22px titles), its own
-   radius and shadow ramp, its own section padding, and — inside
-   `.marketing-lux` — a warmer paper (#f4f2ec), a navy-as-accent and a copper
-   warm tone. That is an editorial identity, not a drifted copy of the product,
-   and flattening it would cost the marketing site its voice. Marketing's muted
-   ink (#44536b) is also darker than the product's on purpose: long-form prose
-   on a wide white field wants more contrast than a dense dashboard label. */
-:root{
-  --brand-navy:#14243a;
-  --brand-blue:#1457d9;
-  --brand-blue-soft:#e4ecfc;
-  --brand-paper:#eef2f7;
-  --brand-white:#ffffff;
-}
-
-:root{
-  --soft-bg:var(--brand-paper);
-  --soft-card:var(--brand-white);
-  --soft-ink:var(--brand-navy);
-  --soft-muted:#5a6578;
-  --soft-line:#d5dde8;
-  --soft-accent:var(--brand-blue);
-  --soft-accent-soft:var(--brand-blue-soft);
-  /* Semantic roles missing from the original ramp. --soft-accent-ink is the text
-     colour that sits ON an accent fill (dark accent is a light blue, so white
-     text fails 4.5:1 there). --soft-warning/--soft-danger are status text
-     colours; leaf sheets tint fills from them with color-mix. */
-  --soft-accent-ink:#fff;
-  --soft-warning:#98630a;
-  --soft-danger:#b91c1c;
-  --soft-success:#15803d;
-  /* Tinted fills for the same three statuses. Every one is derived, so dark
-     inherits the swap for free instead of re-hardcoding a pastel that only
-     reads on paper. */
-  --soft-warning-soft:color-mix(in srgb,var(--soft-warning) 14%,var(--soft-card));
-  --soft-danger-soft:color-mix(in srgb,var(--soft-danger) 13%,var(--soft-card));
-  --soft-success-soft:color-mix(in srgb,var(--soft-success) 13%,var(--soft-card));
-  /* Second surface: insets, wells, table zebra, "quiet" chips. One expression
-     instead of the ~12 near-identical greys leaf sheets each invented. */
-  --soft-surface-2:color-mix(in srgb,var(--soft-bg) 82%,var(--soft-line));
-  --soft-line-soft:color-mix(in srgb,var(--soft-line) 55%,transparent);
-
-  /* ---- Tone ramp. Per-hub / per-widget accents. ---------------------------
-     A tone is a HUE and nothing else. The plate it sits on and the ink it
-     paints with are derived from that hue against the live surface (see
-     --tone-plate / --tone-ink in system.css), so one value is correct on paper
-     AND on a dark panel. The old pair shipped a second, light-only `--tone-bg`
-     alongside every tone — written as an inline style, therefore beyond the
-     reach of any stylesheet, which is exactly how a #e8eefc chip ended up on a
-     #0c1118 drawer. Nothing reads --tone-bg any more.
-     Named here so a hue is declared once instead of re-typed as a hex at each
-     call site (the drawer and the dashboard between them had two different
-     "blues", #1457d9/#e8eefc and #1457d9/#e4ecfc, for the same intent). */
-  --tone-blue:#1457d9;
-  --tone-green:#15803d;
-  --tone-teal:#0f766e;
-  --tone-amber:#b45309;
-  --tone-red:#b91c1c;
-  /* How much hue goes into the plate, and into the ink, per theme. Light ink is
-     the hue itself (100%); dark lifts it toward white so it clears 4.5:1 on the
-     dark plate. These two scalars are the whole theme story for tones. */
-  --tone-plate-mix:10%;
-  --tone-ink-mix:100%;
-
-  /* ---- Radius scale. Five steps, nothing between them. -------------------- */
-  --soft-radius-xs:8px;
-  --soft-radius-sm:12px;
-  --soft-radius:16px;
-  --soft-radius-lg:22px;
-  --soft-radius-pill:999px;
-
-  /* ---- Type scale. Titles clamp so one rule covers 390 → 1440. ------------ */
-  --soft-font:var(--font-source-sans),ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --soft-font-mono:var(--font-ibm-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  --soft-text-2xs:11px;
-  --soft-text-xs:12px;
-  --soft-text-sm:13px;
-  --soft-text:14px;
-  --soft-text-lg:15px;
-  --soft-title-4:14px;
-  --soft-title-3:clamp(15px,1.3vw,16px);
-  --soft-title-2:clamp(16px,1.7vw,18px);
-  --soft-title-1:clamp(19px,2.2vw,22px);
-  --soft-display:clamp(26px,3.2vw,34px);
-  --soft-tracking-tight:-.02em;
-  --soft-tracking-display:-.03em;
-  --soft-tracking-kicker:.06em;
-
-  /* ---- Controls. 44px is the resting height everywhere (2.5.5 target size);
-     -sm is for dense in-card rows that are still ≥ 2.5.8's 24px floor. ------- */
-  --soft-control-h:44px;
-  --soft-control-h-sm:36px;
-  --soft-control-pad:0 14px;
-  --soft-control-pad-sm:0 10px;
-
-  /* ---- Page rhythm. One content measure so 1440 is not 30% dead gutter. --- */
-  --soft-measure:1180px;
-  /* One prose measure. Empty states said 52ch, setup cards said 60ch and the
-     error message said 52ch again — three numbers for "one comfortable line". */
-  --soft-measure-prose:58ch;
-  --soft-measure-narrow:760px;
-  --soft-gutter:clamp(14px,3vw,28px);
-
-  --soft-shadow:0 10px 28px rgba(19,32,51,.07);
-  /* One elevation ramp for every surface: resting (--soft-shadow), hover lift,
-     and floating overlays. Dark redefines the same three so nothing hardcodes
-     a light-only rgba. --soft-ring resolves against whichever accent is live. */
-  --soft-shadow-lift:0 14px 34px rgba(19,32,51,.11);
-  --soft-shadow-pop:0 16px 40px rgba(19,32,51,.16);
-  --soft-ring:color-mix(in srgb,var(--soft-accent) 62%,transparent);
-  --soft-island:rgba(255,255,255,.94);
-  --soft-safe-bottom:env(safe-area-inset-bottom,0px);
-  /* Status glyphs as masks, so they take `currentColor` and need no markup —
-     a status line can gain an icon without touching 190 call sites. */
-  --soft-glyph-warning:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M8 2 15 14H1L8 2Z'/%3E%3Cpath d='M8 6.4v3.2M8 11.8v.1'/%3E%3C/svg%3E");
-  --soft-glyph-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5 6.5 12 13 4.5'/%3E%3C/svg%3E");
-  --soft-glow:radial-gradient(120% 80% at 12% -10%,color-mix(in srgb,var(--soft-accent) 12%,transparent),transparent 55%),
-    radial-gradient(90% 60% at 100% 0%,color-mix(in srgb,#38bdf8 8%,transparent),transparent 50%);
-}
-html[data-theme="dark"]{
-  --soft-bg:#0c1118;
-  --soft-card:#151b24;
-  --soft-ink:#edf2f7;
-  --soft-muted:#9aa7b5;
-  --soft-line:#273140;
-  --soft-accent:#6e9bff;
-  --soft-accent-soft:#1a2740;
-  --soft-accent-ink:#0c1118;
-  --soft-warning:#ffb936;
-  --soft-danger:#ff9a91;
-  --soft-success:#4ade80;
-  /* Tone hues stay put — a hue is brand, not theme. What changes is how much of
-     it goes into the plate and how far the ink is lifted off it. */
-  --tone-plate-mix:24%;
-  --tone-ink-mix:42%;
-  --soft-island:rgba(21,27,36,.94);
-  --soft-shadow:0 12px 36px rgba(0,0,0,.4);
-  --soft-shadow-lift:0 16px 42px rgba(0,0,0,.5);
-  --soft-shadow-pop:0 20px 50px rgba(0,0,0,.55);
-  --soft-glow:radial-gradient(120% 80% at 10% -10%,color-mix(in srgb,var(--soft-accent) 18%,transparent),transparent 55%);
-}
-
-/* ---------------------------------------------------------------------------
-   One palette, two names.
-
-   `--app-*` is the older token family (styles.css and ~120 leaf sheets still
-   speak it). It used to resolve to a warm cream/teal ramp at :root and only
-   became the Soft-UI blue *inside* `body.has-app-shell` — so the same
-   `.app-card` was two different products depending on the route, and <html>
-   painted cream behind a cool body (the seam visible under every short page).
-   Aliasing the family here makes one palette, and dark parity comes free
-   because every alias resolves through the --soft-* pair above.
-
-   The trailing block also defines the ~20 names leaf sheets *reach for* and
-   never found (--app-border, --app-fg, --soft-border, --hairline, …). Those
-   used to fall through to a hardcoded light-only hex in the var() fallback,
-   which is precisely how a sheet ends up correct in light and wrong in dark.
-   -------------------------------------------------------------------------- */
-:root{
-  --app-bg:var(--soft-bg);
-  --app-canvas:var(--soft-bg);
-  --app-surface:var(--soft-card);
-  --app-surface-2:var(--soft-surface-2);
-  --app-surface-muted:var(--soft-surface-2);
-  --app-soft:var(--soft-surface-2);
-  --app-ink:var(--soft-ink);
-  --app-fg:var(--soft-ink);
-  --app-text:var(--soft-ink);
-  --app-navy:var(--soft-ink);
-  --app-muted:var(--soft-muted);
-  --app-line:var(--soft-line);
-  --app-border:var(--soft-line);
-  --app-accent:var(--soft-accent);
-  --app-accent-ink:var(--soft-accent-ink);
-  --app-on-accent:var(--soft-accent-ink);
-  --app-accent-hover:color-mix(in srgb,var(--soft-accent) 82%,#000);
-  --app-radius:var(--soft-radius-sm);
-  --app-shadow:var(--soft-shadow);
-  --app-warn:var(--soft-warning);
-  --app-warning:var(--soft-warning);
-  --app-warn-bg:var(--soft-warning-soft);
-  --app-danger:var(--soft-danger);
-  --app-critical:var(--soft-danger);
-  --app-good:var(--soft-success);
-  --app-success:var(--soft-success);
-  --app-positive:var(--soft-success);
-  /* Text sitting ON a status fill needs a darker plate than text sitting IN it. */
-  --app-positive-fill:#267353;
-  --app-critical-fill:#a33a32;
-
-  /* Names leaf sheets reach for. Aliases, not new roles. */
-  --soft-panel:var(--soft-card);
-  --soft-border:var(--soft-line);
-  --border-soft:var(--soft-line);
-  --hairline:var(--soft-line);
-  --hub-border:var(--soft-line);
-  --surface:var(--soft-card);
-  --danger:var(--soft-danger);
-  --font-mono:var(--soft-font-mono);
-  --font-inter:var(--soft-font);
-  --font-ibm-plex-sans:var(--soft-font);
-}
-html[data-theme="dark"]{
-  --app-positive-fill:#2b7d5b;
-  --app-critical-fill:#c2483d;
-}
+/** Soft-card product UI shared by Home, Account, and Admin.
+ * Palette, radius, type and spacing tokens live in system.css. This sheet is
+ * component rules only — it consumes tokens, it does not declare --soft-*,
+ * --app-*, or --m-*.
+ */
 
 body.has-app-shell{
   padding:56px 0 calc(96px + var(--soft-safe-bottom)) 0 !important;
@@ -584,7 +369,6 @@ body.soft-nav-panel-open .soft-island{
    the 12px it sits off the bottom, plus a gap. The consent banner reads this,
    because the island's "All" is now the only way to open navigation and the
    banner would otherwise sit on top of it. */
-:root{--soft-island-clearance:88px}
 .soft-island{
   position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--soft-safe-bottom));transform:translateX(-50%);
   display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
@@ -1558,20 +1342,8 @@ html[data-theme="dark"] .edc-caveat{background:#2a2416;border-color:#5c4d24;colo
 
 /* -- Legacy product modules ? cooler blue soft-UI (dashboard parity) -- */
 body.has-app-shell{
-  --app-bg:var(--soft-bg);
-  --app-surface:var(--soft-card);
-  --app-soft:color-mix(in srgb,var(--soft-bg) 82%,var(--soft-line));
-  --app-ink:var(--soft-ink);
-  --app-muted:var(--soft-muted);
-  --app-line:var(--soft-line);
-  --app-accent:var(--soft-accent);
   /* Theme-aware: pages like hours/kiosk.css rely on accent-ink flipping dark in
      dark mode (white on the light-blue dark accent is only 2.7:1). */
-  --app-accent-ink:var(--soft-accent-ink);
-  --app-accent-hover:color-mix(in srgb,var(--soft-accent) 82%,#000);
-  --app-radius:var(--soft-radius-sm);
-  --app-shadow:var(--soft-shadow);
-  --app-navy:var(--soft-ink);
 }
 /* One keyboard ring for the whole shell. The UA default only gave us a colour
    here, so thin/invisible rings survived on borderless controls — pin width,
@@ -2899,23 +2671,9 @@ body.has-app-shell .command-dialog [role="option"].is-active>small{color:var(--s
      2. --data-density → the --soft-space-* ramp (mirrored by densityTokens()).
      3. --data-motion  → the JS-driven animations that a media query cannot reach.
    ========================================================================= */
-:root{
-  --soft-brand:var(--soft-accent);
-  --soft-brand-ink:#fff;
-  --soft-density:1;
-  --soft-motion:1;
-  --soft-space-1:calc(4px * var(--soft-density));
-  --soft-space-2:calc(8px * var(--soft-density));
-  --soft-space-3:calc(12px * var(--soft-density));
-  --soft-space-4:calc(16px * var(--soft-density));
-  --soft-space-5:calc(20px * var(--soft-density));
-  --soft-space-6:calc(24px * var(--soft-density));
-}
-html[data-theme="dark"]{--soft-brand-ink:#0b1014}
 
 /* Compact density: tighter shell padding and card rhythm. Touch targets keep
    their 44px floor — density trims whitespace, never tap area. */
-html[data-density="compact"]{--soft-density:.78;--soft-radius:13px;--soft-radius-sm:10px}
 html[data-density="compact"] .soft-main{padding-block:var(--soft-space-4)}
 html[data-density="compact"] .soft-panel{gap:var(--soft-space-2);padding:var(--soft-space-3)}
 html[data-density="compact"] .soft-card{padding:var(--soft-space-4)}
@@ -2933,12 +2691,10 @@ html[data-density="compact"] .account-panel{gap:var(--soft-space-3)}
 html[data-density="compact"] .settings-hub{gap:var(--soft-space-2)}
 @media(max-width:420px){
   /* 360px phones already run tight — do not compound the squeeze. */
-  html[data-density="compact"]{--soft-density:.9}
 }
 
 /* Reduced motion by preference, for the animations JS drives (drag jiggle,
    sheets, splash) that @media(prefers-reduced-motion) cannot know about. */
-html[data-motion="reduced"]{--soft-motion:0}
 html[data-motion="reduced"] *,
 html[data-motion="reduced"] *::before,
 html[data-motion="reduced"] *::after{

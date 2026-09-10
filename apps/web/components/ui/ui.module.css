@@ -589,8 +589,12 @@
   white-space: nowrap;
 }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
-.btnSm { padding: 6px 12px; font-size: 12px; }
-.btnMd { padding: 9px 16px; }
+.btnSm { min-height: var(--soft-control-h-sm); padding: var(--soft-control-pad-sm); font-size: 12px; }
+.btnMd { min-height: var(--soft-control-h); padding: var(--soft-control-pad); }
+.btnLg { min-height: 48px; padding: 0 18px; font-size: 15px; }
+@media (pointer: coarse) {
+  .btnSm, .btnMd, .btnLg { min-height: 44px; }
+}
 /* --soft-accent-ink, not #fff: dark accent is a light blue; white text on it is 2.7:1. */
 .btnPrimary { background: var(--soft-accent); color: var(--soft-accent-ink); }
 .btnPrimary:hover:not(:disabled) { background: color-mix(in srgb, var(--soft-accent) 85%, #000); }

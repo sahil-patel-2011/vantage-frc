@@ -1,36 +1,4 @@
 ﻿/* Marketing v3 — engineered warmth visual redesign. Layers over .marketing-lux. */
-.marketing-lux{
-  /* Fluid type scale (body >= 16px, display tight) */
-  --m-step--1:clamp(13px,.78rem + .1vw,14px);
-  --m-step-0:clamp(16px,.97rem + .15vw,17px);
-  --m-step-1:clamp(17px,1rem + .35vw,20px);
-  --m-step-2:clamp(20px,1.1rem + .8vw,26px);
-  --m-step-3:clamp(26px,1.35rem + 1.5vw,38px);
-  --m-step-4:clamp(32px,1.6rem + 2.4vw,52px);
-  --m-step-5:clamp(38px,2rem + 2.9vw,64px);
-  /* Warm technical accent (copper) */
-  --m-warm:#a34a07;
-  --m-warm-soft:rgba(163,74,7,.09);
-  --m-warm-line:rgba(163,74,7,.28);
-  /* Blueprint grid lines */
-  --m-grid-line:rgba(20,36,58,.05);
-  --m-grid-line-strong:rgba(20,36,58,.085);
-  /* One card recipe */
-  --m-card-radius:16px;
-  --m-card-shadow:0 1px 2px rgba(15,18,20,.04),0 8px 24px rgba(15,18,20,.05);
-  --m-card-shadow-lg:0 2px 4px rgba(15,18,20,.05),0 18px 44px rgba(15,18,20,.09);
-  --m-section-pad:clamp(64px,8vw,112px);
-}
-html[data-theme="dark"] .marketing-lux{
-  --m-warm:#f0a35c;
-  --m-warm-soft:rgba(240,163,92,.11);
-  --m-warm-line:rgba(240,163,92,.34);
-  --m-grid-line:rgba(255,255,255,.045);
-  --m-grid-line-strong:rgba(255,255,255,.08);
-  --m-card-shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.28);
-  --m-card-shadow-lg:0 2px 4px rgba(0,0,0,.45),0 18px 44px rgba(0,0,0,.4);
-}
-
 /* Anchored sections land below the sticky header */
 .marketing-lux [id]{scroll-margin-top:76px}
 

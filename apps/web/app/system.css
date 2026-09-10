@@ -1,4 +1,340 @@
 /* =============================================================================
+   Canonical tokens. This is the only stylesheet allowed to DECLARE
+   --bg/--surface/--ink and the legacy --soft-* / --app-* / --m-* aliases.
+
+   Light: navy ink on cool paper, one house blue. Dark: surfaces step UP in
+   lightness (#0c1118 → #151b24 → #1c2430), borders lighten, shadows become
+   rims. No pure black on white. No neon.
+
+   Contrast (WCAG 2.1, measured against the fill they sit on):
+     #14243a on #eef2f7  ≈ 12.4:1  (body text)
+     #14243a on #ffffff   ≈ 13.7:1
+     #1457d9 on #ffffff    ≈  5.6:1  (accent as text)
+     #ffffff on #1457d9   ≈  5.6:1  (accent-ink on house blue)
+     #5a6578 on #eef2f7   ≈  5.1:1  (muted)
+     #98630a on #ffffff    ≈  5.2:1  (warning text)
+     #b91c1c on #ffffff    ≈  6.1:1  (critical text)
+     #15803d on #ffffff    ≈  4.6:1  (positive text)
+     #edf2f7 on #0c1118   ≈ 14.5:1  (dark body)
+     #0c1118 on #6e9bff   ≈  7.4:1  (dark accent-ink)
+   Marketing copper #a34a07 is decoration + large type; it is not body text.
+   ========================================================================== */
+
+:root {
+  --brand-navy: #14243a;
+  --brand-blue: #1457d9;
+  --brand-blue-soft: #e4ecfc;
+  --brand-paper: #eef2f7;
+  --brand-white: #ffffff;
+
+  --bg: var(--brand-paper);
+  --surface: var(--brand-white);
+  --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
+  --line: #d5dde8;
+  --ink: var(--brand-navy);
+  --muted: #5a6578;
+  --accent: var(--brand-blue);
+  --accent-ink: #fff;
+  --accent-soft: var(--brand-blue-soft);
+  --positive: #15803d;
+  --critical: #b91c1c;
+  --warning: #98630a;
+  --radius: 16px;
+  --space: 8px;
+
+  --tone-blue: #1457d9;
+  --tone-green: #15803d;
+  --tone-teal: #0f766e;
+  --tone-amber: #b45309;
+  --tone-red: #b91c1c;
+  --tone-plate-mix: 10%;
+  --tone-ink-mix: 100%;
+
+  --soft-bg: var(--bg);
+  --soft-card: var(--surface);
+  --soft-ink: var(--ink);
+  --soft-muted: var(--muted);
+  --soft-line: var(--line);
+  --soft-accent: var(--accent);
+  --soft-accent-soft: var(--accent-soft);
+  --soft-accent-ink: var(--accent-ink);
+  --soft-warning: var(--warning);
+  --soft-danger: var(--critical);
+  --soft-success: var(--positive);
+  --soft-warning-soft: color-mix(in srgb, var(--soft-warning) 14%, var(--soft-card));
+  --soft-danger-soft: color-mix(in srgb, var(--soft-danger) 13%, var(--soft-card));
+  --soft-success-soft: color-mix(in srgb, var(--soft-success) 13%, var(--soft-card));
+  --soft-surface-2: var(--surface-2);
+  --soft-line-soft: color-mix(in srgb, var(--soft-line) 55%, transparent);
+  --soft-radius-xs: 8px;
+  --soft-radius-sm: 12px;
+  --soft-radius: var(--radius);
+  --soft-radius-lg: 22px;
+  --soft-radius-pill: 999px;
+  --soft-font: var(--font-source-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --soft-font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --soft-text-2xs: 11px;
+  --soft-text-xs: 12px;
+  --soft-text-sm: 13px;
+  --soft-text: 14px;
+  --soft-text-lg: 15px;
+  --soft-title-4: 14px;
+  --soft-title-3: clamp(15px, 1.3vw, 16px);
+  --soft-title-2: clamp(16px, 1.7vw, 18px);
+  --soft-title-1: clamp(19px, 2.2vw, 22px);
+  --soft-display: clamp(26px, 3.2vw, 34px);
+  --soft-tracking-tight: -.02em;
+  --soft-tracking-display: -.03em;
+  --soft-tracking-kicker: .06em;
+  --soft-control-h: 44px;
+  --soft-control-h-sm: 36px;
+  --soft-control-pad: 0 14px;
+  --soft-control-pad-sm: 0 10px;
+  --soft-measure: 1180px;
+  --soft-measure-prose: 58ch;
+  --soft-measure-narrow: 760px;
+  --soft-gutter: clamp(14px, 3vw, 28px);
+  --soft-shadow: 0 10px 28px rgba(19, 32, 51, .07);
+  --soft-shadow-lift: 0 14px 34px rgba(19, 32, 51, .11);
+  --soft-shadow-pop: 0 16px 40px rgba(19, 32, 51, .16);
+  --soft-ring: color-mix(in srgb, var(--soft-accent) 62%, transparent);
+  --soft-island: rgba(255, 255, 255, .94);
+  --soft-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --soft-island-clearance: 88px;
+  --soft-glyph-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M8 2 15 14H1L8 2Z'/%3E%3Cpath d='M8 6.4v3.2M8 11.8v.1'/%3E%3C/svg%3E");
+  --soft-glyph-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5 6.5 12 13 4.5'/%3E%3C/svg%3E");
+  --soft-glow: radial-gradient(120% 80% at 12% -10%, color-mix(in srgb, var(--soft-accent) 12%, transparent), transparent 55%),
+    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, #38bdf8 8%, transparent), transparent 50%);
+  --soft-panel: var(--soft-card);
+  --soft-border: var(--soft-line);
+  --soft-brand: var(--soft-accent);
+  --soft-brand-ink: #fff;
+  --soft-density: 1;
+  --soft-motion: 1;
+  --soft-space-1: calc(4px * var(--soft-density));
+  --soft-space-2: calc(8px * var(--soft-density));
+  --soft-space-3: calc(12px * var(--soft-density));
+  --soft-space-4: calc(16px * var(--soft-density));
+  --soft-space-5: calc(20px * var(--soft-density));
+  --soft-space-6: calc(24px * var(--soft-density));
+
+  --app-bg: var(--soft-bg);
+  --app-canvas: var(--soft-bg);
+  --app-surface: var(--soft-card);
+  --app-surface-2: var(--soft-surface-2);
+  --app-surface-muted: var(--soft-surface-2);
+  --app-soft: var(--soft-surface-2);
+  --app-ink: var(--soft-ink);
+  --app-fg: var(--soft-ink);
+  --app-text: var(--soft-ink);
+  --app-navy: var(--soft-ink);
+  --app-muted: var(--soft-muted);
+  --app-line: var(--soft-line);
+  --app-border: var(--soft-line);
+  --app-accent: var(--soft-accent);
+  --app-accent-ink: var(--soft-accent-ink);
+  --app-on-accent: var(--soft-accent-ink);
+  --app-accent-hover: color-mix(in srgb, var(--soft-accent) 82%, #000);
+  --app-radius: var(--soft-radius-sm);
+  --app-shadow: var(--soft-shadow);
+  --app-warn: var(--soft-warning);
+  --app-warning: var(--soft-warning);
+  --app-warn-bg: var(--soft-warning-soft);
+  --app-danger: var(--soft-danger);
+  --app-critical: var(--soft-danger);
+  --app-good: var(--soft-success);
+  --app-success: var(--soft-success);
+  --app-positive: var(--soft-success);
+  --app-positive-fill: #267353;
+  --app-critical-fill: #a33a32;
+
+  --border-soft: var(--soft-line);
+  --hairline: var(--soft-line);
+  --hub-border: var(--soft-line);
+  --danger: var(--soft-danger);
+  --font-mono: var(--soft-font-mono);
+  --font-inter: var(--soft-font);
+  --font-ibm-plex-sans: var(--soft-font);
+
+  --m-ink: var(--brand-navy);
+  --m-paper: var(--brand-paper);
+  --m-white: var(--brand-white);
+  --m-accent: var(--brand-blue);
+  --m-accent-soft: var(--brand-blue-soft);
+  --m-graphite: var(--brand-navy);
+  --m-blue: var(--brand-blue);
+  --m-soft: #e7edf5;
+  --m-muted: #44536b;
+  --m-line: #ccd6e4;
+  --m-accent-dark: #0f3f9e;
+  --m-graphite-mid: #334561;
+  --m-radius: 14px;
+  --m-radius-sm: 10px;
+  --m-radius-pill: var(--soft-radius-pill);
+  --m-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .04);
+  --m-shadow-lg: 0 2px 4px rgba(0, 0, 0, .04), 0 16px 40px rgba(0, 0, 0, .06);
+  --m-sans: var(--soft-font);
+  --m-serif: var(--font-source-serif), "Source Serif 4", Georgia, "Times New Roman", serif;
+  --m-mono: var(--soft-font-mono);
+  --m-glow: none;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c1118;
+  --surface: #151b24;
+  --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
+  --line: #273140;
+  --ink: #edf2f7;
+  --muted: #9aa7b5;
+  --accent: #6e9bff;
+  --accent-ink: #0c1118;
+  --accent-soft: #1a2740;
+  --positive: #4ade80;
+  --critical: #ff9a91;
+  --warning: #ffb936;
+  --tone-plate-mix: 24%;
+  --tone-ink-mix: 42%;
+  --soft-island: rgba(21, 27, 36, .94);
+  --soft-shadow: 0 12px 36px rgba(0, 0, 0, .4);
+  --soft-shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
+  --soft-shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
+  --soft-glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--soft-accent) 18%, transparent), transparent 55%);
+  --soft-brand-ink: #0b1014;
+  --app-positive-fill: #2b7d5b;
+  --app-critical-fill: #c2483d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1118;
+    --surface: #151b24;
+    --surface-2: color-mix(in srgb, var(--bg) 82%, var(--line));
+    --line: #273140;
+    --ink: #edf2f7;
+    --muted: #9aa7b5;
+    --accent: #6e9bff;
+    --accent-ink: #0c1118;
+    --accent-soft: #1a2740;
+    --positive: #4ade80;
+    --critical: #ff9a91;
+    --warning: #ffb936;
+    --tone-plate-mix: 24%;
+    --tone-ink-mix: 42%;
+    --soft-island: rgba(21, 27, 36, .94);
+    --soft-shadow: 0 12px 36px rgba(0, 0, 0, .4);
+    --soft-shadow-lift: 0 16px 42px rgba(0, 0, 0, .5);
+    --soft-shadow-pop: 0 20px 50px rgba(0, 0, 0, .55);
+    --soft-glow: radial-gradient(120% 80% at 10% -10%, color-mix(in srgb, var(--soft-accent) 18%, transparent), transparent 55%);
+    --soft-brand-ink: #0b1014;
+    --app-positive-fill: #2b7d5b;
+    --app-critical-fill: #c2483d;
+  }
+}
+
+html[data-density="compact"] {
+  --soft-density: .78;
+  --soft-radius: 13px;
+  --soft-radius-sm: 10px;
+}
+@media (pointer: coarse) {
+  html[data-density="compact"] {
+    --soft-density: .9;
+  }
+}
+html[data-motion="reduced"] {
+  --soft-motion: 0;
+}
+
+.marketing-v2 {
+  --m-paper: #eef2f7;
+}
+
+.marketing-lux {
+  --m-ink: #14243a;
+  --m-muted: #515154;
+  --m-line: rgba(0, 0, 0, .09);
+  --m-paper: #f4f2ec;
+  --m-white: #ffffff;
+  --m-canvas: #faf9f6;
+  --m-surface: #ffffff;
+  --m-surface-2: #f8f6f1;
+  --m-line-soft: rgba(0, 0, 0, .08);
+  --m-line-strong: rgba(0, 0, 0, .22);
+  --m-on-accent: #ffffff;
+  --m-accent: #14243a;
+  --m-accent-dark: #000;
+  --m-blue: #1457d9;
+  --m-pad-x: clamp(20px, 5.5vw, 88px);
+  --m-pad-y: clamp(56px, 7vw, 88px);
+  --m-section-gap: clamp(48px, 6vw, 72px);
+  --m-content: 1120px;
+  --m-step--1: clamp(13px, .78rem + .1vw, 14px);
+  --m-step-0: clamp(16px, .97rem + .15vw, 17px);
+  --m-step-1: clamp(17px, 1rem + .35vw, 20px);
+  --m-step-2: clamp(20px, 1.1rem + .8vw, 26px);
+  --m-step-3: clamp(26px, 1.35rem + 1.5vw, 38px);
+  --m-step-4: clamp(32px, 1.6rem + 2.4vw, 52px);
+  --m-step-5: clamp(38px, 2rem + 2.9vw, 64px);
+  --m-warm: #a34a07;
+  --m-warm-soft: rgba(163, 74, 7, .09);
+  --m-warm-line: rgba(163, 74, 7, .28);
+  --m-grid-line: rgba(20, 36, 58, .05);
+  --m-grid-line-strong: rgba(20, 36, 58, .085);
+  --m-card-radius: 16px;
+  --m-card-shadow: 0 1px 2px rgba(15, 18, 20, .04), 0 8px 24px rgba(15, 18, 20, .05);
+  --m-card-shadow-lg: 0 2px 4px rgba(15, 18, 20, .05), 0 18px 44px rgba(15, 18, 20, .09);
+  --m-section-pad: clamp(64px, 8vw, 112px);
+}
+
+:root[data-theme="dark"] .marketing-lux,
+html[data-theme="dark"] .marketing-lux {
+  --m-ink: #f2f3f5;
+  --m-muted: #a3a8b2;
+  --m-line: rgba(255, 255, 255, .12);
+  --m-line-soft: rgba(255, 255, 255, .09);
+  --m-line-strong: rgba(255, 255, 255, .24);
+  --m-paper: #14161a;
+  --m-canvas: #0e1013;
+  --m-surface: #181b20;
+  --m-surface-2: #1f232a;
+  --m-white: #181b20;
+  --m-accent: #f2f3f5;
+  --m-accent-dark: #ffffff;
+  --m-on-accent: #0e1013;
+  --m-blue: #7fb2ff;
+  --m-warm: #f0a05a;
+  --m-warm-soft: rgba(240, 160, 90, .12);
+  --m-warm-line: rgba(240, 160, 90, .32);
+  --m-grid-line: rgba(255, 255, 255, .045);
+  --m-grid-line-strong: rgba(255, 255, 255, .08);
+  --m-card-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .28);
+  --m-card-shadow-lg: 0 2px 4px rgba(0, 0, 0, .45), 0 18px 44px rgba(0, 0, 0, .4);
+}
+
+.public-form {
+  --soft-ink: var(--pf-ink);
+  --soft-muted: var(--pf-muted);
+  --soft-line: var(--pf-line);
+  --soft-accent: var(--pf-accent);
+  --soft-card: var(--pf-card);
+  --soft-bg: var(--pf-bg);
+}
+
+@media (pointer: coarse) {
+  :where(button, [type="button"], [type="submit"], [type="reset"], .app-button, .primary-action) {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(*, *::before, *::after) {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
    Vantage visual system — the last sheet in the cascade.
 
    Two kinds of rule live here and nowhere else:
@@ -12,8 +348,8 @@
    2. GUARDS, written normally, that fix a class of bug rather than a taste:
       horizontal overflow, focus rings, and text that cannot wrap.
 
-   Palette, radius, type and spacing tokens all live in soft-ui.css; nothing
-   here introduces a colour, a radius or a font size that is not a token.
+   Palette, radius, type and spacing tokens are declared in this file.
+   Leaf sheets consume them; they do not redeclare --soft-*/--app-*/--m-*.
    ========================================================================== */
 
 /* --- Focus. One ring, every route ------------------------------------------
@@ -180,6 +516,15 @@
 }
 .app-button.ghost:hover {
   background: var(--soft-surface-2);
+}
+.app-button.primary,
+.primary-action,
+.is-primary {
+  /* One primary treatment. Button variant="primary" also sets .is-primary so
+     the Playwright R4 sweep can count it. */
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: transparent;
 }
 @media (prefers-reduced-motion: no-preference) {
   .app-button {

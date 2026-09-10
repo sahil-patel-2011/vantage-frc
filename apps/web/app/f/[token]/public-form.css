@@ -64,14 +64,6 @@
 /* The shared field styles come from forms.css, which is token-driven for the
    in-app surface; re-point those tokens at this page's own palette so one set
    of field rules serves both without either page borrowing the other's ground. */
-.public-form {
-  --soft-ink: var(--pf-ink);
-  --soft-muted: var(--pf-muted);
-  --soft-line: var(--pf-line);
-  --soft-accent: var(--pf-accent);
-  --soft-card: var(--pf-card);
-  --soft-bg: var(--pf-bg);
-}
 
 .public-form .forms-field > label {
   font-weight: 650;
