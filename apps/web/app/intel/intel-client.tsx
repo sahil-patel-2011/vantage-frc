@@ -18,6 +18,7 @@ import {
 } from "../../lib/intel/intel-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./intel.css";
 
@@ -145,8 +146,8 @@ function IntelShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = intelNextActions({ orgId, shell });
   const copy = intelShellCopy(shell);
+  const setup = shell === "setup" ? intelSetupSteps(orgId)[0] : null;
   // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
   const failure =
     shell === "error"
@@ -165,7 +166,6 @@ function IntelShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? intelSetupSteps(orgId) : [];
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -181,15 +181,7 @@ function IntelShell({
       <EmptyState
         soft
         className="intel-empty"
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "Look up a team"
-                : copy.badge
-        }
+        badge={failure ? undefined : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : error ?? copy.description}
@@ -205,35 +197,17 @@ function IntelShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? teamDataHref : "/workspace"}>{orgId ? "Sync Team Data" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync season metrics</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync season metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="intel-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="intel-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <IntelNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -277,7 +251,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     setErrorStatus(null);
     setCutoffCode(null);
     try {
-      const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as { teams?: SearchTeam[]; error?: string };
       if (!response.ok) {
         setErrorStatus(response.status);
@@ -305,7 +281,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     setErrorStatus(null);
     setCutoffCode(null);
     try {
-      const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`);
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`, {
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as {
         team?: Intel;
         similarTeams?: Array<SearchTeam & { epaTotal: number }>;
@@ -344,6 +322,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       const response = await fetch(path, {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         body: JSON.stringify({ orgId, teamNumber: intel.team.teamNumber }),
       });
       const data = (await response.json()) as {
@@ -382,6 +361,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       const response = await fetch("/api/intel/compare", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         body: JSON.stringify({ orgId, teamNumbers: numbers.slice(0, 3) }),
       });
       const data = (await response.json()) as CompareResult & { error?: string };
@@ -409,6 +389,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       const response = await fetch("/api/intel/pick-lists", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         body: JSON.stringify({
           orgId,
           eventKey: pickEvent,

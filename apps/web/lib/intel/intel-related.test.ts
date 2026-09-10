@@ -42,19 +42,15 @@ describe("intelRelatedLinks", () => {
 });
 
 describe("intelSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO research", () => {
+  it("keeps Sync Team Data; Strategy / Dossier / Scouting live on the related strip", () => {
     const steps = intelSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "dossier")?.href).toBe("/dossier?orgId=org-1");
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(intelSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
@@ -91,59 +87,47 @@ describe("intelShellCopy", () => {
     }
     expect(intelShellCopy("empty").badge).toBe("Look up a team");
     expectPlainCopy(intelShellCopy("empty").description);
-    expect(intelShellCopy("setup").badge).toBe("Setup required");
+    expect(intelShellCopy("setup").badge).toBe("Setup");
+    expectPlainCopy(intelShellCopy("setup").description);
     expectPlainCopy(intelShellCopy("ready").description);
   });
 });
 
 describe("intelNextActions", () => {
-  it("prioritizes workspace when no org", () => {
+  it("gates on workspace when no org and does not repeat the related strip", () => {
     const actions = intelNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "dossier")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(false);
   });
 
-  it("setup with org points at Strategy / Dossier / Scouting", () => {
+  it("setup with a team is only Sync Team Data", () => {
     const actions = intelNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "dossier")).toBe(true);
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
-  it("empty shell points at Team Data / Strategy / Dossier / Scouting", () => {
+  it("empty shell points at Team Data only", () => {
     const actions = intelNextActions({
       orgId: "org-1",
       shell: "empty",
       teamNumber: null,
       findingCount: 0,
     });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["team-data", "strategy", "dossier", "scouting"]),
-    );
-    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
   });
 
-  it("ready prioritizes research findings without DEMO research", () => {
-    const actions = intelNextActions({
-      orgId: "org-1",
-      shell: "ready",
-      teamNumber: 2337,
-      findingCount: 3,
-    });
-    expect(actions[0]?.id).toBe("intel");
-    expect(actions[0]?.detail).toMatch(/3 source-linked finding/);
-    expect(actions[0]?.href).toBe("/intel?team=2337&orgId=org-1");
-    expect(actions.find((a) => a.id === "dossier")?.href).toBe(
-      "/dossier?team=2337&orgId=org-1",
-    );
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+  it("does not add a second guided list on a looked-up team", () => {
+    expect(
+      intelNextActions({
+        orgId: "org-1",
+        shell: "ready",
+        teamNumber: 2337,
+        findingCount: 3,
+      }),
+    ).toEqual([]);
   });
 });

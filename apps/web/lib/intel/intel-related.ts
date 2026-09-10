@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Team Intel / research (never DEMO research). */
@@ -80,39 +81,39 @@ export type IntelSetupStep = {
   href: string;
 };
 
+function intelRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    intelRelatedLinks(orgId, { include: [...INTEL_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = intelRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open Intel and research.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open Intel and research.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
       label: "Sync Team Data",
       detail: "Pull team identity and season numbers from The Blue Alliance and Statbotics.",
       href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context before prioritizing teams.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "dossier",
-      label: "Open Team Dossier",
-      detail: "Cited season facts stay blank until real TBA/Statbotics rows exist.",
-      href: withOrgHref("/dossier", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Add org scout notes so reliability / foul context can appear.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real finding counts only — never invent DEMO research totals. */
@@ -163,10 +164,10 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Setup",
         title: "Select a team",
         description:
-          "Select a team and sync TBA/Statbotics before metrics or findings appear.",
+          "Select a team and sync event ratings before metrics or findings appear.",
       };
     case "empty":
       return {
@@ -176,13 +177,17 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         description:
           "Search by number or name to open metrics, research, and dossier links. Empty cells mean the cache has no data yet. Cross-check Strategy, Dossier, and Scouting.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Team Intel",
         description:
           "TBA/Statbotics metrics and source-linked research only. Verify before locking picks.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -197,161 +202,38 @@ export function intelNextActions(input: {
   findingCount?: number;
 }): IntelNextAction[] {
   const orgId = input.orgId ?? null;
-  const teamNumber = input.teamNumber ?? null;
-  const findingCount = input.findingCount ?? 0;
-  const dossierHref =
-    teamNumber != null
-      ? withOrgHref(`/dossier?team=${encodeURIComponent(String(teamNumber))}`, orgId)
-      : withOrgHref("/dossier", orgId);
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
+    return setupActionsFrom(intelSetupSteps(orgId));
+  }
+
+  switch (input.shell) {
+    case "loading":
+    case "ready":
+      return [];
+    case "error":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before looking up research.",
-          href: "/workspace",
+          id: "retry",
+          label: "Retry Intel",
+          detail: "Reload the global team index.",
+          href: withOrgHref("/intel", orgId),
           primary: true,
         },
+      ]);
+    case "empty":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Win/loss stays empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
+          id: "team-data",
+          label: "Sync season metrics",
+          detail: "Pull match and ranking rows from The Blue Alliance. Intel stays blank until those rows exist.",
+          href: withOrgHref("/team/data", orgId),
+          primary: true,
         },
-        {
-          id: "dossier",
-          label: "Open Team Dossier",
-          detail: "Cited facts stay blank until your team syncs TBA/Statbotics.",
-          href: withOrgHref("/dossier", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout notes stay blank until your team syncs entries.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
+      ]);
+    default: {
+      const _exhaustive: never = input.shell;
+      return _exhaustive;
     }
-    return [
-      {
-        id: "team-data",
-        label: "Sync Team Data",
-        detail: "Intel needs TBA identity + Statbotics EPA before metrics can appear.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before prioritizing teams.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "dossier",
-        label: "Open Team Dossier",
-        detail: "Cited season facts stay blank until real rows exist.",
-        href: withOrgHref("/dossier", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Add org scout notes so reliability / foul context can appear.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
   }
-
-  if (input.shell === "error") {
-    return [
-      {
-        id: "retry",
-        label: "Retry Intel",
-        detail: "Reload the global team index.",
-        href: withOrgHref("/intel", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Event strategy stays available while Intel reloads.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "dossier",
-        label: "Open Team Dossier",
-        detail: "Cited facts stay available while Intel reloads.",
-        href: withOrgHref("/dossier", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Scout coverage stays available while Intel reloads.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
-  }
-
-  if (input.shell === "empty" || isIntelLookupEmpty(teamNumber != null)) {
-    return [
-      {
-        id: "team-data",
-        label: "Sync season metrics",
-        detail:
-          "Pull TBA identity + Statbotics EPA — Intel metrics stay blank until then.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Win/loss waits on the same reference rows.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "dossier",
-        label: "Open Team Dossier",
-        detail: "Cited season facts stay blank until you look up a team.",
-        href: withOrgHref("/dossier", orgId),
-      },
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Org scout notes feed reliability / foul context when present.",
-        href: hubHref("/competition", "scouting", orgId),
-      },
-    ];
-  }
-
-  return [
-    {
-      id: "intel",
-      label: "Review research findings",
-      detail: `${formatIntelMetric(findingCount, true)} source-linked finding${findingCount === 1 ? "" : "s"}`,
-      href:
-        teamNumber != null
-          ? withOrgHref(`/intel?team=${encodeURIComponent(String(teamNumber))}`, orgId)
-          : withOrgHref("/intel", orgId),
-      primary: true,
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Return to event strategy while evaluating this team.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "dossier",
-      label: "Open Team Dossier",
-      detail: "Cross-check cited TBA/Statbotics/scout facts for this team.",
-      href: dossierHref,
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Cross-check org scout notes against reliability / foul evidence.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-  ];
 }
