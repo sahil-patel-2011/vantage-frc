@@ -14,7 +14,7 @@ export const COSTS_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "hub" as const, tab: "orders" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
   { id: "budget", label: "Business budget", kind: "hub" as const, tab: "budget" },
-  { id: "finance-ai", label: "Finance-in-AI", kind: "path" as const, path: "/ai?tab=finance" },
+  { id: "finance-ai", label: "Finance in Ask AI", kind: "path" as const, path: "/ai?tab=finance" },
 ] as const;
 
 export type CostsRelatedId = (typeof COSTS_RELATED_LINKS)[number]["id"];

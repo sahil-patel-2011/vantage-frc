@@ -16,7 +16,7 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "awards", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "writer", label: "Grant & sponsor writer", kind: "path" as const, path: "/writer" },
   { id: "grant-workbench", label: "Grant writing workbench", kind: "path" as const, path: "/team/grants" },
-  { id: "finance-ai", label: "Finance-in-AI", kind: "path" as const, path: "/ai?tab=finance" },
+  { id: "finance-ai", label: "Finance in Ask AI", kind: "path" as const, path: "/ai?tab=finance" },
   { id: "budget", label: "Budget", kind: "hub" as const, tab: "budget" },
 ] as const;
 

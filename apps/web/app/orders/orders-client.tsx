@@ -418,7 +418,7 @@ function AiSummaryPanel({ summary }: { summary: NonNullable<LiveView["aiSummary"
         ))}
       </ul>
       <small className="app-muted">
-        Local Season Costs opt-in — separate from AI chat Finance-in-AI under Team → AI governance.
+        Local Season Costs opt-in — separate from finance in Ask AI under Team → AI governance.
       </small>
     </section>
   );

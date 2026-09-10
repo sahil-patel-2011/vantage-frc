@@ -319,8 +319,16 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Rearrange and remove",
         body: [
-          "Drag cards by the grip handle. Resize from a corner when the layout allows it.",
-          "Tap Remove on a card to take it off the board. Nothing invents ranks, EPA, or match times while you edit.",
+          "On a laptop, drag cards by the grip handle. Resize from a corner when the layout allows it.",
+          "On a phone, tap a widget in the gallery, then tap an empty slot on the board to place it. That is the same idea as adding a widget on an iPhone.",
+          "Tap Remove on a card to take it off the board.",
+        ],
+      },
+      {
+        heading: "Student vs mentor Home",
+        body: [
+          "A new student sees next match, My day, Learn, tasks, recent files, chat, and Ask AI.",
+          "A mentor sees next match, duties that need a person, budget and part requests, attendance tonight, outreach hours, and announcements waiting on a read.",
         ],
       },
       {

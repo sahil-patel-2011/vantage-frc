@@ -112,7 +112,7 @@ export function sponsorCrmNextActions(ctx: SponsorCrmNextActionContext): Sponsor
       });
       actions.push({
         id: "finance-ai",
-        label: "Ask Finance-in-AI",
+        label: "Ask about finance",
         detail: "Opt-in guidance on season costs — never card or bank details.",
         href: withOrgHref("/ai?tab=finance", orgId),
       });
@@ -173,7 +173,7 @@ export function sponsorCrmNextActions(ctx: SponsorCrmNextActionContext): Sponsor
     if (actions.length < 3) {
       actions.push({
         id: "finance-ai",
-        label: "Ask Finance-in-AI",
+        label: "Ask about finance",
         detail: "Season cost questions next to partner revenue planning.",
         href: withOrgHref("/ai?tab=finance", orgId),
       });

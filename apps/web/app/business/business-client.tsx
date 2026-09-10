@@ -553,7 +553,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             ))}
           </ul>
           <small className="app-muted" style={{ display: "block", marginTop: 8 }}>
-            Opt-in rule-based guidance from Season Costs — no card or bank data stored. Chat Finance-in-AI is under{" "}
+            Opt-in guidance from Season Costs — no card or bank data stored. Finance in Ask AI is under{" "}
             <a href={financeAiHref}>AI → Finance</a>.
           </small>
         </section>
@@ -623,7 +623,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
           <p className="app-muted">
             <a href={costsHref}>Season Costs</a> tracks event spend and a local rule-based assistant for open{" "}
             <a href={ordersHref}>purchase requests</a>. Chat tools that read redacted budgets require{" "}
-            <a href={financeAiHref}>Finance-in-AI</a> under AI governance — never card or bank details.
+            <a href={financeAiHref}>Finance in Ask AI</a> under AI governance. Card and bank details stay out.
           </p>
           {/* Finance-in-AI is the same label pointing at the same href three
               lines up, in this card's own sentence. One copy. */}

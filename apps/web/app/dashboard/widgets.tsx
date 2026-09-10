@@ -1,14 +1,41 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { parseYouTubeEmbed } from "../../lib/youtube";
 import { Icon, type IconName } from "../../components/icon";
 import { Badge, EmptyState } from "../../components/ui";
+import { predictionWinDisplay } from "../../lib/strategy/prediction-display";
 import { AskAiWidget } from "./widgets/ask-ai";
+import { LiveCountdown } from "./widgets/live-countdown";
+import { NextMatchLive } from "./widgets/next-match";
+import {
+  AllianceDeskLive,
+  AnnouncementsLive,
+  AssemblyManualLive,
+  AttendanceLive,
+  BatteriesLive,
+  BudgetPartsLive,
+  CadResourcesLive,
+  CalendarTodayLive,
+  CodingResourcesLive,
+  DutiesLive,
+  EventCountdownLive,
+  EventReadinessLive,
+  FilesRecentLive,
+  HoursLive,
+  LearnProgressLive,
+  MatchScheduleLive,
+  MyDayLive,
+  SponsorFollowupsLive,
+  TeamChatLive,
+  TeamProfileLive,
+  WeatherVenueLive,
+} from "./widgets/home-cards";
+
+export { LiveCountdown, countdownLabel, useCountdownTick } from "./widgets/live-countdown";
 
 type EmptyHint = {
   title: string;
@@ -399,62 +426,6 @@ function Shell({
   );
 }
 
-function allianceTeams(alliance: unknown) {
-  if (!alliance || typeof alliance !== "object") return "—";
-  const keys = (alliance as { teamKeys?: string[] }).teamKeys ?? [];
-  return keys.map((key) => key.replace(/^frc/, "")).join(" · ") || "—";
-}
-
-export function countdownLabel(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const ms = new Date(iso).getTime() - Date.now();
-  if (Number.isNaN(ms)) return "—";
-  if (ms <= 0) return "Now";
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-const countdownListeners = new Set<() => void>();
-let countdownTimer: number | null = null;
-
-function startSharedCountdown() {
-  if (countdownTimer !== null || typeof window === "undefined") return;
-  countdownTimer = window.setInterval(() => {
-    for (const listener of countdownListeners) listener();
-  }, 1000);
-}
-
-function stopSharedCountdown() {
-  if (countdownListeners.size > 0 || countdownTimer === null || typeof window === "undefined") return;
-  window.clearInterval(countdownTimer);
-  countdownTimer = null;
-}
-
-/** Tick once per second so countdownLabel stays live (next match, leave times, etc.). */
-export function useCountdownTick(active = true) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    const listener = () => setTick((n) => n + 1);
-    countdownListeners.add(listener);
-    startSharedCountdown();
-    return () => {
-      countdownListeners.delete(listener);
-      stopSharedCountdown();
-    };
-  }, [active]);
-}
-
-/** Live Soft-UI countdown — only renders when a real ISO schedule exists (never DEMO). */
-export function LiveCountdown({ iso }: { iso: string | null | undefined }) {
-  useCountdownTick(Boolean(iso));
-  return <>{countdownLabel(iso)}</>;
-}
-
 function PitStreamEmbed({ title, embedUrl }: { title: string; embedUrl: string }) {
   const [play, setPlay] = useState(false);
   if (!play) {
@@ -509,19 +480,8 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
 
   switch (type) {
     case "next_match": {
-      const scheduled = data.scheduledTime as string | undefined;
-      const alliance = data.ourAlliance === "red" || data.ourAlliance === "blue" ? data.ourAlliance : null;
       const myDayHref =
         typeof data.href === "string" && data.href ? data.href : withOrg("/my-day");
-      const win = predictionWinDisplay({
-        pRed: typeof data.pRed === "number" ? data.pRed : Number(data.pRed),
-        pBlue: typeof data.pBlue === "number" ? data.pBlue : Number(data.pBlue),
-        alliance,
-        modelVersion: typeof data.modelVersion === "string" ? data.modelVersion : null,
-      });
-      const low = typeof data.confidenceLow === "number" ? data.confidenceLow : Number(data.confidenceLow);
-      const high = typeof data.confidenceHigh === "number" ? data.confidenceHigh : Number(data.confidenceHigh);
-      const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
       return (
         <Shell
           type={type}
@@ -531,82 +491,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           emptyHint={hint}
           orgId={orgId}
         >
-          {payload?.status === "live" ? (
-            <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
-              <div>
-                <span>{String(data.compLevel ?? "Match")}</span>
-                <strong>{String(data.matchNumber ?? "—")}</strong>
-              </div>
-              <div className="dash-countdown">
-                <span>Starts in</span>
-                <strong>
-                  <LiveCountdown iso={scheduled} />
-                </strong>
-              </div>
-              {typeof data.bumperCue === "string" && data.bumperCue ? (
-                <p className="dash-bumper-cue">{data.bumperCue}</p>
-              ) : null}
-              {Array.isArray(data.partners) || Array.isArray(data.opponents) ? (
-                <p className="dash-match-sides">
-                  With{" "}
-                  {Array.isArray(data.partners) && data.partners.length
-                    ? data.partners.map(String).join(" · ")
-                    : "—"}
-                  <em>
-                    {" "}
-                    vs{" "}
-                    {Array.isArray(data.opponents) && data.opponents.length
-                      ? data.opponents.map(String).join(" · ")
-                      : "—"}
-                  </em>
-                </p>
-              ) : null}
-              {win ? (
-                <p className="app-muted">
-                  {win.label} chance we win
-                  {Number.isFinite(low) && Number.isFinite(high)
-                    ? ` · typical range ${Math.round(low * 100)}–${Math.round(high * 100)}%`
-                    : ""}
-                </p>
-              ) : (
-                <p className="app-muted">No stored prediction for this match yet. Open Strategy after TBA sync.</p>
-              )}
-              {typeof data.redPredicted === "number" &&
-              typeof data.bluePredicted === "number" &&
-              Number.isFinite(data.redPredicted) &&
-              Number.isFinite(data.bluePredicted) ? (
-                <p className="app-muted">
-                  About {Math.round(Number(data.redPredicted))}–{Math.round(Number(data.bluePredicted))} points
-                  {typeof data.errorBand === "number" && Number.isFinite(data.errorBand)
-                    ? ` · typical error ±${Math.round(Number(data.errorBand))}`
-                    : ""}
-                </p>
-              ) : null}
-              {typeof data.briefing === "string" && data.briefing ? (
-                <p className="dash-bumper-cue">{data.briefing}</p>
-              ) : null}
-              {factors.length ? (
-                <ul className="dash-checklist">
-                  {factors.map((factor, index) => (
-                    <li key={`${factor.name}-${index}`}>
-                      <span>{factor.name ?? "Why"}</span>
-                      <b>{factor.impact ?? ""}</b>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <footer>
-                <div>
-                  <span>Red</span>
-                  <b>{allianceTeams(data.redAlliance)}</b>
-                </div>
-                <div>
-                  <span>Blue</span>
-                  <b>{allianceTeams(data.blueAlliance)}</b>
-                </div>
-              </footer>
-            </div>
-          ) : null}
+          {payload?.status === "live" ? <NextMatchLive data={data} /> : null}
         </Shell>
       );
     }
@@ -1127,6 +1012,138 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     }
+    case "my_day":
+      return (
+        <Shell type={type} title="My day" payload={payload} href={withOrg("/my-day")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <MyDayLive data={data} /> : null}
+        </Shell>
+      );
+    case "learn_progress":
+      return (
+        <Shell type={type} title="Learn" payload={payload} href={withOrg("/cad-learn")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <LearnProgressLive data={data} /> : null}
+        </Shell>
+      );
+    case "files_recent":
+      return (
+        <Shell type={type} title="Recent files" payload={payload} href={withOrg("/files")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <FilesRecentLive data={data} /> : null}
+        </Shell>
+      );
+    case "team_chat":
+      return (
+        <Shell type={type} title="Team chat" payload={payload} href={withOrg("/messages")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <TeamChatLive data={data} /> : null}
+        </Shell>
+      );
+    case "duties":
+      return (
+        <Shell type={type} title="Duties" payload={payload} href={withOrg("/duties")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <DutiesLive data={data} /> : null}
+        </Shell>
+      );
+    case "budget_parts":
+      return (
+        <Shell type={type} title="Budget & parts" payload={payload} href={withOrg("/business?tab=finance")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <BudgetPartsLive data={data} /> : null}
+        </Shell>
+      );
+    case "attendance":
+      return (
+        <Shell type={type} title="Attendance tonight" payload={payload} href={withOrg("/team?tab=attendance")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <AttendanceLive data={data} /> : null}
+        </Shell>
+      );
+    case "outreach_hours":
+      return (
+        <Shell type={type} title="Outreach hours" payload={payload} href={withOrg("/business?tab=evidence")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <HoursLive data={data} label="this month" /> : null}
+        </Shell>
+      );
+    case "announcements_ack":
+      return (
+        <Shell type={type} title="Announcements" payload={payload} href={withOrg("/announcements")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <AnnouncementsLive data={data} /> : null}
+        </Shell>
+      );
+    case "event_countdown":
+      return (
+        <Shell type={type} title="Next event" payload={payload} href={withOrg("/command")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <EventCountdownLive data={data} /> : null}
+        </Shell>
+      );
+    case "hours_month":
+      return (
+        <Shell type={type} title="Hours this month" payload={payload} href={withOrg("/hours")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <HoursLive data={data} label="your hours" /> : null}
+        </Shell>
+      );
+    case "calendar_today":
+      return (
+        <Shell type={type} title="Today" payload={payload} href={withOrg("/team/calendar")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <CalendarTodayLive data={data} /> : null}
+        </Shell>
+      );
+    case "cad_resources":
+      return (
+        <Shell type={type} title="CAD resources" payload={payload} href={withOrg("/cad")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <CadResourcesLive data={data} /> : null}
+        </Shell>
+      );
+    case "coding_resources":
+      return (
+        <Shell type={type} title="Coding resources" payload={payload} href={withOrg("/code")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <CodingResourcesLive data={data} /> : null}
+        </Shell>
+      );
+    case "team_profile":
+      return (
+        <Shell type={type} title="Team profile" payload={payload} href={withOrg("/team/profile")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <TeamProfileLive data={data} /> : null}
+        </Shell>
+      );
+    case "alliance_desk":
+      return (
+        <Shell type={type} title="Alliance desk" payload={payload} href={withOrg("/alliance-selection-desk")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <AllianceDeskLive data={data} /> : null}
+        </Shell>
+      );
+    case "match_schedule":
+      return (
+        <Shell type={type} title="Match schedule" payload={payload} href={withOrg("/schedule")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <MatchScheduleLive data={data} /> : null}
+        </Shell>
+      );
+    case "batteries":
+      return (
+        <Shell type={type} title="Batteries" payload={payload} href={withOrg("/batteries")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <BatteriesLive data={data} /> : null}
+        </Shell>
+      );
+    case "assembly_manual":
+      return (
+        <Shell type={type} title="Assembly manual" payload={payload} href={withOrg("/assembly-manual")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <AssemblyManualLive data={data} /> : null}
+        </Shell>
+      );
+    case "sponsor_followups":
+      return (
+        <Shell type={type} title="Sponsor follow-ups" payload={payload} href={withOrg("/business?tab=sponsors")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <SponsorFollowupsLive data={data} /> : null}
+        </Shell>
+      );
+    case "event_readiness":
+      return (
+        <Shell type={type} title="Event readiness" payload={payload} href={withOrg("/packing")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <EventReadinessLive data={data} /> : null}
+        </Shell>
+      );
+    case "weather_venue":
+      return (
+        <Shell type={type} title="Venue weather" payload={payload} href={withOrg("/command")} emptyHint={hint} orgId={orgId}>
+          {payload?.status === "live" ? <WeatherVenueLive data={data} /> : null}
+        </Shell>
+      );
     default:
       return <Shell type={type} title={hint.title} payload={payload} emptyHint={hint} orgId={orgId} />;
   }

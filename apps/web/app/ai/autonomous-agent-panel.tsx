@@ -224,7 +224,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
 
       <section className="aa-setup" aria-label="Tool setup">
         <div className={webSearchConfigured ? "aa-pill ok" : "aa-pill warn"}>
-          Search: {webSearchConfigured ? "configured" : "setup_required"}
+          Search: {webSearchConfigured ? "ready" : "not set"}
         </div>
         <div className={webBrowseEnabled ? "aa-pill ok" : "aa-pill warn"}>
           Browse: {webBrowseEnabled ? "allowlisted HTTPS" : "disabled"}
@@ -240,7 +240,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
 
       {shell === "setup_required" && !selectedRun ? (
         <section className="app-card soft-panel aa-empty">
-          <h2>Provider setup required</h2>
+          <h2>Add a key to run agents</h2>
           <p>
             {error ??
               "Add your own key, a team key, or a sponsored key under AI API keys, or ask an admin to set up web search."}

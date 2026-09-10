@@ -267,7 +267,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     event.preventDefault();
     if (form.financeInAiEnabled && !financeAckCurrent && !financeInAiRiskAccepted) {
       setFinanceRiskModalOpen(true);
-      setMessage("Accept Finance-in-AI risks before enabling.");
+      setMessage("Accept the finance risks before enabling.");
       return;
     }
     setSaving(true);
@@ -442,7 +442,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </strong>
             </article>
             <article>
-              <span>Finance-in-AI</span>
+              <span>Finance in Ask AI</span>
               <strong>{metricsLoaded ? (form.financeInAiEnabled ? "On" : "Off") : "…"}</strong>
             </article>
           </section>
@@ -544,7 +544,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 <small>
                   Opt-in only. Assistants may use redacted budget and order context (amounts, vendor,
                   purpose) — card/bank/SSN patterns are stripped. Dedicated consent UI:{" "}
-                  <a href={financeHref}>Finance-in-AI</a>.
+                  <a href={financeHref}>Finance in Ask AI</a>.
                   {financeInAiAcceptedAt ? (
                     <>
                       {" "}
@@ -745,7 +745,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
         >
           <div>
             <header>
-              <h2 id="finance-in-ai-risk-title">Accept Finance-in-AI risks</h2>
+              <h2 id="finance-in-ai-risk-title">Accept finance risks for Ask AI</h2>
               <button type="button" aria-label="Close" onClick={dismissFinanceRisks}>
                 ×
               </button>

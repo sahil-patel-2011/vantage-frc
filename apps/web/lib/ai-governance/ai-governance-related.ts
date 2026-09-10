@@ -40,7 +40,7 @@ export function aiGovernanceRelatedLinks(
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "budgets", label: "Budgets", href: hubHref("/ai", "budgets", orgId) },
     { id: "memory", label: "Memory", href: hubHref("/ai", "memory", orgId) },
-    { id: "finance", label: "Finance-in-AI", href: hubHref("/ai", "finance", orgId) },
+    { id: "finance", label: "Finance in Ask AI", href: hubHref("/ai", "finance", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "runs", label: "AI runs", href: withOrgHref("/team/ai-runs", orgId) },
     { id: "admin", label: "Team admin", href: withOrgHref("/team/admin", orgId) },
@@ -180,7 +180,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Admins only",
         title: "AI governance needs an admin",
         description:
-          "Owners and admins set feature/tool allowlists, spend alerts, and Finance-in-AI. Members still use Chat under existing Budgets and Memory rules.",
+          "Owners and admins set which tools Ask AI may use, spend alerts, and whether it can read finance summaries. Members still use Chat under existing Budgets and Memory rules.",
       };
     case "empty":
       return {
@@ -188,7 +188,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Defaults",
         title: "No org gates yet",
         description:
-          "Platform defaults apply until an admin turns on allowlists, high-cost approval, spend alerts, or Finance-in-AI. Spend and queue totals stay blank or zero from Neon.",
+          "Platform defaults apply until an admin turns on allowlists, high-cost approval, spend alerts, or finance in Ask AI. Spend and queue totals stay blank until real rows exist.",
       };
     case "setup":
       return {
@@ -327,7 +327,7 @@ export const AI_GOVERNANCE_SCOPE_CARDS = [
   {
     id: "policy" as const,
     title: "This tab · org policy",
-    body: "Feature and tool allowlists, high-cost approval queue, absolute spend alerts, and Finance-in-AI consent. Saved to Neon per workspace.",
+    body: "Feature and tool allowlists, high-cost approval queue, spend alerts, and consent for Ask AI to read finance summaries. Saved per workspace.",
   },
   {
     id: "budgets" as const,

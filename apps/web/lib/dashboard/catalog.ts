@@ -93,9 +93,39 @@ export function widgetRegistryMeta(entry: WidgetCatalogEntry): {
     sizes: entry.sizes ?? ["s", "m", "l"],
     audience: entry.audience ?? ["student", "mentor"],
     emptyWhen: entry.emptyWhen ?? "No real data yet",
-    helpArticle: entry.helpArticle ?? "edit-home",
+    helpArticle: WIDGET_HELP_ARTICLE[entry.type] ?? entry.helpArticle ?? "edit-home",
   };
 }
+
+const WIDGET_HELP_ARTICLE: Partial<Record<DashboardWidgetType, string>> = {
+  next_match: "event-day-command",
+  my_day: "event-day-command",
+  learn_progress: "cad-naming",
+  files_recent: "files",
+  team_chat: "team-basics",
+  team_todos: "calendar-tasks",
+  duties: "my-kit",
+  budget_parts: "season-finance",
+  attendance: "team-basics",
+  outreach_hours: "outreach-by-person",
+  announcements_ack: "team-basics",
+  ask_ai: "ask-ai",
+  event_countdown: "calendar-tasks",
+  hours_month: "my-kit",
+  calendar_today: "calendar-tasks",
+  cad_resources: "assembly-manual",
+  coding_resources: "bugbot-ultra",
+  team_profile: "team-profile",
+  alliance_desk: "alliance-season",
+  match_schedule: "event-day-command",
+  batteries: "team-basics",
+  assembly_manual: "assembly-manual",
+  sponsor_followups: "season-finance",
+  event_readiness: "event-day-command",
+  weather_venue: "event-day-command",
+  scouting_coverage: "scouting-offline",
+  prediction_summary: "alliance-season",
+};
 
 export const DASHBOARD_COLUMNS = 12;
 

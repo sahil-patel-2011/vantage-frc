@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   COMMAND_REFERENCE,
+  DEV_SETUP_DONE_KEY,
+  DEV_SETUP_OS_KEY,
   OS_LABELS,
   TRACK,
   stepsForOs,
@@ -11,8 +13,8 @@ import {
   type Step,
 } from "../../lib/dev-setup/track";
 
-const OS_KEY = "vantage-dev-setup-os";
-const DONE_KEY = "vantage-dev-setup-done";
+const OS_KEY = DEV_SETUP_OS_KEY;
+const DONE_KEY = DEV_SETUP_DONE_KEY;
 
 type Resource = {
   id: string;

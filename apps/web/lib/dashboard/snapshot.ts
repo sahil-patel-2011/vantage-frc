@@ -11,6 +11,7 @@ import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
+import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -44,8 +45,10 @@ export async function loadDashboardSnapshot(
       teamNumber: number | null;
       eventKey: string | null;
       eventName: string | null;
+      fundingModel: string | null;
     }>(
-      `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName"
+      `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
+              o.funding_model::text AS "fundingModel"
        FROM organizations o
        LEFT JOIN org_active_context c ON c.org_id = o.id
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key
@@ -121,6 +124,7 @@ export async function loadDashboardSnapshot(
     tbaConfigured,
     hasScoutingSchemas,
     hasAiProvider,
+    fundingModel: row.fundingModel,
   };
 
   const widgets: Record<string, WidgetPayload> = {};
@@ -1111,35 +1115,23 @@ export async function loadDashboardSnapshot(
     if (wants(type)) jobs.push(load());
   }
 
-  const honestEmpty: Array<[DashboardWidgetType, string]> = [
-    ["my_day", "No matches on your day yet. Open My Day after TBA sync."],
-    ["learn_progress", "Start Learn CAD or programming setup to see progress here."],
-    ["files_recent", "No files opened yet. Open Files to add one."],
-    ["team_chat", "No unread team chats."],
-    ["duties", "Nothing needs assignment tonight."],
-    ["budget_parts", "No budget row or open part requests."],
-    ["attendance", "No session scheduled tonight."],
-    ["outreach_hours", "No outreach hours logged this month."],
-    ["announcements_ack", "Nothing waiting on you."],
-    ["event_countdown", "No upcoming event on the calendar."],
-    ["hours_month", "No hours logged this month."],
-    ["calendar_today", "Nothing on the calendar today."],
-    ["cad_resources", "No CAD files or Onshape links yet."],
-    ["coding_resources", "No robot-code repo bound yet."],
-    ["team_profile", "Team profile has not been built yet. Open Team profile."],
-    ["alliance_desk", "Alliance selection is not running."],
-    ["match_schedule", "No match schedule synced for this event."],
-    ["batteries", "No batteries logged."],
-    ["assembly_manual", "No assembly manual yet. Open Assembly manual to start one."],
-    ["sponsor_followups", "No open sponsor follow-ups."],
-    ["event_readiness", "No event on the calendar."],
-    ["weather_venue", "No event with a location — weather stays off until there is one."],
-  ];
-  for (const [type, message] of honestEmpty) {
+  for (const type of HOME_WIDGET_TYPES) {
     if (wants(type)) {
       jobs.push(
         (async () => {
-          widgets[type] = stamp("empty", type, undefined, message);
+          widgets[type] = await loadHomeWidget(
+            client,
+            type,
+            {
+              orgId: input.orgId,
+              userId: input.userId,
+              eventKey,
+              eventName: row.eventName,
+              teamNumber: row.teamNumber,
+              fundingModel: row.fundingModel,
+            },
+            stamp,
+          );
         })(),
       );
     }

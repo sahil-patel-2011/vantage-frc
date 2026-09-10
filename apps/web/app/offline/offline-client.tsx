@@ -59,7 +59,7 @@ export default function OfflineClient() {
     <main className="offline-shell">
       <p className="offline-shell-brand">Vantage</p>
       {copy.badge ? <span className={`app-badge ${online ? "good" : "setup"}`}>{copy.badge}</span> : null}
-      <h1>{online ? "Offline shell ready" : copy.title}</h1>
+      <h1>{online ? "Ready when the Wi-Fi drops" : copy.title}</h1>
       <p className="offline-shell-lead">
         {online
           ? "This shell is precached for venue Wi-Fi drops. Open Scouting once while online so a cold no-signal load still works — outbox counts come from this device only."

@@ -40,19 +40,19 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
   switch (kind) {
     case "loading":
       return {
-        title: "Loading Finance-in-AI…",
-        description: "Checking org consent and redaction policy for this workspace.",
+        title: "Loading finance settings…",
+        description: "Checking whether this team lets Ask AI see budgets and orders.",
       };
     case "auth_required":
       return {
         badge: "Sign in",
-        title: "Sign in to manage Finance-in-AI",
+        title: "Sign in to manage finance in Ask AI",
         description: "Each team gives consent separately. Sign in, then reopen Finance from the AI hub.",
       };
     case "forbidden":
       return {
         badge: "Admins only",
-        title: "Finance-in-AI needs an admin",
+        title: "Finance in Ask AI needs an admin",
         description:
           "Owners and admins opt in. Members cannot enable redacted finance tools for the team.",
       };
@@ -66,15 +66,19 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
     case "error":
       return {
         badge: "Unavailable",
-        title: "Could not load Finance-in-AI",
-        description: "Retry, or open full Governance if the policy API is blocked.",
+        title: "Could not load finance settings",
+        description: "Retry, or open Governance if this keeps failing.",
       };
-    default:
+    case "ready":
       return {
-        title: "Finance in AI",
+        title: "Finance in Ask AI",
         description:
           "When on, assistants may call redacted finance tools. Payment credentials are never stored or sent.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -109,7 +113,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
     const data = (await response.json()) as { policy?: PolicySnapshot; error?: string };
     setHttpStatus(response.status);
     if (!response.ok) {
-      setLoadError(data.error ?? "Could not load finance-in-AI policy");
+      setLoadError(data.error ?? "Could not load finance settings");
       setPolicy(null);
       setLoading(false);
       return;
@@ -151,7 +155,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
     });
     const data = (await response.json()) as { error?: string };
     setBusy(false);
-    setMessage(response.ok ? "Finance-in-AI setting saved." : (data.error ?? "Save failed"));
+    setMessage(response.ok ? "Finance in Ask AI setting saved." : (data.error ?? "Save failed"));
     if (response.ok) void load();
   }
 

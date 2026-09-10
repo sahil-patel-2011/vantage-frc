@@ -20,6 +20,10 @@ export const OS_LABELS: Record<Os, string> = {
   windows: "Windows",
 };
 
+/** localStorage key for laptop/programming setup ticks. Shared with Home. */
+export const DEV_SETUP_DONE_KEY = "vantage-dev-setup-done";
+export const DEV_SETUP_OS_KEY = "vantage-dev-setup-os";
+
 export type StepLink = {
   label: string;
   href: string;
