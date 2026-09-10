@@ -17,7 +17,6 @@ import {
   formatAwardTrackerProgress,
   awardTrackerNextActions,
   awardTrackerRelatedLinks,
-  awardTrackerSetupSteps,
   awardTrackerShellCopy,
   shouldShowAwardTrackerSummaryTiles,
   type AwardTrackerNextAction,
@@ -108,10 +107,8 @@ function AwardTrackerShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = awardTrackerNextActions({ orgId, shell });
   const copy = awardTrackerShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "award-tracker", orgId);
-  const steps = shell === "setup" ? awardTrackerSetupSteps(orgId) : [];
 
   return (
     <main className="module-page award-tracker-page soft-gate">
@@ -156,20 +153,6 @@ function AwardTrackerShell({
           <Button as="a" variant="primary" href={hubHref("/business", "evidence", orgId)}>Open Awards</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-      <AwardTrackerNextActionsPanel actions={actions} />
     </main>
   );
 }

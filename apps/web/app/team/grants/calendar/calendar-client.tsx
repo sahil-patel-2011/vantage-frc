@@ -196,11 +196,11 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
           description={view.message}
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title="Select a team">
-          {view.steps.map((step) => (
-            <Button as="a" variant="primary" key={step.id} href={step.href}>
-              {step.label}
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
             </Button>
-          ))}
+          ) : null}
         </EmptyState>
       </main>
     );

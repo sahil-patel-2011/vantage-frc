@@ -10,7 +10,6 @@ import {
   formatGrantReportMetric,
   grantReportNextActions,
   grantReportRelatedLinks,
-  grantReportSetupSteps,
   grantReportShellCopy,
   shouldShowGrantReportSummaryTiles,
   type GrantReportNextAction,
@@ -84,7 +83,6 @@ function GrantReportShell({
   const actions = grantReportNextActions({ orgId, shell });
   const copy = grantReportShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "grant-report", orgId);
-  const steps = shell === "setup" ? grantReportSetupSteps(orgId) : [];
 
   return (
     <main className="module-page grant-report-page soft-gate">
@@ -129,19 +127,7 @@ function GrantReportShell({
           <Button as="a" variant="primary" href={hubHref("/business", "grants", orgId)}>Open Grants</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      
       <GrantReportNextActionsPanel actions={actions} />
     </main>
   );

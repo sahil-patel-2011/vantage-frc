@@ -8,9 +8,7 @@ import {
   classifyEventDayShell,
   eventDayEmptyTitle,
   eventDayRelatedLinks,
-  eventDaySetupSteps,
   eventDayShellCopy,
-  eventDayShellNextActions,
   type EventDayShellKind,
   type EventDayShellNextAction,
 } from "../../lib/command/event-day-related";
@@ -81,29 +79,7 @@ export function EventDayShell({
   const copy = eventDayShellCopy(shell);
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
-  const relatedHrefs = new Set(
-    eventDayRelatedLinks(orgId, { include: [...EVENT_DAY_RELATED_INCLUDE] }).map((link) => link.href),
-  );
   const scheduleHref = withOrgHref("/schedule", orgId);
-  const cardPrimaryHref =
-    shell === "empty"
-      ? scheduleHref
-      : shell === "setup"
-        ? orgId
-          ? canSetEvent && onSelectEvent
-            ? null
-            : teamDataHref
-          : workspaceHref
-        : null;
-  const actions = eventDayShellNextActions({ orgId, shell }).filter(
-    (action) => action.href !== cardPrimaryHref && !relatedHrefs.has(action.href),
-  );
-  const steps =
-    shell === "setup"
-      ? eventDaySetupSteps(orgId).filter(
-          (step) => step.href !== cardPrimaryHref && !relatedHrefs.has(step.href),
-        )
-      : [];
 
   const related = <EventDayRelatedStrip orgId={orgId} />;
 
@@ -134,7 +110,6 @@ export function EventDayShell({
         )}
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-        <EventDayNextActionsPanel actions={onRetry ? [] : actions} />
       </main>
     );
   }
@@ -178,21 +153,7 @@ export function EventDayShell({
             Check schedule sync
           </Button>
         ) : null}
-        {steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      <EventDayNextActionsPanel actions={actions} />
     </main>
   );
 }

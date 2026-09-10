@@ -16,7 +16,6 @@ import {
   classifyVisitShell,
   visitInvitesShareHref,
   visitNextActions,
-  visitSetupSteps,
   visitShellCopy,
   type VisitNextAction,
   type VisitShellKind,
@@ -112,7 +111,6 @@ function VisitShell({
     hostGaps,
   });
   const copy = visitShellCopy(shell);
-  const steps = shell === "setup" || shell === "empty" ? visitSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
 
   if (shell === "loading") {
@@ -174,19 +172,7 @@ function VisitShell({
           {/* Related links stay in the header — repeating them here showed the
               same three or four buttons twice on one screen. */}
         </div>
-        {steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+        
       </EmptyState>
       <VisitNextActionsPanel actions={actions} />
     </main>

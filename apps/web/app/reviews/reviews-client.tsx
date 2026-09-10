@@ -170,17 +170,7 @@ export default function ReviewsClient() {
         <section className="app-card soft-panel">
           <span className="app-badge setup">Setup required</span>
           <h2>{view.message}</h2>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          
         </section>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>

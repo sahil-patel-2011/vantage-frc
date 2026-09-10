@@ -12,7 +12,6 @@ import {
   BATTERY_ROTATION_RELATED_INCLUDE,
   batteryRotationNextActions,
   batteryRotationRelatedLinks,
-  batteryRotationSetupSteps,
   batteryRotationShellCopy,
   classifyBatteryRotationShell,
   formatBatteryRotationMetric,
@@ -141,7 +140,7 @@ function BatteryRotationShell({
           <Button as="a" variant="primary" href={batteriesHref}>Open Batteries</Button>
         ) : null}
       </EmptyState>
-      <BatteryRotationNextActionsPanel actions={actions} />
+      {shell === "ready" ? <BatteryRotationNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -202,7 +201,6 @@ export default function BatteryRotationClient() {
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const forecastHref = hubHref("/build", "battery-health-forecast", orgId);
   const pitHref = withOrgHref("/pit", orgId);
-  const setupSteps = batteryRotationSetupSteps(orgId);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -251,19 +249,7 @@ export default function BatteryRotationClient() {
         orgId={orgId}
         shell="setup"
       >
-        {(view?.status === "setup_required" ? view.steps : setupSteps).length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {(view?.status === "setup_required" ? view.steps : setupSteps).map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+        
       </BatteryRotationShell>
     );
   }

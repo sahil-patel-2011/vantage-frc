@@ -24,7 +24,6 @@ import type {
   WriterTone,
 } from "../../lib/writer/types";
 import { writerNextActions } from "../../lib/writer/writer-next-actions";
-import { withOrgHref } from "../../lib/nav/product-nav";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -233,17 +232,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           <span className="app-badge setup">{setupCopy.badge ?? "Setup required"}</span>
           <h2>{view.message || setupCopy.title}</h2>
           <p className="app-muted">{setupCopy.description}</p>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={withOrgHref(step.href, setupOrg ?? orgId)}>Open</a>
-              </li>
-            ))}
-          </ol>
+          
           <WriterNextActions
             orgId={setupOrg}
             draftCount={0}
@@ -676,19 +665,7 @@ function Composer({
           <p className="app-muted" style={{ marginTop: 0 }}>
             {writerShellCopy("provider_setup").description}
           </p>
-          {providerSetup.steps.length > 0 ? (
-            <ol className="strategy-setup-steps">
-              {providerSetup.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={withOrgHref(step.href, orgId)}>Open</a>
-                </li>
-              ))}
-            </ol>
-          ) : null}
+          
         </div>
       ) : null}
       <div className="writer-kind-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

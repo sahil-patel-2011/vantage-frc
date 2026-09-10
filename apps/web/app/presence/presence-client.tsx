@@ -213,25 +213,13 @@ export default function PresenceClient() {
           badgeTone="setup"
           title="Nothing to reconcile yet"
           description={view.message}
-        />
-        {view.steps.length > 0 ? (
-          <Panel className="prs-panel" aria-label="Setup steps">
-            <h2 className="prs-panel-title">Setup steps</h2>
-            <ul className="prs-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <p className="app-muted prs-tip">{step.detail}</p>
-                  </div>
-                  <Button as="a" variant="secondary" href={withOrgHref(step.href, orgId)}>
-                    Open
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
+        >
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={withOrgHref(view.steps[0].href, orgId)}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
       </Shell>
     );
   }

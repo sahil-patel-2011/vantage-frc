@@ -352,17 +352,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         <EmptyState soft title="Loading…" description="Checking your team for real todos." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          
           <NextActions orgId={view.orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : (

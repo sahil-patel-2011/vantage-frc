@@ -278,19 +278,7 @@ export default function DecisionSearchClient() {
         orgId={view.orgId}
         shell="setup"
       >
-        <ol className="strategy-setup-steps">
-          {view.steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href.startsWith("/") ? withOrgHref(step.href, view.orgId) : step.href}>
-                Open
-              </a>
-            </li>
-          ))}
-        </ol>
+        
       </DecisionSearchShell>
     );
   }

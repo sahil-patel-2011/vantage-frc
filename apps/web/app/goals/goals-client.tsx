@@ -213,19 +213,11 @@ export default function GoalsClient() {
           description="Set measurable season objectives; progress fills in as your team logs work against them."
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="goals-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ol>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
         <NextActions orgId={view.orgId} goalCount={0} achieved={0} needsAttention={0} />
       </main>

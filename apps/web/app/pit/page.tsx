@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   PIT_RELATED_INCLUDE,
-  pitNextActions,
   pitRelatedLinks,
-  pitSetupSteps,
   pitShellCopy,
 } from "../../lib/pit/pit-related";
 import "./pit-command.css";
@@ -24,9 +22,7 @@ export default async function PitCommandPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     const copy = pitShellCopy("setup");
-    const steps = pitSetupSteps(null);
     const related = pitRelatedLinks(null, { include: [...PIT_RELATED_INCLUDE] });
-    const actions = pitNextActions({ orgId: null, shell: "setup" });
     return (
       <main className="module-page pit-page soft-gate">
         <PageHeader
@@ -49,17 +45,6 @@ export default async function PitCommandPage({
             </nav>
           ) : null}
         </PageHeader>
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
         <EmptyState
           soft
           badge="Setup required"
@@ -70,29 +55,7 @@ export default async function PitCommandPage({
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
-          <Button as="a" variant="secondary" href="/dashboard">
-            Back to dashboard
-          </Button>
         </EmptyState>
-        <section className="app-card soft-panel edc-next-actions pit-next-actions" aria-label="Next actions">
-          <header>
-            <h2>Next actions</h2>
-            <p className="app-muted">Each one opens the page where you finish the work.</p>
-          </header>
-          <ol>
-            {actions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <Button as="a" variant="secondary" href={action.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ol>
-        </section>
       </main>
     );
   }

@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Badge,
+  Button,
   EmptyState,
   PageHeader,
   Panel,
-  SetupChecklist,
   Shell,
   SoftBlockSkeleton,
   StatTile,
-  type ShellState, Button } from "../../components/ui";
+  type ShellState,
+} from "../../components/ui";
 import { formatHours } from "../../lib/my-kit/compose";
 import type { MyKitSection, MyKitSectionId, MyKitTone, MyKitView } from "../../lib/my-kit/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -169,12 +170,15 @@ export default function MyKitClient() {
             title={view?.status === "setup_required" ? view.message : "Choose a team"}
             description="My Kit reads only your own rows inside one team."
           >
-            <SetupChecklist
-              steps={(view?.status === "setup_required" ? view.steps : []).map((step) => ({
-                label: `${step.label} — ${step.detail}`,
-                href: step.href,
-              }))}
-            />
+            {view?.status === "setup_required" && view.steps[0] ? (
+              <Button as="a" variant="primary" href={view.steps[0].href}>
+                {view.steps[0].label}
+              </Button>
+            ) : (
+              <Button as="a" variant="primary" href="/workspace">
+                Choose your team
+              </Button>
+            )}
           </EmptyState>
         }
         error={{

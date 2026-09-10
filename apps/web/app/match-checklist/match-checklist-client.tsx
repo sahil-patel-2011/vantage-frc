@@ -200,22 +200,13 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
-        <div className="mcl-stack">
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
-          </EmptyState>
-          <NextActionsPanel actions={nextActions} />
-        </div>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : (
         <div className="mcl-stack">
           {shouldShowSummaryTiles(view.summary) ? <SummaryTiles view={view} /> : null}

@@ -10,7 +10,6 @@ import {
   formatMediaKitMetric,
   mediaKitNextActions,
   mediaKitRelatedLinks,
-  mediaKitSetupSteps,
   mediaKitShellCopy,
   shouldShowMediaKitSummaryTiles,
   type MediaKitNextAction,
@@ -96,7 +95,6 @@ function MediaKitShell({
 }) {
   const actions = mediaKitNextActions({ orgId, shell });
   const copy = mediaKitShellCopy(shell);
-  const steps = shell === "setup" ? mediaKitSetupSteps(orgId) : [];
 
   return (
     <main className="module-page media-kit-page soft-gate">
@@ -141,19 +139,7 @@ function MediaKitShell({
           <Button as="a" variant="primary" href="#media-kit-profile">Save team profile</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      
       <MediaKitNextActionsPanel actions={actions} />
     </main>
   );

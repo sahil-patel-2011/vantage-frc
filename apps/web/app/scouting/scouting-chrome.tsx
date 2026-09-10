@@ -7,9 +7,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SCOUTING_RELATED_INCLUDE,
-  scoutingNextActions,
   scoutingRelatedLinks,
-  scoutingSetupSteps,
   scoutingShellCopy,
   type ScoutingNextAction,
   type ScoutingShellKind,
@@ -77,9 +75,7 @@ export function ScoutingShell({
   embedded?: boolean;
   children?: ReactNode;
 }) {
-  const actions = scoutingNextActions({ orgId, shell });
   const copy = scoutingShellCopy(shell);
-  const steps = shell === "setup" ? scoutingSetupSteps(orgId) : [];
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -146,21 +142,7 @@ export function ScoutingShell({
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>
         ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="scout-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <ScoutingNextActionsPanel actions={actions} />}
     </main>
   );
 }

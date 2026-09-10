@@ -28,7 +28,6 @@ import {
   formatPitMetric,
   pitNextActions,
   pitRelatedLinks,
-  pitSetupSteps,
   pitShellCopy,
   shouldShowPitSummaryTiles,
   type PitNextAction,
@@ -441,7 +440,6 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
-  const setupSteps = pitSetupSteps(orgId);
   const showSummary = shouldShowPitSummaryTiles({
     batteryCount,
     openIssues,
@@ -535,17 +533,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               Log first evidence
             </Button>
           </EmptyState>
-          <ol className="strategy-setup-steps">
-            {setupSteps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          
         </>
       ) : null}
 

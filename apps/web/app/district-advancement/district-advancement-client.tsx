@@ -84,13 +84,11 @@ export default function DistrictAdvancementClient() {
       {!view && !failure ? <p className="app-muted">Loading…</p> : null}
       {view?.status === "setup_required" ? (
         <EmptyState title="Not enough district data yet" description={view.message}>
-            <ol>
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <a href={step.href}>{step.label}</a> — {step.detail}
-                </li>
-              ))}
-            </ol>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
       ) : null}
       {view?.status === "live" ? (

@@ -79,7 +79,11 @@ export default function StandupDigestClient() {
         <EmptyState title="Loading…" description="Checking hours and work for this date." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <StepList steps={view.steps} />
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
       ) : view.status === "empty" ? (
         <EmptyDigest view={view} />
@@ -126,22 +130,6 @@ function LoadFailure({
   );
 }
 
-function StepList({ steps }: { steps: Array<{ id: string; label: string; detail: string; href: string }> }) {
-  return (
-    <ol className="strategy-setup-steps">
-      {steps.map((step) => (
-        <li key={step.id}>
-          <div>
-            <strong>{step.label}</strong>
-            <span>{step.detail}</span>
-          </div>
-          <a href={step.href}>Open</a>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 function EmptyDigest({ view }: { view: EmptyView }) {
   return (
     <EmptyState
@@ -154,7 +142,11 @@ function EmptyDigest({ view }: { view: EmptyView }) {
           : "Clock hours or finish a task, then this page will compile that day. Nothing is invented while the logs are empty."
       }
     >
-      <StepList steps={view.steps} />
+      {view.steps[0] ? (
+        <Button as="a" variant="primary" href={view.steps[0].href}>
+          {view.steps[0].label}
+        </Button>
+      ) : null}
     </EmptyState>
   );
 }

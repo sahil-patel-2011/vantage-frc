@@ -199,20 +199,12 @@ export function IntelligenceSection({
           title="AI provider not configured"
           description={providerSetup.message}
         >
-          {providerSetup.steps.length ? (
-            <ol className="kick-setup-steps">
-              {providerSetup.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
+          {providerSetup.steps[0] ? (
+            <Button as="a" variant="primary" href={providerSetup.steps[0].href}>
+              {providerSetup.steps[0].label}
+            </Button>
           ) : (
-            <Button as="a" variant="secondary" href="/team/admin">
+            <Button as="a" variant="primary" href="/team/admin">
               Open Team Admin
             </Button>
           )}

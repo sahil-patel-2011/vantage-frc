@@ -237,19 +237,11 @@ export default function SubsystemSignoffClient() {
           description="Clear design through field-test gates with an auditable trail — readiness % stays blank until real decisions exist."
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="signoff-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ol>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
         <NextActions
           orgId={view.orgId}

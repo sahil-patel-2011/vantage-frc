@@ -8,7 +8,6 @@ import type { MediaView } from "../../lib/media/compute-media";
 import {
   classifyMediaShell,
   mediaNextActions,
-  mediaSetupSteps,
   mediaShellCopy,
   type MediaNextAction,
   type MediaShellKind,
@@ -81,7 +80,6 @@ function MediaShell({
 }) {
   const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
-  const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
   // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
   const failure =
     shell === "error"
@@ -142,20 +140,7 @@ function MediaShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>Build Media Kit</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-      <MediaNextActionsPanel actions={actions} />
+      {shell === "ready" ? <MediaNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

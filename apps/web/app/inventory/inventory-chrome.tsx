@@ -10,9 +10,7 @@ import {
   formatInventoryMetric,
   formatInventoryMoney,
   inventoryCardPrimaryHref,
-  inventoryNextActions,
   inventoryRelatedLinks,
-  inventorySetupSteps,
   inventoryShellCopy,
   type InventoryNextAction,
   type InventoryShellKind,
@@ -83,20 +81,7 @@ export function InventoryShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const cardPrimaryHref = shell === "empty" ? INVENTORY_ADD_HREF : inventoryCardPrimaryHref(orgId);
-  const relatedHrefs = new Set(
-    inventoryRelatedLinks(orgId, { include: [...INVENTORY_RELATED_INCLUDE] }).map((link) => link.href),
-  );
-  const actions = inventoryNextActions({ orgId, shell }).filter(
-    (action) => action.href !== cardPrimaryHref && !relatedHrefs.has(action.href),
-  );
   const copy = inventoryShellCopy(shell);
-  const steps =
-    shell === "setup"
-      ? inventorySetupSteps(orgId).filter(
-          (step) => step.href !== cardPrimaryHref && !relatedHrefs.has(step.href),
-        )
-      : [];
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -167,21 +152,7 @@ export function InventoryShell({
             Add a part
           </Button>
         ) : null}
-        {steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      <InventoryNextActionsPanel actions={shell === "error" && onRetry ? [] : actions} />
     </main>
   );
 }

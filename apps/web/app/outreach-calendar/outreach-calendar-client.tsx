@@ -14,7 +14,6 @@ import {
   formatOutreachCalendarMetric,
   outreachCalendarNextActions,
   outreachCalendarRelatedLinks,
-  outreachCalendarSetupSteps,
   outreachCalendarShellCopy,
   shouldShowOutreachCalendarSummaryTiles,
   type OutreachCalendarNextAction,
@@ -124,7 +123,6 @@ function OutreachShell({
 }) {
   const actions = outreachCalendarNextActions({ orgId, shell });
   const copy = outreachCalendarShellCopy(shell);
-  const steps = shell === "setup" ? outreachCalendarSetupSteps(orgId) : [];
 
   return (
     <main className="module-page outreach-calendar-page soft-gate">
@@ -169,19 +167,7 @@ function OutreachShell({
           <Button as="a" variant="primary" href="#outreach-calendar-schedule">Schedule an event</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      
       <OutreachNextActionsPanel actions={actions} />
     </main>
   );

@@ -364,17 +364,7 @@ export default function ScoutVoiceNotesPanel({
           <strong>Voice notes</strong>
           <small className="app-muted">{view.message}</small>
         </div>
-        <ol className="strategy-setup-steps">
-          {view.steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
+        
       </div>
     );
   }

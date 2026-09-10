@@ -303,37 +303,15 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
           title="Posting path incomplete"
           description={view.message}
         >
-          <ol className="team-discord-setup-steps">
-            <li>
-              <div>
-                <strong>Add a channel webhook</strong>
-                <span>Server Settings → Integrations → Webhooks — works without a bot token.</span>
-              </div>
-            </li>
-            <li>
-              <div>
-                <strong>Or configure the bot</strong>
-                <span>
-                  Set <code>DISCORD_BOT_TOKEN</code>
-                  {view.inviteUrl ? " and invite the bot" : ""} with a channel id for bot posts.
-                </span>
-              </div>
-              {view.inviteUrl ? (
-                <Button as="a" variant="secondary" href={view.inviteUrl} target="_blank" rel="noreferrer">
-                  Open bot invite
-                </Button>
-              ) : null}
-            </li>
-            <li>
-              <div>
-                <strong>Mirror object-linked Messages</strong>
-                <span>Enable the chat bridge after posting works — only linked objects post.</span>
-              </div>
-              <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", orgId)}>
-                Messages
-              </Button>
-            </li>
-          </ol>
+          {view.inviteUrl ? (
+            <Button as="a" variant="primary" href={view.inviteUrl} target="_blank" rel="noreferrer">
+              Open bot invite
+            </Button>
+          ) : (
+            <Button as="a" variant="primary" href={withOrgHref("/team?tab=messages", orgId)}>
+              Open Messages
+            </Button>
+          )}
         </EmptyState>
       ) : null}
 

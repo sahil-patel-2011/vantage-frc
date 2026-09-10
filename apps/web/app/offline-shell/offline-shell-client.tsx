@@ -190,17 +190,7 @@ export default function OfflineShellClient() {
       ) : view.status === "setup_required" ? (
         <EmptyState soft badge={shellCopy.badge} badgeTone="setup" title={shellCopy.title} description={shellCopy.description}>
           <NextActions orgId={null} shell="setup" />
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          
         </EmptyState>
       ) : (
         <div className="offline-shell-stack">

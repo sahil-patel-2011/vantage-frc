@@ -199,27 +199,13 @@ export default function EventReadinessClient() {
           badgeTone="setup"
           title="No readiness plan yet"
           description={view.message}
-        />
-        {view.steps.length > 0 ? (
-          <Panel className="evr-panel" aria-label="Setup steps">
-            <h2 className="evr-panel-title">Setup steps</h2>
-            <ul className="evr-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <p className="app-muted evr-tip">{step.detail}</p>
-                  </div>
-                  {step.href !== "/event-readiness" ? (
-                    <Button as="a" variant="secondary" href={withOrgHref(step.href, orgId)}>
-                      Open
-                    </Button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
+        >
+          {view.steps[0] && view.steps[0].href !== "/event-readiness" ? (
+            <Button as="a" variant="primary" href={withOrgHref(view.steps[0].href, orgId)}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
         {orgId ? (
           <CreatePlanForm busy={busy} mutate={mutate} candidates={view.eventCandidates} onCreated={setEventKey} />
         ) : null}

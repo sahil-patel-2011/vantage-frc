@@ -224,27 +224,12 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="fmea-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ol>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
-        <NextActions
-          orgId={view.orgId}
-          failureCount={0}
-          activeCount={0}
-          needsFixCount={0}
-          highestRpn={0}
-        />
       </main>
     );
   }

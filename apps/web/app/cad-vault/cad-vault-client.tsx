@@ -412,11 +412,11 @@ export default function CadVaultClient() {
       <main className="module-page cad-vault-page soft-gate">
         <PageHeader breadcrumbs={<><a href="/build">Build</a>{" / CAD Vault"}</>} title="CAD Vault" description={description} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title="Pick a team first" description={view.message}>
-          {view.steps.map((step) => (
-            <Button as="a" variant="primary" key={step.id} href={step.href}>
-              {step.label}
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
             </Button>
-          ))}
+          ) : null}
         </EmptyState>
       </main>
     );

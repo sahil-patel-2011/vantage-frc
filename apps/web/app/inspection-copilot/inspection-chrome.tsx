@@ -5,10 +5,8 @@ import { EmptyState, PageHeader, Button } from "../../components/ui";
 import {
   INSPECTION_COPILOT_RELATED_INCLUDE,
   inspectionCopilotCardPrimaryHref,
-  inspectionCopilotNextActions,
   inspectionCopilotRelatedLinks,
   inspectionCopilotShellCopy,
-  inspectionSetupSteps,
   type InspectionCopilotNextAction,
   type InspectionCopilotShellKind,
 } from "../../lib/inspection-copilot/inspection-copilot-related";
@@ -73,23 +71,7 @@ export function InspectionShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const cardPrimaryHref =
-    shell === "empty" ? "#inspection-copilot-form" : inspectionCopilotCardPrimaryHref(orgId);
-  const relatedHrefs = new Set(
-    inspectionCopilotRelatedLinks(orgId, { include: [...INSPECTION_COPILOT_RELATED_INCLUDE] }).map(
-      (link) => link.href,
-    ),
-  );
-  const actions = inspectionCopilotNextActions({ orgId, shell }).filter(
-    (action) => action.href !== cardPrimaryHref && !relatedHrefs.has(action.href),
-  );
   const copy = inspectionCopilotShellCopy(shell);
-  const steps =
-    shell === "setup"
-      ? inspectionSetupSteps(orgId).filter(
-          (step) => step.href !== cardPrimaryHref && !relatedHrefs.has(step.href),
-        )
-      : [];
   const buildHref = hubHref("/build", "fmea", orgId);
 
   return (
@@ -138,21 +120,7 @@ export function InspectionShell({
             Run a check
           </Button>
         ) : null}
-        {steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      <InspectionNextActionsPanel actions={shell === "error" && onRetry ? [] : actions} />
     </main>
   );
 }

@@ -154,4 +154,27 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     }
     expect(problems, problems.join("\n")).toEqual([]);
   });
+
+  it("product UI does not paint a strategy-setup-steps checklist", () => {
+    const APP = join(__dirname, "..", "..", "app");
+    const hits: string[] = [];
+    function walk(dir: string) {
+      for (const entry of readdirSync(dir)) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        const stats = statSync(full);
+        if (stats.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!entry.endsWith(".tsx")) continue;
+        const src = readFileSync(full, "utf8");
+        if (src.includes('className="strategy-setup-steps"')) {
+          hits.push(full);
+        }
+      }
+    }
+    walk(APP);
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
 });

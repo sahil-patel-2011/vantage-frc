@@ -15,10 +15,7 @@ import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   LOGISTICS_RELATED_INCLUDE,
-  logisticsRelatedLinks,
   logisticsShellCopy,
-  logisticsShellNextActions,
-  logisticsSetupSteps,
   type LogisticsShellKind,
   type LogisticsShellNextAction,
 } from "../../lib/logistics/logistics-related";
@@ -64,23 +61,7 @@ export function LogisticsShell({
   children?: ReactNode;
 }) {
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const emptyPrimaryHref =
-    shell === "empty" && canManage ? withOrgHref("/logistics", orgId) + "#logistics-create-trip" : null;
-  const cardPrimaryHref = shell === "setup" ? workspaceHref : emptyPrimaryHref;
-  const relatedHrefs = new Set(
-    logisticsRelatedLinks(orgId, { include: [...LOGISTICS_RELATED_INCLUDE] }).map((link) => link.href),
-  );
-  const actions = logisticsShellNextActions({ orgId, shell, canManage }).filter(
-    (action) => action.href !== cardPrimaryHref,
-  );
   const copy = logisticsShellCopy(shell);
-  const steps =
-    shell === "setup"
-      ? logisticsSetupSteps(orgId).filter(
-          (step) => !relatedHrefs.has(step.href) && step.href !== cardPrimaryHref,
-        )
-      : [];
-
   if (shell === "loading") {
     return (
       <main className="log-page soft-gate">
@@ -115,8 +96,6 @@ export function LogisticsShell({
         <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
-        {/* ErrorState already owns Retry / Sign in. Related-strip destinations stay in the header. */}
-        <LogisticsNextActionsPanel actions={onRetry ? [] : actions} />
       </main>
     );
   }
@@ -147,26 +126,7 @@ export function LogisticsShell({
             Add a trip
           </Button>
         ) : null}
-        {/* The same four cross-links are already in the page header, a few
-            hundred pixels up and always visible. Rendering them again inside the
-            empty state put Event Day / My Day / Calendar / Visit invites on this
-            screen twice and buried the one action that actually moves you
-            forward. The empty state keeps its single primary action. */}
-        {steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      <LogisticsNextActionsPanel actions={actions} />
     </main>
   );
 }

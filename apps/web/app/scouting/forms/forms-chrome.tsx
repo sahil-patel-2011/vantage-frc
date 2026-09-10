@@ -8,7 +8,6 @@ import {
   FORM_BUILDER_RELATED_INCLUDE,
   formBuilderNextActions,
   formBuilderRelatedLinks,
-  formBuilderSetupSteps,
   formBuilderShellCopy,
   type FormBuilderNextAction,
   type FormBuilderShellKind,
@@ -80,7 +79,6 @@ export function FormBuilderShell({
 }) {
   const actions = formBuilderNextActions({ orgId, shell, entryType });
   const copy = formBuilderShellCopy(shell, { entryType });
-  const steps = shell === "setup" ? formBuilderSetupSteps(orgId) : [];
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -143,21 +141,9 @@ export function FormBuilderShell({
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={scoutingHref}>Open Scouting</Button>
         ) : null}
-        {shell === "setup" && steps.length > 0 ? (
-          <ol className="sfb-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+        
       </EmptyState>
-      {shell !== "loading" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }

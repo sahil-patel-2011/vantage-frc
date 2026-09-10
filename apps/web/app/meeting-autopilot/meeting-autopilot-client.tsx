@@ -170,18 +170,12 @@ function SetupOrEmpty({ view }: { view: Extract<MeetingAutopilotView, { status: 
           : undefined
       }
     >
-      <ol className="strategy-setup-steps">
-        {view.steps.map((step) => (
-          <li key={step.id}>
-            <div>
-              <strong>{step.label}</strong>
-              <span>{step.detail}</span>
-            </div>
-            <a href={step.href}>Open</a>
-          </li>
-        ))}
-      </ol>
-    </EmptyState>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
   );
 }
 

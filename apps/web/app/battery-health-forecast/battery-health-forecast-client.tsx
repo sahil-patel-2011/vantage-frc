@@ -9,7 +9,6 @@ import {
   BATTERY_HEALTH_FORECAST_RELATED_INCLUDE,
   batteryHealthForecastNextActions,
   batteryHealthForecastRelatedLinks,
-  batteryHealthForecastSetupSteps,
   batteryHealthForecastShellCopy,
   classifyBatteryHealthForecastShell,
   formatBatteryHealthForecastMetric,
@@ -210,7 +209,6 @@ export default function BatteryHealthForecastClient() {
   const rotationHref = hubHref("/competition", "battery-rotation", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const pitHref = withOrgHref("/pit", orgId);
-  const setupSteps = batteryHealthForecastSetupSteps(orgId);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -261,19 +259,7 @@ export default function BatteryHealthForecastClient() {
         orgId={orgId}
         shell="setup"
       >
-        {(view?.status === "setup_required" ? view.steps : setupSteps).length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {(view?.status === "setup_required" ? view.steps : setupSteps).map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+        
       </BatteryHealthForecastShell>
     );
   }

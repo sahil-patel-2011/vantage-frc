@@ -5,7 +5,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
-import type { AllianceColor, MatchSimRun, MatchSimSetupStep } from "../../lib/match-sim/types";
+import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 
 function allianceLabel(color: AllianceColor): string {
   return color === "red" ? "Red" : "Blue";
@@ -131,17 +131,11 @@ export default function MatchSimClient() {
         <EmptyState title="Loading…" description="Checking your team." aria-busy />
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step: MatchSimSetupStep) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>

@@ -10,7 +10,6 @@ import {
   formatSponsorWallMetric,
   sponsorWallNextActions,
   sponsorWallRelatedLinks,
-  sponsorWallSetupSteps,
   sponsorWallShellCopy,
   shouldShowSponsorWallSummaryTiles,
   type SponsorWallNextAction,
@@ -91,7 +90,6 @@ function SponsorWallShell({
   const actions = sponsorWallNextActions({ orgId, shell });
   const copy = sponsorWallShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "sponsor-wall", orgId);
-  const steps = shell === "setup" ? sponsorWallSetupSteps(orgId) : [];
 
   return (
     <main className="module-page sponsor-wall-page soft-gate">
@@ -136,19 +134,7 @@ function SponsorWallShell({
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      
       <SponsorWallNextActionsPanel actions={actions} />
     </main>
   );

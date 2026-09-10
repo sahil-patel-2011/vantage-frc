@@ -243,17 +243,7 @@ export default function ImpactClient() {
         <>
           <ImpactNextActions actions={nextActions} />
           <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
+            
             {relatedOrg ? (
               <BusinessRelated
                 orgId={relatedOrg}

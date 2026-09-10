@@ -430,19 +430,7 @@ export default function ChatClient({
           <p className="app-muted">
             {providerSetup?.message && shell === "setup" ? providerSetup.message : shellCopy.description}
           </p>
-          {shell === "setup" && providerSetup && providerSetup.steps.length > 0 ? (
-            <ol className="strategy-setup-steps">
-              {providerSetup.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={withOrgHref(step.href, orgId)}>Open</a>
-                </li>
-              ))}
-            </ol>
-          ) : null}
+          
           {shell === "error" ? (
             <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry

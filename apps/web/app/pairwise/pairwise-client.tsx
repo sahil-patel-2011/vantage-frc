@@ -189,11 +189,11 @@ export default function PairwiseClient() {
 
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          {view.steps.map((step) => (
-            <Button as="a" variant="secondary" key={step.id} href={step.href}>
-              {step.label}
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
             </Button>
-          ))}
+          ) : null}
         </EmptyState>
       ) : null}
 

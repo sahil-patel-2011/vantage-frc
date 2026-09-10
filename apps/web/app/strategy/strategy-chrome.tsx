@@ -7,10 +7,8 @@ import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   STRATEGY_RELATED_INCLUDE,
-  strategyNextActions,
   strategyRelatedLinks,
   strategyShellCopy,
-  strategyShellSetupSteps,
   type StrategyShellKind,
   type StrategyShellNextAction,
 } from "../../lib/strategy/strategy-related";
@@ -99,9 +97,7 @@ export function StrategyShell({
   cachedAt?: string | null;
   children?: ReactNode;
 }) {
-  const actions = strategyNextActions({ orgId, shell });
   const copy = strategyShellCopy(shell);
-  const steps = shell === "setup" ? strategyShellSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
@@ -151,21 +147,7 @@ export function StrategyShell({
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={teamDataHref}>Sync Team Data</Button>
         ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <StrategyNextActionsPanel actions={actions} />}
     </Root>
   );
 }

@@ -287,18 +287,12 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             title={view.message}
             description="Choose a team, then log what, why, when, and cost. The sheet stays empty until someone adds a real line."
           >
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
-          </EmptyState>
+          {view.steps[0] ? (
+            <Button as="a" variant="primary" href={view.steps[0].href}>
+              {view.steps[0].label}
+            </Button>
+          ) : null}
+        </EmptyState>
           <OrdersNextActions actions={nextActions} />
         </>
       ) : (

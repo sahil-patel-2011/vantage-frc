@@ -12,7 +12,6 @@ import {
   shouldShowSponsorSuiteSummaryTiles,
   sponsorSuiteNextActions,
   sponsorSuiteRelatedLinks,
-  sponsorSuiteSetupSteps,
   sponsorSuiteShellCopy,
   type SponsorSuiteNextAction,
   type SponsorSuiteShellKind,
@@ -93,7 +92,6 @@ function SponsorSuiteShell({
   const actions = sponsorSuiteNextActions({ orgId, shell });
   const copy = sponsorSuiteShellCopy(shell);
   const businessHref = hubWorkbenchHref("business", "sponsor-suite", orgId);
-  const steps = shell === "setup" ? sponsorSuiteSetupSteps(orgId) : [];
 
   return (
     <main className="module-page sponsor-suite-page soft-gate">
@@ -138,19 +136,7 @@ function SponsorSuiteShell({
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
         ) : null}
       </EmptyState>
-      {shell === "setup" && steps.length > 0 ? (
-        <ol className="strategy-setup-steps">
-          {steps.map((step) => (
-            <li key={step.id}>
-              <div>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </div>
-              <a href={step.href}>Open</a>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      
       <SponsorSuiteNextActionsPanel actions={actions} />
     </main>
   );
