@@ -89,7 +89,11 @@ export type OfflineFeature =
   | "decision-search"
   | "decisions"
   | "failure-patterns"
-  | "grant-eligibility-matcher";
+  | "grant-eligibility-matcher"
+  | "hours-self-view"
+  | "knowledge-gap"
+  | "matching-gift-finder"
+  | "onboarding-buddy";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

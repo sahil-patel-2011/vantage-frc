@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
@@ -28,6 +29,7 @@ import {
 } from "../../lib/knowledge-gap/knowledge-gap-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./knowledge-gap.css";
 
 const STATUS_TONE: Record<KnowledgeGapStatus, BadgeTone> = {
@@ -49,6 +51,33 @@ const SUBJECT_TONE: Record<KnowledgeGapSubjectKind, BadgeTone> = {
 };
 
 type LiveView = Extract<KnowledgeGapView, { status: "live" }>;
+
+function isKnowledgeGapView(value: unknown): value is KnowledgeGapView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function knowledgeGapCacheOrg(data: KnowledgeGapView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistKnowledgeGapSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: KnowledgeGapView,
+): Promise<void> {
+  const cacheOrg = knowledgeGapCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("knowledge-gap", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("knowledge-gap", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Knowledge-gap detective already painted; IndexedDB is best-effort.
+  }
+}
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = knowledgeGapRelatedLinks(orgId, {
@@ -161,30 +190,75 @@ export default function KnowledgeGapClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<KnowledgeGapView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/knowledge-gap${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<KnowledgeGapView>(
+          "knowledge-gap",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isKnowledgeGapView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(
+          `/api/knowledge-gap${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as KnowledgeGapView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isKnowledgeGapView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Knowledge-gap detective. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistKnowledgeGapSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Knowledge-gap detective. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -229,12 +303,13 @@ export default function KnowledgeGapClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as KnowledgeGapView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isKnowledgeGapView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistKnowledgeGapSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -245,7 +320,11 @@ export default function KnowledgeGapClient() {
   );
 
   if (shell === "loading") {
-    return <GapShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <GapShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+      </GapShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -255,7 +334,9 @@ export default function KnowledgeGapClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+      </GapShell>
     );
   }
   if (shell === "setup" || view?.status !== "live") {
@@ -264,7 +345,9 @@ export default function KnowledgeGapClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
+      </GapShell>
     );
   }
 
@@ -306,6 +389,8 @@ export default function KnowledgeGapClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Knowledge-gap detective" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

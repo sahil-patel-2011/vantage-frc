@@ -112,6 +112,10 @@ const SHELL_ROUTES = [
   "/decisions",
   "/failure-patterns",
   "/grant-eligibility-matcher",
+  "/hours-self-view",
+  "/knowledge-gap",
+  "/matching-gift-finder",
+  "/onboarding-buddy",
 ];
 
 function isShellPath(pathname) {

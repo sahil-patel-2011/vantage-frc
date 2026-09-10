@@ -107,6 +107,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/decisions")).toBe(true);
     expect(pathnameIsOfflineShell("/failure-patterns")).toBe(true);
     expect(pathnameIsOfflineShell("/grant-eligibility-matcher")).toBe(true);
+    expect(pathnameIsOfflineShell("/hours-self-view")).toBe(true);
+    expect(pathnameIsOfflineShell("/knowledge-gap")).toBe(true);
+    expect(pathnameIsOfflineShell("/matching-gift-finder")).toBe(true);
+    expect(pathnameIsOfflineShell("/onboarding-buddy")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -192,7 +196,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/decision-search")).toBe("Decision Search");
     expect(offlineCapableLabel("/decisions")).toBe("Decision Log");
     expect(offlineCapableLabel("/failure-patterns")).toBe("Repeat Failure Patterns");
+    expect(offlineCapableLabel("/hours-self-view")).toBe("My Hours");
+    expect(offlineCapableLabel("/hours")).toBe("Hours");
     expect(offlineCapableLabel("/grant-eligibility-matcher")).toBe("Grant Eligibility Matcher");
+    expect(offlineCapableLabel("/knowledge-gap")).toBe("Knowledge-gap detective");
+    expect(offlineCapableLabel("/matching-gift-finder")).toBe("Matching Gift Finder");
+    expect(offlineCapableLabel("/onboarding-buddy")).toBe("Onboarding Buddy");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -278,6 +287,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("decisions", "org-1", "2026")).toBe("decisions:org-1:2026");
     expect(featureCacheKey("failure-patterns", "org-1", "2026")).toBe("failure-patterns:org-1:2026");
     expect(featureCacheKey("grant-eligibility-matcher", "org-1")).toBe("grant-eligibility-matcher:org-1");
+    expect(featureCacheKey("hours-self-view", "org-1")).toBe("hours-self-view:org-1");
+    expect(featureCacheKey("knowledge-gap", "org-1", "2026")).toBe("knowledge-gap:org-1:2026");
+    expect(featureCacheKey("matching-gift-finder", "org-1")).toBe("matching-gift-finder:org-1");
+    expect(featureCacheKey("onboarding-buddy", "org-1")).toBe("onboarding-buddy:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

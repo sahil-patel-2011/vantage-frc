@@ -94,6 +94,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/decisions",
   "/failure-patterns",
   "/grant-eligibility-matcher",
+  "/hours-self-view",
+  "/knowledge-gap",
+  "/matching-gift-finder",
+  "/onboarding-buddy",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -134,6 +138,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/dashboard")) return "Home";
   if (bare.startsWith("/strategy/draft")) return "Alliance board";
   if (bare.startsWith("/strategy")) return "Strategy";
+  if (bare.startsWith("/hours-self-view")) return "My Hours";
   if (bare.startsWith("/hours")) return "Hours";
   if (bare.startsWith("/messages")) return "Chat";
   if (bare.startsWith("/match-checklist")) return "Match checklist";
@@ -183,6 +188,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/decisions")) return "Decision Log";
   if (bare.startsWith("/failure-patterns")) return "Repeat Failure Patterns";
   if (bare.startsWith("/grant-eligibility-matcher")) return "Grant Eligibility Matcher";
+  if (bare.startsWith("/knowledge-gap")) return "Knowledge-gap detective";
+  if (bare.startsWith("/matching-gift-finder")) return "Matching Gift Finder";
+  if (bare.startsWith("/onboarding-buddy")) return "Onboarding Buddy";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   ErrorState,
@@ -33,9 +34,31 @@ import {
 } from "../../lib/matching-gift-finder/matching-gift-finder-related";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./matching-gift-finder.css";
 
 type LiveView = Extract<MatchingGiftFinderView, { status: "live" }>;
+
+function isMatchingGiftFinderView(value: unknown): value is MatchingGiftFinderView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistMatchingGiftFinderSnapshot(
+  orgHint: string,
+  data: MatchingGiftFinderView,
+): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("matching-gift-finder", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("matching-gift-finder", "_", data);
+  } catch {
+    // Live Matching Gift Finder already painted; IndexedDB is best-effort.
+  }
+}
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = matchingGiftFinderRelatedLinks(orgId, {
@@ -148,27 +171,67 @@ export default function MatchingGiftFinderClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MatchingGiftFinderView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/matching-gift-finder${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MatchingGiftFinderView>(
+          "matching-gift-finder",
+          urlOrg || "_",
+        );
+        if (!viewRef.current && cached?.data && isMatchingGiftFinderView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/matching-gift-finder${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as MatchingGiftFinderView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isMatchingGiftFinderView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Matching Gift Finder. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMatchingGiftFinderSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Matching Gift Finder. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -213,7 +276,7 @@ export default function MatchingGiftFinderClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchingGiftFinderView | { error?: string; code?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isMatchingGiftFinderView(data)) {
           const cutoff = resolveCutoffErrorCode(response.status, data);
           if (cutoff) {
             setCutoffCode(cutoff);
@@ -224,6 +287,7 @@ export default function MatchingGiftFinderClient() {
           return;
         }
         setView(data);
+        void persistMatchingGiftFinderSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -234,7 +298,11 @@ export default function MatchingGiftFinderClient() {
   );
 
   if (shell === "loading") {
-    return <GiftShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <GiftShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+      </GiftShell>
+    );
   }
 
   if (shell === "error") {
@@ -245,7 +313,9 @@ export default function MatchingGiftFinderClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
+      </GiftShell>
     );
   }
 
@@ -256,6 +326,7 @@ export default function MatchingGiftFinderClient() {
         orgId={orgId}
         shell="setup"
       >
+        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
       </GiftShell>
     );
   }
@@ -263,6 +334,7 @@ export default function MatchingGiftFinderClient() {
   if (shell === "empty" || view?.status !== "live") {
     return (
       <GiftShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
         <div id="matching-gift-contacts">
           <ContactForm busy={busy} mutate={mutate} />
         </div>
@@ -290,6 +362,8 @@ export default function MatchingGiftFinderClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="app-muted mgf-status" role="alert">
