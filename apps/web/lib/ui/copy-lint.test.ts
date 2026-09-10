@@ -140,6 +140,7 @@ function isCopyFile(entry: string): boolean {
   // Inspection form labels/hints live in the catalog so the 1k split does not
   // hide student copy from this scan.
   if (entry === "inspection-new-check-model.ts") return true;
+  if (entry === "app-shell-model.ts") return true;
   return false;
 }
 

@@ -8,7 +8,7 @@
  * Fetches nothing: the mounting page passes the role it already loaded.
  */
 
-import { Icon } from "./app-shell";
+import { Icon } from "./icon";
 import {
   activeSettingsId,
   visibleSettingsNav,

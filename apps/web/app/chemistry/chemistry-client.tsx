@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Icon } from "../../components/app-shell";
+import { Icon } from "../../components/icon";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
