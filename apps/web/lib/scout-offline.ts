@@ -375,13 +375,17 @@ export async function quarantineMedia(item: MediaOutboxItem, reason: string): Pr
 
 /** Everything needing attention, oldest first. Scoped to one org when given. */
 export async function listQuarantine(orgId?: string): Promise<QuarantinedItem[]> {
-  const [entryStore, mediaStore] = await Promise.all([
-    store("readonly", ENTRY_QUARANTINE),
-    store("readonly", MEDIA_QUARANTINE),
-  ]);
+  // One transaction, both getAll() calls enqueued synchronously — the same
+  // rule as pendingCounts() above. Two awaited store() calls each open their
+  // own connection; the first transaction has nothing pending while the second
+  // connection opens, so IndexedDB auto-commits it, and getAll() on it then
+  // throws TransactionInactiveError ("The transaction has finished"). That was
+  // an uncaught rejection on every Home load in the browser.
+  const db = await openDatabase();
+  const transaction = db.transaction([ENTRY_QUARANTINE, MEDIA_QUARANTINE], "readonly");
   const [entries, media] = await Promise.all([
-    requestValue<QuarantinedEntry[]>(entryStore.getAll()),
-    requestValue<QuarantinedMedia[]>(mediaStore.getAll()),
+    requestValue<QuarantinedEntry[]>(transaction.objectStore(ENTRY_QUARANTINE).getAll()),
+    requestValue<QuarantinedMedia[]>(transaction.objectStore(MEDIA_QUARANTINE).getAll()),
   ]);
   const all: QuarantinedItem[] = [...entries, ...media];
   const scoped = orgId ? all.filter((item) => item.orgId === orgId) : all;

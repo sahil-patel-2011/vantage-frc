@@ -13,9 +13,7 @@ The only shipping web deployment is `apps/web` (`apps/marketing` is a redirect s
   `installCommand: npm install --legacy-peer-deps`, `buildCommand: npm run build --workspace=@vantage/web`,
   `outputDirectory: apps/web/.next`. Keep the Root Directory at the repo root so this file is the one
   Vercel reads.
-- There is a second `apps/web/vercel.json`. It only matters if the project's Root Directory is set to
-  `apps/web` — in that case its **three** crons exceed the Hobby two-cron ceiling and the deploy's cron
-  config is rejected/truncated. Known discrepancy; see the cron section below.
+- There is no second `apps/web/vercel.json` any more. It was inert (the Root Directory is the repo root) and a cron added to it once looked scheduled while never firing; the root file is the only cron source.
 - Node: `engines.node >= 22` (root `package.json`).
 - Production build is credential-free by design — no DB or auth env is needed to *build*. Auth constructs
   lazily; product routes render `setup_required`/empty states when env is absent.
@@ -169,14 +167,14 @@ one failing cannot fail TBA ingest. **Adding a job means adding it there, not
 adding a fourth entry to a `crons` array.**
 
 > Only the **root** `vercel.json` is read — the Root Directory is the repo root,
-> which makes `apps/web/vercel.json` inert. A cron added to the inert file looks
+> which is why the former `apps/web/vercel.json` was inert and has been deleted. A cron added there once looked
 > scheduled in the diff and never fires, which is worse than a deploy error
 > because nothing complains. Member onboarding was added there once; that is why
 > it rides the season sync now.
 
 **Not scheduled — need an external ticker (or a Vercel plan with more crons):**
 
-- `/api/cron/parent-digest` (weekly parent email digest; listed in `apps/web/vercel.json` but that file
+- `/api/cron/parent-digest` (weekly parent email digest; it was listed in the deleted `apps/web/vercel.json`, which
   is inert while the Root Directory is the repo root — decide: drop it there or upgrade the plan)
 - `/api/cron/team-dream` (nightly team-memory consolidation; journal renders at Team → AI Memory)
 - `/api/cron/team-performance-email`

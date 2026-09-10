@@ -16,7 +16,7 @@ actual hops in code with file evidence, and an honest PASS/FAIL. Companion docs:
   **and** `privacyAccepted: z.literal(true)` in a `.strict()` schema, runs under `withRls`, and calls
   `completeOnboarding` (`packages/core/src/onboarding.ts:471`), which calls `recordLegalAcceptance`
   (onboarding.ts:560 → `packages/core/src/legal.ts:40`) writing `terms_accepted_at/terms_version/
-  privacy_accepted_at/privacy_version` onto `profiles` at version `LEGAL_DOC_VERSION = 2026-08-24.2`.
+  privacy_accepted_at/privacy_version` onto `profiles` at version `LEGAL_DOC_VERSION = 2026-09-09.1`.
 - Rate-limited (30/10min) and served `cache-control: private, no-store`.
 
 ### 2. Admin creates team → owner invite → accept — PASS
@@ -140,14 +140,14 @@ actual hops in code with file evidence, and an honest PASS/FAIL. Companion docs:
    many numbering gaps. The runner tolerates both (full-filename keying, lexicographic order), but a
    fresh-database apply has never been proven end to end — run it against a scratch Neon branch first.
    `npm run deploy:preflight` prints the current list.
-4. **Legal review outstanding.** `LEGAL_DOC_VERSION = 2026-08-24.2` discloses AI-training use of
+4. **Legal review outstanding.** `LEGAL_DOC_VERSION = 2026-09-09.1` discloses AI-training use of
    AI-feature activity — a reversal of earlier no-training language. Counsel should review the Terms and
    Privacy documents (and the youth/COPPA implications of an FRC-student audience) before real sign-ups
    record acceptance of them.
 5. **Cron scheduling decision.** Hobby allows two crons; seven cron routes exist. Root `vercel.json`
-   schedules the two TBA syncs only; `apps/web/vercel.json` (inert at repo-root Root Directory) lists
+   schedules the two TBA syncs only; the former `apps/web/vercel.json` (inert at repo-root Root Directory, now deleted) listed
    three. Decide: external ticker (DEPLOYMENT.md §5), plan upgrade, or accept that dreams/digests/
-   reminders don't run — and delete the stale `apps/web/vercel.json` cron block to end the ambiguity.
+   reminders don't run — (the stale `apps/web/vercel.json` has since been deleted).
 6. **BYOK requires real KMS.** Without `AWS_KMS_KEY_ID` + credentials, saving team AI keys fails in
    production (local KMS intentionally refuses). Either provision KMS before launch or launch with
    platform-key AI only and say so.
