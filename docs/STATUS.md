@@ -42,7 +42,7 @@ Assumption stated: “a new FRC student can do everything from one login without
 | `npm test` | **878 files, 8,320 passed, 10 skipped, 51.93s** | `vitest run` this session |
 | `npm run typecheck` | clean across workspaces that changed | this session |
 | `npx eslint .` | clean (exit 0) | this session, 30.7s |
-| `npm run build --workspace=@vantage/web` | compiled, **zero warnings**, `/connectors` `/team/relays` `/video-analysis` in the route table | `next build` this session, 85.7s |
+| `npm run build --workspace=@vantage/web` | compiled, **zero warnings** in the log, 695 pages; `/connectors` `/team/relays` `/video-analysis` in the route table. Shared runtime 540.3 KB. | `next build` this session, 66.4s |
 | `node scripts/deploy-preflight.mjs` | 8 FAIL in this image (no Vercel env). Owner must still set `CRON_SECRET` in the project. | this session |
 | `npm audit --omit=dev` | **0 vulnerabilities** | this session |
 | `scripts/rls-proof.mjs` | *not run* | needs local Postgres (not in this image) |
@@ -110,5 +110,5 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 14 | Business funding models | in progress | `funding_model` column, onboarding radios, Business default tab + sponsor hide |
 | 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive/workspace/account/invite vs scouting/messages/pit/hours. `FEATURE_DIRS` now includes workspace, account, invite, help, season-calendar, and packing. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
-| 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. |
+| 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. Production `next build` this session: compiled 15.5s, TypeScript 45s, 695 pages, no warnings in the log. Shared runtime (rootMain + polyfill) **540.3 KB**. Unique client-reference JS: Home `/dashboard` 391 KB, Scouting 391 KB, Strategy 325 KB, Pit 284 KB, `/workspace` 248 KB. Next 16 Turbopack does not print a First Load JS column in the route table. |
 | 18 | Final verification | pending | |
