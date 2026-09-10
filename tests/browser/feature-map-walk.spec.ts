@@ -19,46 +19,53 @@ test.beforeEach(async ({ context }) => {
  * catalog does not 500 / "Application error" on first paint.
  *
  * Several FEATURE_MAP URLs client-redirect (e.g. `/account?tab=integrations`
- * → `/connectors`). Reads after `goto` retry when the execution context is
- * destroyed by that navigation. Connection resets retry because `next dev`
- * can drop a socket while compiling the next route.
+ * → `/connectors`) or 307 to another path (`/help/hub-access` → `/docs/hub-access`).
+ * `waitUntil: "commit"` avoids waiting on every client chunk; a dead `next dev`
+ * aborts the rest of the catalog instead of retrying 70 refused sockets.
  */
-async function readBody(page: Page): Promise<string> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    try {
-      await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => undefined);
-      return await page.locator("body").innerText({ timeout: 8_000 });
-    } catch {
-      await page.waitForTimeout(250 * (attempt + 1));
-    }
-  }
-  return "";
-}
-
 async function visitRoute(page: Page, route: string): Promise<string | null> {
   let lastError = "";
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const response = await page.goto(route, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      const response = await page.goto(route, { waitUntil: "commit", timeout: 45_000 });
       const status = response?.status() ?? 0;
       if (status >= 500) return `${route} HTTP ${status}`;
-      await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => undefined);
-      const text = await readBody(page);
-      if (/Application error/i.test(text)) return `${route} application-error`;
+      await page.waitForLoadState("domcontentloaded", { timeout: 20_000 });
+      await expect(page.locator("body")).not.toContainText(/Application error/i, {
+        timeout: 8_000,
+      });
       return null;
     } catch (error) {
       lastError = error instanceof Error ? error.message.split("\n")[0]! : String(error);
+      if (/ERR_CONNECTION_REFUSED|ERR_CONNECTION_RESET|ECONNREFUSED/i.test(lastError) && attempt === 3) {
+        return `${route} ${lastError}`;
+      }
       await page.waitForTimeout(1_000 * attempt);
     }
   }
   return `${route} ${lastError}`;
 }
 
+function serverDied(failure: string): boolean {
+  return /ERR_CONNECTION_REFUSED|ERR_CONNECTION_RESET|ECONNREFUSED/i.test(failure);
+}
+
 async function walkFeatureMapRoutes(page: Page, routes: string[]) {
   const failures: string[] = [];
+  let lastOk: string | null = null;
   for (const route of routes) {
     const failure = await visitRoute(page, route);
-    if (failure) failures.push(failure);
+    if (!failure) {
+      lastOk = route;
+      continue;
+    }
+    if (serverDied(failure)) {
+      failures.push(
+        `${failure} (dev server died after ${lastOk ?? "the first route"}; remaining routes not retried)`,
+      );
+      break;
+    }
+    failures.push(failure);
   }
   expect(failures, `FEATURE_MAP walk failures:\n  ${failures.join("\n  ")}`).toEqual([]);
 }
