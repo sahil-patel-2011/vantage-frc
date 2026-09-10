@@ -50,7 +50,11 @@ export type OfflineFeature =
   | "match-video"
   | "inspection"
   | "inspection-copilot"
-  | "fmea";
+  | "fmea"
+  | "match-sim"
+  | "pit-map"
+  | "pairwise"
+  | "team-tags";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

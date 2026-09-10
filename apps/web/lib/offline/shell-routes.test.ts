@@ -68,6 +68,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/inspection-copilot")).toBe(true);
     expect(pathnameIsOfflineShell("/inspection")).toBe(true);
     expect(pathnameIsOfflineShell("/fmea")).toBe(true);
+    expect(pathnameIsOfflineShell("/match-sim")).toBe(true);
+    expect(pathnameIsOfflineShell("/pit-map-planner")).toBe(true);
+    expect(pathnameIsOfflineShell("/pairwise")).toBe(true);
+    expect(pathnameIsOfflineShell("/team-tags")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -113,6 +117,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/inspection-copilot")).toBe("Inspection Copilot");
     expect(offlineCapableLabel("/inspection")).toBe("Inspection");
     expect(offlineCapableLabel("/fmea")).toBe("FMEA");
+    expect(offlineCapableLabel("/match-sim")).toBe("Match Simulator");
+    expect(offlineCapableLabel("/pit-map-planner")).toBe("Pit Map Planner");
+    expect(offlineCapableLabel("/pairwise")).toBe("Pairwise ranking");
+    expect(offlineCapableLabel("/team-tags")).toBe("Drive-team tags");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -159,6 +167,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("inspection", "org-1")).toBe("inspection:org-1");
     expect(featureCacheKey("inspection-copilot", "org-1", "2026")).toBe("inspection-copilot:org-1:2026");
     expect(featureCacheKey("fmea", "org-1", "2026")).toBe("fmea:org-1:2026");
+    expect(featureCacheKey("match-sim", "org-1")).toBe("match-sim:org-1");
+    expect(featureCacheKey("pit-map", "org-1", "2026")).toBe("pit-map:org-1:2026");
+    expect(featureCacheKey("pairwise", "org-1")).toBe("pairwise:org-1");
+    expect(featureCacheKey("team-tags", "org-1")).toBe("team-tags:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

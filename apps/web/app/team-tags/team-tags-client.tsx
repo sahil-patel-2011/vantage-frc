@@ -1,14 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./team-tags.css";
 
 type LiveView = Extract<TeamTagsView, { status: "live" }>;
+
+function isTeamTagsView(value: unknown): value is TeamTagsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistTeamTagsSnapshot(orgHint: string, data: TeamTagsView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("team-tags", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("team-tags", "_", data);
+  } catch {
+    // Live tags already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function TeamTagsClient() {
   const [view, setView] = useState<TeamTagsView | null>(null);
@@ -16,22 +37,55 @@ export default function TeamTagsClient() {
   // Kept so an expired session offers sign-in instead of a dead end.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<TeamTagsView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
+    const orgId = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
     const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     setErrorStatus(null);
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/team-tags${query}`);
+      const cached = await getFeatureSnapshot<TeamTagsView>("team-tags", orgId || "_");
+      if (!viewRef.current && cached?.data && isTeamTagsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(`/api/team-tags${query}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as TeamTagsView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setErrorStatus(response.status);
-        setError("error" in data && data.error ? data.error : "Could not load drive-team tags.");
+      if (!response.ok || !isTeamTagsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Drive-team tags. Showing the last copy on this device.");
+        } else {
+          setErrorStatus(response.status);
+          setError("error" in data && data.error ? data.error : "Could not load drive-team tags.");
+        }
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      setError("");
+      await persistTeamTagsSnapshot(orgId, data);
     } catch {
-      setError("Network error — please try again.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Drive-team tags. Showing the last copy on this device.");
+      } else {
+        setError("Network error — please try again.");
+      }
     }
   }, []);
 
@@ -60,12 +114,14 @@ export default function TeamTagsClient() {
           teamNumber: data.get("teamNumber"),
           notes: data.get("notes"),
         }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const payload = (await response.json()) as TeamTagsView | { error?: string };
-      if (!response.ok || !("status" in payload)) {
+      if (!response.ok || !isTeamTagsView(payload)) {
         throw new Error("error" in payload && payload.error ? payload.error : "Could not save tag");
       }
       setView(payload);
+      void persistTeamTagsSnapshot(live.orgId, payload);
       form.reset();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save tag");
@@ -82,9 +138,13 @@ export default function TeamTagsClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", orgId: live.orgId, assignmentId }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const payload = (await response.json()) as TeamTagsView;
-      if (payload && "status" in payload) setView(payload);
+      if (payload && isTeamTagsView(payload)) {
+        setView(payload);
+        void persistTeamTagsSnapshot(live.orgId, payload);
+      }
     } finally {
       setBusy(false);
     }
@@ -102,6 +162,7 @@ export default function TeamTagsClient() {
         title="Drive-team tags"
         description="Label robots as you watch them. The board stays empty until someone applies a real tag — not a 1–10 scale, not TBA."
       />
+      <OfflineBanner feature="Drive-team tags" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         <Button as="a" variant="secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>

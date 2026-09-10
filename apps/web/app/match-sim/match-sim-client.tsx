@@ -1,11 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+
+function isMatchSimView(value: unknown): value is MatchSimView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistMatchSimSnapshot(orgHint: string, data: MatchSimView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("match-sim", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("match-sim", "_", data);
+  } catch {
+    // Live simulator already painted; IndexedDB is best-effort.
+  }
+}
 
 function allianceLabel(color: AllianceColor): string {
   return color === "red" ? "Red" : "Blue";
@@ -24,29 +45,66 @@ export default function MatchSimClient() {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<MatchSimView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((runId?: string) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (runId) query.set("runId", runId);
-    void fetch(`/api/match-sim${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<MatchSimView>("match-sim", urlOrg || "_");
+        if (!viewRef.current && cached?.data && isMatchSimView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setErrorStatus(null);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (runId) query.set("runId", runId);
+      try {
+        const response = await fetch(`/api/match-sim${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as MatchSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+        if (!response.ok || !isMatchSimView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setErrorStatus(response.status);
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistMatchSimSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Match Simulator. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -63,13 +121,15 @@ export default function MatchSimClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as MatchSimView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isMatchSimView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        void persistMatchSimSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -91,6 +151,7 @@ export default function MatchSimClient() {
         title="Match Simulator"
         description="Deterministic full-field score timeline from real, synced EPA capability data — plus the single highest-leverage lever to pull. Nothing here is guessed."
       />
+      <OfflineBanner feature="Match Simulator" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

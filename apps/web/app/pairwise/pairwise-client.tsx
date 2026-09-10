@@ -1,16 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { PairwiseView } from "../../lib/pairwise/compute-pairwise";
 import type { PairwisePromoteResult } from "../../lib/pairwise/promote-to-pick-list";
 import { pairwiseRelatedLinks } from "../../lib/pairwise/pairwise-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./pairwise.css";
 
 type LiveView = Extract<PairwiseView, { status: "live" }>;
 type PairwiseResponse = PairwiseView & { promotion?: PairwisePromoteResult; error?: string };
+
+function isPairwiseView(value: unknown): value is PairwiseView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistPairwiseSnapshot(orgHint: string, data: PairwiseView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("pairwise", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("pairwise", "_", data);
+  } catch {
+    // Live ranking already painted; IndexedDB is best-effort.
+  }
+}
 
 export default function PairwiseClient() {
   const [view, setView] = useState<PairwiseView | null>(null);
@@ -22,28 +43,65 @@ export default function PairwiseClient() {
   const [right, setRight] = useState("");
   const [criterionId, setCriterionId] = useState<string | null>(null);
   const [promoteMessage, setPromoteMessage] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PairwiseView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async (nextCriterion?: string | null) => {
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
+    const orgId = new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
     const query = new URLSearchParams();
     if (orgId) query.set("orgId", orgId);
     const selected = nextCriterion ?? criterionId;
     if (selected) query.set("criterionId", selected);
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/pairwise?${query.toString()}`);
+      const cached = await getFeatureSnapshot<PairwiseView>("pairwise", orgId || "_");
+      if (!viewRef.current && cached?.data && isPairwiseView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+        if (cached.data.status === "live") {
+          setCriterionId(cached.data.criterionId);
+          if (!left && cached.data.teamNumber) setLeft(String(cached.data.teamNumber));
+        }
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    try {
+      const response = await fetch(`/api/pairwise?${query.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as PairwiseResponse;
-      if (!response.ok || !("status" in data)) {
-        setError(data.error ? data.error : "Could not load pairwise ranking.");
-        setErrorStatus(response.status);
+      if (!response.ok || !isPairwiseView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+        } else {
+          setError(data.error ? data.error : "Could not load pairwise ranking.");
+          setErrorStatus(response.status);
+        }
         return;
       }
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      setError("");
       if (data.status === "live") {
         setCriterionId(data.criterionId);
         if (!left && data.teamNumber) setLeft(String(data.teamNumber));
       }
+      await persistPairwiseSnapshot(orgId, data);
     } catch {
-      setError("Network error — please try again.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+      } else {
+        setError("Network error — please try again.");
+      }
     }
   }, [criterionId, left]);
 
@@ -74,12 +132,14 @@ export default function PairwiseClient() {
           winnerTeamNumber,
           loserTeamNumber,
         }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PairwiseResponse;
-      if (!response.ok || !("status" in data)) {
+      if (!response.ok || !isPairwiseView(data)) {
         throw new Error(data.error ? data.error : "Could not save comparison");
       }
       setView(data);
+      void persistPairwiseSnapshot(live.orgId, data);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save comparison");
     } finally {
@@ -95,9 +155,13 @@ export default function PairwiseClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", orgId: live.orgId, comparisonId, criterionId: live.criterionId }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PairwiseResponse;
-      if (data && "status" in data) setView(data);
+      if (data && isPairwiseView(data)) {
+        setView(data);
+        void persistPairwiseSnapshot(live.orgId, data);
+      }
     } finally {
       setBusy(false);
     }
@@ -117,12 +181,14 @@ export default function PairwiseClient() {
           orgId: live.orgId,
           criterionId: live.criterionId,
         }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PairwiseResponse;
-      if (!response.ok || !("status" in data)) {
+      if (!response.ok || !isPairwiseView(data)) {
         throw new Error(data.error ? data.error : "Could not save pairwise order to the pick list");
       }
       setView(data);
+      void persistPairwiseSnapshot(live.orgId, data);
       setPromoteMessage(data.promotion?.message ?? "Saved pairwise order to the pick list.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save pairwise order to the pick list");
@@ -143,6 +209,7 @@ export default function PairwiseClient() {
         title="Pairwise ranking"
         description="Tap who looked better. Ranks come from your taps — not from official rankings or EPA."
       />
+      <OfflineBanner feature="Pairwise ranking" fromCache={fromCache} cachedAt={cachedAt} />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
         {related.map((link) => (
