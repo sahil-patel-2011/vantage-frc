@@ -95,10 +95,10 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
   }
   if (kind === "empty") {
     return {
-      eyebrow: "CHOOSE A WORKSPACE",
+      eyebrow: "CHOOSE A TEAM",
       title: "Select a team to add API keys",
       description: "Choose your team, then return here to paste keys for yourself or the team.",
-      badge: "No workspace",
+      badge: "No team",
     };
   }
   if (kind === "setup") {
@@ -143,7 +143,7 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   if (normalized === "free") {
     return {
       title: "Free · hosted free models or your keys",
-      body: "Free workspaces use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
+      body: "Free teams use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
     };
   }
   return {

@@ -5,7 +5,7 @@ import {
   parseByokProvider,
   parseOptionalBaseUrl,
 } from "./byok-providers";
-import { AI_KEYS_RELATED_INCLUDE, aiKeysBillingNote, classifyAiKeysShell } from "./ai-keys-related";
+import { AI_KEYS_RELATED_INCLUDE, aiKeysBillingNote, aiKeysShellCopy, classifyAiKeysShell } from "./ai-keys-related";
 
 describe("byok providers", () => {
   it("parses gemini as google", () => {
@@ -46,8 +46,15 @@ describe("ai keys soft-ui helpers", () => {
 
   it("frames free vs paid without double-billing confusion", () => {
     expect(aiKeysBillingNote("free").title).toMatch(/your keys/i);
+    expect(aiKeysBillingNote("free").body).not.toMatch(/workspace/i);
     expect(aiKeysBillingNote("team").body).toMatch(/hosted/i);
     expect(aiKeysBillingNote("team").body).toMatch(/not billed twice|does not consume/i);
+  });
+
+  it("empty copy says team, not workspace", () => {
+    const copy = aiKeysShellCopy("empty");
+    expect(copy.title).toMatch(/team/i);
+    expect(`${copy.eyebrow} ${copy.badge} ${copy.title} ${copy.description}`).not.toMatch(/workspace/i);
   });
 
   it("keeps the keys page related strip to chat only", () => {
