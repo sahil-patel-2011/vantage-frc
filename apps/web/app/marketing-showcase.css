@@ -162,7 +162,7 @@
 .shx-integrations{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:clamp(28px,4vw,44px) 0 0;padding:0;list-style:none}
 .shx-integrations li{padding:7px 14px;border:1px solid rgba(255,255,255,.16);border-radius:var(--soft-radius-pill);color:#d2d2d7;font:600 12px var(--m-sans);letter-spacing:.01em}
 
-@media (max-width:var(--soft-radius-pill)){
+@media (max-width:999px){
   .shx-pipeline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .shx-hub-grid,.shx-season-grid,.shx-menu-grid,.shx-trust-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .shx-depth-grid,.shx-honesty-grid{grid-template-columns:1fr}

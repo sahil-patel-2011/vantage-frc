@@ -71,6 +71,24 @@ describe("stylesheet integrity", () => {
     expect(broken, `unbalanced braces:\n  ${broken.join("\n  ")}`).toEqual([]);
   });
 
+  it("never puts a var() inside a media query prelude", () => {
+    // `@media (max-width: var(--x))` is not CSS — custom properties are not
+    // allowed in a media prelude, so the whole block silently never applies.
+    // Eleven such blocks shipped once, from a find-and-replace of `999px` (the
+    // pill radius) that also hit `@media(max-width:999px)`; every responsive
+    // rule in the marketing stylesheets below 999px was dead for a release.
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = scrub(readFileSync(file, "utf8"));
+      const lines = text.split("\n");
+      lines.forEach((line, index) => {
+        const match = /@media[^{]*\{/.exec(line) ?? /@media[^{]*$/.exec(line);
+        if (match && /var\(/.test(match[0])) offenders.push(`${file}:${index + 1}: ${match[0].trim()}`);
+      });
+    }
+    expect(offenders, `var() in a media prelude:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
+
   it("has no declaration sitting outside a rule", () => {
     // This is the exact failure that 500'd four hubs.
     const orphans: string[] = [];

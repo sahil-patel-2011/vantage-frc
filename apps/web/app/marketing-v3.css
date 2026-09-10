@@ -361,7 +361,7 @@ html.reveal-armed .marketing-lux [data-reveal]{
 html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 
 /* â”€â”€ Responsive â”€â”€ */
-@media(max-width:var(--soft-radius-pill)){
+@media(max-width:999px){
   .marketing-lux .lux-hero-inner{
     grid-template-columns:1fr;min-height:0;align-items:start;
     padding-top:clamp(40px,7vw,64px);gap:clamp(32px,6vw,44px);
@@ -570,7 +570,7 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
 @media(max-width:1100px){
   .marketing-lux .mk-pillars{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(max-width:var(--soft-radius-pill)){
+@media(max-width:999px){
   .marketing-lux .mk-mock{justify-self:stretch;width:100%;max-width:520px}
 }
 @media(max-width:1000px){
@@ -711,10 +711,13 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   .marketing-lux .mk-hero-proof{gap:6px 14px}
 }
 
-/* Mobile header: desktop links hide at 700px, so the details menu has to
-   actually work. On desktop it must not leak a 15px disclosure into the bar. */
+/* Mobile header. Five links plus Sign in and Join waitlist need more than a
+   tablet's width — at 768px "Pricing" and "Sign in" ran into each other — so
+   the desktop links hide and the details menu takes over below 1000px, the
+   same breakpoint the hero uses to go single-column. On desktop it must not
+   leak a 15px disclosure into the bar. */
 .marketing-lux .mobile-menu{display:none}
-@media(max-width:700px){
+@media(max-width:999px){
   .marketing-lux .nav{gap:10px}
   .marketing-lux .nav>nav{display:none}
   .marketing-lux .nav-actions{margin-left:auto}
@@ -852,4 +855,15 @@ html:has(.marketing-lux){scroll-padding-top:76px}
   font-size:14px;
   line-height:1.55;
   max-width:60ch;
+}
+
+/* Responsive, restated last. The v5 block above re-declares the hero grid
+   without a media query, and the same-specificity 999px block earlier in this
+   file lost to it on source order — so at 768px the hero stayed two columns
+   with the mock squeezed to 340px. Whatever is declared above, below 1000px
+   the hero is one column. */
+@media(max-width:999px){
+  .marketing-lux .lux-hero-inner{grid-template-columns:1fr;align-items:start}
+  .marketing-lux .mk-mock,
+  .marketing-lux .hero-teach{justify-self:stretch;width:100%;max-width:560px}
 }

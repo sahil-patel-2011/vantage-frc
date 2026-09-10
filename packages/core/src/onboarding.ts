@@ -449,12 +449,17 @@ export async function saveOnboardingProgress(
   } else {
     const displayName = trimOrNull(input.displayName, 80);
     const theme = input.themePreference === "dark" ? "dark" : "light";
+    // Only an explicit answer counts as choosing (0650 theme_chosen_at). An
+    // omitted answer still stores 'light' for the NOT NULL column, but must not
+    // be reported as a decision that overrides the device's own setting.
+    const chose = input.themePreference === "light" || input.themePreference === "dark";
     await client.query(
-      `INSERT INTO profiles(user_id,display_name,theme_preference,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
-       VALUES($1,$2,$3,'preferences',now(),now())
+      `INSERT INTO profiles(user_id,display_name,theme_preference,theme_chosen_at,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
+       VALUES($1,$2,$3,CASE WHEN $4::boolean THEN now() ELSE NULL END,'preferences',now(),now())
        ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,theme_preference=excluded.theme_preference,
+         theme_chosen_at=CASE WHEN $4::boolean THEN now() ELSE profiles.theme_chosen_at END,
          onboarding_current_step='preferences',onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
-      [userId, displayName, theme],
+      [userId, displayName, theme, chose],
     );
   }
   return getOnboardingState(client, userId);
