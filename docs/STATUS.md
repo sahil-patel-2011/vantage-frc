@@ -81,7 +81,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | `/ai` Agent | `setup_required` / `running` shown as pills | this commit |
 | `/offline` `/offline-shell` | "Offline Shell", "precache" | this commit |
 | `/workspace` empty states | "Select a team workspace" / "Open Workspace" | this commit |
-| Chat limits / AI policy / Hub access | "allowlist", "API budget", "FINANCE-IN-AI" | this commit |
+| `/competition` Scouting empty | Coverage/Strategy/Offline duplicated the hub strip and next-actions | this commit |
 
 ---
 
@@ -89,7 +89,7 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,314 passed, 10 skipped** (56.4s) |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **876 files, 8,315 passed, 10 skipped** (53.0s) |
 | 2 | One design system | in progress | tokens in `system.css`; Button now emits `.app-button` so chrome and the primitive match. ClassName migration of leftover `.app-button` still open. |
 | 3 | Full UI pass | in progress | Workspace jargon replaced with "team". Allowlist / API-budget student copy rewritten. FEATURE_MAP walk unfinished. |
 | 4 | Home widgets | in progress | Real loaders for student/mentor defaults (files, chat, my day, learn, duties, budget, attendance, outreach, announcements, weather city, …). Live cards in `widgets/home-cards.tsx`. Weather temperature is fetched in the browser from Open-Meteo on event day only — never invented in the snapshot. 2200-line dashboard-client still not fully split. |

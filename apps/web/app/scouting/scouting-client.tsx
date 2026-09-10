@@ -253,9 +253,6 @@ function ScoutingShell({
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
   const formsHref = hubHref("/competition", "forms", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const offlineHref = withOrgHref("/offline", orgId);
 
   return (
     <main className={`module-page scout-page soft-gate${embedded ? " is-embedded" : ""}`}>
@@ -297,25 +294,14 @@ function ScoutingShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : workspaceHref}>
+          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>
             {orgId ? "Set active event" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={formsHref}>
-              Open Form builder
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={offlineHref}>
-              Open Offline
-            </a>
-          </>
+          <a className="app-button is-primary" href={formsHref}>
+            Open Form builder
+          </a>
         ) : null}
         {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="scout-setup-steps">
@@ -994,7 +980,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           >
             {data?.canManageSchemas ? (
               <div className="scout-empty-actions">
-                <button className="app-button" type="button" onClick={() => void createStarterForms()}>
+                <button className="app-button is-primary" type="button" onClick={() => void createStarterForms()}>
                   Create starter forms
                 </button>
                 <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
@@ -1002,19 +988,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                 </a>
               </div>
             ) : (
-              <a className="app-button" href={hubHref("/competition", "forms", orgId)}>
+              <a className="app-button is-primary" href={hubHref("/competition", "forms", orgId)}>
                 Open Form builder
               </a>
             )}
-            <a className="app-button secondary" href={withOrgHref("/scouting/lineup", orgId)}>
-              Open Coverage
-            </a>
-            <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/offline", orgId)}>
-              Open Offline
-            </a>
           </EmptyState>
           <ScoutingNextActionsPanel actions={formEmptyActions} />
         </>
