@@ -1,9 +1,12 @@
 "use client";
-import { Button } from "../../components/ui";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
+import { Button } from "../../components/ui";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   fmtTimestamp,
@@ -18,6 +21,23 @@ import {
 } from "../../lib/video-review";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isVideoView(value: unknown): value is VideoView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistMatchVideoSnapshot(orgHint: string, data: VideoView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("match-video", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("match-video", "_", data);
+  } catch {
+    // Live reviews already painted; IndexedDB is best-effort.
+  }
+}
 
 function ReviewDetail({
   review,
@@ -215,25 +235,59 @@ export default function VideoClient() {
   const [newUrl, setNewUrl] = useState("");
   const [newMatchKey, setNewMatchKey] = useState("");
   const [newTeamNumber, setNewTeamNumber] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<VideoView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const response = await fetch(`/api/video${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const cached = await getFeatureSnapshot<VideoView>("match-video", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isVideoView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
+    try {
+      const response = await fetch(`/api/video${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as VideoView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load video reviews.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isVideoView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Match video. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load video reviews.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistMatchVideoSnapshot(urlOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Match video. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -250,6 +304,7 @@ export default function VideoClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string; id?: string };
         if (!response.ok) {
@@ -277,6 +332,7 @@ export default function VideoClient() {
             <h1>Match Video Review</h1>
           </div>
         </header>
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card vid-empty">
           {fetchFailed ? (
             (() => {
@@ -329,6 +385,7 @@ export default function VideoClient() {
             <p>Re-watch match footage with timestamped team notes.</p>
           </div>
         </header>
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card vid-empty">
           <strong>Choose your team</strong>
           <p className="app-muted">{view.message}</p>
@@ -379,6 +436,8 @@ export default function VideoClient() {
           </p>
         </div>
       </header>
+
+      <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

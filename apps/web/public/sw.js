@@ -69,6 +69,10 @@ const SHELL_ROUTES = [
   "/match-strategy-cards",
   "/match-copilot",
   "/event-readiness",
+  "/video",
+  "/inspection-copilot",
+  "/inspection",
+  "/fmea",
 ];
 
 function isShellPath(pathname) {

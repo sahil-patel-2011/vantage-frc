@@ -46,7 +46,11 @@ export type OfflineFeature =
   | "lineup"
   | "strategy-cards"
   | "match-copilot"
-  | "event-readiness";
+  | "event-readiness"
+  | "match-video"
+  | "inspection"
+  | "inspection-copilot"
+  | "fmea";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

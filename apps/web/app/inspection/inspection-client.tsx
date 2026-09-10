@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, Button } from "../../components/ui";
 import {
@@ -11,10 +12,29 @@ import {
   type InspectionStatus,
   type InspectionView,
 } from "../../lib/inspection";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+
+function isInspectionView(value: unknown): value is InspectionView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistInspectionSnapshot(orgHint: string, data: InspectionView): Promise<void> {
+  const cacheOrg = data.context.orgId?.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("inspection", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("inspection", "_", data);
+  } catch {
+    // Live checklist already painted; IndexedDB is best-effort.
+  }
+}
 
 const STATUS_LABEL: Record<InspectionStatus, string> = { pending: "—", pass: "Pass", fail: "Fail", na: "N/A" };
 
@@ -106,25 +126,59 @@ export default function InspectionClient() {
   const [weightInput, setWeightInput] = useState("");
   const [weightConfig, setWeightConfig] = useState("with bumpers");
   const [limitInput, setLimitInput] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<InspectionView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<InspectionView>("inspection", urlOrg || "_");
+      if (!viewRef.current && cached?.data && isInspectionView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/inspection${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/inspection${urlOrg ? `?orgId=${encodeURIComponent(urlOrg)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as InspectionView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load inspection.");
-        setErrorStatus(response.status);
-        setFetchFailed(true);
+      if (!response.ok || !isInspectionView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Inspection. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load inspection.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistInspectionSnapshot(urlOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Inspection. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+      }
     }
   }, []);
 
@@ -141,6 +195,7 @@ export default function InspectionClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -179,6 +234,7 @@ export default function InspectionClient() {
             <h1>Robot Inspection</h1>
           </div>
         </header>
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card insp-empty">
           {fetchFailed ? (
             (() => {
@@ -229,6 +285,7 @@ export default function InspectionClient() {
             <p>Self-inspect against the standard checklist before the real inspector arrives.</p>
           </div>
         </header>
+        <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState className="insp-empty" title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -280,6 +337,8 @@ export default function InspectionClient() {
           </nav>
         </div>
       </header>
+
+      <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
@@ -17,8 +18,29 @@ import {
 } from "../../lib/fmea/fmea-related";
 import type { FmeaContext, FmeaEvaluation, FmeaLevel, FmeaStatus } from "../../lib/fmea/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./fmea.css";
+
+function isFmeaView(value: unknown): value is FmeaView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+async function persistFmeaSnapshot(orgHint: string, seasonHint: string, data: FmeaView): Promise<void> {
+  const cacheOrg =
+    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("fmea", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("fmea", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live failure log already painted; IndexedDB is best-effort.
+  }
+}
 
 type LiveView = Extract<FmeaView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -110,34 +132,75 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<FmeaView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const crumbs = embed === "build" ? "Build / FMEA" : "Team / FMEA";
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    setLoadError("");
-    setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/fmea${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<FmeaView>("fmea", urlOrg || "_", seasonHint);
+        if (!viewRef.current && cached?.data && isFmeaView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      setLoadError("");
+      setErrorStatus(null);
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(`/api/fmea${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as FmeaView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+        if (!response.ok || !isFmeaView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh FMEA. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setErrorStatus(response.status);
+            setLoadError("error" in data && data.error ? data.error : "");
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistFmeaSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh FMEA. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -153,6 +216,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as FmeaView | { error?: string };
@@ -162,6 +226,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           }
           setView(data);
           setSeason(data.seasonYear);
+          void persistFmeaSnapshot(orgId, season != null ? String(season) : "", data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -194,6 +259,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           title="Failure Log (FMEA)"
           description="Capture in-match and pit failures with real O×S×D scores."
         />
+        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading failure log…"}
@@ -223,6 +289,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           title="Failure Log (FMEA)"
           description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
         />
+        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -283,6 +350,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
           </Button>
         </div>
       </PageHeader>
+      <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
 
