@@ -231,7 +231,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
 
           {award.ranked.length === 0 ? <p className="app-muted">No nominations yet.</p> : null}
           {award.ranked.map((nom) => (
-            <article key={nom.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--soft-line, #d5dde8)" }}>
+            <article key={nom.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--line)" }}>
               <div style={{ flex: 1 }}>
                 <strong>
                   {nom.nomineeName}

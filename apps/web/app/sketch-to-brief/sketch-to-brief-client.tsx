@@ -333,7 +333,7 @@ export default function SketchToBriefClient() {
 
       <div className="sketch-to-brief-layout">
         <LogSketchForm busy={busy} mutate={mutate} />
-        <SketchList view={view} busy={busy} mutate={mutate} kickoffHref={kickoffHref} cadHref={cadHref} />
+        <SketchList view={view} busy={busy} mutate={mutate} />
         <BriefList view={view} kickoffHref={kickoffHref} cadHref={cadHref} />
         <Panel className="sketch-to-brief-tip" aria-label="Sketch-to-Brief tip">
           <span className="eyebrow">Grounding path</span>
@@ -438,14 +438,10 @@ function SketchList({
   view,
   busy,
   mutate,
-  kickoffHref,
-  cadHref,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
-  kickoffHref: string;
-  cadHref: string;
 }) {
   if (view.sketches.length === 0) {
     return (

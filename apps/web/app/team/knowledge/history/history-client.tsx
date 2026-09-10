@@ -100,8 +100,8 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
                       overflow: "auto",
                       padding: 12,
                       whiteSpace: "pre-wrap",
-                      background: "var(--soft-bg, var(--app-bg))",
-                      border: "1px solid var(--soft-line, var(--app-line))",
+                      background: "var(--bg)",
+                      border: "1px solid var(--line)",
                       borderRadius: 12,
                       font: "12px/1.5 ui-monospace, monospace",
                     }}

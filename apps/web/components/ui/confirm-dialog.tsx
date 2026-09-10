@@ -60,7 +60,7 @@ export function ConfirmDialog({
         {critical ? (
           <div style={{ marginTop: 14 }}>
             <label className={styles.stackKey} htmlFor="confirm-phrase" style={{ display: "block", marginBottom: 6 }}>
-              Type <strong style={{ color: "var(--soft-ink)" }}>{phrase}</strong> to confirm
+              Type <strong style={{ color: "var(--ink)" }}>{phrase}</strong> to confirm
             </label>
             <input
               id="confirm-phrase"

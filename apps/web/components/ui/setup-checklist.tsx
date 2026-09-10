@@ -32,15 +32,15 @@ export function SetupChecklist({ steps, className }: { steps: SetupStep[]; class
                 borderRadius: 999,
                 fontSize: 11,
                 fontWeight: 700,
-                color: step.done ? "#166534" : "var(--soft-accent, #1457d9)",
+                color: step.done ? "#166534" : "var(--accent)",
                 background: step.done
                   ? "color-mix(in srgb, #dcfce7 70%, transparent)"
-                  : "var(--soft-accent-soft, #e4ecfc)",
+                  : "var(--accent-soft)",
               }}
             >
               {step.done ? <CheckGlyph /> : i + 1}
             </span>
-            <span style={step.done ? { color: "var(--soft-muted, #5a6578)" } : undefined}>{step.label}</span>
+            <span style={step.done ? { color: "var(--muted)" } : undefined}>{step.label}</span>
           </span>
         );
         return (

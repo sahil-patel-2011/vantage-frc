@@ -71,10 +71,9 @@ const CONTROL = /<(a|button|Button)\b[\s\S]*?<\/\1>/g;
 
 function topLevelControls(inner: string): string[] | null {
   const tags: string[] = [];
-  let i = 0;
   const text = inner.trim();
   const body = text.startsWith("<>") && text.endsWith("</>") ? text.slice(2, -3) : inner;
-  i = 0;
+  let i = 0;
   while (i < body.length) {
     while (i < body.length && /\s/.test(body[i] ?? "")) i += 1;
     if (i >= body.length) break;

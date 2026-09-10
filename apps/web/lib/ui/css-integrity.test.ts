@@ -170,4 +170,45 @@ describe("stylesheet integrity", () => {
       `token declarations outside system.css:\n  ${offenders.join("\n  ")}`,
     ).toEqual([]);
   });
+
+  it("keeps product TSX off --soft-* aliases", () => {
+    // Canonical names are --bg/--line/--accent. Aliases stay in system.css so
+    // leftover stylesheets still resolve. New inline styles should not add a
+    // fourth name for the same colour.
+    const roots = [
+      join(__dirname, "..", "..", "app"),
+      join(__dirname, "..", "..", "components"),
+      join(__dirname, "..", "..", "lib"),
+    ];
+    const offenders: string[] = [];
+    function walk(dir: string) {
+      let entries: string[];
+      try {
+        entries = readdirSync(dir);
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (entry.startsWith(".") || entry === "node_modules") continue;
+        const full = join(dir, entry);
+        let stats;
+        try {
+          stats = statSync(full);
+        } catch {
+          continue;
+        }
+        if (stats.isDirectory()) walk(full);
+        else if (entry.endsWith(".tsx")) {
+          const text = readFileSync(full, "utf8");
+          text.split("\n").forEach((line, index) => {
+            if (/var\(--soft-/.test(line)) {
+              offenders.push(`${full}:${index + 1}: ${line.trim().slice(0, 80)}`);
+            }
+          });
+        }
+      }
+    }
+    for (const root of roots) walk(root);
+    expect(offenders, `TSX still uses --soft-*:\n  ${offenders.join("\n  ")}`).toEqual([]);
+  });
 });

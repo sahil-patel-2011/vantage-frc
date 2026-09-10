@@ -39,7 +39,7 @@ Assumption stated: “a new FRC student can do everything from one login without
 | Check | Result | Evidence |
 |---|---|---|
 | `npm ci` | 718 packages, 9s | this session, no lockfile change |
-| `npm test` | **878 files, 8,320 passed, 10 skipped, 51.93s** | `vitest run` this session |
+| `npm test` | **879 files, 8,323 passed, 10 skipped, 52.31s** | `vitest run` this session |
 | `npm run typecheck` | clean across workspaces that changed | this session |
 | `npx eslint .` | clean (exit 0) | this session, 30.7s |
 | `npm run build --workspace=@vantage/web` | compiled, **zero warnings** in the log, 695 pages; `/connectors` `/team/relays` `/video-analysis` in the route table. Shared runtime 540.3 KB. | `next build` this session, 66.4s |
@@ -98,8 +98,8 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 
 | # | Task | Status | Verification |
 |---|---|---|---|
-| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **879 files, 8,322 passed, 10 skipped** (52.46s) |
-| 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Product `<a className="app-button">` and leftover native `<button className="app-button">` now use `<Button>` (this session: 1130 anchors + 881 native buttons). Remaining `app-button` classes are disabled `<span>` chrome, not clickable controls. CSS token alias cleanup still open. |
+| 1 | Land / baseline / competitive notes | done | this file + `COMPETITIVE_NOTES.md`; latest full suite **879 files, 8,323 passed, 10 skipped** (52.31s) |
+| 2 | One design system | in progress | tokens in `system.css`; Button emits `.app-button`. Product `<a className="app-button">` and leftover native `<button className="app-button">` now use `<Button>` (this session: 1130 anchors + 881 native buttons). Remaining `app-button` classes are disabled `<span>` chrome, not clickable controls. Product TSX no longer uses `var(--soft-*)` (css-integrity). Stylesheets may still consume `--soft-*` aliases. |
 | 3 | Full UI pass | in progress | Student copy says team, not workspace, on Home widgets, related strips, Event Day setup, intel crumbs, and `/workspace`. Empty/setup cards keep one primary (`<Button variant="primary">` counts). Video re-scout review tools are a ToolStrip. FEATURE_MAP walk unfinished. No signed-in student/mentor browser walk. |
 | 4 | Home widgets | in progress | Live cards in `widgets/home-cards.tsx`. Canvas helpers in `dashboard-canvas.ts`. Widget chrome/empty copy in `widgets/widget-shell.tsx`. Competition/ops widgets in `widgets/ops-cards.tsx`. Board types in `dashboard-board-types.ts`. First-run banner, board switcher, widget palette, library sheet, boards modal, and edit/preview docks are sibling modules. `dashboard-client.tsx` is still the drag/save shell. |
 | 5 | Offline shell | in progress | Season calendar, packing, batteries, pit, season-tasks already queued. **My Day**, **Schedule**, and **Event Day** (`/command`) restore the last IndexedDB snapshot when the fetch fails. `/my-day` and `/command` are on the service-worker shell list. Playwright spec covers `/my-day`, `/schedule`, and `/command` offline reloads. No signed-in `next start` walk. |
@@ -115,4 +115,4 @@ See `docs/COMPETITIVE_NOTES.md`. That document is the brief for Tasks 2–4.
 | 15 | Modular monolith | in progress | ESLint `no-restricted-imports` on dashboard/offline/drive/workspace/account/invite/connectors/onboarding/help/bugbot/business/cad-vault/packing/season-calendar vs scouting/messages/pit/hours. `FEATURE_DIRS` now also includes bugbot, business, and cad-vault. File-path matching covers `packing.ts` / `season-calendar.ts` (rel === dir). `funding-profile.ts` is shared onboarding types, not a feature folder. |
 | 16 | Supabase readiness | in progress | preflight dual URLs + rehearsal script. **Not connected.** |
 | 17 | Performance / cost | in progress | Home, Event day, Pit, Display, assembly-manual, exports, storage, hours kiosk, and the outbox badge skip while the tab is hidden. Production `next build` this session: compiled 15.5s, TypeScript 45s, 695 pages, no warnings in the log. Shared runtime (rootMain + polyfill) **540.3 KB**. Unique client-reference JS: Home `/dashboard` 391 KB, Scouting 391 KB, Strategy 325 KB, Pit 284 KB, `/workspace` 248 KB. Next 16 Turbopack does not print a First Load JS column in the route table. |
-| 18 | Final verification | pending | |
+| 18 | Final verification | pending | this pass: `tsc -p apps/web` clean; `npm run typecheck` clean across workspaces; full `vitest run` **879 / 8,323 passed / 10 skipped / 52.31s**. RLS proof and signed-in `next start` walk still not in this image. |

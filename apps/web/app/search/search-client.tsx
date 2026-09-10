@@ -59,7 +59,7 @@ function ResultRow({ result }: { result: SearchResult }) {
           textDecoration: "none",
           padding: "0.6rem 0.75rem",
           borderRadius: "0.5rem",
-          border: "1px solid var(--soft-border, rgba(120,120,120,0.25))",
+          border: "1px solid var(--line)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>

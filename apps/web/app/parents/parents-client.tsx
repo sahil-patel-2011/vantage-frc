@@ -280,7 +280,7 @@ export default function ParentsClient() {
           <>
             {activeContacts.map((contact) => (
               <div key={contact.id}
-                style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px", alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--soft-line)", minHeight: 44 }}>
+                style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px", alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--line)", minHeight: 44 }}>
                 <div style={{ minWidth: 180 }}>
                   <strong>{contact.name}</strong>
                   <div className="app-muted" style={{ fontSize: 13 }}>
@@ -313,7 +313,7 @@ export default function ParentsClient() {
                 <h3 className="app-muted" style={{ marginTop: 16 }}>Deactivated</h3>
                 {inactiveContacts.map((contact) => (
                   <div key={contact.id}
-                    style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px", alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--soft-line)", minHeight: 44 }}>
+                    style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px", alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--line)", minHeight: 44 }}>
                     <div style={{ minWidth: 180 }}>
                       <strong>{contact.name}</strong>
                       <div className="app-muted" style={{ fontSize: 13 }}>{contact.email}</div>
@@ -361,7 +361,7 @@ export default function ParentsClient() {
           </p>
         ) : null}
         {ready.preview ? (
-          <pre style={{ whiteSpace: "pre-wrap", overflowX: "auto", background: "var(--soft-bg)", border: "1px solid var(--soft-line)", borderRadius: 8, padding: 12, marginTop: 12, fontSize: 13 }}>
+          <pre style={{ whiteSpace: "pre-wrap", overflowX: "auto", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginTop: 12, fontSize: 13 }}>
             {`Subject: ${ready.preview.subject}\n\n${ready.preview.text}`}
           </pre>
         ) : (
@@ -390,7 +390,7 @@ export default function ParentsClient() {
               </thead>
               <tbody>
                 {ready.log.map((row) => (
-                  <tr key={row.id} style={{ borderTop: "1px solid var(--soft-line)" }}>
+                  <tr key={row.id} style={{ borderTop: "1px solid var(--line)" }}>
                     <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
                       {new Date(row.createdAt).toLocaleString()}
                     </td>

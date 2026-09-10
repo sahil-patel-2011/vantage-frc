@@ -28,7 +28,7 @@ export function Skeleton({
   const h =
     size(height) ?? (variant === "line" ? "1em" : variant === "circle" ? w : "100%");
   const r =
-    size(radius) ?? (variant === "circle" ? "999px" : "var(--soft-radius-sm, 12px)");
+    size(radius) ?? (variant === "circle" ? "999px" : "12px");
   return (
     <span
       aria-hidden="true"

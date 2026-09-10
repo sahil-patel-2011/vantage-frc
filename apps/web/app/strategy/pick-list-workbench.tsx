@@ -54,7 +54,7 @@ function PositionHeatPanel({ heatmaps }: { heatmaps: FieldPositionHeatmap[] }) {
                   style={{
                     background:
                       intensity > 0
-                        ? `color-mix(in srgb, var(--soft-accent, var(--app-accent)) ${Math.round(
+                        ? `color-mix(in srgb, var(--accent) ${Math.round(
                             15 + intensity * 85,
                           )}%, transparent)`
                         : undefined,

@@ -49,7 +49,7 @@ export function Freshness({ updatedAt, staleAfterMs, fetchStatus = "idle", class
   return (
     <span
       className={className}
-      style={{ fontSize: 11, color: "var(--soft-muted, #5a6578)" }}
+      style={{ fontSize: 11, color: "var(--muted)" }}
       aria-live="off"
     >
       {fetchStatus === "loading" ? "Updating…" : `Updated ${rel}`}
