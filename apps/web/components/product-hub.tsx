@@ -14,8 +14,8 @@ import {
 import {
   hubById,
   hubLegacyHref,
-  hubNestedTabs,
   hubPrimaryTabs,
+  hubStripTabs,
   hubWorkbenchId,
   isHubTab,
   type ProductHubDef,
@@ -139,11 +139,11 @@ export function ProductHubShell({
   const workbenchId = hubWorkbenchId(hub, tab);
   /** Tools inside the open workbench — the workbench root itself is the tab above. */
   const toolTabs = useMemo(() => {
-    const inner = hubNestedTabs(hub, workbenchId).filter((entry) => entry.group === workbenchId);
+    const inner = hubStripTabs(hub, workbenchId, tab).filter((entry) => entry.group === workbenchId);
     if (!inner.length) return [];
     if (primaryTabs.some((entry) => entry.id === workbenchId)) return inner;
     return filterTabsByHubAccess(inner, access.hubAccess, accessHubId);
-  }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
+  }, [access.hubAccess, accessHubId, hub, primaryTabs, tab, workbenchId]);
 
   useEffect(() => {
     let cancelled = false;

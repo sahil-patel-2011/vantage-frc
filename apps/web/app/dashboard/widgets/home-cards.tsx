@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  venueCoordsFromGeocode,
+  venueForecastFromResponse,
+  venueForecastUrl,
+  venueGeocodeUrl,
+} from "../../../lib/dashboard/venue-weather";
 import { DEV_SETUP_DONE_KEY } from "../../../lib/dev-setup/track";
 import { LiveCountdown } from "./live-countdown";
 
@@ -366,53 +372,29 @@ export function EventReadinessLive({ data }: { data: Record<string, unknown> }) 
   );
 }
 
-const WMO: Record<number, string> = {
-  0: "Clear",
-  1: "Mostly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Fog",
-  51: "Drizzle",
-  61: "Rain",
-  71: "Snow",
-  80: "Showers",
-  95: "Thunderstorm",
-};
-
 export function WeatherVenueLive({ data }: { data: Record<string, unknown> }) {
   const [forecast, setForecast] = useState<{ tempC: number; summary: string } | null>(null);
   const [failed, setFailed] = useState(false);
   const city = typeof data.city === "string" ? data.city : "";
   const isEventDay = data.isEventDay === true;
+  const country = typeof data.country === "string" ? data.country : "";
 
   useEffect(() => {
     if (!city || !isEventDay) return;
     let cancelled = false;
     void (async () => {
       try {
-        const geoUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
-        geoUrl.searchParams.set("name", city);
-        geoUrl.searchParams.set("count", "1");
-        if (typeof data.country === "string" && data.country) geoUrl.searchParams.set("country", data.country);
-        const geo = (await (await fetch(geoUrl)).json()) as {
-          results?: Array<{ latitude: number; longitude: number }>;
+        const geo = (await (await fetch(venueGeocodeUrl(city, country || null))).json()) as {
+          results?: Array<{ latitude?: unknown; longitude?: unknown }>;
         };
-        const place = geo.results?.[0];
+        const place = venueCoordsFromGeocode(geo);
         if (!place || cancelled) return;
-        const wxUrl = new URL("https://api.open-meteo.com/v1/forecast");
-        wxUrl.searchParams.set("latitude", String(place.latitude));
-        wxUrl.searchParams.set("longitude", String(place.longitude));
-        wxUrl.searchParams.set("current", "temperature_2m,weather_code");
-        const wx = (await (await fetch(wxUrl)).json()) as {
-          current?: { temperature_2m?: number; weather_code?: number };
+        const wx = (await (await fetch(venueForecastUrl(place.latitude, place.longitude))).json()) as {
+          current?: { temperature_2m?: unknown; weather_code?: unknown };
         };
-        const temp = wx.current?.temperature_2m;
-        const code = wx.current?.weather_code;
-        if (typeof temp !== "number" || cancelled) return;
-        setForecast({
-          tempC: Math.round(temp),
-          summary: (typeof code === "number" && WMO[code]) || "Weather",
-        });
+        const next = venueForecastFromResponse(wx);
+        if (!next || cancelled) return;
+        setForecast(next);
       } catch {
         if (!cancelled) setFailed(true);
       }
@@ -420,7 +402,7 @@ export function WeatherVenueLive({ data }: { data: Record<string, unknown> }) {
     return () => {
       cancelled = true;
     };
-  }, [city, isEventDay, data.country]);
+  }, [city, isEventDay, country]);
 
   return (
     <div>

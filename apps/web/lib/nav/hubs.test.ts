@@ -7,6 +7,7 @@ import {
   hubMoreTabs,
   hubNestedTabs,
   hubPrimaryTabs,
+  hubStripTabs,
   hubWorkbenchHref,
   hubWorkbenchId,
   isHubTab,
@@ -282,6 +283,50 @@ describe("product hubs", () => {
       expect(hubWorkbenchId(hub, tabId), `${hubId}:${tabId} workbench`).toBe(workbench);
       expect(hubNestedTabs(hub, workbench).map((entry) => entry.id)).toContain(tabId);
     }
+  });
+
+  it("keeps scout meta jobs reachable but off the Scouting tool strip", () => {
+    const competition = hubById("competition");
+    const hidden = [
+      "scout-accuracy",
+      "scout-crossval",
+      "scout-disagreements",
+      "scout-data-impact",
+      "scout-assisted-count",
+      "scout-schema-negotiate",
+      "scouting-heat-signals",
+      "scouting-schema-ab",
+    ];
+    const nested = hubNestedTabs(competition, "scouting").map((tab) => tab.id);
+    for (const id of hidden) {
+      expect(nested, id).toContain(id);
+      expect(isHubTab(competition, id)).toBe(true);
+    }
+    expect(hubStripTabs(competition, "scouting").map((tab) => tab.id)).toEqual([
+      "scouting",
+      "forms",
+      "scout-coverage-live",
+      "shift-balancer",
+      "scout-p2p-relay",
+      "scout-training-mode",
+      "scout-field-budget",
+      "data-quality-scorecard",
+    ]);
+    expect(competition.tabs.find((tab) => tab.id === "scout-field-budget")?.label).toBe(
+      "Field value",
+    );
+    expect(hubStripTabs(competition, "scouting", "scout-accuracy").map((tab) => tab.id)).toContain(
+      "scout-accuracy",
+    );
+  });
+
+  it("keeps the build-season board off the Work tool strip", () => {
+    const team = hubById("team");
+    expect(hubNestedTabs(team, "todos").map((tab) => tab.id)).toContain("task-board");
+    expect(isHubTab(team, "task-board")).toBe(true);
+    expect(team.tabs.find((tab) => tab.id === "task-board")?.legacyHref).toBe("/tasks");
+    expect(hubStripTabs(team, "todos").map((tab) => tab.id)).not.toContain("task-board");
+    expect(hubStripTabs(team, "todos", "task-board").map((tab) => tab.id)).toContain("task-board");
   });
 
   it("sends the Business outreach calendar tab to /outreach-calendar, not the content calendar", () => {

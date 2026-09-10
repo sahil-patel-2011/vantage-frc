@@ -55,7 +55,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:scout-crossval": ["cross check", "validate", "agreement", "double scout"],
   "competition:scout-disagreements": ["disagreements", "conflicts", "mismatch", "discrepancy"],
   "competition:scout-data-impact": ["data impact", "value", "which fields matter"],
-  "competition:scout-field-budget": ["field budget", "how many fields", "form length"],
+  "competition:scout-field-budget": ["field budget", "field value", "how many fields", "form length"],
   "competition:scout-assisted-count": ["assisted count", "counting help", "tally"],
   "competition:scout-schema-negotiate": ["schema sync", "share form", "other teams", "negotiate"],
   "competition:scouting-heat-signals": ["heat", "signals", "hot teams", "trends"],

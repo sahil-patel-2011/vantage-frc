@@ -165,7 +165,7 @@ Map: [docs/FEATURE_MAP.md](FEATURE_MAP.md).
 
 #### Scouting quality satellites (all listed)
 
-Canonical consumer should be **Forms + Coverage + Strategy**. These are meta unless they change a publish or an assignment.
+Canonical consumer should be **Forms + Coverage + Strategy**. These are meta unless they change a publish or an assignment. Eight of these (`scout-accuracy` through `scouting-schema-ab`) are `inStrip: false` — still in Cmd+K and on their routes.
 
 | Tab | Route | Outcome | Status | Up → down | Acceptance | Evidence / blocker |
 |---|---|---|---|---|---|---|
@@ -173,7 +173,7 @@ Canonical consumer should be **Forms + Coverage + Strategy**. These are meta unl
 | Cross-check | `/scout-crossval` · `scout-crossval` | Double-scout agreement | partial | entries × entries | Disagreement list from real pairs | `auto_points` aliases in module |
 | Disagreements | `/scout-disagreements` · `scout-disagreements` | Resolve conflicts | partial | disagreements table → trust | Coach marks which scout stood | Audit: numeric thresholds vs builder |
 | Data impact | `/scout-data-impact` · `scout-data-impact` | Which fields moved picks | unverified | entries → pick use | Scout sees “your row informed this pick” | Job named; hop `unverified` |
-| Field budget | `/scout-field-budget` · `scout-field-budget` | Form not too long | partial | schema field count | Warn past ~20–25 fields | Lint exists in form-builder imports |
+| Field budget (strip label **Field value**) | `/scout-field-budget` · `scout-field-budget` | Form not too long | partial | schema field count | Warn past ~20–25 fields | Lint exists in form-builder imports. On the Scouting strip as Field value. |
 | Assisted count | `/scout-assisted-count` · `scout-assisted-count` | Human box + machine count | unverified | video/region → tally | No full auto-ID claim | Research-shaped; hide until demo’d |
 | Schema sync | `/scout-schema-negotiate` · `scout-schema-negotiate` | Tablets on same version | partial | schema versions | Stale tablet prompted | Producer of negotiate rows `unverified` |
 | Heat signals | `/scouting-heat-signals` · `scouting-heat-signals` | Hot teams from entries | unverified | entries → heat | Null when n=0 | Island |
@@ -275,7 +275,7 @@ Canonical consumer should be **Forms + Coverage + Strategy**. These are meta unl
 | **Work** `todos` · `/todos` | Season to-dos. | partial | Work | `team_todos` + `build_tasks` → canonical work-item projection | Both trackers appear in one owner/status/blocked workbench without copying rows. | Shared projection [`work-items/canonical.ts`](../apps/web/lib/work-items/canonical.ts), service [`work-items/service.ts`](../apps/web/lib/work-items/service.ts), and Work UI cross-tracker summary are implemented; [`canonical.test.ts`](../apps/web/lib/work-items/canonical.test.ts) passes. Live concurrent writer proof remains open. |
 | **Practice** `practice` · `/practice` | Driver cycles. | partial | Work | sessions/cycles → briefing readiness | Cycles from logs; unbounded SELECT is a scale risk | Audit LIMIT gap |
 | **Season plan** `season-planning-workspace` · `/season-planning-workspace` | Goals → milestones → owners + ICS. | partial | Work | plan → calendar | Progress only from attendance / `build_tasks` | FEATURE_MAP |
-| **Task board** `task-board` · `/tasks` | Kanban on `build_tasks`. | merge | Work | tasks + hours → canonical Work projection | Multi-assignee; idle members listed; Work is the cross-tracker entry point. | Survives as the build-task detail board while `/todos` owns the combined work view through [`work-items/canonical.ts`](../apps/web/lib/work-items/canonical.ts). |
+| **Task board** `task-board` · `/tasks` | Kanban on `build_tasks`. | merge | Work | tasks + hours → canonical Work projection | Multi-assignee; idle members listed; Work is the cross-tracker entry point. | Survives as the build-task detail board while `/todos` owns the combined work view through [`work-items/canonical.ts`](../apps/web/lib/work-items/canonical.ts). Hidden from the Work tool strip (`inStrip: false` in [`hubs.ts`](../apps/web/lib/nav/hubs.ts)); Work still links **Open build board**. |
 | **Goals** `goals-tracker` · `/goals-tracker` | Tracked targets. | unverified | Work | tracker rows | | Parallel to Objectives |
 | **Objectives** `goals` · `/goals` | Season objectives + scorecard. | partial | Work | current/target | % blank until goals exist | FEATURE_MAP |
 | **Standup** `standup-digest` · `/standup-digest` | Daily digest. | unverified | Work | tasks/hours | | |
@@ -679,6 +679,7 @@ Priority = FRC job blocked, not ticket count. **Corrected claims come first** so
 | Sponsor wall has no public surface (audit) | **Public wall exists** at `/sponsor-wall/{uuid}` + matching API ([`proxy.ts`](../apps/web/proxy.ts)). Builder stays gated. | `partial` — not `broken`. Live published wall unverified. |
 | After repo scan, $2 fix hits the textarea / sample ([audit](FEATURE_COMPLETENESS_AUDIT.md) Bugbot Ultra) | **`resolveBugbotTarget` retargeting is fixed** ([`grounding.ts`](../apps/web/lib/bugbot/grounding.ts) + tests + `code-client.tsx`). | `partial` — billing-target bug closed at the client resolver. File-cap / PR write still open. |
 | `/training` and `/roles` unreachable (audit) | Both are Team › People tabs in [`hubs.ts`](../apps/web/lib/nav/hubs.ts) and Cmd+K. Training mutations are owner/admin-only; roles now store nullable roster `holder_user_id`. | `partial` — reachability, permission, and new holder identity defects are closed; live downstream proof remains open. |
+| Fourteen scout-* nest items + Work/Task board as sibling chips (audit item 14) | Scouting strip is Forms · Coverage · Shifts · Pit mesh · Training · Field value · Data quality. Eight meta routes stay registered with `inStrip: false`. `/tasks` stays; Task board is off the Work strip (`hubStripTabs`). | `partial` / `merge` — nav crowding closed; tables are not merged. |
 | Form builder has only eight types, no counter/timer/rating (audit) | Builder lists counter, multi_counter, timer, rating, multi_select, slider, field_position, section ([`form-builder.ts`](../apps/web/lib/scouting/form-builder.ts)). | `partial` — type-count claim stale. |
 | 3D printing does not exist (audit) | `/print-farm` is a Build › Robot tab with queue/printers/filament (no telemetry). | `partial` — absence claim stale. |
 | Three competing pre-match briefs including `/match-copilot` (audit) | `/match-copilot` **redirects to `/briefing`**. | Briefing `partial`; copilot row is `merge`. `/command` is still a second brief. |
@@ -722,7 +723,7 @@ Priority = FRC job blocked, not ticket count. **Corrected claims come first** so
 
 | ID | Gap | Suggested status |
 |---|---|---|
-| P2-1 | Eleven scout-* meta tabs | hide or nest under Forms / Data quality |
+| P2-1 | Eleven scout-* meta tabs | hide from the Scouting tool strip (`inStrip: false`); routes, Cmd+K, and related links remain. Field value + Data quality stay on the strip. |
 | P2-2 | Sponsor satellites (suite, ROI, tier, matching) | hide until they write CRM |
 | P2-3 | Strategy satellites that do not write the pick list | hide or promote-only |
 | P2-4 | `/award-tracker` vs `/team/awards` | merge |
@@ -767,6 +768,7 @@ Owners must not mark TBA, Onshape, Stripe, Resend, or production Postgres `verif
 
 | Date | Change | Evidence |
 |---|---|---|
+| 2026-09-10 | Hid eight scout meta jobs and the build-season Task board from hub tool strips without deleting routes. Scouting strip is Forms · Coverage · Shifts · Pit mesh · Training · Field value · Data quality. `/tasks` remains via Work's Open build board and Cmd+K. | [`hubs.ts`](../apps/web/lib/nav/hubs.ts) `inStrip` + `hubStripTabs`; [`hubs.test.ts`](../apps/web/lib/nav/hubs.test.ts); [`product-hub.tsx`](../apps/web/components/product-hub.tsx). |
 | 2026-08-31 | Completed the credential-free Team vertical slice: multi-channel chat lifecycle, supervised DMs/export/history, roster-linked attendance and role holders, owner/admin training mutations, canonical cross-tracker work view, exact knowledge object links, and a formatted Playbook reading mode. Added the missing channel archive migration. Kept rows `partial` where live Postgres, notification load, or downstream acceptance is not evidenced. | Team/canonical suite: 13 files / 189 tests passed; migration suite: 2 files / 15 tests passed; web typecheck and targeted lint passed. Key files: [`messages/channels.ts`](../apps/web/lib/messages/channels.ts), migration `0498_message_channel_archive.sql`, [`attendance/route.ts`](../apps/web/app/api/attendance/route.ts), [`roles/compute-roles.ts`](../apps/web/lib/roles/compute-roles.ts), [`work-items/canonical.ts`](../apps/web/lib/work-items/canonical.ts), [`knowledge-client.tsx`](../apps/web/app/team/knowledge/knowledge-client.tsx). |
 | 2026-08-31 | Finished credential-free CAD implementation evidence: browser-session Onshape auth, native editable sketch/extrude/Part Studio/assembly/instance/mate operations, CLI commands, session persistence, and CAD-to-purchase-request UI. Kept integration `setup-only`: `vantage-cad login --status` reports no saved browser session and the available live MCP credential returned 401, so no live geometry claim is made. | `@vantage/cad`: 20 files / 257 tests passed; `@vantage/cad-cli`: 6 files / 70 tests passed; both typechecks passed; CLI bundle/help smoke passed. |
 | 2026-08-31 | Completed the credential-free competition vertical slice in code: chunked offline scouting, media preparation/linking, shared coverage, schema-role mapping, one pick-list board with Pick Clock writes, and briefing consumption of cards/counter-books/defense/watchlist. External event data remains an integration-release gate, not a fabricated `verified` claim. | Competition suite: 35 files / 393 tests passed; coverage adapter suite: 14 files / 130 tests passed; web + scouting + prediction-strategy typechecks passed. Mobile Edge route exercise returned valid honest states for `/competition`, `/scouting`, `/scouting/lineup`, `/scout-coverage-live`, `/strategy`, `/pick-clock`, and `/briefing`. |

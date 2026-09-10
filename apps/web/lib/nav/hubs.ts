@@ -21,6 +21,12 @@ export type HubTabDef = {
    * Pin near the front of a workbench's inner tabs.
    */
   featured?: boolean;
+  /**
+   * When false, the tab stays in search, help, and access settings but is
+   * omitted from the workbench ToolStrip unless it is the active deep link.
+   * Defaults to true.
+   */
+  inStrip?: boolean;
 };
 
 export type ProductHubDef = {
@@ -77,16 +83,17 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
         { id: "scout-p2p-relay", label: "Pit mesh", legacyHref: "/scout-p2p-relay" },
         { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode" },
-        { id: "scout-accuracy", label: "Accuracy", legacyHref: "/scout-accuracy" },
-        { id: "scout-crossval", label: "Cross-check", legacyHref: "/scout-crossval" },
-        { id: "scout-disagreements", label: "Disagreements", legacyHref: "/scout-disagreements" },
-        { id: "scout-data-impact", label: "Data impact", legacyHref: "/scout-data-impact" },
-        { id: "scout-field-budget", label: "Field budget", legacyHref: "/scout-field-budget" },
-        { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count" },
-        { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate" },
-        { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals" },
-        { id: "scouting-schema-ab", label: "Schema A/B", legacyHref: "/scouting-schema-ab" },
+        { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget" },
         { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard" },
+        // Meta analysis of scouting — routes and Cmd+K stay; the strip does not.
+        { id: "scout-accuracy", label: "Accuracy", legacyHref: "/scout-accuracy", inStrip: false },
+        { id: "scout-crossval", label: "Cross-check", legacyHref: "/scout-crossval", inStrip: false },
+        { id: "scout-disagreements", label: "Disagreements", legacyHref: "/scout-disagreements", inStrip: false },
+        { id: "scout-data-impact", label: "Data impact", legacyHref: "/scout-data-impact", inStrip: false },
+        { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count", inStrip: false },
+        { id: "scout-schema-negotiate", label: "Schema sync", legacyHref: "/scout-schema-negotiate", inStrip: false },
+        { id: "scouting-heat-signals", label: "Heat signals", legacyHref: "/scouting-heat-signals", inStrip: false },
+        { id: "scouting-schema-ab", label: "Schema A/B", legacyHref: "/scouting-schema-ab", inStrip: false },
       ]),
       { id: "strategy", label: "Strategy", legacyHref: "/strategy" },
       ...nest("strategy", [
@@ -189,7 +196,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
           legacyHref: "/season-planning-workspace",
           featured: true,
         },
-        { id: "task-board", label: "Task board", legacyHref: "/tasks" },
+        // Build-season kanban stays on /tasks and on Work's "Open build board"
+        // button. It is not a second chip next to Work itself.
+        { id: "task-board", label: "Task board", legacyHref: "/tasks", inStrip: false },
         { id: "goals-tracker", label: "Goals", legacyHref: "/goals-tracker" },
         { id: "goals", label: "Objectives", legacyHref: "/goals" },
         { id: "standup-digest", label: "Standup", legacyHref: "/standup-digest" },
@@ -481,6 +490,21 @@ export function hubNestedTabs(hub: ProductHubDef, workbenchId: string): HubTabDe
   const root = hub.tabs.find((tab) => tab.id === workbenchId && !tab.group);
   const nested = hub.tabs.filter((tab) => tab.group === workbenchId);
   return root ? [root, ...nested] : nested;
+}
+
+/**
+ * Inner tools shown in the workbench ToolStrip. Jobs with `inStrip: false`
+ * stay in `hubNestedTabs` (search, help, access) and only appear here when
+ * they are the active deep link, so a search hit is not a missing chip.
+ */
+export function hubStripTabs(
+  hub: ProductHubDef,
+  workbenchId: string,
+  activeId?: string,
+): HubTabDef[] {
+  return hubNestedTabs(hub, workbenchId).filter(
+    (tab) => tab.inStrip !== false || tab.id === activeId,
+  );
 }
 
 /** Nested tools (and leftover standalone pages) that have a route. */

@@ -143,6 +143,28 @@ test("the hub tab bar owns the workbench name and the tool strip does not repeat
   await expect(page.locator(".hub-tool-strip")).toContainText("Pre-match briefing");
 });
 
+test("scouting and Work strips hide meta jobs that still have routes", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto("/competition?tab=scouting");
+  await expect(page.getByRole("tab", { name: "Scouting" })).toBeVisible();
+  const scoutingStrip = page.locator(".hub-tool-strip");
+  await expect(scoutingStrip).toContainText("Forms");
+  await expect(scoutingStrip).toContainText("Field value");
+  await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
+  await expect(scoutingStrip.getByText("Cross-check", { exact: true })).toHaveCount(0);
+  await expect(scoutingStrip.getByText("Schema A/B", { exact: true })).toHaveCount(0);
+  await scoutingStrip.getByRole("button", { name: /More tools/ }).click();
+  await expect(scoutingStrip).toContainText("Data quality");
+  await expect(scoutingStrip.getByText("Accuracy", { exact: true })).toHaveCount(0);
+
+  await page.goto("/team?tab=todos");
+  await expect(page.getByRole("tab", { name: "Work" })).toBeVisible();
+  const workStrip = page.locator(".hub-tool-strip");
+  await expect(workStrip).toContainText("Practice");
+  await workStrip.getByRole("button", { name: /More tools/ }).click();
+  await expect(workStrip.getByText("Task board", { exact: true })).toHaveCount(0);
+});
+
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
   // E2E fixture bypasses onboarding incomplete redirects and lands on dashboard.
   await page.goto("/dashboard");
