@@ -268,7 +268,6 @@ function FormBuilderShell({
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
 
   return (
     <main className="module-page sfb-page soft-gate">
@@ -306,19 +305,14 @@ function FormBuilderShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : workspaceHref}>
+          <a className="app-button is-primary" href={orgId ? commandHref : workspaceHref}>
             {orgId ? "Set active event" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage
-            </a>
-          </>
+          <a className="app-button is-primary" href={scoutingHref}>
+            Open Scouting
+          </a>
         ) : null}
         {shell === "setup" && steps.length > 0 ? (
           <ol className="sfb-setup-steps">
@@ -868,7 +862,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
     entryType: type,
   });
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
   if (shell === "setup") {
@@ -916,11 +909,8 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
           title={formBuilderShellCopy("empty", { entryType: type }).title}
           description={formBuilderShellCopy("empty", { entryType: type }).description}
         >
-          <a className="app-button secondary" href={scoutingHref}>
+          <a className="app-button is-primary" href={scoutingHref}>
             Open Scouting
-          </a>
-          <a className="app-button secondary" href={coverageHref}>
-            Open Coverage
           </a>
         </EmptyState>
       ) : null}
@@ -1332,7 +1322,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
             <div className="sfb-publish-actions">
               <button
                 type="button"
-                className="app-button"
+                className="app-button is-primary"
                 disabled={busy || Boolean(publishBlocked)}
                 title={publishBlocked ?? publishStatus.detail}
                 onClick={() => void publish()}
@@ -1341,9 +1331,6 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
               </button>
               <a className="app-button secondary" href={scoutingHref}>
                 Open Scouting
-              </a>
-              <a className="app-button secondary" href={coverageHref}>
-                Open Coverage
               </a>
             </div>
           </Panel>

@@ -116,8 +116,6 @@ function ScoutAccuracyShell({
         )
       : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
-  const coverageHref = withOrgHref("/scouting/lineup", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
     <main className="module-page scout-accuracy-page soft-gate">
@@ -161,22 +159,14 @@ function ScoutAccuracyShell({
           </button>
         ) : null}
         {shell === "setup" ? (
-          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+          <a className="app-button is-primary" href={orgId ? scoutingHref : "/workspace"}>
             {orgId ? "Open Scouting" : "Choose your team"}
           </a>
         ) : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={scoutingHref}>
-              Log scout entries
-            </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-          </>
+          <a className="app-button is-primary" href={scoutingHref}>
+            Log scout entries
+          </a>
         ) : null}
       </EmptyState>
       {steps.length > 0 ? (
@@ -471,14 +461,8 @@ function Leaderboard({
         title="No scout accuracy data yet"
         description="Scouted totals will be scored once matches have cached official TBA results."
       >
-        <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+        <a className="app-button is-primary" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
-        </a>
-        <a className="app-button secondary" href={withOrgHref("/scouting/lineup", view.orgId)}>
-          Open Coverage
-        </a>
-        <a className="app-button secondary" href={hubHref("/competition", "strategy", view.orgId)}>
-          Open Strategy
         </a>
       </EmptyState>
     );

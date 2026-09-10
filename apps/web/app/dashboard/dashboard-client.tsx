@@ -1698,7 +1698,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                       : primary.label
                 : "Continue";
             return (
-              <a className="app-button" href={href}>
+              <a className="app-button is-primary" href={href}>
                 {label}
               </a>
             );
