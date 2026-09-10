@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { CadReviewQueueView } from "../../lib/cad-review-queue/compute-cad-review-queue";
@@ -13,8 +14,37 @@ import {
   signoffProgress,
 } from "../../lib/cad-review-queue";
 import type { CadReviewItem } from "../../lib/cad-review-queue/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type LiveView = Extract<CadReviewQueueView, { status: "live" }>;
+
+function isCadReviewQueueView(value: unknown): value is CadReviewQueueView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function cadReviewCacheOrg(data: CadReviewQueueView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCadReviewQueueSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: CadReviewQueueView,
+): Promise<void> {
+  const cacheOrg = cadReviewCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("cad-review-queue", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("cad-review-queue", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live CAD Review Queue already painted; IndexedDB is best-effort.
+  }
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -29,39 +59,92 @@ export default function CadReviewQueueClient() {
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [seasonYear, setSeasonYear] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CadReviewQueueView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
+    const seasonHint =
+      seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CadReviewQueueView>("cad-review-queue", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isCadReviewQueueView(cached.data)) {
+        setView(cached.data);
+        setSeasonYear(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("seasonYear", String(seasonQuery));
-    void fetch(`/api/cad-review-queue${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as CadReviewQueueView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setLoadStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    setLoadStatus(null);
+    setLoadError("");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery != null && Number.isFinite(seasonQuery)) query.set("seasonYear", String(seasonQuery));
+      const response = await fetch(`/api/cad-review-queue${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isCadReviewQueueView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh CAD Review Queue. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        if ("seasonYear" in data) setSeasonYear(data.seasonYear);
-      })
-      .catch(() => {
-        setLoadStatus(null);
-        setLoadError("");
         setFetchFailed(true);
-      });
+        setLoadStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeasonYear(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistCadReviewQueueSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh CAD Review Queue. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -74,14 +157,21 @@ export default function CadReviewQueueClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: seasonYear ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as CadReviewQueueView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok || !isCadReviewQueueView(data)) {
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Something went wrong.",
+          );
           return;
         }
         setView(data);
-        if ("seasonYear" in data) setSeasonYear(data.seasonYear);
+        setSeasonYear(data.seasonYear);
+        setFromCache(false);
+        void persistCadReviewQueueSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -125,6 +215,7 @@ export default function CadReviewQueueClient() {
           ) : null}
         </div>
       </PageHeader>
+      <OfflineBanner feature="CAD Review Queue" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -132,8 +223,9 @@ export default function CadReviewQueueClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        (() => {
+      {!view ? (
+        fetchFailed ? (
+          (() => {
           const kind = classifyLoadFailure({
             status: loadStatus,
             message: loadError,
@@ -154,15 +246,16 @@ export default function CadReviewQueueClient() {
                 </Button>
               ) : null}
               {copy.showRetry ? (
-                <Button variant="secondary" type="button" onClick={() => load()}>
+                <Button variant="secondary" type="button" onClick={() => void load()}>
                   Retry
                 </Button>
               ) : null}
             </EmptyState>
           );
-        })()
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your team." aria-busy />
+          })()
+        ) : (
+          <EmptyState title="Loading…" description="Checking your team." aria-busy />
+        )
       ) : view.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           

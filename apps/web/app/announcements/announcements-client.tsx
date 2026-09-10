@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
 import {
   ANNOUNCEMENT_PRIORITIES,
@@ -8,6 +9,9 @@ import {
   type AnnouncementPriority,
 } from "../../lib/announcements/store";
 import { formatInstant } from "../../lib/announcements/time";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type View = {
   orgId: string;
@@ -15,6 +19,23 @@ type View = {
   canPost: boolean;
   announcements: Announcement[];
 };
+
+function isAnnouncementsView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { orgId?: unknown; announcements?: unknown };
+  return typeof row.orgId === "string" && Array.isArray(row.announcements);
+}
+
+async function persistAnnouncementsSnapshot(orgHint: string, data: View): Promise<void> {
+  const cacheOrg = data.orgId.trim() || orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("announcements", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("announcements", "_", data);
+  } catch {
+    // Live Announcements already painted; IndexedDB is best-effort.
+  }
+}
 
 const PRIORITY_LABEL: Record<AnnouncementPriority, string> = {
   normal: "Normal",
@@ -45,7 +66,10 @@ function priorityTone(priority: AnnouncementPriority): BadgeTone {
 export default function AnnouncementsClient() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [priority, setPriority] = useState<AnnouncementPriority>("normal");
@@ -56,19 +80,70 @@ export default function AnnouncementsClient() {
   // everyone has been told, so "emailed 9 of 30, 21 have this off" belongs on
   // screen rather than in a log nobody reads.
   const [notice, setNotice] = useState("");
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
+    const query = orgParam();
+    const orgHint = typeof window === "undefined"
+      ? ""
+      : new URLSearchParams(window.location.search).get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
     try {
-      const query = orgParam();
-      const response = await fetch(`/api/announcements${query ? `?${query}` : ""}`);
-      const data = (await response.json()) as View & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load announcements.");
+      const cached = await getFeatureSnapshot<View>("announcements", orgHint || "_");
+      if (!viewRef.current && cached?.data && isAnnouncementsView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setError("");
+    setErrorStatus(null);
+    try {
+      const response = await fetch(`/api/announcements${query ? `?${query}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load announcements.",
+        );
+        return;
+      }
+      if (!response.ok || !isAnnouncementsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Announcements. Showing the last copy on this device.");
+          return;
+        }
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load announcements.",
+        );
         return;
       }
       setView(data);
-      setError("");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistAnnouncementsSnapshot(orgHint, data);
     } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Announcements. Showing the last copy on this device.");
+        return;
+      }
       setError("Could not reach the server.");
     }
   }, []);
@@ -110,11 +185,39 @@ export default function AnnouncementsClient() {
   }
 
   if (error && !view) {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
     return (
       <main className="module-page announcements-page">
         <PageHeader breadcrumbs="Team / Announcements" title="Announcements" />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="Announcements need a team" description={error}>
-          <Button as="a" variant="primary" href="/workspace">Choose your team</Button>
+        <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState
+          soft
+          badge={failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Unavailable"}
+          badgeTone="setup"
+          title={failure.title}
+          description={failure.description}
+        >
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
+            </Button>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
         </EmptyState>
       </main>
     );
@@ -124,6 +227,7 @@ export default function AnnouncementsClient() {
     return (
       <main className="module-page announcements-page">
         <PageHeader breadcrumbs="Team / Announcements" title="Announcements" />
+        <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
         <Panel><p className="app-muted">Loading…</p></Panel>
       </main>
     );
@@ -136,6 +240,12 @@ export default function AnnouncementsClient() {
         title="Announcements"
         description={`Post to everyone in ${view.orgName}, and see who has read the things that matter.`}
       />
+      <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
+      {error ? (
+        <p role="alert" className="ann-error">
+          {error}
+        </p>
+      ) : null}
 
       {view.canPost ? (
         <Panel className="ann-compose">

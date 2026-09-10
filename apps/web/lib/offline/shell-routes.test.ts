@@ -156,7 +156,11 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/goals")).toBe(true);
     expect(pathnameIsOfflineShell("/cad-vault")).toBe(true);
     expect(pathnameIsOfflineShell("/cad-learn")).toBe(true);
+    expect(pathnameIsOfflineShell("/cad-review-queue")).toBe(true);
     expect(pathnameIsOfflineShell("/reimbursements")).toBe(true);
+    expect(pathnameIsOfflineShell("/costs")).toBe(true);
+    expect(pathnameIsOfflineShell("/duties")).toBe(true);
+    expect(pathnameIsOfflineShell("/announcements")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -297,8 +301,12 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/goals")).toBe("Goals");
     expect(offlineCapableLabel("/cad-vault")).toBe("CAD Vault");
     expect(offlineCapableLabel("/cad-learn")).toBe("CAD Learn");
+    expect(offlineCapableLabel("/cad-review-queue")).toBe("CAD Review Queue");
     expect(offlineCapableLabel("/cad-change-radar")).toBe("CAD Change Radar");
     expect(offlineCapableLabel("/reimbursements")).toBe("Reimbursements");
+    expect(offlineCapableLabel("/costs")).toBe("Season Costs");
+    expect(offlineCapableLabel("/duties")).toBe("Duties");
+    expect(offlineCapableLabel("/announcements")).toBe("Announcements");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -435,6 +443,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("cad-vault", "org-1", "2026")).toBe("cad-vault:org-1:2026");
     expect(featureCacheKey("cad-learn", "org-1")).toBe("cad-learn:org-1");
     expect(featureCacheKey("reimbursements", "org-1")).toBe("reimbursements:org-1");
+    expect(featureCacheKey("costs", "org-1", "2026")).toBe("costs:org-1:2026");
+    expect(featureCacheKey("cad-review-queue", "org-1", "2026")).toBe("cad-review-queue:org-1:2026");
+    expect(featureCacheKey("duties", "org-1")).toBe("duties:org-1");
+    expect(featureCacheKey("announcements", "org-1")).toBe("announcements:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

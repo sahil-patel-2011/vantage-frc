@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
@@ -22,12 +23,37 @@ import type {
   SubscriptionWithAnnual,
 } from "../../lib/costs/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./costs.css";
 
 type LiveView = Extract<CostsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isCostsView(value: unknown): value is CostsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function costsCacheOrg(data: CostsView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistCostsSnapshot(orgHint: string, seasonHint: string, data: CostsView): Promise<void> {
+  const cacheOrg = costsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("costs", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("costs", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Season Costs already painted; IndexedDB is best-effort.
+  }
+}
 
 const SOURCE_COLOR: Record<string, string> = {
   season: "#1457d9",
@@ -108,37 +134,92 @@ export default function CostsClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<CostsView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<CostsView>("costs", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isCostsView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setError("");
     setLoadError("");
     setErrorStatus(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/costs${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as CostsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/costs${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isCostsView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Season Costs. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistCostsSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Season Costs. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -150,15 +231,22 @@ export default function CostsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
-          const data = (await response.json()) as CostsView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+          const data: unknown = await response.json().catch(() => null);
+          if (!response.ok || !isCostsView(data)) {
+            setError(
+              data && typeof data === "object" && "error" in data && typeof data.error === "string"
+                ? data.error
+                : "Something went wrong.",
+            );
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistCostsSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -166,7 +254,7 @@ export default function CostsClient() {
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     // Retry cannot fix an expired session, so the failure decides its own action.
     const failure = fetchFailed
       ? loadFailureCopy(
@@ -192,6 +280,7 @@ export default function CostsClient() {
           title="Season Costs"
           description="Real-world spend against a season budget."
         />
+        <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading season costs…"}
@@ -204,7 +293,7 @@ export default function CostsClient() {
             </Button>
           ) : null}
           {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -220,16 +309,15 @@ export default function CostsClient() {
           breadcrumbs="Business / Season Costs"
           title="Season Costs"
           description="Track real event spend, subscriptions, and live AI/API usage — separate from Business purchase approvals."
-        />
-        {view.orgId ? <CostsRelated orgId={view.orgId} /> : null}
-        <NextActions
-          orgId={view.orgId}
-          seasonYear={view.seasonYear}
-          costCount={0}
-          subscriptionCount={0}
-          budgetUsd={null}
-          overBudget={false}
-        />
+        >
+          {view.orgId ? <CostsRelated orgId={view.orgId} /> : null}
+        </PageHeader>
+        <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
+        {error ? (
+          <p className="costs-alert" role="alert">
+            {error}
+          </p>
+        ) : null}
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -286,6 +374,7 @@ export default function CostsClient() {
           </Button>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <CostsRelated orgId={orgId} /> : null}
 

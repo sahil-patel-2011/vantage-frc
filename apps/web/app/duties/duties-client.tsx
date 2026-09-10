@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   FormGrid,
@@ -17,10 +18,34 @@ import {
   type DutyWatch,
   type WatchKind,
 } from "../../lib/duties";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ReadyView = Extract<DutiesView, { status: "ready" }>;
+
+function isDutiesView(value: unknown): value is DutiesView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function dutiesCacheOrg(data: DutiesView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistDutiesSnapshot(orgHint: string, data: DutiesView): Promise<void> {
+  const cacheOrg = dutiesCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("duties", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("duties", "_", data);
+  } catch {
+    // Live Duties already painted; IndexedDB is best-effort.
+  }
+}
 
 function memberLabel(member: { name: string | null; email: string | null }): string {
   return member.name?.trim() || member.email?.trim() || "Teammate";
@@ -40,27 +65,77 @@ export default function DutiesClient() {
   const [error, setError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<DutiesView | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
-    const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const qs = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<DutiesView>("duties", orgHint || "_");
+      if (!viewRef.current && cached?.data && isDutiesView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setError("");
     setErrorStatus(null);
-    void fetch(`/api/duties${qs}`)
-      .then(async (response) => {
-        const data = (await response.json()) as DutiesView & { error?: string };
-        if (!response.ok) {
-          setErrorStatus(response.status);
-          throw new Error(data.error ?? "Could not load duties");
+    try {
+      const response = await fetch(`/api/duties${qs}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load duties",
+        );
+        return;
+      }
+      if (!response.ok || !isDutiesView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Duties. Showing the last copy on this device.");
+          return;
         }
-        setView(data);
-      })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load duties"));
+        setErrorStatus(response.status);
+        setError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load duties",
+        );
+        return;
+      }
+      setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistDutiesSnapshot(orgHint, data);
+    } catch (err: unknown) {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Duties. Showing the last copy on this device.");
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not load duties");
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback(
@@ -74,14 +149,21 @@ export default function DutiesClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
-          const data = (await response.json()) as DutiesView & { error?: string };
-          if (!response.ok) {
+          const data: unknown = await response.json().catch(() => null);
+          if (!response.ok || !isDutiesView(data)) {
             setErrorStatus(response.status);
-            throw new Error(data.error ?? "Could not save assignment");
+            throw new Error(
+              data && typeof data === "object" && "error" in data && typeof data.error === "string"
+                ? data.error
+                : "Could not save assignment",
+            );
           }
           setView(data);
+          setFromCache(false);
+          void persistDutiesSnapshot(orgId, data);
         })
         .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not save assignment"))
         .finally(() => setBusy(false));
@@ -105,25 +187,26 @@ export default function DutiesClient() {
     return (
       <main className="module-page duties-page">
         <PageHeader navPath="/duties" title="Duties" />
+        <OfflineBanner feature="Duties" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           badge={
-            failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Setup"
+            failure.kind === "auth" ? "Signed out" : failure.kind === "forbidden" ? "No access" : "Unavailable"
           }
           badgeTone="setup"
           title={failure.title}
           description={failure.description}
         >
-          <div className="soft-btn-row">
-            {failure.primary ? (
-              <Button as="a" variant="primary" href={failure.primary.href}>
-                {failure.primary.label}
-              </Button>
-            ) : null}
-            <Button as="a" variant="secondary" href="/workspace">
-              Choose your team
+          {failure.primary ? (
+            <Button as="a" variant="primary" href={failure.primary.href}>
+              {failure.primary.label}
             </Button>
-          </div>
+          ) : null}
+          {failure.showRetry ? (
+            <Button variant="secondary" type="button" onClick={() => void load()}>
+              Retry
+            </Button>
+          ) : null}
         </EmptyState>
       </main>
     );
@@ -133,6 +216,7 @@ export default function DutiesClient() {
     return (
       <main className="module-page duties-page">
         <PageHeader navPath="/duties" title="Duties" />
+        <OfflineBanner feature="Duties" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft title="Opening duties…" description="Loading on-duty and chaperone assignments." aria-busy />
       </main>
     );
@@ -141,28 +225,42 @@ export default function DutiesClient() {
   if (view.status !== "ready") {
     return (
       <main className="module-page duties-page">
-        <PageHeader navPath="/duties" title="Duties" />
+        <PageHeader navPath="/duties" title="Duties">
+          <Button as="a" variant="secondary" href={withOrgHref("/my-day", view.orgId)}>
+            My Day
+          </Button>
+        </PageHeader>
+        <OfflineBanner feature="Duties" fromCache={fromCache} cachedAt={cachedAt} />
+        {error ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
         <EmptyState
           soft
           badge="Setup required"
           badgeTone="setup"
           title={view.message}
-          description="Pick a team, then post who is on duty. My Day stays empty until someone is assigned."
+          description="Choose your team, then post who is on duty. My Day stays empty until someone is assigned."
         >
-          <div className="soft-btn-row">
-            <Button as="a" variant="primary" href="/workspace">
-              Choose your team
-            </Button>
-            <Button as="a" variant="secondary" href={withOrgHref("/my-day", view.orgId)}>
-              My Day
-            </Button>
-          </div>
+          <Button as="a" variant="primary" href="/workspace">
+            Choose your team
+          </Button>
         </EmptyState>
       </main>
     );
   }
 
-  return <ReadyDuties view={view} busy={busy} error={error} onAssign={mutate} />;
+  return (
+    <ReadyDuties
+      view={view}
+      busy={busy}
+      error={error}
+      onAssign={mutate}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
+    />
+  );
 }
 
 function ReadyDuties({
@@ -170,11 +268,15 @@ function ReadyDuties({
   busy,
   error,
   onAssign,
+  fromCache,
+  cachedAt,
 }: {
   view: ReadyView;
   busy: boolean;
   error: string;
   onAssign: (payload: Record<string, unknown>) => void;
+  fromCache: boolean;
+  cachedAt: string | null;
 }) {
   const orgQ = `?orgId=${encodeURIComponent(view.orgId)}`;
   const assigned = view.watches.filter((watch) => watch.assignedUserId);
@@ -199,6 +301,7 @@ function ReadyDuties({
           </Button>
         </div>
       </PageHeader>
+      <OfflineBanner feature="Duties" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="duties-warn" role="alert">
