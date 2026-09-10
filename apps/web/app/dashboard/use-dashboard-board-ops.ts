@@ -24,6 +24,7 @@ import {
   packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
+  type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import {
@@ -124,6 +125,22 @@ export function useDashboardBoardOps(input: {
     setRenameId,
     setRenameDraft,
   } = input;
+
+  function requestPlaceWidget(
+    entry: WidgetCatalogEntry,
+    tapToPlace: boolean,
+    closeLibrary = false,
+  ) {
+    if (tapToPlace) {
+      setPendingPlaceType(entry.type);
+      if (closeLibrary) setLibraryOpen(false);
+      setMessageKind("success");
+      setMessage(`Tap a slot on the board to place ${entry.label}.`);
+      setAnnounce(`Tap a slot on the board to place ${entry.label}.`);
+      return;
+    }
+    addWidget(entry.type);
+  }
 
   function addWidget(type: DashboardWidgetType, drop?: GridCell, displayCols?: number) {
     const result = dropWidgetOntoLayout(layoutRef.current, type, {
@@ -581,6 +598,7 @@ export function useDashboardBoardOps(input: {
 
   return {
     addWidget,
+    requestPlaceWidget,
     placePendingAtPoint,
     tidyLayout,
     setWidgetSize,
