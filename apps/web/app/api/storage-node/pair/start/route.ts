@@ -6,6 +6,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createKms, encryptSecret } from "@vantage/billing";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
+import { isRelayDatabaseUnconfigured, relaySetupResponse } from "../../../../../lib/connectors/pairing-setup";
 
 /** Ambiguous alphabet (no I/O/0/1) for human entry. */
 function code() {
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
       interval: 3,
     });
   } catch (error) {
+    // A missing DATABASE_CAD_RELAY_URL used to come back as 400, which the node
+    // agent reads as "your request was wrong" and gives up on. It is a setup
+    // problem on the deployment, so it is 503 and names the variable.
+    if (isRelayDatabaseUnconfigured(error)) return relaySetupResponse();
     return Response.json(
       { error: error instanceof Error ? error.message : "Pairing could not start" },
       { status: 400 },
