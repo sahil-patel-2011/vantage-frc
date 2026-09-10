@@ -105,7 +105,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
       return {
         kind,
         title: "Loading Decision Search…",
-        description: "Checking workspace membership and the indexed corpus — never DEMO decisions.",
+        description: "Checking workspace membership and the indexed corpus.",
       };
     case "error":
       return {
@@ -121,7 +121,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Decision Search is org-scoped. Pick a workspace before indexing decisions, design reviews, or notebook entries — nothing is pre-seeded.",
+          "Pick a workspace before indexing decisions, design reviews, or notebook entries.",
       };
     case "empty":
       return {
@@ -129,7 +129,7 @@ export function decisionSearchShellCopy(kind: DecisionSearchShellKind): Decision
         badge: "No documents indexed",
         title: "Index your first record",
         description:
-          "Search stays blank until you index real decisions or import from the Decision Log. Season Report, Knowledge, and Strategy stay linked for context — never DEMO decisions.",
+          "Search stays blank until you index real decisions or import from the Decision Log. Season Report, Knowledge, and Strategy stay linked for context.",
       };
     default:
       return {
@@ -161,20 +161,20 @@ export function decisionSearchNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Indexed decisions are org-scoped — pick a team before searching.",
+          detail: "Pick a team before searching.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "season-report",
           label: "Open Season Report",
-          detail: "Season notes stay empty until you log real entries — never DEMO stats.",
+          detail: "Season notes stay empty until you log real entries.",
           href: hubHref("/ai", "season-report", null),
         },
         {
           id: "knowledge",
           label: "Open Knowledge",
-          detail: "Wiki pages stay blank until authored — never DEMO articles.",
+          detail: "Wiki pages stay blank until authored.",
           href: hubHref("/team", "knowledge", null),
         },
         {
@@ -283,7 +283,7 @@ export function decisionSearchNextActions(input: {
     {
       id: "season-report",
       label: "Open Season Report",
-      detail: "Cross-check season narrative with indexed design choices — never DEMO stats.",
+      detail: "Cross-check season narrative with indexed design choices.",
       href: hubHref("/ai", "season-report", orgId),
       primary: !actions.some((a) => a.primary),
     },

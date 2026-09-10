@@ -34,7 +34,7 @@ const roles = [
   },
   {
     title: "Every member",
-    copy: "Home island is four apps: Home, Compete, Team, Business. Menu and search for the rest. Chat stays org-scoped.",
+    copy: "Home island is four apps: Home, Compete, Team, Business. Menu and search for the rest. Chat stays inside your team.",
   },
 ] as const;
 
@@ -48,7 +48,7 @@ export default function ForTeamsPage() {
           <h1>Built for the whole FRC team.</h1>
           <p>
             Mentors provision access. Students open Competition, Team, Business, Build, AI, and Media. Everyone shares
-            one event context. There is no DEMO workspace and no invented win rates.
+            one event context.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">

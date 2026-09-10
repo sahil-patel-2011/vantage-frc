@@ -115,13 +115,13 @@ export function supportNextActions(input: {
       {
         id: "account",
         label: "Open Account",
-        detail: "Profile and notification prefs live under Account — not DEMO support threads.",
+        detail: "Profile and notification prefs live under Account.",
         href: "/account",
       },
       {
         id: "help",
         label: "Open app manual",
-        detail: "Soft-UI topics (island, Home, scouting, BYOK) — separate from tickets.",
+        detail: "topics (island, Home, scouting, BYOK) — separate from tickets.",
         href: "/docs",
       },
     ];
@@ -135,7 +135,7 @@ export function supportNextActions(input: {
     actions.push({
       id: "submit",
       label: "Submit your first ticket",
-      detail: "Describe what broke — the list stays empty until you send something. Never DEMO tickets.",
+      detail: "Describe what broke — the list stays empty until you send something.",
       href: "#support-new-ticket",
       primary: true,
     });
@@ -161,7 +161,7 @@ export function supportNextActions(input: {
     {
       id: "help",
       label: "App manual",
-      detail: "Soft-UI topics — island, Edit Home, scouting, BYOK, Event Day, credits.",
+      detail: "topics — island, Edit Home, scouting, BYOK, Event Day, credits.",
       href: "/docs",
       primary: false,
     },

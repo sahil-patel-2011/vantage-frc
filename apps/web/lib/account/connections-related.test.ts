@@ -9,6 +9,7 @@ import {
   connectionsNextActions,
   connectionsRelatedLinks,
 } from "./connections-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("connectionsRelatedLinks", () => {
   it("builds Account / CAD / Discord cross-links with careful hrefs", () => {
@@ -69,7 +70,7 @@ describe("classifyConnectionsShell", () => {
 describe("connectionsEmptyCopy", () => {
   it("keeps setup / empty honest", () => {
     expect(connectionsEmptyCopy("setup").badge).toBe("Setup required");
-    expect(connectionsEmptyCopy("empty").description.toLowerCase()).toContain("pre-seeded");
+    expectPlainCopy(connectionsEmptyCopy("empty").description.toLowerCase());
     expect(connectionsEmptyCopy("empty").description).not.toMatch(/\bdemo\b/i);
   });
 });

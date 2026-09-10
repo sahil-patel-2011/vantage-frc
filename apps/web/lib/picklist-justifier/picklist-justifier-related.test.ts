@@ -8,6 +8,7 @@ import {
   picklistJustifierShellCopy,
   shouldShowPicklistJustifierSummaryTiles,
 } from "./picklist-justifier-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("picklistJustifierRelatedLinks", () => {
   it("builds Strategy / Collaborative Pick List / Scouting cross-links", () => {
@@ -103,7 +104,7 @@ describe("classifyPicklistJustifierShell + copy", () => {
   it("copy never invents DEMO rationales", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = picklistJustifierShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO|nothing is pre-seeded|pick/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

@@ -111,7 +111,7 @@ function IntelNextActionsPanel({ actions }: { actions: IntelNextAction[] }) {
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -173,7 +173,7 @@ function IntelShell({
       <PageHeader
         breadcrumbs="Competition / Matches & Teams"
         title="Team Intel"
-        description="Search the global team index. Metrics and research stay blank until TBA/Statbotics or source-linked findings exist — never DEMO research."
+        description="Search the global team index. Metrics and research stay blank until TBA/Statbotics or source-linked findings exist."
       >
         <IntelRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -220,7 +220,7 @@ function IntelShell({
         <Panel className="intel-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="intel-setup-steps">
             {steps.map((step) => (
@@ -473,7 +473,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs="Competition / Matches & Teams"
         title="Team Intel"
-        description="Search the global team index. Metrics stay blank until TBA/Statbotics data exists; research findings stay blank until a metered sweep — never DEMO research."
+        description="Search the global team index. Metrics stay blank until TBA/Statbotics data exists; research findings stay blank until a metered sweep."
       >
         {/* The strip already is Strategy · Dossier · Scouting. The row beside
             it was the same three hrefs with the same three labels. */}
@@ -623,7 +623,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                     </span>
                   ))
                 ) : (
-                  <p className="app-muted">Insufficient data for archetypes — never DEMO research.</p>
+                  <p className="app-muted">Insufficient data for archetypes.</p>
                 )}
               </div>
               <h4>Reliability</h4>
@@ -645,7 +645,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                   ))}
                 </ul>
               ) : (
-                <p className="app-muted">No year metrics in cache yet — never DEMO research.</p>
+                <p className="app-muted">No year metrics in cache yet.</p>
               )}
             </Panel>
 
@@ -664,7 +664,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                   ))}
                 </ul>
               ) : (
-                <p className="app-muted">No comparable year metrics — never DEMO research.</p>
+                <p className="app-muted">No comparable year metrics.</p>
               )}
             </Panel>
           </div>
@@ -672,7 +672,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
           <Panel>
             <h3 style={{ marginTop: 0 }}>Source-linked research</h3>
             <p className="app-muted">
-              Web findings are context, never hard performance data or DEMO research.
+              Web findings are context, not hard performance data.
               {findingCount > 0 ? ` ${findingCount} finding${findingCount === 1 ? "" : "s"} on file.` : ""}
             </p>
             {intel.findings.length ? (
@@ -695,7 +695,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
               </ul>
             ) : (
               <p className="app-muted">
-                No research findings yet. Use Research above to run a metered sweep — never DEMO research.
+                No research findings yet. Use Research above to run a metered sweep.
               </p>
             )}
           </Panel>

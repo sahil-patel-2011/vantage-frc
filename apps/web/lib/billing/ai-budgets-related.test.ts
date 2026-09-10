@@ -17,6 +17,7 @@ import {
   policySnapshotFromBudgetForm,
   type AiBudgetsPolicySnapshot,
 } from "./ai-budgets-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const defaults: AiBudgetsPolicySnapshot = {
   hasDailySpendLimit: false,
@@ -105,7 +106,7 @@ describe("classifyAiBudgetsShell + copy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
       expect(copy.description).toMatch(/never|Chat|Pricing|Account|Neon|hard/i);
     }
-    expect(aiBudgetsShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(aiBudgetsShellCopy("empty").description);
   });
 });
 
@@ -163,7 +164,7 @@ describe("classifyAiUsageShell + next actions", () => {
     expect(actions.find((a) => a.id === "budgets")?.href).toContain("tab=budgets");
     expect(actions.some((a) => a.id === "pricing")).toBe(true);
     expect(actions.some((a) => a.id === "account")).toBe(true);
-    expect(aiUsageShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(aiUsageShellCopy("empty").description);
   });
 });
 

@@ -59,9 +59,7 @@ function BatteryRotationNextActionsPanel({ actions }: { actions: BatteryRotation
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">
-          Batteries, Health Forecast, and Pit — never DEMO IR or charge metrics.
-        </p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -298,7 +296,7 @@ export default function BatteryRotationClient() {
           </>
         }
         title="Battery rotation & charge planner"
-        description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time — never DEMO IR or charge metrics."
+        description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time."
       >
         <div className="battery-rotation-header-actions">
           {relatedLinks.map((link) => (
@@ -354,7 +352,7 @@ export default function BatteryRotationClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Log IR on <a href={batteriesHref}>Batteries</a>, project retirement in{" "}
             <a href={forecastHref}>Health Forecast</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Pit command</a> — never invent DEMO resistance or charge plans.
+            <a href={pitHref}>Pit command</a>
           </p>
         </Panel>
       </div>
@@ -551,7 +549,7 @@ function LogReadingForm({
         badge="No batteries yet"
         badgeTone="setup"
         title="Add a battery first"
-        description="Log an internal-resistance reading once at least one real pack is tracked — never DEMO IR values."
+        description="Log an internal-resistance reading once at least one real pack is tracked."
       />
     );
   }
@@ -713,7 +711,7 @@ function RotationSchedule({
         badge="No assignments yet"
         badgeTone="setup"
         title="Schedule your first battery-to-match assignment"
-        description="Assignments show rotation order with charge-time and short-pack warnings from real logs — never DEMO schedules."
+        description="Assignments show rotation order with charge-time and short-pack warnings from real logs."
       />
     );
   }

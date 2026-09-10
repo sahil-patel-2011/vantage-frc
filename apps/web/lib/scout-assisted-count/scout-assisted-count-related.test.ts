@@ -8,6 +8,7 @@ import {
   scoutAssistedCountShellCopy,
   shouldShowScoutAssistedCountSummaryTiles,
 } from "./scout-assisted-count-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutAssistedCountRelatedLinks", () => {
   it("builds Scouting / Forms / Coverage Live cross-links", () => {
@@ -85,9 +86,7 @@ describe("classifyScoutAssistedCountShell + helpers", () => {
   it("copy never invents DEMO tallies", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = scoutAssistedCountShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

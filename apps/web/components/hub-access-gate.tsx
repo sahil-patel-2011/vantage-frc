@@ -28,7 +28,7 @@ export function SoftAccessDenied({
 }) {
   return (
     <main className="module-page soft-gate soft-access-denied">
-      <PageHeader breadcrumbs={breadcrumbs} title={title} description={description} />
+      <PageHeader breadcrumbs={breadcrumbs} title={title} />
       <EmptyState soft badge={badge} badgeTone="setup" title={heading} description={description}>
         {actions ?? (
           <>
@@ -79,7 +79,7 @@ export function SponsorsFundingForbidden({ breadcrumbs = "Business / Sponsors" }
       title="Sponsors"
       badge="Not enabled"
       heading="Sponsor tools are off for this team"
-      description="Your funding profile turns off sponsor CRM and related Soft-UI tools. An owner can re-enable sponsors under Team → Background."
+      description="Your funding profile turns off sponsor CRM and the tools that depend on it. An owner can re-enable sponsors under Team → Background."
       actions={
         <>
           <a className="app-button" href="/business">
@@ -109,8 +109,8 @@ export function SponsorsFundingGate({
   if (!access.ready) {
     return (
       <main className="module-page soft-gate" aria-busy>
-        <PageHeader breadcrumbs={breadcrumbs ?? "Business / Sponsors"} title="Sponsors" description="Checking access…" />
-        <EmptyState soft badge="Loading" title="Checking access…" description="Confirming your team funding profile." />
+        <PageHeader breadcrumbs={breadcrumbs ?? "Business / Sponsors"} title="Sponsors" />
+        <EmptyState soft badge="Loading" title="Opening Sponsors…" />
       </main>
     );
   }

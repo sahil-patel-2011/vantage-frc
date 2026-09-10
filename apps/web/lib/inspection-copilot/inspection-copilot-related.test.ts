@@ -8,6 +8,7 @@ import {
   inspectionCopilotRelatedLinks,
   inspectionCopilotShellCopy,
 } from "./inspection-copilot-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("inspectionCopilotRelatedLinks", () => {
   it("builds Batteries / FMEA / Subsystems cross-links", () => {
@@ -121,10 +122,10 @@ describe("inspectionCopilotShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = inspectionCopilotShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|logged/i);
+      expectPlainCopy(copy.description);
     }
-    expect(inspectionCopilotShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(inspectionCopilotShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(inspectionCopilotShellCopy("empty").description);
+    expectPlainCopy(inspectionCopilotShellCopy("setup").description);
   });
 
   it("formats real counts and blanks risk until checks exist", () => {

@@ -77,7 +77,7 @@ function FundraisersNextActions({
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Plan events and record real deposits</h2>
-        <p>Raised totals stay empty until someone logs proceeds — never DEMO campaign dollars.</p>
+        <p>Raised totals stay empty until someone logs proceeds.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -224,8 +224,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
             <span className="breadcrumbs">Business / Fundraisers</span>
             <h1>Fundraisers</h1>
             <p className="app-muted">
-              Team-run events for this workspace only — proceeds post to finance when recorded, never DEMO raised
-              totals.
+              Team-run events for this workspace. Proceeds post to finance once you record them.
             </p>
           </div>
         </header>
@@ -269,7 +268,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
           <h1>Fundraiser events — {seasonYear}</h1>
           <p className="app-muted">
             Community campaigns for {view.context.orgName ?? "your team"}. Goal bars use recorded goals and deposits
-            only — never DEMO raised totals.
+            only.
           </p>
         </div>
       </header>

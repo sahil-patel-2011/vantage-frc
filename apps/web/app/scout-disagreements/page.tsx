@@ -57,7 +57,7 @@ export default async function ScoutDisagreementsPage({
         <section className="app-card soft-panel scout-disagreements-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Accuracy, and Coverage — never DEMO conflicts.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-disagreements-setup-steps">
             {steps.map((step) => (

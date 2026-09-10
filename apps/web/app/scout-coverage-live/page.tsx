@@ -57,7 +57,7 @@ export default async function ScoutCoverageLivePage({
         <section className="app-card soft-panel scout-coverage-live-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Lineup, and Cross-Validation — never DEMO coverage.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-coverage-live-setup-steps">
             {steps.map((step) => (

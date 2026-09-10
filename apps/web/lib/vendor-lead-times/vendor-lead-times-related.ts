@@ -102,7 +102,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         kind,
         title: "Loading Vendor Lead Times…",
         description:
-          "Checking workspace membership and real vendor / reorder rows — never DEMO lead-time metrics.",
+          "Checking workspace membership and real vendor / reorder rows.",
       };
     case "error":
       return {
@@ -110,7 +110,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "Unavailable",
         title: "Could not load Vendor Lead Times",
         description:
-          "A network or server issue blocked the tracker. Retry, or open Orders / Spare Forecast / Vendors while it reloads — never invent DEMO reorder metrics.",
+          "A network or server issue blocked the tracker. Retry, or open Orders / Spare Forecast / Vendors while it reloads.",
       };
     case "setup":
       return {
@@ -118,7 +118,7 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Vendor Lead Times is org-scoped. Pick a workspace before logging real vendors and reorders — nothing is pre-seeded.",
+          "Pick a workspace before logging real vendors and reorders.",
       };
     case "empty":
       return {
@@ -126,14 +126,14 @@ export function vendorLeadTimesShellCopy(kind: VendorLeadTimesShellKind): Vendor
         badge: "No vendors yet",
         title: "Add a vendor before tracking reorders",
         description:
-          "Order-by dates stay blank until you log a real vendor lead time. Cross-check Orders, Spare Forecast, and Vendors — never DEMO reorder metrics.",
+          "Order-by dates stay blank until you log a real vendor lead time. Cross-check Orders, Spare Forecast, and Vendors.",
       };
     default:
       return {
         kind: "ready",
         title: "Vendor lead times & reorder-by dates",
         description:
-          "Order-by dates use only logged lead times, safety buffers, and needed-by dates — never DEMO reorder metrics.",
+          "Order-by dates use only logged lead times, safety buffers, and needed-by dates.",
       };
   }
 }
@@ -160,26 +160,26 @@ export function vendorLeadTimesNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Lead times are org-scoped — pick a team before logging vendors.",
+          detail: "Pick a team before logging vendors.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "orders",
           label: "Open Orders",
-          detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+          detail: "Purchase orders stay empty until drafted.",
           href: hubHref("/business", "orders", null),
         },
         {
           id: "spare-forecast",
           label: "Open Spare Forecast",
-          detail: "Spare shortfalls stay blank until inventory + FMEA land — never DEMO counts.",
+          detail: "Spare shortfalls stay blank until inventory + FMEA land.",
           href: hubHref("/build", "spare-forecast", null),
         },
         {
           id: "vendors",
           label: "Open Vendors",
-          detail: "Supplier directory stays empty until you add contacts — never DEMO vendors.",
+          detail: "Supplier directory stays empty until you add contacts.",
           href: withOrgHref("/vendors", null),
         },
       ];
@@ -255,7 +255,7 @@ export function vendorLeadTimesNextActions(input: {
       {
         id: "orders",
         label: "Open Orders",
-        detail: "Purchase orders stay blank until you draft them — never DEMO PO totals.",
+        detail: "Purchase orders stay blank until you draft them.",
         href: hubHref("/business", "orders", orgId),
       },
       {
@@ -287,7 +287,7 @@ export function vendorLeadTimesNextActions(input: {
     actions.push({
       id: "log-reorder",
       label: "Log a reorder",
-      detail: "Needed-by + lead time + buffer compute the order-by date — never invent DEMO dates.",
+      detail: "Needed-by + lead time + buffer compute the order-by date.",
       href: "#vendor-lead-times-add-reorder",
       primary: true,
     });
@@ -295,7 +295,7 @@ export function vendorLeadTimesNextActions(input: {
     actions.push({
       id: "reorders",
       label: "Review open reorders",
-      detail: `${openReorderCount} open reorder${openReorderCount === 1 ? "" : "s"} with real order-by dates — never DEMO urgency.`,
+      detail: `${openReorderCount} open reorder${openReorderCount === 1 ? "" : "s"} with real order-by dates.`,
       href: "#vendor-lead-times-reorders",
       primary: true,
     });
@@ -305,13 +305,13 @@ export function vendorLeadTimesNextActions(input: {
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Promote due reorders into season purchase orders — never DEMO PO totals.",
+      detail: "Promote due reorders into season purchase orders.",
       href: hubHref("/business", "orders", orgId),
     },
     {
       id: "spare-forecast",
       label: "Open Spare Forecast",
-      detail: "Align restock windows with projected spare exhaustion — never DEMO counts.",
+      detail: "Align restock windows with projected spare exhaustion.",
       href: hubHref("/build", "spare-forecast", orgId),
     },
     {

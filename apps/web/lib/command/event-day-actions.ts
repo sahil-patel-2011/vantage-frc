@@ -101,7 +101,7 @@ export function eventDayNextActions(
     actions.push({
       id: "strategy",
       label: "Open strategy",
-      detail: "Labeled win/loss and playbook when schedule + metrics exist — never invents EPA.",
+      detail: "Labeled win/loss and playbook when schedule + metrics exist.",
       href: snap?.links.strategy ?? hubHref("/competition", "strategy", orgId),
     });
   } else {

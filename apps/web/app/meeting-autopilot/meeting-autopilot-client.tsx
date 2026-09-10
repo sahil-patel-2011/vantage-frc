@@ -87,7 +87,7 @@ export default function MeetingAutopilotClient() {
           </>
         }
         title="Meeting-agenda autopilot"
-        description="Agenda and minutes persist against a calendar meeting. The page stays empty until a meeting exists — never DEMO notes."
+        description="Agenda and minutes persist against a calendar meeting. The page stays empty until a meeting exists."
       >
         {seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

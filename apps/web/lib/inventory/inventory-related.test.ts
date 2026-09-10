@@ -10,6 +10,7 @@ import {
   inventoryShellCopy,
   shouldShowInventorySummaryTiles,
 } from "./inventory-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("inventoryRelatedLinks", () => {
   it("builds Vendors / Orders / Spare Forecast cross-links via hubHref / withOrgHref", () => {
@@ -135,10 +136,10 @@ describe("inventoryShellCopy + formatInventoryMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = inventoryShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(inventoryShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(inventoryShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(inventoryShellCopy("empty").description);
+    expectPlainCopy(inventoryShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

@@ -205,7 +205,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
           <h1>Goal → tools → answer</h1>
           <p>
             ReAct-style loop with allowlisted web fetch and optional search. Org facts and tool
-            results are injected each step. Metered via feature=agent — never DEMO runs.
+            results are injected each step. Metered via feature=agent.
           </p>
         </div>
         <div className="aa-header-actions">
@@ -234,7 +234,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
       {shell === "auth_required" ? (
         <section className="app-card soft-panel aa-empty">
           <h2>Sign in required</h2>
-          <p>Autonomous agent runs are org-scoped. Sign in, then reopen this tab.</p>
+          <p>Agent runs belong to your team. Sign in, then reopen this tab.</p>
         </section>
       ) : null}
 
@@ -283,7 +283,7 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
         <section className="aa-history app-card soft-panel" aria-label="Past runs">
           <header>
             <h2>Past runs</h2>
-            <p>Persisted in Neon with truncated step logs — never DEMO history.</p>
+            <p>Persisted in Neon with truncated step logs.</p>
           </header>
           {loading ? <p className="aa-muted">Loading…</p> : null}
           {empty ? (

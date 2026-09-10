@@ -75,7 +75,7 @@ function NextActionsPanel({ actions }: { actions: SponsorRenewalRoiNextAction[] 
     <section className="app-card soft-panel edc-next-actions srr-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Sponsor CRM, Suite, and Impact — never DEMO churn scores.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -159,7 +159,7 @@ function RoiShell({
         <Panel className="srr-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">CRM and Impact — never DEMO churn scores.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="srr-setup-steps">
             {steps.map((step) => (
@@ -330,7 +330,7 @@ export default function SponsorRenewalRoiClient() {
           </>
         }
         title="Sponsor Renewal-Risk Score & ROI Report"
-        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions — never DEMO churn scores. Cross-check Sponsor CRM, Suite, and Impact."
+        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions. Cross-check Sponsor CRM, Suite, and Impact."
       >
         <div className="srr-header-actions">
           {view.seasons.length > 0 ? (

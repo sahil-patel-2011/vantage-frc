@@ -105,7 +105,7 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiGovernanceShell
     >
       <header>
         <h2>Next actions</h2>
-        <p>From real org policy and Neon spend only — never DEMO policy stats.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -464,8 +464,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           >
             <span className="eyebrow">FEATURE &amp; TOOL POLICY</span>
             <p className="app-muted ai-governance-policy-lead">
-              Org gates for metered AI capabilities. Empty Neon spend and empty approval queues stay empty —
-              never DEMO policy stats. Model allowlists are edited on{" "}
+              Org gates for metered AI capabilities. Empty Neon spend and empty approval queues stay empty. Model allowlists are edited on{" "}
               <a href={budgetsHref}>Budgets</a>.
             </p>
             <label className="state-control">
@@ -684,7 +683,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             </p>
             {models.length === 0 ? (
               <p className="app-muted">
-                No per-model rules yet — an empty list is honest, not a DEMO allowlist.
+                No per-model rules yet — an empty list is honest.
               </p>
             ) : (
               <ul>

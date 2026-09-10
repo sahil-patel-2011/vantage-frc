@@ -60,25 +60,25 @@ function setupSteps(orgId: string | null): AlliancePartnerBriefSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Alliance-Partner Brief is org-scoped.",
+      detail: "Choose your team organization to open Alliance-Partner Brief.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "alliance-board",
       label: "Run alliance selection",
-      detail: "Build and finalize picks on an alliance board — never DEMO captains.",
+      detail: "Build and finalize picks on an alliance board.",
       href: withOrgHref("/strategy/draft", orgId),
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

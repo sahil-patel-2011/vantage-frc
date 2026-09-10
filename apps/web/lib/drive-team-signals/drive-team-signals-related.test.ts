@@ -8,6 +8,7 @@ import {
   driveTeamSignalsShellCopy,
   shouldShowDriveTeamSignalsSummaryTiles,
 } from "./drive-team-signals-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("driveTeamSignalsRelatedLinks", () => {
   it("builds Checklist / Strategy Cards / Briefing cross-links", () => {
@@ -94,9 +95,7 @@ describe("classifyDriveTeamSignalsShell + helpers", () => {
   it("copy never invents DEMO cheat sheets", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = driveTeamSignalsShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

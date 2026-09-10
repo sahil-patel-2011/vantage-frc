@@ -73,13 +73,13 @@ export function matchingGiftFinderSetupSteps(orgId?: string | null): MatchingGif
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — matching gifts are org-scoped.",
+      detail: "Choose your team organization to open matching gifts.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "contacts",
       label: "Add a household contact",
-      detail: "Parents, alumni, or mentors with an employer unlock matches — never DEMO pledges.",
+      detail: "Parents, alumni, or mentors with an employer unlock matches.",
       href: orgId ? withOrgHref("/matching-gift-finder", orgId) : "/matching-gift-finder",
     },
     {
@@ -132,7 +132,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
       return {
         kind,
         title: "Loading Matching Gift Finder…",
-        description: "Checking workspace membership and household contacts — never DEMO matches.",
+        description: "Checking workspace membership and household contacts.",
       };
     case "error":
       return {
@@ -140,7 +140,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
         badge: "Unavailable",
         title: "Could not load Matching Gift Finder",
         description:
-          "A network or server issue blocked matching. Retry, or open Sponsor CRM while it reloads — never invent DEMO pledges.",
+          "A network or server issue blocked matching. Retry, or open Sponsor CRM while it reloads.",
       };
     case "setup":
       return {
@@ -148,7 +148,7 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Matching Gift Finder is org-scoped. Pick a workspace before adding household employers — nothing is pre-seeded.",
+          "Pick a workspace before adding household employers.",
       };
     case "empty":
       return {
@@ -156,14 +156,14 @@ export function matchingGiftFinderShellCopy(kind: MatchingGiftFinderShellKind): 
         badge: "No contacts yet",
         title: "Add a household employer contact",
         description:
-          "Matches appear only after real contacts and tracked programs exist — never DEMO pledges or dollar totals.",
+          "Matches appear only after real contacts and tracked programs exist.",
       };
     default:
       return {
         kind: "ready",
         title: "Employer matches from recorded contacts",
         description:
-          "Matches and pledges use your household contacts and programs only — never DEMO multipliers.",
+          "Matches and pledges use your household contacts and programs only.",
       };
   }
 }
@@ -188,7 +188,7 @@ export function matchingGiftFinderNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Matching gifts are org-scoped — pick a team before adding contacts.",
+          detail: "Pick a team before adding contacts.",
           href: "/workspace",
           primary: true,
         },
@@ -210,7 +210,7 @@ export function matchingGiftFinderNextActions(input: {
       {
         id: "contacts",
         label: "Add a household contact",
-        detail: "Employer names unlock program matches — never DEMO pledges.",
+        detail: "Employer names unlock program matches.",
         href: withOrgHref("/matching-gift-finder", orgId) + "#matching-gift-contacts",
         primary: true,
       },
@@ -258,7 +258,7 @@ export function matchingGiftFinderNextActions(input: {
       {
         id: "add-contact",
         label: "Add the first contact",
-        detail: "Matches stay blank until household employers exist — never DEMO pledges.",
+        detail: "Matches stay blank until household employers exist.",
         href: "#matching-gift-contacts",
         primary: true,
       },
@@ -283,7 +283,7 @@ export function matchingGiftFinderNextActions(input: {
       label: matchCount > 0 ? "Review employer matches" : "Track employer programs",
       detail:
         matchCount > 0
-          ? `${matchCount} match${matchCount === 1 ? "" : "es"} from recorded contacts — never DEMO multipliers.`
+          ? `${matchCount} match${matchCount === 1 ? "" : "es"} from recorded contacts.`
           : `${contactCount} contact${contactCount === 1 ? "" : "s"} need matching programs before pledges.`,
       href: matchCount > 0 ? "#matching-gift-matches" : "#matching-gift-programs",
       primary: true,

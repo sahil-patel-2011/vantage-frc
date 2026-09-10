@@ -121,7 +121,7 @@ export function CadFeatureTree({ features, disabled = false, onUpdate, onDelete 
       <div className="cad-operation-body">
         <p className="app-muted">
           Depth, width, height, radius, diameter, and thickness are millimetres on the feature Onshape already
-          created. Empty fields stay empty — IDs are never invented.
+          created. A field Onshape did not report stays blank.
         </p>
         {error ? (
           <p className="telemetry-status" role="alert">

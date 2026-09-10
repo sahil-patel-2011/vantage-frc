@@ -11,6 +11,7 @@ import {
   isBuildBurndownBoardEmpty,
   shouldShowBuildBurndownSummaryTiles,
 } from "./build-burndown-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("buildBurndownRelatedLinks", () => {
   it("builds Task board / Kickoff / FMEA via hubHref", () => {
@@ -84,7 +85,7 @@ describe("buildBurndownShellCopy", () => {
       const copy = buildBurndownShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(buildBurndownShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(buildBurndownShellCopy("empty").description);
     expect(buildBurndownShellCopy("setup").badge).toBe("Setup required");
   });
 });

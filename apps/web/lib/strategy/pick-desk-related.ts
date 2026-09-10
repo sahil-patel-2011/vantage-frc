@@ -77,7 +77,7 @@ export function pickDeskSetupSteps(orgId?: string | null): PickDeskSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — pick desks are org-scoped.",
+      detail: "Choose your team organization to open pick desks.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -89,13 +89,13 @@ export function pickDeskSetupSteps(orgId?: string | null): PickDeskSetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO EPA or win rates.",
+      detail: "Pull TBA/Statbotics rows into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Match and pit entries deepen pick explainability once synced — never DEMO picks.",
+      detail: "Match and pit entries deepen pick explainability once synced.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -149,7 +149,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         kind,
         title: "Loading pick desk…",
         description:
-          "Checking workspace membership and TBA/Statbotics event metrics — never DEMO picks.",
+          "Checking workspace membership and TBA/Statbotics event metrics.",
       };
     case "error":
       return {
@@ -157,7 +157,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "Unavailable",
         title: "Could not load pick desk",
         description:
-          "A network or server issue blocked the desk. Retry, or open Strategy / Scouting / Coverage while it reloads — never invent DEMO picks.",
+          "A network or server issue blocked the desk. Retry, or open Strategy / Scouting / Coverage while it reloads.",
       };
     case "setup":
       return {
@@ -165,7 +165,7 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Pick desk is org- and event-scoped. Pick a workspace and active TBA event before ranks appear — nothing is pre-seeded.",
+          "Pick desk is org- and event-scoped. Pick a workspace and active TBA event before ranks appear.",
       };
     case "empty":
       return {
@@ -173,14 +173,14 @@ export function pickDeskShellCopy(kind: PickDeskShellKind): PickDeskEmptyCopy {
         badge: "No event metrics yet",
         title: "Waiting on synced team metrics",
         description:
-          "First / second / third pick tiers stay blank until TBA/Statbotics rows land for this event. Cross-check Strategy, Scouting, and Coverage — never DEMO picks.",
+          "First / second / third pick tiers stay blank until TBA/Statbotics rows land for this event. Cross-check Strategy, Scouting, and Coverage.",
       };
     default:
       return {
         kind: "ready",
         title: "First / second / third pick desk",
         description:
-          "Ranks use only synced event metrics and membership-bound scout depth — never DEMO picks.",
+          "Ranks use only synced event metrics and membership-bound scout depth.",
       };
   }
 }
@@ -206,26 +206,26 @@ export function pickDeskNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Pick desks are org-scoped — choose a team before ranking alliances.",
+          detail: "Choose a team before ranking alliances.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and pick lists stay empty until real metrics exist — never DEMO picks.",
+          detail: "Win/loss and pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "coverage",
           label: "Open Coverage",
-          detail: "Coverage stays blank until a schedule syncs — never DEMO %.",
+          detail: "Coverage stays blank until a schedule syncs.",
           href: withOrgHref("/scouting/lineup", null),
         },
       ];
@@ -247,7 +247,7 @@ export function pickDeskNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scout depth stays honest when the event is unset — never DEMO picks.",
+        detail: "Scout depth stays honest when the event is unset.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
@@ -294,7 +294,7 @@ export function pickDeskNextActions(input: {
       {
         id: "team-data",
         label: "Sync event metrics",
-        detail: "Pull TBA/Statbotics team_event_metrics — pick tiers stay blank until then, never DEMO picks.",
+        detail: "Pull TBA/Statbotics team_event_metrics — pick tiers stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -325,7 +325,7 @@ export function pickDeskNextActions(input: {
       label: listCount > 0 ? "Review saved pick lists" : "Arrange tiers, then save",
       detail:
         listCount > 0
-          ? `${formatPickDeskMetric(listCount, true)} saved list${listCount === 1 ? "" : "s"} use real event teams only — never DEMO picks.`
+          ? `${formatPickDeskMetric(listCount, true)} saved list${listCount === 1 ? "" : "s"} use real event teams only.`
           : "Drop teams from the synced pool into first / second / third — empty tiers stay empty.",
       href: hubHref("/competition", "strategy", orgId),
       primary: true,
@@ -345,7 +345,7 @@ export function pickDeskNextActions(input: {
     {
       id: "draft",
       label: "Open Draft board",
-      detail: "Run draft day on the same real event pool — never DEMO alliance slots.",
+      detail: "Run draft day on the same real event pool.",
       href: withOrgHref("/strategy/draft", orgId),
     },
   ];

@@ -368,8 +368,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         description={
           <>
             Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. IR and cycles only from logged
-            events — never demo metrics.
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. Internal resistance and cycle counts come from the charges your team logs.
           </>
         }
       >
@@ -462,7 +461,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
               <h2>Competition cart</h2>
               <p className="app-muted">
                 Killer Bees cool-down: 15 minutes off the charger before a Beak test, then Ready. Slots stay empty until
-                you log a real charge — never DEMO ready packs.
+                you log a real charge.
               </p>
               <ul className="batt-cart">
                 {view.packs

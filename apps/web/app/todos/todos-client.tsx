@@ -53,7 +53,7 @@ function NextActions({
     <section className="todos-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From real team_todos only — never a DEMO task list.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -244,7 +244,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             description={
               <>
                 Todos, build tasks, and season milestones in one workbench. Create quick team todos here and open
-                specialized work in its owning board; never a DEMO task list.
+                specialized work in its owning board.
               </>
             }
           >
@@ -498,7 +498,7 @@ function Board({
         badge="Empty"
         badgeTone="setup"
         title="No team todos yet"
-        description="Add the first shared action item when your team has real work to track. Vantage does not invent DEMO task lists."
+        description="Add the first shared action item when your team has real work to track."
       >
         <div className="soft-btn-row">
           <a className="app-button secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
@@ -520,7 +520,7 @@ function Board({
       <EmptyState
         soft
         title="Nothing in this filter"
-        description="Try All, or create a todo that matches this view. Filters never invent rows."
+        description="Show all, or add a todo that matches this view."
       >
         <button type="button" className="app-button secondary" onClick={() => setFilter("all")}>
           Show all

@@ -80,7 +80,7 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — membership and invites are org-scoped.",
+      detail: "Choose your team organization to open membership and invites.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -92,7 +92,7 @@ export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[]
     {
       id: "discord",
       label: "Link Discord",
-      detail: "Guild / webhook bridge stays empty until configured — never DEMO sync %.",
+      detail: "Guild / webhook bridge stays empty until configured.",
       href: withOrgHref("/team/discord", orgId),
     },
     {
@@ -148,7 +148,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         kind,
         title: "Loading membership…",
         description:
-          "Checking workspace membership and real invites — never DEMO members.",
+          "Checking workspace membership and real invites.",
       };
     case "error":
       return {
@@ -156,7 +156,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Unavailable",
         title: "Could not load membership",
         description:
-          "A network or server issue blocked the members ledger. Retry, or open Account / Discord / Connections while it reloads — never invent DEMO members.",
+          "A network or server issue blocked the members ledger. Retry, or open Account / Discord / Connections while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Invites and member roles are org-scoped. Join or pick a workspace before managing access — nothing is pre-seeded.",
+          "Join or pick a workspace before managing access.",
       };
     case "empty":
       return {
@@ -172,14 +172,14 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
         badge: "No members yet",
         title: "Membership stays blank until real people join",
         description:
-          "The members list and invite ledger stay empty until real people join. Cross-check Account, Discord, and Connections — never DEMO members.",
+          "The members list and invite ledger stay empty until real people join. Cross-check Account, Discord, and Connections.",
       };
     default:
       return {
         kind: "ready",
         title: "Members and invites",
         description:
-          "Only real membership rows and invites appear here — never DEMO members.",
+          "Only real membership rows and invites appear here.",
       };
   }
 }
@@ -205,7 +205,7 @@ export function teamAdminNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Membership and invites are org-scoped — pick a team before sending access.",
+          detail: "Pick a team before sending access.",
           href: "/workspace",
           primary: true,
         },
@@ -224,7 +224,7 @@ export function teamAdminNextActions(input: {
         {
           id: "discord",
           label: "Discord",
-          detail: "Guild bridge settings need a workspace too — never DEMO sync %.",
+          detail: "Guild bridge settings need a workspace too.",
           href: withOrgHref("/team/discord", null),
         },
       ];
@@ -246,7 +246,7 @@ export function teamAdminNextActions(input: {
       {
         id: "discord",
         label: "Open Discord",
-        detail: "Optional guild bridge stays blank until configured — never DEMO sync %.",
+        detail: "Optional guild bridge stays blank until configured.",
         href: withOrgHref("/team/discord", orgId),
       },
       {
@@ -263,7 +263,7 @@ export function teamAdminNextActions(input: {
       {
         id: "invite",
         label: "Invite an exact email",
-        detail: "Team numbers never grant access — send a real invite; never seed DEMO members.",
+        detail: "Team numbers never grant access — send a real invite.",
         href: "#membership",
         primary: true,
       },
@@ -282,7 +282,7 @@ export function teamAdminNextActions(input: {
       {
         id: "connections",
         label: "Account Connections",
-        detail: "Workspace connectors stay honest until linked — never DEMO Connected.",
+        detail: "Workspace connectors stay honest until linked.",
         href: "/account?tab=integrations",
       },
     ];
@@ -323,7 +323,7 @@ export function teamAdminNextActions(input: {
       {
         id: "ledger",
         label: "Review pending invites",
-        detail: `${pendingInvites} real invitation${pendingInvites === 1 ? "" : "s"} in the ledger — resend or revoke; never DEMO rows.`,
+        detail: `${pendingInvites} real invitation${pendingInvites === 1 ? "" : "s"} in the ledger — resend or revoke.`,
         href: "#invitation-ledger",
         primary: true,
       },
@@ -352,7 +352,7 @@ export function teamAdminNextActions(input: {
     {
       id: "invite",
       label: "Invite another teammate",
-      detail: "Exact emails only — the ledger grows from real sends, never DEMO members.",
+      detail: "Exact emails only — the ledger grows from real sends.",
       href: "#membership",
       primary: true,
     },

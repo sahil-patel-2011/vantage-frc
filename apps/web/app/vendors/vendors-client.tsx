@@ -69,7 +69,7 @@ function VendorsNextActionsPanel({ actions }: { actions: VendorsNextAction[] }) 
     <section className="app-card soft-panel edc-next-actions vendors-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Orders and Vendor Lead Times — never DEMO vendor metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -298,7 +298,7 @@ export default function VendorsClient() {
           </>
         }
         title="Vendor Directory"
-        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics."
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory. Cross-check Orders and Vendor Lead Times."
       >
         <div className="vendors-header-actions">
           {relatedLinks.map((link) => (
@@ -344,8 +344,7 @@ export default function VendorsClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Purchase orders pick a supplier id from this directory — add vendors here, then submit
             through <a href={ordersHref}>Orders</a>. Keep shipping windows in{" "}
-            <a href={leadTimesHref}>Vendor Lead Times</a> — never invent DEMO contacts, ratings, or
-            lead-time averages.
+            <a href={leadTimesHref}>Vendor Lead Times</a>.
           </p>
         </Panel>
       </div>
@@ -429,7 +428,7 @@ function AddVendorForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     >
       <h2 style={{ margin: 0 }}>Add vendor</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Contacts and lead times come from real suppliers — never DEMO directory rows.
+        Contacts and lead times come from real suppliers.
       </p>
       <FormGrid min={140}>
         <FormRow label="Vendor name" wide>

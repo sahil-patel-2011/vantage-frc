@@ -8,6 +8,7 @@ import {
   formatCodeDeployLogMetric,
   shouldShowCodeDeployLogSummaryTiles,
 } from "./code-deploy-log-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("codeDeployLogRelatedLinks", () => {
   it("builds Code / Perf / CAD cross-links", () => {
@@ -86,9 +87,7 @@ describe("classifyCodeDeployLogShell + helpers", () => {
   it("copy never invents DEMO firmware trails", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = codeDeployLogShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

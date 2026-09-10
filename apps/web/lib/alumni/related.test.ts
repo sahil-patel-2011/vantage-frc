@@ -7,6 +7,7 @@ import {
   classifyAlumniShell,
   formatAlumniMetric,
 } from "./related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("alumniRelatedLinks", () => {
   it("builds Alumni network / Team knowledge / Workspace cross-links", () => {
@@ -42,8 +43,8 @@ describe("alumniShellCopy + next actions", () => {
       const copy = alumniShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(alumniShellCopy("empty").description).toMatch(/never DEMO classmates/i);
-    expect(alumniShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(alumniShellCopy("empty").description);
+    expectPlainCopy(alumniShellCopy("setup").description);
   });
 
   it("points empty boards at add + alumni network without DEMO names", () => {

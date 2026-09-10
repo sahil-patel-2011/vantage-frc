@@ -47,7 +47,7 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
       return {
         badge: "Sign in",
         title: "Sign in to manage Finance-in-AI",
-        description: "Consent is org-scoped. Sign in, then reopen Finance from the AI hub.",
+        description: "Each team gives consent separately. Sign in, then reopen Finance from the AI hub.",
       };
     case "forbidden":
       return {
@@ -61,7 +61,7 @@ function financeShellCopy(kind: FinanceShell): { badge?: string; title: string; 
         badge: "Off",
         title: "Finance tools are off",
         description:
-          "Assistants will not read season budgets or open orders until an admin enables this and accepts the risk note. Nothing is pre-seeded — never DEMO ledger totals.",
+          "Assistants will not read season budgets or open orders until an admin enables this and accepts the risk note. Nothing is pre-seeded.",
       };
     case "error":
       return {

@@ -9,6 +9,7 @@ import {
   grantReportShellCopy,
   shouldShowGrantReportSummaryTiles,
 } from "./grant-report-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("grantReportRelatedLinks", () => {
   it("builds Grants / Grants workbench / Community Impact cross-links", () => {
@@ -123,12 +124,10 @@ describe("grantReportShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = grantReportShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(
-        /never|empty|org-scoped|real|blank|invent|dollars|pre-seeded/i,
-      );
+      expectPlainCopy(copy.description);
     }
-    expect(grantReportShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(grantReportShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(grantReportShellCopy("empty").description);
+    expectPlainCopy(grantReportShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

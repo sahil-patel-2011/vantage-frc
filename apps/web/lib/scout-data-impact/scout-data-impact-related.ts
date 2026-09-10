@@ -71,13 +71,13 @@ export function scoutDataImpactSetupSteps(orgId?: string | null): ScoutDataImpac
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — where-your-data-went is org-scoped.",
+      detail: "Choose your team organization to open where-your-data-went.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real match-scout rows for teams that may be picked — never DEMO credit.",
+      detail: "Log real match-scout rows for teams that may be picked.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -162,7 +162,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         kind,
         title: "Loading scout data impact…",
         description:
-          "Checking workspace membership and logged alliance picks — never DEMO where-your-data-went credit.",
+          "Checking workspace membership and logged alliance picks.",
       };
     case "error":
       return {
@@ -170,7 +170,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "Unavailable",
         title: "Could not load scout data impact",
         description:
-          "A network or server issue blocked the feedback loop. Retry, or open Scouting / Strategy / Accuracy while it reloads — never invent DEMO credit.",
+          "A network or server issue blocked the feedback loop. Retry, or open Scouting / Strategy / Accuracy while it reloads.",
       };
     case "setup":
       return {
@@ -178,7 +178,7 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Where-your-data-went is org-scoped. Pick a workspace before pick credit appears — nothing is pre-seeded.",
+          "Pick a workspace before pick credit appears.",
       };
     case "empty":
       return {
@@ -186,14 +186,14 @@ export function scoutDataImpactShellCopy(kind: ScoutDataImpactShellKind): ScoutD
         badge: "No picks yet",
         title: "Waiting on logged alliance picks",
         description:
-          "Credit stays blank until coaches log real picks and matching scout rows exist. Cross-check Scouting, Strategy, and Accuracy — never DEMO where-your-data-went.",
+          "Credit stays blank until coaches log real picks and matching scout rows exist. Cross-check Scouting, Strategy, and Accuracy.",
       };
     default:
       return {
         kind: "ready",
         title: "Where your data went",
         description:
-          "Each pick credits only real match-scout entries for that team — never DEMO influence.",
+          "Each pick credits only real match-scout entries for that team.",
       };
   }
 }
@@ -217,20 +217,20 @@ export function scoutDataImpactNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Where-your-data-went is org-scoped — pick a team before logging picks.",
+          detail: "Pick a team before logging picks.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Credit stays blank until your team enters match rows — never DEMO influence.",
+          detail: "Credit stays blank until your team enters match rows.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO picks.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
@@ -245,7 +245,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Log alliance picks at the desk so scout credit can attach — never DEMO influence.",
+        detail: "Log alliance picks at the desk so scout credit can attach.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },
@@ -275,7 +275,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "retry",
         label: "Retry scout data impact",
-        detail: "Reload real pick credit — nothing is pre-seeded while this fails.",
+        detail: "Reload real pick credit.",
         href: withOrgHref("/scout-data-impact", orgId),
         primary: true,
       },
@@ -305,7 +305,7 @@ export function scoutDataImpactNextActions(input: {
       {
         id: "log-pick",
         label: "Log an alliance pick",
-        detail: "Credit appears only after a real pick is logged — never DEMO where-your-data-went.",
+        detail: "Credit appears only after a real pick is logged.",
         href: "#log-alliance-pick",
         primary: true,
       },
@@ -339,7 +339,7 @@ export function scoutDataImpactNextActions(input: {
           : "Review where data went",
       detail:
         uncoveredPicks > 0
-          ? "Some logged picks still have no matching scout entries — never invent DEMO credit."
+          ? "Some logged picks still have no matching scout entries."
           : "Every logged pick has at least one attributable scout entry.",
       href: uncoveredPicks > 0 ? hubHref("/competition", "scouting", orgId) : "#pick-evidence",
       primary: true,

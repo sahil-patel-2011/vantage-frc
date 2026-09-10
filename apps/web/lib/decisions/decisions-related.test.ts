@@ -7,6 +7,7 @@ import {
   decisionsShellCopy,
   formatDecisionsMetric,
 } from "./decisions-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("decisionsRelatedLinks", () => {
   it("builds Decision Search / Season Report / Knowledge cross-links", () => {
@@ -131,10 +132,10 @@ describe("decisionsShellCopy + formatDecisionsMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = decisionsShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|recorded|log/i);
+      expectPlainCopy(copy.description);
     }
-    expect(decisionsShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(decisionsShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(decisionsShellCopy("empty").description);
+    expectPlainCopy(decisionsShellCopy("setup").description);
   });
 
   it("formats real counts only", () => {

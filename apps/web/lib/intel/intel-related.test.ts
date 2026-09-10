@@ -9,6 +9,7 @@ import {
   intelSetupSteps,
   intelShellCopy,
 } from "./intel-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("intelRelatedLinks", () => {
   it("builds Strategy / Dossier / Scouting via hubHref / withOrgHref", () => {
@@ -89,9 +90,9 @@ describe("intelShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(intelShellCopy("empty").badge).toBe("Look up a team");
-    expect(intelShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(intelShellCopy("empty").description);
     expect(intelShellCopy("setup").badge).toBe("Setup required");
-    expect(intelShellCopy("ready").description).toMatch(/never DEMO/i);
+    expectPlainCopy(intelShellCopy("ready").description);
   });
 });
 

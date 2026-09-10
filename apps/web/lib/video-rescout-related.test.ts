@@ -10,6 +10,7 @@ import {
   videoRescoutSetupSteps,
   videoRescoutShellCopy,
 } from "./video-rescout-related";
+import { expectPlainCopy } from "./ui/copy-assertions";
 
 describe("videoRescoutRelatedLinks", () => {
   it("builds Scouting / Accuracy / Disagreements via hubHref / withOrgHref", () => {
@@ -97,7 +98,7 @@ describe("videoRescoutShellCopy", () => {
       const copy = videoRescoutShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(videoRescoutShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(videoRescoutShellCopy("empty").description);
     expect(videoRescoutShellCopy("setup").badge).toBe("Setup required");
   });
 });

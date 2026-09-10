@@ -51,7 +51,7 @@ export function costsNextActions(ctx: CostsNextActionContext): CostsNextAction[]
     actions.push({
       id: "set-budget",
       label: "Set a season budget",
-      detail: "Remaining and % used stay blank until you enter a real budget — never DEMO dollars.",
+      detail: "Remaining and % used stay blank until you enter a real budget.",
       href: withSeason(costsHref),
       primary: true,
     });

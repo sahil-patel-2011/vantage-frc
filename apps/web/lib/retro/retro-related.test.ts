@@ -10,6 +10,7 @@ import {
   retroShellCopy,
   shouldShowRetroSummaryTiles,
 } from "./retro-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("retroRelatedLinks", () => {
   it("builds Season report / Playbook handoff links via hubHref / withOrgHref", () => {
@@ -89,7 +90,7 @@ describe("retroShellCopy", () => {
       const copy = retroShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(retroShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(retroShellCopy("empty").description);
     expect(retroShellCopy("setup").badge).toBe("Setup required");
   });
 });

@@ -68,7 +68,7 @@ function ScoutCrossvalNextActionsPanel({ actions }: { actions: ScoutCrossvalNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Coverage Live, and Accuracy — never DEMO agreement.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -169,7 +169,7 @@ function ScoutCrossvalShell({
         <Panel className="scout-crossval-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Coverage Live, and Accuracy — never DEMO agreement.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-crossval-setup-steps">
             {steps.map((step) => (
@@ -320,7 +320,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           </>
         }
         title="Scout Cross-Validation"
-        description="Compares saved match-scout entries against cached TBA score breakdowns — agree, conflict, or unverifiable, never DEMO agreement rates."
+        description="Compares saved match-scout entries against cached TBA score breakdowns — agree, conflict, or unverifiable."
       >
         <div className="scout-crossval-header-meta">
           <ScoutCrossvalRelatedStrip orgId={orgId} />
@@ -419,7 +419,7 @@ function EntriesList({
       <header>
         <h2>Match entries vs TBA</h2>
         <p className="app-muted">
-          Per-field badges use cached official score breakdowns only — never DEMO agreement.
+          Per-field badges use cached official score breakdowns only.
         </p>
       </header>
       {view.entries.length === 0 ? (

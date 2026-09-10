@@ -59,7 +59,7 @@ export function notificationNextActions(input: {
     actions.push({
       id: "caught-up",
       label: "You’re caught up",
-      detail: "No unread rows — switch to All to review history, or leave the inbox clear. Never DEMO notifications.",
+      detail: "No unread rows — switch to All to review history, or leave the inbox clear.",
       href: "/notifications",
       primary: true,
     });
@@ -68,7 +68,7 @@ export function notificationNextActions(input: {
       id: "empty",
       label: "Inbox stays empty until something real arrives",
       detail:
-        "Coach todos, duties, calendar events, releases, and teammate messages land here with real timestamps — nothing is pre-seeded.",
+        "Coach todos, duties, calendar events, releases, and teammate messages land here with real timestamps.",
       href: "/notifications/preferences",
       primary: true,
     });

@@ -11,6 +11,7 @@ import {
   draftShellCopy,
   shouldShowDraftSummaryTiles,
 } from "./draft-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("draftRelatedLinks", () => {
   it("builds Strategy / Pick desk / Scouting via hubHref / withOrgHref", () => {
@@ -127,7 +128,7 @@ describe("draftShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(draftShellCopy("empty").badge).toBe("No draft board yet");
-    expect(draftShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(draftShellCopy("empty").description);
     expect(draftShellCopy("setup").badge).toBe("Setup required");
     expect(draftShellCopy("ready").description).toMatch(/org-bound/i);
   });

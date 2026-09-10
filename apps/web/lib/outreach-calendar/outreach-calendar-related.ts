@@ -75,13 +75,13 @@ export function outreachCalendarSetupSteps(orgId?: string | null): OutreachCalen
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — outreach plans are org-scoped.",
+      detail: "Choose your team organization to open outreach plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "schedule",
       label: "Schedule an outreach event",
-      detail: "Events stay blank until you add them — nothing is pre-seeded.",
+      detail: "Events stay blank until you add them.",
       href: orgId ? withOrgHref("/outreach-calendar", orgId) : "/outreach-calendar",
     },
     {
@@ -140,7 +140,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         kind,
         title: "Loading Outreach Calendar…",
         description:
-          "Checking workspace membership and scheduled events — never DEMO reach metrics.",
+          "Checking workspace membership and scheduled events.",
       };
     case "error":
       return {
@@ -148,7 +148,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "Unavailable",
         title: "Could not load the Outreach Calendar",
         description:
-          "A network or server issue blocked the calendar. Retry, or open Community Impact / Media Kit while it reloads — never invent DEMO hours.",
+          "A network or server issue blocked the calendar. Retry, or open Community Impact / Media Kit while it reloads.",
       };
     case "setup":
       return {
@@ -156,7 +156,7 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Outreach Calendar is org-scoped. Pick a workspace and schedule real events before projecting hours — nothing is pre-seeded.",
+          "Pick a workspace and schedule real events before projecting hours.",
       };
     case "empty":
       return {
@@ -164,14 +164,14 @@ export function outreachCalendarShellCopy(kind: OutreachCalendarShellKind): Outr
         badge: "No events yet",
         title: "Schedule your first outreach event",
         description:
-          "Hours and reach stay blank until you schedule real events. Cross-check Community Impact and Media Kit — never DEMO reach metrics.",
+          "Hours and reach stay blank until you schedule real events. Cross-check Community Impact and Media Kit.",
       };
     default:
       return {
         kind: "ready",
         title: "Planned outreach",
         description:
-          "Projections use only events you schedule — never invent DEMO hours or reach.",
+          "Projections use only events you schedule.",
       };
   }
 }
@@ -224,20 +224,20 @@ export function outreachCalendarNextActions(input: {
       {
         id: "schedule",
         label: "Schedule an event",
-        detail: "Events stay blank until you add them — never invent DEMO reach.",
+        detail: "Events stay blank until you add them.",
         href: "#outreach-calendar-schedule",
         primary: true,
       },
       {
         id: "impact",
         label: "Open Community Impact",
-        detail: "Log completed outreach as real evidence — never DEMO hours.",
+        detail: "Log completed outreach as real evidence.",
         href: hubHref("/business", "impact", orgId),
       },
       {
         id: "media-kit",
         label: "Open Media Kit",
-        detail: "Pair outreach with real media assets — never invent DEMO logos.",
+        detail: "Pair outreach with real media assets.",
         href: hubHref("/business", "media-kit", orgId),
       },
     ];

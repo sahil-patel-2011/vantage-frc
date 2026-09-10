@@ -68,7 +68,7 @@ function NextActionsPanel({
     <section className="ptk-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Test → decision → CAD / FMEA. Metrics and confidence only from what you record — never DEMO.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -375,7 +375,7 @@ function TestsList({
     <Panel className="ptk-panel">
       <h2>Prototype tests</h2>
       <p className="lead app-muted">
-        Outcomes and metrics from logged shop tests only — never DEMO placeholders.
+        Outcomes and metrics from logged shop tests only.
       </p>
       <ul className="ptk-list">
         {view.tests.map((test) => {
@@ -601,7 +601,7 @@ function LogTestForm({
     >
       <h2>Log a prototype test</h2>
       <p className="lead app-muted">
-        Optional metrics stay blank until you measure them — never invent DEMO attainment.
+        Optional metrics stay blank until you measure them.
       </p>
       <FormGrid min={180}>
         <FormRow label="Subsystem">

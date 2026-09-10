@@ -53,7 +53,7 @@ export function whatsNewNextActions(input: {
       id: "empty",
       label: "No published releases yet",
       detail:
-        "This feed stays blank until Vantage publishes a release that matches your team’s plan — nothing is pre-seeded.",
+        "This feed stays blank until Vantage publishes a release that matches your team’s plan.",
       href: "/whats-new",
       primary: true,
     });

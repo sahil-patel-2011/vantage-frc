@@ -58,7 +58,7 @@ function ScrimNextActionsPanel({ actions }: { actions: CrossTeamScrimNextAction[
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Calendar, Scouting, and Team Data — never DEMO scrim metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -156,7 +156,7 @@ function ScrimShell({
         <Panel className="cross-team-scrim-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Calendar, Scouting, and Team Data — never DEMO scrim metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="cross-team-scrim-setup-steps">
             {steps.map((step) => (
@@ -302,7 +302,7 @@ export default function CrossTeamScrimClient() {
           </>
         }
         title="Cross-Team Scrim Scheduling"
-        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared. Cross-check Calendar, Scouting, and Team Data — never DEMO scrim metrics."
+        description="Propose scrimmages with nearby teams and agree on what data — match results, video, or full scouting sheets — will be shared. Cross-check Calendar, Scouting, and Team Data."
       >
         <div className="cross-team-scrim-header-actions">
           {view.seasons.length > 0 ? (
@@ -425,7 +425,7 @@ function UpcomingInvites({
           badge="No upcoming scrims"
           badgeTone="setup"
           title="Propose a scrimmage with a nearby team"
-          description="Open invites with a proposed or accepted status will appear here, soonest first — never DEMO partners."
+          description="Open invites with a proposed or accepted status will appear here, soonest first."
         />
       </div>
     );
@@ -433,7 +433,7 @@ function UpcomingInvites({
   return (
     <Panel className="cross-team-scrim-panel" id="cross-team-scrim-upcoming">
       <h2 style={{ marginTop: 0 }}>Upcoming</h2>
-      <p className="app-muted">Real partner invites only — never DEMO schedules.</p>
+      <p className="app-muted">Real partner invites only.</p>
       <ul className="cross-team-scrim-list">
         {view.upcoming.map((invite) => (
           <InviteRow key={invite.id} invite={invite} busy={busy} mutate={mutate} />
@@ -591,7 +591,7 @@ function CreateInviteForm({
       }}
     >
       <h2 style={{ margin: 0 }}>Propose a scrim</h2>
-      <p className="app-muted">Partner rows stay blank until you enter a real team — never DEMO partners.</p>
+      <p className="app-muted">Partner rows stay blank until you enter a real team.</p>
       <FormGrid min={160}>
         <FormRow label="Partner team #">
           <input type="number" min={1} value={form.partnerTeamNumber} onChange={set("partnerTeamNumber")} required />

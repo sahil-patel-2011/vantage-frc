@@ -54,7 +54,7 @@ function SponsorWallNextActionsPanel({ actions }: { actions: SponsorWallNextActi
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Sponsor CRM and Sponsorship — never DEMO sponsor counts.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -289,7 +289,7 @@ export default function SponsorWallClient() {
           </>
         }
         title="Sponsor Wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Never DEMO sponsor counts. Cross-check Sponsor CRM and Sponsorship."
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Cross-check Sponsor CRM and Sponsorship."
       >
         <div className="sponsor-wall-header-actions">
           {relatedLinks.map((link) => (
@@ -365,8 +365,7 @@ export default function SponsorWallClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Pull names from <a href={sponsorsHref}>Sponsor CRM</a>, align tiers with{" "}
-            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor Suite</a> —
-            never invent DEMO logos or shout-outs.
+            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor Suite</a>
           </p>
         </Panel>
       </div>
@@ -491,7 +490,7 @@ function AddEntryForm({
     >
       <h2 style={{ margin: 0 }}>Add sponsor</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Published entries reflect sponsors you add — never DEMO logos or invent shout-outs.
+        Published entries reflect sponsors you add.
       </p>
       <FormGrid min={160}>
         <FormRow label="Sponsor name">
@@ -541,7 +540,7 @@ function WallPreview({
         badge="No sponsors yet"
         badgeTone="setup"
         title="Add your first sponsor to build the wall"
-        description="Sponsor names, tiers, and thank-you messages appear here only after real entries — never DEMO logos."
+        description="Sponsor names, tiers, and thank-you messages appear here only after real entries."
       />
     );
   }

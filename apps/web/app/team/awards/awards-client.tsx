@@ -63,7 +63,7 @@ function AwardsNextActions({
       <header>
         <span className="biz-overline">Next actions</span>
         <h2>Draft essays from real submissions</h2>
-        <p>Counts reflect submissions you start — never DEMO win rates or invented award dollars.</p>
+        <p>Counts reflect submissions you start.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -470,8 +470,8 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
               </div>
               <p className="awards-export-note">
                 {realItemCount === 0
-                  ? "Copy and print stay empty until an item has a written answer. Catalog prompts and impact hours are never invented."
-                  : `${realItemCount} written item${realItemCount === 1 ? "" : "s"} ready to paste into the FIRST portal. Empty prompts omitted — no invented impact hours.`}
+                  ? "Write an answer to at least one prompt, then copy or print."
+                  : `${realItemCount} written item${realItemCount === 1 ? "" : "s"} ready to paste into the FIRST portal. Prompts you left blank are skipped.`}
               </p>
 
               {items.length === 0 ? (

@@ -139,7 +139,7 @@ export function signoffNextActions(input: {
       label: `Clear ${input.pendingGates} pending gate${input.pendingGates === 1 ? "" : "s"}`,
       detail: sample
         ? `${sample} still needs gate decisions — % is from recorded approvals only.`
-        : "Approve or reject remaining gates from real reviews — never invent readiness.",
+        : "Approve or reject remaining gates from real reviews.",
       href: signoffHref,
       primary: true,
     });

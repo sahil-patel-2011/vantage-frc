@@ -6,6 +6,7 @@ import {
   whatsNewNextActions,
   whatsNewRelatedLinks,
 } from "./whats-new-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("whatsNewRelatedLinks", () => {
   it("includes Support and Pricing by default focus strip", () => {
@@ -27,7 +28,7 @@ describe("whatsNewNextActions", () => {
     const actions = whatsNewNextActions({ releaseCount: 0 });
     expect(actions[0]?.id).toBe("empty");
     expect(actions[0]?.primary).toBe(true);
-    expect(actions[0]?.detail.toLowerCase()).toContain("pre-seeded");
+    expectPlainCopy(actions[0]?.detail.toLowerCase());
     expect(actions.some((a) => a.id === "pricing")).toBe(true);
     expect(actions.some((a) => a.id === "support")).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.label))).toBe(true);

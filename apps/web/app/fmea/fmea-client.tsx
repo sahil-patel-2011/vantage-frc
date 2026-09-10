@@ -260,7 +260,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         description={
           <>
             Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix — RPN only from logged scores, never demo numbers.
+            detection, record root cause and fix. Risk priority is calculated from the scores you enter.
           </>
         }
       >

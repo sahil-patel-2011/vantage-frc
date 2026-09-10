@@ -76,13 +76,13 @@ export function scoutAccuracySetupSteps(orgId?: string | null): ScoutAccuracySet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — accuracy is org-scoped.",
+      detail: "Choose your team organization to open accuracy.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Log real match-scout entries — leaderboard stays blank until then, never DEMO scores.",
+      detail: "Log real match-scout entries — leaderboard stays blank until then.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -94,7 +94,7 @@ export function scoutAccuracySetupSteps(orgId?: string | null): ScoutAccuracySet
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick-desk rotation reads the same accuracy ranks — never invents DEMO scores.",
+      detail: "Pick-desk rotation reads the same accuracy ranks.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
@@ -190,7 +190,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         kind,
         title: "Loading scout accuracy…",
         description:
-          "Checking workspace membership and TBA-verified scout rows — never DEMO scores.",
+          "Checking workspace membership and TBA-verified scout rows.",
       };
     case "error":
       return {
@@ -198,7 +198,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "Unavailable",
         title: "Could not load scout accuracy",
         description:
-          "A network or server issue blocked the leaderboard. Retry, or open Scouting / Coverage / Strategy while it reloads — never invent DEMO scores.",
+          "A network or server issue blocked the leaderboard. Retry, or open Scouting / Coverage / Strategy while it reloads.",
       };
     case "setup":
       return {
@@ -206,7 +206,7 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Scout accuracy is org-scoped. Pick a workspace before TBA-verified ranks appear — nothing is pre-seeded.",
+          "Pick a workspace before TBA-verified ranks appear.",
       };
     case "empty":
       return {
@@ -214,14 +214,14 @@ export function scoutAccuracyShellCopy(kind: ScoutAccuracyShellKind): ScoutAccur
         badge: "No scores yet",
         title: "Waiting on verifiable scout rows",
         description:
-          "The leaderboard stays blank until your team logs match-scout entries for an event with cached TBA results. Cross-check Scouting, Coverage, and Strategy — never DEMO scores.",
+          "The leaderboard stays blank until your team logs match-scout entries for an event with cached TBA results. Cross-check Scouting, Coverage, and Strategy.",
       };
     default:
       return {
         kind: "ready",
         title: "Accuracy leaderboard",
         description:
-          "Ranks use only real scout totals vs cached TBA score breakdowns — never DEMO scores.",
+          "Ranks use only real scout totals vs cached TBA score breakdowns.",
       };
   }
 }
@@ -245,14 +245,14 @@ export function scoutAccuracyNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Accuracy is org-scoped — pick a team before ranking scouts.",
+          detail: "Pick a team before ranking scouts.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -264,7 +264,7 @@ export function scoutAccuracyNextActions(input: {
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
       ];
@@ -273,7 +273,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Log match-scout entries so TBA can verify totals — never DEMO scores.",
+        detail: "Log match-scout entries so TBA can verify totals.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -303,7 +303,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "retry",
         label: "Retry scout accuracy",
-        detail: "Reload real TBA-verified ranks — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA-verified ranks.",
         href: withOrgHref("/scout-accuracy", orgId),
         primary: true,
       },
@@ -333,7 +333,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "scouting",
         label: "Log scout entries",
-        detail: "Accuracy stays blank until membership-bound match rows exist — never DEMO scores.",
+        detail: "Accuracy stays blank until membership-bound match rows exist.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -346,7 +346,7 @@ export function scoutAccuracyNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Pick desk waits on the same real scout data — never DEMO scores.",
+        detail: "Pick desk waits on the same real scout data.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -368,7 +368,7 @@ export function scoutAccuracyNextActions(input: {
       detail:
         suggestedPromotions > 0
           ? "Confirm TBA-accurate scouts into the pick-desk conversation."
-          : "Ranks use only verifiable totals — never DEMO scores.",
+          : "Ranks use only verifiable totals.",
       href: suggestedPromotions > 0 ? "#accuracy-leaderboard" : hubHref("/competition", "strategy", orgId),
       primary: true,
     },

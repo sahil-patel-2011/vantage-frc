@@ -952,8 +952,8 @@ export function CodeClient({
           <h1>FRC Code Coach</h1>
           <p>
             Flag risky robot-code patterns, explain why they fail under match pressure, then suggest a safer habit.
-            Pattern review runs locally — findings only come from matched rules, never invented AI output. Proposed
-            changes stay human-approved unified diffs. It never deploys to a robot.
+            Review runs on this device against a fixed rule set. Every proposed change is a diff a person has to
+            approve, and nothing is ever pushed to a robot.
           </p>
         </div>
         <div className="cdc-header-actions">
@@ -1232,7 +1232,7 @@ export function CodeClient({
                 badge="Idle"
                 badgeTone="setup"
                 title="No review yet"
-                description="Paste robot code or use the sample, then run a review. Findings appear only when a local rule matches — never invented AI diagnoses. Vantage never deploys to a robot."
+                description="Paste robot code or load the sample, then run a review. Nothing is ever pushed to a robot."
               />
             )}
 
@@ -1273,8 +1273,7 @@ export function CodeClient({
                   : "Proposal only · human approval required"}
               </strong>
               <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
-                No autonomous robot deploy. Mentors or students approve every grounded diff — coach never invents
-                fixes for unmatched source.
+                A mentor or student approves every diff before it goes anywhere. Nothing deploys on its own.
               </p>
               {proposal ? <pre aria-label="Unified diff proposal">{proposal.unifiedDiff}</pre> : null}
             </div>

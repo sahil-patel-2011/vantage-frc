@@ -8,6 +8,7 @@ import {
   formatBinShelfLocatorMetric,
   shouldShowBinShelfLocatorSummaryTiles,
 } from "./bin-shelf-locator-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("binShelfLocatorRelatedLinks", () => {
   it("builds Spares / CAD cross-links", () => {
@@ -59,9 +60,7 @@ describe("classifyBinShelfLocatorShell + helpers", () => {
   it("copy never invents DEMO inventory pins", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = binShelfLocatorShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

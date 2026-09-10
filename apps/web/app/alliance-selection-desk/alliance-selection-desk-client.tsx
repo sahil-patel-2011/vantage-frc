@@ -70,7 +70,7 @@ function DeskNextActionsPanel({ actions }: { actions: AllianceSelectionDeskNextA
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick list, and Pick clock — never DEMO rankings.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -149,7 +149,7 @@ function DeskShell({
         <Panel className="alliance-desk-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Scouting — never DEMO rankings.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="alliance-desk-setup-steps">
             {steps.map((step) => (
@@ -445,7 +445,7 @@ export default function AllianceSelectionDeskClient() {
           </>
         }
         title="Alliance selection desk"
-        description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export — never DEMO rankings. Cross-check Strategy, Collaborative pick list, and Pick clock."
+        description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export. Cross-check Strategy, Collaborative pick list, and Pick clock."
       >
         <div className="alliance-desk-header-actions">
           {view?.status === "live" ? (
@@ -570,7 +570,7 @@ export default function AllianceSelectionDeskClient() {
               <p className="app-muted">Exported {new Date(exportSnap.exportedAt).toLocaleString()}</p>
               <pre className="alliance-desk-export-pre">{JSON.stringify(exportSnap, null, 2)}</pre>
               <Button type="button" variant="secondary" size="sm" onClick={() => window.print()}>
-                Print Soft-UI pack
+                Print this pack
               </Button>
             </Panel>
           ) : null}

@@ -68,19 +68,19 @@ function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — EPA Trend Alerts is org-scoped.",
+      detail: "Choose your team organization to open EPA Trend Alerts.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO EPA.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "opponent-watchlist",
       label: "Open Opponent Watchlist",
-      detail: "Manual opponent notes stay blank until logged — never DEMO rankings.",
+      detail: "Manual opponent notes stay blank until logged.",
       href: hubHref("/competition", "opponent-watchlist", orgId),
     },
   ];

@@ -141,7 +141,7 @@ export default function PairwiseClient() {
           </>
         }
         title="Pairwise ranking"
-        description="Tap who looked better. Ranks come from those taps only — not TBA, not EPA, never invented."
+        description="Tap who looked better. Ranks come from your taps — not from official rankings or EPA."
       />
 
       <nav className="product-hub-related" aria-label="Related qualitative tools">
@@ -279,8 +279,8 @@ function LivePairwise({
 
       <Panel>
         <p className="app-muted">
-          Inspired by Pairwise / Maneuver qualitative scouting, but org-scoped and ranked with Bradley-Terry so a few
-          honest taps beat a fake 1–10 scale. Event {view.eventKey ?? "not set"}.
+          Inspired by Pairwise / Maneuver qualitative scouting, ranked with Bradley-Terry so a few honest taps beat a
+          guessed 1–10 scale. Event {view.eventKey ?? "not set"}.
         </p>
         <div className="pairwise-bout">
           <label>
@@ -322,7 +322,7 @@ function LivePairwise({
       <section className="app-card">
         <header>
           <h2>Rank from recorded taps</h2>
-          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams. No DEMO ranks."}</p>
+          <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams."}</p>
         </header>
         <div className="pairwise-promote">
           <button

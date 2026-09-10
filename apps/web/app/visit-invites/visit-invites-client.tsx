@@ -63,7 +63,7 @@ function VisitNextActionsPanel({ actions }: { actions: VisitNextAction[] }) {
     <Panel className="visit-next-actions edc-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Logistics, Event Day, and Calendar only — never DEMO invite rows.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -337,7 +337,7 @@ export default function VisitInvitesClient() {
       <PageHeader
         navPath="/visit-invites"
         title="Visit Invites"
-        description={`${view.context.orgName} — shop tours, demo days, mentor hosts, and guest RSVPs. Real visits only — never DEMO invites.`}
+        description={`${view.context.orgName} — shop tours, demo days, mentor hosts, and guest RSVPs. Real visits only.`}
       >
         <div className="visit-header-actions">
           <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
@@ -362,7 +362,7 @@ export default function VisitInvitesClient() {
           <p>
             Mentors schedule real visits here. <strong>Draft</strong> stays planner-only;{" "}
             <strong>Scheduled</strong> opens member and guest RSVPs. Sync to Calendar for outreach blocks, then copy the
-            board link — no DEMO invite placeholders.
+            board link.
           </p>
         </header>
         {/* "Copy board link" and the Calendar / Logistics / Event Day links are
@@ -495,7 +495,7 @@ export default function VisitInvitesClient() {
             description={
               canManage
                 ? "Create a shop tour or demo day above — empty stays empty until someone schedules a real visit."
-                : "Mentors will post real visits here. Nothing is pre-filled with DEMO invites."
+                : "Mentors will post real visits here."
             }
           >
             {/* One action out of an empty state. The related links live in the

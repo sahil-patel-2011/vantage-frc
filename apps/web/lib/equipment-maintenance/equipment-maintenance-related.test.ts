@@ -8,6 +8,7 @@ import {
   equipmentMaintenanceShellCopy,
   shouldShowEquipmentMaintenanceSummaryTiles,
 } from "./equipment-maintenance-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("equipmentMaintenanceRelatedLinks", () => {
   it("builds Tool Checkout / Safety / Checklist cross-links", () => {
@@ -94,9 +95,7 @@ describe("classifyEquipmentMaintenanceShell + helpers", () => {
   it("copy never invents DEMO service packs", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = equipmentMaintenanceShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

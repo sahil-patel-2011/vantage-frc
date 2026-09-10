@@ -7,6 +7,7 @@ import {
   sketchToBriefRelatedLinks,
   sketchToBriefShellCopy,
 } from "./sketch-to-brief-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("sketchToBriefRelatedLinks", () => {
   it("builds Kickoff / CAD cross-links", () => {
@@ -117,10 +118,10 @@ describe("sketchToBriefShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = sketchToBriefShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|logged|transcrib/i);
+      expectPlainCopy(copy.description);
     }
-    expect(sketchToBriefShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(sketchToBriefShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(sketchToBriefShellCopy("empty").description);
+    expectPlainCopy(sketchToBriefShellCopy("setup").description);
   });
 
   it("formats real counts only", () => {

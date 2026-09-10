@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { costsNextActions } from "./costs-next-actions";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("costsNextActions Soft-UI helpers", () => {
   it("routes missing workspace to /workspace", () => {
@@ -18,7 +19,7 @@ describe("costsNextActions Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(actions.find((a) => a.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never DEMO|not placeholders|not invented/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("asks for first cost when budget exists but nothing is logged", () => {

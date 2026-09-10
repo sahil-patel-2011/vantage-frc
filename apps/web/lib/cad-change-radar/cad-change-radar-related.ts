@@ -73,13 +73,13 @@ export function cadChangeRadarSetupSteps(orgId?: string | null): CadChangeRadarS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — change radar is org-scoped.",
+      detail: "Choose your team organization to open change radar.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Connect Onshape and confirm workspace context — never DEMO revision diffs.",
+      detail: "Connect Onshape and confirm workspace context.",
       href: hubHref("/build", "cad", orgId),
     },
     {
@@ -136,7 +136,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
       return {
         kind,
         title: "Loading CAD Change Impact Radar…",
-        description: "Checking workspace membership and Onshape connection — never DEMO revision diffs.",
+        description: "Checking workspace membership and Onshape connection.",
       };
     case "error":
       return {
@@ -144,7 +144,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
         badge: "Unavailable",
         title: "Could not load CAD Change Impact Radar",
         description:
-          "A network or server issue blocked change radar. Retry, or open CAD while it reloads — never invent DEMO diffs.",
+          "A network or server issue blocked change radar. Retry, or open CAD while it reloads.",
       };
     case "setup":
       return {
@@ -152,7 +152,7 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
         badge: "Setup required",
         title: "Connect Onshape and select a workspace",
         description:
-          "Change radar needs an org and CAD connection. Snapshots stay blank until a real revision is recorded — nothing is pre-seeded.",
+          "Change radar needs an org and CAD connection. Snapshots stay blank until a real revision is recorded.",
       };
     case "empty":
       return {
@@ -160,14 +160,14 @@ export function cadChangeRadarShellCopy(kind: CadChangeRadarShellKind): CadChang
         badge: "No snapshots yet",
         title: "Record the first tracked revision",
         description:
-          "Envelope dims, mounts, mass, and ratios appear once you snapshot a real Onshape release — never DEMO revision packs.",
+          "Envelope dims, mounts, mass, and ratios appear once you snapshot a real Onshape release.",
       };
     default:
       return {
         kind: "ready",
         title: "Release diffs from real snapshots",
         description:
-          "Notifications fan out only when tracked parts change — never DEMO impact alerts.",
+          "Notifications fan out only when tracked parts change.",
       };
   }
 }
@@ -194,7 +194,7 @@ export function cadChangeRadarNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Change radar is org-scoped — pick a team before tracking parts.",
+          detail: "Pick a team before tracking parts.",
           href: "/workspace",
           primary: true,
         },
@@ -264,7 +264,7 @@ export function cadChangeRadarNextActions(input: {
       {
         id: "snapshot",
         label: "Record the first snapshot",
-        detail: "Diffs stay blank until a real revision is recorded — never DEMO packs.",
+        detail: "Diffs stay blank until a real revision is recorded.",
         href: "#cad-change-radar-snapshot",
         primary: true,
       },
@@ -289,7 +289,7 @@ export function cadChangeRadarNextActions(input: {
       label: unreadCount > 0 ? "Review unread change alerts" : "Review release diffs",
       detail:
         unreadCount > 0
-          ? `${unreadCount} unread alert${unreadCount === 1 ? "" : "s"} from real release diffs — never DEMO impact.`
+          ? `${unreadCount} unread alert${unreadCount === 1 ? "" : "s"} from real release diffs.`
           : `${diffCount} recorded diff${diffCount === 1 ? "" : "s"} across ${snapshotCount} snapshot${snapshotCount === 1 ? "" : "s"}.`,
       href: unreadCount > 0 ? "#cad-change-radar-alerts" : "#cad-change-radar-diffs",
       primary: true,

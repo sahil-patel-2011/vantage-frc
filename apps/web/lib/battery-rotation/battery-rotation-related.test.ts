@@ -10,6 +10,7 @@ import {
   formatBatteryRotationPlanReadiness,
   shouldShowBatteryRotationSummaryTiles,
 } from "./battery-rotation-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("batteryRotationRelatedLinks", () => {
   it("builds Batteries / Health Forecast / Pit cross-links via hubHref / withOrgHref", () => {
@@ -142,10 +143,10 @@ describe("batteryRotationShellCopy + metrics", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = batteryRotationShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(batteryRotationShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(batteryRotationShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(batteryRotationShellCopy("empty").description);
+    expectPlainCopy(batteryRotationShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles / readiness", () => {

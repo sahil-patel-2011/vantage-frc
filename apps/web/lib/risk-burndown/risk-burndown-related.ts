@@ -95,7 +95,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         kind,
         title: "Loading Risk-Register Burndown…",
         description:
-          "Checking workspace membership and real risk rows — never DEMO burndown metrics.",
+          "Checking workspace membership and real risk rows.",
       };
     case "error":
       return {
@@ -103,7 +103,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "Unavailable",
         title: "Could not load Risk-Register Burndown",
         description:
-          "A network or server issue blocked the register. Retry, or open Risks / FMEA while it reloads — never invent DEMO risk metrics.",
+          "A network or server issue blocked the register. Retry, or open Risks / FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -111,7 +111,7 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Risk-Register Burndown is org-scoped. Pick a workspace before logging real season risks — nothing is pre-seeded.",
+          "Pick a workspace before logging real season risks.",
       };
     case "empty":
       return {
@@ -119,14 +119,14 @@ export function riskBurndownShellCopy(kind: RiskBurndownShellKind): RiskBurndown
         badge: "No risks yet",
         title: "Log a season risk before tracking burndown",
         description:
-          "Open / closed counts stay blank until you log a real risk. Cross-check Risks and FMEA — never DEMO burndown metrics.",
+          "Open / closed counts stay blank until you log a real risk. Cross-check Risks and FMEA.",
       };
     default:
       return {
         kind: "ready",
         title: "Season risk-register burndown",
         description:
-          "Open counts and severity bands use only logged risks — never DEMO burndown metrics.",
+          "Open counts and severity bands use only logged risks.",
       };
   }
 }
@@ -153,20 +153,20 @@ export function riskBurndownNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Burndown is org-scoped — pick a team before logging season risks.",
+          detail: "Pick a team before logging season risks.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "risks",
           label: "Open Risks",
-          detail: "Season L×I scores stay empty until you log them — never DEMO totals.",
+          detail: "Season L×I scores stay empty until you log them.",
           href: withOrgHref("/risks", null),
         },
         {
           id: "fmea",
           label: "Open FMEA",
-          detail: "Failure modes stay blank until logged — never DEMO RPN scores.",
+          detail: "Failure modes stay blank until logged.",
           href: hubHref("/team", "fmea", null),
         },
       ];
@@ -223,14 +223,14 @@ export function riskBurndownNextActions(input: {
       {
         id: "log-risk",
         label: "Log a season risk",
-        detail: "Title, L×I, and identified-on stay blank until you enter a real risk — never DEMO rows.",
+        detail: "Title, L×I, and identified-on stay blank until you enter a real risk.",
         href: "#risk-burndown-log-risk",
         primary: true,
       },
       {
         id: "risks",
         label: "Open Risks",
-        detail: "Season L×I scores stay empty until logged — never DEMO totals.",
+        detail: "Season L×I scores stay empty until logged.",
         href: withOrgHref("/risks", orgId),
       },
       {
@@ -256,7 +256,7 @@ export function riskBurndownNextActions(input: {
     actions.push({
       id: "log-risk",
       label: "Log another season risk",
-      detail: "Closed registers still need new season risks as schedule and supply change — never DEMO rows.",
+      detail: "Closed registers still need new season risks as schedule and supply change.",
       href: "#risk-burndown-log-risk",
       primary: true,
     });
@@ -264,7 +264,7 @@ export function riskBurndownNextActions(input: {
     actions.push({
       id: "register",
       label: "Review open risks",
-      detail: `${openRiskCount} open risk${openRiskCount === 1 ? "" : "s"} with real L×I — never DEMO burndown signal.`,
+      detail: `${openRiskCount} open risk${openRiskCount === 1 ? "" : "s"} with real L×I.`,
       href: "#risk-burndown-register",
       primary: true,
     });
@@ -274,7 +274,7 @@ export function riskBurndownNextActions(input: {
     {
       id: "risks",
       label: "Open Risks",
-      detail: "Keep the season risk register in sync with burndown closures — never DEMO scores.",
+      detail: "Keep the season risk register in sync with burndown closures.",
       href: withOrgHref("/risks", orgId),
     },
     {

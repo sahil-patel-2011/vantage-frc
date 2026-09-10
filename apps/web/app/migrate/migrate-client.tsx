@@ -287,7 +287,7 @@ export default function MigrateClient() {
           </>
         }
         title="Bring your season"
-        description="Pick one source, preview real rows, then import. Dual-run until you turn the old tool off — never invent events."
+        description="Pick one source, preview the rows, then import. Keep the old tool running until you have checked the result."
       />
       {loadFailed ? (
         (() => {

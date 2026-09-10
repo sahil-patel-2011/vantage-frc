@@ -98,14 +98,14 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         title: "Loading assistant…",
-        description: "Checking org-scoped channels and memory settings for this workspace.",
+        description: "Checking your team's channels and memory settings for this workspace.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
         title: "Sign in to use Chat",
-        description: "The assistant is org-scoped. Sign in, then reopen Chat from the AI hub.",
+        description: "Sign in, then reopen Chat from the AI hub.",
       };
     case "setup":
       return {
@@ -121,7 +121,7 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
         badge: "Start here",
         title: "Pick or create a channel",
         description:
-          "Private chats stay yours. Team-shared channels are visible to members. Tools only run when authorized — never invent rows for empty Neon or TBA results.",
+          "Private chats stay yours. Team-shared channels are visible to members. Tools only run when authorized.",
       };
     case "error":
       return {

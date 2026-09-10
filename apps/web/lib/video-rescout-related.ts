@@ -76,13 +76,13 @@ export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — video re-scout is org-scoped.",
+      detail: "Choose your team organization to open video re-scout.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Confirm a match schema so timeline scores can commit — never DEMO jobs.",
+      detail: "Confirm a match schema so timeline scores can commit.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -94,7 +94,7 @@ export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetup
     {
       id: "disagreements",
       label: "Open Disagreements",
-      detail: "Re-watch clips when stand scouts conflict — never invent DEMO jobs.",
+      detail: "Re-watch clips when stand scouts conflict.",
       href: withOrgHref("/scout-disagreements", orgId),
     },
     {
@@ -152,7 +152,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         kind,
         title: "Loading video re-scout…",
         description:
-          "Checking workspace membership and saved match reviews — never DEMO jobs.",
+          "Checking workspace membership and saved match reviews.",
       };
     case "error":
       return {
@@ -160,7 +160,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         badge: "Unavailable",
         title: "Could not load video re-scout",
         description:
-          "A network or server issue blocked match reviews. Retry, or open Scouting / Accuracy / Disagreements while it reloads — never invent DEMO jobs.",
+          "A network or server issue blocked match reviews. Retry, or open Scouting / Accuracy / Disagreements while it reloads.",
       };
     case "setup":
       return {
@@ -168,7 +168,7 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Video re-scout is org-scoped. Pick a workspace before match reviews appear — nothing is pre-seeded.",
+          "Pick a workspace before match reviews appear.",
       };
     case "empty":
       return {
@@ -176,14 +176,14 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
         badge: "No reviews yet",
         title: "Waiting on a real match clip",
         description:
-          "Paste a YouTube match link and assign up to four teams to re-scout. Cross-check Scouting, Accuracy, and Disagreements — never DEMO jobs.",
+          "Paste a YouTube match link and assign up to four teams to re-scout. Cross-check Scouting, Accuracy, and Disagreements.",
       };
     default:
       return {
         kind: "ready",
         title: "Video re-scout",
         description:
-          "Pause, rewind, and stamp timeline scores from real match footage — never DEMO jobs.",
+          "Pause, rewind, and stamp timeline scores from real match footage.",
       };
   }
 }
@@ -208,14 +208,14 @@ export function videoRescoutNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Video re-scout is org-scoped — pick a team before saving reviews.",
+          detail: "Pick a team before saving reviews.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Match schemas stay blank until your team configures them — never DEMO jobs.",
+          detail: "Match schemas stay blank until your team configures them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
@@ -236,7 +236,7 @@ export function videoRescoutNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Confirm a match schema so timeline scores can commit — never DEMO jobs.",
+        detail: "Confirm a match schema so timeline scores can commit.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },
@@ -266,7 +266,7 @@ export function videoRescoutNextActions(input: {
       {
         id: "retry",
         label: "Retry video re-scout",
-        detail: "Reload real match reviews — nothing is pre-seeded while this fails.",
+        detail: "Reload real match reviews.",
         href: withOrgHref("/video", orgId),
         primary: true,
       },
@@ -296,7 +296,7 @@ export function videoRescoutNextActions(input: {
       {
         id: "create",
         label: "Add a match review",
-        detail: "Paste a YouTube link on this page — reviews stay blank until then, never DEMO jobs.",
+        detail: "Paste a YouTube link on this page — reviews stay blank until then.",
         href: "#video-new-review",
         primary: true,
       },
@@ -330,8 +330,8 @@ export function videoRescoutNextActions(input: {
           : `Open ${reviewCount} review${reviewCount === 1 ? "" : "s"}`,
       detail:
         scoreCount > 0
-          ? "Commit real timeline scores into scouting — never DEMO jobs."
-          : "Assign teams and stamp scores from the playhead — never DEMO jobs.",
+          ? "Commit real timeline scores into scouting."
+          : "Assign teams and stamp scores from the playhead.",
       href: scoreCount > 0 ? "#video-timeline" : "#video-reviews",
       primary: true,
     },

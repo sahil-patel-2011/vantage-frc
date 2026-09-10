@@ -8,6 +8,7 @@ import {
   spareRobotKitShellCopy,
   shouldShowSpareRobotKitSummaryTiles,
 } from "./spare-robot-kit-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("spareRobotKitRelatedLinks", () => {
   it("builds FMEA / Spare Forecast / Batteries cross-links", () => {
@@ -92,9 +93,7 @@ describe("classifySpareRobotKitShell + helpers", () => {
   it("copy never invents DEMO pack lists", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = spareRobotKitShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

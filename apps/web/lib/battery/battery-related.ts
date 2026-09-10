@@ -139,7 +139,7 @@ export function batteryNextActions(input: {
     actions.push({
       id: "rotation",
       label: `Next pack: ${input.nextRotationLabel}`,
-      detail: "Rotation ranks only active packs with real health signals — never invented IR.",
+      detail: "Rotation ranks only active packs with real health signals.",
       href: withOrg("/battery-rotation", orgId),
       primary: actions.length === 0,
     });

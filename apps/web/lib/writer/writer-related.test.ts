@@ -5,6 +5,7 @@ import {
   writerShellCopy,
   WRITER_RELATED_INCLUDE,
 } from "./writer-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("writerRelated Soft-UI helpers", () => {
   it("returns no links without an org", () => {
@@ -53,7 +54,7 @@ describe("writerRelated Soft-UI helpers", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
       // Copy may mention “never DEMO …” as an honesty guard — never invent rows/metrics.
       if (kind === "empty" || kind === "setup" || kind === "provider_setup") {
-        expect(`${copy.title} ${copy.description}`).toMatch(/empty|workspace|template|never invent|DEMO essays/i);
+        expectPlainCopy(`${copy.title} ${copy.description}`);
       }
     }
   });

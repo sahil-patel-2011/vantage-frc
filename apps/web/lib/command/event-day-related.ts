@@ -79,7 +79,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Event Day Command is org-scoped.",
+      detail: "Choose your team organization to open Event Day Command.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -302,7 +302,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "retry",
         label: "Retry Event Day",
-        detail: "Reload real TBA schedule rows — nothing is pre-seeded while this fails.",
+        detail: "Reload real TBA schedule rows.",
         href: withOrgHref("/command", orgId),
         primary: true,
       },

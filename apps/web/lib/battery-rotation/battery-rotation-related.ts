@@ -95,7 +95,7 @@ export function batteryRotationSetupSteps(orgId?: string | null): BatteryRotatio
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Battery Rotation is org-scoped.",
+      detail: "Choose your team organization to open Battery Rotation.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -167,7 +167,7 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         kind,
         title: "Loading Battery Rotation…",
         description:
-          "Checking workspace membership and real pack / IR logs — never DEMO charge plans.",
+          "Checking workspace membership and real pack / IR logs.",
       };
     case "error":
       return {
@@ -175,7 +175,7 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         badge: "Unavailable",
         title: "Could not load Battery Rotation",
         description:
-          "A network or server issue blocked the rotation board. Retry, or open Batteries / Health Forecast / Pit while it reloads — never invent DEMO IR or charge metrics.",
+          "A network or server issue blocked the rotation board. Retry, or open Batteries / Health Forecast / Pit while it reloads.",
       };
     case "setup":
       return {
@@ -183,7 +183,7 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Battery Rotation is org-scoped. Pick a workspace before scheduling packs from real IR trends — nothing is pre-seeded.",
+          "Pick a workspace before scheduling packs from real IR trends.",
       };
     case "empty":
       return {
@@ -191,14 +191,14 @@ export function batteryRotationShellCopy(kind: BatteryRotationShellKind): Batter
         badge: "No batteries yet",
         title: "Add a pack before planning match rotation",
         description:
-          "Match assignments and charge windows stay blank until you register a pack. Cross-check Batteries, Health Forecast, and Pit — never DEMO IR or charge metrics.",
+          "Match assignments and charge windows stay blank until you register a pack. Cross-check Batteries, Health Forecast, and Pit.",
       };
     default:
       return {
         kind: "ready",
         title: "Battery rotation & charge planner",
         description:
-          "Schedules use only logged packs and IR trends — never DEMO charge plans or short-pack counts.",
+          "Schedules use only logged packs and IR trends.",
       };
   }
 }
@@ -263,20 +263,20 @@ export function batteryRotationNextActions(input: {
       {
         id: "add-battery",
         label: "Add a battery",
-        detail: "Label and serial stay blank until you register a real pack — never DEMO rows.",
+        detail: "Label and serial stay blank until you register a real pack.",
         href: "#br-add-battery",
         primary: true,
       },
       {
         id: "batteries",
         label: "Open Batteries",
-        detail: "Log IR and cycles on the Team Batteries board — never DEMO health scores.",
+        detail: "Log IR and cycles on the Team Batteries board.",
         href: hubHref("/team", "batteries", orgId),
       },
       {
         id: "battery-health-forecast",
         label: "Open Health Forecast",
-        detail: "Retirement projections stay blank until packs exist — never DEMO EOL dates.",
+        detail: "Retirement projections stay blank until packs exist.",
         href: hubHref("/build", "battery-health-forecast", orgId),
       },
       {
@@ -294,7 +294,7 @@ export function batteryRotationNextActions(input: {
     actions.push({
       id: "short-packs",
       label: "Review short-pack alerts",
-      detail: `${shortPackCount} pack${shortPackCount === 1 ? "" : "s"} flagged from real IR thresholds — bench before eliminations, never DEMO alerts.`,
+      detail: `${shortPackCount} pack${shortPackCount === 1 ? "" : "s"} flagged from real IR thresholds — bench before eliminations.`,
       href: "#br-fleet",
       primary: true,
     });
@@ -334,7 +334,7 @@ export function batteryRotationNextActions(input: {
     {
       id: "battery-health-forecast",
       label: "Open Health Forecast",
-      detail: "Project pack retirement from the same IR + cycle history — never DEMO EOL dates.",
+      detail: "Project pack retirement from the same IR + cycle history.",
       href: hubHref("/build", "battery-health-forecast", orgId),
     },
     {

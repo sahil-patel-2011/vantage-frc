@@ -495,7 +495,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
                   </li>
                 ))}
               </ul>
-              <p className="app-muted">This tile is the last stored row — never a DEMO %.</p>
+              <p className="app-muted">Showing the last stored result.</p>
               <a className="app-button secondary" href={withOrg("/strategy")}>
                 Recompute on Strategy
               </a>

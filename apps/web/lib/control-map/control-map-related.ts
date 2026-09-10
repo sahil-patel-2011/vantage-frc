@@ -96,7 +96,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
       return {
         kind,
         title: "Loading control map…",
-        description: "Checking workspace membership and saved bindings — never DEMO button maps.",
+        description: "Checking workspace membership and saved bindings.",
       };
     case "error":
       return {
@@ -112,7 +112,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Control Map is org-scoped. Pick a workspace before mapping driver and operator inputs — nothing is pre-seeded.",
+          "Pick a workspace before mapping driver and operator inputs.",
       };
     case "empty":
       return {
@@ -120,7 +120,7 @@ export function controlMapShellCopy(kind: ControlMapShellKind): ControlMapEmptyC
         badge: "No bindings yet",
         title: "Map your first controller input",
         description:
-          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and FMEA so buttons match robot systems — never DEMO bindings.",
+          "The cheat sheet stays blank until you save a real input → action. Cross-check Subsystems and FMEA so buttons match robot systems.",
       };
     default:
       return {
@@ -154,26 +154,26 @@ export function controlMapNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Bindings are org-scoped — pick a team before mapping controls.",
+          detail: "Pick a team before mapping controls.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "subsystems",
           label: "Open Subsystems",
-          detail: "Subsystem specs stay empty until you author them — never DEMO systems.",
+          detail: "Subsystem specs stay empty until you author them.",
           href: withOrgHref("/subsystems", null),
         },
         {
           id: "fmea",
           label: "Open FMEA",
-          detail: "Failure modes stay blank until scored — never DEMO RPN.",
+          detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
         {
           id: "practice",
           label: "Open Practice",
-          detail: "Driver sessions stay empty until logged — never DEMO reps.",
+          detail: "Driver sessions stay empty until logged.",
           href: hubHref("/team", "practice", null),
         },
       ];
@@ -285,7 +285,7 @@ export function controlMapNextActions(input: {
     {
       id: "subsystems",
       label: "Cross-check Subsystems",
-      detail: "Confirm each command still matches a live robot subsystem — never DEMO systems.",
+      detail: "Confirm each command still matches a live robot subsystem.",
       href: withOrgHref("/subsystems", orgId),
       primary: !actions.some((a) => a.primary),
     },

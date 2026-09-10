@@ -8,6 +8,7 @@ import {
   formatCadChangeRadarMetric,
   shouldShowCadChangeRadarSummaryTiles,
 } from "./cad-change-radar-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("cadChangeRadarRelatedLinks", () => {
   it("builds CAD / FMEA / Prototypes cross-links", () => {
@@ -97,9 +98,7 @@ describe("classifyCadChangeRadarShell + helpers", () => {
   it("copy never invents DEMO revision diffs", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = cadChangeRadarShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

@@ -73,13 +73,13 @@ export function binShelfLocatorSetupSteps(orgId?: string | null): BinShelfLocato
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — bin locations are org-scoped.",
+      detail: "Choose your team organization to open bin locations.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "locations",
       label: "Add a bin or shelf",
-      detail: "Locations stay blank until your team maps them — never DEMO pins.",
+      detail: "Locations stay blank until your team maps them.",
       href: orgId ? withOrgHref("/bin-shelf-locator", orgId) : "/bin-shelf-locator",
     },
     {
@@ -126,7 +126,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
       return {
         kind,
         title: "Loading Bin/Shelf Locator…",
-        description: "Checking workspace membership and mapped locations — never DEMO inventory pins.",
+        description: "Checking workspace membership and mapped locations.",
       };
     case "error":
       return {
@@ -134,7 +134,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
         badge: "Unavailable",
         title: "Could not load Bin/Shelf Locator",
         description:
-          "A network or server issue blocked location maps. Retry, or open Spare Forecast while it reloads — never invent DEMO pins.",
+          "A network or server issue blocked location maps. Retry, or open Spare Forecast while it reloads.",
       };
     case "setup":
       return {
@@ -142,7 +142,7 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Bin/Shelf Locator is org-scoped. Pick a workspace before mapping bins — nothing is pre-seeded.",
+          "Pick a workspace before mapping bins.",
       };
     case "empty":
       return {
@@ -150,13 +150,13 @@ export function binShelfLocatorShellCopy(kind: BinShelfLocatorShellKind): BinShe
         badge: "No locations yet",
         title: "Map your first bin or shelf",
         description:
-          "QR/NFC find results appear only after real locations exist — never DEMO inventory pins.",
+          "QR/NFC find results appear only after real locations exist.",
       };
     default:
       return {
         kind: "ready",
         title: "Shop locations from your map",
-        description: "Bins and shelves from your team only — never DEMO location counters.",
+        description: "Bins and shelves from your team only.",
       };
   }
 }
@@ -181,7 +181,7 @@ export function binShelfLocatorNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Locations are org-scoped — pick a team before mapping bins.",
+          detail: "Pick a team before mapping bins.",
           href: "/workspace",
           primary: true,
         },
@@ -203,7 +203,7 @@ export function binShelfLocatorNextActions(input: {
       {
         id: "locations",
         label: "Add a bin or shelf",
-        detail: "Locations stay blank until your team maps them — never DEMO pins.",
+        detail: "Locations stay blank until your team maps them.",
         href: withOrgHref("/bin-shelf-locator", orgId) + "#bin-shelf-locations",
         primary: true,
       },
@@ -251,7 +251,7 @@ export function binShelfLocatorNextActions(input: {
       {
         id: "add-location",
         label: "Map the first location",
-        detail: "Find results stay blank until bins exist — never DEMO inventory pins.",
+        detail: "Find results stay blank until bins exist.",
         href: "#bin-shelf-locations",
         primary: true,
       },
@@ -276,7 +276,7 @@ export function binShelfLocatorNextActions(input: {
       label: itemCount > 0 ? "Find items by QR/code" : "Assign items to locations",
       detail:
         itemCount > 0
-          ? `${itemCount} item${itemCount === 1 ? "" : "s"} pinned across ${locationCount} location${locationCount === 1 ? "" : "s"} — never DEMO pins.`
+          ? `${itemCount} item${itemCount === 1 ? "" : "s"} pinned across ${locationCount} location${locationCount === 1 ? "" : "s"}`
           : `${locationCount} location${locationCount === 1 ? "" : "s"} mapped — assign items before scanning.`,
       href: itemCount > 0 ? "#bin-shelf-find" : "#bin-shelf-locations",
       primary: true,

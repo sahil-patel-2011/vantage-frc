@@ -228,7 +228,7 @@ export function offlineShellNextActions(input: {
       {
         id: "retry",
         label: "Retry Offline Shell",
-        detail: "Reload real sync events from Neon — nothing is pre-seeded while this fails.",
+        detail: "Reload real sync events from Neon.",
         href: shellHref,
         primary: true,
       },
@@ -339,7 +339,7 @@ export function offlineBootNextActions(input: {
     actions.push({
       id: "stay",
       label: "Keep this page open when sync returns",
-      detail: "Queued entries upload with retry/backoff. Counts come from IndexedDB — never invented.",
+      detail: "Queued entries upload with retry/backoff. Counts come from IndexedDB.",
       href: scoutHref,
     });
   }

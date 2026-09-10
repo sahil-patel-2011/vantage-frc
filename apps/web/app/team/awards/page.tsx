@@ -19,8 +19,7 @@ export default async function AwardsPage({
             <span className="breadcrumbs">Business / Awards workbench</span>
             <h1>Select a workspace</h1>
             <p className="app-muted">
-              FIRST award submissions and essay prompts are org-scoped. Choose a team workspace to open the awards
-              workbench — empty is not a placeholder scoreboard.
+              Award submissions and essay prompts belong to one team. Choose a workspace to open the awards workbench.
             </p>
           </div>
         </header>

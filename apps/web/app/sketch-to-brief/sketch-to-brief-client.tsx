@@ -52,7 +52,7 @@ function SketchNextActionsPanel({ actions }: { actions: SketchToBriefNextAction[
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Kickoff and CAD — never DEMO brief metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -285,7 +285,7 @@ export default function SketchToBriefClient() {
           </>
         }
         title="Sketch-to-Brief"
-        description="Transcribe a kickoff whiteboard sketch and get a grounded first-pass CAD brief plus a rule-compliance check — from your team's Kickoff notes and design priorities only. Cross-check Kickoff and CAD — never DEMO brief metrics."
+        description="Transcribe a kickoff whiteboard sketch and get a grounded first-pass CAD brief plus a rule-compliance check — from your team's Kickoff notes and design priorities only. Cross-check Kickoff and CAD."
       >
         <div className="sketch-to-brief-header-actions">
           {view.seasons.length > 0 ? (
@@ -360,8 +360,7 @@ export default function SketchToBriefClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep{" "}
             <a href={kickoffHref}>Kickoff</a> rule notes and design priorities aligned with brief
-            grounding, then model the mechanism in <a href={cadHref}>CAD</a> — never invent DEMO brief
-            metrics or rule text.
+            grounding, then model the mechanism in <a href={cadHref}>CAD</a>.
           </p>
         </Panel>
       </div>
@@ -429,8 +428,8 @@ function LogSketchForm({
       <h2 style={{ margin: 0 }}>Log a kickoff sketch</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Transcribe the whiteboard: mechanism labels, function, and any dimensions or rule callouts written
-        on it. Sketch-to-Brief never invents dimensions or rule text — it only works from what you write
-        here and what your team already logged in Kickoff &amp; Game Analysis.
+        on it. The brief is built from what you write here and what your team logged in Kickoff &amp; Game
+        Analysis, so include any dimensions or rule callouts you want it to use.
       </p>
       <FormRow label="Title">
         <input value={form.title} onChange={set("title")} placeholder="Coral intake concept" required />
@@ -476,7 +475,7 @@ function SketchList({
           badge="No sketches yet"
           badgeTone="setup"
           title="Log your first kickoff sketch"
-          description="Once logged, generate a grounded first-pass CAD brief from it — never DEMO brief metrics."
+          description="Once logged, generate a grounded first-pass CAD brief from it."
         >
           <a className="app-button" href="#sketch-to-brief-log-sketch">
             Log a sketch
@@ -557,7 +556,7 @@ function BriefList({
           badge="No briefs yet"
           badgeTone="setup"
           title="Generate a CAD brief from a logged sketch"
-          description="Briefs stay blank until you generate one from a real sketch — never DEMO dimensions or rule text."
+          description="Briefs stay blank until you generate one from a real sketch."
         >
           <a className="app-button" href="#sketch-to-brief-sketches">
             View sketches

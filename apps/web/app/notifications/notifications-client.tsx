@@ -56,7 +56,7 @@ function NextActions({
     <section className="notif-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From your real inbox only — empty means nothing has been sent yet. Never DEMO notifications.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -161,7 +161,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       <PageHeader
         breadcrumbs="Account / Inbox"
         title="Notifications"
-        description="Real alerts for your signed-in account. Empty means nothing has been sent yet — Vantage never invents DEMO competition notices."
+        description="Real alerts for your signed-in account."
       >
         {/* Prefs and Account used to be repeated here, one line above the
             related strip that already carries both — and the two "Account"
@@ -202,7 +202,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
                   : `${window.location.pathname}${window.location.search}`,
               message:
                 message ||
-                "Try again, or open Support if the inbox keeps failing. Nothing was filled with DEMO notifications.",
+                "Try again, or open Support if the inbox keeps failing.",
             },
           );
           return (
@@ -274,8 +274,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
               title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
               description={
                 filter === "unread"
-                  ? "You’re caught up. Switch to All for history, or wait for the next real todo, duty, calendar, or release alert — never DEMO fillers."
-                  : "When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here with a real timestamp — never DEMO competition noise."
+                  ? "You’re caught up. Switch to All for history, or wait for the next real todo, duty, calendar, or release alert."
+                  : "When a coach assigns a todo or duty, schedules a calendar event, a release ships, or teammates message you, they appear here with a real timestamp."
               }
             />
           ) : (

@@ -68,7 +68,7 @@ export function teamHealthSetupSteps(orgId?: string | null): TeamHealthSetupStep
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Team Health is org-scoped.",
+      detail: "Choose your team organization to open Team Health.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -136,7 +136,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
       return {
         kind,
         title: "Loading Team Health…",
-        description: "Checking workspace membership and attendance / hour logs — never DEMO morale scores.",
+        description: "Checking workspace membership and attendance / hour logs.",
       };
     case "error":
       return {
@@ -144,7 +144,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
         badge: "Unavailable",
         title: "Could not load Team Health",
         description:
-          "A network or server issue blocked the engagement view. Retry, or open Attendance while it reloads — never invent DEMO morale.",
+          "A network or server issue blocked the engagement view. Retry, or open Attendance while it reloads.",
       };
     case "setup":
       return {
@@ -152,7 +152,7 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Team Health is org-scoped. Pick a workspace before reading attendance and hour logs — nothing is pre-seeded.",
+          "Pick a workspace before reading attendance and hour logs.",
       };
     case "empty":
       return {
@@ -160,13 +160,13 @@ export function teamHealthShellCopy(kind: TeamHealthShellKind): TeamHealthEmptyC
         badge: "No logs yet",
         title: "Engagement stays empty until someone logs time",
         description:
-          "Team Health is built from attendance roll call and shop-hour clock-ins only — never DEMO morale scores.",
+          "Team Health is built from attendance roll call and shop-hour clock-ins only.",
       };
     default:
       return {
         kind: "ready",
         title: "Engagement from logs",
-        description: "Attendance roll call and shop hours only — never DEMO morale scores.",
+        description: "Attendance roll call and shop hours only.",
       };
   }
 }
@@ -219,7 +219,7 @@ export function teamHealthNextActions(input: {
       {
         id: "attendance",
         label: "Log attendance",
-        detail: "Take roll call so engagement has real presence — never DEMO morale.",
+        detail: "Take roll call so engagement has real presence.",
         href: hubHref("/team", "attendance", orgId),
         primary: true,
       },
@@ -246,7 +246,7 @@ export function teamHealthNextActions(input: {
       detail:
         checkInCount > 0
           ? `${checkInCount} roster member(s) have no attendance or hours this season.`
-          : "Attendance and shop hours from this season — never DEMO morale.",
+          : "Attendance and shop hours from this season.",
       href: checkInCount > 0 ? "#team-health-checkins" : "#team-health-members",
       primary: true,
     },

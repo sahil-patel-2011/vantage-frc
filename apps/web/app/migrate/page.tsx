@@ -3,7 +3,7 @@ import "./migrate.css";
 
 export const metadata = {
   title: "Bring your season",
-  description: "Import ICS, scouting CSV, and Notion into Vantage — never invent events.",
+  description: "Import your calendar, scouting CSV, and Notion pages into Vantage.",
 };
 
 export default function MigratePage() {

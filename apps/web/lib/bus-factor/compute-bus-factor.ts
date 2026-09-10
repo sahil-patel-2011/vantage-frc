@@ -19,19 +19,19 @@ function setupSteps(orgId: string | null): BusFactorSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Bus-Factor is org-scoped.",
+      detail: "Choose your team organization to open Bus-Factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Presence stays blank until real check-ins exist — never DEMO headcount.",
+      detail: "Presence stays blank until real check-ins exist.",
       href: hubHref("/team", "attendance", orgId),
     },
     {
       id: "hours-self-view",
       label: "Open My Hours",
-      detail: "Clocked hours stay blank until members log shop time — never DEMO hours.",
+      detail: "Clocked hours stay blank until members log shop time.",
       href: hubHref("/team", "hours-self-view", orgId),
     },
   ];

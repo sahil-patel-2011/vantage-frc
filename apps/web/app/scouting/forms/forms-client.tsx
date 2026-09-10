@@ -208,7 +208,7 @@ function FormBuilderNextActionsPanel({ actions }: { actions: FormBuilderNextActi
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting and Coverage — never DEMO fields.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -275,7 +275,7 @@ function FormBuilderShell({
       <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
-        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
+        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists."
       >
         <FormBuilderRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -891,7 +891,7 @@ export default function FormsClient({ orgId }: { orgId: string; embedded?: boole
       <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
-        description="Configure required fields, preview, and publish versioned match or pit schemas — never DEMO fields."
+        description="Configure required fields, preview, and publish versioned match or pit schemas."
       >
         <div className="sfb-toolbar">
           <FormBuilderRelatedStrip orgId={orgId} />

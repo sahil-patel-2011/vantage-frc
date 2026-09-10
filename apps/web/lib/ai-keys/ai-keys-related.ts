@@ -89,7 +89,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "SIGN IN REQUIRED",
       title: "Sign in to manage API keys",
-      description: "BYOK keys are org-scoped and encrypted. Sign in, then open this page from Account or Team setup.",
+      description: "BYOK keys are your team's and encrypted. Sign in, then open this page from Account or Team setup.",
       badge: "Auth required",
     };
   }
@@ -125,7 +125,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "COULD NOT LOAD",
       title: "Could not load AI key status",
-      description: detail?.trim() || "Retry when the network or database is available. No DEMO keys are invented.",
+      description: detail?.trim() || "Retry when the network or database is available.",
       badge: "Retry",
     };
   }

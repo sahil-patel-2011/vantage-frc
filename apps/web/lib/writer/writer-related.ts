@@ -95,7 +95,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "Setup required",
         title: "Select a workspace",
         description:
-          "Choose a team organization before composing. FRC Assistant never invents essays when a provider key is missing — use templates once a team is selected.",
+          "Choose a team organization before composing. FRC Assistant needs a provider key; templates work without one.",
       };
     case "provider_setup":
       return {
@@ -103,7 +103,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "Setup required",
         title: "AI provider not configured",
         description:
-          "Use Compose from template for org-scoped drafts without a model key — FRC Assistant never invents text when providers are missing.",
+          "Use Compose from template to draft from your team’s profile without a model key.",
       };
     case "empty":
       return {
@@ -111,7 +111,7 @@ export function writerShellCopy(kind: WriterShellKind): WriterShellCopy {
         badge: "No drafts",
         title: "Draft library is empty",
         description:
-          "Templates and saved drafts stay blank until you compose. Nothing is seeded with DEMO essays.",
+          "Templates and saved drafts stay blank until you compose.",
       };
     default:
       return {

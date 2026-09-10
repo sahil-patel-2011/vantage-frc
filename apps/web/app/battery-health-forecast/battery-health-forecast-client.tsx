@@ -63,9 +63,7 @@ function BatteryHealthForecastNextActionsPanel({
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">
-          Battery Rotation, Batteries, and Pit — never DEMO IR or end-of-life metrics.
-        </p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -310,7 +308,7 @@ export default function BatteryHealthForecastClient() {
           </>
         }
         title="Battery Health Forecast"
-        description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log — never DEMO IR or EOL metrics."
+        description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log."
       >
         <div className="battery-health-forecast-header-actions">
           {relatedLinks.map((link) => (
@@ -362,7 +360,7 @@ export default function BatteryHealthForecastClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Schedule match packs in <a href={rotationHref}>Battery Rotation</a>, log IR on{" "}
             <a href={batteriesHref}>Batteries</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Pit Command</a> — never invent DEMO resistance or retirement dates.
+            <a href={pitHref}>Pit Command</a>
           </p>
         </Panel>
       </div>

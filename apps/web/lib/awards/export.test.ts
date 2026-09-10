@@ -12,6 +12,7 @@ import {
   type AwardExportSubmissionInput,
   type AwardNotebookEntryInput,
 } from "./export";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const SUBMISSION: AwardExportSubmissionInput = {
   id: "sub-chair-1",
@@ -162,7 +163,7 @@ describe("buildAwardExportPayload", () => {
     expect(blob).not.toMatch(/volunteerHours/i);
     expect(blob).not.toMatch(/communityHours/i);
     expect(blob).not.toMatch(/\b120 hours\b/i);
-    expect(payload.copyText).toContain("Impact hours are never invented");
+    expectPlainCopy(payload.copyText);
   });
 
   it("records character counts from authored text only — not a fabricated hour total", () => {

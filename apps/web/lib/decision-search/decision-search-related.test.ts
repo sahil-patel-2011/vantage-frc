@@ -8,6 +8,7 @@ import {
   formatDecisionSearchMatchPct,
   formatDecisionSearchMetric,
 } from "./decision-search-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("decisionSearchRelatedLinks", () => {
   it("builds Season Report / Knowledge / Strategy cross-links", () => {
@@ -119,10 +120,10 @@ describe("decisionSearchShellCopy + metrics", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = decisionSearchShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|indexed|metered/i);
+      expectPlainCopy(copy.description);
     }
-    expect(decisionSearchShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(decisionSearchShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(decisionSearchShellCopy("empty").description);
+    expectPlainCopy(decisionSearchShellCopy("setup").description);
   });
 
   it("formats metrics from real counts only", () => {

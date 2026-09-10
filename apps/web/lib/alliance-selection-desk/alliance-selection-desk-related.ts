@@ -80,19 +80,19 @@ export function allianceSelectionDeskSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — the desk is org-scoped.",
+      detail: "Choose your team organization to open the desk.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Confirm event context and pick lists before opening a live board — never DEMO rankings.",
+      detail: "Confirm event context and pick lists before opening a live board.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
     {
@@ -146,7 +146,7 @@ export function allianceSelectionDeskShellCopy(
         kind,
         title: "Loading Alliance Selection Desk…",
         description:
-          "Checking workspace membership and desk sessions — never DEMO alliance rankings.",
+          "Checking workspace membership and desk sessions.",
       };
     case "error":
       return {
@@ -154,7 +154,7 @@ export function allianceSelectionDeskShellCopy(
         badge: "Unavailable",
         title: "Could not load Alliance Selection Desk",
         description:
-          "A network or server issue blocked the board. Retry, or open Strategy / Scouting while it reloads — never DEMO picks.",
+          "A network or server issue blocked the board. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -162,7 +162,7 @@ export function allianceSelectionDeskShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Alliance Selection Desk is org-scoped. Pick a workspace before creating a live board — nothing is pre-seeded, never DEMO rankings.",
+          "Pick a workspace before creating a live board.",
       };
     case "empty":
       return {
@@ -170,14 +170,14 @@ export function allianceSelectionDeskShellCopy(
         badge: "No sessions",
         title: "Create a selection desk session",
         description:
-          "Open an 8-alliance live board for your active event. Slots stay empty until you assign real teams — never DEMO captains.",
+          "Open an 8-alliance live board for your active event. Slots stay empty until you assign real teams.",
       };
     default:
       return {
         kind: "ready",
         title: "Live alliance selection board",
         description:
-          "Shared slots, scout evidence, and TBA conflict flags — never DEMO rankings or invented EPA.",
+          "Shared slots, scout evidence, and TBA conflict flags.",
       };
   }
 }
@@ -202,20 +202,20 @@ export function allianceSelectionDeskNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "The desk is org-scoped — pick a team before opening a board.",
+          detail: "Pick a team before opening a board.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -285,7 +285,7 @@ export function allianceSelectionDeskNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scout evidence attaches to slots — never DEMO scores.",
+        detail: "Scout evidence attaches to slots.",
         href: hubHref("/competition", "scouting", orgId),
       },
     ];
@@ -296,7 +296,7 @@ export function allianceSelectionDeskNextActions(input: {
       {
         id: "conflicts",
         label: "Resolve conflict flags",
-        detail: `${conflictCount} conflict flag${conflictCount === 1 ? "" : "s"} from TBA/scout overlap — never invent DEMO warnings.`,
+        detail: `${conflictCount} conflict flag${conflictCount === 1 ? "" : "s"} from TBA/scout overlap.`,
         href: "#alliance-desk-board",
         primary: true,
       },
@@ -341,7 +341,7 @@ export function allianceSelectionDeskNextActions(input: {
     {
       id: "export",
       label: "Export drive-team pack",
-      detail: "Print Soft-UI pack from assigned slots only — never DEMO alliances.",
+      detail: "Print pack from assigned slots only.",
       href: "#alliance-desk-export",
     },
   ];

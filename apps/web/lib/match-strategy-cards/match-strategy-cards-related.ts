@@ -82,13 +82,13 @@ export function matchStrategyCardsSetupSteps(
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — strategy cards are org-scoped.",
+      detail: "Choose your team organization to open strategy cards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Confirm event context and schedule sync — never DEMO matchups.",
+      detail: "Confirm event context and schedule sync.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
@@ -144,7 +144,7 @@ export function matchStrategyCardsShellCopy(
         kind,
         title: "Loading Match Strategy Cards…",
         description:
-          "Checking workspace membership and scheduled matches — never DEMO game plans.",
+          "Checking workspace membership and scheduled matches.",
       };
     case "error":
       return {
@@ -152,7 +152,7 @@ export function matchStrategyCardsShellCopy(
         badge: "Unavailable",
         title: "Could not load Match Strategy Cards",
         description:
-          "A network or server issue blocked the schedule. Retry, or open Strategy / Command while it reloads — never DEMO matchups.",
+          "A network or server issue blocked the schedule. Retry, or open Strategy / Command while it reloads.",
       };
     case "setup":
       return {
@@ -160,7 +160,7 @@ export function matchStrategyCardsShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Strategy Cards are org-scoped. Pick a workspace and active event before drafting plans — nothing is pre-seeded, never DEMO game plans.",
+          "Pick a workspace and active event before drafting plans.",
       };
     case "empty":
       return {
@@ -168,14 +168,14 @@ export function matchStrategyCardsShellCopy(
         badge: "No matches yet",
         title: "Waiting on a synced match schedule",
         description:
-          "Cards appear once the schedule is synced for your active event. Plans stay blank until your drive team writes them — never DEMO game plans.",
+          "Cards appear once the schedule is synced for your active event. Plans stay blank until your drive team writes them.",
       };
     default:
       return {
         kind: "ready",
         title: "Printable per-match game plans",
         description:
-          "Roles, auto, defense focus, and threats from your drive team only — never DEMO strategy packs.",
+          "Roles, auto, defense focus, and threats from your drive team only.",
       };
   }
 }
@@ -206,14 +206,14 @@ export function matchStrategyCardsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Strategy cards are org-scoped — pick a team before drafting plans.",
+          detail: "Pick a team before drafting plans.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Confirm event context — never DEMO matchups.",
+          detail: "Confirm event context.",
           href: hubHref("/competition", "strategy", null),
         },
         {
@@ -276,7 +276,7 @@ export function matchStrategyCardsNextActions(input: {
       {
         id: "strategy",
         label: "Sync event schedule",
-        detail: "Cards stay blank until matches exist for your active event — never DEMO matchups.",
+        detail: "Cards stay blank until matches exist for your active event.",
         href: hubHref("/competition", "strategy", orgId),
         primary: true,
       },
@@ -310,7 +310,7 @@ export function matchStrategyCardsNextActions(input: {
         label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
         detail:
           savedCount > 0
-            ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
+            ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "": "s"} saved — print packs for drive team.`
             : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
         href: "#match-strategy-cards-list",
       },
@@ -336,7 +336,7 @@ export function matchStrategyCardsNextActions(input: {
       {
         id: "edit",
         label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
-        detail: "Keep the spoken plan flexible — never DEMO paths.",
+        detail: "Keep the spoken plan flexible.",
         href: "#match-strategy-cards-list",
       },
       {
@@ -361,7 +361,7 @@ export function matchStrategyCardsNextActions(input: {
       {
         id: "edit",
         label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
-        detail: "Driver notes stay blank until you write them — never DEMO callouts.",
+        detail: "Driver notes stay blank until you write them.",
         href: "#match-strategy-cards-list",
       },
       {
@@ -379,7 +379,7 @@ export function matchStrategyCardsNextActions(input: {
       label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
       detail:
         savedCount > 0
-          ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
+          ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "": "s"} saved — print packs for drive team.`
           : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
       href: "#match-strategy-cards-list",
       primary: true,
@@ -393,7 +393,7 @@ export function matchStrategyCardsNextActions(input: {
     {
       id: "defense-planner",
       label: "Open Defense Planner",
-      detail: "Ground defense focus in scouted matchups — never DEMO metrics.",
+      detail: "Ground defense focus in scouted matchups.",
       href: hubHref("/competition", "defense-planner", orgId),
     },
     {
@@ -406,7 +406,7 @@ export function matchStrategyCardsNextActions(input: {
       id: "briefing",
       label: "Open Briefing",
       detail:
-        "This next-match card exports auto / backup / deploy cues from written text — never DEMO plans.",
+        "This next-match card exports auto / backup / deploy cues from written text.",
       href: hubHref("/competition", "briefing", orgId),
     },
   ];

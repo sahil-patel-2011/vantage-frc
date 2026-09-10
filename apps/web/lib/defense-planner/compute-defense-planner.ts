@@ -21,19 +21,19 @@ function setupSteps(orgId: string | null): DefensePlannerSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Defense Planner is org-scoped.",
+      detail: "Choose your team organization to open Defense Planner.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Event strategy stays empty until real metrics exist — never DEMO rankings.",
+      detail: "Event strategy stays empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

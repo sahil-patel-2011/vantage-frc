@@ -66,7 +66,7 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
     actions.push({
       id: "broaden",
       label: "Broaden audiences and cadence",
-      detail: "Add K-12 reach and activities across more months from real events — readiness is not a DEMO scoreboard.",
+      detail: "Add K-12 reach and activities across more months as you run events.",
       href: withSeason(impactHref),
       primary: true,
     });
@@ -83,7 +83,7 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
   actions.push({
     id: "evidence",
     label: "Record wins in Business · Awards",
-    detail: "Awarded evidence for grants comes from submissions you mark won — never invented award $.",
+    detail: "Awarded evidence for grants comes from submissions you mark won.",
     href: hubHref("/business", "evidence", orgId),
   });
 

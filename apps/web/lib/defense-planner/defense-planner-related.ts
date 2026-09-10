@@ -75,7 +75,7 @@ export function defensePlannerSetupSteps(orgId?: string | null): DefensePlannerS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Defense Planner is org-scoped.",
+      detail: "Choose your team organization to open Defense Planner.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -143,7 +143,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         kind,
         title: "Loading Defense Planner…",
         description:
-          "Checking workspace membership and logged matchups — never DEMO defense recommendations.",
+          "Checking workspace membership and logged matchups.",
       };
     case "error":
       return {
@@ -151,7 +151,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         badge: "Unavailable",
         title: "Could not load Defense Planner",
         description:
-          "A network or server issue blocked matchups. Retry, or open Strategy / Scouting while it reloads — never invent DEMO defense metrics.",
+          "A network or server issue blocked matchups. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -159,7 +159,7 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Defense Planner is org-scoped. Pick a workspace before logging robot profile or matchups — nothing is pre-seeded.",
+          "Pick a workspace before logging robot profile or matchups.",
       };
     case "empty":
       return {
@@ -167,14 +167,14 @@ export function defensePlannerShellCopy(kind: DefensePlannerShellKind): DefenseP
         badge: "No matchups yet",
         title: "Log your first opponent matchup",
         description:
-          "Save our robot profile, then enter scouted mass, drivetrain, and cycle path. Recommendations use only what you log — never DEMO defense metrics.",
+          "Save our robot profile, then enter scouted mass, drivetrain, and cycle path. Recommendations use only what you log.",
       };
     default:
       return {
         kind: "ready",
         title: "Defense matchups from your scouting",
         description:
-          "Recommendations use only logged robot profile and scouted opponent cycles — never DEMO metrics.",
+          "Recommendations use only logged robot profile and scouted opponent cycles.",
       };
   }
 }
@@ -230,7 +230,7 @@ export function defensePlannerNextActions(input: {
         id: "log",
         label: hasProfile ? "Log an opponent matchup" : "Save robot profile first",
         detail: hasProfile
-          ? "Enter scouted mass, drivetrain, and cycle path below — never DEMO recommendations."
+          ? "Enter scouted mass, drivetrain, and cycle path below."
           : "Set our mass and drivetrain so containment math has real inputs.",
         href: hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile",
         primary: true,
@@ -238,13 +238,13 @@ export function defensePlannerNextActions(input: {
       {
         id: "scouting",
         label: "Log scouting first",
-        detail: "Cycle paths need real match scout rows — never DEMO averages.",
+        detail: "Cycle paths need real match scout rows.",
         href: hubHref("/competition", "scouting", orgId),
       },
       {
         id: "strategy",
         label: "Cross-check Strategy",
-        detail: "Ground picks in scouted and reference metrics — never DEMO rankings.",
+        detail: "Ground picks in scouted and reference metrics.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -267,7 +267,7 @@ export function defensePlannerNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground picks in scouted data and reference metrics — never DEMO rankings.",
+      detail: "Ground picks in scouted data and reference metrics.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {

@@ -55,7 +55,7 @@ function EpaNextActionsPanel({ actions }: { actions: EpaTrendAlertsNextAction[] 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy and Opponent Watchlist — never DEMO EPA forecasts.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -278,7 +278,7 @@ export default function EpaTrendAlertsClient() {
           </>
         }
         title="EPA Trend Alerts"
-        description="Watch teams you might face and get flagged when their reference EPA moves meaningfully between events — never DEMO EPA forecasts. Cross-check Strategy and Opponent Watchlist."
+        description="Watch teams you might face and get flagged when their reference EPA moves meaningfully between events. Cross-check Strategy and Opponent Watchlist."
       >
         <div className="epa-trend-alerts-header-actions">
           {relatedLinks.map((link) => (
@@ -341,8 +341,7 @@ export default function EpaTrendAlertsClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, and pair
-            qualitative notes in <a href={watchlistHref}>Opponent Watchlist</a> — never invent DEMO EPA
-            forecasts.
+            qualitative notes in <a href={watchlistHref}>Opponent Watchlist</a>.
           </p>
         </Panel>
       </div>
@@ -409,7 +408,7 @@ function WatchTeamForm({
     >
       <h2 style={{ margin: 0 }}>Add a team to the watchlist</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use only Neon reference EPA between events for teams you watch — never DEMO EPA forecasts.
+        Alerts use only Neon reference EPA between events for teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team number">
@@ -451,7 +450,7 @@ function AlertsPanel({
         badge="No alerts"
         badgeTone="good"
         title="No meaningful EPA swings right now"
-        description="Alerts appear here once a watched team's reference EPA moves enough between two events — never DEMO forecasts."
+        description="Alerts appear here once a watched team's reference EPA moves enough between two events."
       />
     );
   }

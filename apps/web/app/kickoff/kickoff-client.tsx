@@ -73,7 +73,7 @@ function NextActionsPanel({
     <section className="kick-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Manual → summary → Strategy seeds → CAD brief. Never DEMO game rules.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -259,8 +259,8 @@ function IntelligenceSection({
           <h2>Game release intelligence</h2>
           <p className="app-muted">
             Paste the game manual and kickoff transcript (or a text URL). Vantage structures a season summary, seeds
-            Strategy design priorities, and opens a CAD brief — labeled <strong>MODEL</strong> advice, never DEMO game
-            rules or fabricated match stats.
+            Strategy design priorities, and opens a CAD brief. Everything it writes is marked as an{" "}
+            <strong>AI suggestion</strong> — check it against the manual before you build on it.
           </p>
         </div>
         <nav className="kick-pipeline-links" aria-label="Kickoff pipeline">
@@ -380,8 +380,7 @@ function IntelligenceSection({
       ) : !selected ? (
         <EmptyState soft badge="Empty" title="No structured summary yet" description={emptyMessage}>
           <p className="app-muted">
-            Summary stays blank until you paste real {seasonYear} release materials — Vantage will not invent DEMO game
-            rules, scoring tables, or match stats.
+            Paste the {seasonYear} game manual and kickoff transcript above to fill this in.
           </p>
         </EmptyState>
       ) : (
@@ -475,7 +474,7 @@ function IntelligenceSection({
                 {selected.summary.constraints.length ? (
                   selected.summary.constraints.map((item) => <li key={item}>{item}</li>)
                 ) : (
-                  <li className="app-muted">Confirm robot rules in the official manual — never DEMO rulings.</li>
+                  <li className="app-muted">Confirm robot rules in the official manual.</li>
                 )}
               </ul>
             </div>
@@ -572,8 +571,8 @@ function ScoringSection({
     <section className="app-card soft-panel kick-section">
       <h2>Scoring analysis</h2>
       <p className="app-muted">
-        List every way to score from the real manual, estimate cycle time, and let points per second show where the
-        value is — no DEMO scoring tables.
+        List every way to score from the game manual, estimate cycle time, and let points per second show where the
+        value is.
       </p>
 
       {ranked.length === 0 ? (
@@ -912,7 +911,7 @@ function RulesSection({
       <h2>Rules Q&amp;A</h2>
       <p className="app-muted">
         Track manual questions from kickoff weekend and record the ruling once it lands. Cite the official manual or
-        FIRST Q&amp;A only — never invent DEMO game rules.
+        FIRST Q&amp;A only.
       </p>
 
       {sorted.length === 0 ? (
@@ -1175,7 +1174,7 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           <>
             Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, seed Strategy
-            priorities, and hand a CAD brief to Onshape/Fusion paths. Never DEMO game rules.
+            priorities, and hand a CAD brief to Onshape/Fusion paths.
           </>
         }
       >
@@ -1198,8 +1197,8 @@ export default function KickoffClient(_props: { embedded?: boolean } = {}) {
           <p className="app-muted" role="status">
             {pack.gameName} {pack.year}
             {pack.status === "awaiting_manual"
-              ? " — scoring keys stay empty until the official manual publishes. Do not invent BIOCORE metrics."
-              : " — published pack. Scoring keys come from the manual, not DEMO tables."}
+              ? " — scoring keys stay empty until the official manual publishes."
+              : " — scoring keys come from the official manual."}
           </p>
         );
       })()}

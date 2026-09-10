@@ -77,7 +77,7 @@ export function retroSetupSteps(orgId?: string | null): RetroSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — retros and postmortems are org-scoped.",
+      detail: "Choose your team organization to open retros and postmortems.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -146,7 +146,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         kind,
         title: "Loading Team Retrospective…",
         description:
-          "Checking workspace membership and real retro sessions — never DEMO feedback.",
+          "Checking workspace membership and real retro sessions.",
       };
     case "error":
       return {
@@ -154,7 +154,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Team Retrospective",
         description:
-          "A network or server issue blocked retros. Retry, or open Messages / FMEA / Decisions while it reloads — never invent DEMO retro metrics.",
+          "A network or server issue blocked retros. Retry, or open Messages / FMEA / Decisions while it reloads.",
       };
     case "setup":
       return {
@@ -162,7 +162,7 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Retrospectives are org-scoped. Join or pick a workspace before collecting start/stop/continue feedback — nothing is pre-seeded.",
+          "Join or pick a workspace before collecting start/stop/continue feedback.",
       };
     case "empty":
       return {
@@ -170,14 +170,14 @@ export function retroShellCopy(kind: RetroShellKind): RetroEmptyCopy {
         badge: "No session yet",
         title: "Start your first retro",
         description:
-          "Start/stop/continue boards stay blank until you create a real session. Cross-check Messages, FMEA, and Decisions — never DEMO feedback.",
+          "Start/stop/continue boards stay blank until you create a real session. Cross-check Messages, FMEA, and Decisions.",
       };
     default:
       return {
         kind: "ready",
         title: "Retro sessions",
         description:
-          "Only real session rows, votes, and action items appear here — counts never invent DEMO metrics.",
+          "Sessions, votes, and action items your team logged appear here.",
       };
   }
 }
@@ -210,7 +210,7 @@ export function retroNextActions(input: {
       {
         id: "retry",
         label: "Retry Retrospective",
-        detail: "Reload real sessions and action items — nothing is pre-seeded while this fails.",
+        detail: "Reload real sessions and action items.",
         href: withOrgHref("/retro", orgId),
         primary: true,
       },
@@ -240,7 +240,7 @@ export function retroNextActions(input: {
       {
         id: "session",
         label: "Start a retro session",
-        detail: "Create a session below to collect start/stop/continue feedback — never DEMO items.",
+        detail: "Create a session below to collect start/stop/continue feedback.",
         href: "#retro-new-session",
         primary: true,
       },
@@ -259,7 +259,7 @@ export function retroNextActions(input: {
       {
         id: "decisions",
         label: "Open Decisions",
-        detail: "Decision log feeds season postmortems — never DEMO counts.",
+        detail: "Decision log feeds season postmortems.",
         href: withOrgHref("/decisions", orgId),
       },
     ];
@@ -272,7 +272,7 @@ export function retroNextActions(input: {
       detail:
         openActionCount > 0
           ? `${openActionCount} open action item${openActionCount === 1 ? "" : "s"} — tracked from real retro rows only.`
-          : "Sessions, votes, and actions use logged rows only — never DEMO metrics.",
+          : "Sessions, votes, and actions use logged rows only.",
       href: "#retro-actions",
       primary: true,
     },

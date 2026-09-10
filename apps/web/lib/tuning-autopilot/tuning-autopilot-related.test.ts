@@ -8,6 +8,7 @@ import {
   tuningAutopilotRelatedLinks,
   tuningAutopilotShellCopy,
 } from "./tuning-autopilot-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("tuningAutopilotRelatedLinks", () => {
   it("builds CAD / FMEA / Practice cross-links", () => {
@@ -122,10 +123,10 @@ describe("tuningAutopilotShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = tuningAutopilotShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|logged/i);
+      expectPlainCopy(copy.description);
     }
-    expect(tuningAutopilotShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(tuningAutopilotShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(tuningAutopilotShellCopy("empty").description);
+    expectPlainCopy(tuningAutopilotShellCopy("setup").description);
   });
 
   it("formats real counts and blanks scores until iterations exist", () => {

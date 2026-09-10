@@ -63,7 +63,7 @@ function CopilotNextActionsPanel({ actions }: { actions: MatchCopilotNextAction[
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Command, and FMEA — never DEMO match metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -299,7 +299,7 @@ export default function MatchCopilotClient() {
           </>
         }
         title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent EPA, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Never DEMO match metrics. Cross-check Strategy, Command, and FMEA."
+        description="A glanceable 60-second brief for your next match — fusing opponent EPA, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts. Cross-check Strategy, Command, and FMEA."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
@@ -360,8 +360,7 @@ export default function MatchCopilotClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep the next-match plan in <a href={strategyHref}>Strategy</a>, confirm the active event
-            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>FMEA</a> —
-            never invent DEMO callouts, EPA, or battery flags.
+            in <a href={commandHref}>Command</a>, and log open failures in <a href={fmeaHref}>FMEA</a>
           </p>
         </Panel>
       </div>
@@ -440,7 +439,7 @@ function CalloutsPanel({ view }: { view: LiveView }) {
         badge="No callouts yet"
         badgeTone="setup"
         title="Generate this match's brief"
-        description="Fuses opponent EPA, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts — never DEMO match metrics."
+        description="Fuses opponent EPA, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
       />
     );
   }
@@ -471,7 +470,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
     <Panel>
       <h2 style={{ marginTop: 0 }}>Opponent alliance</h2>
       {view.opponents.length === 0 ? (
-        <p className="app-muted">No opponent data available yet — never invent DEMO EPA.</p>
+        <p className="app-muted">No opponent data available yet.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8, margin: 0 }}>
           {view.opponents.map((team) => (
@@ -491,7 +490,7 @@ function RisksPanel({ view }: { view: LiveView }) {
     <Panel>
       <h2 style={{ marginTop: 0 }}>Open FMEA risks</h2>
       {view.openRisks.length === 0 ? (
-        <p className="app-muted">No open risks logged — never invent DEMO RPNs.</p>
+        <p className="app-muted">No open risks logged.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8, margin: 0 }}>
           {view.openRisks.map((risk) => (
@@ -514,7 +513,7 @@ function BatteryPanel({ view }: { view: LiveView }) {
     <Panel>
       <h2 style={{ marginTop: 0 }}>Battery fleet</h2>
       {view.batteryFleet.length === 0 ? (
-        <p className="app-muted">No batteries tracked — never invent DEMO health flags.</p>
+        <p className="app-muted">No batteries tracked.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8, margin: 0 }}>
           {view.batteryFleet.slice(0, 8).map((battery) => (

@@ -77,7 +77,7 @@ export function todosNextActions(input: {
     actions.push({
       id: "add-first",
       label: "Add the first real todo",
-      detail: "The list stays empty until someone on this org creates work — nothing is pre-seeded.",
+      detail: "The list stays empty until someone on this org creates work.",
       href: hubHref("/team", "todos", orgId),
       primary: true,
     });

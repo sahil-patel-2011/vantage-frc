@@ -26,25 +26,25 @@ function setupStepsFor(orgId: string | null): ImpactEssaySetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Impact Essay is org-scoped.",
+      detail: "Choose your team organization to open Impact Essay.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "impact",
       label: "Open Community Impact",
-      detail: "Outreach claims stay blank until real activities exist — never DEMO hours.",
+      detail: "Outreach claims stay blank until real activities exist.",
       href: hubHref("/business", "impact", orgId),
     },
     {
       id: "evidence",
       label: "Open Awards",
-      detail: "Award packets stay blank until your team uploads evidence — never DEMO packets.",
+      detail: "Award packets stay blank until your team uploads evidence.",
       href: hubHref("/business", "evidence", orgId),
     },
     {
       id: "writer",
       label: "Open Writer",
-      detail: "Grant and sponsor copy stays empty until you draft it — never DEMO awards.",
+      detail: "Grant and sponsor copy stays empty until you draft it.",
       href: hubHref("/ai", "writer", orgId),
     },
   ];

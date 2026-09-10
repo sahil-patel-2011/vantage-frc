@@ -65,7 +65,7 @@ function SeasonReportNextActionsPanel({ actions }: { actions: SeasonReportNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy and Impact only — never DEMO season stats.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -347,7 +347,7 @@ export default function SeasonReportClient() {
           </>
         }
         title="Season Report"
-        description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded — never DEMO season stats."
+        description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded."
       >
         <div className="season-report-header-actions">
           {relatedLinks.map((link) => (
@@ -442,7 +442,7 @@ function CompletenessPanel({ view, loaded }: { view: LiveView; loaded: boolean }
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Retrospective coverage</h2>
           <small className="app-muted">
-            {entryLabel} entr{summary.totalEntries === 1 ? "y" : "ies"} logged — never DEMO totals
+            {entryLabel} entr{summary.totalEntries === 1 ? "y" : "ies"} logged.
           </small>
         </div>
         <strong className="season-report-coverage-pct">{completenessLabel}</strong>
@@ -539,7 +539,7 @@ function SnapshotsPanel({
         </button>
       </header>
       <p className="app-muted">
-        Snapshots are computed deterministically from your logged entries — never DEMO season stats.
+        Snapshots are computed deterministically from your logged entries.
         &ldquo;Expand with AI&rdquo; is the optional metered model pass on top.
       </p>
       {view.summary.totalEntries === 0 ? (

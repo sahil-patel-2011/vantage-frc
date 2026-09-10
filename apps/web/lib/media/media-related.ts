@@ -83,13 +83,13 @@ export function mediaSetupSteps(orgId?: string | null): MediaSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — media tools are org-scoped.",
+      detail: "Choose your team organization to open media tools.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "media-kit",
       label: "Build Media Kit",
-      detail: "Mission, bio, and logos stay blank until you record them — nothing is pre-seeded.",
+      detail: "Mission, bio, and logos stay blank until you record them.",
       href: orgId ? withOrgHref("/media-kit", orgId) : "/media-kit",
     },
     {
@@ -154,7 +154,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         kind,
         title: "Loading Media workspace…",
         description:
-          "Checking workspace membership and recorded press assets — never DEMO media metrics.",
+          "Checking workspace membership and recorded press assets.",
       };
     case "error":
       return {
@@ -162,7 +162,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Media",
         description:
-          "A network or server issue blocked the workspace. Retry, or open Media Kit / Outreach while it reloads — never invent DEMO logos.",
+          "A network or server issue blocked the workspace. Retry, or open Media Kit / Outreach while it reloads.",
       };
     case "setup":
       return {
@@ -170,7 +170,7 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Media is org-scoped for business and press workflows. Pick a workspace before recording assets or outreach — nothing is pre-seeded.",
+          "Media is your team's for business and press workflows. Pick a workspace before recording assets or outreach.",
       };
     case "empty":
       return {
@@ -178,14 +178,14 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
         badge: "No media yet",
         title: "Start your press and social toolkit",
         description:
-          "Assets, outreach dates, and media impact stay blank until you add them. Open Media Kit or Outreach — never DEMO media metrics.",
+          "Assets, outreach dates, and media impact stay blank until you add them. Open Media Kit or Outreach.",
       };
     default:
       return {
         kind: "ready",
         title: "Media workspace",
         description:
-          "Counts reflect content items, Media Kit, outreach, impact, and sponsor visuals you recorded — never DEMO reach or invent bios.",
+          "Counts reflect content items, Media Kit, outreach, impact, and sponsor visuals you recorded.",
       };
   }
 }
@@ -240,14 +240,14 @@ export function mediaNextActions(input: {
       {
         id: "media-kit",
         label: "Build Media Kit",
-        detail: "Mission, bio, and logos stay blank until you enter them — never invent DEMO claims.",
+        detail: "Mission, bio, and logos stay blank until you enter them.",
         href: withOrgHref("/media-kit", orgId),
         primary: true,
       },
       {
         id: "outreach-calendar",
         label: "Schedule a media event",
-        detail: "Press dates stay empty until you add them — never DEMO calendars.",
+        detail: "Press dates stay empty until you add them.",
         href: hubHref("/business", "outreach-calendar", orgId),
       },
       {
@@ -266,7 +266,7 @@ export function mediaNextActions(input: {
       detail:
         assetCount > 0
           ? `${assetCount} asset${assetCount === 1 ? "" : "s"} in the kit — only real URLs.`
-          : "Asset library stays empty until you add real URLs — never DEMO logos.",
+          : "Asset library stays empty until you add real URLs.",
       href: withOrgHref("/media-kit", orgId),
       primary: true,
     },

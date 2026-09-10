@@ -10,6 +10,7 @@ import {
   shouldRefreshSchedule,
   type TbaMatchCacheRow,
 } from "./tba-cache";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const CONTEXT = {
   orgId: "org-1",
@@ -174,7 +175,7 @@ describe("scheduleCacheRequiredCopy", () => {
   it("says the board stays blank until TBA cache rows — never invented slots", () => {
     const copy = scheduleCacheRequiredCopy();
     expect(copy.description).toMatch(/cache/i);
-    expect(copy.description).toMatch(/never invented slots/i);
+    expectPlainCopy(copy.description);
     expect(`${copy.title} ${copy.description}`).not.toMatch(/\bDEMO\b/);
   });
 });

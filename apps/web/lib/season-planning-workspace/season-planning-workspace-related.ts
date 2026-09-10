@@ -74,13 +74,13 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — season plans are org-scoped.",
+      detail: "Choose your team organization to open season plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "goals-tracker",
       label: "Open Season Goals",
-      detail: "Lightweight goal tracking pairs with this workspace — never DEMO completion %.",
+      detail: "Lightweight goal tracking pairs with this workspace.",
       href: hubHref("/team", "goals-tracker", orgId),
     },
     {
@@ -92,7 +92,7 @@ export function seasonPlanningSetupSteps(orgId?: string | null): SeasonPlanningS
     {
       id: "attendance",
       label: "Open Attendance",
-      detail: "Progress signals use real check-ins only — never DEMO attendance.",
+      detail: "Progress signals use real check-ins only.",
       href: hubHref("/team", "attendance", orgId),
     },
   ];
@@ -136,7 +136,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         kind,
         title: "Loading Season Planning Workspace…",
         description:
-          "Checking workspace membership and season plans — never DEMO completion percentages.",
+          "Checking workspace membership and season plans.",
       };
     case "error":
       return {
@@ -144,7 +144,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         badge: "Unavailable",
         title: "Could not load Season Planning Workspace",
         description:
-          "A network or server issue blocked the plan. Retry, or open Goals / Calendar while it reloads — never DEMO progress.",
+          "A network or server issue blocked the plan. Retry, or open Goals / Calendar while it reloads.",
       };
     case "setup":
       return {
@@ -152,7 +152,7 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Season Planning is org-scoped. Pick a workspace before creating a plan — nothing is pre-seeded, never DEMO completion %.",
+          "Pick a workspace before creating a plan.",
       };
     case "empty":
       return {
@@ -160,14 +160,14 @@ export function seasonPlanningShellCopy(kind: SeasonPlanningShellKind): SeasonPl
         badge: "No plan",
         title: "Create this season’s plan",
         description:
-          "Add goals and dated milestones with owners. Attendance and build-task signals appear only when those modules have real rows — never DEMO %.",
+          "Add goals and dated milestones with owners. Attendance and build-task signals appear only when those modules have real rows.",
       };
     default:
       return {
         kind: "ready",
         title: "Season goals and milestones",
         description:
-          "Progress uses real attendance and build-task data — never DEMO completion percentages.",
+          "Progress uses real attendance and build-task data.",
       };
   }
 }
@@ -192,20 +192,20 @@ export function seasonPlanningNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Season plans are org-scoped — pick a team before creating goals.",
+          detail: "Pick a team before creating goals.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "goals-tracker",
           label: "Open Season Goals",
-          detail: "Goal rows stay blank until your team enters them — never DEMO targets.",
+          detail: "Goal rows stay blank until your team enters them.",
           href: hubHref("/team", "goals-tracker", null),
         },
         {
           id: "calendar",
           label: "Open Calendar",
-          detail: "Calendar stays empty until events exist — never DEMO schedules.",
+          detail: "Calendar stays empty until events exist.",
           href: hubHref("/team", "calendar", null),
         },
       ];
@@ -275,7 +275,7 @@ export function seasonPlanningNextActions(input: {
       {
         id: "attendance",
         label: "Open Attendance",
-        detail: "Check-ins feed progress signals — never DEMO attendance.",
+        detail: "Check-ins feed progress signals.",
         href: hubHref("/team", "attendance", orgId),
       },
     ];
@@ -312,7 +312,7 @@ export function seasonPlanningNextActions(input: {
       detail:
         milestonesTotal > 0
           ? `${milestonesTotal} milestone${milestonesTotal === 1 ? "" : "s"} on file — owners and due dates only.`
-          : "Dated milestones unlock completion % — never invent DEMO progress.",
+          : "Dated milestones unlock completion %.",
       href: "#season-plan-goals",
       primary: true,
     },

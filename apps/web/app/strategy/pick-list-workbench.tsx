@@ -125,7 +125,7 @@ function PickDeskNextActionsPanel({ actions }: { actions: PickDeskNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Scouting, and Coverage — never DEMO picks.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -177,8 +177,7 @@ function PickDeskShell({
         <div>
           <h2 style={{ marginTop: 0 }}>Event pick desk</h2>
           <p className="app-muted">
-            First / second / third pick tiers from synced TBA/Statbotics rows and scout depth — never DEMO
-            picks.
+            First / second / third pick tiers from synced TBA/Statbotics rows and scout depth.
           </p>
         </div>
         <PickDeskRelatedStrip orgId={orgId} />
@@ -232,7 +231,7 @@ function PickDeskShell({
         <Panel className="pick-desk-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Scouting, and Coverage — never DEMO picks.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="pick-desk-setup-steps">
             {steps.map((step) => (
@@ -503,7 +502,7 @@ export function PickListWorkbench({
           shell === "error"
             ? "Could not load pick desk."
             : shell === "setup" && setupMessage
-              ? `${setupMessage} Pick ranks stay empty until real event metrics exist — never DEMO picks.`
+              ? `${setupMessage} Pick ranks stay empty until real event metrics exist.`
               : undefined
         }
         onRetry={shell === "error" ? () => load() : undefined}
@@ -583,7 +582,7 @@ export function PickListWorkbench({
         <p className="strategy-pick-coverage-hint app-muted" role="status">
           Thin scout depth —{" "}
           <a href={coverageHref}>open scout coverage</a> or add notes in Scouting before trusting pick
-          explainability — never DEMO picks.
+          explainability.
         </p>
       ) : null}
 
@@ -731,7 +730,7 @@ export function PickListWorkbench({
               })}
               {!entriesForTier(tier.id).length ? (
                 <li className="strategy-pick-empty">
-                  Drop teams from the pool — empty tiers stay empty (never DEMO picks).
+                  Drop teams from the pool — empty tiers stay empty.
                 </li>
               ) : null}
             </ul>
@@ -744,7 +743,7 @@ export function PickListWorkbench({
           <h3>Event pool</h3>
           <small>
             Only teams with synced TBA/Statbotics rows. Suggestions use event EPA / org pEPA
-            percentiles + scout reliability — never DEMO picks.
+            percentiles + scout reliability.
           </small>
         </header>
         {!pool.length ? (

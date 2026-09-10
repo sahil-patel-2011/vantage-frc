@@ -129,7 +129,7 @@ export function connectionsEmptyCopy(shell: ConnectionsShellKind): ConnectionsEm
       badgeTone: "setup",
       title: "No team connectors linked yet",
       description:
-        "Statuses stay blank until you configure TBA, authorize Onshape, add Discord, or link GitHub. Nothing is pre-seeded as linked.",
+        "Statuses stay blank until you configure TBA, authorize Onshape, add Discord, or link GitHub.",
     };
   }
   if (shell === "error") {
@@ -176,7 +176,7 @@ export function connectionsNextActions(input: {
       {
         id: "workspace",
         label: "Select a workspace",
-        detail: "Team connectors (TBA, Onshape, Discord, GitHub) are org-scoped — pick a team before linking.",
+        detail: "Pick a team before linking.",
         href: "/workspace",
         primary: true,
       },
@@ -201,7 +201,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "tba",
       label: "Configure TBA",
-      detail: "Match sync stays quiet until a TBA key or Neon cache exists — never DEMO matches.",
+      detail: "Match sync stays quiet until a TBA key or Neon cache exists.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     });
@@ -224,7 +224,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "discord",
       label: "Link Discord",
-      detail: "Add a channel webhook (or bot + channel id) on the Discord settings page — never DEMO sync %.",
+      detail: "Add a channel webhook (or bot + channel id) on the Discord settings page.",
       href: withOrgHref("/team/discord", orgId),
       primary: actions.length === 0,
     });
@@ -234,7 +234,7 @@ export function connectionsNextActions(input: {
     actions.push({
       id: "slack",
       label: "Link Slack",
-      detail: "Paste a channel webhook so Vantage team chat and Slack stay in sync — never DEMO history.",
+      detail: "Paste a channel webhook so Vantage team chat and Slack stay in sync.",
       href: withOrgHref("/team/slack", orgId),
       primary: actions.length === 0,
     });

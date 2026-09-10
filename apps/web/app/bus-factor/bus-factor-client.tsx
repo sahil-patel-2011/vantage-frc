@@ -71,7 +71,7 @@ function BusFactorNextActionsPanel({ actions }: { actions: BusFactorNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Attendance, My Hours, and Task board — never DEMO risk metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -161,7 +161,7 @@ function BusFactorShell({
         <Panel className="bus-factor-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Attendance and My Hours — never DEMO risk metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="bus-factor-setup-steps">
             {steps.map((step) => (
@@ -307,7 +307,7 @@ export default function BusFactorClient() {
           </>
         }
         title="Bus-Factor & Burnout Watch"
-        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board — never DEMO risk metrics."
+        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board."
       >
         <div className="bus-factor-header-actions">
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -386,7 +386,7 @@ function RiskPanel({ view }: { view: LiveView }) {
           <h2 style={{ margin: "6px 0 0" }}>Organizational risk signal</h2>
           <small className="app-muted">
             {formatBusFactorMetric(summary.activeMembers, true)} active member(s) logged over the last{" "}
-            {view.windowWeeks} week(s) — never DEMO scores
+            {view.windowWeeks} week(s).
           </small>
         </div>
         <strong style={{ fontSize: "2rem" }}>{formatBusFactorPercent(summary.riskScore, true)}</strong>
@@ -477,7 +477,7 @@ function ConcentrationBreakdown({ view }: { view: LiveView }) {
         </ul>
         {view.actualBuildHours.length > 0 ? (
           <small className="app-muted" style={{ display: "block", marginTop: 6 }}>
-            &quot;Clocked&quot; hours are actual Build Hours over the same window — never DEMO hours.
+            &quot;Clocked&quot; hours are actual Build Hours over the same window.
           </small>
         ) : null}
       </div>
@@ -560,7 +560,7 @@ function LogEntryForm({
         badge="No members"
         badgeTone="setup"
         title="Invite teammates before logging workload"
-        description="Bus-Factor needs org members to attribute hours — never DEMO headcount."
+        description="Bus-Factor needs org members to attribute hours."
       >
         <a className="app-button" href={withOrgHref("/workspace", view.orgId)}>
           Open Workspace

@@ -62,7 +62,7 @@ function QrHandoffNextActionsPanel({ actions }: { actions: QrHandoffNextAction[]
     <section className="app-card soft-panel edc-next-actions scout-qr-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting and Offline — never DEMO outbox rows.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -107,7 +107,7 @@ function QrHandoffShell({
           <h2 style={{ marginTop: 0 }}>QR scout handoff</h2>
           <p className="app-muted">
             Transfer pending IndexedDB outbox rows between devices. Scans merge offline (last write wins),
-            then sync when venue Wi-Fi returns — never DEMO rows.
+            then sync when venue Wi-Fi returns.
           </p>
         </div>
         <QrHandoffRelatedStrip orgId={orgId} />
@@ -155,7 +155,7 @@ function QrHandoffShell({
         <Panel className="scout-qr-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting and Offline — never DEMO outbox rows.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-qr-setup-steps">
             {steps.map((step) => (
@@ -393,7 +393,7 @@ export default function ScoutHandoffPanel({
             <h2 style={{ marginTop: 0 }}>QR scout handoff</h2>
             <p className="app-muted">
               Transfer pending IndexedDB outbox rows between devices. Scans merge offline (last write wins),
-              then sync into disagreements and the coverage board — never DEMO rows.
+              then sync into disagreements and the coverage board.
             </p>
           </div>
           <div className="scout-qr-heading-meta">

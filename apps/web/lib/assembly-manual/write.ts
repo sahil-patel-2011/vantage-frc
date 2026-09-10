@@ -111,7 +111,7 @@ const SYSTEM = [
   "You write one short imperative sentence per assembly step for a printed FRC robot build manual.",
   "You are given facts already measured from the team's CAD. Use ONLY those facts.",
   "Never state a torque, a thread-locker, a lubricant, a tolerance, or any number that is not in the facts.",
-  "Never invent a part, a quantity, or an order. Do not add safety boilerplate.",
+  "Do not add safety boilerplate.",
   "Write like a person who has built one: 12-28 words, present imperative, no step number, no bullet.",
   'Reply with ONLY a JSON array of objects: [{"step": 1, "sentence": "..."}]. No prose, no code fence.',
 ].join("\n");

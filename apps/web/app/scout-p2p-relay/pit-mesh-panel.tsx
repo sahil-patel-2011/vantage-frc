@@ -157,8 +157,8 @@ export function PitMeshPanel({
     <div className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
       <h3 style={{ margin: 0 }}>Pit mesh</h3>
       <p className="app-muted" style={{ margin: 0 }}>
-        Same-browser tabs use BroadcastChannel. Other tablets: paste the JSON envelope or use QR scout handoff.
-        Never DEMO rows — only this device's IndexedDB outbox.
+        Tabs in the same browser share automatically. For another tablet, paste the copied text or use QR scout
+        handoff. Only entries saved on this device are shared.
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
         <FormRow label="This device">

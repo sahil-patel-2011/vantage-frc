@@ -333,7 +333,7 @@ function AddItemForm({
         </button>
       </header>
       <p className="app-muted" style={{ margin: 0 }}>
-        Quantities and costs come from real parts — never DEMO stock rows. Adding a common COTS part?{" "}
+        Quantities and costs come from real parts. Adding a common COTS part?{" "}
         <a href={`/parts-catalog?orgId=${encodeURIComponent(orgId)}`}>Pick it from the parts catalog</a> and the name,
         vendor, part number and unit come filled in.
       </p>
@@ -564,7 +564,7 @@ function InventoryNextActionsPanel({ actions }: { actions: InventoryNextAction[]
     <section className="app-card soft-panel edc-next-actions inventory-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Vendors, Orders, and Spare Forecast — never DEMO stock metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -897,7 +897,7 @@ export default function InventoryClient() {
           </>
         }
         title="Inventory & BOM"
-        description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${context.orgName ?? "your team"}${context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast — never DEMO stock metrics.`}
+        description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${context.orgName ?? "your team"}${context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast.`}
       >
         <div className="inventory-header-actions">
           {summary && summary.lowStock > 0 ? (
@@ -1073,7 +1073,7 @@ export default function InventoryClient() {
             panel keeps the sentence and gives up the links. */}
         <p className="app-muted" style={{ marginTop: 8 }}>
           Restock through Orders, keep suppliers in Vendors, and project spare exhaustion in Spare
-          Forecast — never invent DEMO stock, costs, or reorder totals.
+          Forecast.
         </p>
       </Panel>
 
@@ -1081,7 +1081,7 @@ export default function InventoryClient() {
         orgId={readyOrgId}
         kind="stock_advisor"
         title="Stock advisor"
-        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost. Never DEMO stock metrics."
+        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost."
       />
     </main>
   );

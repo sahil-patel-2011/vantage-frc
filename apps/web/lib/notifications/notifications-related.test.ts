@@ -6,6 +6,7 @@ import {
   notificationReadTone,
   notificationRelatedLinks,
 } from "./notifications-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("notifications Soft-UI helpers", () => {
   it("builds What’s new / Support / Account / prefs cross-links", () => {
@@ -34,9 +35,7 @@ describe("notifications Soft-UI helpers", () => {
     expect(actions.map((a) => a.id)).toContain("whats-new");
     expect(actions.map((a) => a.id)).toContain("support");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never DEMO|pre-seeded|nothing is pre-seeded/i.test(a.detail))).toBe(
-      true,
-    );
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("clarifies unread-empty vs all-empty", () => {

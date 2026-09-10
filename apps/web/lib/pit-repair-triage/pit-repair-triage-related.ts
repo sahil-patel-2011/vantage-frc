@@ -71,7 +71,7 @@ export function pitRepairTriageSetupSteps(orgId?: string | null): PitRepairTriag
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — triage reports are org-scoped.",
+      detail: "Choose your team organization to open triage reports.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -130,7 +130,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
       return {
         kind,
         title: "Loading Pit Repair Triage…",
-        description: "Checking workspace membership, FMEA history, and spares — never DEMO triage calls.",
+        description: "Checking workspace membership, FMEA history, and spares.",
       };
     case "error":
       return {
@@ -138,7 +138,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "Unavailable",
         title: "Could not load Pit Repair Triage",
         description:
-          "A network or server issue blocked triage. Retry, or open FMEA while it reloads — never invent DEMO calls.",
+          "A network or server issue blocked triage. Retry, or open FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -146,7 +146,7 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pit Repair Triage is org-scoped. Pick a workspace before logging failures — nothing is pre-seeded.",
+          "Pick a workspace before logging failures.",
       };
     case "empty":
       return {
@@ -154,13 +154,13 @@ export function pitRepairTriageShellCopy(kind: PitRepairTriageShellKind): PitRep
         badge: "No reports yet",
         title: "Log your first pit failure",
         description:
-          "Fix-vs-swap calls use real FMEA history and spare stock — never DEMO triage packs.",
+          "Fix-vs-swap calls use real FMEA history and spare stock.",
       };
     default:
       return {
         kind: "ready",
         title: "Pit repair triage",
-        description: "Reports from logged failures only — never DEMO confidence scores.",
+        description: "Reports from logged failures only.",
       };
   }
 }
@@ -182,7 +182,7 @@ export function pitRepairTriageNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Triage reports are org-scoped — pick a team before logging failures.",
+          detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
         },
@@ -234,7 +234,7 @@ export function pitRepairTriageNextActions(input: {
       {
         id: "log-failure",
         label: "Log a pit failure",
-        detail: "Reports stay blank until you log a real failure — never DEMO triage packs.",
+        detail: "Reports stay blank until you log a real failure.",
         href: "#pit-repair-triage-log",
         primary: true,
       },
@@ -271,8 +271,8 @@ export function pitRepairTriageNextActions(input: {
             label: openCount > 0 ? "Resolve open triage" : "Review triage reports",
             detail:
               openCount > 0
-                ? `${openCount} open report${openCount === 1 ? "" : "s"} from logged failures — never DEMO calls.`
-                : `${reportCount} triage report${reportCount === 1 ? "" : "s"} from real pit failures — never DEMO counters.`,
+                ? `${openCount} open report${openCount === 1 ? "" : "s"} from logged failures.`
+                : `${reportCount} triage report${reportCount === 1 ? "" : "s"} from real pit failures.`,
             href: "#pit-repair-triage-reports",
             primary: true,
           } satisfies PitRepairTriageNextAction,

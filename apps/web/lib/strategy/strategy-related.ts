@@ -77,7 +77,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Strategy is org-scoped.",
+      detail: "Choose your team organization to open Strategy.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -196,7 +196,7 @@ export function strategyNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Strategy is org-scoped — choose a team before loading event predictions.",
+          detail: "Choose a team before loading event predictions.",
           href: "/workspace",
           primary: true,
         },

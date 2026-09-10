@@ -75,25 +75,25 @@ export function sponsorWallSetupSteps(orgId?: string | null): SponsorWallSetupSt
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — sponsor walls are org-scoped.",
+      detail: "Choose your team organization to open sponsor walls.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Sponsor rows stay blank until your team logs them — nothing is pre-seeded.",
+      detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "sponsorship",
       label: "Open Sponsorship",
-      detail: "One-pagers stay empty until real packages exist — nothing is pre-seeded.",
+      detail: "One-pagers stay empty until real packages exist.",
       href: hubHref("/business", "sponsorship", orgId),
     },
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Suite assets stay blank until real sponsors land — nothing is pre-seeded.",
+      detail: "Suite assets stay blank until real sponsors land.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
   ];
@@ -140,7 +140,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         kind,
         title: "Loading Sponsor Wall…",
         description:
-          "Checking workspace membership and wall entries — never DEMO sponsor counts.",
+          "Checking workspace membership and wall entries.",
       };
     case "error":
       return {
@@ -148,7 +148,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "Unavailable",
         title: "Could not load the Sponsor Wall",
         description:
-          "A network or server issue blocked the wall. Retry, or open Sponsor CRM / Sponsorship while it reloads — never invent DEMO sponsor counts.",
+          "A network or server issue blocked the wall. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -156,7 +156,7 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Sponsor Wall is org-scoped. Pick a workspace and add real sponsors before publishing — nothing is pre-seeded.",
+          "Pick a workspace and add real sponsors before publishing.",
       };
     case "empty":
       return {
@@ -164,14 +164,14 @@ export function sponsorWallShellCopy(kind: SponsorWallShellKind): SponsorWallEmp
         badge: "No sponsors yet",
         title: "Add your first sponsor to build the wall",
         description:
-          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsor CRM and Sponsorship — never DEMO sponsor counts.",
+          "Logos, tiers, and thank-you messages stay blank until you add real entries. Cross-check Sponsor CRM and Sponsorship.",
       };
     default:
       return {
         kind: "ready",
         title: "Public thank-you wall",
         description:
-          "Published entries reflect sponsors you add — never DEMO logos or invent shout-outs.",
+          "Published entries reflect sponsors you add.",
       };
   }
 }
@@ -226,20 +226,20 @@ export function sponsorWallNextActions(input: {
       {
         id: "add",
         label: "Add a sponsor",
-        detail: "Wall entries stay blank until you add real logos — never invent DEMO shout-outs.",
+        detail: "Wall entries stay blank until you add real logos.",
         href: "#sponsor-wall-add",
         primary: true,
       },
       {
         id: "sponsors",
         label: "Open Sponsor CRM",
-        detail: "Pull names from real CRM rows — never DEMO logos.",
+        detail: "Pull names from real CRM rows.",
         href: hubHref("/business", "sponsors", orgId),
       },
       {
         id: "sponsorship",
         label: "Open Sponsorship",
-        detail: "Align wall tiers with real package language — never invent DEMO tiers.",
+        detail: "Align wall tiers with real package language.",
         href: hubHref("/business", "sponsorship", orgId),
       },
     ];
@@ -252,14 +252,14 @@ export function sponsorWallNextActions(input: {
       detail:
         publishedCount > 0
           ? `${publishedCount} published entr${publishedCount === 1 ? "y" : "ies"} — only real logos.`
-          : `${entryCount} entr${entryCount === 1 ? "y" : "ies"} on the wall — never DEMO shout-outs.`,
+          : `${entryCount} entr${entryCount === 1 ? "y" : "ies"} on the wall.`,
       href: "#sponsor-wall-add",
       primary: true,
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Keep wall names grounded in CRM sponsors — never DEMO logos.",
+      detail: "Keep wall names grounded in CRM sponsors.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
@@ -271,7 +271,7 @@ export function sponsorWallNextActions(input: {
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Pair wall shout-outs with suite assets — never invent DEMO sponsors.",
+      detail: "Pair wall shout-outs with suite assets.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
   ];

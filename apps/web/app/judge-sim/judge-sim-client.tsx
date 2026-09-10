@@ -54,7 +54,7 @@ function JudgeSimNextActionsPanel({ actions }: { actions: JudgeSimNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Community Impact, Impact Essay, and Awards — never DEMO judge metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -298,7 +298,7 @@ export default function JudgeSimClient() {
           </>
         }
         title="Judge-Pitch Simulator"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Never DEMO judge metrics. Cross-check Community Impact, Impact Essay, and Awards."
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Cross-check Community Impact, Impact Essay, and Awards."
       >
         <div className="judge-sim-header-actions">
           {view.seasons.length > 0 ? (
@@ -400,8 +400,7 @@ export default function JudgeSimClient() {
           <span className="eyebrow">Grounding path</span>
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep outreach facts in <a href={impactHref}>Community Impact</a>, draft award language in{" "}
-            <a href={essayHref}>Impact Essay</a>, and upload packets in <a href={awardsHref}>Awards</a> —
-            never invent DEMO verdicts, readiness scores, or evidence.
+            <a href={essayHref}>Impact Essay</a>, and upload packets in <a href={awardsHref}>Awards</a>
           </p>
         </Panel>
       </div>
@@ -441,7 +440,7 @@ function RunSessionForm({
       <h2 style={{ margin: 0 }}>Ask a judge question</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Leave the question blank to get one picked for you from the judging category, then answer it like you would
-        in a real interview. Your answer is graded against evidence you&apos;ve logged below — never DEMO verdicts.
+        in a real interview. Your answer is graded against evidence you&apos;ve logged below.
       </p>
       <FormGrid min={160}>
         <FormRow label="Category">
@@ -491,7 +490,7 @@ function SessionsList({
         badge="No sessions yet"
         badgeTone="setup"
         title="Run your first judge Q&A"
-        description="Ask yourself a judging question above and see which claims are backed by your evidence log — never DEMO verdicts."
+        description="Ask yourself a judging question above and see which claims are backed by your evidence log."
       />
     );
   }
@@ -589,7 +588,7 @@ function EvidenceLogForm({
       <h2 style={{ margin: 0 }}>Log evidence</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Facts you can actually point to for judges — numbers, events, outcomes. Answers are only graded as
-        &quot;backed&quot; against what&apos;s logged here — never DEMO evidence.
+        &quot;backed&quot; against what&apos;s logged here.
       </p>
       <FormGrid min={160}>
         <FormRow label="Title">
@@ -648,7 +647,7 @@ function EvidenceList({
         badge="No evidence yet"
         badgeTone="setup"
         title="Log your first piece of evidence"
-        description="Without logged evidence, every claim in an answer will be flagged as unbacked — never invent DEMO facts."
+        description="Without logged evidence, every claim in an answer will be flagged as unbacked."
       />
     );
   }

@@ -12,6 +12,7 @@ import {
   scoutAccuracyShellCopy,
   shouldShowScoutAccuracySummaryTiles,
 } from "./scout-accuracy-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutAccuracyRelatedLinks", () => {
   it("builds Scouting / Coverage / Strategy via hubHref / withOrgHref", () => {
@@ -117,7 +118,7 @@ describe("scoutAccuracyShellCopy", () => {
       const copy = scoutAccuracyShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(scoutAccuracyShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(scoutAccuracyShellCopy("empty").description);
     expect(scoutAccuracyShellCopy("setup").badge).toBe("Setup required");
   });
 });

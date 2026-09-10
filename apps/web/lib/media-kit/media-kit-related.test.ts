@@ -8,6 +8,7 @@ import {
   mediaKitShellCopy,
   shouldShowMediaKitSummaryTiles,
 } from "./media-kit-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("mediaKitRelatedLinks", () => {
   it("builds Media workspace / Sponsor Suite / Outreach / Impact cross-links", () => {
@@ -82,7 +83,7 @@ describe("mediaKitShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = mediaKitShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|pre-seeded/i);
+      expectPlainCopy(copy.description);
     }
     expect(formatMediaKitMetric(null, false)).toBe("…");
     expect(formatMediaKitMetric(3, true)).toBe("3");

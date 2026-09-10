@@ -40,7 +40,7 @@ const stages = [
     id: "5",
     title: "Pick from your notes",
     detail:
-      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. No DEMO EPA. Private Edge stays blank until scout n is real.",
+      "Alliance Selection Desk, pick list, pairwise ranking, and drive-team tags attach scout evidence to public facts. Private Edge stays blank until scout n is real.",
   },
   {
     id: "6",

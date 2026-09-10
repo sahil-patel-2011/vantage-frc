@@ -108,7 +108,7 @@ function PickClockNextActionsPanel({ actions }: { actions: PickClockNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -175,7 +175,7 @@ function PickClockShell({
       <PageHeader
         breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
-        description="Next best pick + why — built for the 45-second alliance selection timer. Never invents DEMO picks or EPA."
+        description="Next best pick + why — built for the 45-second alliance selection timer."
       >
         <PickClockRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -233,7 +233,7 @@ function PickClockShell({
         <Panel className="pck-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="pck-setup-steps">
             {steps.map((step) => (
@@ -419,7 +419,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           shell === "error"
             ? error || "Could not load pick clock."
             : shell === "setup" && view?.status === "setup_required" && view.message
-              ? `${view.message} Recommendations stay blank until real event metrics exist — never DEMO picks.`
+              ? `${view.message} Recommendations stay blank until real event metrics exist.`
               : undefined
         }
         onRetry={
@@ -459,7 +459,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         shell="empty"
         error={
           excludedCount > 0
-            ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates — never DEMO picks.`
+            ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
             : undefined
         }
       />
@@ -478,8 +478,8 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         title="Pick Clock"
         description={
           readyView.eventName
-            ? `${readyView.eventName} · ${PICK_CLOCK_SECONDS}s selection clock — never DEMO picks.`
-            : `${PICK_CLOCK_SECONDS}-second alliance pick assistant — never DEMO picks.`
+            ? `${readyView.eventName} · ${PICK_CLOCK_SECONDS}s selection clock.`
+            : `${PICK_CLOCK_SECONDS}-second alliance pick assistant.`
         }
       >
         <div className="pck-heading">
@@ -559,7 +559,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       {readyView.pickMode === "low_data_tba" ? (
         <p className="pck-mode-banner" role="status">
           <span className="app-badge setup">Low-data TBA</span>
-          {readyView.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves — never DEMO picks."}
+          {readyView.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves."}
         </p>
       ) : null}
 
@@ -600,7 +600,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           title="No teams left to recommend"
           description={
             excludedCount
-              ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates — never DEMO picks.`
+              ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
               : "Load event metrics or build a pick list on Strategy first — no invented rankings."
           }
           badge="No teams left to recommend"
@@ -742,7 +742,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
           {readyView.epaDrifts.length
             ? ` · ${readyView.epaDrifts.length} EPA-drift callout${readyView.epaDrifts.length === 1 ? "" : "s"}`
             : ""}
-          {" · never DEMO picks"}
         </p>
       ) : null}
     </main>

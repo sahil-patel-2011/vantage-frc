@@ -71,7 +71,7 @@ export function failurePatternsSetupSteps(orgId?: string | null): FailurePattern
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — failure clusters are org-scoped.",
+      detail: "Choose your team organization to open failure clusters.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -120,7 +120,7 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
       return {
         kind,
         title: "Loading Repeat Failure Patterns…",
-        description: "Checking workspace membership and FMEA history — never DEMO clusters.",
+        description: "Checking workspace membership and FMEA history.",
       };
     case "error":
       return {
@@ -128,7 +128,7 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
         badge: "Unavailable",
         title: "Could not load failure patterns",
         description:
-          "A network or server issue blocked clustering. Retry, or open FMEA while it reloads — never invent DEMO patterns.",
+          "A network or server issue blocked clustering. Retry, or open FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -136,20 +136,20 @@ export function failurePatternsShellCopy(kind: FailurePatternsShellKind): Failur
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Repeat Failure Patterns is org-scoped. Pick a workspace before clustering — nothing is pre-seeded.",
+          "Pick a workspace before clustering.",
       };
     case "empty":
       return {
         kind,
         badge: "No failures logged",
         title: "Log FMEA or incident failures",
-        description: "Clusters appear only after real failures are logged — never DEMO pattern packs.",
+        description: "Clusters appear only after real failures are logged.",
       };
     default:
       return {
         kind: "ready",
         title: "Repeat failure clusters",
-        description: "Clusters from logged FMEA and incidents only — never DEMO counters.",
+        description: "Clusters from logged FMEA and incidents only.",
       };
   }
 }
@@ -170,7 +170,7 @@ export function failurePatternsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Failure clusters are org-scoped — pick a team before logging failures.",
+          detail: "Pick a team before logging failures.",
           href: "/workspace",
           primary: true,
         },
@@ -222,7 +222,7 @@ export function failurePatternsNextActions(input: {
       {
         id: "fmea",
         label: "Log FMEA failures",
-        detail: "Clusters stay blank until failures are logged — never DEMO patterns.",
+        detail: "Clusters stay blank until failures are logged.",
         href: hubHref("/build", "fmea", orgId),
         primary: true,
       },
@@ -247,8 +247,8 @@ export function failurePatternsNextActions(input: {
       label: criticalCount > 0 ? "Review critical clusters" : "Review failure clusters",
       detail:
         criticalCount > 0
-          ? `${criticalCount} critical cluster${criticalCount === 1 ? "" : "s"} from logged failures — never DEMO counters.`
-          : `${clusterCount} subsystem cluster${clusterCount === 1 ? "" : "s"} from real events — never DEMO counters.`,
+          ? `${criticalCount} critical cluster${criticalCount === 1 ? "" : "s"} from logged failures.`
+          : `${clusterCount} subsystem cluster${clusterCount === 1 ? "" : "s"} from real events.`,
       href: "#failure-patterns-clusters",
       primary: true,
     },

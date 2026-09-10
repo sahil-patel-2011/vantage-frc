@@ -88,7 +88,7 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Pit Command is org-scoped.",
+      detail: "Choose your team organization to open Pit Command.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -188,7 +188,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         kind,
         title: "Loading Pit Command…",
         description:
-          "Checking workspace membership and real issues / maintenance / battery logs — never DEMO release gates.",
+          "Checking workspace membership and real issues / maintenance / battery logs.",
       };
     case "error":
       return {
@@ -196,7 +196,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Pit Command",
         description:
-          "A network or server issue blocked the release board. Retry, or open Batteries / Match checklist / Event Day while it reloads — never invent DEMO IR or readiness metrics.",
+          "A network or server issue blocked the release board. Retry, or open Batteries / Match checklist / Event Day while it reloads.",
       };
     case "setup":
       return {
@@ -204,7 +204,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pit Command is org-scoped. Pick a workspace before logging batteries, issues, or maintenance — nothing is pre-seeded.",
+          "Pick a workspace before logging batteries, issues, or maintenance.",
       };
     case "empty":
       return {
@@ -212,14 +212,14 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
         badge: "No pit evidence yet",
         title: "Log the first battery, issue, or work item",
         description:
-          "Release gates, rack status, and work queues stay blank until you record real evidence. Cross-check Batteries, Match checklist, and Event Day — never DEMO volts or readiness %.",
+          "Release gates, rack status, and work queues stay blank until you record real evidence. Cross-check Batteries, Match checklist, and Event Day.",
       };
     default:
       return {
         kind: "ready",
         title: "Robot release board",
         description:
-          "Gates use only logged issues, maintenance, and battery readings — never DEMO release metrics.",
+          "Gates use only logged issues, maintenance, and battery readings.",
       };
   }
 }
@@ -286,14 +286,14 @@ export function pitNextActions(input: {
       {
         id: "log-battery",
         label: "Log a battery reading",
-        detail: "Voltage and IR stay blank until you measure a real pack — never DEMO volts.",
+        detail: "Voltage and IR stay blank until you measure a real pack.",
         href: "#pit-actions",
         primary: true,
       },
       {
         id: "batteries",
         label: "Open Batteries",
-        detail: "Register packs and IR on the Team Batteries board — never DEMO health scores.",
+        detail: "Register packs and IR on the Team Batteries board.",
         href: hubHref("/team", "batteries", orgId),
       },
       {
@@ -317,7 +317,7 @@ export function pitNextActions(input: {
     actions.push({
       id: "open-issues",
       label: "Review open issues",
-      detail: `${openIssues} open issue${openIssues === 1 ? "" : "s"} on the board — resolve with real verification notes, never DEMO severity.`,
+      detail: `${openIssues} open issue${openIssues === 1 ? "" : "s"} on the board — resolve with real verification notes.`,
       href: "#pit-issues",
       primary: true,
     });
@@ -334,7 +334,7 @@ export function pitNextActions(input: {
     actions.push({
       id: "battery-review",
       label: "Review battery rack",
-      detail: `${short} active pack${short === 1 ? "" : "s"} need a fresh reading or service — never DEMO IR thresholds.`,
+      detail: `${short} active pack${short === 1 ? "" : "s"} need a fresh reading or service.`,
       href: "#pit-batteries",
       primary: true,
     });
@@ -342,7 +342,7 @@ export function pitNextActions(input: {
     actions.push({
       id: "refresh-gate",
       label: "Refresh release gate",
-      detail: "Recompute from logged issues, maintenance, and battery evidence — never DEMO readiness %.",
+      detail: "Recompute from logged issues, maintenance, and battery evidence.",
       href: "#pit-actions",
       primary: true,
     });
@@ -358,7 +358,7 @@ export function pitNextActions(input: {
     {
       id: "match-checklist",
       label: "Open Match checklist",
-      detail: "Turn a GO gate into timed pre-match pit runs — never DEMO checklist progress.",
+      detail: "Turn a GO gate into timed pre-match pit runs.",
       href: hubHref("/competition", "match-checklist", orgId),
     },
     {

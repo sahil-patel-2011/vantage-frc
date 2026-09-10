@@ -8,6 +8,7 @@ import {
   teamHealthRelatedLinks,
   teamHealthShellCopy,
 } from "./related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("teamHealthRelatedLinks", () => {
   it("builds Attendance / My Hours cross-links", () => {
@@ -40,7 +41,7 @@ describe("teamHealthNextActions", () => {
     expect(actions[0]?.id).toBe("attendance");
     expect(actions.some((a) => a.id === "hours-self-view")).toBe(true);
     expect(actions.every((a) => !/\bDEMO morale score/i.test(`${a.label} ${a.detail}`))).toBe(true);
-    expect(actions.some((a) => /never DEMO morale/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("ready boards prioritize check-ins when roster members have no logs", () => {
@@ -75,6 +76,6 @@ describe("team health shell", () => {
     expect(shouldShowTeamHealthSummaryTiles(true)).toBe(true);
     expect(formatTeamHealthRate(null, true)).toBe("—");
     expect(formatTeamHealthRate(0.5, true)).toBe("50%");
-    expect(teamHealthShellCopy("empty").description).toMatch(/never DEMO morale/i);
+    expectPlainCopy(teamHealthShellCopy("empty").description);
   });
 });

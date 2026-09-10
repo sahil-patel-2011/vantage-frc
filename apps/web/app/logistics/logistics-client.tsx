@@ -68,7 +68,7 @@ function LogisticsNextActionsPanel({ actions }: { actions: LogisticsShellNextAct
     <Panel className="log-next-actions edc-next-actions soft-panel">
       <header>
         <h2>Next actions</h2>
-        <p>Event Day, My Day, Calendar, and Visit invites — never DEMO lodging.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -113,7 +113,7 @@ function LogisticsShell({
         <PageHeader
           navPath="/logistics"
           title="Logistics"
-          description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+          description="Hotels, rooming, travel legs, and day-of checklists."
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
@@ -134,7 +134,7 @@ function LogisticsShell({
         <PageHeader
           navPath="/logistics"
           title="Logistics"
-          description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+          description="Hotels, rooming, travel legs, and day-of checklists."
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
@@ -151,7 +151,7 @@ function LogisticsShell({
       <PageHeader
         navPath="/logistics"
         title="Logistics"
-        description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+        description="Hotels, rooming, travel legs, and day-of checklists."
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
@@ -398,7 +398,7 @@ export default function LogisticsClient() {
         title="Logistics"
         description={
           canManage
-            ? `${context.orgName ?? "Team"} — plan hotels, travel legs, contacts, and day-of checklists. Never DEMO lodging.`
+            ? `${context.orgName ?? "Team"} — plan hotels, travel legs, contacts, and day-of checklists.`
             : `${context.orgName ?? "Team"} — your lodging, leave times, who to call, and day-of checklist.`
         }
       >
@@ -431,7 +431,7 @@ export default function LogisticsClient() {
       ) : !canManage ? (
         <Panel>
           <span className="log-kicker">Next on my trip</span>
-          <p className="app-muted">No upcoming travel times published yet — never DEMO departures.</p>
+          <p className="app-muted">No upcoming travel times published yet.</p>
         </Panel>
       ) : null}
 
@@ -475,7 +475,7 @@ export default function LogisticsClient() {
         <Panel>
           <span className="log-kicker">My lodging</span>
           <p className="app-muted">
-            No room assignment yet. Mentors add hotels and rooming lists when travel is booked — never DEMO rooms.
+            No room assignment yet. Mentors add hotels and rooming lists when travel is booked.
           </p>
         </Panel>
       ) : null}
@@ -784,7 +784,7 @@ export default function LogisticsClient() {
             <h2>Trips, hotels, and travel times</h2>
             <p className="app-muted">
               Publish leave, hotel, venue, and return times. Legs sync to Team Calendar when configured. Counts reflect
-              saved lodging only — never DEMO fillers.
+              saved lodging only.
             </p>
           </div>
         </div>

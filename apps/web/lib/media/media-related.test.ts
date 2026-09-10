@@ -6,6 +6,7 @@ import {
   mediaShellCopy,
 } from "./media-related";
 import { isMediaWorkspaceEmpty, shouldShowMediaSummaryTiles } from ".";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("media-related Soft-UI helpers", () => {
   it("builds Media Kit / Outreach / Impact via hubHref / withOrgHref", () => {
@@ -56,7 +57,7 @@ describe("media-related Soft-UI helpers", () => {
     const empty = mediaNextActions({ orgId: "org-1", shell: "empty" });
     expect(empty[0]?.href).toBe("/media-kit?orgId=org-1");
     expect(mediaShellCopy("empty").title).not.toMatch(/\bDEMO\b/);
-    expect(mediaShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(mediaShellCopy("empty").description);
   });
 
   it("hides summary tiles when the board is empty", () => {

@@ -58,7 +58,7 @@ function SpareForecastNextActionsPanel({ actions }: { actions: SpareForecastNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Batteries, Orders, and Subsystems — never DEMO spare counts.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -339,7 +339,7 @@ export default function SpareForecastClient() {
         description={
           view.seasonHorizon === "offseason"
             ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged FMEA failures — never \"no risk\" from a closed 200-day window."
-            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems — never DEMO spare counts."
+            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
         }
       >
         <div className="spare-forecast-header-actions">
@@ -423,8 +423,7 @@ export default function SpareForecastClient() {
               Draft from projected shortfalls, then promote through{" "}
               <a href={ordersHref}>Orders</a>. Keep{" "}
               <a href={batteriesHref}>Batteries</a> and{" "}
-              <a href={subsystemsHref}>Subsystems</a> aligned with inventory tags — never invent DEMO
-              spare counts.
+              <a href={subsystemsHref}>Subsystems</a> aligned with inventory tags.
             </p>
           </Panel>
         </div>
@@ -495,7 +494,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
           <small className="app-muted">
             {offseason
               ? "Remaining-season risk is unknown — cadence from inventory × FMEA only"
-              : "Real inventory only — never DEMO spare counts"}
+              : "Real inventory only."}
           </small>
         </div>
         {tiles.map((tile) => (

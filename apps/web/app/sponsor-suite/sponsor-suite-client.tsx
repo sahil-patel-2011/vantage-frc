@@ -56,7 +56,7 @@ function SponsorSuiteNextActionsPanel({ actions }: { actions: SponsorSuiteNextAc
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Sponsor CRM and Sponsorship — never DEMO fundraising metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -307,7 +307,7 @@ export default function SponsorSuiteClient() {
           </>
         }
         title="Sponsor Suite"
-        description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Never DEMO fundraising metrics. Deck and ROI generation are metered."
+        description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
         <div className="sponsor-suite-header-actions">
           {view.seasons.length > 0 ? (
@@ -435,7 +435,7 @@ function GoalPanel({
         <div>
           <h2 style={{ margin: 0 }}>Fundraising goal — {view.seasonYear}</h2>
           <small className="app-muted">
-            Actual is computed live from recorded sponsor contributions — never DEMO raised totals.
+            Actual is computed live from recorded sponsor contributions.
           </small>
         </div>
         <strong style={{ fontSize: "1.6rem" }}>
@@ -525,7 +525,7 @@ function RemindersPanel({
           badge="No reminders"
           badgeTone="setup"
           title="No pending reminders"
-          description="Create a thank-you or renewal reminder for a real CRM sponsor — never invent DEMO follow-ups."
+          description="Create a thank-you or renewal reminder for a real CRM sponsor."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
@@ -697,7 +697,7 @@ function DeckPanel({
           badge="No decks yet"
           badgeTone="setup"
           title="Generate your first sponsor deck"
-          description="Pitch and renewal outlines are grounded in your recorded sponsor history and season goal — never invent DEMO asks."
+          description="Pitch and renewal outlines are grounded in your recorded sponsor history and season goal."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 14, marginTop: 12 }}>
@@ -776,8 +776,7 @@ function RoiPanel({
         </button>
       </header>
       <p className="app-muted">
-        Metered ROI narrative from recorded sponsor_contributions only — never invent DEMO raised
-        totals.
+        A sponsor ROI write-up built from the contributions your team has recorded.
       </p>
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -787,7 +786,7 @@ function RoiPanel({
           badge="No reports yet"
           badgeTone="setup"
           title="Generate an ROI report"
-          description="Summarizes recorded sponsor_contributions for this season against your fundraising goal — never DEMO attainment."
+          description="Summarizes recorded sponsor_contributions for this season against your fundraising goal."
         />
       ) : (
         <div style={{ display: "grid", gap: 14, marginTop: 12 }}>

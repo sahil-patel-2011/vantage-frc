@@ -244,7 +244,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "team_todos",
     label: "Team todos",
-    description: "Open shared todos, yours first — no invented demo items",
+    description: "Open shared todos, yours first",
     defaultW: 4,
     defaultH: 3,
     minW: 3,

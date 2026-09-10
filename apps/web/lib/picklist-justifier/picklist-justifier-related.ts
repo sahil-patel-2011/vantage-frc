@@ -99,7 +99,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         kind,
         title: "Loading Pick-list Justifier…",
         description:
-          "Checking workspace membership and pick lists — never DEMO slot rationales.",
+          "Checking workspace membership and pick lists.",
       };
     case "error":
       return {
@@ -107,7 +107,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         badge: "Unavailable",
         title: "Could not load Pick-list Justifier",
         description:
-          "A network or server issue blocked the pick list. Retry, or open Strategy / Scouting while it reloads — never invent DEMO rationales.",
+          "A network or server issue blocked the pick list. Retry, or open Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -115,7 +115,7 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Pick-list Justifier is org-scoped. Pick a workspace before justifying slots — nothing is pre-seeded.",
+          "Pick a workspace before justifying slots.",
       };
     case "empty":
       return {
@@ -123,14 +123,14 @@ export function picklistJustifierShellCopy(kind: PicklistJustifierShellKind): Pi
         badge: "No pick lists yet",
         title: "Build a pick list first",
         description:
-          "Justifications stay blank until you have a real ranked pick list. Cross-check Strategy and Collaborative Pick List — never DEMO rationales.",
+          "Justifications stay blank until you have a real ranked pick list. Cross-check Strategy and Collaborative Pick List.",
       };
     default:
       return {
         kind: "ready",
         title: "Source-cited pick rationales",
         description:
-          "Slots cite TBA hard metrics and your scout rows only — never DEMO win rates or invented contradictions.",
+          "Slots cite TBA hard metrics and your scout rows only.",
       };
   }
 }
@@ -157,20 +157,20 @@ export function picklistJustifierNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Justifications are org-scoped — pick a team before generating rationales.",
+          detail: "Pick a team before generating rationales.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -240,7 +240,7 @@ export function picklistJustifierNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scout observations strengthen rationales — never DEMO scores.",
+        detail: "Scout observations strengthen rationales.",
         href: hubHref("/competition", "scouting", orgId),
       },
     ].slice(0, 4);
@@ -260,7 +260,7 @@ export function picklistJustifierNextActions(input: {
     actions.push({
       id: "review-contradictions",
       label: "Review contradictions",
-      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with TBA — never invent DEMO flags.`,
+      detail: `${contradictionCount} slot${contradictionCount === 1 ? "" : "s"} where scouting disagrees with TBA.`,
       href: "#picklist-justifier-entries",
       primary: true,
     });
@@ -291,7 +291,7 @@ export function picklistJustifierNextActions(input: {
     {
       id: "pick-clock",
       label: "Open Pick clock",
-      detail: "Stored rationales appear as recommendation reasons — never DEMO picks.",
+      detail: "Stored rationales appear as recommendation reasons.",
       href: withOrgHref("/pick-clock", orgId),
     },
     {

@@ -51,7 +51,7 @@ function MatchNotesNextActionsPanel({ actions }: { actions: MatchNotesTimelineNe
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Schedule, Strategy, and Scouting — never DEMO match metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -282,7 +282,7 @@ export default function MatchNotesTimelineClient() {
           </>
         }
         title="Match Note Timeline"
-        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs. Never DEMO match metrics. Cross-check Schedule, Strategy, and Scouting."
+        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs. Cross-check Schedule, Strategy, and Scouting."
       >
         <div className="match-notes-timeline-header-actions">
           {view.seasons.length > 0 ? (
@@ -355,7 +355,7 @@ export default function MatchNotesTimelineClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Keep match labels aligned with <a href={scheduleHref}>Schedule</a>, ground debriefs in{" "}
             <a href={strategyHref}>Strategy</a>, and pair clock notes with{" "}
-            <a href={scoutingHref}>Scouting</a> rows — never invent DEMO match metrics.
+            <a href={scoutingHref}>Scouting</a> rows.
           </p>
         </Panel>
       </div>
@@ -506,7 +506,7 @@ function LogNoteForm({
       <h2 style={{ margin: 0 }}>Log a note</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Notes use only what you type against the match clock. Paste QRScout hold ranges like{" "}
-        <code>12-18,22-30</code> to paint the action tracker — never DEMO match metrics.
+        <code>12-18,22-30</code> to paint the action tracker.
       </p>
       <FormGrid min={160}>
         <FormRow label="Match label">

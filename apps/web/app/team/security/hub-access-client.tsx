@@ -162,7 +162,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       <span className="eyebrow">Section allowlists</span>
       <h2>Hub access</h2>
       <p className="app-muted">
-        Limit scouts and viewers to specific Soft-UI hubs. Start unrestricted (no hubs checked). Enabling a hub shows
+        Limit scouts and viewers to specific hubs. Start unrestricted (no hubs checked). Enabling a hub shows
         it; leave its tabs unchecked for every tab, or check tabs to restrict to those only. Clear all restores full
         navigation. Owners and admins stay unrestricted.
       </p>

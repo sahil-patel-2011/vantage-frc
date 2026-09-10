@@ -102,7 +102,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
       return {
         kind,
         title: "Loading Season Report…",
-        description: "Checking workspace membership and logged season entries — never DEMO stats.",
+        description: "Checking workspace membership and logged season entries.",
       };
     case "error":
       return {
@@ -118,7 +118,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Season Report is org-scoped. Pick a workspace before logging build, results, budget, or outreach notes — nothing is pre-seeded.",
+          "Pick a workspace before logging build, results, budget, or outreach notes.",
       };
     case "empty":
       return {
@@ -126,7 +126,7 @@ export function seasonReportShellCopy(kind: SeasonReportShellKind): SeasonReport
         badge: "No entries yet",
         title: "Log your first season note",
         description:
-          "Coverage and snapshots stay blank until you record real entries. Strategy and Impact stay linked for context — never DEMO season stats.",
+          "Coverage and snapshots stay blank until you record real entries. Strategy and Impact stay linked for context.",
       };
     default:
       return {
@@ -158,14 +158,14 @@ export function seasonReportNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Season notes and snapshots are org-scoped — pick a team before logging entries.",
+          detail: "Pick a team before logging entries.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick desks stay empty until real competition data exists — never DEMO win rates.",
+          detail: "Pick desks stay empty until real competition data exists.",
           href: withOrgHref("/strategy", null),
         },
         {
@@ -217,7 +217,7 @@ export function seasonReportNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Strategy stays empty rather than invent DEMO season stats when this page is down.",
+        detail: "Strategy stays empty while this page is down.",
         href: withOrgHref("/strategy", orgId),
       },
     ];
@@ -247,7 +247,7 @@ export function seasonReportNextActions(input: {
       {
         id: "decision-search",
         label: "Open Decision Search",
-        detail: "Index design decisions separately — never DEMO retrospective narratives.",
+        detail: "Index design decisions separately.",
         href: hubHref("/ai", "decision-search", orgId),
       },
     ].slice(0, 4);
@@ -268,7 +268,7 @@ export function seasonReportNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Use competition strategy alongside this season narrative — never DEMO win rates.",
+      detail: "Use competition strategy alongside this season narrative.",
       href: withOrgHref("/strategy", orgId),
       primary: !actions.some((a) => a.primary),
     },

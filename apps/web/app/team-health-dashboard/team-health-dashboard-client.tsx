@@ -61,7 +61,7 @@ function NextActionsPanel({ actions }: { actions: TeamHealthNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions thd-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Attendance and My Hours — never DEMO morale scores.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -150,7 +150,7 @@ function TeamHealthShell({
         <Panel className="thd-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Attendance and My Hours — never DEMO morale scores.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="thd-setup-steps">
             {steps.map((step) => (
@@ -291,7 +291,7 @@ export default function TeamHealthDashboardClient() {
           </>
         }
         title="Team Health"
-        description="Engagement from attendance roll call and shop-hour clock-ins only — never DEMO morale scores."
+        description="Engagement from attendance roll call and shop-hour clock-ins only."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           {view.seasons.length > 0 ? (

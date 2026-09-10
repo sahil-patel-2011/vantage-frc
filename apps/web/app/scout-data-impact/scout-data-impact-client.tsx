@@ -55,7 +55,7 @@ function ScoutDataImpactNextActionsPanel({ actions }: { actions: ScoutDataImpact
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -187,7 +187,7 @@ function ScoutDataImpactShell({
         <Panel className="scout-data-impact-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-data-impact-setup-steps">
             {steps.map((step) => (
@@ -356,7 +356,7 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
           </>
         }
         title="Scout Data Impact"
-        description="After alliance selection, see which real scouting entries informed each pick — where-your-data-went, never DEMO credit."
+        description="After alliance selection, see which real scouting entries informed each pick — where-your-data-went."
       >
         <div className="scout-data-impact-header-meta">
           <ScoutDataImpactRelatedStrip orgId={orgId} />
@@ -443,7 +443,7 @@ function ScoutSummaries({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <header>
         <h2>Your data, credited</h2>
         <p className="app-muted">
-          Scouts appear only when their real match entries match a logged pick — never DEMO influence.
+          Scouts appear only when their real match entries match a logged pick.
         </p>
       </header>
       {view.scoutSummaries.length === 0 ? (
@@ -491,7 +491,7 @@ function PicksList({
     <Panel className="scout-data-impact-panel" id="pick-evidence">
       <header>
         <h2>Picks and their evidence</h2>
-        <p className="app-muted">Each pick lists only attributable scout entries for that team — never DEMO credit.</p>
+        <p className="app-muted">Each pick lists only attributable scout entries for that team.</p>
       </header>
       {view.picks.length === 0 ? (
         <p className="app-muted">Log an alliance pick below to start the where-your-data-went loop.</p>

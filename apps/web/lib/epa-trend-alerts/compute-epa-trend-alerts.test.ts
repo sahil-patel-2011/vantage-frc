@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { computeEpaTrendAlertsView } from "./compute-epa-trend-alerts";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const USER = "22222222-2222-4222-8222-222222222222";
@@ -27,7 +28,7 @@ describe("computeEpaTrendAlertsView", () => {
       expect(view.steps[0]?.href).toBe("/workspace");
       expect(view.steps.find((s) => s.id === "strategy")?.href).toBe("/competition?tab=strategy");
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

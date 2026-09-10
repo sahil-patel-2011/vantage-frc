@@ -57,7 +57,7 @@ function NextActionsPanel({ actions }: { actions: MatchVideoIndexNextAction[] })
     <section className="app-card soft-panel edc-next-actions mvi-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Match Notes, and Match-Delta — never DEMO clip packs.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -141,7 +141,7 @@ function IndexShell({
         <Panel className="mvi-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting and Match Notes — never DEMO clip packs.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="mvi-setup-steps">
             {steps.map((step) => (
@@ -273,7 +273,7 @@ export default function MatchVideoIndexClient() {
           </>
         }
         title="Match Video Index"
-        description="Auto-index your match videos by match key for quick review — never DEMO clip packs. Cross-check Scouting and Match Notes."
+        description="Auto-index your match videos by match key for quick review. Cross-check Scouting and Match Notes."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -324,7 +324,7 @@ function VideoGroups({
         badge="No videos yet"
         badgeTone="setup"
         title="Index your first match video"
-        description="Add a video link with its match key — never DEMO clip packs."
+        description="Add a video link with its match key."
       />
     );
   }
@@ -428,7 +428,7 @@ function AddVideoForm({
       }}
     >
       <h2>Add video</h2>
-      <p className="app-muted">Real URLs and match keys only — never DEMO clip packs.</p>
+      <p className="app-muted">Real URLs and match keys only.</p>
       <FormGrid min={160}>
         <FormRow label="Match key">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026casj_qm12" required />

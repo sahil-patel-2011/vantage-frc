@@ -8,6 +8,7 @@ import {
   formatCounterBookMetric,
   shouldShowCounterBookSummaryTiles,
 } from "./counter-book-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("counterBookRelatedLinks", () => {
   it("builds Strategy / Scouting cross-links", () => {
@@ -99,7 +100,7 @@ describe("classifyCounterBookShell + copy", () => {
   it("copy never invents DEMO opponent metrics", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = counterBookShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(/never DEMO|nothing is pre-seeded|scout/i);
+      expectPlainCopy(`${copy.title} ${copy.description}`);
       expect(`${copy.title} ${copy.description}`.toLowerCase()).not.toMatch(/\binvented demo\b/);
     }
   });

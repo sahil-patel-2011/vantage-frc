@@ -68,7 +68,7 @@ function NextActions({
     <section className="offline-shell-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From logged precache syncs only — never DEMO device or sync counts.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -165,7 +165,7 @@ export default function OfflineShellClient() {
           </>
         }
         title="Offline Shell"
-        description="Track service-worker precache readiness so Scouting and schedule shells still cold-launch with no signal. Scores use logged sync events only — never DEMO counts."
+        description="Track service-worker precache readiness so Scouting and schedule shells still cold-launch with no signal. Scores use logged sync events only."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -276,7 +276,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
           </div>
         ))}
       </div>
-      <p className="app-muted offline-shell-tiles-note">Blank or zero until teammates log a real precache sync — never DEMO totals.</p>
+      <p className="app-muted offline-shell-tiles-note">Blank or zero until teammates log a real precache sync.</p>
     </Panel>
   );
 }
@@ -380,7 +380,7 @@ function LogCacheEventForm({
       className="offline-shell-log-form"
     >
       <h2 className="offline-shell-panel-title">Log a precache sync</h2>
-      <p className="app-muted">Record only devices you actually warmed and verified — do not invent DEMO sync rows.</p>
+      <p className="app-muted">Record each device once you have warmed it up and checked it works.</p>
       <FormGrid min={160}>
         <FormRow label="Device">
           <input value={form.deviceLabel} onChange={set("deviceLabel")} placeholder="Scout tablet A" required />

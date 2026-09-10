@@ -75,7 +75,7 @@ function DefenseNextActionsPanel({ actions }: { actions: DefensePlannerNextActio
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Scouting, and Counter-book — never DEMO defense metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -168,7 +168,7 @@ function DefenseShell({
         <Panel className="defense-planner-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Scouting — never DEMO defense metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="defense-planner-setup-steps">
             {steps.map((step) => (
@@ -322,7 +322,7 @@ export default function DefensePlannerClient() {
           </>
         }
         title="Defense planner"
-        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book — never DEMO defense metrics."
+        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book."
       >
         <div className="defense-planner-header-actions">
           {view.seasons.length > 0 ? (
@@ -439,7 +439,7 @@ function RobotProfileForm({
       <h2 style={{ margin: 0 }}>Our robot profile — {view.seasonYear}</h2>
       {!profile ? (
         <small className="app-muted">
-          Set our mass and drivetrain to unlock matchup recommendations — never DEMO containment.
+          Set our mass and drivetrain to unlock matchup recommendations.
         </small>
       ) : null}
       <FormGrid min={160}>
@@ -548,7 +548,7 @@ function LogMatchupForm({
     >
       <h2 style={{ margin: 0 }}>Scout the next opponent</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Metered local recommendation — UsageCutoffBanner appears when budgets hard-stop. Never DEMO defense metrics.
+        Metered local recommendation — UsageCutoffBanner appears when budgets hard-stop.
       </p>
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       <FormGrid min={160}>
@@ -624,7 +624,7 @@ function MatchupsPanel({
   return (
     <Panel className="defense-planner-panel" id="defense-planner-list">
       <h2 style={{ marginTop: 0 }}>Matchups — {view.seasonYear}</h2>
-      <p className="app-muted">Real logged matchups only — never DEMO recommendations.</p>
+      <p className="app-muted">Real logged matchups only.</p>
       <ul className="defense-planner-list">
         {view.matchups.map((matchup) => (
           <li key={matchup.id} className="app-card soft-panel defense-planner-row">

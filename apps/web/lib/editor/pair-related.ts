@@ -83,7 +83,7 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — pairing is org-scoped.",
+      detail: "Choose your team organization to open pairing.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         kind,
         title: "Loading Pair VS Code…",
         description:
-          "Checking workspace membership and real paired editors — never DEMO pairing metrics.",
+          "Checking workspace membership and real paired editors.",
       };
     case "error":
       return {
@@ -156,7 +156,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Pair VS Code",
         description:
-          "A network or server issue blocked pairing. Retry, or open Code Coach / GitHub / AI while it reloads — never invent DEMO device counts.",
+          "A network or server issue blocked pairing. Retry, or open Code Coach / GitHub / AI while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Editor pairing is org-scoped. Join or pick a workspace before approving a VS Code code — nothing is pre-seeded.",
+          "Join or pick a workspace before approving a VS Code code.",
       };
     case "empty":
       return {
@@ -172,14 +172,14 @@ export function pairShellCopy(kind: PairShellKind): PairEmptyCopy {
         badge: "No editors paired yet",
         title: "Approve your first editor",
         description:
-          "Paired devices stay blank until you approve a real code from the Vantage VS Code extension. Cross-check Code Coach, GitHub, and AI — never DEMO pairing metrics.",
+          "Paired devices stay blank until you approve a real code from the Vantage VS Code extension. Cross-check Code Coach, GitHub, and AI.",
       };
     default:
       return {
         kind: "ready",
         title: "Paired editors",
         description:
-          "Only editors you approved appear here — counts use real device rows, never DEMO pairing metrics.",
+          "Only editors you approved appear here — counts use real device rows.",
       };
   }
 }
@@ -218,7 +218,7 @@ export function pairNextActions(input: {
       {
         id: "code",
         label: "Open Code Coach",
-        detail: "Review robot source locally after pairing — never DEMO findings.",
+        detail: "Review robot source locally after pairing.",
         href: hubHref("/build", "code", orgId),
       },
       {
@@ -247,7 +247,7 @@ export function pairNextActions(input: {
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Optional repo context for Code Coach — still never invents DEMO findings.",
+      detail: "Optional repo context for Code Coach.",
       href: githubConnectionHref(orgId),
     },
     {

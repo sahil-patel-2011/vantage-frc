@@ -58,7 +58,7 @@ function NextActionsPanel({ actions }: { actions: ScoutAssistedCountNextAction[]
     <section className="app-card soft-panel edc-next-actions sac-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Forms, and Coverage Live — never DEMO tap tallies.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -142,7 +142,7 @@ function CountShell({
         <Panel className="sac-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting and Forms — never DEMO tap tallies.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="sac-setup-steps">
             {steps.map((step) => (
@@ -276,7 +276,7 @@ export default function ScoutAssistedCountClient() {
           </>
         }
         title="Scout-Assisted Count"
-        description="Tap a counter during a match instead of typing — every tap is audited, never DEMO tallies. Cross-check Scouting and Forms."
+        description="Tap a counter during a match instead of typing — every tap is audited. Cross-check Scouting and Forms."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -342,7 +342,7 @@ function StartSessionForm({
       }}
     >
       <h2>Start a counting session</h2>
-      <p className="app-muted">Real match keys and audited taps — never DEMO tallies.</p>
+      <p className="app-muted">Real match keys and audited taps.</p>
       <FormGrid min={160}>
         <FormRow label="Label">
           <input
@@ -393,7 +393,7 @@ function Sessions({
         badge="No sessions yet"
         badgeTone="setup"
         title="Start your first counting session"
-        description="Tap during a match — the tally is audited, never DEMO tallies."
+        description="Tap during a match — the tally is audited."
       />
     );
   }

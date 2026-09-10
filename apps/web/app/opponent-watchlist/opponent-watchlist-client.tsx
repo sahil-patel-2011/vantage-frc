@@ -60,7 +60,7 @@ function WatchlistNextActionsPanel({ actions }: { actions: OpponentWatchlistNext
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, EPA Trend Alerts, and Scouting — never DEMO opponent metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -287,7 +287,7 @@ export default function OpponentWatchlistClient() {
           </>
         }
         title="Opponent Watchlist"
-        description="Track opponent teams personally and get notified when their reference EPA or next scheduled match changes — never DEMO opponent metrics. Cross-check Strategy, EPA Trend Alerts, and Scouting."
+        description="Track opponent teams personally and get notified when their reference EPA or next scheduled match changes. Cross-check Strategy, EPA Trend Alerts, and Scouting."
       >
         <div className="opponent-watchlist-header-actions">
           {relatedLinks.map((link) => (
@@ -349,7 +349,7 @@ export default function OpponentWatchlistClient() {
             <a href={lineupHref}>Lineup &amp; Coverage</a>. Keep{" "}
             <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
             <a href={epaAlertsHref}>EPA Trend Alerts</a> for event-to-event swings, and confirm field
-            notes in <a href={scoutingHref}>Scouting</a> — never invent DEMO opponent rankings.
+            notes in <a href={scoutingHref}>Scouting</a>
           </p>
         </Panel>
       </div>
@@ -392,7 +392,7 @@ function AlertsPanel({ view }: { view: LiveView }) {
         badge="No changes"
         badgeTone="good"
         title="No EPA or schedule changes yet"
-        description="Alerts appear here once a watched team's reference EPA moves or their next match is scheduled or rescheduled — never DEMO forecasts."
+        description="Alerts appear here once a watched team's reference EPA moves or their next match is scheduled or rescheduled."
       />
     );
   }
@@ -478,8 +478,7 @@ function CoveragePriorityPanel({ view, lineupHref }: { view: LiveView; lineupHre
     <Panel id="opponent-watchlist-coverage" className="opponent-watchlist-panel">
       <h2 style={{ marginTop: 0 }}>Coverage order</h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
-        Real watchlist rows move these teams earlier in the scouting coverage queue — never DEMO
-        rankings.
+        Real watchlist rows move these teams earlier in the scouting coverage queue.
       </p>
       <ol className="opponent-watchlist-list">
         {view.coveragePriorityTeamKeys.map((teamKey, index) => {
@@ -527,8 +526,7 @@ function AddEntryForm({
     >
       <h2 style={{ margin: 0 }}>Watch a team</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Alerts use only reference EPA and scheduled matches for teams you watch — never DEMO opponent
-        rankings.
+        Alerts use reference EPA and scheduled matches for the teams you watch.
       </p>
       <FormGrid min={160}>
         <FormRow label="Team key" hint="e.g. frc254">

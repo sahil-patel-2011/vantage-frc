@@ -27,19 +27,19 @@ function setupSteps(orgId: string | null): CounterBookSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Counter-book is org-scoped.",
+      detail: "Choose your team organization to open Counter-book.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

@@ -8,6 +8,7 @@ import {
   vendorLeadTimesRelatedLinks,
   vendorLeadTimesShellCopy,
 } from "./vendor-lead-times-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("vendorLeadTimesRelatedLinks", () => {
   it("builds Orders / Spare Forecast / Vendors cross-links", () => {
@@ -123,10 +124,10 @@ describe("vendorLeadTimesShellCopy + formatVendorLeadTimesMetric", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = vendorLeadTimesShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(vendorLeadTimesShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(vendorLeadTimesShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(vendorLeadTimesShellCopy("empty").description);
+    expectPlainCopy(vendorLeadTimesShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

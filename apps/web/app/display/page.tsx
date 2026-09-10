@@ -19,8 +19,7 @@ export default async function DisplayPage({
         <span className="eyebrow">VANTAGE / DISPLAY</span>
         <h1>Select a workspace</h1>
         <p>
-          Pit TV boards are saved per team. Select a workspace before creating a display layout —
-          nothing is pre-filled with DEMO matches or ranks.
+          Pit TV boards are saved per team. Select a workspace before creating a display layout.
         </p>
         <div className="disp-gate-actions">
           <a className="app-button" href="/workspace">

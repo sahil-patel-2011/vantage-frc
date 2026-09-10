@@ -46,7 +46,7 @@ export function CopyShareLink({
       className={className}
       onClick={() => void copy()}
       aria-live="polite"
-      title="Copy org-scoped link for this page"
+      title="Copy a link to this page for your team"
     >
       {status === "copied" ? "Link copied" : status === "failed" ? "Copy failed" : label}
     </button>

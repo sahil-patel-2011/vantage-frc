@@ -53,9 +53,7 @@ function WriterNextActions({
     <section className="writer-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>
-          Grants, Awards, and Knowledge stay org-scoped — Writer never invents essays or DEMO award copy.
-        </p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -650,7 +648,7 @@ function Composer({
           setAiMeta(
             data.pitch.source === "ai"
               ? "Metered FRC Assistant"
-              : `Org-scoped template + business facts · usage logged (${data.pitch.provider})`,
+              : `Template + your team’s business facts · usage logged (${data.pitch.provider})`,
           );
           setAiProvenance(
             data.pitch.source === "ai"
@@ -834,7 +832,7 @@ function Composer({
               Save draft
             </button>
             <small className="app-muted" style={{ alignSelf: "center" }}>
-              Org-scoped only — review before sending.
+              Read this through before you send it.
             </small>
           </div>
         </div>
@@ -843,9 +841,8 @@ function Composer({
           <span className="app-badge setup">No draft yet</span>
           <h3 style={{ margin: "8px 0 4px", fontSize: "1rem" }}>Templates stay empty until you compose</h3>
           <p className="app-muted" style={{ margin: 0 }}>
-            Pick a grant or sponsor template above, then <strong>Compose from template</strong> for org-scoped text from
-            your profile only. FRC Assistant requires a configured provider key and shows setup — it never invents essays
-            when keys are missing. Pair with{" "}
+            Pick a grant or sponsor template above, then <strong>Compose from template</strong> to fill it in from your
+            team’s profile. FRC Assistant needs a provider key before it can draft for you. Pair with{" "}
             {writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE }).map((link, index, arr) => (
               <span key={link.id}>
                 <a href={link.href}>{link.label}</a>

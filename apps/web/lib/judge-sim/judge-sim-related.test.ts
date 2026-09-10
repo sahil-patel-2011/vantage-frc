@@ -9,6 +9,7 @@ import {
   judgeSimShellCopy,
   shouldShowJudgeSimSummaryTiles,
 } from "./judge-sim-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("judgeSimRelatedLinks", () => {
   it("builds Community Impact / Impact Essay / Awards cross-links", () => {
@@ -132,10 +133,10 @@ describe("judgeSimShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = judgeSimShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|metrics|pre-seeded/i);
+      expectPlainCopy(copy.description);
     }
-    expect(judgeSimShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(judgeSimShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(judgeSimShellCopy("empty").description);
+    expectPlainCopy(judgeSimShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

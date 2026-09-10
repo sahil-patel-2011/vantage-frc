@@ -70,7 +70,7 @@ function NextActionsPanel({ actions }: { actions: GrantEligibilityMatcherNextAct
     <section className="app-card soft-panel edc-next-actions gem-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Grants, Grant Report, and Impact — never DEMO grant dollars.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -159,7 +159,7 @@ function MatcherShell({
         <Panel className="gem-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Grants and Impact — never DEMO grant dollars.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="gem-setup-steps">
             {steps.map((step) => (
@@ -317,7 +317,7 @@ export default function GrantEligibilityMatcherClient() {
           </>
         }
         title="Grant Eligibility Matcher"
-        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Never DEMO grant dollars. Distinct from Grant Report. Cross-check Grants, Grant Report, and Impact."
+        description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Grant Report. Cross-check Grants, Grant Report, and Impact."
       >
         <div className="gem-header-actions">
           {relatedLinks.map((link) => (
@@ -474,7 +474,7 @@ function EligibleGrants({
         badge="No matches yet"
         badgeTone="setup"
         title="No grants match your recorded team profile"
-        description="Complete your team profile (rookie year, region, mentor employers, demographics) to surface grants you qualify for — never DEMO grant dollars."
+        description="Complete your team profile (rookie year, region, mentor employers, demographics) to surface grants you qualify for."
       >
         <a className="app-button" href="#grant-eligibility-profile">
           Complete profile

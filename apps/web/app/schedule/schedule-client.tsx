@@ -155,7 +155,7 @@ function ScheduleNextActionsPanel({ actions }: { actions: ScheduleNextAction[] }
     <Panel className="sched-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Calendar, Event Day, and My Day only — never DEMO match rows.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -222,7 +222,7 @@ function ScheduleShell({
                 : `${window.location.pathname}${window.location.search}`,
             message:
               error ||
-              "Check your connection and try again — nothing is filled with DEMO matches.",
+              "Check your connection and try again.",
           },
         )
       : null;
@@ -365,7 +365,7 @@ export default function ScheduleClient() {
         title={fetchFailed ? "Could not load the match schedule" : "Loading match schedule…"}
         description={
           fetchFailed
-            ? "A network or server issue blocked the board. Retry — never DEMO match rows."
+            ? "A network or server issue blocked the board. Retry."
             : "Reading the TBA match cache for your active event…"
         }
         shell={fetchFailed ? "error" : "loading"}
@@ -438,7 +438,7 @@ export default function ScheduleClient() {
         fromCache={Boolean(view.matches.length) && fetchFailed}
         detail={
           fetchFailed
-            ? "Showing the last loaded schedule from this session when available — never DEMO match rows."
+            ? "Showing the last loaded schedule from this session when available."
             : undefined
         }
       />

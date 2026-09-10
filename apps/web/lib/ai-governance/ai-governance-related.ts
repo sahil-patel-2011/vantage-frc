@@ -165,7 +165,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
       return {
         kind,
         title: "Loading AI governance…",
-        description: "Checking org-scoped policy, spend alerts, and the high-cost approval queue.",
+        description: "Checking your team's policy, spend alerts, and the high-cost approval queue.",
       };
     case "auth_required":
       return {
@@ -188,7 +188,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Defaults",
         title: "No org gates yet",
         description:
-          "Platform defaults apply until an admin turns on allowlists, high-cost approval, spend alerts, or Finance-in-AI. Spend and queue totals stay blank or zero from Neon — never DEMO policy stats.",
+          "Platform defaults apply until an admin turns on allowlists, high-cost approval, spend alerts, or Finance-in-AI. Spend and queue totals stay blank or zero from Neon.",
       };
     case "setup":
       return {
@@ -196,7 +196,7 @@ export function aiGovernanceShellCopy(kind: AiGovernanceShellKind): AiGovernance
         badge: "Setup",
         title: "Finish the policy you started",
         description:
-          "An allowlist or high-cost gate is on but incomplete (no features/tools selected, or no USD threshold). Complete the form below — do not invent DEMO restrictions.",
+          "An allowlist or high-cost gate is on but incomplete (no features/tools selected, or no USD threshold).",
       };
     case "error":
       return {

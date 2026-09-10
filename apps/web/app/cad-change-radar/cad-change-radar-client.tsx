@@ -62,7 +62,7 @@ function NextActionsPanel({ actions }: { actions: CadChangeRadarNextAction[] }) 
     <section className="app-card soft-panel edc-next-actions ccr-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">CAD, FMEA, and Prototypes — never DEMO revision diffs.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -151,7 +151,7 @@ function RadarShell({
         <Panel className="ccr-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">CAD and FMEA — never DEMO revision diffs.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="ccr-setup-steps">
             {steps.map((step) => (
@@ -310,7 +310,7 @@ export default function CadChangeRadarClient() {
           </>
         }
         title="CAD Change Impact Radar"
-        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects — never DEMO revision diffs. Cross-check CAD, FMEA, and Prototypes."
+        description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects. Cross-check CAD, FMEA, and Prototypes."
       >
         <div className="ccr-header-actions">
           {relatedLinks.map((link) => (
@@ -386,7 +386,7 @@ function NotificationsPanel({
         badge="No alerts yet"
         badgeTone="setup"
         title="You'll be notified here when a part you subscribe to changes"
-        description="Notifications fan out automatically when a tracked part gets a new release with a diff — never DEMO impact alerts."
+        description="Notifications fan out automatically when a tracked part gets a new release with a diff."
       />
     );
   }
@@ -438,7 +438,7 @@ function DiffsPanel({
         badge="No release diffs yet"
         badgeTone="setup"
         title="Record a revision snapshot below to start diffing releases"
-        description="Diffs appear once a second snapshot of the same part is recorded — empty means nothing tracked yet, never DEMO revision packs."
+        description="Diffs appear once a second snapshot of the same part is recorded — empty means nothing tracked yet."
       >
         <a className="app-button" href="#cad-change-radar-snapshot">
           Record snapshot

@@ -11,6 +11,7 @@ import {
   isGitHubBoardEmpty,
   shouldShowGitHubSummaryTiles,
 } from "./github-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("githubConnectionHref", () => {
   it("targets Team admin #github-connection via withOrgHref", () => {
@@ -83,7 +84,7 @@ describe("githubShellCopy", () => {
       const copy = githubShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(githubShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(githubShellCopy("empty").description);
     expect(githubShellCopy("setup").badge).toBe("Setup required");
   });
 });

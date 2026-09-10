@@ -118,7 +118,7 @@ function setupRequired(
 const WORKSPACE_STEP: CoverageSetupStep = {
   id: "workspace",
   label: "Select workspace",
-  detail: "Coverage is org-scoped — choose your team organization.",
+  detail: "Choose your team organization.",
   href: "/workspace",
 };
 

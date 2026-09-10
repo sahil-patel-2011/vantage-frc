@@ -39,6 +39,7 @@ import {
   updateOptionAt,
   validateDraft,
 } from "./form-builder";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("form-builder", () => {
   it("slugifies unique keys", () => {
@@ -221,7 +222,7 @@ describe("form-builder", () => {
     expect(steps.some((s) => s.id === "scouting")).toBe(true);
     expect(steps.some((s) => s.id === "coverage")).toBe(true);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(formBuilderShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(formBuilderShellCopy("empty").description);
   });
 
   it("classifies empty/setup shells without inventing DEMO fields", () => {
@@ -303,9 +304,9 @@ describe("form-builder", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(formBuilderShellCopy("empty").badge).toBe("Not published");
-    expect(formBuilderShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(formBuilderShellCopy("empty").description);
     expect(formBuilderShellCopy("setup").badge).toBe("Setup required");
-    expect(formBuilderShellCopy("ready").description).toMatch(/never DEMO/i);
+    expectPlainCopy(formBuilderShellCopy("ready").description);
     const actions = formBuilderNextActions({
       orgId: "org-1",
       shell: "empty",

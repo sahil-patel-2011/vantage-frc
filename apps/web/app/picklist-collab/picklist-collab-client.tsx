@@ -59,7 +59,7 @@ function NextActionsPanel({ actions }: { actions: PicklistCollabNextAction[] }) 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Strategy, Justifier, and Pick clock — never DEMO ranks.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -138,7 +138,7 @@ function CollabShell({
         <Panel className="picklist-collab-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Strategy and Scouting — never DEMO ranks.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="picklist-collab-setup-steps">
             {steps.map((step) => (
@@ -297,7 +297,7 @@ export default function PicklistCollabClient() {
           </>
         }
         title="Collaborative pick list"
-        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team. Never DEMO ranks."
+        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -430,7 +430,7 @@ function EntriesByTier({
         badge="No teams yet"
         badgeTone="setup"
         title="Add your first team to this pick list"
-        description="Once teams are added, anyone on the team can cast a weighted vote to build consensus — never DEMO ranks."
+        description="Once teams are added, anyone on the team can cast a weighted vote to build consensus."
       />
     );
   }

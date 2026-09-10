@@ -93,25 +93,25 @@ function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Match Note Timeline is org-scoped.",
+      detail: "Choose your team organization to open Match Note Timeline.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "schedule",
       label: "Open Schedule",
-      detail: "Match rows stay empty until real TBA/event data exists — never DEMO matches.",
+      detail: "Match rows stay empty until real TBA/event data exists.",
       href: withOrgHref("/schedule", orgId),
     },
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Pick lists stay empty until real metrics exist — never DEMO win rates.",
+      detail: "Pick lists stay empty until real metrics exist.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      detail: "Scout rows stay blank until your team enters them.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];

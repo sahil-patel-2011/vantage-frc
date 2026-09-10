@@ -10,6 +10,7 @@ import {
   pairShellCopy,
   shouldShowPairSummaryTiles,
 } from "./pair-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("pairRelatedLinks", () => {
   it("builds Code Coach / GitHub / AI cross-links via hubHref / withOrgHref", () => {
@@ -116,10 +117,10 @@ describe("pairShellCopy + metrics", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = pairShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent/i);
+      expectPlainCopy(copy.description);
     }
-    expect(pairShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(pairShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(pairShellCopy("empty").description);
+    expectPlainCopy(pairShellCopy("setup").description);
   });
 
   it("formats real counts only and hides zeroed tiles", () => {

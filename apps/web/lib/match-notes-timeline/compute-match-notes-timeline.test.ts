@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { computeMatchNotesTimelineView } from "./compute-match-notes-timeline";
 import { actionTrackerStrip, parseActionRanges } from ".";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 type QueryCall = { text: string; values: unknown[] };
 
@@ -33,7 +34,7 @@ describe("computeMatchNotesTimelineView", () => {
       expect(view.steps.find((s) => s.id === "strategy")?.href).toBe("/competition?tab=strategy");
       expect(view.steps.find((s) => s.id === "scouting")?.href).toBe("/competition?tab=scouting");
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
-      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
+      view.steps.forEach((s) => expectPlainCopy(s.detail));
     }
   });
 

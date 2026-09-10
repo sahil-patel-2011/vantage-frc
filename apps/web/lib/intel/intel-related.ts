@@ -85,13 +85,13 @@ export function intelSetupSteps(orgId?: string | null): IntelSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Intel and research are org-scoped.",
+      detail: "Choose your team organization to open Intel and research.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA identity + Statbotics EPA into Neon — never invent DEMO research.",
+      detail: "Pull TBA identity + Statbotics EPA into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -150,7 +150,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         kind,
         title: "Loading Team Intel…",
         description:
-          "Checking workspace membership and the global team index — never DEMO research.",
+          "Checking workspace membership and the global team index.",
       };
     case "error":
       return {
@@ -158,7 +158,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Team Intel",
         description:
-          "A network or server issue blocked the lookup. Retry, or open Strategy / Dossier / Scouting while it reloads — never invent DEMO research.",
+          "A network or server issue blocked the lookup. Retry, or open Strategy / Dossier / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -166,7 +166,7 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Intel and metered research are org-scoped. Pick a workspace and sync TBA/Statbotics before metrics or findings appear — nothing is pre-seeded.",
+          "Pick a workspace and sync TBA/Statbotics before metrics or findings appear.",
       };
     case "empty":
       return {
@@ -174,14 +174,14 @@ export function intelShellCopy(kind: IntelShellKind): IntelEmptyCopy {
         badge: "Look up a team",
         title: "Search the global team index",
         description:
-          "Search by number or name to open metrics, research, and dossier links. Empty cells mean the cache has no data yet — never DEMO research. Cross-check Strategy, Dossier, and Scouting.",
+          "Search by number or name to open metrics, research, and dossier links. Empty cells mean the cache has no data yet. Cross-check Strategy, Dossier, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Team Intel",
         description:
-          "TBA/Statbotics metrics and source-linked research only — never DEMO research. Verify before locking picks.",
+          "TBA/Statbotics metrics and source-linked research only. Verify before locking picks.",
       };
   }
 }
@@ -210,26 +210,26 @@ export function intelNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Intel is org-scoped — choose a team before looking up research.",
+          detail: "Choose a team before looking up research.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss stays empty until real metrics exist — never DEMO research.",
+          detail: "Win/loss stays empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "dossier",
           label: "Open Team Dossier",
-          detail: "Cited facts stay blank until your team syncs TBA/Statbotics — never DEMO stats.",
+          detail: "Cited facts stay blank until your team syncs TBA/Statbotics.",
           href: withOrgHref("/dossier", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout notes stay blank until your team syncs entries — never DEMO notes.",
+          detail: "Scout notes stay blank until your team syncs entries.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -299,7 +299,7 @@ export function intelNextActions(input: {
         id: "team-data",
         label: "Sync season metrics",
         detail:
-          "Pull TBA identity + Statbotics EPA — Intel metrics stay blank until then, never DEMO research.",
+          "Pull TBA identity + Statbotics EPA — Intel metrics stay blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -328,7 +328,7 @@ export function intelNextActions(input: {
     {
       id: "intel",
       label: "Review research findings",
-      detail: `${formatIntelMetric(findingCount, true)} source-linked finding${findingCount === 1 ? "" : "s"} — never DEMO research.`,
+      detail: `${formatIntelMetric(findingCount, true)} source-linked finding${findingCount === 1 ? "" : "s"}`,
       href:
         teamNumber != null
           ? withOrgHref(`/intel?team=${encodeURIComponent(String(teamNumber))}`, orgId)

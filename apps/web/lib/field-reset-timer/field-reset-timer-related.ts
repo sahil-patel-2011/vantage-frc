@@ -69,7 +69,7 @@ export function fieldResetTimerSetupSteps(orgId?: string | null): FieldResetTime
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — reset drills are org-scoped.",
+      detail: "Choose your team organization to open reset drills.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -118,7 +118,7 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
       return {
         kind,
         title: "Loading Field Reset Timer…",
-        description: "Checking workspace membership and reset-drill sessions — never DEMO drill times.",
+        description: "Checking workspace membership and reset-drill sessions.",
       };
     case "error":
       return {
@@ -126,7 +126,7 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
         badge: "Unavailable",
         title: "Could not load Field Reset Timer",
         description:
-          "A network or server issue blocked reset drills. Retry, or open Practice while it reloads — never invent DEMO times.",
+          "A network or server issue blocked reset drills. Retry, or open Practice while it reloads.",
       };
     case "setup":
       return {
@@ -134,7 +134,7 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Field Reset Timer is org-scoped. Pick a workspace before logging real practice cycles — nothing is pre-seeded.",
+          "Pick a workspace before logging real practice cycles.",
       };
     case "empty":
       return {
@@ -142,13 +142,13 @@ export function fieldResetTimerShellCopy(kind: FieldResetTimerShellKind): FieldR
         badge: "No sessions yet",
         title: "Start a practice reset session",
         description:
-          "Create a session, then log real reset cycles as your drive team runs them — never DEMO drill packs.",
+          "Create a session, then log real reset cycles as your drive team runs them.",
       };
     default:
       return {
         kind: "ready",
         title: "Field reset drills",
-        description: "Sessions and cycles from your practice logs only — never DEMO timers.",
+        description: "Sessions and cycles from your practice logs only.",
       };
   }
 }
@@ -199,7 +199,7 @@ export function fieldResetTimerNextActions(input: {
       {
         id: "create-session",
         label: "Create a practice session",
-        detail: "Sessions stay blank until you start one — never DEMO drill packs.",
+        detail: "Sessions stay blank until you start one.",
         href: "#field-reset-new-session",
         primary: true,
       },
@@ -224,7 +224,7 @@ export function fieldResetTimerNextActions(input: {
       label: cycleCount > 0 ? "Review logged cycles" : "Log a reset cycle",
       detail:
         cycleCount > 0
-          ? `${sessionCount} session${sessionCount === 1 ? "" : "s"} · ${cycleCount} cycle${cycleCount === 1 ? "" : "s"} from real practice — never DEMO timers.`
+          ? `${sessionCount} session${sessionCount === 1 ? "" : "s"} · ${cycleCount} cycle${cycleCount === 1 ? "" : "s"} from real practice.`
           : `${sessionCount} session${sessionCount === 1 ? "" : "s"} ready — log timed resets as the drive team runs them.`,
       href: cycleCount > 0 ? "#field-reset-sessions" : "#field-reset-cycles",
       primary: true,

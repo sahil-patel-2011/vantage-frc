@@ -124,7 +124,7 @@ export function buildGrantAssistMessage(input: GrantAssistInput): string {
   const limit = input.charLimit ? ` Character limit: ${input.charLimit}.` : "";
   const prompt = input.prompt.trim() || "(no specific prompt)";
   return [
-    `Draft a grant application answer for ${handle} using ONLY the org-scoped impact metrics, community hours, season goals, and awards in context.`,
+    `Draft a grant application answer for ${handle} using ONLY the your team's impact metrics, community hours, season goals, and awards in context.`,
     `Focus: ${focus}.${limit}`,
     `Grant prompt: ${prompt}`,
     "Do not invent metrics, hours, goals, awards, or other teams' data. If a fact is missing, omit it rather than fabricate it.",

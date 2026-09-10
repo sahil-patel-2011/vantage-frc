@@ -8,6 +8,7 @@ import {
   failurePatternsShellCopy,
   shouldShowFailurePatternsSummaryTiles,
 } from "./failure-patterns-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("failurePatternsRelatedLinks", () => {
   it("builds FMEA / Spare Kit / Incident Heatmap cross-links", () => {
@@ -85,9 +86,7 @@ describe("classifyFailurePatternsShell + helpers", () => {
   it("copy never invents DEMO clusters", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = failurePatternsShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

@@ -68,7 +68,7 @@ export function scoutAssistedCountSetupSteps(orgId?: string | null): ScoutAssist
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — tap sessions are org-scoped.",
+      detail: "Choose your team organization to open tap sessions.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -117,7 +117,7 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
       return {
         kind,
         title: "Loading Scout-Assisted Count…",
-        description: "Checking workspace membership and tap sessions — never DEMO tallies.",
+        description: "Checking workspace membership and tap sessions.",
       };
     case "error":
       return {
@@ -125,7 +125,7 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
         badge: "Unavailable",
         title: "Could not load Scout-Assisted Count",
         description:
-          "A network or server issue blocked tap sessions. Retry, or open Scouting while it reloads — never invent DEMO counts.",
+          "A network or server issue blocked tap sessions. Retry, or open Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -133,20 +133,20 @@ export function scoutAssistedCountShellCopy(kind: ScoutAssistedCountShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Scout-Assisted Count is org-scoped. Pick a workspace before starting sessions — nothing is pre-seeded.",
+          "Pick a workspace before starting sessions.",
       };
     case "empty":
       return {
         kind,
         badge: "No sessions yet",
         title: "Start your first counting session",
-        description: "Tap during a match — every tap is retained for audit, never DEMO tallies.",
+        description: "Tap during a match — every tap is retained for audit.",
       };
     default:
       return {
         kind: "ready",
         title: "Assisted count sessions",
-        description: "Tallies from real taps only — never DEMO counters.",
+        description: "Tallies from real taps only.",
       };
   }
 }
@@ -167,7 +167,7 @@ export function scoutAssistedCountNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Tap sessions are org-scoped — pick a team before counting.",
+          detail: "Pick a team before counting.",
           href: "/workspace",
           primary: true,
         },
@@ -219,7 +219,7 @@ export function scoutAssistedCountNextActions(input: {
       {
         id: "start-session",
         label: "Start a counting session",
-        detail: "Sessions stay blank until you start one — never DEMO tap packs.",
+        detail: "Sessions stay blank until you start one.",
         href: "#scout-assisted-count-start",
         primary: true,
       },
@@ -244,8 +244,8 @@ export function scoutAssistedCountNextActions(input: {
       label: openSessions > 0 ? "Tap open sessions" : "Review closed sessions",
       detail:
         openSessions > 0
-          ? `${openSessions} open session${openSessions === 1 ? "" : "s"} with real taps — never DEMO tallies.`
-          : `${sessionCount} session${sessionCount === 1 ? "" : "s"} from audited taps — never DEMO counters.`,
+          ? `${openSessions} open session${openSessions === 1 ? "" : "s"} with real taps.`
+          : `${sessionCount} session${sessionCount === 1 ? "" : "s"} from audited taps.`,
       href: "#scout-assisted-count-sessions",
       primary: true,
     },

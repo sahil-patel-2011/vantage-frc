@@ -8,6 +8,7 @@ import {
   matchNotesTimelineShellCopy,
   shouldShowMatchNotesSummaryTiles,
 } from "./match-notes-timeline-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchNotesTimelineRelatedLinks", () => {
   it("builds Schedule / Strategy / Scouting cross-links", () => {
@@ -124,10 +125,10 @@ describe("matchNotesTimelineShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = matchNotesTimelineShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|org-scoped|real|blank|invent|log|clock/i);
+      expectPlainCopy(copy.description);
     }
-    expect(matchNotesTimelineShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(matchNotesTimelineShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(matchNotesTimelineShellCopy("empty").description);
+    expectPlainCopy(matchNotesTimelineShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

@@ -74,7 +74,7 @@ function ScoutCoverageLiveNextActionsPanel({ actions }: { actions: ScoutCoverage
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Lineup, and Cross-Validation — never DEMO coverage.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -179,7 +179,7 @@ function ScoutCoverageLiveShell({
         <Panel className="scout-coverage-live-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Lineup, and Cross-Validation — never DEMO coverage.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-coverage-live-setup-steps">
             {steps.map((step) => (
@@ -330,7 +330,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
           </>
         }
         title="Scout Coverage Live"
-        description="Zero and thin match/team cells from real scout-entry counts, with coordinator nudges mid-event — never DEMO coverage."
+        description="Zero and thin match/team cells from real scout-entry counts, with coordinator nudges mid-event."
       >
         <div className="scout-coverage-live-header-meta">
           <ScoutCoverageLiveRelatedStrip orgId={orgId} />
@@ -432,7 +432,7 @@ function CoverageGaps({
       <header>
         <h2>Coverage gaps</h2>
         <p className="app-muted">
-          Zero and thin cells from real scout-entry counts — never DEMO gaps. Nudge the coordinator mid-event.
+          Zero and thin cells from real scout-entry counts. Nudge the coordinator mid-event.
         </p>
       </header>
       {view.gaps.length === 0 ? (

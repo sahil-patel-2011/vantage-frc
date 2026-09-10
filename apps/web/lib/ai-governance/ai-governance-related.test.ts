@@ -12,6 +12,7 @@ import {
   isAiGovernanceLaissezFaire,
   type AiGovernancePolicySnapshot,
 } from "./ai-governance-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 const laissez: AiGovernancePolicySnapshot = {
   featureAllowlistEnabled: false,
@@ -105,11 +106,11 @@ describe("classifyAiGovernanceShell + copy", () => {
   it("refuses invented DEMO policy stats in empty/setup copy", () => {
     for (const kind of ["empty", "setup", "forbidden", "ready"] as const) {
       const copy = aiGovernanceShellCopy(kind);
-      expect(copy.description).toMatch(/never|not|admin|Budgets|Memory/i);
+      expectPlainCopy(copy.description);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
-    expect(aiGovernanceShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(aiGovernanceShellCopy("setup").description).toMatch(/DEMO/i);
+    expectPlainCopy(aiGovernanceShellCopy("empty").description);
+    expectPlainCopy(aiGovernanceShellCopy("setup").description);
   });
 });
 

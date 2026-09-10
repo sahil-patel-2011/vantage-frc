@@ -9,7 +9,7 @@ describe("Business Budget honesty", () => {
     expect(source).toContain("/api/finance/budget-vs-actual");
     expect(source).toContain("describeBudgetLine");
     expect(source).toContain("Budget vs recorded spend");
-    expect(source).toContain("never a DEMO %");
+    expect(source).not.toMatch(/never (a )?DEMO|never invents?\b/i);
     expect(source).not.toMatch(/Math\.random\(/);
   });
 });

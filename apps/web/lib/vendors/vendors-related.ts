@@ -102,7 +102,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         kind,
         title: "Loading Vendor Directory…",
         description:
-          "Checking workspace membership and real supplier rows — never DEMO vendor metrics.",
+          "Checking workspace membership and real supplier rows.",
       };
     case "error":
       return {
@@ -110,7 +110,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Vendor Directory",
         description:
-          "A network or server issue blocked the directory. Retry, or open Orders / Vendor Lead Times while it reloads — never invent DEMO vendor metrics.",
+          "A network or server issue blocked the directory. Retry, or open Orders / Vendor Lead Times while it reloads.",
       };
     case "setup":
       return {
@@ -118,7 +118,7 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Vendor Directory is org-scoped. Pick a workspace before adding real suppliers — nothing is pre-seeded.",
+          "Pick a workspace before adding real suppliers.",
       };
     case "empty":
       return {
@@ -126,14 +126,14 @@ export function vendorsShellCopy(kind: VendorsShellKind): VendorsEmptyCopy {
         badge: "No vendors yet",
         title: "Add a supplier before building the directory",
         description:
-          "Contacts, lead times, and ratings stay blank until you add a real vendor. Orders require a supplier from this directory. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics.",
+          "Contacts, lead times, and ratings stay blank until you add a real vendor. Orders require a supplier from this directory. Cross-check Orders and Vendor Lead Times.",
       };
     default:
       return {
         kind: "ready",
         title: "Team vendor directory",
         description:
-          "Preferred flags, ratings, and contacts use only logged suppliers — never DEMO vendor metrics.",
+          "Preferred flags, ratings, and contacts use only logged suppliers.",
       };
   }
 }
@@ -160,20 +160,20 @@ export function vendorsNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Vendor Directory is org-scoped — pick a team before adding suppliers.",
+          detail: "Pick a team before adding suppliers.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "orders",
           label: "Open Orders",
-          detail: "Purchase orders stay empty until you pick a directory vendor — never DEMO PO totals.",
+          detail: "Purchase orders stay empty until you pick a directory vendor.",
           href: hubHref("/business", "orders", null),
         },
         {
           id: "vendor-lead-times",
           label: "Open Vendor Lead Times",
-          detail: "Reorder-by dates stay blank until lead times land — never DEMO urgency.",
+          detail: "Reorder-by dates stay blank until lead times land.",
           href: hubHref("/business", "vendor-lead-times", null),
         },
       ];
@@ -230,14 +230,14 @@ export function vendorsNextActions(input: {
       {
         id: "add-vendor",
         label: "Add a vendor",
-        detail: "Name, category, and contacts stay blank until you enter a real supplier — never DEMO rows.",
+        detail: "Name, category, and contacts stay blank until you enter a real supplier.",
         href: "#vendors-add-vendor",
         primary: true,
       },
       {
         id: "orders",
         label: "Open Orders",
-        detail: "Purchase orders stay blank until you pick a directory vendor — never DEMO PO totals.",
+        detail: "Purchase orders stay blank until you pick a directory vendor.",
         href: hubHref("/business", "orders", orgId),
       },
       {
@@ -263,7 +263,7 @@ export function vendorsNextActions(input: {
     actions.push({
       id: "mark-preferred",
       label: "Mark a preferred supplier",
-      detail: "Preferred flags help the next season reorder without hunting — never DEMO ratings.",
+      detail: "Preferred flags help the next season reorder without hunting.",
       href: "#vendors-directory",
       primary: true,
     });
@@ -281,7 +281,7 @@ export function vendorsNextActions(input: {
     {
       id: "orders",
       label: "Open Orders",
-      detail: "Turn preferred suppliers into season purchase orders — never DEMO PO totals.",
+      detail: "Turn preferred suppliers into season purchase orders.",
       href: hubHref("/business", "orders", orgId),
     },
     {

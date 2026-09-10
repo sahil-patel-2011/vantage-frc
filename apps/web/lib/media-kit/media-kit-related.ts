@@ -84,13 +84,13 @@ export function mediaKitSetupSteps(orgId?: string | null): MediaKitSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — media kits are org-scoped.",
+      detail: "Choose your team organization to open media kits.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "profile",
       label: "Record team profile",
-      detail: "Mission, bio, and contact stay blank until you enter them — nothing is pre-seeded.",
+      detail: "Mission, bio, and contact stay blank until you enter them.",
       href: orgId ? withOrgHref("/media-kit", orgId) : "/media-kit",
     },
     {
@@ -167,7 +167,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         kind,
         title: "Loading Media Kit…",
         description:
-          "Checking workspace membership and recorded assets — never DEMO media metrics.",
+          "Checking workspace membership and recorded assets.",
       };
     case "error":
       return {
@@ -175,7 +175,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "Unavailable",
         title: "Could not load Media Kit",
         description:
-          "A network or server issue blocked the kit. Retry, or open Sponsor Suite / Outreach while it reloads — never invent DEMO logos.",
+          "A network or server issue blocked the kit. Retry, or open Sponsor Suite / Outreach while it reloads.",
       };
     case "setup":
       return {
@@ -183,7 +183,7 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Media Kit is org-scoped. Pick a workspace and record real profile fields before generating one-pagers — nothing is pre-seeded.",
+          "Pick a workspace and record real profile fields before generating one-pagers.",
       };
     case "empty":
       return {
@@ -191,14 +191,14 @@ export function mediaKitShellCopy(kind: MediaKitShellKind): MediaKitEmptyCopy {
         badge: "No media yet",
         title: "Record your first media kit fields",
         description:
-          "Mission, bio, logos, and one-pagers stay blank until you add them. Cross-check Sponsor Suite and Outreach — never DEMO media metrics.",
+          "Mission, bio, logos, and one-pagers stay blank until you add them. Cross-check Sponsor Suite and Outreach.",
       };
     default:
       return {
         kind: "ready",
         title: "Sponsor- and media-ready kit",
         description:
-          "Completeness reflects fields and assets you recorded — never DEMO logos or invent bios.",
+          "Completeness reflects fields and assets you recorded.",
       };
   }
 }
@@ -253,14 +253,14 @@ export function mediaKitNextActions(input: {
       {
         id: "profile",
         label: "Save team profile",
-        detail: "Mission and bio stay blank until you enter them — never invent DEMO claims.",
+        detail: "Mission and bio stay blank until you enter them.",
         href: "#media-kit-profile",
         primary: true,
       },
       {
         id: "assets",
         label: "Add a logo or photo",
-        detail: "Asset library stays empty until you add real URLs — never DEMO logos.",
+        detail: "Asset library stays empty until you add real URLs.",
         href: "#media-kit-assets",
       },
       {
@@ -279,7 +279,7 @@ export function mediaKitNextActions(input: {
       detail:
         assetCount > 0
           ? `${assetCount} asset${assetCount === 1 ? "" : "s"} recorded — only real URLs.`
-          : "Asset library stays empty until you add real URLs — never DEMO logos.",
+          : "Asset library stays empty until you add real URLs.",
       href: "#media-kit-assets",
       primary: true,
     },
@@ -289,13 +289,13 @@ export function mediaKitNextActions(input: {
       detail:
         documentCount > 0
           ? `${documentCount} one-pager${documentCount === 1 ? "" : "s"} from recorded fields only.`
-          : "One-pagers assemble only recorded profile fields — never invent DEMO claims.",
+          : "One-pagers assemble only recorded profile fields.",
       href: "#media-kit-documents",
     },
     {
       id: "sponsor-suite",
       label: "Open Sponsor Suite",
-      detail: "Pair kit assets with real sponsor decks — never invent DEMO logos.",
+      detail: "Pair kit assets with real sponsor decks.",
       href: hubHref("/business", "sponsor-suite", orgId),
     },
     {

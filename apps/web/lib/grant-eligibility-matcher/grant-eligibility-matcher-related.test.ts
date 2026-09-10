@@ -8,6 +8,7 @@ import {
   grantEligibilityMatcherShellCopy,
   shouldShowGrantEligibilityMatcherSummaryTiles,
 } from "./grant-eligibility-matcher-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("grantEligibilityMatcherRelatedLinks", () => {
   it("builds Grants / Report / Impact cross-links", () => {
@@ -95,9 +96,7 @@ describe("classifyGrantEligibilityMatcherShell + helpers", () => {
   it("copy never invents DEMO grant dollars", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = grantEligibilityMatcherShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

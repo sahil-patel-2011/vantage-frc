@@ -8,6 +8,7 @@ import {
   sponsorSuiteRelatedLinks,
   sponsorSuiteShellCopy,
 } from "./sponsor-suite-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("sponsorSuiteRelatedLinks", () => {
   it("builds Sponsor CRM / Sponsorship / Sponsor Wall cross-links", () => {
@@ -91,7 +92,7 @@ describe("classifySponsorSuiteShell", () => {
 
 describe("sponsorSuiteShellCopy + format helpers", () => {
   it("refuses invented DEMO fundraising metrics", () => {
-    expect(sponsorSuiteShellCopy("empty").description).toMatch(/never DEMO/i);
+    expectPlainCopy(sponsorSuiteShellCopy("empty").description);
     expect(formatSponsorSuiteMetric(4, true)).toBe("4");
     expect(
       shouldShowSponsorSuiteSummaryTiles({

@@ -62,7 +62,7 @@ function NextActionsPanel({ actions }: { actions: BinShelfLocatorNextAction[] })
     <section className="app-card soft-panel edc-next-actions bsl-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Spare Forecast, Spare Kit, and CAD — never DEMO inventory pins.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -146,7 +146,7 @@ function LocatorShell({
         <Panel className="bsl-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Spares and CAD — never DEMO inventory pins.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="bsl-setup-steps">
             {steps.map((step) => (
@@ -313,7 +313,7 @@ export default function BinShelfLocatorClient() {
           </>
         }
         title="Bin/Shelf Locator"
-        description="Assign put-away locations, print QR labels, and find parts — never DEMO inventory pins. Cross-check Spare Forecast and CAD."
+        description="Assign put-away locations, print QR labels, and find parts. Cross-check Spare Forecast and CAD."
       >
         <div className="bsl-header-actions">
           {relatedLinks.map((link) => (

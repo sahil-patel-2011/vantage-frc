@@ -44,7 +44,7 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
     actions.push({
       id: "profile",
       label: "Fill in team mission and achievements",
-      detail: "Template and Assistant drafts use this org’s profile only — empty fields stay blank, never DEMO essays.",
+      detail: "Template and Assistant drafts use this org’s profile only — empty fields stay blank.",
       href: writerHref,
       primary: true,
     });
@@ -53,7 +53,7 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
       id: "compose",
       label: "Compose a template draft",
       detail:
-        "Start from an org-scoped template, or use FRC Assistant when a provider key is configured — no invented copy without one.",
+        "Start from an your team's template, or use FRC Assistant when a provider key is configured.",
       href: writerHref,
       primary: true,
     });
@@ -74,14 +74,14 @@ export function writerNextActions(ctx: WriterNextActionContext): WriterNextActio
       actions.push({
         id: "awards",
         label: "Open Awards workbench",
-        detail: "FIRST essay prompts and submission status — never DEMO win rates or fabricated essays.",
+        detail: "FIRST essay prompts and submission status.",
         href: link.href,
       });
     } else if (link.id === "knowledge") {
       actions.push({
         id: "knowledge",
         label: "Open Team Knowledge",
-        detail: "Ground pitches in recorded team facts — Knowledge is org-scoped context, not invented background.",
+        detail: "Ground pitches in recorded team facts context, not invented background.",
         href: link.href,
       });
     }

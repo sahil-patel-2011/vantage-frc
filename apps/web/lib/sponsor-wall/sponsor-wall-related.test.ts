@@ -8,6 +8,7 @@ import {
   sponsorWallShellCopy,
   shouldShowSponsorWallSummaryTiles,
 } from "./sponsor-wall-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("sponsorWallRelatedLinks", () => {
   it("builds Sponsor CRM / Sponsorship / Sponsor Suite cross-links", () => {
@@ -122,12 +123,10 @@ describe("sponsorWallShellCopy + format helpers", () => {
     for (const kind of ["empty", "setup", "error", "ready"] as const) {
       const copy = sponsorWallShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(
-        /never|empty|org-scoped|real|blank|invent|sponsor|pre-seeded|logos/i,
-      );
+      expectPlainCopy(copy.description);
     }
-    expect(sponsorWallShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(sponsorWallShellCopy("setup").description).toMatch(/pre-seeded|org-scoped/i);
+    expectPlainCopy(sponsorWallShellCopy("empty").description);
+    expectPlainCopy(sponsorWallShellCopy("setup").description);
   });
 
   it("formats real counts only and hides empty summary tiles", () => {

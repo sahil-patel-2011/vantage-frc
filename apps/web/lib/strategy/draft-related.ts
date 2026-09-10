@@ -73,7 +73,7 @@ export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — draft boards are org-scoped.",
+      detail: "Choose your team organization to open draft boards.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -85,7 +85,7 @@ export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO alliance boards.",
+      detail: "Pull TBA/Statbotics rows into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -97,7 +97,7 @@ export function draftSetupSteps(orgId?: string | null): DraftSetupStep[] {
     {
       id: "scouting",
       label: "Open Scouting",
-      detail: "Match and pit entries deepen pick assist once synced — never DEMO boards.",
+      detail: "Match and pit entries deepen pick assist once synced.",
       href: hubHref("/competition", "scouting", orgId),
     },
   ];
@@ -159,7 +159,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         kind,
         title: "Loading draft board…",
         description:
-          "Checking workspace membership and event alliance board — never DEMO boards.",
+          "Checking workspace membership and event alliance board.",
       };
     case "error":
       return {
@@ -167,7 +167,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "Unavailable",
         title: "Could not load draft board",
         description:
-          "A network or server issue blocked the board. Retry, or open Strategy / Pick desk / Scouting while it reloads — never invent DEMO boards.",
+          "A network or server issue blocked the board. Retry, or open Strategy / Pick desk / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -175,7 +175,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "Setup required",
         title: "Select a team workspace and event",
         description:
-          "Draft day is org- and event-scoped. Pick a workspace and active TBA event before alliance slots appear — nothing is pre-seeded.",
+          "Draft day is org- and event-scoped. Pick a workspace and active TBA event before alliance slots appear.",
       };
     case "empty":
       return {
@@ -183,14 +183,14 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "No draft board yet",
         title: "Waiting on a real event board",
         description:
-          "Alliance slots stay blank until an owner/admin opens Draft day with synced event metrics. Cross-check Strategy, Pick desk, and Scouting — never DEMO boards.",
+          "Alliance slots stay blank until an owner/admin opens Draft day with synced event metrics. Cross-check Strategy, Pick desk, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Draft day alliance board",
         description:
-          "Captains, first picks, then reverse second picks from synced event teams only — never DEMO boards. Mentor share links stay org-bound.",
+          "Captains, first picks, then reverse second picks from synced event teams only. Mentor share links stay org-bound.",
       };
   }
 }
@@ -217,26 +217,26 @@ export function draftNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Draft boards are org-scoped — choose a team before alliance selection.",
+          detail: "Choose a team before alliance selection.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist — never DEMO boards.",
+          detail: "Win/loss and draft day stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows — never DEMO picks.",
+          detail: "Pick tiers stay blank until your team syncs event rows.",
           href: withOrgHref("/strategy?tab=picks", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -264,7 +264,7 @@ export function draftNextActions(input: {
       {
         id: "scouting",
         label: "Open Scouting",
-        detail: "Scout depth stays honest when the event is unset — never DEMO boards.",
+        detail: "Scout depth stays honest when the event is unset.",
         href: hubHref("/competition", "scouting", orgId),
       },
     ];
@@ -275,7 +275,7 @@ export function draftNextActions(input: {
       {
         id: "retry",
         label: "Retry draft board",
-        detail: "Reload the real org-scoped alliance board — nothing is invented while this fails.",
+        detail: "Reload the real your team's alliance board.",
         href: withOrgHref("/strategy/draft", orgId),
         primary: true,
       },
@@ -306,7 +306,7 @@ export function draftNextActions(input: {
         id: "team-data",
         label: "Sync event metrics",
         detail:
-          "Pull TBA/Statbotics team_event_metrics — the draft pool stays blank until then, never DEMO boards.",
+          "Pull TBA/Statbotics team_event_metrics — the draft pool stays blank until then.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -337,7 +337,7 @@ export function draftNextActions(input: {
       label: filledSlots > 0 ? "Continue draft day" : "Start captains, then first picks",
       detail:
         filledSlots > 0
-          ? `${formatDraftMetric(filledSlots, true)} filled slot${filledSlots === 1 ? "" : "s"} use real event teams only — never DEMO boards. Mentor links stay org-bound.`
+          ? `${formatDraftMetric(filledSlots, true)} filled slot${filledSlots === 1 ? "" : "s"} use real event teams only. Mentor links stay org-bound.`
           : "Assign captains, then first picks, then reverse second picks from the synced pool.",
       href: withOrgHref("/strategy/draft", orgId),
       primary: true,

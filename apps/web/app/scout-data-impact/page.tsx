@@ -57,7 +57,7 @@ export default async function ScoutDataImpactPage({
         <section className="app-card soft-panel scout-data-impact-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-data-impact-setup-steps">
             {steps.map((step) => (

@@ -60,7 +60,7 @@ function NextActionsPanel({ actions }: { actions: MatchingGiftFinderNextAction[]
     <section className="app-card soft-panel edc-next-actions mgf-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Sponsor CRM, Renewal ROI, and Impact — never DEMO matches.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -144,7 +144,7 @@ function GiftShell({
         <Panel className="mgf-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">CRM and Impact — never DEMO matches or pledges.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="mgf-setup-steps">
             {steps.map((step) => (
@@ -315,7 +315,7 @@ export default function MatchingGiftFinderClient() {
           </>
         }
         title="Matching Gift Multiplier Finder"
-        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status — never DEMO matches or pledges. Cross-check Sponsor CRM, Renewal ROI, and Impact."
+        description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status. Cross-check Sponsor CRM, Renewal ROI, and Impact."
       >
         <div className="mgf-header-actions">
           {relatedLinks.map((link) => (

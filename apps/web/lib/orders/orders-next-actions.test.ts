@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ordersNextActions } from "./orders-next-actions";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("ordersNextActions Soft-UI helpers", () => {
   it("routes missing workspace to /workspace", () => {
@@ -16,7 +17,7 @@ describe("ordersNextActions Soft-UI helpers", () => {
     expect(actions.find((a) => a.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(actions.find((a) => a.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /never.*DEMO|DEMO.*never|no placeholder DEMO/i.test(a.detail))).toBe(true);
+    actions.forEach((a) => expectPlainCopy(a.detail));
   });
 
   it("routes admins to approve awaiting requests", () => {

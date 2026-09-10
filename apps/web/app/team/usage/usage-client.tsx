@@ -168,7 +168,7 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKin
     >
       <header>
         <h2>Next actions</h2>
-        <p>From real Neon metered calls only — never DEMO activity.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -418,7 +418,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <section className="intel-panel">
                 <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
                 {!activity?.byKeySource.length && (
-                  <p className="app-muted">No metered calls in this window — never DEMO funding rows.</p>
+                  <p className="app-muted">No metered calls in this window.</p>
                 )}
                 {activity?.byKeySource.map((row) => (
                   <article className="admin-org" style={rowStyle} key={row.keySource}>
@@ -436,7 +436,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <section className="intel-panel">
                 <span className="eyebrow">SPEND BY FEATURE · LAST {windowDays}D</span>
                 {!activity?.byFeature.length && (
-                  <p className="app-muted">No metered calls in this window — never DEMO feature spend.</p>
+                  <p className="app-muted">No metered calls in this window.</p>
                 )}
                 {activity?.byFeature.map((row) => (
                   <article className="admin-org" style={rowStyle} key={row.feature}>
@@ -475,7 +475,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
               <section className="intel-panel">
                 <span className="eyebrow">BY MODEL · ALL TIME</span>
                 {!usage.models.length && (
-                  <p className="app-muted">No model usage recorded yet — never DEMO model rows.</p>
+                  <p className="app-muted">No model usage recorded yet.</p>
                 )}
                 {usage.models.map((row) => (
                   <article className="admin-org" style={rowStyle} key={`${row.provider}/${row.model}`}>
@@ -514,7 +514,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
                 </div>
               )}
               {!denials.events.length && (
-                <p className="app-muted">No AI calls have been blocked — never DEMO denials.</p>
+                <p className="app-muted">No AI calls have been blocked.</p>
               )}
               {denials.events.map((event) => (
                 <article className="admin-org" style={rowStyle} key={event.id}>
@@ -538,7 +538,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
             <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
               <span className="eyebrow">RECENT ACTIVITY · LAST {activity.events.length} CALLS</span>
               {!activity.events.length && (
-                <p className="app-muted">No AI calls have been metered for this team yet — never DEMO activity.</p>
+                <p className="app-muted">No AI calls have been metered for this team yet.</p>
               )}
               {activity.events.map((event) => (
                 <article className="admin-org" style={rowStyle} key={event.id}>

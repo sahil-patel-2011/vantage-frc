@@ -74,7 +74,7 @@ function NextActionsPanel({ actions }: { actions: ToolCheckoutNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions tc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Equipment, Checklists, and Safety — never DEMO loan ledgers.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -160,7 +160,7 @@ function CheckoutShell({
         <Panel className="tc-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Equipment and Inventory — never DEMO loan ledgers.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="tc-setup-steps">
             {steps.map((step) => (
@@ -293,7 +293,7 @@ export default function ToolCheckoutClient() {
           </>
         }
         title="Tool Checkout"
-        description="Track who has each shop tool and when it's due back — never DEMO loan ledgers."
+        description="Track who has each shop tool and when it's due back."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -345,7 +345,7 @@ function ToolsPanel({
         badge="No tools yet"
         badgeTone="setup"
         title="Add your first shop tool"
-        description="Register tools to track who has each one and when it's due back — never DEMO loan packs."
+        description="Register tools to track who has each one and when it's due back."
       />
     );
   }
@@ -530,7 +530,7 @@ function AddToolForm({
       }}
     >
       <h2>Add tool</h2>
-      <p className="app-muted tc-tip">Real shop tools only — never DEMO loan packs.</p>
+      <p className="app-muted tc-tip">Real shop tools only.</p>
       <FormGrid min={160}>
         <FormRow label="Name">
           <input value={form.name} onChange={set("name")} placeholder="Cordless drill" required />

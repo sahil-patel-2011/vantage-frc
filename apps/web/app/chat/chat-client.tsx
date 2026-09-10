@@ -87,7 +87,7 @@ function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }
     <section className="ch-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>From real channels and provider setup only — never DEMO replies.</p>
+        <p>Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -514,7 +514,7 @@ export default function ChatClient({
               <p>
                 {shell === "empty"
                   ? shellCopy.description
-                  : "Private chats stay yours. Team-shared channels are visible to members. Authorized tools never invent rows."}
+                  : "Private chats stay yours. Team channels are visible to every member."}
               </p>
               <div className="ch-empty-actions">
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>

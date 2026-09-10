@@ -640,7 +640,7 @@ export default function CadVaultClient() {
             badge="No documents yet"
             badgeTone="setup"
             title="Your vault is empty"
-            description="Upload your first STL, STEP, or vendor file above. Files live in your team's database behind row-level security — nothing is shared outside your org."
+            description="Upload your first STL, STEP, or vendor file above. Only your team can see what you put here."
           />
         ) : (
           documents.map((doc) => (

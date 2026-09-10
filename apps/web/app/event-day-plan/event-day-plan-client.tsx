@@ -83,7 +83,7 @@ function NextActionsPanel({ actions }: { actions: EventDayPlanNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions edp-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Command, Batteries, and Pit — never DEMO schedule blocks.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -172,7 +172,7 @@ function PlanShell({
         <Panel className="edp-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Command and Batteries — never DEMO schedule blocks.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="edp-setup-steps">
             {steps.map((step) => (
@@ -344,7 +344,7 @@ export default function EventDayPlanClient() {
           </>
         }
         title="Event-Day Stress Planner"
-        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Never DEMO schedule blocks. Cross-check Command, Battery Rotation, and Pit Repair."
+        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Cross-check Command, Battery Rotation, and Pit Repair."
       >
         <div className="edp-header-actions">
           <label className="app-muted edp-filter">
@@ -456,7 +456,7 @@ function HourlyOverlay({
         badge="No blocks yet"
         badgeTone="setup"
         title="Add your first event-day block"
-        description="Qual matches, battery charges, scout shifts, pit-repair windows, and logistics all overlay on one hourly plan — never DEMO schedule packs."
+        description="Qual matches, battery charges, scout shifts, pit-repair windows, and logistics all overlay on one hourly plan."
       >
         <a className="app-button" href="#event-day-plan-add">
           Add block

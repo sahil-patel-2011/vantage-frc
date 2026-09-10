@@ -257,7 +257,7 @@ function friendlySqlError(error: unknown, fallback: string): Error {
   if (message.includes("nesting is too deep")) {
     return new Error("Folder nesting is too deep (max 100 levels).");
   }
-  if (message.includes("row-level security")) {
+  if (message.includes("your team's own space")) {
     return new Error("You do not have access to do that.");
   }
   return new Error(fallback);

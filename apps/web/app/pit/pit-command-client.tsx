@@ -156,9 +156,7 @@ function PitNextActionsPanel({ actions }: { actions: PitNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions pit-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">
-          Batteries, Match checklist, and Event Day — never DEMO release metrics.
-        </p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -752,7 +750,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           {!data.issues.length ? (
             <div className="pit-empty">
               <strong>No open robot issues</strong>
-              <span>Report anything the next crew needs to know — never DEMO severity.</span>
+              <span>Report anything the next crew needs to know.</span>
             </div>
           ) : (
             <ul className="pit-issues">
@@ -834,7 +832,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               <strong>No batteries tracked</strong>
               <span>
                 Log a reading to create the first record, or{" "}
-                <a href={batteriesHref}>open Batteries</a> — never DEMO volts.
+                <a href={batteriesHref}>open Batteries</a>
               </span>
             </div>
           ) : (

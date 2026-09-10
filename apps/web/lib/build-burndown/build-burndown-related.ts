@@ -76,7 +76,7 @@ export function buildBurndownSetupSteps(orgId?: string | null): BuildBurndownSet
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — burndown plans are org-scoped.",
+      detail: "Choose your team organization to open burndown plans.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -152,7 +152,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         kind,
         title: "Loading Build-Season Burndown…",
         description:
-          "Checking workspace membership and real build tasks — never DEMO progress.",
+          "Checking workspace membership and real build tasks.",
       };
     case "error":
       return {
@@ -160,7 +160,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "Unavailable",
         title: "Could not load Build Burndown",
         description:
-          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / FMEA while it reloads — never invent DEMO burndown metrics.",
+          "A network or server issue blocked burndown. Retry, or open Task board / Kickoff / FMEA while it reloads.",
       };
     case "setup":
       return {
@@ -168,7 +168,7 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Build burndown is org-scoped. Join or pick a workspace before charting remaining work — nothing is pre-seeded.",
+          "Join or pick a workspace before charting remaining work.",
       };
     case "empty":
       return {
@@ -176,14 +176,14 @@ export function buildBurndownShellCopy(kind: BuildBurndownShellKind): BuildBurnd
         badge: "No tasks yet",
         title: "Add your first build task",
         description:
-          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and FMEA — never DEMO progress.",
+          "The burndown line stays blank until you log real tasks with planned dates. Cross-check Task board, Kickoff, and FMEA.",
       };
     default:
       return {
         kind: "ready",
         title: "Build-season burndown",
         description:
-          "Only real tasks and kickoff-plan dates drive the chart — counts never invent DEMO progress.",
+          "Tasks with planned dates are what draw the chart.",
       };
   }
 }
@@ -216,7 +216,7 @@ export function buildBurndownNextActions(input: {
       {
         id: "retry",
         label: "Retry Build Burndown",
-        detail: "Reload real tasks and plans — nothing is pre-seeded while this fails.",
+        detail: "Reload real tasks and plans.",
         href: withOrgHref("/build-burndown", orgId),
         primary: true,
       },
@@ -247,7 +247,7 @@ export function buildBurndownNextActions(input: {
         id: "task",
         label: hasPlan ? "Add a build task" : "Set the kickoff plan",
         detail: hasPlan
-          ? "Log real planned-date tasks below — the chart never invents DEMO progress."
+          ? "Log a task with a planned date below to start the chart."
           : "Enter kickoff and competition dates first so the ideal line uses real season windows.",
         href: hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan",
         primary: true,
@@ -255,7 +255,7 @@ export function buildBurndownNextActions(input: {
       {
         id: "kickoff",
         label: "Open Kickoff",
-        detail: "Confirm season timing from real kickoff materials — never DEMO timelines.",
+        detail: "Confirm season timing from real kickoff materials.",
         href: hubHref("/build", "kickoff", orgId),
       },
       {
@@ -280,7 +280,7 @@ export function buildBurndownNextActions(input: {
       detail:
         remainingTasks > 0
           ? `${remainingTasks} task${remainingTasks === 1 ? "" : "s"} remaining — from logged rows only.`
-          : "Progress and pace use real task status only — never DEMO metrics.",
+          : "Progress and pace use real task status only.",
       href: "#build-burndown-tasks",
       primary: true,
     },

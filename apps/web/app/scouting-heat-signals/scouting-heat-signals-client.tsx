@@ -73,7 +73,7 @@ function NextActionsPanel({ actions }: { actions: ScoutingHeatSignalsNextAction[
     <section className="app-card soft-panel edc-next-actions shs-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Watchlist, and Pick List — never DEMO trend arrows.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -162,7 +162,7 @@ function HeatShell({
         <Panel className="shs-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting and Pick List — never DEMO trend arrows.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="shs-setup-steps">
             {steps.map((step) => (
@@ -295,7 +295,7 @@ export default function ScoutingHeatSignalsClient() {
           </>
         }
         title="Scouting Heat Signals"
-        description="Highlight teams trending up or down from what scouts have actually observed — never DEMO trend arrows."
+        description="Highlight teams trending up or down from what scouts have actually observed."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -341,7 +341,7 @@ function TeamHeatList({
         badge="No observations yet"
         badgeTone="setup"
         title="Log your first heat signal"
-        description="Record a team as trending up or down after a match — never DEMO trend packs."
+        description="Record a team as trending up or down after a match."
       />
     );
   }

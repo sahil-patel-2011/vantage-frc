@@ -369,7 +369,7 @@ function emptyUntilMeeting(input: {
       {
         id: "calendar",
         label: "Add a meeting",
-        detail: "Create a meeting on the team calendar. Agenda and minutes persist against that event — never DEMO notes.",
+        detail: "Create a meeting on the team calendar. Agenda and minutes persist against that event.",
         href: calendarHref(input.orgId),
       },
     ],

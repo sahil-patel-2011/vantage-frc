@@ -152,7 +152,7 @@ export function accountNextActions(input: {
     actions.push({
       id: "tba",
       label: "Configure TBA connectors",
-      detail: "Match alerts stay quiet until a TBA key or Neon cache sync exists — never DEMO matches.",
+      detail: "Match alerts stay quiet until a TBA key or Neon cache sync exists.",
       href: withOrgHref("/team/data", orgId),
       primary: actions.length === 0,
     });

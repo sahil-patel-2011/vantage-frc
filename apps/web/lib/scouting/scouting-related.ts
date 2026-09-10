@@ -83,7 +83,7 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Scouting is org-scoped.",
+      detail: "Choose your team organization to open Scouting.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -231,7 +231,7 @@ export function scoutingNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Scouting is org-scoped — choose a team before caching forms offline.",
+          detail: "Choose a team before caching forms offline.",
           href: "/workspace",
           primary: true,
         },
@@ -303,7 +303,7 @@ export function scoutingNextActions(input: {
       {
         id: "retry",
         label: "Retry scouting",
-        detail: "Reload real event context and schemas — nothing is pre-seeded while this fails.",
+        detail: "Reload real event context and schemas.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
       },

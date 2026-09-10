@@ -75,7 +75,7 @@ export function busFactorSetupSteps(orgId?: string | null): BusFactorSetupStep[]
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — Bus-Factor is org-scoped.",
+      detail: "Choose your team organization to open Bus-Factor.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -148,7 +148,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         kind,
         title: "Loading Bus-Factor & Burnout…",
         description:
-          "Checking workspace membership and logged workload entries — never DEMO risk scores.",
+          "Checking workspace membership and logged workload entries.",
       };
     case "error":
       return {
@@ -156,7 +156,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         badge: "Unavailable",
         title: "Could not load Bus-Factor",
         description:
-          "A network or server issue blocked workload risk. Retry, or open Attendance / My Hours while it reloads — never invent DEMO risk metrics.",
+          "A network or server issue blocked workload risk. Retry, or open Attendance / My Hours while it reloads.",
       };
     case "setup":
       return {
@@ -164,7 +164,7 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Bus-Factor is org-scoped. Pick a workspace before logging weekly workload — nothing is pre-seeded.",
+          "Pick a workspace before logging weekly workload.",
       };
     case "empty":
       return {
@@ -172,14 +172,14 @@ export function busFactorShellCopy(kind: BusFactorShellKind): BusFactorEmptyCopy
         badge: "No entries yet",
         title: "Log your first weekly workload entry",
         description:
-          "Track hours, tasks owned, and sole-knowledge counts per member and area. Risk stays blank until you log real rows — never DEMO burnout scores.",
+          "Track hours, tasks owned, and sole-knowledge counts per member and area. Risk stays blank until you log real rows.",
       };
     default:
       return {
         kind: "ready",
         title: "Bus-factor from logged workload",
         description:
-          "Concentration and overload use only what the team logs — never DEMO risk metrics.",
+          "Concentration and overload use only what the team logs.",
       };
   }
 }
@@ -234,7 +234,7 @@ export function busFactorNextActions(input: {
       {
         id: "log",
         label: "Log a weekly workload entry",
-        detail: "Hours, tasks owned, and sole-knowledge counts stay blank until you log them — never DEMO risk.",
+        detail: "Hours, tasks owned, and sole-knowledge counts stay blank until you log them.",
         href: "#bus-factor-log",
         primary: true,
       },
@@ -265,7 +265,7 @@ export function busFactorNextActions(input: {
       label: flagCount > 0 ? "Review risk flags" : "Log another week",
       detail:
         flagCount > 0
-          ? `${flagCount} flag${flagCount === 1 ? "" : "s"} from logged rows only — never DEMO scores.`
+          ? `${flagCount} flag${flagCount === 1 ? "" : "s"} from logged rows only.`
           : `${entryCount} entr${entryCount === 1 ? "y" : "ies"} on file — keep logging real weeks.`,
       href: flagCount > 0 ? "#bus-factor-risk" : "#bus-factor-log",
       primary: true,

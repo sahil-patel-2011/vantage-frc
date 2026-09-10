@@ -105,7 +105,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         kind,
         title: "Loading tuning autopilot…",
         description:
-          "Checking workspace membership and logged tuning sessions — never DEMO gain metrics.",
+          "Checking workspace membership and logged tuning sessions.",
       };
     case "error":
       return {
@@ -113,7 +113,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         badge: "Unavailable",
         title: "Could not load the tuning autopilot",
         description:
-          "A network or server issue blocked tuning sessions. Retry, or open CAD / FMEA / Practice while it reloads — never invent DEMO gain metrics.",
+          "A network or server issue blocked tuning sessions. Retry, or open CAD / FMEA / Practice while it reloads.",
       };
     case "setup":
       return {
@@ -121,7 +121,7 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Tuning Autopilot is org-scoped. Pick a workspace before logging gain sets and test results — nothing is pre-seeded.",
+          "Pick a workspace before logging gain sets and test results.",
       };
     case "empty":
       return {
@@ -129,14 +129,14 @@ export function tuningAutopilotShellCopy(kind: TuningAutopilotShellKind): Tuning
         badge: "No sessions yet",
         title: "Start your first tuning session",
         description:
-          "Next-gain suggestions stay blank until you log a real gain set and observed test result. Cross-check CAD, FMEA, and Practice — never DEMO gain metrics.",
+          "Next-gain suggestions stay blank until you log a real gain set and observed test result. Cross-check CAD, FMEA, and Practice.",
       };
     default:
       return {
         kind: "ready",
         title: "Tuning sessions",
         description:
-          "Suggestions use only the gain sets and test results your team logged. Cross-check CAD, FMEA, and Practice — never DEMO gain metrics.",
+          "Suggestions use only the gain sets and test results your team logged. Cross-check CAD, FMEA, and Practice.",
       };
   }
 }
@@ -163,26 +163,26 @@ export function tuningAutopilotNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Tuning sessions are org-scoped — pick a team before logging gain sets.",
+          detail: "Pick a team before logging gain sets.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "cad",
           label: "Open CAD",
-          detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+          detail: "Mechanism geometry stays blank until connected.",
           href: hubHref("/build", "cad", null),
         },
         {
           id: "fmea",
           label: "Open FMEA",
-          detail: "Failure modes stay blank until scored — never DEMO RPN.",
+          detail: "Failure modes stay blank until scored.",
           href: hubHref("/build", "fmea", null),
         },
         {
           id: "practice",
           label: "Open Practice",
-          detail: "Practice plans stay empty until scheduled — never DEMO attendance.",
+          detail: "Practice plans stay empty until scheduled.",
           href: hubHref("/team", "practice", null),
         },
       ];
@@ -270,7 +270,7 @@ export function tuningAutopilotNextActions(input: {
       {
         id: "practice",
         label: "Open Practice",
-        detail: "Block practice time to log real overshoot / settle / error results — never DEMO scores.",
+        detail: "Block practice time to log real overshoot / settle / error results.",
         href: hubHref("/team", "practice", orgId),
       },
     ].slice(0, 4);
@@ -298,7 +298,7 @@ export function tuningAutopilotNextActions(input: {
     actions.push({
       id: "try-suggestion",
       label: "Try the suggested next gains",
-      detail: "Next gains come only from your logged trend — never invented DEMO setpoints.",
+      detail: "Next gains come only from your logged trend.",
       href: "#tuning-autopilot-suggestion",
       primary: true,
     });
@@ -308,7 +308,7 @@ export function tuningAutopilotNextActions(input: {
     {
       id: "cad",
       label: "Open CAD",
-      detail: "Keep mechanism geometry aligned with the subsystem you’re tuning — never DEMO models.",
+      detail: "Keep mechanism geometry aligned with the subsystem you’re tuning.",
       href: hubHref("/build", "cad", orgId),
       primary: !actions.some((a) => a.primary),
     },
@@ -327,7 +327,7 @@ export function tuningAutopilotNextActions(input: {
     {
       id: "subsystems",
       label: "Cross-check Subsystems",
-      detail: "Session subsystem names should match real robot mechanisms — never DEMO systems.",
+      detail: "Session subsystem names should match real robot mechanisms.",
       href: withOrgHref("/subsystems", orgId),
     },
   );

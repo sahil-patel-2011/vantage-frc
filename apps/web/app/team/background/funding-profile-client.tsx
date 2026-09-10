@@ -85,7 +85,7 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     }
     setMessage(
       draft.sponsorsAllowed
-        ? "Funding profile saved. Sponsor tools stay visible in Soft-UI."
+        ? "Funding profile saved. Sponsor tools stay visible."
         : "Funding profile saved. Sponsor tools are hidden for this workspace.",
     );
     setMessageTone("ok");
@@ -113,7 +113,7 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
     <Panel className="team-funding-profile-panel">
       <div className="team-funding-profile-header">
         <div>
-          <span className="eyebrow">Business Soft-UI</span>
+          <span className="eyebrow">Business</span>
           <h2>Affiliation &amp; funding</h2>
         </div>
       </div>

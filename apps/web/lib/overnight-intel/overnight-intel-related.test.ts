@@ -9,6 +9,7 @@ import {
   overnightIntelSignalCount,
   shouldShowOvernightIntelSummaryTiles,
 } from "./overnight-intel-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("overnightIntelRelatedLinks", () => {
   it("builds Command / Strategy / Scouting cross-links", () => {
@@ -113,9 +114,7 @@ describe("classifyOvernightIntelShell + helpers", () => {
   it("copy never invents DEMO overnight metrics", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = overnightIntelShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });

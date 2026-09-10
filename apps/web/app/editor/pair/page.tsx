@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Pair VS Code",
   description:
-    "Approve a Vantage VS Code editor pairing code for your team workspace — real devices only, never DEMO pairing metrics.",
+    "Approve a Vantage VS Code editor pairing code for your team workspace — real devices only.",
 };
 
 export default async function EditorPairPage({

@@ -118,7 +118,7 @@ export function calendarNextActions(input: {
     actions.push({
       id: "practice",
       label: "Open Practice",
-      detail: "Log driver cycles after a real shop night — Practice never invents DEMO reps.",
+      detail: "Log driver cycles after a shop night.",
       href: hubHref("/team", "practice", orgId),
     });
     actions.push({
@@ -169,7 +169,7 @@ export function calendarNextActions(input: {
   actions.push({
     id: "attendance",
     label: "Mark Attendance",
-    detail: "Who showed up uses real attendance events — never DEMO percent.",
+    detail: "Who showed up uses real attendance events.",
     href: hubHref("/team", "attendance", orgId),
   });
   actions.push({

@@ -75,13 +75,13 @@ export function sponsorSuiteSetupSteps(orgId?: string | null): SponsorSuiteSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — sponsor suite is org-scoped.",
+      detail: "Choose your team organization to open sponsor suite.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "sponsors",
       label: "Open Sponsor CRM",
-      detail: "Sponsor rows stay blank until your team logs them — nothing is pre-seeded.",
+      detail: "Sponsor rows stay blank until your team logs them.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
@@ -173,7 +173,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         kind,
         title: "Loading Sponsor Suite…",
         description:
-          "Checking workspace membership and recorded sponsors — never DEMO fundraising metrics.",
+          "Checking workspace membership and recorded sponsors.",
       };
     case "error":
       return {
@@ -181,7 +181,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "Unavailable",
         title: "Could not load Sponsor Suite",
         description:
-          "A network or server issue blocked the suite. Retry, or open Sponsor CRM / Sponsorship while it reloads — never invent DEMO raised totals.",
+          "A network or server issue blocked the suite. Retry, or open Sponsor CRM / Sponsorship while it reloads.",
       };
     case "setup":
       return {
@@ -189,7 +189,7 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Sponsor Suite is org-scoped. Pick a workspace and log real sponsors before generating decks — nothing is pre-seeded.",
+          "Pick a workspace and log real sponsors before generating decks.",
       };
     case "empty":
       return {
@@ -197,14 +197,14 @@ export function sponsorSuiteShellCopy(kind: SponsorSuiteShellKind): SponsorSuite
         badge: "No sponsors yet",
         title: "Add sponsors before building the suite",
         description:
-          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsor CRM and Sponsorship — never DEMO fundraising metrics.",
+          "Goals, decks, ROI reports, and reminders stay blank until real CRM sponsors exist. Cross-check Sponsor CRM and Sponsorship.",
       };
     default:
       return {
         kind: "ready",
         title: "Pitch, renew, and report",
         description:
-          "Decks and ROI reports ground only in recorded sponsors and contributions — never invent DEMO raised totals.",
+          "Decks and ROI reports ground only in recorded sponsors and contributions.",
       };
   }
 }
@@ -259,14 +259,14 @@ export function sponsorSuiteNextActions(input: {
       {
         id: "sponsors",
         label: "Open Sponsor CRM",
-        detail: "Log real sponsors before generating decks — never invent DEMO raised totals.",
+        detail: "Log real sponsors before generating decks.",
         href: hubHref("/business", "sponsors", orgId),
         primary: true,
       },
       {
         id: "goal",
         label: "Set a season goal",
-        detail: "Goal progress stays blank until you set one — never DEMO attainment.",
+        detail: "Goal progress stays blank until you set one.",
         href: "#sponsor-suite-goal",
       },
       {
@@ -285,7 +285,7 @@ export function sponsorSuiteNextActions(input: {
       detail:
         deckCount > 0
           ? `${deckCount} deck${deckCount === 1 ? "" : "s"} grounded in recorded sponsors — metered.`
-          : "Pitch/renewal decks are metered and grounded in real CRM sponsors — never invent DEMO asks.",
+          : "Pitch/renewal decks are metered and grounded in real CRM sponsors.",
       href: "#sponsor-suite-decks",
       primary: true,
     },
@@ -298,7 +298,7 @@ export function sponsorSuiteNextActions(input: {
     {
       id: "sponsor-wall",
       label: "Open Sponsor Wall",
-      detail: "Pair suite shout-outs with wall entries — never invent DEMO logos.",
+      detail: "Pair suite shout-outs with wall entries.",
       href: hubHref("/business", "sponsor-wall", orgId),
     },
     {

@@ -74,7 +74,7 @@ function NextActionsPanel({ actions }: { actions: SeasonPlanningNextAction[] }) 
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Goals, Calendar, and Attendance — never DEMO completion %.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -153,7 +153,7 @@ function PlanShell({
         <Panel className="season-plan-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Goals and Calendar — never DEMO completion %.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="season-plan-setup-steps">
             {steps.map((step) => (
@@ -461,7 +461,7 @@ export default function SeasonPlanningWorkspaceClient() {
           </>
         }
         title="Season Planning Workspace"
-        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data — never DEMO completion %. Cross-check Season Goals, Calendar, and Attendance."
+        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data. Cross-check Season Goals, Calendar, and Attendance."
       >
         <div className="season-plan-header-actions">
           {view && "seasons" in view && view.seasons.length > 0 ? (

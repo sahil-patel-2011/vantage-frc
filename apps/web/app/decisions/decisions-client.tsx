@@ -56,7 +56,7 @@ function DecisionsNextActionsPanel({ actions }: { actions: DecisionsNextAction[]
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Decision Search, Season Report, and Knowledge — never DEMO log entries.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -361,7 +361,7 @@ export default function DecisionsClient() {
             </>
           }
           title="Decision Log"
-          description="Record the calls that shape your season — context, options, what you chose, and why. Institutional memory for next year — never DEMO log entries."
+          description="Record the calls that shape your season — context, options, what you chose, and why. Institutional memory for next year."
         >
           {headerActions}
         </PageHeader>
@@ -415,7 +415,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
             {s.total === 0 ? "EMPTY" : "LOGGED"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season log</h2>
-          <small className="app-muted">Real decision records only — never DEMO entries</small>
+          <small className="app-muted">Real decision records only.</small>
         </div>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -502,7 +502,7 @@ function AddDecisionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     >
       <h2 style={{ margin: 0 }}>Record a decision</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Paste real context and rationale only — never DEMO placeholders.
+        Paste real context and rationale only.
       </p>
       <FormGrid>
         <FormRow label="Decision" wide>

@@ -58,7 +58,7 @@ function ScoutDisagreementsNextActionsPanel({ actions }: { actions: ScoutDisagre
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Scouting, Accuracy, and Coverage — never DEMO conflicts.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -184,7 +184,7 @@ function ScoutDisagreementsShell({
         <Panel className="scout-disagreements-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Scouting, Accuracy, and Coverage — never DEMO conflicts.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="scout-disagreements-setup-steps">
             {steps.map((step) => (
@@ -357,7 +357,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           </>
         }
         title="Scout Disagreements"
-        description="Resolve conflicting scouted field values between scouts, with an immutable audit trail — never DEMO conflicts."
+        description="Resolve conflicting scouted field values between scouts, with an immutable audit trail."
       >
         <div className="scout-disagreements-header-meta">
           <ScoutDisagreementsRelatedStrip orgId={orgId} />
@@ -458,7 +458,7 @@ function Queue({
         badge="No disagreements yet"
         badgeTone="setup"
         title="Log your first conflicting field"
-        description="When two scouts report different values for the same match/team/field, log it here — never DEMO conflicts."
+        description="When two scouts report different values for the same match/team/field, log it here."
       >
         <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
           Open Scouting
@@ -476,7 +476,7 @@ function Queue({
     <Panel className="scout-disagreements-panel" id="disagreement-queue" aria-label="Resolution queue">
       <header>
         <h2>Resolution queue</h2>
-        <p className="app-muted">Real scout submissions only — never DEMO conflicts.</p>
+        <p className="app-muted">Real scout submissions only.</p>
       </header>
       <ul className="scout-disagreements-list">
         {view.items.map((item) => (
@@ -511,7 +511,7 @@ function QueueRow({
             Match {item.matchNumber} · Team {item.teamNumber} · {item.fieldLabel}
           </strong>
           <small>
-            {item.values.map((value) => `${value.source}: ${value.value}`).join("  ·  ")}
+            {item.values.map((value) => `${value.source}: ${value.value}`).join(" · ")}
           </small>
         </div>
       </div>
@@ -668,7 +668,7 @@ function LogDisagreementForm({
     >
       <header>
         <h2>Log a disagreement</h2>
-        <p className="app-muted">Manual entry for real scout conflicts — never DEMO rows.</p>
+        <p className="app-muted">Manual entry for real scout conflicts.</p>
       </header>
       <FormGrid min={160}>
         <FormRow label="Match #">

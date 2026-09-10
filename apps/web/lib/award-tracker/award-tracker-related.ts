@@ -76,25 +76,25 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
     {
       id: "workspace",
       label: "Select workspace",
-      detail: "Choose your team organization — award submissions are org-scoped.",
+      detail: "Choose your team organization to open award submissions.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
       id: "evidence",
       label: "Open Awards",
-      detail: "Award evidence stays blank until your team uploads it — nothing is pre-seeded.",
+      detail: "Award evidence stays blank until your team uploads it.",
       href: hubHref("/business", "evidence", orgId),
     },
     {
       id: "awards-workbench",
       label: "Open Awards workbench",
-      detail: "Submission packets stay empty until real uploads exist — nothing is pre-seeded.",
+      detail: "Submission packets stay empty until real uploads exist.",
       href: withOrgHref("/team/awards", orgId),
     },
     {
       id: "impact-essay",
       label: "Open Impact Essay",
-      detail: "Essay drafts stay blank until grounded outreach exists — nothing is pre-seeded.",
+      detail: "Essay drafts stay blank until grounded outreach exists.",
       href: hubHref("/business", "impact-essay", orgId),
     },
   ];
@@ -150,7 +150,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         kind,
         title: "Loading Award Tracker…",
         description:
-          "Checking workspace membership and award submissions — never DEMO win rates.",
+          "Checking workspace membership and award submissions.",
       };
     case "error":
       return {
@@ -158,7 +158,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "Unavailable",
         title: "Could not load Award Tracker",
         description:
-          "A network or server issue blocked the tracker. Retry, or open Awards / Impact Essay while it reloads — never invent DEMO win rates.",
+          "A network or server issue blocked the tracker. Retry, or open Awards / Impact Essay while it reloads.",
       };
     case "setup":
       return {
@@ -166,7 +166,7 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Award Tracker is org-scoped. Pick a workspace and log real submissions before tracking deadlines — nothing is pre-seeded.",
+          "Pick a workspace and log real submissions before tracking deadlines.",
       };
     case "empty":
       return {
@@ -174,14 +174,14 @@ export function awardTrackerShellCopy(kind: AwardTrackerShellKind): AwardTracker
         badge: "No submissions yet",
         title: "Track your first award submission",
         description:
-          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact Essay — never DEMO win rates.",
+          "Deadlines and status stay blank until you log an award, event, and due date. Cross-check Awards and Impact Essay.",
       };
     default:
       return {
         kind: "ready",
         title: "Award submission deadlines",
         description:
-          "Counts reflect submissions you start — never DEMO win rates or invented award dollars.",
+          "Counts reflect submissions you start.",
       };
   }
 }
@@ -236,20 +236,20 @@ export function awardTrackerNextActions(input: {
       {
         id: "track",
         label: "Track a submission",
-        detail: "Deadlines stay blank until you log a real award — never invent DEMO wins.",
+        detail: "Deadlines stay blank until you log a real award.",
         href: "#award-tracker-create",
         primary: true,
       },
       {
         id: "evidence",
         label: "Open Awards",
-        detail: "Ground packets in uploaded evidence — never DEMO awards.",
+        detail: "Ground packets in uploaded evidence.",
         href: hubHref("/business", "evidence", orgId),
       },
       {
         id: "impact-essay",
         label: "Open Impact Essay",
-        detail: "Essay drafts stay empty until real outreach lands — never DEMO awards.",
+        detail: "Essay drafts stay empty until real outreach lands.",
         href: hubHref("/business", "impact-essay", orgId),
       },
     ];
@@ -262,14 +262,14 @@ export function awardTrackerNextActions(input: {
       detail:
         dueSoonCount > 0
           ? `${dueSoonCount} deadline${dueSoonCount === 1 ? "" : "s"} due soon — only real rows.`
-          : `${submissionCount} submission${submissionCount === 1 ? "" : "s"} on record — never DEMO wins.`,
+          : `${submissionCount} submission${submissionCount === 1 ? "" : "s"} on record.`,
       href: "#award-tracker-create",
       primary: true,
     },
     {
       id: "evidence",
       label: "Open Awards",
-      detail: "Keep packets grounded in uploaded evidence — never DEMO awards.",
+      detail: "Keep packets grounded in uploaded evidence.",
       href: hubHref("/business", "evidence", orgId),
     },
     {
@@ -281,7 +281,7 @@ export function awardTrackerNextActions(input: {
     {
       id: "impact-essay",
       label: "Open Impact Essay",
-      detail: "Pair submission timelines with grounded essay drafts — never DEMO awards.",
+      detail: "Pair submission timelines with grounded essay drafts.",
       href: hubHref("/business", "impact-essay", orgId),
     },
   ];

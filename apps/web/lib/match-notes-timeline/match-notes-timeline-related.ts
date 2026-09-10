@@ -98,7 +98,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         kind,
         title: "Loading Match Note Timeline…",
         description:
-          "Checking workspace membership and logged notes — never DEMO match metrics.",
+          "Checking workspace membership and logged notes.",
       };
     case "error":
       return {
@@ -106,7 +106,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         badge: "Unavailable",
         title: "Could not load Match Note Timeline",
         description:
-          "A network or server issue blocked the timeline. Retry, or open Schedule / Strategy / Scouting while it reloads — never invent DEMO match metrics.",
+          "A network or server issue blocked the timeline. Retry, or open Schedule / Strategy / Scouting while it reloads.",
       };
     case "setup":
       return {
@@ -114,7 +114,7 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "Match Note Timeline is org-scoped. Pick a workspace before logging clock-synced notes — nothing is pre-seeded.",
+          "Pick a workspace before logging clock-synced notes.",
       };
     case "empty":
       return {
@@ -122,14 +122,14 @@ export function matchNotesTimelineShellCopy(kind: MatchNotesTimelineShellKind): 
         badge: "No notes yet",
         title: "Log your first match note",
         description:
-          "Timelines stay blank until you log a real note with the match clock. Cross-check Schedule, Strategy, and Scouting — never DEMO match metrics.",
+          "Timelines stay blank until you log a real note with the match clock. Cross-check Schedule, Strategy, and Scouting.",
       };
     default:
       return {
         kind: "ready",
         title: "Clock-synced match notes",
         description:
-          "Notes use only what your team logs against the match clock — never DEMO match metrics.",
+          "Notes use only what your team logs against the match clock.",
       };
   }
 }
@@ -154,26 +154,26 @@ export function matchNotesTimelineNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Match notes are org-scoped — pick a team before logging clock times.",
+          detail: "Pick a team before logging clock times.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Match rows stay empty until real TBA/event data exists — never DEMO matches.",
+          detail: "Match rows stay empty until real TBA/event data exists.",
           href: withOrgHref("/schedule", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO win rates.",
+          detail: "Pick lists stay empty until real metrics exist.",
           href: hubHref("/competition", "strategy", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout rows stay blank until your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
       ];
@@ -249,13 +249,13 @@ export function matchNotesTimelineNextActions(input: {
       {
         id: "schedule",
         label: "Cross-check Schedule",
-        detail: "Use real match labels from the schedule — never DEMO matches.",
+        detail: "Use real match labels from the schedule.",
         href: withOrgHref("/schedule", orgId),
       },
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Debriefs stay grounded in scouted and reference metrics — never DEMO win rates.",
+        detail: "Debriefs stay grounded in scouted and reference metrics.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -284,7 +284,7 @@ export function matchNotesTimelineNextActions(input: {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Ground picks and debriefs in scouted data — never DEMO win rates.",
+      detail: "Ground picks and debriefs in scouted data.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {

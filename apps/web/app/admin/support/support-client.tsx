@@ -100,7 +100,7 @@ export default function AdminSupportClient() {
       <PageHeader
         breadcrumbs="Platform / Support"
         title="Support tickets"
-        description="Triage member-reported breakage. Replies show on the submitter’s Soft-UI Support page. Empty until real tickets exist — never DEMO triage rows."
+        description="Triage member-reported breakage. Replies show on the submitter’s Support page. Empty until real tickets exist."
       >
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({

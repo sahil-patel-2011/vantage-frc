@@ -60,7 +60,7 @@ function RetroNextActionsPanel({ actions }: { actions: RetroNextAction[] }) {
     <section className="app-card soft-panel edc-next-actions retro-next-actions" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Messages, FMEA, and Decisions — never DEMO retro metrics.</p>
+        <p className="app-muted">Each one opens the page where you finish the work.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -158,7 +158,7 @@ function RetroShell({
         <Panel className="retro-panel" aria-label="Setup steps">
           <header>
             <h2>Setup steps</h2>
-            <p className="app-muted">Messages, FMEA, and Decisions — never DEMO retro metrics.</p>
+            <p className="app-muted">Finish these once and this page fills in.</p>
           </header>
           <ul className="retro-setup-steps">
             {steps.map((step) => (
@@ -325,7 +325,7 @@ export default function RetroClient() {
           </>
         }
         title="Team Retrospective"
-        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log. Cross-check Messages, FMEA, and Decisions — never DEMO retro metrics."
+        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log. Cross-check Messages, FMEA, and Decisions."
       >
         <div className="retro-header-actions">
           {view.sessions.length > 0 ? (
@@ -420,7 +420,7 @@ export default function RetroClient() {
             badge="No active session"
             badgeTone="setup"
             title="Start a retro session"
-            description="Create a session above to begin collecting start/stop/continue feedback — never DEMO items."
+            description="Create a session above to begin collecting start/stop/continue feedback."
           />
         ) : null}
         <LearnedItems view={view} busy={busy} mutate={mutate} />
@@ -453,7 +453,7 @@ function NewSessionForm({
       }}
     >
       <h2 style={{ margin: 0 }}>New retro session</h2>
-      <p className="app-muted">Sessions start empty — never DEMO feedback.</p>
+      <p className="app-muted">Sessions start empty.</p>
       <FormGrid min={180}>
         <FormRow label="Title">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Week 3 build retro" required />
@@ -528,7 +528,7 @@ function ItemColumn({
         </button>
       </form>
       {items.length === 0 ? (
-        <p className="app-muted">No items yet — never DEMO feedback.</p>
+        <p className="app-muted">No items yet.</p>
       ) : (
         <ul className="retro-list">
           {items.map((item) => (
@@ -580,7 +580,7 @@ function ActionItems({
   return (
     <Panel className="retro-panel" id="retro-actions">
       <h2 style={{ marginTop: 0 }}>Action items</h2>
-      <p className="app-muted">Tracked from real retro sessions only — never DEMO actions.</p>
+      <p className="app-muted">Tracked from real retro sessions only.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -670,7 +670,7 @@ function LearnedItems({
         <div>
           <h2 style={{ margin: 0 }}>Learned items</h2>
           <p className="app-muted">
-            Only start/stop/continue rows the team wrote — never invented lessons.
+            The start / stop / continue notes your team wrote.
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -688,8 +688,8 @@ function LearnedItems({
       ) : null}
       {items.length === 0 ? (
         <p className="app-muted">
-          No learned items yet. Write start/stop/continue notes first — this never invents lessons
-          for Season report or Playbook.
+          No learned items yet. Write a start / stop / continue note above and it will carry into the Season
+          report and the Playbook.
         </p>
       ) : (
         <ul className="retro-list">
@@ -781,8 +781,7 @@ function Postmortems({
         </div>
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and FMEA log —
-          nothing is invented if those are empty — never DEMO metrics.
+          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and FMEA log.
         </p>
       )}
     </Panel>

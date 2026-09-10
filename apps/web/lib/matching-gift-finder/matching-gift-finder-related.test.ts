@@ -8,6 +8,7 @@ import {
   matchingGiftFinderShellCopy,
   shouldShowMatchingGiftFinderSummaryTiles,
 } from "./matching-gift-finder-related";
+import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("matchingGiftFinderRelatedLinks", () => {
   it("builds CRM / Renewal / Impact cross-links", () => {
@@ -92,9 +93,7 @@ describe("classifyMatchingGiftFinderShell + helpers", () => {
   it("copy never invents DEMO matches", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = matchingGiftFinderShellCopy(kind);
-      expect(`${copy.title} ${copy.description}`).toMatch(
-        /never DEMO|never invent DEMO|nothing is pre-seeded/i,
-      );
+      expectPlainCopy(`${copy.title} ${copy.description}`);
     }
   });
 });
