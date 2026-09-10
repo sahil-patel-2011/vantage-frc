@@ -185,7 +185,7 @@ export function onboardingMembershipNote(
   if (accessStatus === "pending") {
     return {
       title: "Awaiting that team's approval",
-      body: "That workspace already exists. Only that team's owners or admins can let you in — a team number never joins you by itself.",
+      body: "That team already exists. Only that team's owners or admins can let you in — a team number never joins you by itself.",
     };
   }
   if (accessStatus === "declined") {

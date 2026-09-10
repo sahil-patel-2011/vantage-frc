@@ -26,7 +26,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   const empty = page.getByRole("heading", { name: /Select a team|Choose a team|Finish setup/i });
   if (!(await expectHubReadyOrGate(page, invite, empty))) {
     if (process.env.ADMIN_SHOT === "1") {
-      await page.screenshot({ path: "/opt/cursor/artifacts/team-admin-after-split.png", fullPage: true });
+      await page.screenshot({ path: "/opt/cursor/artifacts/team-admin-one-primary.png", fullPage: true });
     }
     return;
   }
@@ -36,6 +36,6 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("tab")).toHaveCount(0);
 
   if (process.env.ADMIN_SHOT === "1") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/team-admin-after-split.png", fullPage: true });
+    await page.screenshot({ path: "/opt/cursor/artifacts/team-admin-one-primary.png", fullPage: true });
   }
 });

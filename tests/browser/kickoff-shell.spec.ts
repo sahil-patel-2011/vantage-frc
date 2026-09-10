@@ -17,7 +17,7 @@ test("Kickoff hub still loads after the panel split", async ({ page }) => {
   // GHA has no Postgres: HubOrgGate paints Choose a team and never mounts KickoffClient.
   if (!(await expectHubReadyOrGate(page, intel, setup))) {
     if (process.env.KICKOFF_SHOT === "1") {
-      await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-after-split.png", fullPage: true });
+      await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-hub-org-gate.png", fullPage: true });
     }
     return;
   }
@@ -27,6 +27,6 @@ test("Kickoff hub still loads after the panel split", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Kickoff" })).toHaveAttribute("aria-selected", "true");
 
   if (process.env.KICKOFF_SHOT === "1") {
-    await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-after-split.png", fullPage: true });
+    await page.screenshot({ path: "/opt/cursor/artifacts/kickoff-hub-org-gate.png", fullPage: true });
   }
 });
