@@ -17,8 +17,17 @@ async function session() {
   return value;
 }
 
-const fail = (error: unknown, status = 400) =>
-  Response.json({ error: error instanceof Error ? error.message : "Discord request failed" }, { status });
+/**
+ * Same status-code fix as Slack: an expired session answered 400, so the client
+ * offered Retry instead of sign-in, and a non-admin answered 400, which reads as
+ * a malformed request rather than "ask an owner or admin".
+ */
+const fail = (error: unknown, status = 400) => {
+  const message = error instanceof Error ? error.message : "Discord request failed";
+  if (/authentication required/i.test(message)) return Response.json({ error: message }, { status: 401 });
+  if (/administrator access required/i.test(message)) return Response.json({ error: message }, { status: 403 });
+  return Response.json({ error: message }, { status });
+};
 
 async function assertAdmin(client: import("@neondatabase/serverless").PoolClient, orgId: string, userId: string) {
   const admin = await client.query(
