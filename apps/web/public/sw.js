@@ -135,6 +135,10 @@ const SHELL_ROUTES = [
   "/retro",
   "/team/data",
   "/tuning-autopilot",
+  "/fundraisers",
+  "/impact",
+  "/orders",
+  "/team/grants",
 ];
 
 function isShellPath(pathname) {

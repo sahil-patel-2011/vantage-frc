@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState } from "../../components/ui";
 import {
   composeGrantAnswer,
   composeSponsorEmail,
@@ -156,6 +156,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const loadingCopy = writerShellCopy("loading");
   const errorCopy = writerShellCopy("error");
   const setupCopy = writerShellCopy("setup");
+  const setupPrimary = writerNextActions({ orgId: setupOrg, draftCount: 0 })[0] ?? null;
   const neighborLinks = orgId
     ? writerRelatedLinks(orgId, { include: ["chat", "budgets", "usage"] })
     : [];
@@ -220,7 +221,6 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           <Button variant="secondary" type="button" onClick={() => load()}>
             Retry
           </Button>
-          <WriterNextActions orgId={orgId} draftCount={0} hasMission={false} hasAchievements={false} />
         </section>
       ) : view == null ? (
         <section className="app-card soft-panel" aria-busy>
@@ -228,18 +228,19 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           <p className="app-muted">{loadingCopy.description}</p>
         </section>
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel writer-setup">
-          <span className="app-badge setup">{setupCopy.badge ?? "Setup required"}</span>
-          <h2>{view.message || setupCopy.title}</h2>
-          <p className="app-muted">{setupCopy.description}</p>
-          
-          <WriterNextActions
-            orgId={setupOrg}
-            draftCount={0}
-            hasMission={false}
-            hasAchievements={false}
-          />
-        </section>
+        <EmptyState
+          soft
+          badge={setupCopy.badge ?? "Setup required"}
+          badgeTone="setup"
+          title={view.message || setupCopy.title}
+          description={setupCopy.description}
+        >
+          {setupPrimary ? (
+            <Button as="a" variant="primary" href={setupPrimary.href}>
+              {setupPrimary.label}
+            </Button>
+          ) : null}
+        </EmptyState>
       ) : (
         <WriterWorkspace
           view={view}

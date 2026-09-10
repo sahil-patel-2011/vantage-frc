@@ -130,6 +130,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/retro")).toBe(true);
     expect(pathnameIsOfflineShell("/team/data")).toBe(true);
     expect(pathnameIsOfflineShell("/tuning-autopilot")).toBe(true);
+    expect(pathnameIsOfflineShell("/fundraisers")).toBe(true);
+    expect(pathnameIsOfflineShell("/impact")).toBe(true);
+    expect(pathnameIsOfflineShell("/orders")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/grants")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -198,6 +202,9 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/visit-invites")).toBe("Visit Invites");
     expect(offlineCapableLabel("/judge-sim")).toBe("Judge-Pitch Simulator");
     expect(offlineCapableLabel("/impact-essay")).toBe("Impact Essay");
+    expect(offlineCapableLabel("/impact")).toBe("Community Impact");
+    expect(offlineCapableLabel("/fundraisers")).toBe("Fundraisers");
+    expect(offlineCapableLabel("/orders")).toBe("Orders");
     expect(offlineCapableLabel("/battery-rotation")).toBe("Battery Rotation");
     expect(offlineCapableLabel("/vendors")).toBe("Vendors");
     expect(offlineCapableLabel("/season-report")).toBe("Season Report");
@@ -240,6 +247,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/season-planning-workspace")).toBe("Season Planning");
     expect(offlineCapableLabel("/retro")).toBe("Retro");
     expect(offlineCapableLabel("/team/data")).toBe("Team Data");
+    expect(offlineCapableLabel("/team/grants")).toBe("Grant writing");
     expect(offlineCapableLabel("/team")).toBe("Team");
     expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning Autopilot");
   });
@@ -351,6 +359,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("team-data", "org-1")).toBe("team-data:org-1");
     expect(featureCacheKey("tuning-autopilot", "org-1", "2026")).toBe("tuning-autopilot:org-1:2026");
     expect(featureCacheKey("video-rescout", "org-1")).toBe("video-rescout:org-1");
+    expect(featureCacheKey("fundraisers", "org-1", "2026")).toBe("fundraisers:org-1:2026");
+    expect(featureCacheKey("impact", "org-1", "2026")).toBe("impact:org-1:2026");
+    expect(featureCacheKey("orders", "org-1", "2026")).toBe("orders:org-1:2026");
+    expect(featureCacheKey("grants-writing", "org-1", "2026")).toBe("grants-writing:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 

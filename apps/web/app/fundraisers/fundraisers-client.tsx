@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button } from "../../components/ui";
 import { FUNDRAISERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { fundraisersNextActions } from "../../lib/business/fundraisers-next-actions";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   FUNDRAISER_TYPE_LABEL,
   FUNDRAISER_TYPES,
@@ -53,6 +56,37 @@ const STATUS_FLOW: Record<FundraiserStatus, FundraiserStatus | null> = {
   completed: null,
   cancelled: null,
 };
+
+function isFundraisersView(value: unknown): value is View {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+function fundraisersCacheOrg(data: View, orgHint: string): string {
+  switch (data.status) {
+    case "ready":
+      return data.context.orgId.trim() || orgHint;
+    case "setup_required":
+      return data.orgId?.trim() || orgHint;
+    default: {
+      data satisfies never;
+      return orgHint;
+    }
+  }
+}
+
+async function persistFundraisersSnapshot(orgHint: string, seasonHint: string, data: View): Promise<void> {
+  const cacheOrg = fundraisersCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "ready" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("fundraisers", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("fundraisers", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Fundraisers already painted; IndexedDB is best-effort.
+  }
+}
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -104,6 +138,8 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   const [loadError, setLoadError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     type: "car_wash",
@@ -112,21 +148,62 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
     location: "",
     notes: "",
   });
+  const viewRef = useRef<View | null>(null);
+  viewRef.current = view;
 
-  const load = useCallback(async () => {
-    setLoadError("");
-    setErrorStatus(null);
-    const response = await fetch(
-      `/api/fundraisers?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`,
-    );
-    const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) {
-      setMessage(data.error ?? "Failed to load fundraisers");
-      setLoadError(data.error ?? "Failed to load fundraisers");
-      setErrorStatus(response.status);
-      return;
-    }
-    setView(data);
+  const load = useCallback(() => {
+    void (async () => {
+      const orgHint = orgId?.trim() ?? "";
+      const seasonHint = String(seasonYear);
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<View>("fundraisers", orgHint || "_", seasonHint);
+        if (!viewRef.current && cached?.data && isFundraisersView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setLoadError("");
+      setErrorStatus(null);
+      try {
+        const response = await fetch(
+          `/api/fundraisers?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`,
+          { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+        );
+        const data = (await response.json()) as View & { error?: string };
+        if (!response.ok || !isFundraisersView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setMessage("Could not refresh Fundraisers. Showing the last copy on this device.");
+            setLoadError("");
+            setErrorStatus(null);
+          } else {
+            const detail = "error" in data && data.error ? data.error : "Failed to load fundraisers";
+            setMessage(detail);
+            setLoadError(detail);
+            setErrorStatus(response.status);
+          }
+          return;
+        }
+        setView(data);
+        setFromCache(false);
+        setCachedAt(null);
+        await persistFundraisersSnapshot(orgHint, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh Fundraisers. Showing the last copy on this device.");
+          setLoadError("");
+        } else {
+          setLoadError("Failed to load fundraisers");
+          setErrorStatus(null);
+        }
+      }
+    })();
   }, [orgId, seasonYear]);
 
   useEffect(() => {
@@ -236,6 +313,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
             ariaLabel="Related fundraising tools"
           />
         ) : null}
+        <OfflineBanner feature="Fundraisers" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {nextActions[0] ? (
             <Button as="a" variant="primary" href={nextActions[0].href}>
@@ -283,6 +361,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
         include={FUNDRAISERS_RELATED_INCLUDE}
         ariaLabel="Related fundraising tools"
       />
+      <OfflineBanner feature="Fundraisers" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className="fr-status" role="status">

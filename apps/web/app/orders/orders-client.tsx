@@ -1,14 +1,17 @@
 "use client";
 import { Button } from "../../components/ui";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ORDERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { validateBuySheet } from "../../lib/finance/buy-sheet";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import {
   ordersNextActions,
   showBuyPanel,
@@ -43,6 +46,29 @@ function catalogItemsFromInventory(data: unknown): CatalogItem[] {
 
 type LiveView = Extract<OrdersView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isOrdersView(value: unknown): value is OrdersView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function ordersCacheOrg(data: OrdersView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistOrdersSnapshot(orgHint: string, seasonHint: string, data: OrdersView): Promise<void> {
+  const cacheOrg = ordersCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = data.status === "live" ? String(data.seasonYear) : seasonHint;
+  try {
+    await putFeatureSnapshot("orders", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("orders", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Orders already painted; IndexedDB is best-effort.
+  }
+}
 
 export type OrdersClientProps = {
   /** When embedded in Business hub, hide page chrome and inherit season. */
@@ -137,35 +163,76 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(seasonYear ?? null);
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<OrdersView | null>(null);
+  viewRef.current = view;
+
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? orgIdProp ?? null;
 
   const load = useCallback(
     (seasonOverride?: number) => {
-      setError("");
-      setErrorStatus(null);
-      const params = new URLSearchParams(window.location.search);
-      const urlOrg = orgIdProp ?? params.get("orgId");
-      const orderId = params.get("orderId");
-      const seasonQuery =
-        seasonOverride ??
-        seasonYear ??
-        (params.get("season") ? Number(params.get("season")) : null);
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (orderId) query.set("orderId", orderId);
-      if (seasonQuery && Number.isFinite(seasonQuery)) query.set("season", String(seasonQuery));
-      void fetch(`/api/orders${query.toString() ? `?${query.toString()}` : ""}`)
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams(window.location.search);
+        const urlOrg = (orgIdProp ?? params.get("orgId"))?.trim() ?? "";
+        const orderId = params.get("orderId");
+        const seasonQuery =
+          seasonOverride ??
+          seasonYear ??
+          (params.get("season") ? Number(params.get("season")) : null);
+        const seasonHint =
+          seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<OrdersView>("orders", urlOrg || "_", seasonHint);
+          if (!viewRef.current && cached?.data && isOrdersView(cached.data)) {
+            setView(cached.data);
+            if (cached.data.status === "live") setSeason(cached.data.seasonYear);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setError("");
+        setErrorStatus(null);
+        const query = new URLSearchParams();
+        if (urlOrg) query.set("orgId", urlOrg);
+        if (orderId) query.set("orderId", orderId);
+        if (seasonHint) query.set("season", seasonHint);
+        try {
+          const response = await fetch(`/api/orders${query.toString() ? `?${query.toString()}` : ""}`, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          });
           const data = (await response.json()) as OrdersView & { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Could not load the buy sheet");
-            setErrorStatus(response.status);
+          if (!response.ok || !isOrdersView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh Orders. Showing the last copy on this device.");
+              setErrorStatus(null);
+            } else {
+              setError("error" in data && data.error ? data.error : "Could not load the buy sheet");
+              setErrorStatus(response.status);
+            }
             return;
           }
           setView(data);
           if (data.status === "live") setSeason(data.seasonYear);
-        })
-        .catch(() => setError("Network error — please try again."));
+          setFromCache(false);
+          setCachedAt(null);
+          await persistOrdersSnapshot(urlOrg, seasonHint, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Orders. Showing the last copy on this device.");
+            setErrorStatus(null);
+          } else {
+            setError("Network error — please try again.");
+          }
+        }
+      })();
     },
     [orgIdProp, seasonYear],
   );
@@ -183,15 +250,17 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? seasonYear ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as OrdersView & { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isOrdersView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           if (data.status === "live") setSeason(data.seasonYear);
+          void persistOrdersSnapshot(orgId, season != null ? String(season) : "", data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -236,6 +305,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
 
   const body = (
     <>
+      <OfflineBanner feature="Orders" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? (
         <p className="orders-error" role="alert">
           {error}
@@ -293,7 +363,6 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             </Button>
           ) : null}
         </EmptyState>
-          <OrdersNextActions actions={nextActions} />
         </>
       ) : (
         <>

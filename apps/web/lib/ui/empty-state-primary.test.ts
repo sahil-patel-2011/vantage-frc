@@ -204,4 +204,18 @@ describe("empty-state R4 (one primary on the empty card)", () => {
     }
     expect(hits, hits.join("\n")).toEqual([]);
   });
+
+  it("setup_required shells do not paint a Next-actions panel", () => {
+    const hits: string[] = [];
+    const marker = 'status === "setup_required" ? (';
+    for (const file of clients) {
+      const src = readFileSync(file, "utf8");
+      for (const inner of parenBlocks(src, marker)) {
+        if (/<[A-Z][A-Za-z0-9]*NextActions\b/.test(inner)) {
+          hits.push(`${file} setup_required paints a Next-actions panel`);
+        }
+      }
+    }
+    expect(hits, hits.join("\n")).toEqual([]);
+  });
 });

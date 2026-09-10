@@ -113,7 +113,11 @@ export type OfflineFeature =
   | "retro"
   | "team-data"
   | "tuning-autopilot"
-  | "video-rescout";
+  | "video-rescout"
+  | "fundraisers"
+  | "impact"
+  | "orders"
+  | "grants-writing";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

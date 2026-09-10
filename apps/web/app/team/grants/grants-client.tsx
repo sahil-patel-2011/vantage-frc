@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
 import { EmptyState, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
@@ -17,6 +18,8 @@ import {
   type GrantWritingView,
   type GuidedFields,
 } from "../../../lib/grant-writing";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { AllocateSpend } from "./allocate-spend";
 import "./grants.css";
 
@@ -32,6 +35,33 @@ const STATUS_LABEL: Record<GrantDraftStatus, string> = {
 };
 
 type LiveView = Extract<GrantWritingView, { status: "live" }>;
+
+function isGrantWritingView(value: unknown): value is GrantWritingView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function grantsWritingCacheOrg(data: GrantWritingView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistGrantsWritingSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: GrantWritingView,
+): Promise<void> {
+  const cacheOrg = grantsWritingCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("grants-writing", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("grants-writing", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Grant writing already painted; IndexedDB is best-effort.
+  }
+}
 
 function moneyLabel(amount: number | null | undefined): string {
   if (amount == null || !Number.isFinite(amount) || amount <= 0) return "—";
@@ -69,6 +99,11 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [fields, setFields] = useState<GuidedFields>(EMPTY_FIELDS);
   const [body, setBody] = useState("");
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<GrantWritingView | null>(null);
+  viewRef.current = view;
+
   const resolvedOrgId =
     view && view.status === "live"
       ? view.orgId
@@ -87,29 +122,70 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
 
   const load = useCallback(
     (seasonOverride?: number) => {
-      setFetchFailed(false);
-      setError("");
-      setErrorStatus(null);
-      setCutoffCode(null);
-      const params = new URLSearchParams(window.location.search);
-      const urlOrg = orgIdProp ?? params.get("orgId");
-      const seasonQuery = seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (seasonQuery) query.set("seasonYear", String(seasonQuery));
-      void fetch(`/api/grants/writing${query.toString() ? `?${query.toString()}` : ""}`)
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams(window.location.search);
+        const urlOrg = (orgIdProp ?? params.get("orgId"))?.trim() ?? "";
+        const seasonQuery =
+          seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
+        const seasonHint =
+          seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<GrantWritingView>(
+            "grants-writing",
+            urlOrg || "_",
+            seasonHint,
+          );
+          if (!viewRef.current && cached?.data && isGrantWritingView(cached.data)) {
+            setView(cached.data);
+            setSeason(cached.data.seasonYear);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setError("");
+        setErrorStatus(null);
+        setCutoffCode(null);
+        const query = new URLSearchParams();
+        if (urlOrg) query.set("orgId", urlOrg);
+        if (seasonHint) query.set("seasonYear", seasonHint);
+        try {
+          const response = await fetch(
+            `/api/grants/writing${query.toString() ? `?${query.toString()}` : ""}`,
+            { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
+          );
           const data = (await response.json()) as GrantWritingView | { error?: string };
-          if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "");
-            setErrorStatus(response.status);
-            setFetchFailed(true);
+          if (!response.ok || !isGrantWritingView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh Grant writing. Showing the last copy on this device.");
+              setFetchFailed(false);
+            } else {
+              setError("error" in data && data.error ? data.error : "");
+              setErrorStatus(response.status);
+              setFetchFailed(true);
+            }
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
-        })
-        .catch(() => setFetchFailed(true));
+          setFromCache(false);
+          setCachedAt(null);
+          await persistGrantsWritingSnapshot(urlOrg, seasonHint, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Grant writing. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
+        }
+      })();
     },
     [orgIdProp],
   );
@@ -165,6 +241,9 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
       }
       setView(data);
       setSeason(data.seasonYear);
+      if (isGrantWritingView(data)) {
+        void persistGrantsWritingSnapshot(live.orgId, String(season ?? live.seasonYear), data);
+      }
       if (data.status === "live") {
         if (payload.action === "compose" && data.drafts[0]) {
           applyDraft(data.drafts[0]);
@@ -205,7 +284,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
 
   const readyCount = live?.drafts.filter((draft) => draft.status === "ready").length ?? 0;
 
-  if (fetchFailed) {
+  if (fetchFailed && !view) {
     const kind = classifyLoadFailure({
       status: errorStatus,
       message: error,
@@ -294,6 +373,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             ariaLabel="Related fundraising tools"
           />
         ) : null}
+        <OfflineBanner feature="Grant writing" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {nextActions[0] ? (
             <Button as="a" variant="primary" href={nextActions[0].href}>
@@ -324,6 +404,8 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
       provenance={provenance}
       readyCount={readyCount}
       resolvedOrgId={resolvedOrgId}
+      fromCache={fromCache}
+      cachedAt={cachedAt}
       onSeasonChange={(next) => {
         setSeason(next);
         setSelectedDraftId(null);
@@ -360,6 +442,8 @@ function GrantWritingWorkspace({
   provenance,
   readyCount,
   resolvedOrgId,
+  fromCache,
+  cachedAt,
   onSeasonChange,
   onSelectTemplate,
   onSelectDraft,
@@ -385,6 +469,8 @@ function GrantWritingWorkspace({
   provenance: GrantWritingDraft["provenance"];
   readyCount: number;
   resolvedOrgId: string | null;
+  fromCache: boolean;
+  cachedAt: string | null;
   onSeasonChange: (season: number) => void;
   onSelectTemplate: (template: GrantTemplate) => void;
   onSelectDraft: (draft: GrantWritingDraft) => void;
@@ -442,6 +528,7 @@ function GrantWritingWorkspace({
         include={GRANTS_WRITING_RELATED_INCLUDE}
         ariaLabel="Related fundraising tools"
       />
+      <OfflineBanner feature="Grant writing" fromCache={fromCache} cachedAt={cachedAt} />
 
       <AllocateSpend orgId={view.orgId} seasonYear={season ?? view.seasonYear} />
 

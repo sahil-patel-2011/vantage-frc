@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { IMPACT_RELATED_INCLUDE } from "../../lib/business/business-related";
@@ -14,6 +15,8 @@ import {
   type ImpactView,
 } from "../../lib/impact/compute-impact";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory, ImpactTier } from "../../lib/impact/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { draftsToPayload, ParticipantNames, PeoplePanel, WhoHelped, type ParticipantDraft } from "./people";
 import "./impact.css";
 
@@ -42,6 +45,29 @@ function pct(value: number): string {
 }
 
 type LiveView = Extract<ImpactView, { status: "live" }>;
+
+function isImpactView(value: unknown): value is ImpactView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function impactCacheOrg(data: ImpactView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistImpactSnapshot(orgHint: string, seasonHint: string, data: ImpactView): Promise<void> {
+  const cacheOrg = impactCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("impact", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("impact", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Community Impact already painted; IndexedDB is best-effort.
+  }
+}
 
 function ImpactNextActions({
   actions,
@@ -82,30 +108,71 @@ export default function ImpactClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ImpactView | null>(null);
+  viewRef.current = view;
+
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setErrorStatus(null);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/impact${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<ImpactView>("impact", urlOrg || "_", seasonHint);
+        if (!viewRef.current && cached?.data && isImpactView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setErrorStatus(null);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      try {
+        const response = await fetch(`/api/impact${query.toString() ? `?${query.toString()}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as ImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setFetchFailed(true);
+        if (!response.ok || !isImpactView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Community Impact. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setErrorStatus(response.status);
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistImpactSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Community Impact. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -122,14 +189,16 @@ export default function ImpactClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isImpactView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistImpactSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -201,13 +270,15 @@ export default function ImpactClient() {
         />
       ) : null}
 
+      <OfflineBanner feature="Community Impact" fromCache={fromCache} cachedAt={cachedAt} />
+
       {error ? (
         <p className="impact-status" role="alert">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {fetchFailed && !view ? (
         (() => {
           const kind = classifyLoadFailure({
             status: errorStatus,
