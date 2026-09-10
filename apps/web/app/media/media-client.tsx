@@ -189,7 +189,7 @@ function MediaShell({
 
   return (
     <main className="module-page media-page soft-gate">
-      <PageHeader breadcrumbs="Media / Media hub" title="Media" description={description}>
+      <PageHeader breadcrumbs="Media" title="Media" description={description}>
         <div className="media-header-actions">
           <MediaRelatedStrip orgId={orgId} />
         </div>
@@ -810,7 +810,7 @@ function LiveMediaWorkspace({
   return (
     <main className="module-page media-page">
       <PageHeader
-        breadcrumbs="Media / Media hub"
+        breadcrumbs="Media"
         title="Media"
         description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
       >
@@ -1074,7 +1074,7 @@ export default function MediaClient() {
   if (hubDenied || accessDenied) {
     return (
       <SoftAccessDenied
-        breadcrumbs="Media / Media hub"
+        breadcrumbs="Media"
         title="Media"
         heading={hubDenied ? "Media is not available" : "This Media tab is not available"}
         description={

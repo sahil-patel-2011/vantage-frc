@@ -82,12 +82,12 @@ const GENDERS: Array<{ value: OnboardingGender; label: string }> = [
   { value: "other", label: "Other" },
 ];
 
-const ROLES: Array<{ value: OnboardingRole; label: string; detail: string; glyph: string }> = [
-  { value: "student", label: "Student", detail: "On the team, in the shop", glyph: "🎒" },
-  { value: "mentor", label: "Mentor", detail: "Adult who coaches a subteam", glyph: "🔧" },
-  { value: "coach", label: "Coach", detail: "Runs the team and the season", glyph: "📋" },
-  { value: "parent", label: "Parent", detail: "Guardian supporting the team", glyph: "🚗" },
-  { value: "other", label: "Something else", detail: "Alum, volunteer, sponsor", glyph: "✳️" },
+const ROLES: Array<{ value: OnboardingRole; label: string; detail: string }> = [
+  { value: "student", label: "Student", detail: "On the team, in the shop" },
+  { value: "mentor", label: "Mentor", detail: "Adult who coaches a subteam" },
+  { value: "coach", label: "Coach", detail: "Runs the team and the season" },
+  { value: "parent", label: "Parent", detail: "Guardian supporting the team" },
+  { value: "other", label: "Something else", detail: "Alum, volunteer, sponsor" },
 ];
 
 const CREW_ROLES: Array<{ value: OnboardingCrew; label: string; detail: string }> = [
@@ -658,7 +658,6 @@ export default function OnboardingClient() {
                     checked={draft.teamRole === option.value}
                     onChange={() => pickRole(option.value)}
                   />
-                  <i aria-hidden="true">{option.glyph}</i>
                   <strong>{option.label}</strong>
                   <span>{option.detail}</span>
                 </label>

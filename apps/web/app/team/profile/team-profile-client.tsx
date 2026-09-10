@@ -71,7 +71,7 @@ export default function TeamProfileClient() {
 
   const header = (
     <PageHeader
-      breadcrumbs="Team / People / Team profile"
+      breadcrumbs="Team / Profile"
       title={view && view.status !== "none" && view.profile?.nickname ? `${view.teamNumber} · ${view.profile.nickname}` : "Team profile"}
       description="What The Blue Alliance and Statbotics have on record for this team. Vantage's AI features use these facts as context."
     />

@@ -291,7 +291,7 @@ export default function BusinessClient() {
   if (hubDenied) {
     return (
       <SoftAccessDenied
-        breadcrumbs="Business / Business Hub"
+        breadcrumbs="Business"
         title="Business"
         heading="Business is not available"
         description="Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security."
@@ -302,7 +302,7 @@ export default function BusinessClient() {
   return (
     <main className="module-page business-page">
       <PageHeader
-        breadcrumbs="Business / Business Hub"
+        breadcrumbs="Business"
         title="Business"
         description={
           live
@@ -601,7 +601,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
         </article>
         <article className="app-card soft-panel">
           <span className="biz-overline">Season spend + finance AI</span>
-          <h2>Two different finance toggles.</h2>
+          <h2>Track spend, and choose what AI can read.</h2>
           <p className="app-muted">
             <a href={costsHref}>Season Costs</a> tracks event spend and a local rule-based assistant for open{" "}
             <a href={ordersHref}>purchase requests</a>. Chat tools that read redacted budgets require{" "}

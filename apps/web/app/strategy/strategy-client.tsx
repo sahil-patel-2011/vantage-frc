@@ -160,7 +160,7 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
       <Panel className="strategy-private-edge">
         <header>
           <div>
-            <span className="eyebrow">ORG PRIVATE</span>
+            <span className="eyebrow">Your team only</span>
             <h2>Private Edge</h2>
           </div>
           <span className="app-badge setup">one engine</span>
@@ -177,7 +177,7 @@ function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "liv
     <Panel className="strategy-private-edge">
       <header>
         <div>
-          <span className="eyebrow">ORG PRIVATE · NOT STATBOTICS</span>
+          <span className="eyebrow">Your team only</span>
           <h2>Private Edge</h2>
         </div>
         <span className={`app-badge ${edge.status === "live" ? "good" : "setup"}`}>{edge.status}</span>

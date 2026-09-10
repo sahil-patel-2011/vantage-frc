@@ -66,9 +66,6 @@
 .onboarding-cards input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .onboarding-cards strong{font-size:14px;line-height:1.2}
 .onboarding-cards span{color:var(--soft-muted);font-size:11px;font-weight:500;line-height:1.35}
-.onboarding-cards-role label{grid-template-columns:26px 1fr;align-items:center;column-gap:10px}
-.onboarding-cards-role i{grid-row:1/3;font-size:19px;font-style:normal;line-height:1}
-.onboarding-cards-role strong,.onboarding-cards-role span{grid-column:2}
 /* Role: 5 options read best two-up; crew: 10 short options read three-up. */
 @media(min-width:520px){
   .onboarding-cards-role{grid-template-columns:1fr 1fr}

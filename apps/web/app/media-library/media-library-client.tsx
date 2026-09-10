@@ -648,7 +648,7 @@ export default function MediaLibraryClient() {
                     />
                   ) : (
                     <span className="ml-thumb-fallback" aria-hidden="true">
-                      {item.kind === "video" ? "▶" : "🖼"}
+                      {item.kind === "video" ? "▶" : "▣"}
                     </span>
                   )}
                   {item.kind === "video" && item.durationSeconds ? (

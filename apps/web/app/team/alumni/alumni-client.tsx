@@ -265,7 +265,6 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
               <article className="admin-org" style={rowStyle} key={alum.id}>
                 <div>
                   <strong>
-                    {alum.isMentor ? "🎓 " : ""}
                     {alum.fullName}
                     {alum.gradYear ? ` · ’${String(alum.gradYear).slice(2)}` : ""}
                   </strong>
