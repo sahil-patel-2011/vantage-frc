@@ -119,6 +119,7 @@ describe("Bugbot scan planning", () => {
     expect(message).toContain("src/main/java/frc/robot/Robot.java");
     expect(message).toContain("Do not comment on files that are not in this chunk");
     expect(message).toContain("rotations vs radians vs degrees");
+    expect(message).toContain("Do not push, merge, or open a pull request");
   });
 });
 

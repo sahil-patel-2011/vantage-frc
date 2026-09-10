@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { classifyTaskDifficulty, consultingAllowed } from "../src/auto-mode";
 import { pickByokModelForFeature } from "../src/byok-model-routing";
 import {
+  compactChatTurns,
   compactContextItems,
   contextTokenBudgetForAdapter,
   LOCAL_CONTEXT_TOKEN_BUDGET,
@@ -35,6 +36,17 @@ describe("auto-compact context", () => {
     expect(compacted.compacted).toBe(true);
     expect(compacted.items.some((item) => item.id === "auto-compact")).toBe(true);
     expect(compacted.estimatedTokens).toBeLessThanOrEqual(500);
+  });
+
+  it("folds older chat turns into one earlier-conversation note", () => {
+    const history = Array.from({ length: 20 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `turn ${i} ${"word ".repeat(20)}`,
+    }));
+    const compact = compactChatTurns(history, { maxTurns: 6 });
+    expect(compact.history.length).toBe(6);
+    expect(compact.summary).toMatch(/user:/);
+    expect(compactChatTurns(history.slice(-3), { maxTurns: 16 }).summary).toBeNull();
   });
 });
 

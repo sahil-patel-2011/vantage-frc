@@ -6,6 +6,7 @@ import type {
   ChatToolDefinition,
   ContextItem,
 } from "./index";
+import { compactChatTurns, compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
@@ -141,6 +142,23 @@ export class HttpChatAdapter implements ChatAdapter {
     this.extraHeaders = config.extraHeaders ?? {};
   }
 
+  private prepare(context: ContextItem[], history: ChatMessage[]) {
+    const compacted = compactContextItems(context, contextTokenBudgetForAdapter(this));
+    const turns = compactChatTurns(history);
+    const withSummary: ContextItem[] = turns.summary
+      ? [
+          ...compacted.items,
+          {
+            type: "chat_turn",
+            id: "earlier-conversation",
+            importance: 45,
+            content: `Earlier in this conversation…\n${turns.summary}`,
+          },
+        ]
+      : compacted.items;
+    return { context: withSummary, history: turns.history as ChatMessage[] };
+  }
+
   async complete(input: {
     message: string;
     context: ContextItem[];
@@ -149,10 +167,11 @@ export class HttpChatAdapter implements ChatAdapter {
     promptCachingEnabled?: boolean;
   }) {
     const caching = input.promptCachingEnabled ?? this.promptCachingEnabled;
+    const prepared = this.prepare(input.context, input.history ?? []);
     if (this.kind === "anthropic") {
-      return this.completeAnthropic(input.message, input.context, input.history ?? [], input.tools ?? [], caching);
+      return this.completeAnthropic(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
     }
-    return this.completeOpenAi(input.message, input.context, input.history ?? [], input.tools ?? [], caching);
+    return this.completeOpenAi(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
   }
 
   estimateCostUsd(promptTokens: number, completionTokens: number): number {

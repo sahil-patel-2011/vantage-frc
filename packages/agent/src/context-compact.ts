@@ -80,3 +80,34 @@ export function compactContextItems(
   used += compactCost;
   return { items: kept, estimatedTokens: used, compacted: true };
 }
+
+export type CompactableTurn = { role: string; content: string };
+
+/**
+ * Fold older chat turns into one "Earlier in this conversation…" note so the
+ * model's window stays inside budget. The latest turns stay verbatim.
+ */
+export function compactChatTurns(
+  history: CompactableTurn[],
+  options?: { maxTurns?: number; maxChars?: number },
+): { history: CompactableTurn[]; summary: string | null } {
+  const maxTurns = options?.maxTurns ?? 16;
+  const maxChars = options?.maxChars ?? 12_000;
+  const chars = history.reduce((sum, turn) => sum + turn.content.length, 0);
+  if (history.length <= maxTurns && chars <= maxChars) {
+    return { history, summary: null };
+  }
+  const keepCount = Math.min(history.length, Math.max(4, maxTurns));
+  const keep = history.slice(-keepCount);
+  const older = history.slice(0, Math.max(0, history.length - keepCount));
+  if (!older.length) {
+    return { history: keep, summary: null };
+  }
+  const summary = older
+    .map((turn) => {
+      const text = turn.content.replace(/\s+/g, " ").trim().slice(0, 180);
+      return `- ${turn.role}: ${text}`;
+    })
+    .join("\n");
+  return { history: keep, summary };
+}

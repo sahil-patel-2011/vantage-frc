@@ -305,7 +305,7 @@ describe("sponsored provider pool", () => {
     for (const body of bodies) {
       expect(body).toContain("FRC team number: 1111");
       expect(body).toMatch(/You are Vantage/);
-      expect(body).toMatch(/DEMO/i);
+      expect(body).toMatch(/Do not fill gaps with made-up/);
     }
   });
 });
