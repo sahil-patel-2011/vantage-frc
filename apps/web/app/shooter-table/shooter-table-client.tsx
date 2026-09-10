@@ -89,7 +89,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / SHOOTER</span><h1>Shooter lookup table — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={`/tuning${orgId ? `?orgId=${orgId}` : ""}`}>Tuning</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={`/tuning${orgId ? `?orgId=${orgId}` : ""}`}>Tuning</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
 

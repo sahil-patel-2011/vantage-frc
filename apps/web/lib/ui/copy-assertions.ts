@@ -25,7 +25,10 @@ const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bBYOK\b/, 'billing jargon — say "your own keys"'],
   [/\bkill\s+switch\b/i, 'billing internals — say "pause Chat"'],
   [/\ballowlist(?:s|ed)?\b/i, 'say what is allowed, not "allowlist"'],
-  [/\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b/i, 'say "team"'],
+  [
+    /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b|\b(connect|set|finish)\s+workspace\b|\bjoin workspace\b|\bopen workspace\b|\bin workspace\b|\bfrom workspace\b|\bcheck workspace\b|\bcross-check workspace\b|\bworkspace created\b|\bworkspace picks\b|\bworkspace\s*→/i,
+    'say "team"',
+  ],
   [
     /\b(no|never|zero|without)\s+(any\s+)?(placeholder|demo|fake|synthetic|mock|dummy|sample|invented|fabricated)\s+(data|numbers?|metrics?|rows?|values?|names?|stats?|figures?|dollars?|hours?|logos?|slots?|lessons?)\b/i,
     "a disclaimer that the data is real",

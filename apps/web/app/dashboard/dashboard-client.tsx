@@ -84,7 +84,7 @@ import {
   widgetLockReason,
 } from "./dashboard-canvas";
 import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
-import { Badge, Modal } from "../../components/ui";
+import { Badge, Button, Modal } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import {
@@ -1358,14 +1358,15 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
             </a>
           ) : null}
           {!orgId ? (
-            <a className="app-button secondary" href="/workspace">
+            <Button as="a" variant="secondary" href="/workspace">
               Choose your team
-            </a>
+            </Button>
           ) : (setupRequired || tbaConfigured === false) && dashShell === "ready" ? (
             // The first-run banner below already carries this action; showing
             // it here too was the third "Connect TBA" on one screen.
-            <a
-              className="app-button secondary"
+            <Button
+              as="a"
+              variant="secondary"
               href={
                 tbaConfigured === false
                   ? withOrgHref("/team/data", orgId)
@@ -1373,18 +1374,18 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
               }
             >
               {tbaConfigured === false ? "Connect TBA" : "Select event"}
-            </a>
+            </Button>
           ) : null}
           {!editing && !previewing ? (
-            <button
-              className="app-button secondary dash-edit-trigger"
-              type="button"
+            <Button
+              variant="secondary"
+              className="dash-edit-trigger"
               data-testid="dash-customize"
               aria-label="Edit Home — rearrange, add, or remove widgets"
               onClick={enterEditMode}
             >
               Edit Home
-            </button>
+            </Button>
           ) : null}
           <details className="dash-home-more">
             <summary aria-label="More home tools">More</summary>
@@ -1576,9 +1577,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
                       : primary.label
                 : "Continue";
             return (
-              <a className="app-button is-primary" href={href}>
+              <Button as="a" variant="primary" href={href}>
                 {label}
-              </a>
+              </Button>
             );
           })()}
         </section>

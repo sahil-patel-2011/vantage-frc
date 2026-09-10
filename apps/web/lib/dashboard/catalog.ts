@@ -282,7 +282,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "onboarding_checklist",
     label: "Setup checklist",
-    description: "First-run steps: workspace, event, TBA, scouting, and AI",
+    description: "First-run steps: team, event, TBA, scouting, and AI",
     defaultW: 12,
     defaultH: 4,
     minW: 6,

@@ -5,7 +5,7 @@ export const ALUMNI_RELATED_LINKS = [
   { id: "alumni-network", label: "Alumni network", path: "/alumni-network" },
   { id: "team-alumni", label: "Team alumni", path: "/team/alumni" },
   { id: "team-knowledge", label: "Team knowledge", path: "/team/knowledge" },
-  { id: "workspace", label: "Workspace", path: "/workspace" },
+  { id: "workspace", label: "Your team", path: "/workspace" },
 ] as const;
 
 export type AlumniRelatedId = (typeof ALUMNI_RELATED_LINKS)[number]["id"];

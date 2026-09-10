@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
-import { EmptyState, FormGrid, FormRow, PageHeader } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Button } from "../../components/ui";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 
 export default function ClaimWorkspaceClient() {
@@ -54,12 +54,12 @@ export default function ClaimWorkspaceClient() {
       />
       {orgId ? (
         <EmptyState
-          title="Workspace created"
+          title="Team created"
           description="Invite your scouts next. Import Notion or ICS from Bring your season."
         >
-            <a className="app-button" href={`/migrate?orgId=${encodeURIComponent(orgId)}`}>
+            <Button as="a" variant="primary" href={`/migrate?orgId=${encodeURIComponent(orgId)}`}>
               Bring your season
-            </a>
+            </Button>
         </EmptyState>
       ) : (
         <FormGrid>
@@ -85,14 +85,9 @@ export default function ClaimWorkspaceClient() {
             required
           />
           {error ? <p className="app-muted">{error}</p> : null}
-          <button
-            type="button"
-            className="app-button"
-            disabled={!consentComplete}
-            onClick={() => void submit()}
-          >
+          <Button type="button" variant="primary" disabled={!consentComplete} onClick={() => void submit()}>
             Claim team
-          </button>
+          </Button>
         </FormGrid>
       )}
     </main>

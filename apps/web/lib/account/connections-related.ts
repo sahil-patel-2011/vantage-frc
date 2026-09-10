@@ -24,7 +24,7 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "slack", label: "Slack", kind: "path" as const, path: "/team/slack" },
   { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
   { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
-  { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
+  { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
 export type ConnectionsRelatedId = (typeof CONNECTIONS_RELATED_LINKS)[number]["id"];

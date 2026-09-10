@@ -127,7 +127,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / SAFETY</span><h1>Safety log &amp; tool certifications</h1></div>
-        <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/pit${orgId ? `?orgId=${orgId}` : ""}`}>Pit</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/pit${orgId ? `?orgId=${orgId}` : ""}`}>Pit</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
 

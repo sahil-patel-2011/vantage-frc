@@ -175,7 +175,7 @@ export function buildRankingsView(input: {
     return {
       status: "setup_required",
       context: input.context,
-      message: input.setupMessage ?? "Select an active event in Workspace.",
+      message: input.setupMessage ?? "Select an active event on Your team.",
     };
   }
 

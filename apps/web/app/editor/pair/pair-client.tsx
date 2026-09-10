@@ -229,7 +229,7 @@ export default function PairClient({
         `${data.machineName ?? "Editor"} is paired. Return to VS Code — the extension will finish automatically.`,
       );
       const machineName = data.machineName?.trim() || "Paired editor";
-      const orgName = orgNameById.get(orgId) ?? "Workspace";
+      const orgName = orgNameById.get(orgId) ?? "Your team";
       setDevices((prev) => {
         if (data.deviceId && prev.some((row) => row.id === data.deviceId)) return prev;
         return [

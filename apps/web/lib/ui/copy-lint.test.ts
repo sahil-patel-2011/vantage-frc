@@ -96,7 +96,8 @@ const RULES: readonly Rule[] = [
   },
   {
     label: "workspace (as a team picker)",
-    pattern: /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b/i,
+    pattern:
+      /\bopen your workspace\b|\bmore than one workspace\b|\bworkspace membership\b|\bteam workspaces\b|\bworkspace inventory\b|\b(connect|set|finish)\s+workspace\b|\bjoin workspace\b|\bopen workspace\b|\bin workspace\b|\bfrom workspace\b|\bcheck workspace\b|\bcross-check workspace\b|\bworkspace created\b|\bworkspace picks\b|\bworkspace\s*→/i,
     why: 'say "team" — students pick 6925, not a workspace',
   },
   {
@@ -129,6 +130,8 @@ function isCopyFile(entry: string): boolean {
   if (entry === "metered-ai-fail.ts") return true;
   if (entry === "usage-cutoff.ts") return true;
   if (entry === "workspace-join.ts") return true;
+  if (entry === "invite-flow.ts") return true;
+  if (entry === "catalog.ts") return true;
   return false;
 }
 

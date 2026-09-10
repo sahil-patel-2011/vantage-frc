@@ -567,7 +567,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
       <TeamBrandingPanel orgId={orgId} />
 
-      <nav className="settings-hub" aria-label="Workspace settings">
+      <nav className="settings-hub" aria-label="Team settings">
         <a href={withOrgHref("/team/background", orgId)}>
           <strong>Team background</strong>
           <span>Mission, history, demographics for sponsors</span>

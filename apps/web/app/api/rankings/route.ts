@@ -58,7 +58,7 @@ export async function GET(request: Request) {
       if (!row.eventKey) {
         return buildRankingsView({
           context: row,
-          setupMessage: "Select an active event in Workspace.",
+          setupMessage: "Select an active event on Your team.",
         });
       }
 

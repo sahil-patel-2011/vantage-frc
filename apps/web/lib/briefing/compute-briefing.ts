@@ -412,12 +412,12 @@ export async function computeBriefingView(
   };
 
   if (!row.eventKey) {
-    return { status: "setup_required", message: "Select an active event in Workspace.", context };
+    return { status: "setup_required", message: "Select an active event on Your team.", context };
   }
   if (row.teamNumber == null) {
     return {
       status: "setup_required",
-      message: "Set your team number in Workspace so the briefing knows which alliance is yours.",
+      message: "Set your team number on Your team so the briefing knows which alliance is yours.",
       context,
     };
   }

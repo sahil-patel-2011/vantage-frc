@@ -168,7 +168,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
             FIRST awards
           </a>
           <a className="app-button secondary" href="/workspace">
-            Workspace
+            Your team
           </a>
         </nav>
       </PageHeader>

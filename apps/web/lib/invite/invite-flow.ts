@@ -227,7 +227,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "This invitation was already used",
       description:
         detail?.trim() ||
-        "If you already joined, open Workspace. Otherwise ask an owner for a fresh invite.",
+        "If you already joined, choose your team. Otherwise ask an owner for a fresh invite.",
       badge: "Used",
     };
   }
@@ -315,8 +315,8 @@ export function inviteNextActions(input: {
     return [
       {
         id: "workspace",
-        label: "Check workspace access",
-        detail: "If you already belong to a team, pick it from Workspace.",
+        label: "Check team access",
+        detail: "If you already belong to a team, pick it from Your team.",
         href: "/workspace",
         primary: true,
       },

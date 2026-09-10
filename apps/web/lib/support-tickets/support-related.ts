@@ -5,7 +5,7 @@ import type { SupportTicket, SupportTicketStatus } from "./types";
 export const SUPPORT_RELATED_LINKS = [
   { id: "account", label: "Account", path: "/account" },
   { id: "help", label: "App manual", path: "/docs" },
-  { id: "workspace", label: "Workspace", path: "/workspace" },
+  { id: "workspace", label: "Your team", path: "/workspace" },
   { id: "notifications", label: "Notifications", path: "/notifications" },
 ] as const;
 

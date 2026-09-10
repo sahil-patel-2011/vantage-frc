@@ -141,7 +141,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "getting-started",
     title: "Set up a new team, start to first event",
     summary:
-      "Workspace → invite members → pick how AI is powered → import your old data → connect TBA for your first event.",
+      "Your team → invite members → pick how AI is powered → import your old data → connect TBA for your first event.",
     category: "getting-started",
     keywords: [
       "getting started",

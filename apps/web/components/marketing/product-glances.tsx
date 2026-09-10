@@ -75,7 +75,7 @@ export function HeroProductVisual() {
               <span className="hero-soft-mark">v</span>
               <div>
                 <strong>Vantage</strong>
-                <small>Workspace</small>
+                <small>Your team</small>
               </div>
             </div>
             <nav>

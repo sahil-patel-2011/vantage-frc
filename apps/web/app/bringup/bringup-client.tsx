@@ -78,7 +78,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / BRING-UP</span><h1>Robot bring-up checklist — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/inspection${orgId ? `?orgId=${orgId}` : ""}`}>Inspection</a><a href={`/wiring${orgId ? `?orgId=${orgId}` : ""}`}>Wiring</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/inspection${orgId ? `?orgId=${orgId}` : ""}`}>Inspection</a><a href={`/wiring${orgId ? `?orgId=${orgId}` : ""}`}>Wiring</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
 

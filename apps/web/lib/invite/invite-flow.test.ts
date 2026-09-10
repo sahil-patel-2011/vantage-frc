@@ -137,5 +137,9 @@ describe("invite Soft-UI flow helpers", () => {
     expect(mismatch[0]?.href).toContain("invite");
     expect(inviteSignInHref("abc")).toContain("/signin?next=");
     expect(decodeURIComponent(inviteSignInHref("abc"))).toContain("/invite?token=abc");
+    const expired = inviteNextActions({ kind: "expired" });
+    expect(expired[0]?.label).toBe("Check team access");
+    expect(expired[0]?.detail).toMatch(/Your team/);
+    expect(inviteEmptyCopy("accepted").description).toMatch(/choose your team/i);
   });
 });

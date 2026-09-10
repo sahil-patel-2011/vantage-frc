@@ -7,7 +7,7 @@ export const SCHEDULE_RELATED_LINKS = [
   { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
   { id: "my-day", label: "My Day", kind: "competition" as const, tab: "my-day" },
   { id: "scouting", label: "Scouting", kind: "path" as const, path: "/scouting" },
-  { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
+  { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
 export type ScheduleRelatedId = (typeof SCHEDULE_RELATED_LINKS)[number]["id"];
@@ -94,7 +94,7 @@ export function scheduleNextActions(input: {
         {
           id: "workspace",
           label: "Set active event",
-          detail: "Workspace picks the TBA event key the match board reads — empty until you choose one.",
+          detail: "Your team’s active event is what the match board reads — empty until you choose one.",
           href: withOrgHref("/workspace", orgId),
           primary: true,
         },

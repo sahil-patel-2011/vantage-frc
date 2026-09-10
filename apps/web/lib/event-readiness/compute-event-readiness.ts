@@ -304,7 +304,7 @@ export async function computeEventReadinessView(
             {
               id: "active-event",
               label: "Set your active event",
-              detail: "Pick your registered event in Workspace so readiness can date the countdown from it",
+              detail: "Pick your registered event on Your team so readiness can date the countdown from it",
               href: "/workspace",
             },
             {
@@ -319,7 +319,7 @@ export async function computeEventReadinessView(
       message:
         eventCandidates.length > 0
           ? "Pick an event and start a plan — the template dates every step back from the event start."
-          : "No event on file yet. Set your active event in Workspace, or enter an event key and start date by hand.",
+          : "No event on file yet. Set your active event on Your team, or enter an event key and start date by hand.",
       steps,
       orgId: org.orgId,
       teamNumber: org.teamNumber,

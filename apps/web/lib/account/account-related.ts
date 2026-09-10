@@ -9,7 +9,7 @@ export const ACCOUNT_RELATED_LINKS = [
   { id: "support", label: "Help & Support", kind: "path" as const, path: "/support" },
   { id: "whats-new", label: "What’s new", kind: "path" as const, path: "/whats-new" },
   { id: "security", label: "Security", kind: "path" as const, path: "/security" },
-  { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
+  { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
 export type AccountRelatedId = (typeof ACCOUNT_RELATED_LINKS)[number]["id"];

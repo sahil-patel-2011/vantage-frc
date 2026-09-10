@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Onboarding Buddy (never DEMO progress). */
 export const ONBOARDING_BUDDY_RELATED_LINKS = [
-  { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
+  { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
   { id: "onboarding", label: "Onboarding", kind: "path" as const, path: "/onboarding" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "onboarding-buddy" },
@@ -160,7 +160,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "Unavailable",
         title: "Could not load Onboarding Buddy",
         description:
-          "A network or server issue blocked buddy pairings. Retry, or open Workspace / Onboarding / Team Data while it reloads.",
+          "A network or server issue blocked buddy pairings. Retry, or open Your team / Onboarding / Team Data while it reloads.",
       };
     case "setup":
       return {
@@ -176,7 +176,7 @@ export function onboardingBuddyShellCopy(kind: OnboardingBuddyShellKind): Onboar
         badge: "No pairings yet",
         title: "Pair your first buddy",
         description:
-          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Workspace, Onboarding, and Team Data.",
+          "First-week plans stay blank until you pair a real new member with a tenured buddy. Cross-check Your team, Onboarding, and Team Data.",
       };
     default:
       return {

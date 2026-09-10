@@ -214,8 +214,8 @@ function AdminClientInner() {
       </div>
 
       {confirmation ? (
-        <Panel className="admin-provision-confirmation" aria-label="Workspace created">
-          <span className="eyebrow">Workspace created</span>
+        <Panel className="admin-provision-confirmation" aria-label="Team created">
+          <span className="eyebrow">Team created</span>
           <h2>
             #{confirmation.teamNumber} {confirmation.name}
           </h2>

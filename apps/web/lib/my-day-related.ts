@@ -231,7 +231,7 @@ export function myDayNextActions(input: {
         {
           id: "workspace",
           label: "Set active event",
-          detail: "Workspace picks the TBA event key My Day reads — empty until you choose one.",
+          detail: "Your team’s active event is what My Day reads — empty until you choose one.",
           href: withOrgHref("/workspace", orgId),
           primary: true,
         },

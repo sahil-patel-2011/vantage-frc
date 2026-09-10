@@ -7,7 +7,7 @@ export const TEAM_DATA_RELATED_LINKS = [
   { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
   { id: "strategy", label: "Strategy", kind: "path" as const, path: "/strategy" },
   { id: "exports", label: "Exports", kind: "path" as const, path: "/exports" },
-  { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
+  { id: "workspace", label: "Your team", kind: "path" as const, path: "/workspace" },
 ] as const;
 
 export type TeamDataRelatedId = (typeof TEAM_DATA_RELATED_LINKS)[number]["id"];
@@ -93,7 +93,7 @@ export function teamDataNextActions(input: {
         {
           id: "workspace",
           label: "Set active event",
-          detail: "Workspace picks the TBA event key Team Data syncs — empty until you choose one.",
+          detail: "Your team’s active event is what Team Data syncs — empty until you choose one.",
           href: withOrgHref("/workspace", orgId),
           primary: true,
         },

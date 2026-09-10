@@ -124,7 +124,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Our match debrief — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/scouting${orgId ? `?orgId=${orgId}` : ""}`}>Scouting</a><a href={`/repairs${orgId ? `?orgId=${orgId}` : ""}`}>Repairs</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/scouting${orgId ? `?orgId=${orgId}` : ""}`}>Scouting</a><a href={`/repairs${orgId ? `?orgId=${orgId}` : ""}`}>Repairs</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
       <p className="telemetry-status">Log how <strong>our</strong> robot performed each match — separate from scouting other teams. Patterns here tell you what to fix before the next match.</p>

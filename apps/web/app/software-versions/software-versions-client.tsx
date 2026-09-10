@@ -84,7 +84,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / SOFTWARE</span><h1>Software &amp; firmware versions — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/wiring${orgId ? `?orgId=${orgId}` : ""}`}>Wiring</a><a href={`/code${orgId ? `?orgId=${orgId}` : ""}`}>Code</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/wiring${orgId ? `?orgId=${orgId}` : ""}`}>Wiring</a><a href={`/code${orgId ? `?orgId=${orgId}` : ""}`}>Code</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
       {radioFirmwareCue ? <p className="telemetry-status" role="status">{radioFirmwareCue}</p> : null}

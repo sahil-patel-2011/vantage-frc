@@ -91,7 +91,14 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/web/lib/dashboard/**/*.{ts,tsx}", "apps/web/lib/offline/**/*.{ts,tsx}", "apps/web/lib/drive/**/*.{ts,tsx}"],
+    files: [
+      "apps/web/lib/dashboard/**/*.{ts,tsx}",
+      "apps/web/lib/offline/**/*.{ts,tsx}",
+      "apps/web/lib/drive/**/*.{ts,tsx}",
+      "apps/web/lib/workspace/**/*.{ts,tsx}",
+      "apps/web/lib/account/**/*.{ts,tsx}",
+      "apps/web/lib/invite/**/*.{ts,tsx}",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

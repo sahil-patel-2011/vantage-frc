@@ -263,7 +263,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs={
           <>
-            <a href={withOrgHref("/workspace", orgId)}>Workspace</a>
+            <a href={withOrgHref("/workspace", orgId)}>Your team</a>
             {" / Displays"}
           </>
         }

@@ -467,7 +467,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           <section className="app-card soft-panel team-data-panel">
             <h2>Sync active event</h2>
             <p className="app-muted">
-              Refreshes match and team data for the event selected in Workspace / Event Day. Uses the platform key with
+              Refreshes match and team data for the event selected on Event Day. Uses the platform key with
               your fallback credential when configured.
             </p>
             <button type="button" className="app-button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>

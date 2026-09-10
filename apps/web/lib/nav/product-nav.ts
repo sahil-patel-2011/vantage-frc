@@ -140,7 +140,7 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
 /** Quiet chrome destinations — Cmd+K / footer, never drawer accordion dumps. */
 export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/notifications", label: "Notifications", icon: "bell" },
-  { href: "/workspace", label: "Workspace", icon: "grid" },
+  { href: "/workspace", label: "Your team", icon: "grid" },
   { href: "/account", label: "Account", icon: "users" },
   { href: "/docs", label: "App manual", icon: "clipboard" },
   { href: "/support", label: "Support", icon: "chat" },

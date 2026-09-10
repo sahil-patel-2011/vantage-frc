@@ -193,7 +193,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / NOTEBOOK</span><h1>Engineering &amp; build notebook</h1></div>
-        <nav className="intel-actions"><a href={`/impact${orgQuery(orgId)}`}>Impact</a><a href={`/team/awards${orgQuery(orgId)}`}>Awards</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/impact${orgQuery(orgId)}`}>Impact</a><a href={`/team/awards${orgQuery(orgId)}`}>Awards</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
       {view.summary.missingPhotos > 0 && (

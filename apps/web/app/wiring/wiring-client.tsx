@@ -88,7 +88,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
     <main className="intel-app">
       <header className="intel-header">
         <div><span className="eyebrow">VANTAGE / WIRING</span><h1>Wiring &amp; CAN-bus map — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/batteries${orgId ? `?orgId=${orgId}` : ""}`}>Batteries</a><a href="/workspace">Workspace →</a></nav>
+        <nav className="intel-actions"><a href={`/inventory${orgId ? `?orgId=${orgId}` : ""}`}>Inventory</a><a href={`/batteries${orgId ? `?orgId=${orgId}` : ""}`}>Batteries</a><a href="/workspace">Your team →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
 

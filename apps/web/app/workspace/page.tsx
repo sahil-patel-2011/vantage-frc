@@ -18,7 +18,7 @@ import { VantageLogo } from "../../components/brand";
 import "../invite/invite-flow.css";
 
 export const metadata = {
-  title: "Workspace",
+  title: "Your team",
 };
 
 // Session-gated server page: never prerendered, so a credential-free build works.

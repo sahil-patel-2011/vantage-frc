@@ -497,7 +497,7 @@ export default function ScheduleClient() {
                 type="button"
                 className={scope === "ours" ? "active" : undefined}
                 disabled={!teamKey}
-                title={teamKey ? undefined : "Set a team number in Workspace to filter"}
+                title={teamKey ? undefined : "Set a team number on Your team to filter"}
                 onClick={() => setScope("ours")}
               >
                 Our matches

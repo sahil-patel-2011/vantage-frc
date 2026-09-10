@@ -1182,7 +1182,7 @@ export default function AppShell() {
             ) : null}
           </div>
         ) : (
-          <nav className="soft-drawer-flat" aria-label="Workspaces">
+          <nav className="soft-drawer-flat" aria-label="Hubs">
             {visibleNavGroups.map((group) => {
               const item = group.items[0];
               if (!item || item.state === "planned") return null;
