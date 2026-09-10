@@ -101,7 +101,11 @@ export type OfflineFeature =
   | "spare-forecast"
   | "sketch-to-brief"
   | "scout-assisted-count"
-  | "scout-coverage-live";
+  | "scout-coverage-live"
+  | "scout-field-budget"
+  | "scouting-heat-signals"
+  | "scout-data-impact"
+  | "scout-disagreements";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

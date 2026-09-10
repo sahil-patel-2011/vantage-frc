@@ -124,6 +124,10 @@ const SHELL_ROUTES = [
   "/sketch-to-brief",
   "/scout-assisted-count",
   "/scout-coverage-live",
+  "/scout-field-budget",
+  "/scouting-heat-signals",
+  "/scout-data-impact",
+  "/scout-disagreements",
 ];
 
 function isShellPath(pathname) {

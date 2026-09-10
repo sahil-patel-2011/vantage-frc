@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
@@ -21,6 +22,7 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scout-disagreements.css";
 
 function statusTone(status: ScoutDisagreement["status"]): string {
@@ -30,6 +32,33 @@ function statusTone(status: ScoutDisagreement["status"]): string {
 }
 
 type LiveView = Extract<ScoutDisagreementsView, { status: "live" }>;
+
+function isScoutDisagreementsView(value: unknown): value is ScoutDisagreementsView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function scoutDisagreementsCacheOrg(data: ScoutDisagreementsView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistScoutDisagreementsSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: ScoutDisagreementsView,
+): Promise<void> {
+  const cacheOrg = scoutDisagreementsCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("scout-disagreements", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("scout-disagreements", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Scout Disagreements already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScoutDisagreementsRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutDisagreementsRelatedLinks(orgId, {
@@ -182,41 +211,91 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutDisagreementsView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback(
     (seasonOverride?: number) => {
-      setFetchFailed(false);
-      setFailureStatus(null);
-      setError("");
-      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-      const urlOrg = initialOrgId ?? params.get("orgId");
-      const seasonQuery =
-        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (seasonQuery) query.set("season", String(seasonQuery));
-      void fetch(`/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+        const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
+        const seasonQuery =
+          seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+        const seasonHint =
+          seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<ScoutDisagreementsView>(
+            "scout-disagreements",
+            urlOrg || "_",
+            seasonHint,
+          );
+          if (!viewRef.current && cached?.data && isScoutDisagreementsView(cached.data)) {
+            setView(cached.data);
+            setSeason(cached.data.seasonYear);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setFailureStatus(null);
+        setError("");
+        const query = new URLSearchParams();
+        if (urlOrg) query.set("orgId", urlOrg);
+        if (seasonHint) query.set("season", seasonHint);
+        try {
+          const response = await fetch(
+            `/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`,
+            {
+              cache: "no-store",
+              signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+            },
+          );
           const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (response.status === 401 || response.status === 403) {
+            setView(null);
+            setFromCache(false);
+            setCachedAt(null);
             setFetchFailed(true);
             setFailureStatus(response.status);
             setError("error" in data && data.error ? data.error : "Could not load scout disagreements.");
             return;
           }
+          if (!response.ok || !isScoutDisagreementsView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+              setFetchFailed(false);
+            } else {
+              setFetchFailed(true);
+              setFailureStatus(response.status);
+              setError("error" in data && data.error ? data.error : "Could not load scout disagreements.");
+            }
+            return;
+          }
           setView(data);
           setSeason(data.seasonYear);
-          setFetchFailed(false);
-        })
-        .catch(() => {
-          setFetchFailed(true);
-          setError("Network error — please try again.");
-        });
+          setFromCache(false);
+          setCachedAt(null);
+          await persistScoutDisagreementsSnapshot(urlOrg, seasonHint, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setError("Network error — please try again.");
+          }
+        }
+      })();
     },
     [initialOrgId],
   );
@@ -238,12 +317,13 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isScoutDisagreementsView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistScoutDisagreementsSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -282,7 +362,9 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
 
   if (shell === "loading") {
     return (
-      <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="loading" />
+      <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDisagreementsShell>
     );
   }
 
@@ -295,7 +377,9 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         error={error || shellCopy.description}
         errorStatus={failureStatus}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDisagreementsShell>
     );
   }
 
@@ -307,13 +391,16 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         }
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDisagreementsShell>
     );
   }
 
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
         <LogDisagreementForm busy={busy} mutate={mutate} />
       </ScoutDisagreementsShell>
     );
@@ -335,6 +422,8 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           <ScoutDisagreementsRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout Disagreements" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

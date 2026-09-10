@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   EmptyState,
   FormGrid,
@@ -26,9 +27,37 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./scout-data-impact.css";
 
 type LiveView = Extract<ScoutDataImpactView, { status: "live" }>;
+
+function isScoutDataImpactView(value: unknown): value is ScoutDataImpactView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function scoutDataImpactCacheOrg(data: ScoutDataImpactView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistScoutDataImpactSnapshot(
+  orgHint: string,
+  eventHint: string,
+  data: ScoutDataImpactView,
+): Promise<void> {
+  const cacheOrg = scoutDataImpactCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const eventKey = "eventKey" in data && data.eventKey ? data.eventKey : "";
+  try {
+    await putFeatureSnapshot("scout-data-impact", cacheOrg, data, eventHint || eventKey);
+    if (!orgHint) await putFeatureSnapshot("scout-data-impact", "_", data, eventHint || eventKey);
+  } catch {
+    // Live Scout Data Impact already painted; IndexedDB is best-effort.
+  }
+}
 
 function ScoutDataImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutDataImpactRelatedLinks(orgId, {
@@ -180,39 +209,89 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<ScoutDataImpactView | null>(null);
+  viewRef.current = view;
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback(
     (eventOverride?: string) => {
-      setFetchFailed(false);
-      setFailureStatus(null);
-      setError("");
-      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-      const urlOrg = initialOrgId ?? params.get("orgId");
-      const eventQuery = eventOverride ?? params.get("eventKey");
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (eventQuery) query.set("eventKey", eventQuery);
-      void fetch(`/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-        .then(async (response) => {
+      void (async () => {
+        const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+        const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
+        const eventQuery = eventOverride ?? params.get("eventKey") ?? "";
+        const eventHint = eventQuery.trim();
+        let hadCache = Boolean(viewRef.current);
+        try {
+          const cached = await getFeatureSnapshot<ScoutDataImpactView>(
+            "scout-data-impact",
+            urlOrg || "_",
+            eventHint,
+          );
+          if (!viewRef.current && cached?.data && isScoutDataImpactView(cached.data)) {
+            setView(cached.data);
+            if ("eventKey" in cached.data) setEventKey(cached.data.eventKey);
+            setFromCache(true);
+            setCachedAt(cached.cachedAt);
+            hadCache = true;
+          }
+        } catch {
+          // IndexedDB missing or blocked; live fetch still runs.
+        }
+        setFetchFailed(false);
+        setFailureStatus(null);
+        setError("");
+        const query = new URLSearchParams();
+        if (urlOrg) query.set("orgId", urlOrg);
+        if (eventHint) query.set("eventKey", eventHint);
+        try {
+          const response = await fetch(
+            `/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`,
+            {
+              cache: "no-store",
+              signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+            },
+          );
           const data = (await response.json()) as ScoutDataImpactView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (response.status === 401 || response.status === 403) {
+            setView(null);
+            setFromCache(false);
+            setCachedAt(null);
             setFetchFailed(true);
             setFailureStatus(response.status);
             setError("error" in data && data.error ? data.error : "Could not load scout data impact.");
             return;
           }
+          if (!response.ok || !isScoutDataImpactView(data)) {
+            if (hadCache || viewRef.current) {
+              setFromCache(true);
+              setError("Could not refresh Scout Data Impact. Showing the last copy on this device.");
+              setFetchFailed(false);
+            } else {
+              setFetchFailed(true);
+              setFailureStatus(response.status);
+              setError("error" in data && data.error ? data.error : "Could not load scout data impact.");
+            }
+            return;
+          }
           setView(data);
           if ("eventKey" in data) setEventKey(data.eventKey);
-        })
-        .catch(() => {
-          setFetchFailed(true);
-          setError("Network error — please try again.");
-        });
+          setFromCache(false);
+          setCachedAt(null);
+          await persistScoutDataImpactSnapshot(urlOrg, eventHint, data);
+        } catch {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Scout Data Impact. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+            setError("Network error — please try again.");
+          }
+        }
+      })();
     },
     [initialOrgId],
   );
@@ -234,12 +313,13 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as ScoutDataImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isScoutDataImpactView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         if ("eventKey" in data) setEventKey(data.eventKey);
+        void persistScoutDataImpactSnapshot(orgId, eventKey ?? "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -278,7 +358,11 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
   const logPickForm = <LogPickForm busy={busy} mutate={mutate} />;
 
   if (shell === "loading") {
-    return <ScoutDataImpactShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <ScoutDataImpactShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDataImpactShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -289,7 +373,9 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         error={error || shellCopy.description}
         errorStatus={failureStatus}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDataImpactShell>
     );
   }
   if (shell === "setup") {
@@ -299,7 +385,9 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         orgId={orgId}
         shell="setup"
         logPick={orgId ? logPickForm : null}
-      />
+      >
+        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDataImpactShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
@@ -309,7 +397,9 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
         orgId={orgId}
         shell="empty"
         logPick={logPickForm}
-      />
+      >
+        <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
+      </ScoutDataImpactShell>
     );
   }
 
@@ -329,6 +419,8 @@ export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?:
           <ScoutDataImpactRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Scout Data Impact" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

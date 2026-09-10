@@ -106,6 +106,10 @@ export const OFFLINE_SHELL_ROUTES = [
   "/sketch-to-brief",
   "/scout-assisted-count",
   "/scout-coverage-live",
+  "/scout-field-budget",
+  "/scouting-heat-signals",
+  "/scout-data-impact",
+  "/scout-disagreements",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -124,6 +128,7 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
+  if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
   if (bare.startsWith("/scouting")) return "Scouting";
   if (bare.startsWith("/schedule")) return "Schedule";
   if (bare.startsWith("/offline-shell")) return "This phone";
@@ -207,6 +212,9 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/sketch-to-brief")) return "Sketch-to-Brief";
   if (bare.startsWith("/scout-assisted-count")) return "Scout-Assisted Count";
   if (bare.startsWith("/scout-coverage-live")) return "Scout Coverage Live";
+  if (bare.startsWith("/scout-field-budget")) return "Field-Count Budget";
+  if (bare.startsWith("/scout-data-impact")) return "Scout Data Impact";
+  if (bare.startsWith("/scout-disagreements")) return "Scout Disagreements";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

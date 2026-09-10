@@ -119,6 +119,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/sketch-to-brief")).toBe(true);
     expect(pathnameIsOfflineShell("/scout-assisted-count")).toBe(true);
     expect(pathnameIsOfflineShell("/scout-coverage-live")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-field-budget")).toBe(true);
+    expect(pathnameIsOfflineShell("/scouting-heat-signals")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-data-impact")).toBe(true);
+    expect(pathnameIsOfflineShell("/scout-disagreements")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -218,6 +222,11 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/sketch-to-brief")).toBe("Sketch-to-Brief");
     expect(offlineCapableLabel("/scout-assisted-count")).toBe("Scout-Assisted Count");
     expect(offlineCapableLabel("/scout-coverage-live")).toBe("Scout Coverage Live");
+    expect(offlineCapableLabel("/scout-field-budget")).toBe("Field-Count Budget");
+    expect(offlineCapableLabel("/scouting-heat-signals")).toBe("Scouting Heat Signals");
+    expect(offlineCapableLabel("/scouting")).toBe("Scouting");
+    expect(offlineCapableLabel("/scout-data-impact")).toBe("Scout Data Impact");
+    expect(offlineCapableLabel("/scout-disagreements")).toBe("Scout Disagreements");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -315,6 +324,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("sketch-to-brief", "org-1", "2026")).toBe("sketch-to-brief:org-1:2026");
     expect(featureCacheKey("scout-assisted-count", "org-1")).toBe("scout-assisted-count:org-1");
     expect(featureCacheKey("scout-coverage-live", "org-1")).toBe("scout-coverage-live:org-1");
+    expect(featureCacheKey("scout-field-budget", "org-1")).toBe("scout-field-budget:org-1");
+    expect(featureCacheKey("scouting-heat-signals", "org-1")).toBe("scouting-heat-signals:org-1");
+    expect(featureCacheKey("scout-data-impact", "org-1", "2026txcmp")).toBe("scout-data-impact:org-1:2026txcmp");
+    expect(featureCacheKey("scout-disagreements", "org-1", "2026")).toBe("scout-disagreements:org-1:2026");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
