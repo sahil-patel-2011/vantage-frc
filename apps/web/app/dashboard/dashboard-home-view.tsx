@@ -28,6 +28,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/icon";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { DashboardGridItem } from "./dashboard-grid-item";
 import { LiveCountdown } from "./widgets";
@@ -117,6 +118,8 @@ export function DashboardHomeView(props: {
   messageKind: "success" | "error";
   announce: string;
   updatedAt: string | null;
+  fromCache: boolean;
+  cachedAt: string | null;
   mounted: boolean;
   measured: boolean;
   width: number;
@@ -207,6 +210,8 @@ export function DashboardHomeView(props: {
     messageKind,
     announce,
     updatedAt,
+    fromCache,
+    cachedAt,
     mounted,
     measured,
     width,
@@ -354,7 +359,7 @@ export function DashboardHomeView(props: {
                   Manage boards
                 </button>
               ) : null}
-              {updatedAt && orgId && !editing ? (
+              {updatedAt && orgId && !editing && !fromCache ? (
                 <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
               ) : null}
             </div>
@@ -491,6 +496,8 @@ export function DashboardHomeView(props: {
           ) : null}
         </p>
       ) : null}
+
+      <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
       {meLoaded && orgId && tbaConfigured !== false ? (
         <DataSourceDegradedBanner health={dataSourceHealth} />
