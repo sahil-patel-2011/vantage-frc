@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -36,6 +39,33 @@ import "./subsystem-signoff.css";
 
 type LiveView = Extract<SubsystemSignoffView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function isSubsystemSignoffView(value: unknown): value is SubsystemSignoffView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function signoffCacheOrg(data: SubsystemSignoffView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistSubsystemSignoffSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: SubsystemSignoffView,
+): Promise<void> {
+  const cacheOrg = signoffCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("subsystem-signoff", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("subsystem-signoff", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Subsystem Sign-off already painted; IndexedDB is best-effort.
+  }
+}
 
 function SignoffRelated({ orgId }: { orgId: string }) {
   const primary = signoffRelatedLinks(orgId, { include: ["fmea", "cad", "tasks"] });
@@ -125,37 +155,96 @@ export default function SubsystemSignoffClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<SubsystemSignoffView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<SubsystemSignoffView>(
+        "subsystem-signoff",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isSubsystemSignoffView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
     setErrorMessage(null);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/subsystem-signoff${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as SubsystemSignoffView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setErrorMessage("error" in data && data.error ? data.error : null);
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/subsystem-signoff${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : null,
+        );
+        return;
+      }
+      if (!response.ok || !isSubsystemSignoffView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setErrorMessage(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : null,
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistSubsystemSignoffSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -167,15 +256,18 @@ export default function SubsystemSignoffClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as SubsystemSignoffView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isSubsystemSignoffView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistSubsystemSignoffSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -183,7 +275,7 @@ export default function SubsystemSignoffClient() {
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     const failure = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -207,6 +299,7 @@ export default function SubsystemSignoffClient() {
           title="Subsystem Sign-off"
           description="Track each robot subsystem through its review gates — readiness comes only from recorded approve/reject decisions."
         />
+        <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading subsystem sign-offs…"}
@@ -219,7 +312,7 @@ export default function SubsystemSignoffClient() {
             </Button>
           ) : null}
           {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -236,6 +329,7 @@ export default function SubsystemSignoffClient() {
           title="Subsystem Sign-off"
           description="Clear design through field-test gates with an auditable trail — readiness % stays blank until real decisions exist."
         />
+        <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -243,14 +337,6 @@ export default function SubsystemSignoffClient() {
             </Button>
           ) : null}
         </EmptyState>
-        <NextActions
-          orgId={view.orgId}
-          subsystemCount={0}
-          startedCount={0}
-          signedOffCount={0}
-          blockedCount={0}
-          pendingGates={0}
-        />
       </main>
     );
   }
@@ -288,7 +374,7 @@ export default function SubsystemSignoffClient() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSeason(next);
-                  load(next);
+                  void load(next);
                 }}
               >
                 {view.seasons.map((year) => (
@@ -310,6 +396,8 @@ export default function SubsystemSignoffClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Subsystem Sign-off" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <SignoffRelated orgId={orgId} /> : null}
 

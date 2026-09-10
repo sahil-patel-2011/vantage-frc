@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
@@ -14,6 +15,8 @@ import {
 } from "../../lib/risks/risks-related";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskLevel, RiskStatus } from "../../lib/risks/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./risks.css";
@@ -22,6 +25,29 @@ type LiveView = Extract<RisksView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
 const SCALES = [1, 2, 3, 4, 5];
+
+function isRisksView(value: unknown): value is RisksView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function risksCacheOrg(data: RisksView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistRisksSnapshot(orgHint: string, seasonHint: string, data: RisksView): Promise<void> {
+  const cacheOrg = risksCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("risks", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("risks", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Risk Register already painted; IndexedDB is best-effort.
+  }
+}
 
 function RisksRelated({ orgId }: { orgId: string }) {
   const primary = risksRelatedLinks(orgId, { include: ["fmea", "knowledge", "batteries"] });
@@ -94,37 +120,92 @@ export default function RisksClient() {
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RisksView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<RisksView>("risks", orgHint || "_", seasonHint);
+      if (!viewRef.current && cached?.data && isRisksView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
     setLoadError("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/risks${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as RisksView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/risks${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isRisksView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Risk Register. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistRisksSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Risk Register. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -136,15 +217,18 @@ export default function RisksClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       })
         .then(async (response) => {
           const data = (await response.json()) as RisksView | { error?: string };
-          if (!response.ok || !("status" in data)) {
+          if (!response.ok || !isRisksView(data)) {
             setError("error" in data && data.error ? data.error : "Something went wrong.");
             return;
           }
           setView(data);
           setSeason(data.seasonYear);
+          setFromCache(false);
+          void persistRisksSnapshot(orgId, String(data.seasonYear), data);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
@@ -152,7 +236,7 @@ export default function RisksClient() {
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     const copy = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -176,6 +260,7 @@ export default function RisksClient() {
           title="Risk Register"
           description="Proactive season risks scored with real likelihood × impact. Distinct from FMEA failure logging."
         />
+        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={copy ? copy.title : "Loading risk register…"}
@@ -188,7 +273,7 @@ export default function RisksClient() {
             </Button>
           ) : null}
           {copy?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -205,6 +290,7 @@ export default function RisksClient() {
           title="Risk Register"
           description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from FMEA’s O×S×D failure log."
         />
+        <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -212,13 +298,6 @@ export default function RisksClient() {
             </Button>
           ) : null}
         </EmptyState>
-        <NextActions
-          orgId={view.orgId}
-          riskCount={0}
-          activeCount={0}
-          overdueCount={0}
-          highestScore={0}
-        />
       </main>
     );
   }
@@ -247,7 +326,7 @@ export default function RisksClient() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSeason(next);
-                  load(next);
+                  void load(next);
                 }}
               >
                 {view.seasons.map((year) => (
@@ -269,6 +348,8 @@ export default function RisksClient() {
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? <RisksRelated orgId={orgId} /> : null}
 

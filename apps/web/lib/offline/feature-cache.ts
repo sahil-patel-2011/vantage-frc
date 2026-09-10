@@ -144,7 +144,11 @@ export type OfflineFeature =
   | "costs"
   | "cad-review-queue"
   | "duties"
-  | "announcements";
+  | "announcements"
+  | "risks"
+  | "subsystem-signoff"
+  | "prototype-tracker"
+  | "equipment-maintenance";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

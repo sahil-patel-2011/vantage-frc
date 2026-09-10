@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Badge,
   type BadgeTone,
@@ -14,6 +14,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
 import { equipmentCategoryLabel, maintenanceActionLabel } from "../../lib/equipment-maintenance";
 import {
   EQUIPMENT_CATEGORIES,
@@ -35,6 +36,7 @@ import {
 } from "../../lib/equipment-maintenance/equipment-maintenance-related";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./equipment-maintenance.css";
 
 const STATUS_LABEL: Record<EquipmentStatus, string> = {
@@ -52,6 +54,31 @@ const STATUS_TONE: Record<EquipmentStatus, BadgeTone> = {
 };
 
 type LiveView = Extract<EquipmentMaintenanceView, { status: "live" }>;
+
+function isEquipmentMaintenanceView(value: unknown): value is EquipmentMaintenanceView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function equipmentCacheOrg(data: EquipmentMaintenanceView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistEquipmentMaintenanceSnapshot(
+  orgHint: string,
+  data: EquipmentMaintenanceView,
+): Promise<void> {
+  const cacheOrg = equipmentCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("equipment-maintenance", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("equipment-maintenance", "_", data);
+  } catch {
+    // Live Equipment Maintenance already painted; IndexedDB is best-effort.
+  }
+}
 
 function RelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = equipmentMaintenanceRelatedLinks(orgId, {
@@ -100,12 +127,14 @@ function MaintenanceShell({
   shell,
   error,
   onRetry,
+  children,
 }: {
   description: string;
   orgId?: string | null;
   shell: EquipmentMaintenanceShellKind;
   error?: string;
   onRetry?: () => void;
+  children?: ReactNode;
 }) {
   const actions = equipmentMaintenanceNextActions({ orgId, shell });
   const copy = equipmentMaintenanceShellCopy(shell);
@@ -126,6 +155,7 @@ function MaintenanceShell({
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+      {children}
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading Equipment Maintenance">
           <SoftBlockSkeleton lines={4} />
@@ -160,27 +190,79 @@ export default function EquipmentMaintenanceClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<EquipmentMaintenanceView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(() => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    void fetch(`/api/equipment-maintenance${query.toString() ? `?${query.toString()}` : ""}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-    })
-      .then(async (response) => {
-        const data = (await response.json()) as EquipmentMaintenanceView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<EquipmentMaintenanceView>(
+          "equipment-maintenance",
+          urlOrg || "_",
+        );
+        if (!viewRef.current && cached?.data && isEquipmentMaintenanceView(cached.data)) {
+          setView(cached.data);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      try {
+        const response = await fetch(
+          `/api/equipment-maintenance${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
+        const data: unknown = await response.json().catch(() => null);
+        if (response.status === 401 || response.status === 403) {
+          setView(null);
+          setFromCache(false);
+          setCachedAt(null);
           setFetchFailed(true);
+          setError(
+            data && typeof data === "object" && "error" in data && typeof data.error === "string"
+              ? data.error
+              : "",
+          );
+          return;
+        }
+        if (!response.ok || !isEquipmentMaintenanceView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Equipment Maintenance. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistEquipmentMaintenanceSnapshot(urlOrg, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Equipment Maintenance. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -223,11 +305,13 @@ export default function EquipmentMaintenanceClient() {
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as EquipmentMaintenanceView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isEquipmentMaintenanceView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
+        setFromCache(false);
+        void persistEquipmentMaintenanceSnapshot(orgId, data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -238,7 +322,11 @@ export default function EquipmentMaintenanceClient() {
   );
 
   if (shell === "loading") {
-    return <MaintenanceShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <MaintenanceShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+      </MaintenanceShell>
+    );
   }
   if (shell === "error") {
     return (
@@ -248,7 +336,9 @@ export default function EquipmentMaintenanceClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+      </MaintenanceShell>
     );
   }
   if (shell === "setup" || view?.status !== "live") {
@@ -257,7 +347,9 @@ export default function EquipmentMaintenanceClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
+      </MaintenanceShell>
     );
   }
 
@@ -275,6 +367,8 @@ export default function EquipmentMaintenanceClient() {
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
+
+      <OfflineBanner feature="Equipment Maintenance" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

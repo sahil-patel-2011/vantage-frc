@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
+import { OfflineBanner } from "../../components/offline-banner";
 import { TEST_OUTCOMES, decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
 import type { PrototypeTrackerView } from "../../lib/prototype-tracker/compute-prototype-tracker";
 import {
@@ -17,11 +18,40 @@ import {
 } from "../../lib/prototype-tracker/prototype-related";
 import type { DecisionRecommendation, DecisionStatus, TestOutcome } from "../../lib/prototype-tracker/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./prototype-tracker.css";
 
 type LiveView = Extract<PrototypeTrackerView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => Promise<void>;
+
+function isPrototypeTrackerView(value: unknown): value is PrototypeTrackerView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function prototypeCacheOrg(data: PrototypeTrackerView, orgHint: string): string {
+  if (typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistPrototypeTrackerSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: PrototypeTrackerView,
+): Promise<void> {
+  const cacheOrg = prototypeCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("prototype-tracker", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("prototype-tracker", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Prototype-to-Decision Tracker already painted; IndexedDB is best-effort.
+  }
+}
 
 function useHubEmbed(): "build" | null {
   const [embed, setEmbed] = useState<"build" | null>(null);
@@ -119,6 +149,10 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<PrototypeTrackerView | null>(null);
+  viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const crumbs = embed === "build" ? "Build / Prototypes" : (
@@ -128,34 +162,89 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
     </>
   );
 
-  const load = useCallback((seasonOverride?: number) => {
+  const load = useCallback(async (seasonOverride?: number) => {
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonHint =
+      seasonQuery && Number.isFinite(seasonQuery) ? String(seasonQuery) : String(new Date().getFullYear());
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<PrototypeTrackerView>(
+        "prototype-tracker",
+        orgHint || "_",
+        seasonHint,
+      );
+      if (!viewRef.current && cached?.data && isPrototypeTrackerView(cached.data)) {
+        setView(cached.data);
+        setSeason(cached.data.seasonYear);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
     setFetchFailed(false);
     setErrorStatus(null);
     setLoadError("");
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/prototype-tracker${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as PrototypeTrackerView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setErrorStatus(response.status);
-          setLoadError("error" in data && data.error ? data.error : "");
-          setFetchFailed(true);
+    try {
+      const query = new URLSearchParams();
+      if (orgHint) query.set("orgId", orgHint);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      const response = await fetch(`/api/prototype-tracker${query.toString() ? `?${query.toString()}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      if (!response.ok || !isPrototypeTrackerView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+          setFetchFailed(false);
           return;
         }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFetchFailed(true);
+        setErrorStatus(response.status);
+        setLoadError(
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "",
+        );
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistPrototypeTrackerSnapshot(orgHint, seasonHint, data);
+    } catch {
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+        setFetchFailed(false);
+        return;
+      }
+      setFetchFailed(true);
+    }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const mutate = useCallback<Mutate>(
@@ -168,14 +257,17 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PrototypeTrackerView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isPrototypeTrackerView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        setFromCache(false);
+        void persistPrototypeTrackerSnapshot(orgId, String(data.seasonYear), data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -185,7 +277,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
     [orgId, season, busy],
   );
 
-  if (fetchFailed || view == null) {
+  if (!view) {
     const copy = fetchFailed
       ? loadFailureCopy(
           classifyLoadFailure({
@@ -209,6 +301,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           title="Prototype-to-Decision Tracker"
           description="Log a real prototype test — hypothesis, outcome, metric vs. target — then draft the design decision it informs."
         />
+        <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={copy ? copy.title : "Loading prototype tracker…"}
@@ -221,7 +314,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </Button>
           ) : null}
           {copy?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => load()}>
+            <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
           ) : null}
@@ -238,6 +331,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           title="Prototype-to-Decision Tracker"
           description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
         />
+        <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           {view.steps[0] ? (
             <Button as="a" variant="primary" href={view.steps[0].href}>
@@ -245,14 +339,6 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
             </Button>
           ) : null}
         </EmptyState>
-        <NextActionsPanel
-          orgId={view.orgId}
-          seasonYear={view.seasonYear}
-          testCount={0}
-          decisionCount={0}
-          draftDecisionCount={0}
-          testsWithoutDecision={0}
-        />
       </main>
     );
   }
@@ -278,7 +364,7 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setSeason(next);
-                  load(next);
+                  void load(next);
                 }}
               >
                 {view.seasons.map((year) => (
@@ -300,6 +386,8 @@ export default function PrototypeTrackerClient(_props: { embedded?: boolean } = 
           </Button>
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Prototype-to-Decision Tracker" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId ? (
         <BuildHubRelated
