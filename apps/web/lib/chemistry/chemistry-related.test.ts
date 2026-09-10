@@ -35,22 +35,15 @@ describe("chemistryRelatedLinks", () => {
 });
 
 describe("chemistrySetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO chemistry scores", () => {
+  it("keeps Set active event; Strategy / Pick desk / Draft live on the related strip", () => {
     const steps = chemistrySetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "command")?.href).toBe(
-      "/competition?tab=command&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "pick-desk")?.href).toBe(
-      "/strategy?tab=picks&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "draft")?.href).toBe("/strategy/draft?orgId=org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(chemistrySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
@@ -121,56 +114,48 @@ describe("chemistryShellCopy", () => {
     }
     expect(chemistryShellCopy("empty").badge).toBe("No chemistry score yet");
     expectPlainCopy(chemistryShellCopy("empty").description);
-    expect(chemistryShellCopy("setup").badge).toBe("Setup required");
+    expect(chemistryShellCopy("setup").badge).toBe("Setup");
+    expectPlainCopy(chemistryShellCopy("setup").description);
     expectPlainCopy(chemistryShellCopy("ready").description);
   });
 });
 
 describe("chemistryNextActions", () => {
-  it("prioritizes workspace when no org", () => {
+  it("gates on workspace when no org and does not repeat the related strip", () => {
     const actions = chemistryNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "draft")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(false);
   });
 
-  it("setup with org points at Strategy / Pick desk / Draft", () => {
+  it("setup with a team is only Set active event", () => {
     const actions = chemistryNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("command");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "draft")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
   });
 
-  it("empty shell points at Team Data / Strategy / Pick desk / Draft", () => {
+  it("empty shell points at Team Data only", () => {
     const actions = chemistryNextActions({
       orgId: "org-1",
       shell: "empty",
       seatCount: 0,
       hasScore: false,
     });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["team-data", "strategy", "pick-desk", "draft"]),
-    );
-    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(actions[0]?.detail).not.toMatch(/team_event_metrics/);
   });
 
-  it("ready prioritizes chemistry without DEMO scores", () => {
-    const actions = chemistryNextActions({
-      orgId: "org-1",
-      shell: "ready",
-      seatCount: 3,
-      hasScore: true,
-    });
-    expect(actions[0]?.id).toBe("chemistry");
-    expect(actions[0]?.detail).toMatch(/3 seat/);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "draft")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+  it("does not add a second guided list on a scored board", () => {
+    expect(
+      chemistryNextActions({
+        orgId: "org-1",
+        shell: "ready",
+        seatCount: 3,
+        hasScore: true,
+      }),
+    ).toEqual([]);
   });
 });

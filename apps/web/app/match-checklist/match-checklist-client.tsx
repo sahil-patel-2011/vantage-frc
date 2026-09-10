@@ -22,6 +22,7 @@ import {
   summaryHasTimingEvidence,
 } from "../../lib/match-checklist/match-checklist-related";
 import type { ChecklistItem, MatchChecklistRun } from "../../lib/match-checklist/types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
@@ -55,7 +56,9 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         setCachedAt(cached.cachedAt);
       }
       try {
-        const response = await fetch(`/api/match-checklist${query.toString() ? `?${query.toString()}` : ""}`);
+        const response = await fetch(`/api/match-checklist${query.toString() ? `?${query.toString()}` : ""}`, {
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as MatchChecklistView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setErrorStatus(response.status);
@@ -106,6 +109,7 @@ export default function MatchChecklistClient(_props: { embedded?: boolean } = {}
         const response = await fetch("/api/match-checklist", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
           body: JSON.stringify({ orgId, ...payload }),
         });
         const data = (await response.json()) as MatchChecklistView | { error?: string };

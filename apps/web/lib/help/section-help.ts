@@ -71,7 +71,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     when: "Competition day, from load-in until the last match of the day.",
     moments: ["comp-day"],
     how: [
-      "Connect The Blue Alliance and pick the active event under Team → Data — everything on this tab is event-scoped.",
+      "Connect The Blue Alliance and pick the active event under Team → Data — this tab follows that event.",
       "Open Event day; the next match card fills in from the posted schedule.",
       "Send the drive team to My Day for their own next-match view, and the pit to Pit.",
       "Work the pre-match briefing before each match, and the pre-match checklist in the pit.",

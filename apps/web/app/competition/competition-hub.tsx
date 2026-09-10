@@ -32,7 +32,13 @@ export default function CompetitionHub() {
             </HubOrgGate>
           );
         }
-        if (tab === "my-day") return <MyDayClient embedded />;
+        if (tab === "my-day") {
+          return (
+            <HubOrgGate orgId={orgId} label="My Day">
+              {() => <MyDayClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "strategy") {
           return (
             <HubOrgGate orgId={orgId} label="Strategy">
@@ -40,9 +46,27 @@ export default function CompetitionHub() {
             </HubOrgGate>
           );
         }
-        if (tab === "pick-clock") return <PickClockClient embedded />;
-        if (tab === "chemistry") return <ChemistryClient embedded />;
-        if (tab === "match-checklist") return <MatchChecklistClient embedded />;
+        if (tab === "pick-clock") {
+          return (
+            <HubOrgGate orgId={orgId} label="Pick clock">
+              {(id) => <PickClockClient orgId={id} embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "chemistry") {
+          return (
+            <HubOrgGate orgId={orgId} label="Chemistry">
+              {(id) => <ChemistryClient orgId={id} embedded />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "match-checklist") {
+          return (
+            <HubOrgGate orgId={orgId} label="Pit">
+              {() => <MatchChecklistClient embedded />}
+            </HubOrgGate>
+          );
+        }
         if (tab === "scouting") {
           return (
             <HubOrgGate orgId={orgId} label="Scouting">

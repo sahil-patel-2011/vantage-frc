@@ -17,11 +17,10 @@ import {
   type ChemistryNextAction,
   type ChemistryShellKind,
 } from "../../lib/chemistry/chemistry-related";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import "./chemistry.css";
-
-type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null };
 
 function ChemistryRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = chemistryRelatedLinks(orgId, {
@@ -83,8 +82,8 @@ function ChemistryShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = chemistryNextActions({ orgId, shell });
   const copy = chemistryShellCopy(shell);
+  const setup = shell === "setup" ? chemistrySetupSteps(orgId)[0] : null;
   const failure =
     shell === "error"
       ? loadFailureCopy(
@@ -102,8 +101,6 @@ function ChemistryShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? chemistrySetupSteps(orgId) : [];
-  const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -119,15 +116,7 @@ function ChemistryShell({
       <EmptyState
         soft
         className="chem-empty"
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "No chemistry score yet"
-                : copy.badge
-        }
+        badge={failure ? undefined : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : error ?? copy.description}
@@ -143,41 +132,28 @@ function ChemistryShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync event metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="chem-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="chem-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <ChemistryNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
 
-export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
-  const [orgId, setOrgId] = useState("");
+export default function ChemistryClient({
+  orgId: initialOrgId,
+}: {
+  orgId?: string;
+  embedded?: boolean;
+} = {}) {
+  const [orgId, setOrgId] = useState(initialOrgId?.trim() ?? "");
   const [view, setView] = useState<ChemistryView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -191,22 +167,21 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
   const [savedPickListId, setSavedPickListId] = useState<string>("");
 
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
     const teams = new URLSearchParams(window.location.search).get("teams") ?? "";
     if (teams) setDraft(teams);
-    void fetch("/api/me")
-      .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
-      .then((data) => {
-        if (!data) {
-          setLoading(false);
-          return;
-        }
-        setOrgId(fromUrl || data.orgId || "");
-      })
-      .catch(() => {
+    const seeded = initialOrgId?.trim() || readOrgIdFromSearch(window.location.search) || "";
+    if (seeded) {
+      setOrgId(seeded);
+      return;
+    }
+    void fetchProductSession().then((data) => {
+      if (!data?.orgId) {
         setLoading(false);
-      });
-  }, []);
+        return;
+      }
+      setOrgId(data.orgId);
+    });
+  }, [initialOrgId]);
 
   const load = useCallback(
     async (id: string, teams?: string) => {
@@ -221,7 +196,9 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       const list = (teams ?? draft).trim();
       if (list) params.set("teams", list);
       try {
-        const response = await fetch(`/api/chemistry?${params}`);
+        const response = await fetch(`/api/chemistry?${params}`, {
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
           setError(body.error ?? "Could not load chemistry");
@@ -257,7 +234,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
       return;
     }
     void load(orgId);
-  }, [orgId]);  
+  }, [orgId]);
 
   /**
    * Promote chemistry candidates onto the ONE pick list. Idempotent server-side, so a double tap
@@ -274,6 +251,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         const response = await fetch("/api/chemistry", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
           body: JSON.stringify({
             orgId,
             action: "promote-partner-fit",
@@ -350,9 +328,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
     );
   }
 
-  const strategyHref = hubHref("/competition", "strategy", orgId);
   const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
-  const draftHref = withOrgHref("/strategy/draft", orgId);
   const showTiles = shouldShowChemistrySummaryTiles(seatCount, hasScore);
   const readyActions = chemistryNextActions({
     orgId,
@@ -374,20 +350,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
             : "Score how well 2–3 robots complement each other — roles, ratings balance, scout reliability."
         }
       >
-        <div className="chem-heading">
-          <ChemistryRelatedStrip orgId={orgId} />
-          <div className="edc-header-actions">
-            <Button as="a" variant="secondary" href={strategyHref}>
-              Strategy
-            </Button>
-            <Button as="a" variant="secondary" href={pickDeskHref}>
-              Pick desk
-            </Button>
-            <Button as="a" variant="secondary" href={draftHref}>
-              Draft
-            </Button>
-          </div>
-        </div>
+        <ChemistryRelatedStrip orgId={orgId} />
       </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
@@ -601,8 +564,8 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               : emptyCopy.description
           }
         >
-          <Button as="a" variant="secondary" href={strategyHref}>
-            Open Strategy
+          <Button as="a" variant="primary" href={withOrgHref("/team/data", orgId)}>
+            Sync event metrics
           </Button>
         </EmptyState>
       )}
@@ -643,7 +606,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
         <section className="chem-suggest">
           <h2>Try high-EPA seats</h2>
           <p className="edc-muted">
-            Event metrics you can add to the scorer, or promote straight onto the pick_lists spine
+            Event metrics you can add to the scorer, or promote straight onto the same pick list
             the pick desk and Draft board read.
           </p>
           <ul className="edc-queue">

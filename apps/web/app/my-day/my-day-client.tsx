@@ -16,6 +16,7 @@ import {
   type MyDayShellKind,
 } from "../../lib/my-day-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { useCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
@@ -289,7 +290,10 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
     }
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     try {
-      const response = await fetch(`/api/my-day${qs}`, { cache: "no-store" });
+      const response = await fetch(`/api/my-day${qs}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as MyDayView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");

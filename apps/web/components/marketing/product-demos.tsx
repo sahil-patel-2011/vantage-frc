@@ -417,7 +417,7 @@ export function AssistantPreview({ compact = false }: { compact?: boolean }) {
       className={`product-demo assistant-product-demo ${compact ? "compact" : ""}`}
       aria-label="Demo data preview of the FRC Assistant"
     >
-      <DemoChrome title="FRC Assistant · Qual 42 context" meta="Event-scoped · source-labeled" />
+      <DemoChrome title="FRC Assistant · Qual 42 context" meta="This event · source-labeled" />
       <div className={`assistant-demo-body ${compact ? "compact-board" : ""}`}>
         <article className="assistant-demo-prompt">
           <span>TEAM ASK</span>

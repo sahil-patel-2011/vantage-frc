@@ -37,24 +37,15 @@ describe("pickClockRelatedLinks", () => {
 });
 
 describe("pickClockSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO picks", () => {
+  it("keeps Set active event; Strategy / Pick desk / Chemistry live on the related strip", () => {
     const steps = pickClockSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "command")?.href).toBe(
-      "/competition?tab=command&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "pick-desk")?.href).toBe(
-      "/strategy?tab=picks&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "chemistry")?.href).toBe(
-      "/competition?tab=chemistry&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(pickClockSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
@@ -115,56 +106,48 @@ describe("pickClockShellCopy", () => {
     }
     expect(pickClockShellCopy("empty").badge).toBe("No teams left to recommend");
     expectPlainCopy(pickClockShellCopy("empty").description);
-    expect(pickClockShellCopy("setup").badge).toBe("Setup required");
+    expect(pickClockShellCopy("setup").badge).toBe("Setup");
+    expectPlainCopy(pickClockShellCopy("setup").description);
     expectPlainCopy(pickClockShellCopy("ready").description);
   });
 });
 
 describe("pickClockNextActions", () => {
-  it("prioritizes workspace when no org", () => {
+  it("gates on workspace when no org and does not repeat the related strip", () => {
     const actions = pickClockNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "chemistry")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.href).toBe("/workspace");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions.some((a) => a.id === "strategy")).toBe(false);
   });
 
-  it("setup with org points at Strategy / Pick desk / Chemistry", () => {
+  it("setup with a team is only Set active event", () => {
     const actions = pickClockNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("command");
-    expect(actions.some((a) => a.id === "strategy")).toBe(true);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "chemistry")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
   });
 
-  it("empty shell points at Team Data / Strategy / Pick desk / Chemistry", () => {
+  it("empty shell points at Team Data only", () => {
     const actions = pickClockNextActions({
       orgId: "org-1",
       shell: "empty",
       hasRecommendation: false,
       availableCount: 0,
     });
-    expect(actions[0]?.id).toBe("team-data");
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["team-data", "strategy", "pick-desk", "chemistry"]),
-    );
-    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["team-data"]);
+    expect(actions[0]?.href).toBe("/team/data?orgId=org-1");
+    expect(actions[0]?.detail).not.toMatch(/team_event_metrics/);
   });
 
-  it("ready prioritizes clock without DEMO picks", () => {
-    const actions = pickClockNextActions({
-      orgId: "org-1",
-      shell: "ready",
-      hasRecommendation: true,
-      availableCount: 7,
-    });
-    expect(actions[0]?.id).toBe("clock");
-    expect(actions[0]?.detail).toMatch(/7 available/);
-    expect(actions.some((a) => a.id === "pick-desk")).toBe(true);
-    expect(actions.some((a) => a.id === "chemistry")).toBe(true);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+  it("does not add a second guided list on a live clock", () => {
+    expect(
+      pickClockNextActions({
+        orgId: "org-1",
+        shell: "ready",
+        hasRecommendation: true,
+        availableCount: 7,
+      }),
+    ).toEqual([]);
   });
 });

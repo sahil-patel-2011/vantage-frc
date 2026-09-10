@@ -65,7 +65,7 @@ function setupRequired(
       {
         id: "workspace",
         label: "Choose your team",
-        detail: "Pick lists are org-scoped — choose your team.",
+        detail: "Choose your team before ranking alliances.",
         href: "/workspace",
       },
       {

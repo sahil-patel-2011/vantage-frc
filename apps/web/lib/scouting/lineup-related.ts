@@ -300,7 +300,7 @@ export function lineupShellCopy(kind: LineupShellKind): LineupEmptyCopy {
         badge: "Setup required",
         title: "Select a team and event",
         description:
-          "Lineup & coverage is org- and event-scoped. Select a team and active TBA event before gaps appear.",
+          "Select a team and the event this alliance is at before coverage gaps appear.",
       };
     case "empty":
       return {

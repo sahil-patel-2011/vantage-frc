@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Pick clock (never DEMO picks). */
@@ -72,45 +73,39 @@ export type PickClockSetupStep = {
   href: string;
 };
 
+function pickClockRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    pickClockRelatedLinks(orgId, { include: [...PICK_CLOCK_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = pickClockRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function pickClockSetupSteps(orgId?: string | null): PickClockSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open pick clock.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open pick clock.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pick the TBA event your team is competing at — recommendations stay blank until synced.",
+      detail: "Pick the event this alliance is at — recommendations stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull rankings from The Blue Alliance and Statbotics.",
-      href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context before running the 45-second pick clock.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Arrange first / second / third picks from real event teams before the clock.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-    {
-      id: "chemistry",
-      label: "Open Chemistry",
-      detail: "Score alliance fit from synced seats.",
-      href: hubHref("/competition", "chemistry", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real available / scouted counts only — never invent DEMO totals. */
@@ -179,10 +174,10 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Setup",
         title: "Select a team and event",
         description:
-          "Pick clock is org- and event-scoped. Select a team and active TBA event before recommendations appear.",
+          "Select a team and the event this alliance is at before pick recommendations appear.",
       };
     case "empty":
       return {
@@ -192,13 +187,17 @@ export function pickClockShellCopy(kind: PickClockShellKind): PickClockEmptyCopy
         description:
           "Recommendations stay blank until synced event metrics (and free draft slots) exist. Cross-check Strategy, Pick desk, and Chemistry.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "45-second pick clock",
         description:
           "Next best available team from synced event metrics and membership-bound scout depth.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -215,162 +214,42 @@ export function pickClockNextActions(input: {
   excludedCount?: number;
 }): PickClockNextAction[] {
   const orgId = input.orgId ?? null;
-  const availableCount = input.availableCount ?? 0;
   const excludedCount = input.excludedCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
+    return setupActionsFrom(pickClockSetupSteps(orgId));
+  }
+
+  switch (input.shell) {
+    case "loading":
+    case "ready":
+      return [];
+    case "error":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before ranking alliances.",
-          href: "/workspace",
+          id: "retry",
+          label: "Retry pick clock",
+          detail: "Reload event ratings and draft exclusions.",
+          href: hubHref("/competition", "pick-clock", orgId),
           primary: true,
         },
+      ]);
+    case "empty":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Win/loss and pick lists stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
+          id: "team-data",
+          label: "Sync event metrics",
+          detail:
+            excludedCount > 0
+              ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`
+              : "Pull match and ranking rows from The Blue Alliance. Recommendations stay blank until those rows exist.",
+          href: withOrgHref("/team/data", orgId),
+          primary: true,
         },
-        {
-          id: "pick-desk",
-          label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows.",
-          href: withOrgHref("/strategy?tab=picks", null),
-        },
-        {
-          id: "chemistry",
-          label: "Open Chemistry",
-          detail: "Chemistry scores stay blank until synced seats exist.",
-          href: hubHref("/competition", "chemistry", null),
-        },
-      ];
+      ]);
+    default: {
+      const _exhaustive: never = input.shell;
+      return _exhaustive;
     }
-    return [
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Pick clock needs a TBA event before recommendations appear.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before running the selection clock.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Arrange first / second / third picks from real event teams.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "chemistry",
-        label: "Open Chemistry",
-        detail: "Score alliance fit once seats exist.",
-        href: hubHref("/competition", "chemistry", orgId),
-      },
-    ];
   }
-
-  if (input.shell === "error") {
-    return [
-      {
-        id: "retry",
-        label: "Retry pick clock",
-        detail: "Reload real event metrics and draft exclusions.",
-        href: hubHref("/competition", "pick-clock", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Event strategy stays available while the clock reloads.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Pick lists stay available while the clock reloads.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "chemistry",
-        label: "Open Chemistry",
-        detail: "Chemistry stays available while the clock reloads.",
-        href: hubHref("/competition", "chemistry", orgId),
-      },
-    ];
-  }
-
-  if (
-    input.shell === "empty" ||
-    isPickClockQueueEmpty({
-      hasRecommendation: input.hasRecommendation ?? false,
-      availableCount,
-    })
-  ) {
-    return [
-      {
-        id: "team-data",
-        label: "Sync event metrics",
-        detail:
-          excludedCount > 0
-            ? `${formatPickClockMetric(excludedCount, true)} team${excludedCount === 1 ? "" : "s"} already taken on the draft board. Sync or clear slots.`
-            : "Pull TBA/Statbotics team_event_metrics — recommendations stay blank until then.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Win/loss waits on the same reference rows.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Link a real pick list before the clock ranks — empty tiers stay empty.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "chemistry",
-        label: "Open Chemistry",
-        detail: "Score alliance fit from synced seats.",
-        href: hubHref("/competition", "chemistry", orgId),
-      },
-    ];
-  }
-
-  return [
-    {
-      id: "clock",
-      label: "Run the 45s clock",
-      detail: `${formatPickClockMetric(availableCount, true)} available team${availableCount === 1 ? "" : "s"} from synced metrics only.`,
-      href: hubHref("/competition", "pick-clock", orgId),
-      primary: true,
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Return to event strategy while the selection clock runs.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Cross-check first / second / third tiers against the live recommendation.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-    {
-      id: "chemistry",
-      label: "Open Chemistry",
-      detail: "Score how the next pick fits your alliance seats.",
-      href: hubHref("/competition", "chemistry", orgId),
-    },
-  ];
 }

@@ -46,7 +46,7 @@ const RULES: readonly Rule[] = [
   },
   {
     label: "org-scoped",
-    pattern: /\borg[-\s]scoped\b/i,
+    pattern: /\b(?:org|event)[-\s]scoped\b/i,
     why: 'tenancy jargon — say "your team\'s"',
   },
   {

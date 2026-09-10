@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PICK_CLOCK_RELATED_INCLUDE,
@@ -21,8 +21,9 @@ import {
   PICK_CLOCK_SECONDS,
   type PickClockRecommendation,
 } from "../../lib/strategy/pick-clock";
-import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { FEATURE_API_TIMEOUT_MS, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import "./pick-clock.css";
 
 type PickClockView =
@@ -62,8 +63,6 @@ type PickClockView =
       orgId: string | null;
       eventKey: string | null;
     };
-
-type Me = { orgId?: string | null };
 
 function teamDisplay(rec: PickClockRecommendation): string {
   if (rec.teamNumber != null) return String(rec.teamNumber);
@@ -143,8 +142,8 @@ function PickClockShell({
   onRetry?: () => void;
   children?: ReactNode;
 }) {
-  const actions = pickClockNextActions({ orgId, shell });
   const copy = pickClockShellCopy(shell);
+  const setup = shell === "setup" ? pickClockSetupSteps(orgId)[0] : null;
   // A failed load names its own recovery — Retry cannot fix an expired session.
   const failure =
     shell === "error"
@@ -163,8 +162,6 @@ function PickClockShell({
           },
         )
       : null;
-  const steps = shell === "setup" ? pickClockSetupSteps(orgId) : [];
-  const commandHref = hubHref("/competition", "command", orgId);
   const teamDataHref = withOrgHref("/team/data", orgId);
 
   return (
@@ -180,15 +177,7 @@ function PickClockShell({
       <EmptyState
         soft
         className="pck-empty"
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "No teams left to recommend"
-                : copy.badge
-        }
+        badge={failure ? undefined : copy.badge}
         badgeTone="setup"
         title={failure ? failure.title : copy.title}
         description={failure ? failure.description : error ?? copy.description}
@@ -204,41 +193,28 @@ function PickClockShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? commandHref : "/workspace"}>{orgId ? "Set active event" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={teamDataHref}>Sync event metrics</Button>
+          <Button as="a" variant="primary" href={teamDataHref}>
+            Sync event metrics
+          </Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="pck-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="pck-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <PickClockNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
 
-export default function PickClockClient(_props: { embedded?: boolean } = {}) {
-  const [orgId, setOrgId] = useState("");
+export default function PickClockClient({
+  orgId: initialOrgId,
+}: {
+  orgId?: string;
+  embedded?: boolean;
+} = {}) {
+  const [orgId, setOrgId] = useState(initialOrgId?.trim() ?? "");
   const [view, setView] = useState<PickClockView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -253,20 +229,19 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
   const [conflict, setConflict] = useState<{ message: string } | null>(null);
 
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
-    void fetch("/api/me")
-      .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
-      .then((data) => {
-        if (!data) {
-          setLoading(false);
-          return;
-        }
-        setOrgId(fromUrl || data.orgId || "");
-      })
-      .catch(() => {
+    const seeded = initialOrgId?.trim() || readOrgIdFromSearch(window.location.search) || "";
+    if (seeded) {
+      setOrgId(seeded);
+      return;
+    }
+    void fetchProductSession().then((data) => {
+      if (!data?.orgId) {
         setLoading(false);
-      });
-  }, []);
+        return;
+      }
+      setOrgId(data.orgId);
+    });
+  }, [initialOrgId]);
 
   const load = useCallback(async (id: string) => {
     if (!id) {
@@ -281,7 +256,9 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
       // The ONE pick list owns the draft board, and /api/strategy/pick-clock reads it server-side,
       // so anything the desk (or this clock) already drafted is already out of the pool. No second
       // client-side exclusion pass to drift from it.
-      const response = await fetch(`/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}`);
+      const response = await fetch(`/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}`, {
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as PickClockView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load pick clock.");
@@ -329,6 +306,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
         const response = await fetch("/api/strategy/pick-clock", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
           body: JSON.stringify({
             orgId,
             eventKey: ready?.eventKey,
@@ -417,9 +395,7 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
 
   const resolvedOrgId =
     view?.status === "ready" ? view.orgId : view?.orgId ?? (orgId || null);
-  const strategyHref = hubHref("/competition", "strategy", resolvedOrgId);
   const pickDeskHref = withOrgHref("/strategy?tab=picks", resolvedOrgId);
-  const chemistryHref = hubHref("/competition", "chemistry", resolvedOrgId);
   const showTiles = shouldShowPickClockSummaryTiles(availableCount);
   const readyActions = pickClockNextActions({
     orgId: resolvedOrgId,
@@ -464,23 +440,10 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
             : `${PICK_CLOCK_SECONDS}-second alliance pick assistant.`
         }
       >
-        <div className="pck-heading">
-          <PickClockRelatedStrip orgId={resolvedOrgId} />
-          <div className="pck-header-actions">
-            <Button variant="secondary" type="button" onClick={() => { if (resolvedOrgId) void load(resolvedOrgId); }}>
-              Refresh
-            </Button>
-            <Button as="a" variant="secondary" href={strategyHref}>
-              Strategy
-            </Button>
-            <Button as="a" variant="secondary" href={pickDeskHref}>
-              Pick desk
-            </Button>
-            <Button as="a" variant="secondary" href={chemistryHref}>
-              Chemistry
-            </Button>
-          </div>
-        </div>
+        <PickClockRelatedStrip orgId={resolvedOrgId} />
+        <Button variant="secondary" type="button" onClick={() => { if (resolvedOrgId) void load(resolvedOrgId); }}>
+          Refresh
+        </Button>
       </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
@@ -562,12 +525,6 @@ export default function PickClockClient(_props: { embedded?: boolean } = {}) {
             </Button>
             <Button as="a" variant="primary" href={pickDeskHref}>
               Open Pick desk
-            </Button>
-            <Button as="a" variant="secondary" href={strategyHref}>
-              Open Strategy
-            </Button>
-            <Button as="a" variant="secondary" href={chemistryHref}>
-              Open Chemistry
             </Button>
           </div>
         </EmptyState>

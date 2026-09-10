@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { setupActionsFrom } from "../setup-actions";
 import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Alliance Chemistry (never DEMO chemistry scores). */
@@ -72,45 +73,39 @@ export type ChemistrySetupStep = {
   href: string;
 };
 
+function chemistryRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    chemistryRelatedLinks(orgId, { include: [...CHEMISTRY_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = chemistryRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function chemistrySetupSteps(orgId?: string | null): ChemistrySetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open chemistry scores.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open partner-fit scores.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pick the TBA event your team is competing at — scores stay blank until synced.",
+      detail: "Pick the event this alliance is at — scores stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "team-data",
-      label: "Sync Team Data",
-      detail: "Pull rankings from The Blue Alliance and Statbotics.",
-      href: withOrgHref("/team/data", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context before scoring alliance fit.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Arrange first / second / third picks from real event teams before chemistry.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-    {
-      id: "draft",
-      label: "Open Draft board",
-      detail: "Run draft day on the same real event pool.",
-      href: withOrgHref("/strategy/draft", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real seat / scored counts only — never invent DEMO totals. */
@@ -166,8 +161,7 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
       return {
         kind,
         title: "Loading alliance chemistry…",
-        description:
-          "Checking which team you are on and TBA/Statbotics event metrics.",
+        description: "Checking which team you are on and event ratings.",
       };
     case "error":
       return {
@@ -180,10 +174,10 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
     case "setup":
       return {
         kind,
-        badge: "Setup required",
+        badge: "Setup",
         title: "Select a team and event",
         description:
-          "Alliance chemistry is org- and event-scoped. Select a team and active TBA event before scores appear.",
+          "Select a team and the event this alliance is at before partner-fit scores appear.",
       };
     case "empty":
       return {
@@ -191,15 +185,19 @@ export function chemistryShellCopy(kind: ChemistryShellKind): ChemistryEmptyCopy
         badge: "No chemistry score yet",
         title: "Waiting on real alliance seats",
         description:
-          "Enter 2–3 team numbers (or wait for your next alliance on the schedule). Scores stay blank until TBA/Statbotics rows exist. Cross-check Strategy, Pick desk, and Draft.",
+          "Enter 2–3 team numbers (or wait for your next alliance on the schedule). Scores stay blank until event ratings exist. Cross-check Strategy, Pick desk, and Draft.",
       };
-    default:
+    case "ready":
       return {
-        kind: "ready",
+        kind,
         title: "Alliance chemistry",
         description:
           "Partner fit from synced event ratings and scout reliability only. Verify with pit notes before locking picks.",
       };
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -215,154 +213,74 @@ export function chemistryNextActions(input: {
   hasScore?: boolean;
 }): ChemistryNextAction[] {
   const orgId = input.orgId ?? null;
-  const seatCount = input.seatCount ?? 0;
-  const hasScore = input.hasScore ?? false;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
+    return setupActionsFrom(chemistrySetupSteps(orgId));
+  }
+
+  switch (input.shell) {
+    case "loading":
+    case "ready":
+      return [];
+    case "error":
+      return dropRelatedStripDuplicates(orgId, [
         {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Choose a team before scoring alliances.",
-          href: "/workspace",
+          id: "retry",
+          label: "Retry chemistry",
+          detail: "Reload event ratings and seats.",
+          href: hubHref("/competition", "chemistry", orgId),
           primary: true,
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Win/loss and draft day stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
+          detail: "Event strategy stays available while chemistry reloads.",
+          href: hubHref("/competition", "strategy", orgId),
         },
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until your team syncs event rows.",
-          href: withOrgHref("/strategy?tab=picks", null),
+          detail: "Pick lists stay available while chemistry reloads.",
+          href: withOrgHref("/strategy?tab=picks", orgId),
         },
         {
           id: "draft",
           label: "Open Draft board",
-          detail: "Alliance slots stay blank until synced.",
-          href: withOrgHref("/strategy/draft", null),
+          detail: "Draft day stays available while chemistry reloads.",
+          href: withOrgHref("/strategy/draft", orgId),
         },
-      ];
+      ]);
+    case "empty":
+      return dropRelatedStripDuplicates(orgId, [
+        {
+          id: "team-data",
+          label: "Sync event metrics",
+          detail: "Pull match and ranking rows from The Blue Alliance. Partner-fit stays blank until those rows exist.",
+          href: withOrgHref("/team/data", orgId),
+          primary: true,
+        },
+        {
+          id: "strategy",
+          label: "Open Strategy",
+          detail: "Win/loss waits on the same event rows.",
+          href: hubHref("/competition", "strategy", orgId),
+        },
+        {
+          id: "pick-desk",
+          label: "Open Pick desk",
+          detail: "Link a real pick list before scoring alliance fit — empty tiers stay empty.",
+          href: withOrgHref("/strategy?tab=picks", orgId),
+        },
+        {
+          id: "draft",
+          label: "Open Draft board",
+          detail: "Alliance slots use the same synced event pool.",
+          href: withOrgHref("/strategy/draft", orgId),
+        },
+      ]);
+    default: {
+      const _exhaustive: never = input.shell;
+      return _exhaustive;
     }
-    return [
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Chemistry needs a TBA event before alliance seats can score.",
-        href: hubHref("/competition", "command", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before scoring alliance fit.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Arrange first / second / third picks from real event teams.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "draft",
-        label: "Open Draft board",
-        detail: "Run draft day on the same real event pool.",
-        href: withOrgHref("/strategy/draft", orgId),
-      },
-    ];
   }
-
-  if (input.shell === "error") {
-    return [
-      {
-        id: "retry",
-        label: "Retry chemistry",
-        detail: "Reload real event metrics and seats.",
-        href: hubHref("/competition", "chemistry", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Event strategy stays available while chemistry reloads.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Pick lists stay available while chemistry reloads.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "draft",
-        label: "Open Draft board",
-        detail: "Draft day stays available while chemistry reloads.",
-        href: withOrgHref("/strategy/draft", orgId),
-      },
-    ];
-  }
-
-  if (input.shell === "empty" || isChemistryScoreEmpty({ seatCount, hasScore })) {
-    return [
-      {
-        id: "team-data",
-        label: "Sync event metrics",
-        detail:
-          "Pull TBA/Statbotics team_event_metrics — chemistry scores stay blank until then.",
-        href: withOrgHref("/team/data", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Win/loss waits on the same reference rows.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "pick-desk",
-        label: "Open Pick desk",
-        detail: "Link a real pick list before scoring alliance fit — empty tiers stay empty.",
-        href: withOrgHref("/strategy?tab=picks", orgId),
-      },
-      {
-        id: "draft",
-        label: "Open Draft board",
-        detail: "Alliance slots use the same synced event pool.",
-        href: withOrgHref("/strategy/draft", orgId),
-      },
-    ];
-  }
-
-  return [
-    {
-      id: "chemistry",
-      label: "Review chemistry score",
-      detail: `Partner fit across ${formatChemistryMetric(seatCount, true)} seat${seatCount === 1 ? "" : "s"} from synced ratings only.`,
-      href: hubHref("/competition", "chemistry", orgId),
-      primary: true,
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Return to event strategy while evaluating alliance fit.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "pick-desk",
-      label: "Open Pick desk",
-      detail: "Cross-check first / second / third tiers against chemistry.",
-      href: withOrgHref("/strategy?tab=picks", orgId),
-    },
-    {
-      id: "draft",
-      label: "Open Draft board",
-      detail: "Carry the same real seats into draft day.",
-      href: withOrgHref("/strategy/draft", orgId),
-    },
-  ];
 }

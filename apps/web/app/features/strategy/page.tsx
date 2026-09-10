@@ -11,7 +11,7 @@ export const metadata: Metadata = marketingPageMetadata({
 
 const assistantJobs = [
   { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + TBA facts." },
-  { id: "02", title: "Matchups & picks", copy: "Alliance Selection Desk and Pick clock, event-scoped." },
+  { id: "02", title: "Matchups & picks", copy: "Alliance Selection Desk and Pick clock, for the event you are at." },
   { id: "03", title: "Opponent history", copy: "How teams tend to auto, cycle, defend, climb." },
   { id: "04", title: "Robot capabilities", copy: "Pit notes beside public metrics—empty until scouted." },
 ] as const;

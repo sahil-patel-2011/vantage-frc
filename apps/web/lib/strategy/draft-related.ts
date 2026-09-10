@@ -175,7 +175,7 @@ export function draftShellCopy(kind: DraftShellKind): DraftEmptyCopy {
         badge: "Setup required",
         title: "Select a team and event",
         description:
-          "Draft day is org- and event-scoped. Select a team and active TBA event before alliance slots appear.",
+          "Select a team and the event this alliance is at before alliance slots appear.",
       };
     case "empty":
       return {
