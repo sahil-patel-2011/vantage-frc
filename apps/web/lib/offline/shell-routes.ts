@@ -114,6 +114,9 @@ export const OFFLINE_SHELL_ROUTES = [
   "/scout-crossval",
   "/rule-impact",
   "/season-planning-workspace",
+  "/retro",
+  "/team/data",
+  "/tuning-autopilot",
 ] as const;
 
 export type OfflineShellRoute = (typeof OFFLINE_SHELL_ROUTES)[number];
@@ -145,6 +148,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   ) {
     return "Calendar";
   }
+  if (bare.startsWith("/team/data")) return "Team Data";
   if (bare === "/team") return "Team";
   if (bare.startsWith("/todos") || bare.startsWith("/tasks")) return "Todos";
   if (bare.startsWith("/logistics")) return "Logistics";
@@ -223,6 +227,8 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/scout-crossval")) return "Scout Cross-Validation";
   if (bare.startsWith("/rule-impact")) return "Rule Impact Analyzer";
   if (bare.startsWith("/season-planning-workspace")) return "Season Planning";
+  if (bare.startsWith("/retro")) return "Retro";
+  if (bare.startsWith("/tuning-autopilot")) return "Tuning Autopilot";
   if (bare.startsWith("/assembly-manual")) return "Assembly manual";
   if (bare.startsWith("/packing")) return "Packing";
   if (bare.startsWith("/batteries")) return "Batteries";

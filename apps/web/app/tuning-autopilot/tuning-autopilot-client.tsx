@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { TUNING_CONTROLLER_TYPES, tuningControllerTypeLabel, tuningSessionStatusLabel } from "../../lib/tuning-autopilot";
 import type { TuningAutopilotView } from "../../lib/tuning-autopilot/compute-tuning-autopilot";
@@ -18,6 +19,8 @@ import {
 import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./tuning-autopilot.css";
 
 function scoreTone(score: number): string {
@@ -27,6 +30,33 @@ function scoreTone(score: number): string {
 }
 
 type LiveView = Extract<TuningAutopilotView, { status: "live" }>;
+
+function isTuningAutopilotView(value: unknown): value is TuningAutopilotView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "live";
+}
+
+function tuningAutopilotCacheOrg(data: TuningAutopilotView, orgHint: string): string {
+  if ("orgId" in data && typeof data.orgId === "string" && data.orgId.trim()) return data.orgId;
+  return orgHint;
+}
+
+async function persistTuningAutopilotSnapshot(
+  orgHint: string,
+  seasonHint: string,
+  data: TuningAutopilotView,
+): Promise<void> {
+  const cacheOrg = tuningAutopilotCacheOrg(data, orgHint);
+  if (!cacheOrg) return;
+  const seasonKey = String(data.seasonYear);
+  try {
+    await putFeatureSnapshot("tuning-autopilot", cacheOrg, data, seasonHint || seasonKey);
+    if (!orgHint) await putFeatureSnapshot("tuning-autopilot", "_", data, seasonHint || seasonKey);
+  } catch {
+    // Live Tuning Autopilot already painted; IndexedDB is best-effort.
+  }
+}
 
 function TuningRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = tuningAutopilotRelatedLinks(orgId, {
@@ -145,28 +175,76 @@ export default function TuningAutopilotClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<TuningAutopilotView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback((overrides?: { seasonYear?: number; sessionId?: string | null }) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = overrides?.seasonYear ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    if (overrides?.sessionId) query.set("sessionId", overrides.sessionId);
-    void fetch(`/api/tuning-autopilot${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
+    void (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId")?.trim() ?? "";
+      const seasonQuery =
+        overrides?.seasonYear ?? (params.get("season") ? Number(params.get("season")) : null);
+      const seasonHint =
+        seasonQuery != null && Number.isFinite(seasonQuery) ? String(seasonQuery) : "";
+      let hadCache = Boolean(viewRef.current);
+      try {
+        const cached = await getFeatureSnapshot<TuningAutopilotView>(
+          "tuning-autopilot",
+          urlOrg || "_",
+          seasonHint,
+        );
+        if (!viewRef.current && cached?.data && isTuningAutopilotView(cached.data)) {
+          setView(cached.data);
+          setSeason(cached.data.seasonYear);
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          hadCache = true;
+        }
+      } catch {
+        // IndexedDB missing or blocked; live fetch still runs.
+      }
+      setFetchFailed(false);
+      setError("");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonHint) query.set("season", seasonHint);
+      if (overrides?.sessionId) query.set("sessionId", overrides.sessionId);
+      try {
+        const response = await fetch(
+          `/api/tuning-autopilot${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            cache: "no-store",
+            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          },
+        );
         const data = (await response.json()) as TuningAutopilotView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
+        if (!response.ok || !isTuningAutopilotView(data)) {
+          if (hadCache || viewRef.current) {
+            setFromCache(true);
+            setError("Could not refresh Tuning Autopilot. Showing the last copy on this device.");
+            setFetchFailed(false);
+          } else {
+            setFetchFailed(true);
+          }
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
+        setFromCache(false);
+        setCachedAt(null);
+        await persistTuningAutopilotSnapshot(urlOrg, seasonHint, data);
+      } catch {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Tuning Autopilot. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setFetchFailed(true);
+        }
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -221,14 +299,16 @@ export default function TuningAutopilotClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as TuningAutopilotView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+        if (!response.ok || !isTuningAutopilotView(data)) {
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
         setView(data);
         setSeason(data.seasonYear);
+        void persistTuningAutopilotSnapshot(orgId, season != null ? String(season) : "", data);
       } catch {
         setError("Network error — please try again.");
       } finally {
@@ -239,7 +319,11 @@ export default function TuningAutopilotClient() {
   );
 
   if (shell === "loading") {
-    return <TuningShell description={shellCopy.description} orgId={null} shell="loading" />;
+    return (
+      <TuningShell description={shellCopy.description} orgId={null} shell="loading">
+        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      </TuningShell>
+    );
   }
 
   if (shell === "error") {
@@ -250,7 +334,9 @@ export default function TuningAutopilotClient() {
         shell="error"
         error={error || shellCopy.description}
         onRetry={() => load()}
-      />
+      >
+        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      </TuningShell>
     );
   }
 
@@ -260,12 +346,18 @@ export default function TuningAutopilotClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      </TuningShell>
     );
   }
 
   if (view?.status !== "live") {
-    return <TuningShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+    return (
+      <TuningShell description={shellCopy.description} orgId={orgId} shell="setup">
+        <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
+      </TuningShell>
+    );
   }
 
   return (
@@ -307,6 +399,8 @@ export default function TuningAutopilotClient() {
           ))}
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Tuning Autopilot" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

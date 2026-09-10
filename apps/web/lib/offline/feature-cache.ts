@@ -109,7 +109,11 @@ export type OfflineFeature =
   | "scout-accuracy"
   | "scout-crossval"
   | "rule-impact"
-  | "season-planning-workspace";
+  | "season-planning-workspace"
+  | "retro"
+  | "team-data"
+  | "tuning-autopilot"
+  | "video-rescout";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;

@@ -132,6 +132,9 @@ const SHELL_ROUTES = [
   "/scout-crossval",
   "/rule-impact",
   "/season-planning-workspace",
+  "/retro",
+  "/team/data",
+  "/tuning-autopilot",
 ];
 
 function isShellPath(pathname) {

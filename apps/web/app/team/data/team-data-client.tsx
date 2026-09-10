@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { TeamDataRelated } from "../../../components/team-data-related";
 import { EmptyState, Panel, Button } from "../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
 import {
   TEAM_DATA_RELATED_INCLUDE,
@@ -24,6 +27,30 @@ type Credential = {
   lastTestedAt: string | null;
   disabledAt: string | null;
 };
+
+type TeamDataSnapshot = {
+  inventory: InventoryRow[];
+  reference: InventoryRow[];
+  activeEventKey: string | null;
+  credentials: Credential[];
+  health: Record<string, unknown> | null;
+  dataSourceHealth: DataSourceHealthView | null;
+};
+
+function isTeamDataSnapshot(value: unknown): value is TeamDataSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const row = value as { inventory?: unknown; reference?: unknown };
+  return Array.isArray(row.inventory) && Array.isArray(row.reference);
+}
+
+async function persistTeamDataSnapshot(orgId: string, data: TeamDataSnapshot): Promise<void> {
+  if (!orgId) return;
+  try {
+    await putFeatureSnapshot("team-data", orgId, data);
+  } catch {
+    // Live Team Data already painted; IndexedDB is best-effort.
+  }
+}
 
 function TeamDataNextActionsPanel({ actions }: { actions: TeamDataNextAction[] }) {
   if (actions.length === 0) return null;
@@ -151,28 +178,58 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [forbidden, setForbidden] = useState(false);
   const [error, setError] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const paintedOrgRef = useRef<string | null>(null);
 
   const exportHref = withOrgHref("/exports", orgId);
   const exportPdfHref = withOrgHref("/exports?action=pdf", orgId);
 
+  const applySnapshot = useCallback((data: TeamDataSnapshot) => {
+    setInventory(data.inventory);
+    setReference(data.reference);
+    setActiveEventKey(data.activeEventKey ?? null);
+    setCredentials(data.credentials ?? []);
+    setHealth(data.health ?? null);
+    setDataSourceHealth(data.dataSourceHealth ?? null);
+    paintedOrgRef.current = orgId;
+  }, [orgId]);
+
   const load = useCallback(async () => {
     setError("");
+    let hadCache = paintedOrgRef.current === orgId;
+    try {
+      const cached = await getFeatureSnapshot<TeamDataSnapshot>("team-data", orgId);
+      if (paintedOrgRef.current !== orgId && cached?.data && isTeamDataSnapshot(cached.data)) {
+        applySnapshot(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        setLoading(false);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    if (!hadCache) setLoading(true);
     setFetchFailed(false);
     setForbidden(false);
     try {
       const response = await fetch(`/api/team/data?orgId=${encodeURIComponent(orgId)}`, {
         credentials: "include",
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as {
-        inventory?: InventoryRow[];
-        reference?: InventoryRow[];
-        activeEventKey?: string | null;
-        credentials?: Credential[];
-        health?: Record<string, unknown> | null;
-        dataSourceHealth?: DataSourceHealthView;
-        error?: string;
-      };
-      if (!response.ok) {
+      const data = (await response.json()) as TeamDataSnapshot & { error?: string };
+      if (response.status === 401 || response.status === 403) {
+        setInventory([]);
+        setReference([]);
+        setActiveEventKey(null);
+        setCredentials([]);
+        setHealth(null);
+        setDataSourceHealth(null);
+        paintedOrgRef.current = null;
+        setFromCache(false);
+        setCachedAt(null);
         setOk(false);
         setFetchFailed(true);
         setForbidden(response.status === 403);
@@ -180,26 +237,57 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         setMessage(data.error ?? "Unable to load team data");
         return;
       }
-      setInventory(data.inventory ?? []);
-      setReference(data.reference ?? []);
-      setActiveEventKey(data.activeEventKey ?? null);
-      setCredentials(data.credentials ?? []);
-      setHealth(data.health ?? null);
-      setDataSourceHealth(data.dataSourceHealth ?? null);
+      if (!response.ok || !isTeamDataSnapshot(data)) {
+        if (hadCache || paintedOrgRef.current === orgId) {
+          setFromCache(true);
+          setFetchFailed(false);
+          setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+        } else {
+          setOk(false);
+          setFetchFailed(true);
+          setForbidden(false);
+          setError(data.error ?? "Unable to load team data");
+          setMessage(data.error ?? "Unable to load team data");
+        }
+        return;
+      }
+      applySnapshot({
+        inventory: data.inventory,
+        reference: data.reference,
+        activeEventKey: data.activeEventKey ?? null,
+        credentials: data.credentials ?? [],
+        health: data.health ?? null,
+        dataSourceHealth: data.dataSourceHealth ?? null,
+      });
       setOk(true);
       setMessage("");
+      setFromCache(false);
+      setCachedAt(null);
+      await persistTeamDataSnapshot(orgId, {
+        inventory: data.inventory,
+        reference: data.reference,
+        activeEventKey: data.activeEventKey ?? null,
+        credentials: data.credentials ?? [],
+        health: data.health ?? null,
+        dataSourceHealth: data.dataSourceHealth ?? null,
+      });
     } catch {
-      setOk(false);
-      setFetchFailed(true);
-      setError("Unable to load team data");
-      setMessage("Unable to load team data");
+      if (hadCache || paintedOrgRef.current === orgId) {
+        setFromCache(true);
+        setFetchFailed(false);
+        setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+      } else {
+        setOk(false);
+        setFetchFailed(true);
+        setError("Unable to load team data");
+        setMessage("Unable to load team data");
+      }
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [applySnapshot, orgId]);
 
   useEffect(() => {
-    setLoading(true);
     void load();
   }, [load]);
 
@@ -209,6 +297,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, action: "sync" }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as {
       summary?: Record<string, unknown>;
@@ -234,6 +323,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, action: "save", apiKey: key }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as { error?: string };
     setBusy(false);
@@ -255,6 +345,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, action: "test", credentialId }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     });
     const data = (await response.json()) as { error?: string };
     setBusy(false);
@@ -301,7 +392,9 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         description="Checking your event and The Blue Alliance connection."
         orgId={orgId}
         shell="loading"
-      />
+      >
+        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+      </TeamDataShell>
     );
   }
 
@@ -314,10 +407,11 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         shell="error"
         error={error || message}
         onRetry={() => {
-          setLoading(true);
           void load();
         }}
-      />
+      >
+        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
+      </TeamDataShell>
     );
   }
 
@@ -346,6 +440,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         hasActiveEvent={hasActiveEvent}
         tbaConfigured={tbaConfigured}
       >
+        <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
           <section className="app-card soft-panel team-data-panel">
             <h2>Blue Alliance team key</h2>
@@ -401,6 +496,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
           </Button>
         </div>
       </header>
+
+      <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
 import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import {
@@ -42,10 +43,28 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type DetailTab = "notes" | "rescout";
 type ReadyView = Extract<RescoutView, { status: "ready" }>;
+
+function isRescoutView(value: unknown): value is RescoutView {
+  if (!value || typeof value !== "object") return false;
+  const status = (value as { status?: unknown }).status;
+  return status === "setup_required" || status === "ready";
+}
+
+async function persistVideoRescoutSnapshot(orgHint: string, data: RescoutView): Promise<void> {
+  const cacheOrg = data.status === "ready" && data.context.orgId ? data.context.orgId : orgHint;
+  if (!cacheOrg) return;
+  try {
+    await putFeatureSnapshot("video-rescout", cacheOrg, data);
+    if (!orgHint) await putFeatureSnapshot("video-rescout", "_", data);
+  } catch {
+    // Live Match video already painted; IndexedDB is best-effort.
+  }
+}
 
 function teamLabel(teamKey: string): string {
   return teamKey.replace(/^frc/i, "");
@@ -286,30 +305,70 @@ export default function VideoRescoutClient() {
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newMatchKey, setNewMatchKey] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const viewRef = useRef<RescoutView | null>(null);
+  viewRef.current = view;
 
   const load = useCallback(async () => {
-    setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId")?.trim() ?? "";
+    let hadCache = Boolean(viewRef.current);
+    try {
+      const cached = await getFeatureSnapshot<RescoutView>("video-rescout", orgId || "_");
+      if (!viewRef.current && cached?.data && isRescoutView(cached.data)) {
+        setView(cached.data);
+        setFromCache(true);
+        setCachedAt(cached.cachedAt);
+        hadCache = true;
+      }
+    } catch {
+      // IndexedDB missing or blocked; live fetch still runs.
+    }
+    setFetchFailed(false);
     try {
       const response = await fetch(`/api/video/rescout${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as RescoutView | { error?: string };
-      if (!response.ok || !("status" in data)) {
+      if (response.status === 401 || response.status === 403) {
+        setView(null);
+        setFromCache(false);
+        setCachedAt(null);
         setError("error" in data && data.error ? data.error : "Could not load match video.");
         setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
+      if (!response.ok || !isRescoutView(data)) {
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setError("Could not refresh Match video. Showing the last copy on this device.");
+          setFetchFailed(false);
+        } else {
+          setError("error" in data && data.error ? data.error : "Could not load match video.");
+          setErrorStatus(response.status);
+          setFetchFailed(true);
+        }
+        return;
+      }
       setError("");
       setErrorStatus(null);
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      await persistVideoRescoutSnapshot(orgId, data);
     } catch {
-      setFetchFailed(true);
-      setErrorStatus(null);
-      setError("Network error — please try again.");
+      if (hadCache || viewRef.current) {
+        setFromCache(true);
+        setError("Could not refresh Match video. Showing the last copy on this device.");
+        setFetchFailed(false);
+      } else {
+        setFetchFailed(true);
+        setErrorStatus(null);
+        setError("Network error — please try again.");
+      }
     }
   }, []);
 
@@ -415,7 +474,11 @@ export default function VideoRescoutClient() {
   };
 
   if (shell === "loading") {
-    return <VideoRescoutShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+    return (
+      <VideoRescoutShell description={shellCopy.description} orgId={orgId} shell="loading">
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
+      </VideoRescoutShell>
+    );
   }
 
   if (shell === "error") {
@@ -441,7 +504,9 @@ export default function VideoRescoutClient() {
         error={error || shellCopy.description}
         failure={failure}
         onRetry={() => void load()}
-      />
+      >
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
+      </VideoRescoutShell>
     );
   }
 
@@ -451,13 +516,16 @@ export default function VideoRescoutClient() {
         description={view?.status === "setup_required" ? view.message : shellCopy.description}
         orgId={orgId}
         shell="setup"
-      />
+      >
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
+      </VideoRescoutShell>
     );
   }
 
   if (shell === "empty" || view?.status !== "ready" || !orgId) {
     return (
       <VideoRescoutShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
         {orgId ? (
           <NewReviewPanel
             orgId={orgId}
@@ -788,6 +856,8 @@ export default function VideoRescoutClient() {
           <VideoRescoutRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

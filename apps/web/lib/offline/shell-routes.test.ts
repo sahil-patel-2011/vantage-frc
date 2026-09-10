@@ -127,6 +127,9 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/scout-crossval")).toBe(true);
     expect(pathnameIsOfflineShell("/rule-impact")).toBe(true);
     expect(pathnameIsOfflineShell("/season-planning-workspace")).toBe(true);
+    expect(pathnameIsOfflineShell("/retro")).toBe(true);
+    expect(pathnameIsOfflineShell("/team/data")).toBe(true);
+    expect(pathnameIsOfflineShell("/tuning-autopilot")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -235,6 +238,10 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/scout-crossval")).toBe("Scout Cross-Validation");
     expect(offlineCapableLabel("/rule-impact")).toBe("Rule Impact Analyzer");
     expect(offlineCapableLabel("/season-planning-workspace")).toBe("Season Planning");
+    expect(offlineCapableLabel("/retro")).toBe("Retro");
+    expect(offlineCapableLabel("/team/data")).toBe("Team Data");
+    expect(offlineCapableLabel("/team")).toBe("Team");
+    expect(offlineCapableLabel("/tuning-autopilot")).toBe("Tuning Autopilot");
   });
 
   it("keeps public/sw.js SHELL_ROUTES aligned with OFFLINE_SHELL_ROUTES", () => {
@@ -340,6 +347,10 @@ describe("offline shell routes", () => {
     expect(featureCacheKey("scout-crossval", "org-1", "2026txcmp")).toBe("scout-crossval:org-1:2026txcmp");
     expect(featureCacheKey("rule-impact", "org-1", "2026")).toBe("rule-impact:org-1:2026");
     expect(featureCacheKey("season-planning-workspace", "org-1", "2026")).toBe("season-planning-workspace:org-1:2026");
+    expect(featureCacheKey("retro", "org-1", "2026")).toBe("retro:org-1:2026");
+    expect(featureCacheKey("team-data", "org-1")).toBe("team-data:org-1");
+    expect(featureCacheKey("tuning-autopilot", "org-1", "2026")).toBe("tuning-autopilot:org-1:2026");
+    expect(featureCacheKey("video-rescout", "org-1")).toBe("video-rescout:org-1");
     expect(featureCacheKey("schedule", "org-1")).toBe("schedule:org-1");
   });
 
