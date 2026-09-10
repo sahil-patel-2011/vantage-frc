@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { setupActionsFrom } from "../setup-actions";
 
 /** Soft-UI related surfaces for Alliance Selection Desk (never DEMO rankings). */
 export const ALLIANCE_SELECTION_DESK_RELATED_LINKS = [
@@ -73,35 +74,43 @@ export type AllianceSelectionDeskSetupStep = {
   href: string;
 };
 
+function allianceSelectionDeskRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    allianceSelectionDeskRelatedLinks(orgId, {
+      include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
+    }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = allianceSelectionDeskRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function allianceSelectionDeskSetupSteps(
   orgId?: string | null,
 ): AllianceSelectionDeskSetupStep[] {
-  return [
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open the alliance board.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open the desk.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+      id: "command",
+      label: "Set active event",
+      detail: "Pick the event this alliance is at — slots stay empty until it is set.",
+      href: hubHref("/competition", "command", orgId),
     },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Confirm event context and pick lists before opening a live board.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Scout rows stay blank until your team enters them.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "picklist-collab",
-      label: "Open Collaborative Pick List",
-      detail: "Rank partners before assigning alliance slots.",
-      href: hubHref("/competition", "picklist-collab", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real conflict / fill counts only — never invent DEMO totals. */
@@ -197,50 +206,7 @@ export function allianceSelectionDeskNextActions(input: {
   const filledSlots = input.filledSlots ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before opening a board.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist.",
-          href: hubHref("/competition", "strategy", null),
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them.",
-          href: hubHref("/competition", "scouting", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership setup so the desk can resolve your organization.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Confirm event context before creating a selection session.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-      {
-        id: "picklist-collab",
-        label: "Open Collaborative Pick List",
-        detail: "Rank partners before assigning alliance slots.",
-        href: hubHref("/competition", "picklist-collab", orgId),
-      },
-    ];
+    return setupActionsFrom(allianceSelectionDeskSetupSteps(orgId));
   }
 
   if (input.shell === "error") {

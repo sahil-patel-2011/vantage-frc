@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { fetchProductSession } from "../../lib/nav/product-session";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
@@ -80,7 +82,10 @@ export default function AccountClient() {
     setLoading(true);
     setFetchFailed(false);
     try {
-      const response = await fetch("/api/account");
+      const response = await fetch("/api/account", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       if (!response.ok) {
         setMessage("");
         setMessageOk(false);
@@ -102,23 +107,19 @@ export default function AccountClient() {
       if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
       setMessage("");
 
-      const meResponse = await fetch("/api/me");
-      if (meResponse.ok) {
-        const me = (await meResponse.json()) as {
-          orgId?: string | null;
-          orgName?: string | null;
-          teamNumber?: number | null;
-          role?: string | null;
-          planCode?: string | null;
-          workspaces?: unknown[];
-        };
+      const me = await fetchProductSession();
+      if (me) {
         setOrg({
           orgId: me.orgId ?? null,
           orgName: me.orgName ?? null,
           teamNumber: me.teamNumber ?? null,
           role: me.role ?? null,
-          planCode: me.planCode ?? null,
-          workspaceCount: Array.isArray(me.workspaces) ? me.workspaces.length : me.orgId ? 1 : 0,
+          planCode: typeof me.planCode === "string" ? me.planCode : null,
+          workspaceCount: Array.isArray(me.memberships)
+            ? me.memberships.length
+            : me.orgId
+              ? 1
+              : 0,
         });
       } else {
         setOrg({

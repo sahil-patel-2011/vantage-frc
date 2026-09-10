@@ -33,7 +33,7 @@ import {
 } from "../../lib/alliance-selection-desk/alliance-selection-desk-related";
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./alliance-selection-desk.css";
 
 type LiveView = Extract<AllianceSelectionDeskView, { status: "live" }>;
@@ -107,7 +107,7 @@ function DeskShell({
   const actions = allianceSelectionDeskNextActions({ orgId, shell });
   const copy = allianceSelectionDeskShellCopy(shell);
   const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
-  const steps = shell === "setup" ? allianceSelectionDeskSetupSteps(orgId) : [];
+  const setup = shell === "setup" ? allianceSelectionDeskSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page alliance-desk-page soft-gate">
@@ -138,33 +138,19 @@ function DeskShell({
           title={copy.title}
           description={error ?? copy.description}
         >
-          {shell === "setup" ? (
-            <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
+          {setup ? (
+            <Button as="a" variant="primary" href={setup.href}>
+              {setup.label}
+            </Button>
+          ) : null}
+          {shell === "empty" ? (
+            <Button as="a" variant="primary" href="#alliance-desk-create">
+              Start a board
+            </Button>
           ) : null}
         </EmptyState>
       )}
-      {steps.length > 0 ? (
-        <Panel className="alliance-desk-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="alliance-desk-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted alliance-desk-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <DeskNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <DeskNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -305,7 +291,10 @@ export default function AllianceSelectionDeskClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (urlSession) query.set("sessionId", urlSession);
-    void fetch(`/api/alliance-selection-desk${query.toString() ? `?${query.toString()}` : ""}`)
+    void fetch(`/api/alliance-selection-desk${query.toString() ? `?${query.toString()}` : ""}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    })
       .then(async (response) => {
         const data = (await response.json()) as AllianceSelectionDeskView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -364,6 +353,7 @@ export default function AllianceSelectionDeskClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, sessionId, ...payload }),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as
           | { view?: AllianceSelectionDeskView; snapshot?: DeskExportSnapshot; error?: string }

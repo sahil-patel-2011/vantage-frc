@@ -33,19 +33,15 @@ describe("myDayRelatedLinks", () => {
 });
 
 describe("myDaySetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO matches", () => {
+  it("keeps Sync the schedule; Event Day / Schedule / Strategy live on the related strip", () => {
     const steps = myDaySetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "team-data")?.href).toBe("/team/data?orgId=org-1");
-    expect(steps.find((s) => s.id === "command")?.href).toBe(
-      "/competition?tab=command&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "schedule")?.href).toBe("/schedule?orgId=org-1");
-    expect(steps.find((s) => s.id === "strategy")?.href).toBe(
-      "/competition?tab=strategy&orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["team-data"]);
+    expect(steps[0]?.href).toBe("/team/data?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(myDaySetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
@@ -97,11 +93,8 @@ describe("myDayShellCopy", () => {
 describe("myDayNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = myDayNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.primary).toBe(true);
-    expect(actions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["schedule", "strategy"]),
-    );
   });
 
   it("points empty boards at Event Day / Schedule / Strategy — never DEMO matches", () => {

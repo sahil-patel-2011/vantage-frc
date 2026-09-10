@@ -3,6 +3,7 @@ import {
   ALLIANCE_SELECTION_DESK_RELATED_INCLUDE,
   allianceSelectionDeskNextActions,
   allianceSelectionDeskRelatedLinks,
+  allianceSelectionDeskSetupSteps,
   allianceSelectionDeskShellCopy,
   classifyAllianceSelectionDeskShell,
   formatAllianceSelectionDeskMetric,
@@ -27,9 +28,22 @@ describe("allianceSelectionDeskRelatedLinks", () => {
   });
 });
 
+describe("allianceSelectionDeskSetupSteps", () => {
+  it("no-org setup is only Choose your team", () => {
+    expect(allianceSelectionDeskSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
+  });
+
+  it("keeps Set active event; Strategy / Pick list / Pick clock live on the related strip", () => {
+    const steps = allianceSelectionDeskSetupSteps("org-1");
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
+  });
+});
+
 describe("allianceSelectionDeskNextActions", () => {
   it("gates on workspace when org is missing", () => {
     const actions = allianceSelectionDeskNextActions({ orgId: null, shell: "setup" });
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
     expect(actions[0]?.href).toBe("/workspace");
     expect(actions[0]?.primary).toBe(true);
   });

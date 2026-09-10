@@ -1,5 +1,6 @@
 import { hubHref } from "./nav/hubs";
 import { withOrgHref } from "./nav/product-nav";
+import { setupActionsFrom } from "./setup-actions";
 
 /** Soft-UI related surfaces for live ops / now-next My Day (never DEMO matches). */
 export const MY_DAY_RELATED_LINKS = [
@@ -68,39 +69,39 @@ export type MyDaySetupStep = {
   href: string;
 };
 
+function myDayRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    myDayRelatedLinks(orgId, { include: [...MY_DAY_RELATED_INCLUDE] }).map((link) => link.href),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = myDayRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open next-match timing.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open next-match timing.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "team-data",
-      label: "Sync Team Data",
+      label: "Sync the schedule",
       detail: "Load The Blue Alliance schedule for this event.",
       href: withOrgHref("/team/data", orgId),
     },
-    {
-      id: "command",
-      label: "Open Event Day",
-      detail: "Confirm the active event the pit and My Day share.",
-      href: hubHref("/competition", "command", orgId),
-    },
-    {
-      id: "schedule",
-      label: "Open Schedule",
-      detail: "Full event board stays blank until real TBA matches exist.",
-      href: withOrgHref("/schedule", orgId),
-    },
-    {
-      id: "strategy",
-      label: "Open Strategy",
-      detail: "Alliance prep uses the same event.",
-      href: hubHref("/competition", "strategy", orgId),
-    },
-  ];
+  ]);
 }
 
 /** Real match counts only — never invent DEMO totals. */
@@ -202,86 +203,7 @@ export function myDayNextActions(input: {
   const orgId = input.orgId ?? null;
 
   if (!orgId || input.shell === "setup") {
-    const needsEvent = Boolean(orgId) && input.hasActiveEvent === false;
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before loading TBA rows.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "schedule",
-          label: "Open Schedule",
-          detail: "Event boards stay empty until a team and schedule sync exist.",
-          href: withOrgHref("/schedule", null),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Alliance prep lives on Strategy once event context is set.",
-          href: hubHref("/competition", "strategy", null),
-        },
-      ];
-    }
-    if (needsEvent) {
-      return [
-        {
-          id: "workspace",
-          label: "Set active event",
-          detail: "Your team’s active event is what My Day reads — empty until you choose one.",
-          href: withOrgHref("/workspace", orgId),
-          primary: true,
-        },
-        {
-          id: "command",
-          label: "Open Event Day",
-          detail: "Confirm the synced event context the pit uses for day-of ops.",
-          href: hubHref("/competition", "command", orgId),
-        },
-        {
-          id: "schedule",
-          label: "Open Schedule",
-          detail: "Event match rows stay blank until the active event is set and synced.",
-          href: withOrgHref("/schedule", orgId),
-        },
-        {
-          id: "strategy",
-          label: "Open Strategy",
-          detail: "Strategy shares the same active event once it is selected.",
-          href: hubHref("/competition", "strategy", orgId),
-        },
-      ];
-    }
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Finish membership or event setup so My Day can resolve your org.",
-        href: withOrgHref("/workspace", orgId),
-        primary: true,
-      },
-      {
-        id: "command",
-        label: "Open Event Day",
-        detail: "Day-of command uses the same active event as next-match timing.",
-        href: hubHref("/competition", "command", orgId),
-      },
-      {
-        id: "schedule",
-        label: "Open Schedule",
-        detail: "Command and My Day share the same match list.",
-        href: withOrgHref("/schedule", orgId),
-      },
-      {
-        id: "strategy",
-        label: "Open Strategy",
-        detail: "Prep callouts stay blank until real scout/TBA metrics exist.",
-        href: hubHref("/competition", "strategy", orgId),
-      },
-    ];
+    return setupActionsFrom(myDaySetupSteps(orgId));
   }
 
   if (input.shell === "error") {

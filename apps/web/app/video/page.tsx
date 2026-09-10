@@ -2,8 +2,8 @@
 import "./video-rescout.css";
 
 export const metadata = {
-  title: "Match Video Review",
-  description: "Post-match video re-scout: pause, rewind, 2x playback, and stamp scores on the YouTube timeline.",
+  title: "Match video",
+  description: "Watch a match clip, pause, rewind, and stamp what happened on the timeline.",
 };
 
 export default function VideoPage() {

@@ -41,6 +41,7 @@ import {
 } from "../../lib/video-review";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type DetailTab = "notes" | "rescout";
@@ -112,8 +113,7 @@ function VideoRescoutShell({
   const actions = videoRescoutNextActions({ orgId, shell });
   const copy = videoRescoutShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
-  const steps = shell === "setup" ? videoRescoutSetupSteps(orgId) : [];
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const setup = shell === "setup" ? videoRescoutSetupSteps(orgId)[0] : null;
 
   return (
     <main className="module-page vid-page soft-gate">
@@ -121,10 +121,10 @@ function VideoRescoutShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Video Re-Scout"}
+            {" / Match video"}
           </>
         }
-        title="Post-Match Video Re-Scout"
+        title="Match video"
         description={description}
       >
         <VideoRescoutRelatedStrip orgId={orgId} />
@@ -156,35 +156,16 @@ function VideoRescoutShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? scoutingHref : "/workspace"}>{orgId ? "Open Scouting" : "Choose your team"}</Button>
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
+          </Button>
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href="#video-new-review">Add a match review</Button>
         ) : null}
       </EmptyState>
-      {steps.length > 0 ? (
-        <Panel className="vid-soft-panel" aria-label="Setup steps">
-          <header>
-            <h2>Setup steps</h2>
-            <p className="app-muted">Finish these once and this page fills in.</p>
-          </header>
-          <ul className="vid-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <p className="app-muted vid-tip">{step.detail}</p>
-                </div>
-                <Button as="a" variant="secondary" href={step.href}>
-                  Open
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
-      {steps.length === 0 ? <VideoRescoutNextActionsPanel actions={actions} /> : null}
+      {shell === "ready" ? <VideoRescoutNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
@@ -311,10 +292,13 @@ export default function VideoRescoutClient() {
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
-      const response = await fetch(`/api/video/rescout${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const response = await fetch(`/api/video/rescout${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
       const data = (await response.json()) as RescoutView | { error?: string };
       if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load video re-scout.");
+        setError("error" in data && data.error ? data.error : "Could not load match video.");
         setErrorStatus(response.status);
         setFetchFailed(true);
         return;
@@ -342,6 +326,7 @@ export default function VideoRescoutClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string; id?: string };
         if (!response.ok) {
@@ -369,6 +354,7 @@ export default function VideoRescoutClient() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
@@ -792,10 +778,10 @@ export default function VideoRescoutClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Video Re-Scout"}
+            {" / Match video"}
           </>
         }
-        title="Post-Match Video Re-Scout"
+        title="Match video"
         description={`Re-watch real match footage for ${readyView.context.orgName ?? "your team"} and drop timeline scores into scouting.`}
       >
         <div className="vid-header-meta">

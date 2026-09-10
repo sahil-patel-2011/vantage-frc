@@ -35,18 +35,15 @@ describe("videoRescoutRelatedLinks", () => {
 });
 
 describe("videoRescoutSetupSteps", () => {
-  it("uses hubHref / withOrgHref and never DEMO jobs", () => {
+  it("keeps Set active event; Scouting / Accuracy / Disagreements live on the related strip", () => {
     const steps = videoRescoutSetupSteps("org-1");
-    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
-    expect(steps.find((s) => s.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
-    expect(steps.find((s) => s.id === "accuracy")?.href).toBe("/scout-accuracy?orgId=org-1");
-    expect(steps.find((s) => s.id === "disagreements")?.href).toBe(
-      "/scout-disagreements?orgId=org-1",
-    );
+    expect(steps.map((s) => s.id)).toEqual(["command"]);
+    expect(steps[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
-    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("no-org setup is only Choose your team", () => {
+    expect(videoRescoutSetupSteps(null).map((s) => s.id)).toEqual(["workspace"]);
   });
 });
 
@@ -106,19 +103,15 @@ describe("videoRescoutShellCopy", () => {
 describe("videoRescoutNextActions", () => {
   it("prioritizes workspace when no org", () => {
     const actions = videoRescoutNextActions({ orgId: null, shell: "setup" });
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions.some((a) => a.id === "scouting")).toBe(true);
-    expect(actions.some((a) => a.id === "accuracy")).toBe(true);
-    expect(actions.some((a) => a.id === "disagreements")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["workspace"]);
+    expect(actions[0]?.primary).toBe(true);
   });
 
-  it("setup with org points at Scouting / Accuracy / Disagreements", () => {
+  it("setup with org points at Set active event", () => {
     const actions = videoRescoutNextActions({ orgId: "org-1", shell: "setup" });
-    expect(actions[0]?.id).toBe("scouting");
-    expect(actions.some((a) => a.id === "accuracy")).toBe(true);
-    expect(actions.some((a) => a.id === "disagreements")).toBe(true);
+    expect(actions.map((a) => a.id)).toEqual(["command"]);
+    expect(actions[0]?.href).toBe("/competition?tab=command&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
   it("empty shell points at create + Scouting / Accuracy / Disagreements", () => {

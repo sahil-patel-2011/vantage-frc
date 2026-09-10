@@ -1,5 +1,6 @@
 import { hubHref } from "./nav/hubs";
 import { withOrgHref } from "./nav/product-nav";
+import { setupActionsFrom } from "./setup-actions";
 
 /** Soft-UI related surfaces for Video Re-Scout (never DEMO jobs). */
 export const VIDEO_RESCOUT_RELATED_LINKS = [
@@ -71,39 +72,41 @@ export type VideoRescoutSetupStep = {
   href: string;
 };
 
+function videoRescoutRelatedHrefs(orgId?: string | null): Set<string> {
+  return new Set(
+    videoRescoutRelatedLinks(orgId, { include: [...VIDEO_RESCOUT_RELATED_INCLUDE] }).map(
+      (link) => link.href,
+    ),
+  );
+}
+
+function dropRelatedStripDuplicates<T extends { href: string }>(
+  orgId: string | null | undefined,
+  items: T[],
+): T[] {
+  const related = videoRescoutRelatedHrefs(orgId);
+  return items.filter((item) => !related.has(item.href));
+}
+
 export function videoRescoutSetupSteps(orgId?: string | null): VideoRescoutSetupStep[] {
-  return [
-    {
-      id: "workspace",
-      label: "Choose your team",
-      detail: "Choose your team to open video re-scout.",
-      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
-    },
-    {
-      id: "scouting",
-      label: "Open Scouting",
-      detail: "Confirm a match schema so timeline scores can commit.",
-      href: hubHref("/competition", "scouting", orgId),
-    },
-    {
-      id: "accuracy",
-      label: "Open Accuracy",
-      detail: "TBA-verified ranks help decide which re-scout values to trust.",
-      href: withOrgHref("/scout-accuracy", orgId),
-    },
-    {
-      id: "disagreements",
-      label: "Open Disagreements",
-      detail: "Re-watch clips when stand scouts conflict.",
-      href: withOrgHref("/scout-disagreements", orgId),
-    },
+  if (!orgId) {
+    return [
+      {
+        id: "workspace",
+        label: "Choose your team",
+        detail: "Choose your team to open match video.",
+        href: "/workspace",
+      },
+    ];
+  }
+  return dropRelatedStripDuplicates(orgId, [
     {
       id: "command",
       label: "Set active event",
-      detail: "Pin the event so committed re-scout rows stay on the right matches.",
+      detail: "Pick the event these clips belong to — reviews stay blank until it is set.",
       href: hubHref("/competition", "command", orgId),
     },
-  ];
+  ]);
 }
 
 /** Real counts only — never invent DEMO totals. */
@@ -150,40 +153,35 @@ export function videoRescoutShellCopy(kind: VideoRescoutShellKind): VideoRescout
     case "loading":
       return {
         kind,
-        title: "Loading video re-scout…",
-        description:
-          "Checking which team you are on and saved match reviews.",
+        title: "Loading match video…",
+        description: "Checking which team you are on and saved match reviews.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load video re-scout",
-        description:
-          "A network or server issue blocked match reviews. Retry, or open Scouting / Accuracy / Disagreements while it reloads.",
+        title: "Could not load match video",
+        description: "Could not load match video. Retry, or open Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup required",
         title: "Select a team",
-        description:
-          "Select a team before match reviews appear.",
+        description: "Select a team before match reviews appear.",
       };
     case "empty":
       return {
         kind,
         badge: "No reviews yet",
         title: "Waiting on a real match clip",
-        description:
-          "Paste a YouTube match link and assign up to four teams to re-scout. Cross-check Scouting, Accuracy, and Disagreements.",
+        description: "Paste a YouTube match link. Scores stay on the timeline until you commit them to Scouting.",
       };
     default:
       return {
         kind: "ready",
-        title: "Video re-scout",
-        description:
-          "Pause, rewind, and stamp timeline scores from real match footage.",
+        title: "Match video",
+        description: "Pause, rewind, and stamp what happened from real match footage.",
       };
   }
 }
@@ -203,69 +201,14 @@ export function videoRescoutNextActions(input: {
   const scoreCount = input.scoreCount ?? 0;
 
   if (!orgId || input.shell === "setup") {
-    if (!orgId) {
-      return [
-        {
-          id: "workspace",
-          label: "Choose your team",
-          detail: "Pick a team before saving reviews.",
-          href: "/workspace",
-          primary: true,
-        },
-        {
-          id: "scouting",
-          label: "Open Scouting",
-          detail: "Match schemas stay blank until your team configures them.",
-          href: hubHref("/competition", "scouting", null),
-        },
-        {
-          id: "accuracy",
-          label: "Open Accuracy",
-          detail: "TBA-verified ranks stay honest until real scout rows exist.",
-          href: withOrgHref("/scout-accuracy", null),
-        },
-        {
-          id: "disagreements",
-          label: "Open Disagreements",
-          detail: "Conflict queues stay blank until overlapping fields exist.",
-          href: withOrgHref("/scout-disagreements", null),
-        },
-      ];
-    }
-    return [
-      {
-        id: "scouting",
-        label: "Open Scouting",
-        detail: "Confirm a match schema so timeline scores can commit.",
-        href: hubHref("/competition", "scouting", orgId),
-        primary: true,
-      },
-      {
-        id: "accuracy",
-        label: "Open Accuracy",
-        detail: "Use TBA-verified ranks when choosing which re-scout values to trust.",
-        href: withOrgHref("/scout-accuracy", orgId),
-      },
-      {
-        id: "disagreements",
-        label: "Open Disagreements",
-        detail: "Re-watch clips when stand scouts conflict on a field.",
-        href: withOrgHref("/scout-disagreements", orgId),
-      },
-      {
-        id: "command",
-        label: "Set active event",
-        detail: "Confirm the event so committed rows stay match-scoped.",
-        href: hubHref("/competition", "command", orgId),
-      },
-    ];
+    return setupActionsFrom(videoRescoutSetupSteps(orgId));
   }
 
   if (input.shell === "error") {
     return [
       {
         id: "retry",
-        label: "Retry video re-scout",
+        label: "Retry match video",
         detail: "Reload real match reviews.",
         href: withOrgHref("/video", orgId),
         primary: true,

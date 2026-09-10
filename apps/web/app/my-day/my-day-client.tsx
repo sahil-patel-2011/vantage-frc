@@ -172,7 +172,7 @@ function MyDayShell({
     hasActiveEvent,
   });
   const copy = myDayShellCopy(shell, { emptyReason });
-  const steps = shell === "setup" ? myDaySetupSteps(orgId) : [];
+  const setup = shell === "setup" ? myDaySetupSteps(orgId)[0] : null;
   // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
   const failure =
     shell === "error"
@@ -191,8 +191,6 @@ function MyDayShell({
           },
         )
       : null;
-  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
 
@@ -236,9 +234,9 @@ function MyDayShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
-          <Button as="a" variant="primary" href={orgId ? teamDataHref : workspaceHref}>
-            {orgId ? "Sync Team Data" : "Choose your team"}
+        {setup ? (
+          <Button as="a" variant="primary" href={setup.href}>
+            {setup.label}
           </Button>
         ) : null}
         {shell === "empty" ? (
@@ -246,21 +244,8 @@ function MyDayShell({
             {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
           </Button>
         ) : null}
-        {!embedded && shell === "setup" && steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        ) : null}
       </EmptyState>
-      {embedded || shell === "loading" ? null : <MyDayNextActionsPanel actions={actions} />}
+      {embedded || shell !== "ready" ? null : <MyDayNextActionsPanel actions={actions} />}
     </main>
   );
 }
