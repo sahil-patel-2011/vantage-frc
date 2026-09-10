@@ -14,8 +14,9 @@
 // Bump both on any release that changes the shell or its assets: `activate` deletes
 // every cache whose key is not one of these two, so a version bump is what forces a
 // returning installed client off the previous release's cached UI.
-const ASSET_CACHE = "vantage-assets-v5";
-const SHELL_CACHE = "vantage-shell-v5";
+const BUILD = new URL(self.location.href).searchParams.get("v") || "dev";
+const ASSET_CACHE = "vantage-assets-" + BUILD;
+const SHELL_CACHE = "vantage-shell-" + BUILD;
 const SHELL_URL = "/offline";
 
 const PRECACHE = ["/manifest.webmanifest", "/icon.svg", SHELL_URL];
@@ -32,6 +33,10 @@ const SHELL_ROUTES = [
   "/todos",
   "/tasks",
   "/logistics",
+  "/build",
+  "/files",
+  "/docs",
+  "/dashboard",
 ];
 
 function isShellPath(pathname) {

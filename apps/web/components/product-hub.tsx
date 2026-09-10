@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HelpTip } from "./help-tip";
 import { HubTabForbidden } from "./hub-access-gate";
+import { OfflineBanner } from "./offline-banner";
 import { EmptyState, PageHeader, TabBar, ToolStrip } from "./ui";
 import { sectionHelpFor } from "../lib/help/section-help";
 import {
@@ -219,6 +220,7 @@ export function ProductHubShell({
       <PageHeader breadcrumbs={breadcrumbs} title={hub.title}>
         {headerActions}
       </PageHeader>
+      <OfflineBanner feature={hub.label} />
       <TabBar
         aria-label={`${hub.label} sections`}
         value={workbenchId}

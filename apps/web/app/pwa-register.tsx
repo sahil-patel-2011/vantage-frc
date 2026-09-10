@@ -16,6 +16,8 @@ import { useEffect } from "react";
  * origin is removed for the same reason.
  */
 const ENABLED = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_PWA_DEV === "1";
+const BUILD_ID =
+  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || "dev";
 
 export default function PwaRegister() {
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function PwaRegister() {
       return;
     }
     void navigator.serviceWorker
-      .register("/sw.js")
+      .register(`/sw.js?v=${encodeURIComponent(BUILD_ID)}`)
       .then((registration) => {
         void registration.update().catch(() => undefined);
         const worker = registration.active ?? registration.waiting ?? registration.installing;

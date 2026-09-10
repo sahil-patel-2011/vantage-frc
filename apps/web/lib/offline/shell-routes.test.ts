@@ -21,7 +21,10 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/offline")).toBe(true);
     expect(pathnameIsOfflineShell("/competition")).toBe(true);
     expect(pathnameIsOfflineShell("/team")).toBe(true);
-    expect(pathnameIsOfflineShell("/dashboard")).toBe(false);
+    expect(pathnameIsOfflineShell("/dashboard")).toBe(true);
+    expect(pathnameIsOfflineShell("/build")).toBe(true);
+    expect(pathnameIsOfflineShell("/files")).toBe(true);
+    expect(pathnameIsOfflineShell("/docs")).toBe(true);
     expect(pathnameIsOfflineShell("/api/todos")).toBe(false);
   });
 
@@ -31,7 +34,8 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/calendar")).toBe("Calendar");
     expect(offlineCapableLabel("/todos")).toBe("Todos");
     expect(offlineCapableLabel("/logistics")).toBe("Logistics");
-    expect(offlineCapableLabel("/dashboard")).toBeNull();
+    expect(offlineCapableLabel("/dashboard")).toBe("Home");
+    expect(offlineCapableLabel("/files")).toBe("Files");
   });
 
   it("builds stable feature cache keys", () => {

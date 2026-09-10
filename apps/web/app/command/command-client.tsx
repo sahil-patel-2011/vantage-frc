@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { OfflineBanner } from "../../components/offline-banner";
 import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
@@ -203,6 +205,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
   const [eventQ, setEventQ] = useState("");
   const [events, setEvents] = useState<EventOption[]>([]);
@@ -228,11 +232,22 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       setLoading(false);
       setSnap(null);
       setFetchFailed(false);
+      setFromCache(false);
       return;
     }
     try {
       const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`);
       if (!response.ok) {
+        const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id);
+        if (cached) {
+          setSnap(cached.data);
+          setCachedAt(cached.cachedAt);
+          setFromCache(true);
+          setError("");
+          setFetchFailed(false);
+          setLoading(false);
+          return;
+        }
         const body = await response.json().catch(() => ({}));
         setError(body.error ?? "Could not load Event Day Command");
         setFetchFailed(true);
@@ -243,8 +258,21 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       setSnap(data);
       setError("");
       setFetchFailed(false);
+      setFromCache(false);
+      setCachedAt(new Date().toISOString());
       setLoading(false);
+      await putFeatureSnapshot("competition", id, data);
     } catch {
+      const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id);
+      if (cached) {
+        setSnap(cached.data);
+        setCachedAt(cached.cachedAt);
+        setFromCache(true);
+        setError("");
+        setFetchFailed(false);
+        setLoading(false);
+        return;
+      }
       setError("Could not load Event Day Command");
       setFetchFailed(true);
       setLoading(false);
@@ -279,8 +307,19 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       return;
     }
     void load(orgId);
-    const poll = window.setInterval(() => void load(orgId), POLL_MS);
-    return () => window.clearInterval(poll);
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      void load(orgId);
+    };
+    const poll = window.setInterval(tick, POLL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load(orgId);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [orgId, load]);
 
   useEffect(() => {
@@ -474,21 +513,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     );
   }
 
-  return (
-    <main className="edc-page">
-      <PageHeader
-        breadcrumbs="Competition / Event Day"
-        title={snap?.eventName ?? "Event Day Command"}
-        description={
-          <>
-            {snap?.orgName ? `${snap.orgName}` : me.orgName ?? "Your team"}
-            {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
-            {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
-            {" — "}
-            Next match, scout gaps, and briefs.
-          </>
-        }
-      >
+  const headerActions = (
         <div className="edc-header-actions">
           <span className="edc-live" aria-live="polite">
             {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
@@ -503,7 +528,30 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
             Refresh
           </button>
         </div>
+  );
+
+  return (
+    <main className={`edc-page${embedded ? " is-embedded" : ""}`}>
+      {embedded ? (
+        headerActions
+      ) : (
+      <PageHeader
+        breadcrumbs="Competition / Event Day"
+        title={snap?.eventName ?? "Event Day Command"}
+        description={
+          <>
+            {snap?.orgName ? `${snap.orgName}` : me.orgName ?? "Your team"}
+            {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
+            {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
+            {" — "}
+            Next match, scout gaps, and briefs.
+          </>
+        }
+      >
+        {headerActions}
       </PageHeader>
+      )}
+      <OfflineBanner feature="Competition" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <EventDayRelatedStrip orgId={orgId || null} />

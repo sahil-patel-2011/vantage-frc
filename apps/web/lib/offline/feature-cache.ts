@@ -4,7 +4,19 @@
  * read last-good API payloads here when venue Wi-Fi drops.
  */
 
-export type OfflineFeature = "calendar" | "team-calendar" | "todos" | "logistics" | "my-day";
+export type OfflineFeature =
+  | "calendar"
+  | "team-calendar"
+  | "todos"
+  | "logistics"
+  | "my-day"
+  | "competition"
+  | "files"
+  | "docs"
+  | "dashboard"
+  | "chat"
+  | "video-analysis"
+  | "relays";
 
 const DB_NAME = "vantage-feature-cache";
 const DB_VERSION = 1;
