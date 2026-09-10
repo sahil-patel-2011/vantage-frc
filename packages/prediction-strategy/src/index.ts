@@ -17,6 +17,22 @@ export * from "./signals";
 export * from "./scout-ops";
 export * from "./dossier";
 export {
+  DEFAULT_ERROR_BAND,
+  fixtureSeasonRows,
+  isScorePredictionSkip,
+  predictAllianceScores,
+  scorePredictionMetrics,
+} from "./calibrated-score";
+export { matchPlanFromPrediction } from "./match-plan";
+export type { MatchPlan } from "./match-plan";
+export type {
+  AllianceScorePrediction,
+  ScoreFeatureRow,
+  ScorePredictionMetrics,
+  ScorePredictionSkip,
+  TeamScoreFeatures,
+} from "./calibrated-score";
+export {
   PLAN_TO_ENGINE_ID,
   normalizePlanCode,
   selectStrategyEngine,
